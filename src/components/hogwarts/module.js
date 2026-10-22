@@ -80,6 +80,7 @@ import { BEATS, PARTS } from './rules/arrival';
 import { createNight } from './play/night';
 import { createSchool } from './play/school';
 import { createNoticeBoard } from './world/noticeBoard';
+import { snowAt } from './rules/hogsmeade';
 import { frameYaw, fromRoom } from './rules/paths';
 
 export { KEYS };
@@ -230,7 +231,21 @@ export default {
 
     // the rooms behind the doors (Lane D, rooms/host.js): built far below as
     // you go in, the shore hidden and its lights down while you're inside
-    const rooms = createRoomHost({ rt, scene, camera, house, tier, reduced, outside: [sky.mesh, shore.group, lake.mesh, castle.group, boats.group, board.group], lights: [key, hemi], tell });
+    // (every room is built knowing the week, the hour, the snow and what you’ve found; an
+    // 'out' door leaves to the grounds as Esc does)
+    const rooms = createRoomHost({
+      rt,
+      scene,
+      camera,
+      house,
+      tier,
+      reduced,
+      outside: [sky.mesh, shore.group, lake.mesh, castle.group, boats.group, board.group],
+      lights: [key, hemi],
+      tell,
+      props: () => ({ week: school.week, hour: hours() % 24, snow: snowAt(school.week), houseName: school.house, found: school.found() }),
+      onOut: () => world.leave(),
+    });
     // the Great Hall as the term has it: the hourglasses at every house’s
     // points, the twelve trees at Christmas, and at the leaving feast the
     // tables laid and the banners in the colours of the house that won
@@ -327,6 +342,7 @@ export default {
       return nearDoor(walker.state.x, walker.state.z) ? 'door' : null;
     };
     const go = () => {
+      if (rooms.room) return rooms.act();
       const what = promptNow();
       if (what === 'broom') fly();
       else if (what === 'board') tell('board', {});
@@ -448,6 +464,8 @@ export default {
       skip: () => arrival.skip(),
       arrival,
       leave() {
+        // (from a room that opens off another, back into that one: a shop to the village’s street)
+        if (rooms.back()) return;
         rooms.leave();
         walker.place([walker.state.x, walker.state.z], walker.state.yaw);
         relight();

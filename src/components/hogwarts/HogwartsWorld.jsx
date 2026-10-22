@@ -228,9 +228,9 @@ export default function HogwartsWorld() {
   const foot = onRide ? (
     arrival.skippable ? <Prompt k="Enter" verb="Straight to the castle" touch={touch} onClick={() => api()?.skip()} /> : null
   ) : room ? (
-    <Prompt k="Esc" verb="Leave" thing={room.name} touch={touch} onClick={() => api()?.leave()} alt={door ? <Prompt k="E" verb="Go in" thing={door.label} touch={touch} onClick={() => api()?.go?.()} /> : null} />
+    <Prompt k="Esc" verb="Leave" thing={room.name} touch={touch} onClick={() => api()?.leave()} alt={door ? <Prompt k="E" verb={door.verb ?? 'Go in'} thing={door.label} touch={touch} onClick={() => api()?.go?.()} /> : null} />
   ) : door ? (
-    <Prompt k="E" verb="Go in" thing={door.label} touch={touch} onClick={() => api()?.go()} />
+    <Prompt k="E" verb={door.verb ?? 'Go in'} thing={door.label} touch={touch} onClick={() => api()?.go()} />
   ) : null;
 
   return (
@@ -266,6 +266,8 @@ export default function HogwartsWorld() {
                 </MenuItem>
               )}
               {!onRide && <MenuItem onClick={() => api()?.arrive()}>The arrival</MenuItem>}
+              {/* (up the road to the village on a Hogsmeade weekend, until the grounds’ road reaches it) */}
+              {!onRide && [term?.list?.find((q) => q.id === 'hogsmeade')].some((q) => q?.open || q?.done) && room?.id !== 'hogsmeade' && <MenuItem onClick={() => api()?.enter('hogsmeade')}>Hogsmeade</MenuItem>}
               {/* (the broom and the classes are the shore's, until the term's lane sends you to them in their rooms) */}
               {!onRide && !room && !riding && <MenuItem onClick={() => api()?.fly()}>Fly</MenuItem>}
               {!onRide && !room && <MenuItem onClick={() => api()?.lesson('flying')}>The flying lesson</MenuItem>}

@@ -12,7 +12,8 @@
 //   readSave(saves) → the save’s object (never null); writeSave(saves, patch) → merged in, nothing else touched
 //   createSchool({ saves, tell, house, week, day }) → {
 //     hear(type, data) → the world’s events, step(dt, t) (t: world hours), view() → the HUD’s view,
-//     house, week, learnt, knows(spell), feast() → the Cup (the leaving feast held), sleep(day), setWeek(w), nextYear(day) }
+//     house, week, learnt, knows(spell), feast() → the Cup (the leaving feast held), sleep(day), setWeek(w), nextYear(day),
+//     found() → { sweets, butterbeer, shack, cards, cloak } (what the rooms need to know you have) }
 //   hears: 'points' (always your house’s, unless marked rival), 'lesson', 'result', 'house', 'sorted', 'room' and
 //     'enter' (a room gone into), 'learnt', 'driven', 'pickup', 'caught', 'restricted', 'book', 'willow',
 //     'frozen', 'butterbeer', 'sweet'
@@ -263,6 +264,11 @@ export function createSchool({ saves = null, tell = () => {}, house: given = nul
     },
     get cloak() {
       return cloak;
+    },
+    // what the rooms need to know you’ve found: Hogsmeade’s sweets and butterbeer, the cards, the cloak
+    found() {
+      const got = quests.hogsmeade?.got ?? [];
+      return { sweets: got.filter((k) => k.startsWith('sweets:')).map((k) => k.slice(7)), butterbeer: got.includes('butterbeer'), shack: got.includes('shack'), cards: [...cards], cloak };
     },
     get cards() {
       return cards;

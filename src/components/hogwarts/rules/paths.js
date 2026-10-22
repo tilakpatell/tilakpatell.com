@@ -203,6 +203,8 @@ export const EDGES = [
 // Map with its own origin on its spot.
 export const ROOM_FRAMES = {
   greatHall: { at: [-12, 11], yaw: Math.PI / 2 },
+  // (the village’s set is built in the Map’s own frame, its street’s middle at the set’s origin)
+  hogsmeade: { at: VILLAGE.at, yaw: 0 },
 };
 
 const BY_ID = new Map(SPOTS.map((s) => [s.id, s]));

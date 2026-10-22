@@ -10,17 +10,25 @@
 //   ROOM_ORIGIN: [x, y, z]   (rooms/index.js’s, Lane C’s, when it lands)
 //   LOCAL: { id: { name, load } } the rooms this lane has made, until the registry lists them
 //   solidsOf(colliders) → [{ at, r }]: circles for the walk (a box laid as a row of them)
-//   createRoomHost({ rt, scene, camera, house, tier, reduced, outside, lights, tell, load })
-//     → { enter(id, { at, yaw, props, walk }) → Promise<room>, leave(), room, id, step(dt, input, touch) → bool, place(at, yaw), walk(at, yaw), dispose() }
+//   createRoomHost({ rt, scene, camera, house, tier, reduced, outside, lights, tell, load, props })
+//     → { enter(id, { at, yaw, props, walk }) → Promise<room>, leave(), back() → bool, act(), room, id,
+//         step(dt, input, touch, pressed) → bool, place(at, yaw), walk(at, yaw), dispose() }
 //     outside: the grounds’ objects hidden while in a room; lights: the grounds’ lights, dimmed
-//     tell('room', { id, name } | null) as one is entered or left; tell('near', { door } | null) at a door inside
+//     props(): what every room is built with besides its own (the week, the hour, the snow, the cards found)
+//     onOut(): out to the grounds through an 'out' door (the world puts you back where you went in)
+//     tell('room', { id, name } | null) as one is entered or left; tell('near', { door } | null) at a door
+//     or a thing inside (door: { label, verb, room } for a door, { label, verb, spot } for a thing)
 //
 // A room’s module (its default export) has build(rt, ctx) → room, or a
-// Promise of one; ctx: { house, tier, renderer, props, from, leave(), say(text) }.
+// Promise of one; ctx: { house, tier, renderer, props, from, leave(), say(text), tell(type, data) }
+// (tell: the world’s events, as the grounds’ things send them: 'sweet', 'butterbeer', 'pickup', …).
 // A room: { id, name, group, spawn: { at: [x, y, z], yaw }, colliders, floors,
-// doors: [{ id, at: [x, z], r, faces, name, to: 'out' | roomId }], places,
-// bounds, floorAt(x, z) → y, step(dt, ctx), set(props), info(), dispose() }:
-// every place in the room’s own frame (the host stands it at the origin).
+// doors: [{ id, at: [x, z], r, faces, name, verb?, to: 'out' | roomId, toAt?: [x, z], toYaw? }],
+// spots?: [{ id, at: [x, z], r, verb, label }] (things to use: E by one calls use(id)),
+// use?(id), out?: { to, at, yaw } (where Esc and an 'out' door lead: another room, else the grounds),
+// fog?: a THREE fog for the room (an outdoor set's own), places, bounds, floorAt(x, z) → y,
+// step(dt, ctx), set(props), info(), dispose() }: every place in the room’s own frame (the host
+// stands it at the origin).
 
 import { createWalker } from '../play/walk';
 
@@ -28,6 +36,13 @@ export const ROOM_ORIGIN = [0, -2000, 0];
 
 export const LOCAL = {
   greatHall: { name: 'The Great Hall', load: () => import('./greatHall.js') },
+  // Hogsmeade (Lane F): the village as an outdoor set, three insides, the Shack and the passage to it
+  hogsmeade: { name: 'Hogsmeade', load: () => import('./hogsmeade.js') },
+  honeydukes: { name: 'Honeydukes', load: () => import('./honeydukes.js') },
+  broomsticks: { name: 'The Three Broomsticks', load: () => import('./broomsticks.js') },
+  hogshead: { name: 'The Hog’s Head', load: () => import('./hogshead.js') },
+  shack: { name: 'The Shrieking Shack', load: () => import('./shack.js') },
+  tunnel: { name: 'The passage under the Willow', load: () => import('./tunnel.js') },
 };
 
 export function solidsOf(colliders = []) {
@@ -51,7 +66,7 @@ export function solidsOf(colliders = []) {
 
 const NEAR = 2.2; // m from a door’s middle, beyond its own reach, its prompt shows
 
-export function createRoomHost({ rt, scene, camera, house, tier = 'high', reduced = false, outside = [], lights = [], tell = () => {}, load = (id) => LOCAL[id]?.load?.() }) {
+export function createRoomHost({ rt, scene, camera, house, tier = 'high', reduced = false, outside = [], lights = [], tell = () => {}, load = (id) => LOCAL[id]?.load?.(), props: shared = () => ({}), onOut = null }) {
   let room = null;
   let id = null;
   let walker = null;
@@ -66,15 +81,21 @@ export function createRoomHost({ rt, scene, camera, house, tier = 'high', reduce
     for (const l of lights) {
       if (!l) continue;
       if (hide) {
-        lit.set(l, l.intensity);
+        if (!inside) lit.set(l, l.intensity);
         l.intensity = 0;
       } else if (lit.has(l)) l.intensity = lit.get(l);
     }
     if (hide) {
-      wasFog = scene.fog;
-      scene.fog = null;
+      // (once: going from one room straight into another keeps the grounds’ fog to put back)
+      if (!inside) wasFog = scene.fog;
+      scene.fog = room?.fog ?? null;
     } else if (wasFog) scene.fog = wasFog;
+    inside = hide;
   };
+  let inside = false;
+  let pushed = false;
+  // (an 'out' door with nowhere of its own to go: out to the grounds, the world’s way)
+  const leaveOut = () => (onOut ? onOut() : host.leave());
 
   const worldOf = (r) => ({
     floorAt: (x, z) => ROOM_ORIGIN[1] + (r.floorAt?.(x, z) ?? 0),
@@ -100,12 +121,12 @@ export function createRoomHost({ rt, scene, camera, house, tier = 'high', reduce
       const mod = await load(roomId);
       const def = mod?.default ?? mod;
       if (!def?.build) throw new Error(`rooms: no room ${roomId}`);
-      const built = await def.build(rt, { house, tier, renderer: rt?.gfx?.renderer ?? null, props, from: null, leave: () => host.leave(), say: (text) => tell('toast', { text }) });
+      const built = await def.build(rt, { house, tier, renderer: rt?.gfx?.renderer ?? null, props: { ...shared(), ...props }, from: id, leave: () => host.leave(), say: (text) => tell('toast', { text }), tell });
       if (gone || ticket !== entering) {
         built?.dispose?.();
         return null;
       }
-      if (room) host.leave({ quiet: true });
+      if (room) host.leave({ quiet: true, keepOut: true });
       room = built;
       id = roomId;
       room.group.position.set(...ROOM_ORIGIN);
@@ -117,7 +138,7 @@ export function createRoomHost({ rt, scene, camera, house, tier = 'high', reduce
       tell('room', { id: roomId, name: room.name ?? def.name ?? roomId });
       return room;
     },
-    leave({ quiet = false } = {}) {
+    leave({ quiet = false, keepOut = false } = {}) {
       if (!room) return;
       room.dispose?.();
       room.group?.removeFromParent();
@@ -126,11 +147,22 @@ export function createRoomHost({ rt, scene, camera, house, tier = 'high', reduce
       walker = null;
       host.hold = false;
       near = null;
-      hideOutside(false);
+      if (!keepOut) hideOutside(false);
       if (!quiet) {
         tell('near', { door: null });
         tell('room', null);
       }
+    },
+    // the prompt’s own button (touch): what E does, on the next step
+    act() {
+      pushed = true;
+    },
+    // the way back: to the room this one opens off (its `out`), true if there is one
+    back() {
+      const out = room?.out;
+      if (!out?.to || out.to === 'out') return false;
+      host.enter(out.to, { at: out.at ?? null, yaw: out.yaw ?? null }).catch(() => tell('toast', { text: 'Locked. Not today.' }));
+      return true;
     },
     place(at, yaw) {
       walker?.place(at, yaw);
@@ -147,13 +179,34 @@ export function createRoomHost({ rt, scene, camera, house, tier = 'high', reduce
       if (walker && !host.hold) {
         walker.step(dt, input, touch);
         const s = walker.state;
+        // (the nearest door or thing in reach: a door first, as before, then a thing)
         let door = null;
         for (const d of room.doors ?? []) if (Math.hypot(s.x - d.at[0], s.z - d.at[1]) < (d.r ?? 1.5) + NEAR) door = d;
-        if ((door?.id ?? null) !== (near?.id ?? null)) {
-          near = door;
-          tell('near', { door: door && door.to !== 'out' ? { label: door.name, room: door.to } : null });
+        let spot = null;
+        let best = Infinity;
+        if (!door)
+          for (const p of room.spots ?? []) {
+            const dist = Math.hypot(s.x - p.at[0], s.z - p.at[1]);
+            if (dist < (p.r ?? 1) + NEAR * 0.5 && dist < best) {
+              best = dist;
+              spot = p;
+            }
+          }
+        const what = door ?? spot;
+        if ((what?.id ?? null) !== (near?.id ?? null)) {
+          near = what;
+          // (a door out shows only when it says where it goes: a room with no named way out has Esc)
+          const shown = door ? (door.to !== 'out' || door.verb ? { label: door.name, verb: door.verb ?? (door.to === 'out' ? 'Go out' : 'Go in'), room: door.to } : null) : spot ? { label: spot.label, verb: spot.verb ?? 'Use', spot: spot.id } : null;
+          tell('near', { door: shown });
         }
-        if (pressed('act') && near && near.to !== 'out') host.enter(near.to).catch(() => tell('toast', { text: 'Locked. Not today.' }));
+        const acted = pressed('act') || pushed;
+        pushed = false;
+        if (acted && near) {
+          if (near === spot) room.use?.(spot.id);
+          else if (near.to === 'out') {
+            if (!host.back()) leaveOut();
+          } else host.enter(near.to, { at: near.toAt ?? null, yaw: near.toYaw ?? null }).catch(() => tell('toast', { text: 'Locked. Not today.' }));
+        }
       }
       room.step?.(dt, { camera, input, at: walker ? [walker.state.x, walker.state.z] : null });
       return true;
