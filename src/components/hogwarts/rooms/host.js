@@ -21,7 +21,7 @@
 //     tell('room', { id, name } | null) as one is entered or left; tell('near', { door } | null) at a door inside
 //     back(): out of a room gone into from another, back into that one at the door you took; false if none
 //
-// A room may stand in the world instead (`at`: [x, y, z], where its own
+// A room may stand in the world instead (`origin`: [x, y, z], where its own
 // frame’s origin goes; the Astronomy Tower’s top on the far castle’s
 // gallery), and then the grounds stay up round it: everything the walk and
 // the doors read is offset by where it stands, and frame([x, z]) gives the
@@ -115,7 +115,8 @@ export function createRoomHost({ rt, scene, camera, house, tier = 'high', reduce
   };
 
   // where a room’s own frame stands in the world: its `at`, or far below the grounds
-  const originOf = (r) => r?.at ?? ROOM_ORIGIN;
+  // (`origin`, not `at`: the staircase has an at(landing) of its own)
+  const originOf = (r) => (Array.isArray(r?.origin) ? r.origin : ROOM_ORIGIN);
   // (read every step: a room whose floor moves under you, the staircase’s, changes them as you go)
   const worldOf = (r) => {
     const o = originOf(r);
@@ -194,7 +195,7 @@ export function createRoomHost({ rt, scene, camera, house, tier = 'high', reduce
       house?.adopt?.(room.group);
       // (the look’s shade a room’s own warm dark, not the grounds’ night blue; the world’s relight puts it
       // back outside. A room standing in the world keeps the grounds, their light and their fog)
-      if (!room.at) {
+      if (!Array.isArray(room.origin)) {
         house?.set?.({ shadow: new Color(room.shade ?? 0x2e2219) });
         if (!hidden) hideOutside(true);
         hidden = true;
@@ -264,8 +265,16 @@ export function createRoomHost({ rt, scene, camera, house, tier = 'high', reduce
       if (walker && !host.hold) {
         walker.step(dt, input, touch);
         const [x, z] = host.frame([walker.state.x, walker.state.z]);
+        // (the nearest door in reach: on a landing a room’s door and the stairs’ feet stand close together)
         let door = null;
-        for (const d of room.doors ?? []) if (Math.hypot(x - d.at[0], z - d.at[1]) < (d.r ?? 1.5) + NEAR) door = d;
+        let best = Infinity;
+        for (const d of room.doors ?? []) {
+          const dist = Math.hypot(x - d.at[0], z - d.at[1]);
+          if (dist < (d.r ?? 1.5) + NEAR && dist - (d.r ?? 1.5) < best) {
+            best = dist - (d.r ?? 1.5);
+            door = d;
+          }
+        }
         if ((door?.id ?? null) !== (near?.id ?? null) || (door && door.name !== near?.name)) {
           near = door;
           tell('near', { door: door && (door.act || door.to !== 'out') ? { label: door.name, verb: door.verb ?? null, room: door.to ?? null } : null });

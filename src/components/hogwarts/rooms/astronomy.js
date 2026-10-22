@@ -2,7 +2,7 @@
 // the castle’s highest tower, stone-floored, a crenellated parapet at your
 // waist, six brass telescopes on their tripods turned up at the sky, a table
 // of star charts weighted down with an armillary sphere, and a lantern. It
-// stands in the world, not below it (the room host’s `at`): the far castle’s
+// stands in the world, not below it (the room host’s `origin`): the far castle’s
 // own gallery, so the lake, the shore’s lights and the sky are really there,
 // a hundred and fifty metres down and all round. By night, E at a telescope
 // is a look along it: the view narrows to the eyepiece’s and the stars in it
@@ -144,7 +144,7 @@ function build(rt, ctx = {}) {
   const room = {
     id: 'astronomy',
     name: 'The top of the Astronomy Tower',
-    at: AT,
+    origin: AT,
     group,
     spawn: { at: [Math.sin(DOOR_A) * (R0 + 1.2), 0, Math.cos(DOOR_A) * (R0 + 1.2)], yaw: DOOR_A + Math.PI },
     colliders: [

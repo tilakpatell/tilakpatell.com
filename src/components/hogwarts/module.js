@@ -385,7 +385,7 @@ export default {
           if (pressed('menu')) world.leave();
           else rooms.step(dt, input, touch, pressed);
           // (a room standing in the world, the Astronomy Tower’s top: the lake and the light go on round it)
-          if (rooms.room?.at) {
+          if (Array.isArray(rooms.room?.origin)) {
             clock += dt;
             windTime.value += dt;
             lake.update(dt);
@@ -545,7 +545,7 @@ export default {
         const p = rooms.room?.poses?.[name];
         if (!p) return null;
         // (a room standing in the world has its own origin: the Astronomy Tower's top)
-        const o = rooms.room.at ?? ROOM_AT;
+        const o = Array.isArray(rooms.room.origin) ? rooms.room.origin : ROOM_AT;
         rooms.walker && (rooms.walker.place([p.at[0] + o[0], p.at[2] + o[2]], 0));
         camera.position.set(p.at[0] + o[0], p.at[1] + o[1], p.at[2] + o[2]);
         camera.lookAt(p.look[0] + o[0], p.look[1] + o[1], p.look[2] + o[2]);
