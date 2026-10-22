@@ -49,6 +49,16 @@ describe('the map’s marker inside a game', () => {
     expect(gameGoal(d, { deal: { phase: 'run', seen: { [a]: 'bad', [b]: 'bad', [c]: 'good' }, taken: [] } })).toBe(c);
   });
 
+  it('points at the stairs’ foot, then at the giants once he’s up', () => {
+    const d = { id: 'up', climb: { task: 'up', top: 'crown', foot: 'goblins', spot: 'giants' } };
+    expect(gameGoal(d, { climb: { phase: 'idle', stand: 0 } })).toBe('goblins');
+    expect(gameGoal(d, { climb: { phase: 'run', stand: 0 } })).toBe('goblins');
+    expect(gameGoal(d, { climb: { phase: 'run', stand: 2.3 } })).toBe('giants');
+    expect(gameGoal(d, { climb: { phase: 'lost', stand: 2.3 } })).toBe(null);
+    expect(gameGoal(d, { climb: { phase: 'run', stand: 2.3 }, done: ['up'] })).toBe(null);
+    expect(gameGoal(d, {})).toBe(null);
+  });
+
   it('has nothing to say of a place without a game', () => {
     expect(gameGoal(destinationById('customs'), {})).toBe(null);
     expect(gameGoal(null, {})).toBe(null);
