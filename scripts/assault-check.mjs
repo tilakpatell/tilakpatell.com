@@ -145,8 +145,11 @@ async function groundPass(id) {
             const p = [post[0] + Math.sin(a) * r, post[1] + Math.cos(a) * r];
             // (from just ahead of the post: its own sandbags are behind the holders, not between)
             const eye = { x: post[0] + Math.sin(a) * 1.5, z: post[1] + Math.cos(a) * 1.5 };
-            if (Math.abs(s.heightAt(p[0], p[1]) - h) > 12 && ++why.height) continue;
-            if (near.some((o) => pushOut(o, p[0], p[1], 0.6)) && ++why.inside) continue;
+            const g = s.heightAt(p[0], p[1]);
+            if (Math.abs(g - h) > 12 && ++why.height) continue;
+            // (a solid under you, a ledge's top you stand on, or one over your head, is no wall: walker.js's top and base)
+            const walls = (o) => !(o.top != null && o.top <= g + 0.6) && !(o.base != null && o.base >= g + 2);
+            if (near.some((o) => walls(o) && pushOut(o, p[0], p[1], 0.6)) && ++why.inside) continue;
             if (!lineClear(solids, eye, { x: p[0], z: p[1] }) && ++why.line) continue;
             s.put(p[0], p[1]);
             return { p, post, r };
