@@ -126,7 +126,7 @@ describe('the 2017 import', () => {
 
 // a skinned person in a scratch drop: Hips → Spine → RightHand → IK_Joint_RightHand
 // and Wep_Root, and Hips → FACIAL_Jaw, Spine → Cape_Phys; only the hand carries weight
-async function riggedDrop({ weapon = true, parts = false } = {}) {
+async function riggedDrop({ weapon = true, parts = false, markings = false } = {}) {
   const root = await mkdtemp(join(tmpdir(), 'bf2017-rig-'));
   const doc = new Document();
   const buffer = doc.createBuffer();
@@ -180,14 +180,31 @@ async function riggedDrop({ weapon = true, parts = false } = {}) {
       );
     part('helmet', doc.createMaterial('visor').setBaseColorFactor([0.1, 0.1, 0.1, 1]), 1.7);
     part('backpack', armour, 1.2);
+    // (a droid's: its armour drawn by the game's markings preset, as the
+    // export's GLBs name it, the visor by another)
+    if (markings) {
+      armour.setExtras({ shader: 'Shaders/Presets/SS_CharactersPreset_RobotMarkings' });
+      doc
+        .getRoot()
+        .listMaterials()
+        .find((m) => m.getName() === 'visor')
+        .setExtras({ shader: 'Shaders/Presets/SS_CharactersPreset_WalrusMetallic' });
+    }
   }
   const name = 'characters/hero/test/test_01/test_01_mesh';
   await mkdir(join(root, 'web/models/characters/hero/test/test_01'), { recursive: true });
   await writeFile(join(root, `web/models/${name}.glb`), await new NodeIO().writeBinary(doc));
   const entry = { name, file: `models/${name}.glb`, min: [0, 0, 0], max: [0.2, 1.8, 0], lods: [{ lod: 0, file: `models/${name}.glb`, triangles: 1 }] };
   await writeFile(join(root, 'web/models.jsonl'), `${JSON.stringify(entry)}\n`);
+  if (markings) {
+    // (and its skin's record as the export keeps it, under web/data)
+    const record = { name: MARKED, objects: [{ $type: 'ObjectVariation' }, { $type: 'MeshMaterialVariation', Shader: { VectorParameters: [{ ParameterName: 'Color0_Base', Value: { x: 0.637596846, y: 0.5647115, z: 0.3662526, w: 1 } }] } }] };
+    await mkdir(join(root, 'web/data/Characters/Markings/Test'), { recursive: true });
+    await writeFile(join(root, `web/data/${MARKED}.json`), JSON.stringify(record));
+  }
   return { root, name };
 }
+const MARKED = 'Characters/Markings/Test/Test_01_Default';
 
 describe('the 2017 import of a rig', () => {
   const importRig = async (drop, more = []) => {
@@ -226,6 +243,21 @@ describe('the 2017 import of a rig', () => {
     expect(draws(doc)).toBe(2);
     expect(said).toMatch(/2 draws/);
     expect(doc.getRoot().listSkins().length).toBe(1);
+  });
+
+  it('gives a droid’s markings material its skin’s colour with --tint, the map and the other materials as they were', { timeout: 10000 }, async () => {
+    const colourOf = (doc, name) =>
+      doc
+        .getRoot()
+        .listMaterials()
+        .find((m) => m.getName() === name)
+        .getBaseColorFactor()
+        .map((v) => +v.toFixed(3));
+    const { doc } = await importRig({ parts: true, markings: true }, ['--tint', MARKED]);
+    expect(colourOf(doc, 'armour')).toEqual([0.638, 0.565, 0.366, 1]);
+    expect(colourOf(doc, 'visor')).toEqual([0.1, 0.1, 0.1, 1]);
+    // (without --tint the markings material keeps the export's white)
+    expect(colourOf((await importRig({ parts: true, markings: true })).doc, 'armour')).toEqual([1, 1, 1, 1]);
   });
 
   it('holds by the hand’s IK socket where the rig has no weapon socket', { timeout: 10000 }, async () => {

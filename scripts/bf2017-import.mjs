@@ -86,6 +86,12 @@
 //   keep-origin  not grounded: the model keeps the game's own origin, axes
 //              and metres (a hilt or a blaster, modelled for the Wep_Root
 //              socket with its grip at the origin and its barrel up +y)
+//   tint     the colour a skin’s ObjectVariation records give a droid’s
+//              markings shader (`Color0_Base`, which the game multiplies its
+//              grey colour map by: the B1’s tan), set as the factor of each
+//              material drawn with it; the records by name, comma-separated,
+//              read under --root (lib/bf2017-markings.mjs: the bucket’s
+//              data/<name>.json.gz or the export’s web/data/<name>.json)
 //
 // It refuses the sequel era (the site shows none of it), and the campaign's
 // third act with it. Look at what came out with node scripts/glb-shot.mjs
@@ -111,6 +117,7 @@ import { BASIS_LZ, dropLevels, ktx2Info } from './lib/ktx2-levels.mjs';
 import { loadGameWord, slotTransfer, wantedTransfer, withTransfer } from './lib/ktx2-colour.mjs';
 import { writeCatalogueLine, writeCredit } from './lib/catalog-write.mjs';
 import { joinSkinned, shareSkins } from './lib/rig-parts.mjs';
+import { MARKINGS, markingsColour, readRecord } from './lib/bf2017-markings.mjs';
 import { glbTextures } from '../src/lib/glbTextures.js';
 import { KEPT, decalOf, dressed } from './lib/bf2017-dressing.mjs';
 import { atlasUVs } from './lib/bf2017-uv.mjs';
@@ -217,7 +224,7 @@ async function texturesOpt(opts, mesh) {
 // pipeline's derived `__normal` (its z rebuilt; the KTX2 under that name)
 export const overridePath = (name, slot) => (slot === 'normal' ? mapPath(name).replace(/\.png$/, '__normal.ktx2') : mapPath(name).replace(/\.png$/, '.ktx2'));
 
-export async function readLod(io, file, { root, derived, unpackDir, said, eyes = null, textures = null }) {
+export async function readLod(io, file, { root, derived, unpackDir, said, eyes = null, textures = null, tint = null }) {
   const glb = await readFile(localPath(root, inBucket(file)));
   // (the GLB read by hand: glTF-Transform's own reader will not open one whose
   // images are outside it; chunk 0 is the JSON, chunk 1 the binary buffer)
@@ -255,6 +262,9 @@ export async function readLod(io, file, { root, derived, unpackDir, said, eyes =
   for (const [index, m] of doc.getRoot().listMaterials().entries()) {
     for (const slot of SLOTS) if (m[`get${slot}Texture`]()?.getName() === MISSING) m[`set${slot}Texture`](null);
     const shader = String(m.getExtras()?.shader ?? '');
+    // a droid’s markings: its grey map times the skin’s colour, as the
+    // game’s shader draws it (--tint), the map itself left as it is
+    if (tint && MARKINGS.test(shader)) m.setBaseColorFactor([...tint, 1]);
     // a hair preset's colour map carries its strands' cut-out in alpha
     // (Chewbacca's cards, a hero's hair planes), whatever glTF was told
     if (/hair/i.test(shader) && m.getBaseColorTexture()) m.setAlphaMode('MASK').setAlphaCutoff(0.35).setDoubleSided(true);
@@ -611,6 +621,8 @@ export async function importModel(name, opts) {
     // (maps a shader graph binds, by material name: --textures)
     // (and those the game's mesh variation database binds: --variations <record>)
     textures: await texturesOpt(opts, name),
+    // (a droid’s markings colour from its skin’s records: --tint)
+    tint: typeof opts.tint === 'string' ? markingsColour(opts.tint.split(',').map((n) => readRecord(root, n.trim()))) : null,
     // (WebP quality: colour, then the rest; a hero at the game's full maps takes more)
     quality: Number(opts.quality ?? 82),
     mapsQuality: Number(opts.mapsQuality ?? opts.quality ?? 80),
