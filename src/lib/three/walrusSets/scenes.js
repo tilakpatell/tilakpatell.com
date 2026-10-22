@@ -9,8 +9,9 @@
 //   hoth-outro     the Rebels' four at Echo Base when the Battle of Hoth is
 //                  held (CIN_PB_Hoth_Outro_Reb_E1 to E4), on the winners
 //
-// (The Death Star's inside stands its people on Meshy's rig, so none of the
-// game's throne-room or corridor clips can play there: the rig rule.) Pure.
+// (The Death Star's inside draws the game's people on the game's skeleton
+// now, through the clips its rules name, deathstar/inside/scene/gameBody.js;
+// the game's throne-room and corridor scenes aren't packed for it.) Pure.
 //
 //   SCENES                { id: { role: gameName | [gameName…] } }
 //   introScene(kind)      → 'intro-<kind>' where there is one, else null

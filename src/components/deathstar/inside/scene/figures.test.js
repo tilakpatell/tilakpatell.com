@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { ALIAS, PRELOAD, motionOf, playerKind } from './figures';
+import { ALIAS, PEOPLE, PRELOAD, motionOf, playerKind } from './figures';
+import { CAST } from '../rules/cast';
 import { CLIPS } from '../../../../lib/three/clipLibrary';
 
 // locomotion's weights for a `move` (lib/three/locomotion.js): idle below 0.04, run from 0.55
@@ -49,5 +50,12 @@ describe('who the player is drawn as', () => {
 
   it('is Luke when the hero is someone the station has no figure for', () => {
     expect(playerKind({ side: 'rebel', hero: 'nobody' })).toBe('luke');
+  });
+});
+
+describe('the player’s figures', () => {
+  it('are on the game’s bodies the cast names for the same kinds, old Ben on the site’s', () => {
+    for (const [kind, who] of Object.entries(PEOPLE)) expect(who.game ?? null, kind).toBe(CAST[kind].game ?? null);
+    expect(PEOPLE.obiwan.game).toBeUndefined();
   });
 });

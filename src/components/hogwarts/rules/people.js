@@ -57,7 +57,8 @@ export const HOGSMEADE_FROM = 3;
 // Filch’s rounds after curfew, the prefects’ on the staircase, Snape’s in the dungeons
 export const ROUNDS = {
   // (the library and the seventh floor twice a night: the dungeons are Snape’s, the staircase the prefects’)
-  filch: ['filch-office', 'entrance', 'staircase', 'staffroom', 'corridor-north', 'library', 'restricted', 'library', 'corridor-north', 'defence', 'corridor-north', 'requirement', 'corridor-north', 'staffroom', 'staircase', 'entrance'],
+  // (Filch looks into the Great Hall first, down the tables to the high table and back, for anyone left after the feast)
+  filch: ['filch-office', 'entrance', 'hall', 'high-table', 'hall', 'entrance', 'staircase', 'staffroom', 'corridor-north', 'library', 'restricted', 'library', 'corridor-north', 'defence', 'corridor-north', 'requirement', 'corridor-north', 'staffroom', 'staircase', 'entrance'],
   prefects: ['staircase', 'fat-lady', 'staircase', 'witch', 'staircase', 'courtyard-door'],
   snape: ['potions', 'dungeons', 'below', 'entrance', 'below', 'dungeons'],
   baron: ['slytherin', 'potions', 'dungeons', 'below', 'kitchens', 'below', 'dungeons', 'potions'],

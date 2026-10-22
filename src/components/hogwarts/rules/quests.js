@@ -81,9 +81,9 @@ export const QUESTS = [
     title: 'After hours',
     where: 'The Restricted Section',
     place: 'restricted',
-    blurb: 'Find the cloak, then the Restricted Section after curfew, read the roped book and get back to bed unseen.',
+    blurb: 'Find the cloak (in the room of hidden things, or it finds you at Christmas), then the Restricted Section after curfew, the roped book read, and back to bed unseen.',
     steps: [
-      step('cloak', 'Find the cloak in the room of hidden things', (e) => e.type === 'pickup' && e.id === 'cloak'),
+      step('cloak', 'Find the cloak', (e) => e.type === 'pickup' && e.id === 'cloak'),
       step('restricted', 'Reach the Restricted Section after curfew', (e) => e.type === 'restricted'),
       step('book', 'Read the roped book without waking it', (e) => (e.type === 'book' && e.quiet ? true : e.type === 'caught' ? 'back' : false)),
       step('back', 'Back to your common room unseen', (e, c) => (e.type === 'enter' && isCommon(e.room, c.house) ? true : e.type === 'caught' ? 'back' : false)),
