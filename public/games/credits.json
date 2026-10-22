@@ -5128,5 +5128,13 @@
       "Tilak Patel, with Meshy AI"
     ],
     "license": "Meshy paid-plan output, owned by the site owner"
+  },
+  "gen3d/martian-base": {
+    "source": "https://github.com/microsoft/TRELLIS.2",
+    "name": "the Martian base from Invincible: a low white and grey research station on red ground, a central dome with a glass top, two cylindrical huts joined by tunnels, a radio mast with a light, a landing pad with a small white rocket ship beside it; the whole building in a three-quarter view, cel-shaded flat colours, plain white background, made for this site with TRELLIS.2 (trellis.cpp), baked in Blender on the site owner's machine (scripts/gen3d)",
+    "authors": [
+      "Tilak Patel, with Microsoft TRELLIS.2"
+    ],
+    "license": "Generated for this site; TRELLIS.2 is MIT"
   }
 }
