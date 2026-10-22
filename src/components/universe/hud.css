@@ -12,9 +12,9 @@
 .galaxy-page {
   /* the screen's edge for anything flush to it, inside a notch's safe area */
   --hud-edge: max(16px, env(safe-area-inset-left), env(safe-area-inset-right));
-  /* a sheet over the live map: dark glass, no blur (blurring a live map
-     costs frames every frame) */
-  --hud-sheet-bg: rgb(6 8 16 / 0.93);
+  /* a sheet over the live map: the colour's own dark glass (styles/
+     dialogs.css), no blur (blurring a live map costs frames every frame) */
+  --hud-sheet-bg: var(--glass);
   /* the one amber for a warning: short of power, a dropped part, a note */
   --hud-warn: #ffb35c;
   --hud-warn-tint: #ffdca0;
@@ -46,15 +46,15 @@
   text-align: center;
 }
 
-/* A sheet that opens from a button in the corner: flight settings, the
-   hangar. The ship's engine tints its edge. */
-.universe-settings,
-.universe-hangar {
+/* A sheet that opens from a button in the corner: the flight settings. The
+   ship's engine tints its edge; its corners, glass and shadow are the
+   colour's, and the colour dresses it as a .dialog (styles/dialogs.css). */
+.universe-settings {
   border: 1px solid color-mix(in srgb, var(--engine, #e8eefc) 35%, transparent);
-  border-radius: 14px;
+  border-radius: var(--r-card);
   background: var(--hud-sheet-bg);
   color: var(--text);
-  box-shadow: 0 18px 40px color-mix(in srgb, var(--shadow-ink) 45%, transparent);
+  box-shadow: var(--shadow-dialog);
 }
 
 /* The flight cluster (the HUD kit's: runtime/hud/cluster.css), in the
@@ -97,7 +97,7 @@
    shipyard's hull. Columns come from each one's own rule. */
 .universe-seg,
 .universe-hangar-slots,
-.universe-yard-hull { display: grid; border: 1px solid color-mix(in srgb, var(--text) 20%, transparent); border-radius: 8px; overflow: hidden; }
+.universe-yard-hull { display: grid; border: 1px solid color-mix(in srgb, var(--text) 20%, transparent); border-radius: min(var(--r-btn), 8px); overflow: hidden; }
 :is(.universe-seg, .universe-hangar-slots, .universe-yard-hull) button { min-height: 34px; color: var(--muted); font-size: 0.78rem; transition: background-color 0.15s, color 0.15s; }
 :is(.universe-seg, .universe-hangar-slots, .universe-yard-hull) button:hover { color: var(--text); }
 :is(.universe-seg, .universe-hangar-slots, .universe-yard-hull) button[aria-pressed='true'] { background: color-mix(in srgb, var(--engine, #e8eefc) 22%, transparent); color: var(--text); }
@@ -116,5 +116,5 @@
 }
 :is(.universe-back, .universe-online-link, .universe-settings-reset):hover { color: var(--text); text-decoration: underline; }
 
-/* The X on a sheet: round, as multiplayer's card has it. */
-.universe-settings-close { border-radius: 999px; }
+/* The X on a sheet: the colour's pill, as multiplayer's card has it. */
+.universe-settings-close { border-radius: var(--r-btn); }

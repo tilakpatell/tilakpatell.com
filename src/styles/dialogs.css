@@ -1,12 +1,14 @@
 /* ─── What floats wears the colour it floats over ───────────────────────────
    The shell’s panels are one surface, .dialog: the settings, the guide, the
-   tour’s card, the colours panel and the map’s start card (the palette is
-   matched by its own .palette). The veil behind them and the map’s glass come
-   from the colour; their titles speak in its face; and each colour dresses
-   them as its own thing. A dress is drawn on ::before under what the panel
-   holds (the panel isolates itself, so z-index -1 is above its own ground),
-   still and click-through; Middle-earth’s cards keep ::after, over what they
-   hold. A panel that scrolls itself (the colours panel) takes only what its
+   tour’s card, the colours panel, and the map’s too: its panel, start card,
+   nav map, flight settings and multiplayer card, and a world’s gate (the
+   palette is matched by its own .palette). The veil behind them and the
+   map’s glass come from the colour; their titles speak in its face; and each
+   colour dresses them as its own thing. A dress is drawn on ::before under
+   what the panel holds (the panel isolates itself, so z-index -1 is above its
+   own ground), still and click-through; Middle-earth’s cards keep ::after,
+   over what they hold. A panel that scrolls itself (the colours panel, the
+   map’s panel, its flight settings and multiplayer card) takes only what its
    edge and its shadow can carry, since a drawing inside it would scroll away.
    Eager, after the colours’ sheets. */
 
@@ -88,43 +90,43 @@ html[data-mode='dark'] {
    where the page’s display face can’t be read at 18px (Aurebesh, Cybertron
    Script), the family’s second face. The faces load with their colour
    (theme/ThemeProvider.jsx). */
-:is([data-theme='jedi'], [data-theme='sith']) :is(.dialog-title, .tour-title, .tour-offer-title, .start-title, .universe-title, .world-gate-title) {
+:is([data-theme='jedi'], [data-theme='sith']) :is(.dialog-title, .tour-title, .tour-offer-title, .start-title, .universe-title, .world-gate-title, .navmap-title, .universe-online-title, .universe-settings-head h2, .yard-head h2) {
   font-family: 'News Cycle', var(--font-sans); font-stretch: normal; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;
 }
-:is([data-theme='optimus'], [data-theme='megatron'], [data-theme='bumblebee'], [data-theme='shockwave'], [data-theme='soundwave']) :is(.dialog-title, .tour-title, .tour-offer-title, .start-title, .universe-title, .world-gate-title) {
+:is([data-theme='optimus'], [data-theme='megatron'], [data-theme='bumblebee'], [data-theme='shockwave'], [data-theme='soundwave']) :is(.dialog-title, .tour-title, .tour-offer-title, .start-title, .universe-title, .world-gate-title, .navmap-title, .universe-online-title, .universe-settings-head h2, .yard-head h2) {
   font-family: 'Orbitron', var(--font-sans); font-stretch: normal; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; font-size-adjust: ex-height 0.5;
 }
-:is([data-theme='tortuga'], [data-theme='pearl'], [data-theme='dutchman']) :is(.dialog-title, .tour-title, .tour-offer-title, .start-title, .universe-title, .world-gate-title) {
+:is([data-theme='tortuga'], [data-theme='pearl'], [data-theme='dutchman']) :is(.dialog-title, .tour-title, .tour-offer-title, .start-title, .universe-title, .world-gate-title, .navmap-title, .universe-online-title, .universe-settings-head h2, .yard-head h2) {
   font-family: 'Pirata One', var(--font-sans); font-stretch: normal; font-weight: 400; letter-spacing: 0.02em; font-size-adjust: ex-height 0.68;
 }
-:is([data-theme='shire'], [data-theme='mordor']) :is(.dialog-title, .tour-title, .tour-offer-title, .start-title, .universe-title, .world-gate-title) {
+:is([data-theme='shire'], [data-theme='mordor']) :is(.dialog-title, .tour-title, .tour-offer-title, .start-title, .universe-title, .world-gate-title, .navmap-title, .universe-online-title, .universe-settings-head h2, .yard-head h2) {
   font-family: 'Cinzel', Georgia, serif; font-stretch: normal; font-weight: 700; letter-spacing: 0.02em;
 }
-:is([data-theme='portal'], [data-theme='morty'], [data-theme='summer'], [data-theme='beth']) :is(.dialog-title, .tour-title, .tour-offer-title, .start-title, .universe-title, .world-gate-title) {
+:is([data-theme='portal'], [data-theme='morty'], [data-theme='summer'], [data-theme='beth']) :is(.dialog-title, .tour-title, .tour-offer-title, .start-title, .universe-title, .world-gate-title, .navmap-title, .universe-online-title, .universe-settings-head h2, .yard-head h2) {
   font-family: 'Luckiest Guy', var(--font-sans); font-stretch: normal; font-weight: 400; letter-spacing: 0.03em; line-height: 1.15;
 }
-[data-theme='stark'] :is(.dialog-title, .tour-title, .tour-offer-title, .start-title, .universe-title, .world-gate-title) {
+[data-theme='stark'] :is(.dialog-title, .tour-title, .tour-offer-title, .start-title, .universe-title, .world-gate-title, .navmap-title, .universe-online-title, .universe-settings-head h2, .yard-head h2) {
   font-family: 'Bebas Neue', var(--font-sans); font-stretch: normal; font-weight: 400; letter-spacing: 0.04em; line-height: 1.05; font-size-adjust: cap-height 0.86;
 }
-[data-theme='dunder'] :is(.dialog-title, .tour-title, .tour-offer-title, .start-title, .universe-title, .world-gate-title) {
+[data-theme='dunder'] :is(.dialog-title, .tour-title, .tour-offer-title, .start-title, .universe-title, .world-gate-title, .navmap-title, .universe-online-title, .universe-settings-head h2, .yard-head h2) {
   font-family: 'Courier Prime', var(--font-mono); font-stretch: normal; font-weight: 700; letter-spacing: -0.01em;
 }
-[data-theme='arcade'] :is(.dialog-title, .tour-title, .tour-offer-title, .start-title, .universe-title, .world-gate-title) {
+[data-theme='arcade'] :is(.dialog-title, .tour-title, .tour-offer-title, .start-title, .universe-title, .world-gate-title, .navmap-title, .universe-online-title, .universe-settings-head h2, .yard-head h2) {
   font-family: 'Press Start 2P', var(--font-mono); font-stretch: normal; font-weight: 400; letter-spacing: 0; line-height: 1.5; font-size-adjust: ex-height 0.4;
 }
-[data-theme='raga'] :is(.dialog-title, .tour-title, .tour-offer-title, .start-title, .universe-title, .world-gate-title) {
+[data-theme='raga'] :is(.dialog-title, .tour-title, .tour-offer-title, .start-title, .universe-title, .world-gate-title, .navmap-title, .universe-online-title, .universe-settings-head h2, .yard-head h2) {
   font-family: 'Yatra One', var(--font-sans); font-stretch: normal; font-weight: 400; letter-spacing: 0.01em;
 }
-[data-theme='heisenberg'] :is(.dialog-title, .tour-title, .start-title)::first-letter {
+[data-theme='heisenberg'] :is(.dialog-title, .tour-title, .start-title, .navmap-title, .universe-online-title, .universe-settings-head h2, .yard-head h2)::first-letter {
   padding: 0 0.12em; margin-right: 0.06em; border: 0.06em solid #3fae5c; color: #ffffff;
   background: linear-gradient(135deg, #2f8f4e, #14532d);
 }
-[data-theme='src'] :is(.dialog-title, .tour-title, .tour-offer-title, .start-title, .universe-title, .world-gate-title) {
+[data-theme='src'] :is(.dialog-title, .tour-title, .tour-offer-title, .start-title, .universe-title, .world-gate-title, .navmap-title, .universe-online-title, .universe-settings-head h2, .yard-head h2) {
   font-family: var(--font-mono); font-stretch: normal; font-size: 0.875rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase;
 }
-:is([data-theme='rtx'], [data-theme='nvidia']) :is(.dialog-title, .tour-title, .tour-offer-title, .start-title) { font-weight: 750; letter-spacing: 0.06em; text-transform: uppercase; font-size-adjust: cap-height 0.62; }
-[data-theme='shell'] :is(.dialog-title, .tour-title, .tour-offer-title, .start-title) { font-family: var(--font-mono); font-stretch: normal; font-weight: 600; letter-spacing: -0.01em; }
-[data-theme='claude'] :is(.dialog-title, .tour-title, .tour-offer-title, .start-title) { font-family: Georgia, 'Times New Roman', serif; font-stretch: normal; font-weight: 500; letter-spacing: -0.005em; }
+:is([data-theme='rtx'], [data-theme='nvidia']) :is(.dialog-title, .tour-title, .tour-offer-title, .start-title, .navmap-title, .universe-online-title, .universe-settings-head h2, .yard-head h2) { font-weight: 750; letter-spacing: 0.06em; text-transform: uppercase; font-size-adjust: cap-height 0.62; }
+[data-theme='shell'] :is(.dialog-title, .tour-title, .tour-offer-title, .start-title, .navmap-title, .universe-online-title, .universe-settings-head h2, .yard-head h2) { font-family: var(--font-mono); font-stretch: normal; font-weight: 600; letter-spacing: -0.01em; }
+[data-theme='claude'] :is(.dialog-title, .tour-title, .tour-offer-title, .start-title, .navmap-title, .universe-online-title, .universe-settings-head h2, .yard-head h2) { font-family: Georgia, 'Times New Roman', serif; font-stretch: normal; font-weight: 500; letter-spacing: -0.005em; }
 
 /* The switch-in’s quote, in the face of the colour it brings (the door, the
    Eye and the arcade set their own, in themetransition.css) */
@@ -155,8 +157,9 @@ html[data-mode='dark'] {
     linear-gradient(var(--accent) 0 0) right bottom / 12px 2px no-repeat,
     linear-gradient(var(--accent) 0 0) right bottom / 2px 12px no-repeat;
 }
-/* Bose: nothing but the shadow, by day */
-html:not([data-mode='dark'])[data-theme='bose'] :is(.dialog, .palette) { border-color: transparent; box-shadow: 0 1px 2px rgb(19 19 23 / 0.08), 0 28px 60px -24px rgb(19 19 23 / 0.45); }
+/* Bose: nothing but the shadow, by day (on the map’s dark, its night’s edge:
+   a pale shadow on near-black would leave the glass no edge at all) */
+html:not([data-mode='dark'])[data-theme='bose'] :is(.dialog, .palette):not(.dark-scope, .dark-scope *) { border-color: transparent; box-shadow: 0 1px 2px rgb(19 19 23 / 0.08), 0 28px 60px -24px rgb(19 19 23 / 0.45); }
 /* Pendar: the spectrum, as a hairline */
 [data-theme='pendar'] :is(.dialog:not(.overflow-y-auto), .palette)::before { content: ''; background: linear-gradient(90deg, #6a4cff, #2f8cff 18%, #18c6d6 34%, #34d27a 50%, #d9d23a 66%, #ff9a3a 82%, #ff4a5a) top / 100% 2px no-repeat; }
 /* Empowerreg: a lime line, the graph’s lit node */
@@ -195,7 +198,7 @@ html[data-mode='dark'][data-theme='sith'] :is(.dialog, .palette) { box-shadow: v
 /* The Caribbean: a sea chart, a double rule inside its edge and a compass
    rose faint in its foot’s corner; the Dutchman’s at night glows sea-green. (The
    rule’s gap is the panel’s own ground: the glass, on the map.) */
-.start-card, .tour-card[data-map] { --dialog-ground: var(--glass-solid); }
+.start-card, .tour-card[data-map], .universe-panel, .universe-online-card, .universe-settings, .navmap-frame, .world-gate { --dialog-ground: var(--glass-solid); }
 :is([data-theme='tortuga'], [data-theme='pearl'], [data-theme='dutchman']) :is(.dialog, .palette) {
   box-shadow: inset 0 0 0 3px var(--dialog-ground, var(--surface)), inset 0 0 0 4px color-mix(in srgb, var(--border-strong) 55%, transparent), var(--shadow-dialog);
 }
@@ -213,9 +216,10 @@ html[data-mode='dark'][data-theme='dutchman'] :is(.dialog, .palette) {
   box-shadow: inset 0 0 0 3px var(--dialog-ground, var(--surface)), inset 0 0 0 4px rgb(93 242 192 / 0.22), 0 0 0 1px rgb(93 242 192 / 0.2), 0 0 34px -8px rgb(93 242 192 / 0.35), var(--shadow-dialog);
 }
 
-/* Middle-earth: the frame and the strap reach a panel that scrolls itself */
-[data-theme='shire'] .dialog.overflow-y-auto { box-shadow: inset 0 0 0 4px var(--surface), inset 0 0 0 5px color-mix(in srgb, var(--border) 65%, var(--border-strong)), var(--shadow-dialog); }
-[data-theme='mordor'] .dialog.overflow-y-auto { box-shadow: inset 0 3px 0 var(--me-strap), var(--shadow-dialog); }
+/* Middle-earth: the frame and the strap a card draws (middleearth-themes.css)
+   reach a panel that scrolls itself, and one that isn't a card (the map’s) */
+[data-theme='shire'] .dialog:is(.overflow-y-auto, :not(.card)) { box-shadow: inset 0 0 0 4px var(--dialog-ground, var(--surface)), inset 0 0 0 5px color-mix(in srgb, var(--border) 65%, var(--border-strong)), var(--shadow-dialog); }
+[data-theme='mordor'] .dialog:is(.overflow-y-auto, :not(.card)) { box-shadow: inset 0 3px 0 var(--me-strap), var(--shadow-dialog); }
 
 /* The Transformers: an energon line along the plate’s top */
 :is([data-theme='optimus'], [data-theme='megatron'], [data-theme='bumblebee'], [data-theme='shockwave'], [data-theme='soundwave']) :is(.dialog:not(.overflow-y-auto), .palette)::before {

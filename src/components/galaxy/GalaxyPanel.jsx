@@ -187,7 +187,7 @@ export default function GalaxyPanel({ system, at, ship, onShip, onHangar = null,
 
   if (tucked) {
     return (
-      <aside ref={panel} className="universe-panel galaxy-panel" data-tour="galaxy-panel" aria-label={system.name} data-tucked="">
+      <aside ref={panel} className="universe-panel galaxy-panel dialog overflow-y-auto" data-tour="galaxy-panel" aria-label={system.name} data-tucked="">
         <button type="button" className="universe-untuck" onClick={() => toggle(false)} aria-expanded="false">
           <span className="eyebrow truncate" style={{ color: short && !toward ? '#ff8a80' : system.accent }}>
             {toward ? `Jumping to ${toward.name}…` : short ? 'Interdicted!' : system.name}
@@ -203,7 +203,7 @@ export default function GalaxyPanel({ system, at, ship, onShip, onHangar = null,
 
   const quote = system.quote;
   return (
-    <aside ref={panel} className="universe-panel galaxy-panel" data-tour="galaxy-panel" aria-label={system.name}>
+    <aside ref={panel} className="universe-panel galaxy-panel dialog overflow-y-auto" data-tour="galaxy-panel" aria-label={system.name}>
       <button type="button" className="universe-tuck" onClick={() => toggle(true)} aria-expanded="true" aria-label="Hide the panel" title="Hide the panel">
         <RiSideBarFill className="h-4 w-4" aria-hidden="true" />
       </button>
