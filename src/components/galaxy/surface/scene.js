@@ -316,6 +316,10 @@ export async function create(canvas, ctx) {
   // cascades, contact shadows, the level's volumes, the chain's record).
   // Awaited before the first draw.
   let stack = null;
+  // (your holder and your mate's, for the stack's contact shadows: tracked
+  // by whichever comes second, since the stack can land during one of the
+  // awaits before the two of you are made)
+  const held = [];
   // (the world's picture: a page's, the site's, or the game's own where the
   // world is under its light and the site has its records, nodes/picture.js;
   // a site's `picture` that only names its file, lane P's, is read there)
@@ -330,7 +334,7 @@ export async function create(canvas, ctx) {
       stack = made;
       // (the stack draws the sun's shadow wherever the level does: a phone's too)
       if (stack?.parts.cascades) renderer.shadowMap.enabled = true;
-      for (const p of people) stack?.track(p.holder);
+      for (const h of held) stack?.track(h);
     })
     .catch((e) => {
       if (import.meta.env.DEV) console.warn('surface light stack failed', e);
@@ -889,6 +893,8 @@ export async function create(canvas, ctx) {
   for (const p of people) {
     p.holder.visible = false;
     scene.add(p.holder);
+    held.push(p.holder);
+    stack?.track(p.holder);
   }
   // the gun's numbers (weaponRules.js), with the mods they picked and the hero's perks
   const weaponOf = (spec, fig) => {
