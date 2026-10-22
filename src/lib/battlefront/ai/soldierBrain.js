@@ -510,7 +510,8 @@ export function think(brain, world, now) {
   brain.current = mode;
   const intent = { mode, target: b?.id ?? null, goal: null, stance: 'stand', fire: false, aim: null, sprint: false, interact: false };
   const range = brain.s.weapon?.range ?? 200;
-  const coverCtx = (query) => ({ me, threat: tgt, enemies: world.enemies, objective: world.objective, query, range, taken: world.taken, who: s.id });
+  // (the fallback scorer reads the weapon's preferred range and the heights as the game's queries do: cover.js)
+  const coverCtx = (query) => ({ me, meY: s.at[1], threat: tgt, threatY: b?.at.y, enemies: world.enemies, objective: world.objective, query, range, preferred: brain.preferred, taken: world.taken, who: s.id });
   // the game's query first, the fallback scorer when it offers nothing
   const findCover = (state) =>
     runQuery(brain.gameQueries[state], { common: brain.coverScores, nav: world.nav, me, meY: s.at[1], threat: tgt, threatY: b?.at.y, enemies: world.enemies, preferred: brain.preferred, current: brain.cover, taken: world.taken, who: s.id, objective: world.objective }) ??

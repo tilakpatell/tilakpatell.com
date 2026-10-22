@@ -27,7 +27,7 @@ import { ASK_AT, BEATS, END, answerRide, canSkip, newRide, rideAt, skipRide, ste
 import { sort } from '../rules/sorting';
 import { wandFor } from '../rules/wand';
 import { NAMES, say } from '../rules/lines';
-import { SAVE, migrate, withArrival, withSorting } from '../rules/save';
+import { SAVE, blank, migrate, withArrival, withSorting } from '../rules/save';
 import { ANCHORS_A, boatsAt, moonFor, routeOf, shotFor, squidAt } from './arrival/shots';
 import { createFlotilla } from './arrival/flotilla';
 import { createCliff, createMist, createSquid } from './arrival/water';
@@ -94,9 +94,13 @@ export function createArrival({ rt = null, scene, camera, house = null, tier = '
 
   saves?.register?.({ ...SAVE, migrate });
   let save = migrate(saves?.get?.(SAVE.key, null));
+  // (the arrival’s own keys only, over what is stored now: the term writes
+  // its keys beside them during the visit, and a copy read at the start
+  // would put the term back where it was)
   const persist = (next) => {
     save = next;
-    saves?.set?.(SAVE.key, save);
+    const now = migrate(saves?.get?.(SAVE.key, null));
+    saves?.set?.(SAVE.key, { ...now, ...Object.fromEntries(Object.keys(blank()).map((k) => [k, next[k]])) });
   };
 
   let ride = null;

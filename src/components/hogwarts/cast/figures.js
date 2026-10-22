@@ -73,9 +73,11 @@ export function manifest(rt) {
     listed = Promise.resolve(typeof fetch === 'function' ? fetch(`${OWN}/cast.json`) : null)
       .then((r) => (r?.ok ? r.json() : {}))
       .then((j) => {
-        // (a list of { name, file } or a map of name → entry: whichever Lane B writes)
+        // (a list of { name, file }, or a map of name → entry, bare or under `figures`
+        // as Lane B writes it: { height, cuts: { hq, mid, lo }, clips: { idle, walk, run }, hipsY })
         const list = Array.isArray(j) ? j : Array.isArray(j?.figures) ? j.figures : null;
         if (list) return Object.fromEntries(list.filter((e) => e?.name).map((e) => [e.name, e]));
+        if (j?.figures && typeof j.figures === 'object') return j.figures;
         return j && typeof j === 'object' ? j : {};
       })
       .catch(() => ({}));
@@ -84,17 +86,20 @@ export function manifest(rt) {
 }
 
 const templates = new Map();
+// (Lane B’s three cuts: the high one for high and ultra, the low one for low)
+export const cutFor = (rt) => ({ ultra: 'hq', high: 'hq', mid: 'mid', low: 'lo' })[rt?.quality?.tier ?? 'high'] ?? 'mid';
 
 export function loadFigure(name, rt) {
   if (templates.has(name)) return templates.get(name);
   const p = manifest(rt)
     .then((list) => {
       const own = list[name];
-      if (own) return { model: `${OWN}/${own.file ?? `${name}.glb`}`, clips: [] };
+      // (the cut for the device’s detail, and the figure’s own idle, walk and run beside it)
+      if (own) return { model: `${OWN}/${own.cuts?.[cutFor(rt)] ?? own.cuts?.mid ?? own.file ?? `${name}.glb`}`, clips: LOCO.map((c) => (own.clips?.[c] ? `${OWN}/${own.clips[c]}` : null)) };
       const me = STAND_IN[name] ?? 'hobbit';
       return { model: `${ME}/${me}.glb`, clips: LOCO.map((c) => `${ME}/${me}-${c}.glb`) };
     })
-    .then(({ model, clips }) => Promise.all([model, ...clips].map((u) => Promise.resolve(rt?.assets?.gltf?.(u)).catch(() => null))))
+    .then(({ model, clips }) => Promise.all([model, ...clips].map((u) => (u ? Promise.resolve(rt?.assets?.gltf?.(u)).catch(() => null) : null))))
     .then(([g, ...files]) => made(name, g, files))
     .catch(() => null);
   templates.set(name, p);

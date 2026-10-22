@@ -121,7 +121,17 @@ describe('the thirteen quests', () => {
     expect(rows).toHaveLength(13);
     expect(rows[0]).toEqual(expect.objectContaining({ id: 'sorting', open: true, done: false, locked: null }));
     expect(rows[10].locked).toBe('From week 7');
-    expect(rows[1].locked).toBe('After The Sorting');
+    expect(rows[1].locked).toBe('Once you’re sorted');
+    expect(rows[6].locked).toBe('From week 2');
+    expect(listFor(fresh, { week: 2 })[6].locked).toBe('After “The feather”');
+  });
+
+  it('open the lessons once you’re sorted, before your common room is found', () => {
+    const r = play([{ type: 'sorted', house: 'hufflepuff' }, { type: 'lesson', id: 'flying', done: true }]);
+    expect(r.state.sorting.done).toBe(false);
+    expect(r.state.flying.done).toBe(true);
+    expect(isOpen(r.state, questById('feather'), ctx)).toBe(true);
+    expect(isOpen(newQuests(), questById('feather'), ctx)).toBe(false);
   });
 
   it('ignore what isn’t an event', () => {

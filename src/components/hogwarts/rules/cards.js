@@ -12,6 +12,9 @@
 //   find(found, id) → { found, fresh }: the list with it in (once), and whether it was new
 //   binder(found) → [{ id, name, title, text, hint, found }] in the binder’s order
 //   foundCount(found)
+//   roomOf(card, house) → the room it hides in (the common room’s: your house’s)
+//   cardsIn(room, { house, found }) → the cards still to find in a room
+//   spotFor(card, room) → { at: [x, z], r } where it lies in that room’s frame (NEAR: by a named place)
 
 export const CARDS = [
   { id: 'dumbledore', name: 'Albus Dumbledore', title: 'Headmaster of Hogwarts', text: 'Keeps socks in high regard and the castle in better order than it looks. Known to hum in corridors. Has never once been seen to hurry.', where: { room: 'requirement' }, hint: 'At the top of the hill of lost things' },
@@ -40,6 +43,35 @@ const BY_ID = new Map(CARDS.map((c) => [c.id, c]));
 export const cardById = (id) => BY_ID.get(id) ?? null;
 
 export const hiddenIn = ({ room = null, place = null } = {}) => CARDS.filter((c) => (room && c.where.room === room) || (place && c.where.place === place));
+
+// The common room’s card is in yours, whichever house that is
+const HOUSES = new Set(['gryffindor', 'hufflepuff', 'ravenclaw', 'slytherin']);
+export const roomOf = (card, house) => (card.where.room === 'common' ? house : card.where.room ?? null);
+
+// the cards still to find in a room you’re in (`room` its id: a house’s id is its common room)
+export function cardsIn(room, { house = null, found = [] } = {}) {
+  if (!room) return [];
+  return CARDS.filter((c) => !found.includes(c.id) && (c.where.room === room || (c.where.room === 'common' && HOUSES.has(room) && room === house)));
+}
+
+// Where a card lies in a room, in the room’s own frame: by the place its
+// hint names when the room has it (NEAR, a place’s id and a step off it),
+// else a few steps into the room from where you come in
+export const NEAR = {
+  gryffindor: { place: 'high-table', off: [1.2, 2.2] },
+  hufflepuff: { place: 'kitchens', off: [2.4, 1.6] },
+  slytherin: { place: 'landing-3', off: [0.8, 0] },
+};
+export function spotFor(card, room = {}) {
+  const near = NEAR[card.id];
+  const place = near && (room.places ?? []).find((p) => p.id === near.place);
+  if (place) return { at: [place.at[0] + near.off[0], place.at[1] + near.off[1]], r: 1.1 };
+  const s = room.spawn ?? { at: [0, 0, 0], yaw: 0 };
+  const [x, z] = s.at.length === 3 ? [s.at[0], s.at[2]] : s.at;
+  const yaw = s.yaw ?? 0;
+  // (three steps ahead of the way in and one to the left: the walk’s yaw looks along (−sin, −cos))
+  return { at: [x - Math.sin(yaw) * 3 - Math.cos(yaw) * 1.2, z - Math.cos(yaw) * 3 + Math.sin(yaw) * 1.2], r: 1.1 };
+}
 
 export function find(found = [], id) {
   if (!BY_ID.has(id) || found.includes(id)) return { found, fresh: false };

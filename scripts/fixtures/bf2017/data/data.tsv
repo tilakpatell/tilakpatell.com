@@ -1,5 +1,7 @@
 AI/BattleAI/Cover/CoverConstants	CoverConstantData	data/AI/BattleAI/Cover/CoverConstants.json	4298
+AI/BattleAI/Cover/Queries/Attack_Rebel_Soldier	CoverQueryData	data/AI/BattleAI/Cover/Queries/Attack_Rebel_Soldier.json	10949
 AI/BattleAI/Cover/Queries/CommonScores_AvoidCoverNearEnemies	CoverScoreAsset	data/AI/BattleAI/Cover/Queries/CommonScores_AvoidCoverNearEnemies.json	1750
+AI/BattleAI/Cover/Queries/Hide	CoverQueryData	data/AI/BattleAI/Cover/Queries/Hide.json	10543
 AI/BattleAI/Cover/Queries/Hide_CoverQuery	CoverQueryData	data/AI/BattleAI/Cover/Queries/Hide_CoverQuery.json	19743
 AI/BattleAI/System/AISystem	BattleAISystemData	data/AI/BattleAI/System/AISystem.json	2129
 AI/BattleAI/System/AISystem_PvE	BattleAISystemData	data/AI/BattleAI/System/AISystem_PvE.json	2223

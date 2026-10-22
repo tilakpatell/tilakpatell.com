@@ -2,6 +2,7 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { CAST, PERCEPTION, perceptionOf } from './cast';
 import { WEAPONS } from './combat';
+import { bodyOf } from '../../../../lib/cast/bodies';
 
 const root = (path) => new URL(`../../../../../${path}`, import.meta.url);
 const json = (path) => JSON.parse(readFileSync(root(path), 'utf8'));
@@ -128,6 +129,43 @@ describe('the cast', () => {
   it('draws Obi-Wan as the first film’s old Ben, rigged on the crew’s own skeleton', () => {
     expect(CAST.obiwan).toMatchObject({ model: '/models/deathstar/obiwan.glb', tall: 1.78, side: 'rebel', role: 'hero' });
     expect(joints(CAST.obiwan.model)).toEqual(joints(CAST.officer.model));
+  });
+
+  it('draws everyone the 2017 game has on the game’s own body, from the one cast table, the site’s model standing in', () => {
+    // (the battlefront-by-default design, decision 4: the game’s rows, by the station’s kinds)
+    const GAME = {
+      stormtrooper: 'stormtrooper',
+      dstrooper: 'deathtrooper',
+      gunner: 'deathtrooper',
+      officer: 'officer',
+      technician: 'officer',
+      librarian: 'officer',
+      tarkin: 'officer',
+      motti: 'officer',
+      tagge: 'officer',
+      jerjerrod: 'officer',
+      vader: 'vader',
+      emperor: 'palpatine',
+      leia: 'leia',
+      luke: 'luke',
+      han: 'han',
+      chewie: 'chewie',
+      threepio: 'c3po',
+      artoo: 'astromech',
+      gonk: 'gonk',
+      r5: 'r5',
+    };
+    for (const [kind, c] of Object.entries(CAST)) {
+      expect(c.game ?? null, kind).toBe(GAME[kind] ?? null);
+      if (!c.game) continue;
+      const row = bodyOf(c.game);
+      expect(row?.source, kind).toBe('game');
+      // (the people on the game’s humanoid skeleton, the droids on their own)
+      expect(row.rig, kind).toBe(c.role === 'droid' || kind === 'artoo' ? 'own' : 'walrus');
+      expect(typeof c.model, `${kind}’s stand-in`).toBe('string');
+    }
+    // (the Royal Guard, the TIE pilot, old Ben, the mouse droid and the two built here: the game has none of them)
+    for (const k of ['royalguard', 'tiepilot', 'obiwan', 'mouse', 'ito', 'dianoga']) expect(CAST[k].game, k).toBeUndefined();
   });
 
   it('builds the IT-O and the dianoga in code, and only them', () => {

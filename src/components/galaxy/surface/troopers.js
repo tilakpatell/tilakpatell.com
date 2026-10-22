@@ -50,6 +50,9 @@ const ICE = { rebel: 'hothtrooper', empire: 'snowtrooper' };
 export const trooperKind = (side, sys = null) => (sys === 'hoth' && ICE[side]) || KINDS[side] || 'rebel';
 
 export const trooperId = (side, cls) => `trooper-${side}-${cls}`;
+// (a body on the game's skeleton walks on the humanoid pack; one on a rig of
+// its own, the battle droids', on its rig's: the party loads it so)
+const rigOf = (body) => (body.rig === 'walrus' ? { rig: 'walrus', pack: null } : body.rig === 'own' ? { rig: 'own', ownRig: body.ownRig } : {});
 const BOLT = { light: '#ff3b30', dark: '#ff3b30', republic: '#4aa8ff', separatists: '#ff3b30' };
 
 function row(side, cls, sys = null) {
@@ -64,7 +67,7 @@ function row(side, cls, sys = null) {
     name: `${s.short} ${c.name}`,
     tall: body.tall,
     src: { url: body.url },
-    ...(body.rig === 'walrus' ? { rig: 'walrus', pack: null } : {}),
+    ...rigOf(body),
     weapon: gun,
     bolt: BOLT[side] ?? BOLT[key],
     abilities: c.abilities,
@@ -100,7 +103,7 @@ function enforcer(side) {
     name: e.name,
     tall: body.tall,
     src: { url: body.url },
-    ...(body.rig === 'walrus' ? { rig: 'walrus', pack: null } : {}),
+    ...rigOf(body),
     weapon: e.gun,
     bolt: BOLT[side] ?? BOLT[key],
     abilities: e.abilities,
