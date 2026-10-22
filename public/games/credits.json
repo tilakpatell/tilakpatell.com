@@ -5040,5 +5040,13 @@
       "Tilak Patel, with Microsoft TRELLIS.2"
     ],
     "license": "Generated for this site; TRELLIS.2 is MIT, FLUX.1-schnell Apache 2.0"
+  },
+  "gen3d/dupli-kate": {
+    "source": "https://github.com/microsoft/TRELLIS.2",
+    "name": "Dupli-Kate from Invincible, a young woman with light brown skin and black hair in a ponytail, a green and white suit with a number on the chest; full body, A-pose, cel-shaded flat colours, made for this site with Pixal3D (trellis.cpp), baked in Blender on the site owner's machine (scripts/gen3d)",
+    "authors": [
+      "Tilak Patel, with Microsoft TRELLIS.2"
+    ],
+    "license": "Generated for this site; TRELLIS.2 is MIT"
   }
 }
