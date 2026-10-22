@@ -523,3 +523,57 @@ Toward the owner's "focus more on the foliage and look of the world … making t
 - **The White City and the Mountain** wear the site's photo scans, as their chapters dress them. The Road built both undressed. The city from the Pelennor, before and after: `minas-tirith-dressed-before-desktop.webp`, `minas-tirith-dressed-desktop.webp`. Its road has its own darker earth (a track row's `dirt`): in the Pelennor's pale soil it read as sand.
 - **The far ground**: the photo scans end at 80 m, from 120. A two-metre scan's repeat showed as a lattice on Weathertop's hill at dusk.
 
+
+## A laptop's own chip (2026-10-22)
+
+Toward the owner's "check for lighting and WebGPU shaders in laptop conditions without a dedicated GPU", for the Road and the Middle-earth chapters.
+
+**Where a laptop's chip lands.** Nothing here changes it; it is the 2026-10-13 design's.
+
+- Auto reads the chip by its name (`lib/gpuGrade`). An Iris Xe or a Radeon 740M scores 40, and UHD and the built-in Vegas less. Those are Low, and renderer tier T0 for `'name'` with no probe.
+- A Radeon 680M (60), 780M (71), Intel's Arc graphics (85, 90), an Apple M1 (60) or M2 (80), or a Snapdragon X1-85 (55) is Auto ultra by its name. The one-second probe then holds one over 8 ms at Low (T0, `'slow'`), and under the rest the GPU clock's controller steps the resolution down.
+
+**The lab as such a chip.** WebGPU on Dawn's SwiftShader adapter, held to WebGPU's default limits (`LIMITS=default` in `lab/road/common.mjs`). That is 16 sampled textures and 16 samplers a stage, 8 storage buffers, 32 bytes of colour attachment a sample and 16 inter-stage variables, the least a built-in chip has. The Road was surveyed at Low and High, and every chapter's page at Low. No pipeline was refused at those limits. What was wrong:
+
+| | before | after |
+| --- | --- | --- |
+| A ride through Ithilien, Cirith Ungol and Gorgoroth | 2,256 errors, "buffer used in submit while destroyed"; the frame frozen from there on (`laptop-frozen-before-webgpu.webp`: Cirith Ungol and Gorgoroth, the same frame) | none |
+| Pipelines over eight places, Caradhras to the Anduin and back | 1,032; the scene under 3 to 8 lights, by place | 528; the same 6 lights everywhere |
+| Moria at 90 m | black, 74% of the frame crushed at Low and at High (`laptop-moria-deeps-before-webgpu.webp`) | 34% at Low: the company on the stair, seen from beside it, lit by the fire below |
+| Lothlórien's chapter, on WebGPU at Low and High | the company black; a white Lambert stand-in on the ground black (`laptop-lorien-chapter-before-webgpu.webp`, `laptop-lorien-unlit-before-webgpu.webp`) | lit, the ground in the sun (`laptop-lorien-chapter-webgpu.webp`) |
+
+- **The frozen frame**: three's Sprites share one geometry, made once. A stage given back with its geometries freed (Ithilien's, as the ride left it) took that one too, and every sprite still drawn was left on destroyed buffers: Cirith Ungol's Phial, Mount Doom's glow, the orc camps' fires. On WebGPU each frame's submit then failed. `BUFFERS=1` labelled every buffer, and `probe-destroyed.mjs` found the sprites drawn on dead ones. `runtime/webgpu.js`'s `keepSpriteGeometry` keeps it.
+- **The pipelines**: three keys every lit shader by the ids of the lights it is drawn under. A stage's own point lights coming into the scene and going, a neighbour's shown and then not, built every material on the Road again at each seam: seconds of missing objects on a slow chip. They draw through `lamps.js`'s pool now (`probe-seam.mjs`).
+- **The chapters' black company**: `lib/three/pipelineGuard.js` builds a held-out object's shader after the frame. three's `Lighting` puts a scene's lights back to what it held before each render, which was none, so those shaders were built unlit. The guard now leaves a scene's lights in place once its render is over. WebGL 2 builds in the frame and never showed it; the Road kept its lights because its `compileAsync` sets them.
+- **The deeps**: Moria's black air left the house look nothing to measure light against (`daylight.js`'s `refFloor`). Its stair is shot from beside it (`laptop-moria-tomb-webgpu.webp` is the tomb in its shaft of light; `laptop-cirith-phial-webgpu.webp` is Shelob's lair by the Phial).
+- **Warnings a laptop's console showed, gone**:
+  - "PostProcessing has been renamed", once a chain.
+  - A Gollum model asked for that has not been made: four requests a visit.
+  - Moria's way-walls without roles.
+  - Lambert's `roughness`.
+  - Minas Tirith's chapter renaming a shader variable, eight times.
+  - The Shire's grass without a normal. Three put a zero there, and a hook's normalize made it NaN, which a chip may draw black.
+- **Left, the chapters'**:
+  - The Shire's glints and fireflies, and one mesh in Lothlórien, have a map and no uv. On WebGPU a point is a pixel, so the glints are specks.
+  - Moria's and Minas Tirith's chapters ask `toNonIndexed` of geometry that already is.
+
+Every stage at Low on WebGPU, held to the default limits, after all of it: `laptop-low-webgpu-sheet.webp`, with no error. Gorgoroth's plain at 90 m is still dark under the pall at Low, the walkers dim shapes.
+
+**No invisible walls.** `lab/road/probe-walls.mjs` walks every stage's lane, |x| ≤ 3 m, every 0.5 m, from where the walkers stand: the land, or the stair, quay or bridge a stage carries them on. It checks each cell of the solid grid from 0.45 m to 3.2 m up. Rays first look for what is drawn there; where they find nothing, the cell itself is tested against every shown triangle.
+
+- Of 6,907 solid cells, the rays missed 616. Those are thin posts, rails and balusters elsewhere in their half-metre cells, and the inside of rock and stone.
+- Two missed the exact test, one at the Ford and one on the Anduin. Looked at alone, both hold the stage's own drawn statics: the probe had rounded those points across a cell's edge.
+- None is a wall no one can see. Measured from the land alone, the Havens' quay, Cirith Ungol's stair and the refuge rock read as hundreds of walls, being inside the floor the walkers are carried on.
+
+Each stage's cost against the others, at Low on WebGPU (`probe-pace.mjs`). This is software's frames, so it only ranks the stages. Hobbiton, the Shire's edge and Bree ask the most: 400 to 700 thousand triangles at Low, 1.4 to 2 million at High.
+
+| stage | × the lightest | stage | × the lightest |
+| --- | --- | --- | --- |
+| Bree | 4.8 | Moria | 1.5 |
+| the Shire's edge | 4.7 | the Anduin | 1.5 |
+| Hobbiton | 4.2 | the Ford | 1.4 |
+| Weathertop | 2.7 | Cirith Ungol | 1.4 |
+| Lothlórien | 2.6 | the Havens | 1.2 |
+| Rivendell | 2.4 | Ithilien | 1.2 |
+| Minas Tirith | 2.2 | the Marshes | 1.2 |
+| Caradhras | 2.1 | Gorgoroth | 1.0 |

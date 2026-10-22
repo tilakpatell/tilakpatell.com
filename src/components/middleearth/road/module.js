@@ -17,7 +17,7 @@
 // The world adds: goTo(stageId), setAuto(on), press(name, down) (the touch
 // buttons), carryOn() (from a few metres before a moment the ride was left
 // inside: ./carry.js), restart(), skipToEnd(); and set(s), `s`, `scene` for the checks.
-// In development, window.__ROAD__ = { set(s), info(), world, weather, ambience, vision(on), fast(k), grid(), group(), land() }.
+// In development, window.__ROAD__ = { set(s), info(), world, weather, ambience, vision(on), fast(k), grid(), group(), land(), floor(x, z) }.
 
 import * as THREE from 'three';
 import { PACE, newClock, step as stepClock } from './clock';
@@ -628,7 +628,7 @@ export default {
       };
       // (and the stage the ride is in: its solid grid and its group, for lab/road/probe-walls.mjs)
       const here = () => lineAt(STAGES, clock.s).index;
-      window.__ROAD__ = { world, set: (s) => world.set(s), info, weather, ambience, vision: (on) => void (visionOn = Boolean(on)), passes, fast: (k = 1) => void (labPace = Math.max(0, k)), grid: () => scenes.solids(here()), group: () => lands.groupOf(here()), land: () => lands.landOf(here()) };
+      window.__ROAD__ = { world, set: (s) => world.set(s), info, weather, ambience, vision: (on) => void (visionOn = Boolean(on)), passes, fast: (k = 1) => void (labPace = Math.max(0, k)), grid: () => scenes.solids(here()), group: () => lands.groupOf(here()), land: () => lands.landOf(here()), floor: (x, z) => scenes.floor(here(), x, z) };
     }
     return world;
   },
