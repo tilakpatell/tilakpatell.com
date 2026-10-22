@@ -303,6 +303,58 @@ describe('a place that runs on a sequence', () => {
   });
 });
 
+describe('a place that runs on a climb', () => {
+  it('has its stairs and its top as ledges, the stairs’ foot and the giants as spots, and only the game ticks its task', () => {
+    const climbing = DESTINATIONS.filter((d) => d.climb);
+    expect(climbing.map((d) => d.id)).toEqual(['fantasy']);
+    for (const d of climbing) {
+      const cl = d.climb;
+      const ledge = (id) => d.solids.find((s) => s.id === id && s.ledge);
+      for (const s of cl.stairs) {
+        expect(s.steps.length, `${d.id}: ${s.id}`).toBeGreaterThan(0);
+        for (const id of s.steps) expect(ledge(id), `${d.id}: ${id} is a ledge`).toBeTruthy();
+      }
+      expect(ledge(cl.top), `${d.id}: its top is a ledge`).toBeTruthy();
+      const spots = d.hotspots.map((h) => h.id);
+      expect(spots).toContain(cl.foot);
+      expect(spots).toContain(cl.spot);
+      expect(d.say[cl.foot]?.text).toBeTruthy();
+      expect(d.say[cl.spot]?.text).toBeTruthy();
+      // (the spot at the top is up on it: its pin floats there)
+      expect(d.hotspots.find((h) => h.id === cl.spot).y).toBe(ledge(cl.top).top);
+      expect(d.goal).toBe(cl.foot);
+      expect(d.tasks.map((t) => t.id)).toContain(cl.task);
+      expect(d.collect?.task, `${d.id}: a collect ticks the task`).not.toBe(cl.task);
+      expect(Object.values(d.done), `${d.id}: a talk ticks the task`).not.toContain(cl.task);
+      expect(Object.values(d.unlock), `${d.id}: a talk gives the achievement`).not.toContain(cl.unlock);
+      for (const line of [cl.lost, cl.fell]) {
+        expect(line).not.toMatch(/!/);
+        expect(line).not.toContain('Rick');
+        expect(line.split(/[.?]\s/)).toHaveLength(1);
+      }
+    }
+  });
+  it('is Fantasy World’s three Stair Goblins and the beanstalk to the giants', () => {
+    const fantasy = destinationById('fantasy');
+    expect(fantasy.climb).toMatchObject({ task: 'fantasy', top: 'beanstalk', foot: 'goblins', spot: 'giants', who: null, unlock: 'fantasy' });
+    expect(fantasy.climb.stairs).toEqual([
+      { id: 'g1', steps: ['g1-low', 'g1-mid', 'g1-top'] },
+      { id: 'g2', steps: ['g2-low', 'g2-mid', 'g2-top'] },
+      { id: 'g3', steps: ['g3-low', 'g3-mid', 'g3-top'] },
+    ]);
+    expect(fantasy.climb.lost).toBe('The stair bit you: one that shivers is about to bite.');
+    expect(fantasy.climb.fell).toBe('A long way down: back up the stairs, then.');
+    expect(fantasy.done).toEqual({});
+    expect(fantasy.unlock).toEqual({});
+    expect(fantasy.tasks).toEqual([{ id: 'fantasy', name: 'Climb the beanstalk to the giants', hint: 'Dial Fantasy World on the portal gun in Rick’s garage, go up the Stair Goblins by the tavern while they keep still, and climb the beanstalk to the giants.' }]);
+    expect(fantasy.say.giants).toEqual({ who: 'A giant', text: 'A little man, all the way up our beanstalk. Wipe your feet. And mind the edge: it’s cloud.' });
+    expect(fantasy.say.fmeeseeks).toEqual({ who: 'A Meeseeks', text: 'Existence is pain to a Meeseeks, Morty. Give me something to do.' });
+  });
+  it('gives ledges to no other place', () => {
+    for (const d of DESTINATIONS.filter((p) => p.id !== 'fantasy')) expect(d.solids.filter((s) => s.ledge || s.top != null).map((s) => s.id), d.id).toEqual([]);
+  });
+});
+
 describe('a place that plays a rhythm', () => {
   it('has its song at a spot of its own, with its line, and only the song ticks its task', () => {
     const singing = DESTINATIONS.filter((d) => d.rhythm);

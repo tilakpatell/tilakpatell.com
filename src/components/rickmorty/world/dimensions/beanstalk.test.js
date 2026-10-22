@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { BEANSTALK, CASTLE, CLOUD, GOBLIN, beanstalk } from './beanstalk';
+import { destinationById } from './destinations';
+import { COLLIDERS, CLIMB as REACH, MORTY, newMorty, solidIn, stepMorty, supportAt } from '../rules';
+import { TUNING, standingOn } from '../games/climb';
 
 // (MORTY's reach in ../rules.js: a step, and the top of a jump; pinned against it with the walker, below)
 const CLIMB = 0.3 + 5.4 ** 2 / (2 * 18);
@@ -181,5 +184,195 @@ describe('the beanstalk’s ledges: the Stair Goblins, the landings, the shoots 
     const under = ledges.filter((l) => l.id !== 'beanstalk' && outline(l).some(([x, z]) => Math.hypot(x - CLOUD.at[0], z - CLOUD.at[1]) < r));
     expect(under.map((l) => l.id)).toEqual(['shoot-11', 'shoot-12']);
     for (const l of under) expect(l.top + 2.75, l.id).toBeLessThanOrEqual(underside);
+  });
+});
+
+describe('the beanstalk on the walker', () => {
+  const f = destinationById('fantasy');
+  const A = 'fantasy';
+  const DT = 1 / 60;
+  const ledge = (id) => f.solids.find((o) => o.id === id);
+  const onIt = (m, c) => !m.air && Math.abs(m.y - c.top) < 1e-3 && standingOn([c], m) === c.id;
+  // where to make for: a ledge's middle, or the crown's rim nearest him (round the tip)
+  const aim = (c, m) => {
+    if (c.id !== 'beanstalk') return c;
+    const dx = m.x - c.x;
+    const dz = m.z - c.z;
+    const d = Math.hypot(dx, dz) || 1;
+    return { x: c.x + (dx / d) * 1.2, z: c.z + (dz / d) * 1.2 };
+  };
+  // each goblin by its top tread, the landings, every shoot and the crown
+  const legs = BEANSTALK.path.filter((id) => !/-(low|mid)$/.test(id)).map(ledge);
+
+  it('has the ledges in the walker’s solids with their tops and turns, and none in its way', () => {
+    expect(REACH).toBeCloseTo(CLIMB, 9);
+    expect(TUNING.edge).toBe(MORTY.radius / 4);
+    const ids = new Set(BEANSTALK.solids.filter((s) => s.ledge).map((s) => s.id));
+    const walls = new Set(solidIn(A).map((c) => c.id));
+    for (const c of COLLIDERS.fantasy.filter((o) => ids.has(o.id))) {
+      const s = BEANSTALK.solids.find((o) => o.id === c.id);
+      expect(c, c.id).toMatchObject({ top: s.top, ledge: true, ...(s.turn != null && { turn: s.turn }) });
+      expect(walls.has(c.id), c.id).toBe(false);
+    }
+    expect(COLLIDERS.fantasy.filter((o) => ids.has(o.id))).toHaveLength(ids.size);
+    expect(walls.has('beanstalk-tip')).toBe(true);
+  });
+
+  it('is climbed by a runner who aims for each ledge in turn, from the stairs’ foot to the crown', () => {
+    for (const dt of [DT, 0.05]) {
+      const foot = f.hotspots.find((h) => h.id === 'goblins');
+      let m = newMorty({ x: foot.x, z: foot.z, face: Math.PI / 2 });
+      let t = 0;
+      for (const c of legs) {
+        const a = aim(c, m);
+        for (let s = 0; s < 4 && !onIt(m, c); s += dt, t += dt) {
+          const dx = a.x - m.x;
+          const dz = a.z - m.z;
+          const d = Math.hypot(dx, dz) || 1;
+          m = stepMorty(m, { x: dx / d, z: dz / d, jump: !m.air && c.top - m.y > MORTY.step && d < 2.6 }, dt, A);
+        }
+        expect(onIt(m, c), `${c.id} at dt ${dt} (y ${m.y.toFixed(2)})`).toBe(true);
+      }
+      expect(m.y).toBeCloseTo(20.9, 6);
+      expect(t).toBeLessThan(20);
+    }
+  });
+
+  it('drops him lower on few hops round the rings, aimed a little off, and none from the inner ring to the ground', () => {
+    const from = legs.findIndex((c) => c.id === 'shoot-1');
+    let tries = 0;
+    let landed = 0;
+    let dropped = 0;
+    let inner = 0;
+    for (let i = from; i < legs.length - 1; i++) {
+      const a = legs[i];
+      const b = legs[i + 1];
+      // (five starts in the ledge's own frame: its middle and four round it, as shares of its half-sizes)
+      for (const [u, v] of [[0, 0], [0.4, 0], [-0.4, 0], [0, 0.4], [0, -0.4]])
+        for (const err of [-0.35, 0.35])
+          for (const run of [false, true]) {
+            const t = a.turn || 0;
+            const lx = a.r != null ? u * a.r : (u * a.w) / 2;
+            const lz = a.r != null ? v * a.r : (v * a.d) / 2;
+            let m = stepMorty({ ...newMorty({ x: a.x + lx * Math.cos(t) + lz * Math.sin(t), z: a.z - lx * Math.sin(t) + lz * Math.cos(t) }), y: a.top }, {}, DT, A);
+            if (Math.abs(m.y - a.top) > 1e-6) continue;
+            tries++;
+            const q = aim(b, m);
+            const dir = () => {
+              const dx = q.x - m.x;
+              const dz = q.z - m.z;
+              const d = Math.hypot(dx, dz) || 1;
+              return { x: (dx / d) * Math.cos(err) - (dz / d) * Math.sin(err), z: (dx / d) * Math.sin(err) + (dz / d) * Math.cos(err), run };
+            };
+            // a walk at it (into its riser), then the jump held a while, then let go
+            let off = false;
+            for (let s = 0; s < 0.3 && !off; s += DT) off = (m = stepMorty(m, dir(), DT, A)).air;
+            if (!off) {
+              m = stepMorty(m, { ...dir(), jump: true }, DT, A);
+              for (let s = 0; s < 0.5; s += DT) m = stepMorty(m, dir(), DT, A);
+            }
+            for (let s = 0; s < 1.6; s += DT) m = stepMorty(m, {}, DT, A);
+            // (landed; or still where he was, a hop to try again at no cost; or dropped lower)
+            if (Math.abs(m.y - b.top) < 1e-6) landed++;
+            else if (m.y < a.top - 1e-6) dropped++;
+            if (m.y < 1e-6 && /^shoot-1[2-6]$/.test(a.id)) inner++;
+          }
+    }
+    expect(tries).toBeGreaterThan(300);
+    expect(landed / tries).toBeGreaterThanOrEqual(0.95);
+    expect(dropped / tries).toBeLessThanOrEqual(0.03);
+    expect(inner).toBe(0);
+  });
+
+  it('catches a step off the inner ring on the outer one', () => {
+    const stalk = ledge('beanstalk');
+    for (const c of BEANSTALK.path.filter((id) => /^shoot-1[2-6]$/.test(id)).map(ledge)) {
+      const ox = c.x - stalk.x;
+      const oz = c.z - stalk.z;
+      const k = 1 / Math.hypot(ox, oz);
+      let m = { ...newMorty({ x: c.x, z: c.z }), y: c.top };
+      for (let s = 0; s < 3 && !m.air; s += DT) m = stepMorty(m, { x: ox * k, z: oz * k }, DT, A);
+      for (let s = 0; s < 3; s += DT) m = stepMorty(m, {}, DT, A);
+      const under = legs.find((l) => onIt(m, l));
+      expect(under?.id ?? 'the ground', c.id).toMatch(/^shoot-([2-9]|1[01])$/);
+    }
+  });
+
+  it('stands him where the walker does: on the ledge at his height, by a hand past its edge', () => {
+    const ledges = f.solids.filter((o) => o.ledge);
+    let n = 0;
+    for (const c of ledges)
+      for (let i = 0; i < 12; i++)
+        for (const k of [0, 0.5, 0.9, 1.02, 1.1, 1.3]) {
+          const a = (i / 12) * 2 * Math.PI;
+          const x = c.x + k * (c.r ?? c.w / 2 + 0.05) * Math.cos(a);
+          const z = c.z + k * (c.r ?? c.d / 2 + 0.05) * Math.sin(a);
+          const y = supportAt(A, x, z, c.top);
+          const id = standingOn(ledges, { x, z, y, air: false });
+          n++;
+          if (y === 0) expect(id, `${c.id} ${i} ${k}`).toBe(null);
+          else expect(ledge(id)?.top, `${c.id} ${i} ${k}`).toBe(y);
+        }
+    expect(n).toBeGreaterThanOrEqual(2000);
+  });
+
+  it('keeps the giants’ spot to the crown: from anywhere off it, he can’t get near enough to use it', () => {
+    const giants = f.hotspots.find((h) => h.id === 'giants');
+    expect(giants).toMatchObject({ x: ledge('beanstalk').x, z: ledge('beanstalk').z, y: 20.9, r: 1.4 });
+    expect(ledge('beanstalk').r + MORTY.radius).toBeGreaterThan(giants.r);
+  });
+
+  it('holds him on the crown, and keeps the shoots out of a jump from the ground', () => {
+    const crown = ledge('beanstalk');
+    let m = { ...newMorty({ x: crown.x + 1.2, z: crown.z }), y: crown.top };
+    for (let s = 0; s < 1; s += DT) m = stepMorty(m, {}, DT, A);
+    expect(m).toMatchObject({ y: crown.top, air: false });
+    // a running jump at the bridge shoot from the ground: still on the ground after
+    const bridge = ledge('shoot-1');
+    let g = newMorty({ x: bridge.x, z: bridge.z + bridge.d / 2 + 2.5 });
+    for (let s = 0; s < 1.5; s += DT) g = stepMorty(g, { x: 0, z: -1, run: true, jump: s > 0.2 }, DT, A);
+    for (let s = 0; s < 1; s += DT) g = stepMorty(g, {}, DT, A);
+    expect(g.y).toBe(0);
+  });
+
+  it('leaves no ground cut off by the climb: all of it is reached from the way in', () => {
+    const area = f.area;
+    const S = 0.5;
+    const nx = Math.round((area.x1 - area.x0) / S);
+    const nz = Math.round((area.z1 - area.z0) / S);
+    const walls = solidIn(A);
+    const ledges = f.solids.filter((o) => o.ledge);
+    // (within a body's width of a solid or a ledge: the ground there is out of his reach)
+    const near = (c, x, z, m) => {
+      if (c.r != null) return Math.hypot(x - c.x, z - c.z) < c.r + m;
+      const t = c.turn || 0;
+      return Math.abs((x - c.x) * Math.cos(t) - (z - c.z) * Math.sin(t)) < c.w / 2 + m && Math.abs((x - c.x) * Math.sin(t) + (z - c.z) * Math.cos(t)) < c.d / 2 + m;
+    };
+    const free = (x, z) => x > area.x0 + 0.4 && x < area.x1 - 0.4 && z > area.z0 + 0.4 && z < area.z1 - 0.4 && ![...walls, ...ledges].some((c) => near(c, x, z, MORTY.radius));
+    const grid = new Uint8Array(nx * nz);
+    for (let i = 0; i < nx; i++) for (let j = 0; j < nz; j++) grid[i * nz + j] = free(area.x0 + (i + 0.5) * S, area.z0 + (j + 0.5) * S) ? 1 : 0;
+    const start = Math.floor((f.arrive.x - area.x0) / S) * nz + Math.floor((f.arrive.z - area.z0) / S);
+    const seen = new Uint8Array(nx * nz);
+    const todo = [start];
+    seen[start] = 1;
+    while (todo.length) {
+      const k = todo.pop();
+      const i = Math.floor(k / nz);
+      const j = k % nz;
+      for (const [a, b] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        const ii = i + a;
+        const jj = j + b;
+        if (ii < 0 || jj < 0 || ii >= nx || jj >= nz) continue;
+        const q = ii * nz + jj;
+        if (grid[q] && !seen[q]) {
+          seen[q] = 1;
+          todo.push(q);
+        }
+      }
+    }
+    const cut = [];
+    for (let k = 0; k < nx * nz; k++) if (grid[k] && !seen[k]) cut.push(k);
+    expect(grid.reduce((a, v) => a + v, 0)).toBeGreaterThan(8000);
+    expect(cut).toEqual([]);
   });
 });
