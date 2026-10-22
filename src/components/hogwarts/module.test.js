@@ -19,6 +19,9 @@ vi.mock('./world/grounds', () => ({
       get hour() {
         return hour;
       },
+      get clock() {
+        return { t: hour, rate: 1 };
+      },
       groundAt: () => 2,
       setHour: (h) => (hour = h),
       setWeek: (w) => (week = w),

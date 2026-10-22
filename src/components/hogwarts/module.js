@@ -21,6 +21,11 @@
 // development, window.__HOGWARTS__ = { state(), place(x, z, yaw), view(at, look),
 // go(placeId), time(hour), term(week), dusk(s), world }.
 //
+// The night half (play/night.js, Lane F) keeps the castle’s people on their
+// days (rules/people.js) and the world adds map(): the Marauder’s Map’s
+// view of everyone and you, on the Map’s frame, read every frame by
+// hud/MaraudersMap.jsx; the development hook adds night() for the same.
+//
 // The wand (play/wandfx.js) is stepped beside the walker: its events
 // ('spell', 'toast', 'points', 'wand', 'wheel' and the rest it lists) go to
 // the page the same way, and the world adds choose(id) (the wheel's pick)
@@ -81,6 +86,8 @@ import { ROOMS } from './rooms/index';
 import { ROOM_ORIGIN as ROOM_AT, LOCAL, createRoomHost } from './rooms/host';
 import { createArrival } from './world/arrival';
 import { BEATS, PARTS } from './rules/arrival';
+import { createNight } from './play/night';
+import { frameYaw, fromRoom } from './rules/paths';
 
 export { KEYS };
 
@@ -201,6 +208,20 @@ export default {
     const carried = new Set(scene.children.filter((o) => !mine.has(o)));
     wand.place(practiceSet({ at: start.at, yaw: start.yaw, floorAt, house, rt }));
 
+    // the night half (Lane F, play/night.js): the castle’s people on their days
+    // for the Marauder’s Map, on the grounds’ clock and the term’s week; the
+    // grounds’ frame is the Map’s (rules/places.js), so the walk is read as it is
+    const night = createNight({
+      timeOf: () => grounds.clock.t,
+      weekOf: () => grounds.stats().week,
+      // (in a room, its walk in its own frame turned onto the Map's: rules/paths.js's ROOM_FRAMES)
+      me: () => {
+        const inRoom = Boolean(rooms.room && rooms.walker);
+        const w = inRoom ? rooms.walker.state : walker.state;
+        const [x, z] = inRoom ? fromRoom(rooms.id, [w.x, w.z]) : [w.x, w.z];
+        return { x, z, yaw: w.yaw + (inRoom ? frameYaw(rooms.id) : 0), moving: w.speed > 0.3, inside: inRoom ? rooms.id : null };
+      },
+    });
     // the broom, and Quidditch on it; their motes and the Snitch's glint in a
     // pool of their own (the wand's is busy with its own sparks)
     const air = createCards({ count: 400, parent: scene });
@@ -364,6 +385,7 @@ export default {
         said.update();
         feel.update(dt, camera);
         wand.step(dt, input);
+        night.step(dt);
         air.update(dt, camera);
         const s = walker.state;
         lastY = ground.floorAt(s.x, s.z);
@@ -414,6 +436,8 @@ export default {
       arrival,
       rooms,
       wand,
+      // the Marauder’s Map’s view of everyone (hud/MaraudersMap.jsx reads it every frame)
+      map: () => night.view(),
       // the wheel's pick, and the touch buttons held and let go
       choose: (id) => wand.choose(id),
       press(name, down) {
@@ -499,6 +523,7 @@ export default {
         dusk: (sec) => grounds.setHour(ARRIVE + sec / 60),
         cast: (spell, at) => wand.cast(spell, at),
         wand: () => wand.state(),
+        night: () => night.view(),
         fly: () => world.fly(),
         practice: () => world.practice(),
         match: (n) => world.match(n),

@@ -14,7 +14,7 @@ import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { blinkers, consoleMaps, consoleMat, glassMat, glowSprite, plated, platingMaps, rng, roundedBox, screen, tubeAlong } from '../kit';
 import { hyperspace, planet, sky } from '../space';
-import { loadCrew, nudge, prefetchCrew } from '../crew';
+import { loadCrew, loadGameCrew, nudge, nudgeWorld, prefetchGameCrew } from '../crew';
 import { clamp01, smooth } from '../timeline';
 import { shadowRadius } from '../levels';
 import { dimmer } from '../dim';
@@ -45,7 +45,7 @@ const conePoint = (u, a, inset = 0) => {
 };
 
 export function prefetch() {
-  prefetchCrew(['chewie', 'chewie-sit']);
+  prefetchGameCrew('chewie');
 }
 
 // a box from a to b, `w` wide and `d` deep, its width lying along `side`
@@ -485,21 +485,51 @@ export async function build({ rich, level, coarse, renderer }) {
   // he leans in over the console, his arm out to the levers with yours,
   // and his head comes round to the stars: `launch`, 0…1, set each frame)
   const launch = { k: 0 };
-  const chewie = await loadCrew('chewie', {
-    clip: 'sit',
-    height: 2.28,
-    hips: [0.52, 0.6, 0.06],
-    rough: 0.95,
-    pose: (b) => {
-      const k = launch.k;
-      nudge(b.Spine01, -0.08 + k * 0.22, 0, -k * 0.06);
-      nudge(b.Spine02, k * 0.1, 0, 0);
-      nudge(b.Head, -0.05 - k * 0.12, 0.12 - k * 0.3, 0);
-      // the left arm (toward the middle of the console) forward and down to the levers
-      nudge(b.LeftArm, -k * 1.1, k * 0.25, k * 0.2);
-      nudge(b.LeftForeArm, -k * 0.35, 0, 0);
-    },
-  });
+  // (the 2017 game's own Chewbacca, sat at the controls by the game's
+  // driver's clip; the cockpit's Meshy one stands in if he won't load. The
+  // same lean, look and reach on either: on the game's skeleton, about the
+  // cockpit's own directions, as its bones' axes are not Meshy's)
+  const across = new THREE.Vector3(1, 0, 0); // (to his right: he faces −z)
+  const up = new THREE.Vector3(0, 1, 0);
+  const seatAt = { height: 2.28, hips: [0.52, 0.6, 0.06] };
+  const chewie =
+    (await loadGameCrew('chewie', {
+      ...seatAt,
+      // (the X-34 driver's clip sits him a quarter turn from the way he
+      // stands: a quarter back, and he faces down −z, to the window)
+      clip: 'ride.landspeeder',
+      face: Math.PI / 2,
+      pose: (b) => {
+        const k = launch.k;
+        // (a turn about `across` that's less than nothing leans him forward, over the console:
+        // hunched from the small of his back, as a Wookiee sits under that roof, or his head is
+        // at the headrest's height and out of the pilot's sight; his head lifted back to the window)
+        nudgeWorld(b.Spine, across, -0.3);
+        nudgeWorld(b.Spine1, across, -(0.3 + k * 0.22));
+        nudgeWorld(b.Spine2, across, -(k * 0.1));
+        nudgeWorld(b.Head, up, 0.12 - k * 0.3);
+        nudgeWorld(b.Head, across, 0.4 - k * 0.12);
+        // the left arm (toward the middle of the console) forward and down to the levers
+        // (his hand on them at the full reach, measured: within 6 cm of their knobs)
+        nudgeWorld(b.LeftArm, across, k * 0.8);
+        nudgeWorld(b.LeftArm, up, k * 0.7);
+        nudgeWorld(b.LeftForeArm, across, k * 0.5);
+      },
+    })) ??
+    (await loadCrew('chewie', {
+      clip: 'sit',
+      ...seatAt,
+      rough: 0.95,
+      pose: (b) => {
+        const k = launch.k;
+        nudge(b.Spine01, -0.08 + k * 0.22, 0, -k * 0.06);
+        nudge(b.Spine02, k * 0.1, 0, 0);
+        nudge(b.Head, -0.05 - k * 0.12, 0.12 - k * 0.3, 0);
+        // the left arm (toward the middle of the console) forward and down to the levers
+        nudge(b.LeftArm, -k * 1.1, k * 0.25, k * 0.2);
+        nudge(b.LeftForeArm, -k * 0.35, 0, 0);
+      },
+    }));
   if (chewie) inside.add(chewie.group);
 
   // ── light ──

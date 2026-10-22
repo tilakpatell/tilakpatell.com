@@ -1,0 +1,66 @@
+/* ─── The map with a mouse: quieter ───────────────────────────────────────────
+   On a laptop or a desktop the panel and the corner's boxes are drawn smaller
+   and finer, so the map is most of the screen: the panel a quarter of a
+   laptop's width at most (its 400px was nearly a third of a 1280px one; at
+   332 a place's two back links still fit a row beside the corner's two
+   buttons), its type a step down, a ship a slim row, the place's card
+   shorter, and the buttons 36 to 40px, over the least a fine pointer takes
+   (docs/health/RULES.md, UI 2). Borders are a whole pixel: the 1.5px ones
+   blurred across two on a 1× screen. A
+   touch screen keeps its own sizes, and the galaxy (a universe page too) its
+   panel. Imported by universe.css before its own rules, so each rule here
+   is one class stronger than the one it quietens (and leaves the panel put
+   away, `[data-tucked]`, to its own). */
+@media (pointer: fine) and (min-width: 768px) {
+  .universe-page:not(.galaxy-page) { --panel-w: clamp(332px, 23vw, 352px); }
+
+  /* the panel: less padding and a finer edge; the ways out at its foot
+     take the same padding back */
+  .universe-page:not(.galaxy-page) .universe-panel:not([data-tucked]) {
+    top: calc(var(--nav-h) + 8px);
+    padding: 1rem;
+    border-color: color-mix(in srgb, var(--saber) 16%, var(--border));
+  }
+  .universe-page:not(.galaxy-page) .universe-panel[data-tucked] { top: calc(var(--nav-h) + 8px); height: 40px; }
+  .universe-page:not(.galaxy-page) .universe-untuck { min-height: 36px; }
+  .universe-page:not(.galaxy-page) .universe-tuck { top: 0.55rem; right: 0.55rem; }
+  .universe-page:not(.galaxy-page) .universe-guide { right: calc(0.55rem + 34px + 0.2rem); }
+  .universe-page:not(.galaxy-page) .universe-panel > .universe-tuck ~ :is(.eyebrow, .universe-links):first-of-type { padding-right: 4.375rem; }
+  .universe-page:not(.galaxy-page) .universe-links { column-gap: 0.75rem; }
+  .universe-page:not(.galaxy-page) .universe-exits { bottom: -1rem; margin: 1rem -1rem -1rem; padding-inline: 1rem; }
+  .universe-page:not(.galaxy-page) .universe-exits .universe-back { min-height: 36px; }
+
+  /* its words a step down */
+  .universe-page:not(.galaxy-page) .universe-title { margin-top: 0.3rem; font-size: 1.2rem; letter-spacing: -0.01em; line-height: 1.25; }
+  .universe-page:not(.galaxy-page) .universe-panel .text-sm { font-size: var(--fs-xs); line-height: 1.55; }
+  .universe-page:not(.galaxy-page) .universe-panel .btn-sm { padding-inline: 0.8rem; font-size: var(--fs-xs); }
+  .universe-page:not(.galaxy-page) .universe-enter { min-height: 40px; font-size: var(--fs-sm); }
+  .universe-page:not(.galaxy-page) .universe-keymap { gap: 0.4rem 0.9rem; margin-top: 1rem; font-size: 0.75rem; }
+  .universe-page:not(.galaxy-page) .universe-keymap-land { font-size: 0.75rem; }
+  .universe-page:not(.galaxy-page) .universe-credits { margin-top: 1rem; }
+
+  /* the ships: a slim row each */
+  .universe-page:not(.galaxy-page) .universe-ships { gap: 0.4rem; margin-top: 0.75rem; }
+  .universe-page:not(.galaxy-page) .universe-ship { gap: 0.65rem; padding: 0.4rem 0.6rem; border-radius: 10px; }
+  .universe-page:not(.galaxy-page) .universe-ship-face { width: 30px; height: 30px; }
+  .universe-page:not(.galaxy-page) .universe-ship-face + .universe-ship-face { margin-left: -8px; }
+  .universe-page:not(.galaxy-page) .universe-ship-name { font-size: var(--fs-sm); line-height: 1.3; }
+  .universe-page:not(.galaxy-page) .universe-ship-crew { font-size: 0.72rem; line-height: 1.35; }
+
+  /* the place's card: a shorter picture, the panel's padding and no shadow
+     of its own (it's in the panel's glass, not on a page) */
+  .universe-page:not(.galaxy-page) .universe-card { margin-top: 0.75rem; }
+  .universe-page:not(.galaxy-page) .universe-card .fun-card { border-radius: 12px; box-shadow: none; }
+  .universe-page:not(.galaxy-page) .universe-card .fun-visual { height: 132px; }
+  .universe-page:not(.galaxy-page) .universe-card .fun-card > div:not(.fun-visual) { padding: 0.9rem 1rem 1rem; }
+  .universe-page:not(.galaxy-page) .universe-card .fun-card > div:not(.fun-visual) h3 { font-size: 1.05rem; }
+  .universe-page:not(.galaxy-page) .universe-card .fun-card > div:not(.fun-visual) p { font-size: var(--fs-xs); line-height: 1.55; }
+
+  /* the corner's buttons (the flight settings, the Shipyard's, the nav
+     map's): 38px, a pixel's edge, closer together */
+  .universe-page:not(.galaxy-page) :is(.universe-settings-btn, .universe-hangar-btn, .universe-navmap-btn) { bottom: 62px; width: 38px; height: 38px; border-width: 1px; border-radius: 10px; }
+  .universe-page:not(.galaxy-page) .universe-hangar-btn { left: calc(var(--hud-edge) + 46px); }
+  .universe-page:not(.galaxy-page) .universe-navmap-btn[data-ship] { left: calc(var(--hud-edge) + 92px); }
+  .universe-page:not(.galaxy-page) .universe-stick { border-width: 1px; }
+  .universe-page:not(.galaxy-page) .universe-reticle { border-width: 1px; }
+}

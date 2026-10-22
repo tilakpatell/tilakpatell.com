@@ -1,7 +1,9 @@
 // The universe map, the world module: ./scene.js (a scene written for
 // lib/three/useScene) on the world runtime, through fromScene, as the
 // galaxy is (galaxy/module.js). It draws with the runtime’s renderer, at
-// 1.5× at most as it always has, and softens through its post chain when
+// 2× at most: a laptop’s Retina screen at its own pixels (at the 1.5× it
+// had, the planets’ names over it were sharper than the planets), unsampled
+// there (post.js), and softens through its post chain when
 // frames run late, so the canvas is never resized for it (`sharpness:
 // 'own'`: lowerQuality takes the runtime’s level, ./qualityStep.js). Its own
 // watchdog and pace went with the move: the runtime’s cadence and
@@ -16,7 +18,7 @@ import { fromScene } from '../../runtime/module';
 export default {
   ...fromScene('universe', (canvas, ctx) => import('./scene').then((m) => m.create(canvas, ctx)), {
     mb: 6, // (WORLD_MB['/universe']: the planets’ maps, the stations and the ships)
-    ratio: 1.5,
+    ratio: 2, // (a 1× screen still draws at the budget’s least, lib/device’s minRatio)
     sharpness: 'own', // (the pace’s steps are the post’s: lowerQuality)
   }),
   // (its own calibration, in its prepare: scene.js times its passes, the
