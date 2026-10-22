@@ -331,7 +331,8 @@ function build(rt, ctx = {}) {
     poses: {
       doors: { at: [0, 1.55, L - 2.5], look: [0, 4.2, -L + 4] },
       aisle: { at: [-4.4, 1.5, 4], look: [0, 3.6, -L + 2] },
-      dais: { at: [2.4, HALL.dais.height + 1.9, plan.staffZ - 1.4], look: [0, 2.4, L - 6] },
+      // (between Snape’s chair and the Headmaster’s, over their heads: behind Hagrid there is only Hagrid)
+      dais: { at: [-1.9, HALL.dais.height + 2.2, plan.staffZ - 1.4], look: [0, 2.2, L - 6] },
       ceiling: { at: [0, 1.5, 6], look: [0, 18, -8] },
       hourglasses: { at: [0, 1.6, L - 9], look: [-6.4, 2.6, L - 1.6] },
       stool: { at: [0, 1.3, plan.stool.at[2] + 5], look: [0, 1.6, plan.stool.at[2] - 6] },

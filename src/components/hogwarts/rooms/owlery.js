@@ -13,7 +13,7 @@
 
 import * as THREE from 'three';
 import { MeshBasicNodeMaterial, MeshStandardNodeMaterial } from 'three/webgpu';
-import { atan, attribute, cameraPosition, clamp, cos, floor, mix, positionGeometry, sin, smoothstep, uv, vec3, mx_fractal_noise_float, time } from 'three/tsl';
+import { atan, attribute, cameraPosition, clamp, cos, floor, mix, mx_fractal_noise_float, normalGeometry, positionGeometry, sin, smoothstep, time, transformNormalToView, uv, vec3 } from 'three/tsl';
 import { SAVE } from '../rules/save';
 import { send, waiting } from '../rules/post';
 import { commonRoom } from './common/shared';
@@ -49,16 +49,21 @@ export function perches(tier = 'high') {
 }
 
 // an owl’s head (and its face) turned toward the camera about its own up, a snap at a time
-function turned(a) {
+function yawOf() {
   const o = attribute('aOwl', 'vec4');
   const to = cameraPosition.sub(vec3(o.x, o.y, o.z));
   let d = atan(to.x, to.z).sub(o.w);
   d = d.sub(floor(d.div(TAU).add(0.5)).mul(TAU));
   const snap = floor(clamp(d, -1.9, 1.9).div(0.32).add(0.5)).mul(0.32);
-  const yaw = o.w.add(snap).add(a);
-  const p = positionGeometry;
-  return vec3(p.x.mul(cos(yaw)).add(p.z.mul(sin(yaw))), p.y, p.z.mul(cos(yaw)).sub(p.x.mul(sin(yaw)))).add(vec3(o.x, o.y, o.z));
+  return o.w.add(snap);
 }
+const spin = (p, yaw) => vec3(p.x.mul(cos(yaw)).add(p.z.mul(sin(yaw))), p.y, p.z.mul(cos(yaw)).sub(p.x.mul(sin(yaw))));
+function turned() {
+  const o = attribute('aOwl', 'vec4');
+  return spin(positionGeometry, yawOf()).add(vec3(o.x, o.y, o.z));
+}
+// (its normals turned with it: left as they were, the side facing you shaded as its back)
+const turnedNormal = () => transformNormalToView(spin(normalGeometry, yawOf()));
 
 function owls(list, { hedwig }) {
   const group = new THREE.Group();
@@ -77,7 +82,8 @@ function owls(list, { hedwig }) {
   const headGeo = new THREE.SphereGeometry(0.095, 10, 8).scale(1.05, 0.95, 0.9);
   headGeo.setAttribute('aOwl', aOwl);
   const headMat = new MeshStandardNodeMaterial({ color: 0xffffff, roughness: 0.95 });
-  headMat.positionNode = turned(0);
+  headMat.positionNode = turned();
+  headMat.normalNode = turnedNormal();
   const heads = instanced(headGeo, headMat, all.map(() => ({ at: [0, 0, 0] })), { colours: all.map((o) => o.colour) });
   heads.frustumCulled = false;
   // the face: two eyes and the beak, on the head’s front (dark; Hedwig’s amber)
@@ -88,7 +94,7 @@ function owls(list, { hedwig }) {
   ]);
   face.setAttribute('aOwl', aOwl);
   const faceMat = new MeshBasicNodeMaterial({ color: 0xffffff });
-  faceMat.positionNode = turned(0);
+  faceMat.positionNode = turned();
   const faces = instanced(face, faceMat, all.map(() => ({ at: [0, 0, 0] })), { colours: all.map((o) => (o.white ? '#e8b030' : '#140e08')) });
   faces.frustumCulled = false;
   group.add(bodies, heads, faces);
