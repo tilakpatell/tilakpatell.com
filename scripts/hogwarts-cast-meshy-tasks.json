@@ -1,0 +1,59 @@
+{
+  "dumbledore": {
+    "acc": "MESHY_API_KEY_ACC_3",
+    "model": "01a15fe6-5071-7764-a4fe-6a0244f64667",
+    "rig": "01a15fe7-e7cf-76d3-afd3-d9fddeb5c6b4",
+    "idle": "01a15fe8-39b9-7428-9bdf-79a7ea24bc51"
+  },
+  "mcgonagall": {
+    "acc": "MESHY_API_KEY_ACC_3",
+    "model": "01a15ffb-1317-70c3-bee8-34a57361d0fa",
+    "rig": "01a15ffc-5892-755f-bbb9-d7e179810884"
+  },
+  "flitwick": {
+    "acc": "MESHY_API_KEY_ACC_3",
+    "model": "01a15ffd-cd0f-75f0-82dc-eb5a900e7947",
+    "rig": "01a15fff-187d-738a-8174-92d461a44c32"
+  },
+  "sprout": {
+    "acc": "MESHY_API_KEY_ACC_3",
+    "model": "01a16006-78cf-7128-a782-dfca1f94af73",
+    "rig": "01a16008-4048-7467-8864-171a6014a70a",
+    "library": [
+      "walk",
+      "run"
+    ]
+  },
+  "rosmerta": {
+    "acc": "MESHY_API_KEY_ACC_3",
+    "model": "01a1600a-bb1e-7627-93aa-a9ac2c0e1dfc",
+    "rig": "01a1600c-4477-7081-81c3-ea88df4b3beb",
+    "library": [
+      "walk",
+      "run"
+    ]
+  },
+  "hooch": {
+    "acc": "MESHY_API_KEY_ACC_3",
+    "model": "01a16011-21f4-76f4-9765-98d00ce9eef6",
+    "rig": "01a16012-dacb-7126-8399-0e91aa54f471"
+  },
+  "pince_first": {
+    "acc": "MESHY_API_KEY_ACC_3",
+    "model": "01a16008-ad7b-767b-b981-f8e036d9169b",
+    "rig": "01a1600a-5e9c-745a-8c8a-7e739aee16b1",
+    "library": [
+      "walk",
+      "run"
+    ]
+  },
+  "pince": {
+    "library": [
+      "walk",
+      "run"
+    ],
+    "acc": "MESHY_API_KEY_ACC_3",
+    "model": "01a16020-ef88-7702-965d-b278a9e1616d",
+    "rig": "01a16022-3603-7033-89c8-0aae8e6fe2ad"
+  }
+}
