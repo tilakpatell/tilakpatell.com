@@ -1,6 +1,6 @@
 # Making the Hogwarts cast
 
-The people of the Hogwarts world (`docs/superpowers/specs/2026-10-21-hogwarts-world-design.md` §4.10) as big-headed toy figures on the site’s shared skeleton, made on the desktop’s GPU with no Meshy key. The figures are in `scripts/hogwarts-cast-figures.mjs`, each described by how it looks (never by a name: the picture step turns names down, and no likeness is modelled); `scripts/hogwarts-cast.mjs` makes them:
+The people of the Hogwarts world (`docs/superpowers/specs/2026-10-21-hogwarts-world-design.md` §4.10) as big-headed toy figures on the site’s shared skeleton, made on the desktop’s GPU, and with Meshy where that pipeline made one badly (below). The figures are in `scripts/hogwarts-cast-figures.mjs`, each described by how it looks (never by a name: the picture step turns names down, and no likeness is modelled); `scripts/hogwarts-cast.mjs` makes them:
 
 ```
 node scripts/hogwarts-cast.mjs picture --only ron,hermione   # four concept pictures each, and a contact sheet
@@ -35,3 +35,14 @@ A world loads a figure as the Road’s `src/components/middleearth/road/cast.js`
 ## The budget
 
 Under 4 MB a model (none comes near), and the whole cast folder under 30 MB: about a megabyte a figure, its three cuts and its clips together, which is why the cuts are smaller than a gen3d prop’s and colour only.
+
+## Where Meshy makes it instead
+
+The desktop’s pipeline sometimes paints a figure wrong (TRELLIS.2 turned Dumbledore’s purple robes black and spattered McGonagall’s and Sprout’s with skin-coloured patches) or rigs one badly (Flitwick came out facing sideways). Such a figure is made again from the same picked picture with Meshy:
+
+```
+node --env-file=.env.local scripts/hogwarts-cast-meshy.mjs all sprout   # image-to-3D, Meshy's rigger, then the same cut
+node scripts/hogwarts-cast.mjs sheet --only sprout                        # the same check and sheet as the rest
+```
+
+Meshy’s model and its rigger’s skeleton (the one every library clip was made on), Meshy’s own walk and run (left as they come: made on that rig, they plant the feet), and the library’s calm idle for its idle (Meshy’s stands turned to the side), stood on the figure’s own soles. The task ids and the account each was made on are in `scripts/hogwarts-cast-meshy-tasks.json`, so nothing is paid for twice; a figure made there keeps its model and cuts when `hogwarts-cast.mjs all` runs (only its sheet is made here). About 35 credits a figure; `balance` says what each account has. The keys live in the git-ignored `.env.local` and are never printed.

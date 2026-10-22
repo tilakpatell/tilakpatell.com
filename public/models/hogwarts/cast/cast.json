@@ -64,6 +64,141 @@
         "run": "hagrid-run.glb"
       },
       "hipsY": 91.2
+    },
+    "dumbledore": {
+      "height": 1.85,
+      "kind": "staff",
+      "cuts": {
+        "hq": "dumbledore.hq.glb",
+        "mid": "dumbledore.glb",
+        "lo": "dumbledore.lo.glb"
+      },
+      "clips": {
+        "idle": "dumbledore-idle.glb",
+        "walk": "dumbledore-walk.glb",
+        "run": "dumbledore-run.glb"
+      },
+      "hipsY": 79.4
+    },
+    "mcgonagall": {
+      "height": 1.72,
+      "kind": "staff",
+      "cuts": {
+        "hq": "mcgonagall.hq.glb",
+        "mid": "mcgonagall.glb",
+        "lo": "mcgonagall.lo.glb"
+      },
+      "clips": {
+        "idle": "mcgonagall-idle.glb",
+        "walk": "mcgonagall-walk.glb",
+        "run": "mcgonagall-run.glb"
+      },
+      "hipsY": 67.1
+    },
+    "snape": {
+      "height": 1.85,
+      "kind": "staff",
+      "cuts": {
+        "hq": "snape.hq.glb",
+        "mid": "snape.glb",
+        "lo": "snape.lo.glb"
+      },
+      "clips": {
+        "idle": "snape-idle.glb",
+        "walk": "snape-walk.glb",
+        "run": "snape-run.glb"
+      },
+      "hipsY": 64.5
+    },
+    "flitwick": {
+      "height": 0.9,
+      "kind": "staff",
+      "cuts": {
+        "hq": "flitwick.hq.glb",
+        "mid": "flitwick.glb",
+        "lo": "flitwick.lo.glb"
+      },
+      "clips": {
+        "idle": "flitwick-idle.glb",
+        "walk": "flitwick-walk.glb",
+        "run": "flitwick-run.glb"
+      },
+      "hipsY": 38
+    },
+    "sprout": {
+      "height": 1.6,
+      "kind": "staff",
+      "cuts": {
+        "hq": "sprout.hq.glb",
+        "mid": "sprout.glb",
+        "lo": "sprout.lo.glb"
+      },
+      "clips": {
+        "idle": "sprout-idle.glb",
+        "walk": "sprout-walk.glb",
+        "run": "sprout-run.glb"
+      },
+      "hipsY": 51.7
+    },
+    "hooch": {
+      "height": 1.7,
+      "kind": "staff",
+      "cuts": {
+        "hq": "hooch.hq.glb",
+        "mid": "hooch.glb",
+        "lo": "hooch.lo.glb"
+      },
+      "clips": {
+        "idle": "hooch-idle.glb",
+        "walk": "hooch-walk.glb",
+        "run": "hooch-run.glb"
+      },
+      "hipsY": 70.1
+    },
+    "filch": {
+      "height": 1.7,
+      "kind": "staff",
+      "cuts": {
+        "hq": "filch.hq.glb",
+        "mid": "filch.glb",
+        "lo": "filch.lo.glb"
+      },
+      "clips": {
+        "idle": "filch-idle.glb",
+        "walk": "filch-walk.glb",
+        "run": "filch-run.glb"
+      },
+      "hipsY": 59.7
+    },
+    "pince": {
+      "height": 1.7,
+      "kind": "staff",
+      "cuts": {
+        "hq": "pince.hq.glb",
+        "mid": "pince.glb",
+        "lo": "pince.lo.glb"
+      },
+      "clips": {
+        "idle": "pince-idle.glb",
+        "walk": "pince-walk.glb",
+        "run": "pince-run.glb"
+      },
+      "hipsY": 81.9
+    },
+    "rosmerta": {
+      "height": 1.65,
+      "kind": "staff",
+      "cuts": {
+        "hq": "rosmerta.hq.glb",
+        "mid": "rosmerta.glb",
+        "lo": "rosmerta.lo.glb"
+      },
+      "clips": {
+        "idle": "rosmerta-idle.glb",
+        "walk": "rosmerta-walk.glb",
+        "run": "rosmerta-run.glb"
+      },
+      "hipsY": 69.5
     }
   }
 }
