@@ -446,6 +446,8 @@ export default {
       clear.reset();
       jumped = true;
       relight();
+      // (the page told where the ride now is at once: the ribbon and the stage's name, not a quarter second on)
+      sinceProgress = PROGRESS_EVERY;
       report(frame(), 0);
     };
 

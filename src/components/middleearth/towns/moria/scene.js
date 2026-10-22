@@ -157,7 +157,7 @@ export function createMoriaWorld(canvas, { onLost } = {}) {
         const k = 0.72 + rnd(p.getX(i) * 3.1, p.getY(i) * 2.7 + p.getZ(i) * 1.9) * 0.5;
         p.setXYZ(i, p.getX(i) * k, p.getY(i) * k * 0.62, p.getZ(i) * k);
       }
-      return g.toNonIndexed();
+      return g.index ? g.toNonIndexed() : g; // (an icosahedron is already)
     })();
     stone.computeVertexNormals();
     const stoneMat = new THREE.MeshStandardMaterial({ color: 0x6a706a, roughness: 0.92, flatShading: true });

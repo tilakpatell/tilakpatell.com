@@ -293,14 +293,17 @@ export function createLorienWorld(canvas, { onLost } = {}) {
     const n = parts.reduce((a, x) => a + x.attributes.position.count, 0);
     const pos = new Float32Array(n * 3);
     const nrm = new Float32Array(n * 3);
+    const uvs = new Float32Array(n * 2); // (the elfwood's grain: its map and normal map read them)
     let o = 0;
     for (const x of parts) {
       pos.set(x.attributes.position.array, o * 3);
       nrm.set(x.attributes.normal.array, o * 3);
+      uvs.set(x.attributes.uv.array, o * 2);
       o += x.attributes.position.count;
     }
     g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
     g.setAttribute('normal', new THREE.BufferAttribute(nrm, 3));
+    g.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
     return g;
   })();
   const posts = [];

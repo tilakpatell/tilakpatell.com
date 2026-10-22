@@ -15,8 +15,8 @@ export const BEATS = [
   { id: 'argonath', kind: 'argonath', at: 30, hold: 12, rig: 'crane', reach: 24, params: { seconds: 10, top: 6, lookAt: [0, 30, 72] }, deed: { verb: 'rhythm', label: 'Paddle under the Pillars of the Kings', beats: 12 } },
   // Nen Hithoel opening out: Tol Brandir, the roar of Rauros
   { id: 'nenhithoel', kind: 'nenhithoel', at: 78, hold: 0, rig: 'wide', reach: 18, params: { at: [-10, 2.6, 70], lookAt: [6, 8, 120], above: true } },
-  // ashore at Parth Galen, up to the Seat: the vision across the western sky, behind Frodo
-  { id: 'seat', kind: 'seat', at: 112, hold: 12, rig: 'seat', cut: 0, reach: 10, params: { at: [-3.5, 3.8, 115], lookAt: [-60, 26, 122], above: true }, fx: [{ kind: 'vision', at: 2, seconds: 8 }] },
+  // ashore at Parth Galen, up to the Seat: the vision across the western sky, over Frodo’s shoulder (out of the Seat’s pillars, and up at the four pictures, not under them)
+  { id: 'seat', kind: 'seat', at: 112, hold: 12, rig: 'seat', cut: 0, reach: 10, params: { at: [-4.6, 4.6, 118.8], lookAt: [-62, 38, 120], above: true }, fx: [{ kind: 'vision', at: 2, seconds: 8 }] },
   // three notes of the horn, the Uruks through the trees
   { id: 'horn', kind: 'horn', at: 124, hold: 8, rig: 'follow', reach: 12, clip: 'meatsBack', deed: { verb: 'press', label: 'Run to the horn', at: 2, lines: ['anduin-horn'] } },
   // Frodo to the boat, Sam into the water after him, hauled in

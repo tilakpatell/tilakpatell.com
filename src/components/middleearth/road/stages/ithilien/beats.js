@@ -18,8 +18,8 @@ export const BEATS = [
   { id: 'rangers', kind: 'rangers', at: 50, hold: 6, rig: 'seat', reach: 10, params: { at: [3.5, 1.5, 45], lookAt: [-1, 1.2, 53], above: true }, lines: ['ithilien-faramir'], deed: { verb: 'choose', label: 'Tell Faramir who you are', at: 2, choices: [{ label: 'Frodo, son of Drogo', right: true }, { label: 'Mr Underhill', line: { who: 'faramir', text: 'That is the name you gave in Bree, I think. Again, and truly.' } }, { label: 'A friend of Sméagol', line: { who: 'faramir', text: 'Then you keep poor company. Your own name, please.' } }], lines: ['ithilien-name'] } },
   // inside Henneth Annûn, looking out through its falling water at the sunset
   { id: 'henneth', kind: 'henneth', at: 66, hold: 8, rig: 'seat', reach: 10, params: { at: [-9, 2.2, 72], lookAt: [-9, 2.6, 60], above: true } },
-  // the Cross-roads: the seated king, his head fallen and crowned with flowers
-  { id: 'crossroads', kind: 'crossroads', at: 88, hold: 5, rig: 'low', reach: 10, deed: { verb: 'press', label: 'Look up at the fallen king', at: 1, lines: ['ithilien-crown'] } },
+  // the Cross-roads: the seated king, his head fallen and crowned with flowers (looked up at from low by the road: he sits off it)
+  { id: 'crossroads', kind: 'crossroads', at: 88, hold: 5, rig: 'wide', reach: 10, params: { at: [0.6, 0.7, 84.5], lookAt: [-5.6, 4.2, 92.5], above: true }, deed: { verb: 'press', label: 'Look up at the fallen king', at: 1, lines: ['ithilien-crown'] } },
   // the Morgul Vale: the tower lit, its beam, the Witch-king rising, the host out
   { id: 'vale', kind: 'vale', at: 112, hold: 18, rig: 'crane', cut: 0, reach: 18, params: { seconds: 14, top: 9, lookAt: [44, 18, 150] }, deed: { verb: 'hold', label: 'Keep hold of Frodo', seconds: 4, at: 1.5, lines: ['ithilien-vale'] } },
   // far off across the dark to the west, the beacons lit one by one

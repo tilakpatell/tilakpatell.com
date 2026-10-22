@@ -83,6 +83,7 @@ import { byFrame, createShake } from '../feel';
 
 const val = (x, ...args) => (typeof x === 'function' ? x(...args) : x);
 const V = (x, y, z) => new THREE.Vector3(x, y, z);
+const GLINT = 0.26; // m across a mushroom’s glint (a spoon’s 1.4 of it): the points’ 0.55 through the walking lens
 // a creature or rider faces +x; turn it to face `face` (see rules.js)
 const faceTo = (obj, face) => {
   obj.rotation.y = face;
@@ -354,13 +355,16 @@ export async function createShireWorld(canvas, { onLost, reduced = false } = {})
     outdoors.add(p.group);
     return p;
   });
-  const glintGeo = new THREE.BufferGeometry();
-  const glintPos = new Float32Array(MUSHROOMS.length * 3);
-  MUSHROOMS.forEach((m, i) => glintPos.set([m.x, height(m.x, m.z) + 0.55, m.z], i * 3));
-  glintGeo.setAttribute('position', new THREE.BufferAttribute(glintPos, 3));
-  const glintMat = new THREE.PointsMaterial({ color: new THREE.Color(2.4, 2.1, 1.2), size: 0.5, transparent: true, opacity: 0.8, depthWrite: false, blending: THREE.AdditiveBlending, map: dotTexture() });
-  const glints = new THREE.Points(glintGeo, glintMat);
-  outdoors.add(glints);
+  // (a sprite each, not points: the node renderer draws a point a pixel wide)
+  const sprites = (n, material, size) =>
+    Array.from({ length: n }, () => {
+      const g = new THREE.Sprite(material);
+      g.scale.setScalar(size);
+      g.visible = false;
+      return outdoors.add(g) && g;
+    });
+  const glintMat = new THREE.SpriteMaterial({ color: new THREE.Color(2.4, 2.1, 1.2), transparent: true, opacity: 0.8, depthWrite: false, blending: THREE.AdditiveBlending, map: dotTexture() });
+  const glints = sprites(MUSHROOMS.length, glintMat, GLINT);
 
   // ── on the side: Bilbo's silver spoons, out only while Lobelia's after them ──
   const silver = new THREE.MeshStandardMaterial({ color: 0xeef0f6, metalness: 0.95, roughness: 0.16, emissive: 0x3a3e48, emissiveIntensity: 0.5 });
@@ -376,11 +380,8 @@ export async function createShireWorld(canvas, { onLost, reduced = false } = {})
     outdoors.add(g);
     return g;
   });
-  const spoonGlintPos = new Float32Array(SPOON_SPOTS.length * 3);
-  const spoonGlintGeo = new THREE.BufferGeometry();
-  spoonGlintGeo.setAttribute('position', new THREE.BufferAttribute(spoonGlintPos, 3));
-  const spoonGlintMat = new THREE.PointsMaterial({ color: new THREE.Color(1.9, 2.1, 2.6), size: 0.7, transparent: true, opacity: 0.8, depthWrite: false, blending: THREE.AdditiveBlending, map: dotTexture() });
-  outdoors.add(new THREE.Points(spoonGlintGeo, spoonGlintMat));
+  const spoonGlintMat = new THREE.SpriteMaterial({ color: new THREE.Color(1.9, 2.1, 2.6), transparent: true, opacity: 0.8, depthWrite: false, blending: THREE.AdditiveBlending, map: dotTexture() });
+  const spoonGlints = sprites(SPOON_SPOTS.length, spoonGlintMat, GLINT * 1.4);
 
   await breathe();
   // ── the people ──
@@ -647,22 +648,22 @@ export async function createShireWorld(canvas, { onLost, reduced = false } = {})
       cone.material.color.set(alarmed ? 0xff5a3a : 0xffd27a);
       cone.material.opacity = alarmed ? 0.3 : 0.17;
     });
+    const nearField = Math.hypot(h.x - (FIELD.x0 + FIELD.x1) / 2, h.z - (FIELD.z0 + FIELD.z1) / 2) < 22;
     MUSHROOMS.forEach((m, i) => {
       const picked = s.hunt?.picked?.includes(i);
       if (mushrooms[i]) mushrooms[i].group.visible = !picked;
-      glintPos[i * 3 + 1] = picked ? -100 : height(m.x, m.z) + 0.5 + Math.sin(t * 2 + i) * 0.08;
+      glints[i].visible = !picked && nearField;
+      glints[i].position.set(m.x, height(m.x, m.z) + 0.5 + Math.sin(t * 2 + i) * 0.08, m.z);
     });
-    glintGeo.attributes.position.needsUpdate = true;
     glintMat.opacity = 0.35 + 0.45 * Math.abs(Math.sin(t * 1.7));
-    glintMat.size = Math.hypot(h.x - (FIELD.x0 + FIELD.x1) / 2, h.z - (FIELD.z0 + FIELD.z1) / 2) < 22 ? 0.55 : 0;
 
     // Bilbo's spoons, and Lobelia: at her post by the lane, or out after them
     SPOON_SPOTS.forEach((p, i) => {
       const left = Boolean(s.spoons) && spoonLeft(s.spoons, i) && s.mode !== 'inside';
       spoons[i].visible = left;
-      spoonGlintPos.set([p.x, left ? groundY(p.x, p.z) + 0.42 + Math.sin(t * 2.4 + i) * 0.08 : -100, p.z], i * 3);
+      spoonGlints[i].visible = left;
+      if (left) spoonGlints[i].position.set(p.x, groundY(p.x, p.z) + 0.42 + Math.sin(t * 2.4 + i) * 0.08, p.z);
     });
-    spoonGlintGeo.attributes.position.needsUpdate = true;
     spoonGlintMat.opacity = 0.45 + 0.5 * Math.abs(Math.sin(t * 2.1));
     const lb = s.lobelia;
     lobelia.group.visible = Boolean(lb) && s.mode !== 'inside' && Math.hypot(lb.x - camera.position.x, lb.z - camera.position.z) < 60;

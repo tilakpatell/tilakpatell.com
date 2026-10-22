@@ -122,7 +122,10 @@ export function build({ road, heightAt, rt, tier = 'high' }) {
       // the orcs round Frodo on their beat, gone with him
       const tk = since.taken;
       const taking = (live(tk) || tk === Infinity) && local < MARKS.tower.at - 4;
-      torch.intensity = taking ? 60 : 0;
+      // (and one of theirs left burning in the Tower where Sam finds him: the beat was black)
+      const found = !taking && local >= MARKS.tower.at - 4 && local < MARKS.gate.at - 2 && st >= STUNG[2];
+      torch.position.set(...(found ? [FOUND[0] + 1.4, heightAt(...FOUND) + 2.2, FOUND[1] - 0.8] : [DOWN[0], heightAt(...DOWN) + 2.2, DOWN[1]]));
+      torch.intensity = taking ? 60 : found ? 36 : 0;
       for (const w of orcs) {
         w.group.visible = taking;
         if (taking) {

@@ -3,6 +3,7 @@ import { BEATS } from './beats';
 import { sweepBeats } from '../fixtures/beats';
 import { CHANGES } from '../../fellowship';
 import { LINES } from '../../voicelines';
+import { BENCH, NARSIL } from './props';
 
 describe('Rivendell’s beats', () => {
   sweepBeats('rivendell', BEATS);
@@ -16,9 +17,17 @@ describe('Rivendell’s beats', () => {
     expect(by.axe).toMatchObject({ clip: 'andMyAxe', hold: 0, rig: 'seat' });
     expect(by.axe.at).toBeGreaterThan(by.council.at);
     expect(by.axe.params).toEqual(by.council.params);
-    expect(by.narsil).toMatchObject({ rig: 'low', hold: 8 });
+    expect(by.narsil).toMatchObject({ rig: 'wide', hold: 8 });
     expect(by.bilbo.lines.map((l) => LINES[l].who)).toEqual(['bilbo']);
     expect(by.setout).toMatchObject({ rig: 'lead', hold: 6 });
+  });
+
+  it('Narsil’s shot and Bilbo’s are aimed at the hall of the shards and his bench, off the road', () => {
+    const by = Object.fromEntries(BEATS.map((b) => [b.id, b]));
+    for (const [id, [x, z]] of [['narsil', NARSIL], ['bilbo', BENCH]]) {
+      const { lookAt } = by[id].params;
+      expect(Math.hypot(lookAt[0] - x, lookAt[2] - z)).toBeLessThan(1.5);
+    }
   });
 
   it('the nine form up on the setting out’s beat', () => {
