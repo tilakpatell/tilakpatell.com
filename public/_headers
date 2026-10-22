@@ -1,12 +1,36 @@
 # Cloudflare's header rules for the site's files (docs/decisions/2026-10-21-cloudflare-for-the-site.md).
 # Vite names every file under /assets/ by its content's hash, so a file
-# there never changes: a year, and the browser never asks again. Everything
-# else keeps Cloudflare's default (asked again each visit, a 304 when it's
-# unchanged), as its name stays the same when it changes. Rules that match
-# one path are merged, a header set twice joined with a comma: so no rule
-# for /* sets Cache-Control.
+# there never changes: a year, and the browser never asks again. The
+# pictures below are asked again behind the drawing; everything else keeps
+# Cloudflare's default (asked again each visit, a 304 when it's unchanged),
+# as its name stays the same when it changes. Rules that match one path are
+# merged, a header set twice joined with a comma: so no rule for /* sets
+# Cache-Control, and no two that set it match one path
+# (cloudflare/headers.test.js).
 /assets/*
   Cache-Control: public, max-age=31536000, immutable
+
+# The pictures the worlds draw with, whose names stay when they change (the
+# universe map's planets and sky, the CC0 sets, the HDR skies, the fonts):
+# stale at once, as the default has them, but a copy kept from the last week
+# is drawn with straight away while the browser asks again behind it, so a
+# returning visitor's world isn't waiting on hundreds of 304s before its
+# first frame. A picture changed by a deploy is the old one for that one
+# visit and the new one after. (The heavy files the bucket holds are a year
+# already, their paths their hashes. Models are left out: the code that
+# comes with a model reads its nodes' names, and a stale one could break
+# that visit.) docs/decisions/2026-10-22-pictures-fresh-in-the-background.md
+/textures/*
+  Cache-Control: public, max-age=0, stale-while-revalidate=604800
+
+/hdri/*
+  Cache-Control: public, max-age=0, stale-while-revalidate=604800
+
+/cc0/*
+  Cache-Control: public, max-age=0, stale-while-revalidate=604800
+
+/fonts/*
+  Cache-Control: public, max-age=0, stale-while-revalidate=604800
 
 # Any site may read the files, as GitHub Pages let it when it served the
 # site (it sent this on every file): the Minecraft player, on an origin of

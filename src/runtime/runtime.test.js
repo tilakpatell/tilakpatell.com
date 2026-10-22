@@ -867,6 +867,21 @@ describe('createRuntime', () => {
     expect(plain.lowerQuality).toHaveBeenCalledWith(2);
   });
 
+  it("a module that supersamples in its own passes is given a canvas of the screen's own pixels", async () => {
+    const quality = fakeQuality();
+    // (the least, 1.5, is the passes' to draw; the screen is 1×)
+    quality.ratioUnder = vi.fn((cap, { screen = false } = {}) => Math.min(cap ?? Infinity, screen ? 1 : 1.5));
+    const { rt, loop } = make({ quality });
+    const world = fakeWorld({ wants: () => true });
+    await rt.mount({ id: 'universe', ratio: 2, sharpness: 'own', canvas: 'screen', create: () => world }, {}, fakeHost());
+    expect(quality.ratioUnder).toHaveBeenLastCalledWith(2, { unscaled: true, screen: true });
+    expect(rt.gfx.setRatio).toHaveBeenLastCalledWith(1);
+    loop.tick(16);
+    // a module without it keeps the canvas it had, the least and all
+    await rt.mount({ id: 'galaxy', ratio: 1.5, sharpness: 'own', create: () => fakeWorld() }, {}, fakeHost());
+    expect(rt.gfx.setRatio).toHaveBeenLastCalledWith(1.5);
+  });
+
   it("a module's ratio caps the sharpness it's drawn at", async () => {
     const quality = fakeQuality();
     quality.ratioUnder = vi.fn((cap) => Math.min(cap ?? Infinity, 2));

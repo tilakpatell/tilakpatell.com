@@ -25,7 +25,7 @@
 // still the tier.
 //
 // createQuality({ tier, detail, pace, floorAfter, dpr, minRatio, sharp }) → { tier,
-//   budget, level, scale, ratio, ratioUnder(cap, { unscaled }), on(fn) → undo,
+//   budget, level, scale, ratio, ratioUnder(cap, { unscaled, screen }), on(fn) → undo,
 //   frame(now) → the new level or null, reset(), hold(ms), retune(level),
 //   setSharpness(k), setLevel(step) }
 // (`setLevel`: a calibrated step of the pace, held as its ceiling:
@@ -162,9 +162,13 @@ export function createQuality({ tier, detail, pace = createPace(), floorAfter = 
     },
     setSource,
     // (`unscaled`: the level's ratio without the pace's scale, for a module
-    // that softens through its own post chain and keeps its canvas as it is)
-    ratioUnder(cap = Infinity, { unscaled = false } = {}) {
-      return sharpest(cap) * (unscaled ? 1 : scale);
+    // that softens through its own post chain and keeps its canvas as it is;
+    // `screen`: the screen's own pixels under the caps, neither the least nor
+    // the visitor's sharpness, for one that draws those inside its passes and
+    // so wants no canvas bigger than the screen, module.js's `canvas: 'screen'`)
+    ratioUnder(cap = Infinity, { unscaled = false, screen: own = false } = {}) {
+      const r = own ? Math.min(cap ?? Infinity, budget.ratio, dpr) : sharpest(cap);
+      return r * (unscaled ? 1 : scale);
     },
     retune(level) {
       budget = BUDGETS[level] ?? BUDGETS.high;

@@ -301,8 +301,10 @@ export function createRuntime({ makeBackend, loop: makeLoop = createLoop, input,
 
   // the sharpness to draw a module at: the quality's, under the module's own
   // cap (and without the pace's scale for one that softens through its own
-  // passes, module.js's `sharpness: 'own'`: its canvas keeps its size)
-  const ratioFor = (mod) => (quality.ratioUnder ? quality.ratioUnder(mod?.ratio, { unscaled: mod?.sharpness === 'own' }) : quality.ratio);
+  // passes, module.js's `sharpness: 'own'`: its canvas keeps its size; and
+  // at the screen's own pixels for one that supersamples inside them,
+  // `canvas: 'screen'`)
+  const ratioFor = (mod) => (quality.ratioUnder ? quality.ratioUnder(mod?.ratio, { unscaled: mod?.sharpness === 'own', screen: mod?.canvas === 'screen' }) : quality.ratio);
 
   // (a module that says `antialias` has the canvas multisampled or not as
   // it says, on the classic kind: Middle-earth's stages drew on canvases of
