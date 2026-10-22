@@ -197,7 +197,7 @@ export function commonRoom(spec) {
     const group = new THREE.Group();
     group.name = `room:${spec.id}`;
     const kit = createRoomKit({ house, tier });
-    const parts = spec.make(kit, { tier, renderer, props, group, rt }) ?? {};
+    const parts = spec.make(kit, { tier, renderer, props, group, rt, tell, toast }) ?? {};
     const statics = kit.build(group);
     const live = [...(parts.live ?? [])];
     const fires = (parts.fires ?? []).map((f) => createFire({ tier, ...f }));
@@ -302,5 +302,6 @@ export function commonRoom(spec) {
     };
     return room;
   }
-  return { id: spec.id, name: spec.name, build };
+  // (the spec too, for the tests: its bounds, its colliders and its doors are plain data)
+  return { id: spec.id, name: spec.name, build, spec };
 }

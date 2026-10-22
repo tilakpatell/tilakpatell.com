@@ -176,6 +176,9 @@ function doorsOf(l) {
   });
 }
 
+// (the landing you were last on, for the way back out of a room off it)
+const remembered = { here: null };
+
 function build(rt, ctx = {}) {
   const tier = ctx.tier ?? rt?.quality?.tier ?? 'high';
   const house = ctx.house ?? null;
@@ -257,8 +260,10 @@ function build(rt, ctx = {}) {
     })
     .catch(() => {});
 
-  // ── the walk: the landing you’re on, its floor, its doors
-  let here = '0w';
+  // ── the walk: the landing you’re on, its floor, its doors (back out of a
+  // room off a landing, you’re on that landing again; in from the Great
+  // Hall or the grounds, on the ground floor)
+  let here = !ctx.from && remembered.here ? remembered.here : '0w';
   let stairs = createStairs({ seed: (Date.now() >>> 0) % 997 });
   const visit = Date.now();
   let ride = null; // { stair, from: [x,y,z], to: [x,y,z], t, dur, down, target, tripped }
@@ -482,6 +487,7 @@ function build(rt, ctx = {}) {
         }
         if (k >= 1) {
           here = ride.target;
+          remembered.here = here;
           const to = ride.to;
           // (a step onto the landing, facing the way you were going)
           const dx = to[0] - ride.from[0];
@@ -520,6 +526,7 @@ function build(rt, ctx = {}) {
     at(id) {
       if (!landingAt(id)) return;
       here = id;
+      remembered.here = here;
       const sp = spawnAt(id);
       ctx.place?.(sp.at, sp.yaw);
     },

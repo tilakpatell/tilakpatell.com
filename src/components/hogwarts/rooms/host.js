@@ -30,6 +30,7 @@
 // password asked) rather than lead anywhere; `level` is the floor the walk
 // may not step down from (a landing’s edge), read every step.
 
+import { Color } from 'three';
 import { createWalker } from '../play/walk';
 
 export const ROOM_ORIGIN = [0, -2000, 0];
@@ -37,6 +38,11 @@ export const ROOM_ORIGIN = [0, -2000, 0];
 export const LOCAL = {
   greatHall: { name: 'The Great Hall', load: () => import('./greatHall.js') },
   staircase: { name: 'The Grand Staircase', load: () => import('./staircase.js') },
+  gryffindor: { name: 'The Gryffindor common room', load: () => import('./common/gryffindor.js') },
+  slytherin: { name: 'The Slytherin common room', load: () => import('./common/slytherin.js') },
+  ravenclaw: { name: 'The Ravenclaw common room', load: () => import('./common/ravenclaw.js') },
+  hufflepuff: { name: 'The Hufflepuff common room', load: () => import('./common/hufflepuff.js') },
+  kitchens: { name: 'The kitchens', load: () => import('./kitchens.js') },
 };
 
 export function solidsOf(colliders = []) {
@@ -154,9 +160,13 @@ export function createRoomHost({ rt, scene, camera, house, tier = 'high', reduce
       room.group.position.set(...ROOM_ORIGIN);
       scene.add(room.group);
       house?.adopt?.(room.group);
+      // (the look’s shade a room’s own warm dark, not the grounds’ night blue; the world’s relight puts it back outside)
+      house?.set?.({ shadow: new Color(room.shade ?? 0x2e2219) });
       hideOutside(true);
       const spawn = at ? { at, yaw: yaw ?? 0 } : { at: [room.spawn.at[0], room.spawn.at[2]], yaw: yaw ?? room.spawn.yaw ?? 0 };
       walker = walk ? createWalker({ camera, world: worldOf(room), at: spawn.at, yaw: spawn.yaw, reduced }) : null;
+      near = null;
+      tell('near', { door: null });
       tell('room', { id: roomId, name: room.name ?? def.name ?? roomId });
       return room;
     },

@@ -16,8 +16,6 @@ const R = 8;
 const H = 6.5;
 const [RED, GOLD] = HOUSES.gryffindor.colours;
 
-let slid = false;
-
 export default commonRoom({
   id: 'gryffindor',
   name: 'The Gryffindor common room',
@@ -43,16 +41,15 @@ export default commonRoom({
     hole: { at: [0, 1.6, -3], look: [0, 1.6, R] },
     stairs: { at: [-2, 1.6, 0], look: [6, 2.4, 5] },
   },
-  make(kit, { renderer, group }) {
+  make(kit, { renderer, group, toast }) {
+    let slid = false;
     // the round tower room: warm stone, a timbered ceiling, the floor boarded with a rug in the house’s rings
     roundWalls(kit, { r: R, h: H, mat: 'stonewarm', gaps: [[2.6, 3.0], [-0.35, 0.35]] });
     kit.cyl('board', 0, -0.2, 0, R + 0.6, R + 0.6, 0.2, { seg: 32 });
     kit.cyl('darkoak', 0, H, 0, R + 0.6, R + 0.6, 0.3, { seg: 32 });
     for (let i = 0; i < 8; i++) kit.box('darkoak', 0, H - 0.35, 0, 0.3, 0.35, R * 2 + 0.6, { ry: (i * Math.PI) / 8 });
-    // the hearth, the lion over it in gold, the chairs drawn up to it
+    // the hearth, and the chairs drawn up to it
     const fireAt = fireplace(kit, { at: [0, 0, -R + 0.5], ry: 0, w: 3.2, h: 2.6 });
-    kit.box('gold', 0, 3.2, -R + 0.62, 1.2, 1.1, 0.08);
-    kit.box(kit.paint(RED, { rough: 0.6 }), 0, 3.32, -R + 0.66, 0.9, 0.86, 0.06);
     armchair(kit, { at: [-2.2, 0, -4.2], ry: 0.5, cloth: RED });
     armchair(kit, { at: [2.2, 0, -4.2], ry: -0.5, cloth: RED });
     sofa(kit, { at: [0, 0, -2.6], ry: Math.PI, cloth: '#8a2a1e', len: 2.4 });
@@ -74,9 +71,10 @@ export default commonRoom({
     kit.box('oak', 3.8, 0.74, -2.8, 1.6, 0.06, 0.8, { ry: -0.6 });
     for (const [x, z] of [[3.4, -3.4], [4.3, -2.2]]) kit.box('oak', x, 0, z, 0.06, 0.74, 0.06);
     // tapestries of the house’s beast and two tall windows onto the night
+    // the lion over the hearth, and the house’s tapestries either side of the room
     const banners = createBanners(
-      [-1.9, 1.9].map((a) => ({ house: 'gryffindor', at: [Math.sin(a) * (R - 0.15), H - 0.8, Math.cos(a) * (R - 0.15)], ry: a + Math.PI })),
-      { renderer, w: 1.6, h: 4.2 },
+      [{ house: 'gryffindor', at: [0, H - 0.3, -R + 0.95], ry: 0 }, ...[-1.9, 1.9].map((a) => ({ house: 'gryffindor', at: [Math.sin(a) * (R - 0.15), H - 0.8, Math.cos(a) * (R - 0.15)], ry: a + Math.PI }))],
+      { renderer, w: 1.5, h: 3.2 },
     );
     const windows = createWindows(
       [-1.1, 1.1].map((a) => ({ at: [Math.sin(a) * (R - 0.05), 2.4, Math.cos(a) * (R - 0.05)], w: 1.4, h: 3.2, ry: a + Math.PI })),
@@ -98,12 +96,11 @@ export default commonRoom({
           name: 'The girls’ stairs',
           act: () => {
             // (once a visit the stairs flatten into a slide; after that they let you be)
-            slid = !slid;
+            toast(slid ? 'The stairs stay stairs this time. You still don’t trust them.' : 'Halfway up, the stairs flatten into a stone slide and you’re back on the rug.');
+            slid = true;
           },
         },
       ],
     };
   },
 });
-
-export const slide = () => slid;
