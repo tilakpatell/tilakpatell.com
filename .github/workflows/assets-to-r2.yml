@@ -59,8 +59,10 @@ on:
 permissions:
   contents: read
 
+# (a run a set of buckets: the public job alone, by name, needn't wait for a
+# drop's S3 copy, which takes hours)
 concurrency:
-  group: assets-to-r2
+  group: assets-to-r2-${{ inputs.buckets }}-${{ inputs.public-from != '' }}
   cancel-in-progress: false
 
 jobs:
@@ -81,10 +83,12 @@ jobs:
           for b in $BUCKETS; do
             case "$b" in site-assets|bf2017-assets|bf2-extract|bf2-workspace-backup) ;; *) echo "::error::not one of the buckets: $b"; exit 1 ;; esac
           done
-          echo "buckets=$(printf '%s\n' $BUCKETS | jq -R . | jq -cs .)" >> "$GITHUB_OUTPUT"
+          echo "buckets=$(printf '%s\n' $BUCKETS | jq -R . | jq -cs 'map(select(length > 0))')" >> "$GITHUB_OUTPUT"
 
   copy:
     needs: plan
+    # (no S3 bucket asked for: the public job alone)
+    if: ${{ needs.plan.outputs.buckets != '[]' }}
     strategy:
       fail-fast: false
       # (one at a time: two listings at once on one Supabase project made
