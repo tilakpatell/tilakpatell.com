@@ -69,4 +69,13 @@ describe('the trooper classes', () => {
     expect(pick).toMatchObject({ kind: 'deathtrooper', gun: 'dlt19' });
     expect(heroSpec(pick).src.url).toBe(CREW.deathtrooper.url);
   });
+  it('a battle droid’s body goes on its own rig: the Separatists’ classes the B1’s, their enforcer the B2’s', () => {
+    const b1 = heroSpec(readHero({ id: trooperId('separatists', 'assault') }));
+    expect(b1).toMatchObject({ rig: 'own', ownRig: 'b1', pack: null, gun: 'e5' });
+    expect(b1.src.url).toBe(CREW.battledroid.url);
+    expect(troopersFor('separatists')[0]).toMatchObject({ rig: 'own', ownRig: 'b1' });
+    expect(heroSpec(readHero({ id: trooperId('separatists', 'enforcer') }))).toMatchObject({ rig: 'own', ownRig: 'b2' });
+    // (a body on the game's skeleton keeps the humanoid pack)
+    expect(heroSpec(readHero({ id: trooperId('empire', 'assault') }))).toMatchObject({ rig: 'walrus', pack: null });
+  });
 });

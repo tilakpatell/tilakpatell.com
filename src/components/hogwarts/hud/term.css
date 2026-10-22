@@ -1,0 +1,94 @@
+/* The term’s face (hud/PointsChip.jsx, hud/Feast.jsx): the house points
+   chip by the Menu, the House Cup as it stands, and the leaving feast’s
+   card, all on the world’s parchment. */
+.hogwarts-points { position: relative; pointer-events: auto; }
+.hogwarts-points-chip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 40px;
+  padding: 0.25rem 0.65rem 0.25rem 0.5rem;
+  border: var(--hud-border, 1px solid rgb(42 29 18 / 0.28));
+  border-radius: var(--hud-radius, 6px);
+  background: var(--hud-glass, rgb(244 234 210 / 0.82));
+  color: var(--hud-ink, #2a1d12);
+  box-shadow: var(--hud-shadow);
+  cursor: pointer;
+}
+.hogwarts-points-chip:focus-visible { outline: 2px solid var(--house, #8f1d24); outline-offset: 2px; }
+.hogwarts-glass { flex: none; color: #5b4632; }
+.hogwarts-points-count { font: 700 1rem/1 'Cinzel', Georgia, serif; font-variant-numeric: tabular-nums; }
+.hogwarts-points-place { font: italic 600 0.74rem/1 Georgia, serif; color: #5b4632; }
+.hogwarts-points-flash { position: absolute; right: 0.3rem; top: -0.2rem; font: 700 0.85rem/1 'Cinzel', Georgia, serif; opacity: 0; pointer-events: none; }
+.hogwarts-points-flash[data-sign='up'] { color: #2f6b2a; }
+.hogwarts-points-flash[data-sign='down'] { color: #8f1d24; }
+.hogwarts-points-flash.is-on { animation: hw-points 1.6s ease-out forwards; }
+@keyframes hw-points {
+  0% { opacity: 0; transform: translateY(4px); }
+  15% { opacity: 1; transform: translateY(-6px); }
+  70% { opacity: 1; transform: translateY(-12px); }
+  100% { opacity: 0; transform: translateY(-18px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hogwarts-points-flash.is-on { animation: hw-points-still 1.6s linear forwards; }
+  @keyframes hw-points-still { 0%, 80% { opacity: 1; } 100% { opacity: 0; } }
+}
+
+.hogwarts-cup {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 0.45rem);
+  z-index: 4;
+  display: grid;
+  justify-items: center;
+  gap: 0.35rem;
+  width: max-content;
+  padding: 0.75rem 0.9rem;
+  border: 1px solid rgb(58 35 20 / 0.45);
+  border-radius: 4px;
+  background: rgb(240 226 192 / 0.96);
+  color: #3a2314;
+  box-shadow: 0 10px 28px rgb(0 0 0 / 0.4);
+}
+.hogwarts-cup-title { margin: 0; font: 700 1rem/1.2 'Cinzel', Georgia, serif; letter-spacing: 0.04em; }
+.hogwarts-cup-week { margin: 0; font: italic 600 0.8rem/1.2 Georgia, serif; color: #5b4632; }
+.hogwarts-cup-glasses { display: flex; gap: 0.9rem; margin: 0.2rem 0; padding: 0; list-style: none; }
+.hogwarts-cup-glasses li { display: grid; justify-items: center; gap: 0.15rem; }
+.hogwarts-cup-glasses li[data-you] .hogwarts-cup-house { text-decoration: underline; text-underline-offset: 3px; }
+.hogwarts-cup-points { font: 700 0.95rem/1 'Cinzel', Georgia, serif; font-variant-numeric: tabular-nums; }
+.hogwarts-cup-house { font: italic 600 0.74rem/1.2 Georgia, serif; }
+
+.hogwarts-feast {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 5;
+  display: grid;
+  justify-items: center;
+  gap: 0.5rem;
+  width: min(92vw, 520px);
+  padding: 1.6rem 1.4rem 1.2rem;
+  border: 1px solid rgb(58 35 20 / 0.5);
+  border-radius: 4px;
+  background: #ecdcb6;
+  background-image: radial-gradient(ellipse at 30% 20%, rgb(255 250 232 / 0.5), transparent 60%), radial-gradient(ellipse at 80% 90%, rgb(130 88 36 / 0.18), transparent 55%);
+  color: #3a2314;
+  text-align: center;
+  box-shadow: inset 0 0 50px rgb(96 60 22 / 0.4), 0 14px 40px rgb(0 0 0 / 0.5);
+  transform: translate(-50%, -50%);
+  pointer-events: auto;
+}
+.hogwarts-feast-banner { width: 100%; height: 14px; border-radius: 2px; background: repeating-linear-gradient(90deg, var(--winner) 0 28px, color-mix(in srgb, var(--winner) 60%, #f6c343) 28px 34px); box-shadow: 0 2px 6px rgb(0 0 0 / 0.25); }
+.hogwarts-feast-eyebrow { margin: 0.2rem 0 0; font: 600 0.75rem/1.2 'Cinzel', Georgia, serif; letter-spacing: 0.14em; text-transform: uppercase; color: #5b4632; }
+.hogwarts-feast-title { margin: 0; font: 700 clamp(1.15rem, 3vw, 1.5rem)/1.2 'Cinzel', Georgia, serif; }
+.hogwarts-feast-line { margin: 0; max-width: 40ch; font: italic 500 0.95rem/1.45 Georgia, serif; }
+.hogwarts-feast-standings { display: grid; gap: 0.25rem; width: min(100%, 320px); margin: 0.4rem 0; padding: 0; list-style: none; }
+.hogwarts-feast-standings li { display: flex; justify-content: space-between; padding: 0.3rem 0.6rem; border-left: 6px solid var(--gem); background: rgb(255 250 235 / 0.45); font: 600 0.95rem/1.2 Georgia, serif; }
+.hogwarts-feast-standings li[data-you] { background: rgb(255 250 235 / 0.85); }
+.hogwarts-feast-points { font-family: 'Cinzel', Georgia, serif; font-variant-numeric: tabular-nums; }
+.hogwarts-feast-mine { margin: 0; font: 600 0.9rem/1.3 Georgia, serif; }
+.hogwarts-feast-tools { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.5rem; margin-top: 0.4rem; }
+
+/* the top row’s right: the points chip, then the Menu */
+.hogwarts-tools { display: flex; align-items: flex-start; gap: 0.5rem; }
