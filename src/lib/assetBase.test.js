@@ -90,6 +90,34 @@ describe('the asset base', () => {
     expect(await load('/hq/tex/rock.jpg')).toBe(`${BASE}/bbbbbbbbbbbb/hq/tex/rock.jpg`);
   });
 
+  // (Kamino's pack, 2026-10-21: one 429 among a level's first ninety files
+  // marked the bucket down, and every cell after was asked of a site that
+  // has no copy: no platforms, and Luke through the sea)
+  it('asks a busy bucket (a 429) again after a wait, and keeps it', async () => {
+    const asked = [];
+    let busy = 2;
+    const load = withFallback((url) => {
+      asked.push(url);
+      return url.startsWith('https:') && busy-- > 0 ? Promise.reject(Object.assign(new Error('429'), { status: 429 })) : Promise.resolve(url);
+    }, { ...opts, waits: [0, 0, 0] });
+    expect(await load('/kit/crate.glb')).toBe(`${BASE}/aaaaaaaaaaaa/kit/crate.glb`);
+    expect(asked).toEqual(Array(3).fill(`${BASE}/aaaaaaaaaaaa/kit/crate.glb`));
+    expect(isDown()).toBe(false);
+  });
+
+  it('sends one file busy past its asks to the site alone, the bucket kept for the rest', async () => {
+    const asked = [];
+    const load = withFallback((url) => {
+      asked.push(url);
+      // (three's loaders reject with the response: an HttpError's `response.status`)
+      return url.startsWith('https:') && url.includes('crate') ? Promise.reject(Object.assign(new Error('busy'), { response: { status: 503 } })) : Promise.resolve(url);
+    }, { ...opts, waits: [0, 0] });
+    expect(await load('/kit/crate.glb')).toBe('/kit/crate.glb');
+    expect(asked.filter((u) => u.startsWith('https:'))).toHaveLength(3);
+    expect(isDown()).toBe(false);
+    expect(await load('/hq/tex/rock.jpg')).toBe(`${BASE}/bbbbbbbbbbbb/hq/tex/rock.jpg`);
+  });
+
   it('passes an abort on, asking nothing local and marking nothing down', async () => {
     const asked = [];
     const load = withFallback((url) => {

@@ -1,0 +1,123 @@
+name: Copy the buckets to R2
+
+# The heavy assets' buckets copied from Supabase Storage to Cloudflare R2,
+# by hand (Actions → Copy the buckets to R2 → Run workflow), for the move in
+# docs/stack/cloudflare.md. Cloudflare's own copy (Super Slurper) and its
+# copy-on-read (Sippy) won't take Supabase's S3 address, whose bucket sits
+# under /storage/v1/s3, so rclone does it, as Supabase's own guide copies a
+# project's storage out (docs/guides/self-hosting/copy-from-platform-s3):
+# provider Other, the /storage/v1/s3 endpoint, path-style. Nothing is
+# written to the runner's disk: each file streams from one to the other,
+# with its content type and cache header (-M). It only copies: nothing is
+# deleted on either side, and a file R2 holds already at its size is skipped,
+# so a second run sends only what was published to Supabase since (the
+# public bucket's paths are content hashes, never overwritten: --size-only;
+# the working bucket's are compared by size and time as well). Last, both
+# sides' counts and bytes, and the run fails if R2 holds fewer files.
+#
+# Secrets (repository → Settings → Secrets and variables → Actions):
+#   SUPABASE_S3_ACCESS_KEY_ID, SUPABASE_S3_SECRET_ACCESS_KEY: Supabase →
+#     Project Settings → Storage → S3 Access Keys (delete it after the move)
+#   R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY: R2 → Manage API tokens, Object
+#     Read & Write on the buckets: the Access Key ID (32 hex characters) and
+#     the Secret Access Key (64) it shows once, not the token itself
+# The R2 buckets are made by hand first, named as Supabase's. Besides the
+# two the site reads, Supabase holds bf2-extract (empty on 2026-10-10) and
+# bf2-workspace-backup: named in `buckets`, they're copied too.
+
+on:
+  workflow_dispatch:
+    inputs:
+      region:
+        description: "The Supabase project's S3 region (Project Settings → Storage → S3 Connection)"
+        required: true
+        type: string
+      buckets:
+        description: 'Which buckets, space-separated'
+        required: false
+        default: 'site-assets bf2017-assets'
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: assets-to-r2
+  cancel-in-progress: false
+
+jobs:
+  copy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 340
+    env:
+      # (rclone reads its remotes from the environment: RCLONE_CONFIG_<remote>_<option>)
+      RCLONE_CONFIG_SUPABASE_TYPE: s3
+      RCLONE_CONFIG_SUPABASE_PROVIDER: Other
+      RCLONE_CONFIG_SUPABASE_ENDPOINT: https://jzabcqboyemokwifmjmp.storage.supabase.co/storage/v1/s3
+      RCLONE_CONFIG_SUPABASE_REGION: ${{ inputs.region }}
+      RCLONE_CONFIG_SUPABASE_FORCE_PATH_STYLE: 'true'
+      RCLONE_CONFIG_R2_TYPE: s3
+      RCLONE_CONFIG_R2_PROVIDER: Cloudflare
+      # (the account's R2 address: wrangler.jsonc's account_id)
+      RCLONE_CONFIG_R2_ENDPOINT: https://b12a527ca9fde882ef12c5c60f75f2e8.r2.cloudflarestorage.com
+      RCLONE_CONFIG_R2_NO_CHECK_BUCKET: 'true'
+      # (the keys as saved: the first step hands them to rclone)
+      SUPABASE_S3_ACCESS_KEY_ID: ${{ secrets.SUPABASE_S3_ACCESS_KEY_ID }}
+      SUPABASE_S3_SECRET_ACCESS_KEY: ${{ secrets.SUPABASE_S3_SECRET_ACCESS_KEY }}
+      R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+      R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+      BUCKETS: ${{ inputs.buckets }}
+    steps:
+      # (one version, held to its published checksum)
+      - name: rclone 1.70.3
+        run: |
+          curl -fsSL -o "$RUNNER_TEMP/rclone.zip" https://downloads.rclone.org/v1.70.3/rclone-v1.70.3-linux-amd64.zip
+          echo "7d69057e69385f6514a9684c7eaa424d972096b130284bb34dd967c4ed4f9dad  $RUNNER_TEMP/rclone.zip" | sha256sum -c -
+          unzip -q -j "$RUNNER_TEMP/rclone.zip" '*/rclone' -d "$RUNNER_TEMP/bin"
+          echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
+
+      # Each key to rclone (RCLONE_CONFIG_<remote>_<option>, for this step and
+      # the ones after) with any space or line break a paste left in it taken
+      # out: on 2026-10-21 the R2 key's id held one, and Go refused the header
+      # it went into ("invalid header field value for Authorization"). R2's
+      # are held to their shape, their lengths said when they're not.
+      - name: The keys and the buckets
+        run: |
+          for k in SUPABASE_S3_ACCESS_KEY_ID SUPABASE_S3_SECRET_ACCESS_KEY R2_ACCESS_KEY_ID R2_SECRET_ACCESS_KEY; do
+            v=$(printf '%s' "${!k}" | tr -d '[:space:]')
+            [ -n "$v" ] || { echo "::error::a secret is missing ($k): see this workflow's header"; exit 1; }
+            echo "::add-mask::$v"
+            to="RCLONE_CONFIG_${k/_S3_/_}"
+            export "$to=$v"
+            echo "$to=$v" >> "$GITHUB_ENV"
+          done
+          [[ $RCLONE_CONFIG_R2_ACCESS_KEY_ID =~ ^[0-9a-fA-F]{32}$ ]] || { echo "::error::R2_ACCESS_KEY_ID is ${#RCLONE_CONFIG_R2_ACCESS_KEY_ID} characters, not R2's 32 hex: see this workflow's header"; exit 1; }
+          [[ $RCLONE_CONFIG_R2_SECRET_ACCESS_KEY =~ ^[0-9a-fA-F]{64}$ ]] || { echo "::error::R2_SECRET_ACCESS_KEY is ${#RCLONE_CONFIG_R2_SECRET_ACCESS_KEY} characters, not R2's 64 hex: see this workflow's header"; exit 1; }
+          for b in $BUCKETS; do
+            case "$b" in site-assets|bf2017-assets|bf2-extract|bf2-workspace-backup) ;; *) echo "::error::not one of the buckets: $b"; exit 1 ;; esac
+          done
+          rclone lsd supabase:
+          rclone lsd r2:
+
+      - name: Copy
+        run: |
+          for b in $BUCKETS; do
+            echo "::group::$b"
+            same=""
+            [ "$b" = site-assets ] && same="--size-only"
+            rclone copy "supabase:$b" "r2:$b" -M $same --fast-list --transfers 16 --checkers 32 --retries 5 --low-level-retries 20 --timeout 30m --stats 60s --stats-one-line
+            echo "::endgroup::"
+          done
+
+      - name: Both sides counted
+        run: |
+          short=0
+          for b in $BUCKETS; do
+            from=$(rclone size "supabase:$b" --fast-list --json)
+            to=$(rclone size "r2:$b" --fast-list --json)
+            echo "$b  supabase $from  r2 $to"
+            n_from=$(echo "$from" | python3 -c 'import json,sys; print(json.load(sys.stdin)["count"])')
+            n_to=$(echo "$to" | python3 -c 'import json,sys; print(json.load(sys.stdin)["count"])')
+            [ "$n_to" -ge "$n_from" ] || { echo "::error::$b: R2 holds $n_to files of Supabase's $n_from"; short=1; }
+          done
+          exit $short

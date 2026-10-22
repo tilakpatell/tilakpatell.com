@@ -62,6 +62,21 @@
    and narrower than the room left of the panel on a small tablet) */
 body:has(.universe-page) .tour-offer { bottom: calc(128px + env(safe-area-inset-bottom)); }
 @media (min-width: 768px) { body:has(.universe-page:not([data-tucked])) .tour-offer { width: min(360px, calc(100vw - 440px)); } }
+/* (and with a mouse, smaller and finer, as the map's panel beside it is:
+   universe/desk.css; the picks at 40px, over the fine pointer's least) */
+@media (pointer: fine) and (min-width: 768px) {
+  body:has(.universe-page:not([data-tucked])) .tour-offer,
+  body:has(.universe-page[data-tucked]) .tour-offer { width: min(300px, calc(100vw - 32px)); padding: 0.6rem 0.6rem 0.7rem 0.8rem; }
+  body:has(.universe-page) .tour-offer-icon { width: 1.05rem; height: 1.05rem; }
+  body:has(.universe-page) .tour-offer-title { font-size: var(--fs-sm); }
+  body:has(.universe-page) .tour-offer-text { font-size: 0.75rem; }
+  body:has(.universe-page) .tour-offer-head + .tour-offer-text,
+  body:has(.universe-page) .tour-offer-row { padding-left: calc(1.05rem + 0.6rem); }
+  body:has(.universe-page) .tour-offer-picks { gap: 0.4rem; margin-top: 0.6rem; }
+  body:has(.universe-page) .tour-offer-pick { min-height: 40px; padding: 0.4rem 0.55rem; }
+  body:has(.universe-page) .tour-offer-pick-label { font-size: var(--fs-xs); }
+  body:has(.universe-page) .tour-offer-pick-time { font-size: 0.72rem; }
+}
 @media (max-width: 767px) {
   .tour-offer, body:has(.universe-page) .tour-offer { top: calc(var(--nav-h) + 8px); bottom: auto; }
 }

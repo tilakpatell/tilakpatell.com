@@ -31,6 +31,7 @@
 
 import { CLIP_FALLBACK } from './walrusRig.js';
 import { FAUNA } from './walrusSets/fauna.js';
+import { OWN_HEROES } from './walrusSets/ownHeroes.js';
 import { SET_PACKS } from './walrusSets/index.js';
 
 const one = (xs) => (xs.length === 1 ? xs[0] : xs);
@@ -291,6 +292,8 @@ export const OWN_RIGS = {
 };
 // (and the galaxy's small creatures, droids and aliens: walrusSets/fauna.js)
 for (const [rig, row] of Object.entries(FAUNA)) OWN_RIGS[rig] = { skeleton: row.skeleton, body: row.body, set: row.set };
+// (and Yoda and Grievous, the heroes on skeletons of their own: walrusSets/ownHeroes.js)
+for (const [rig, row] of Object.entries(OWN_HEROES)) OWN_RIGS[rig] = { skeleton: row.skeleton, body: row.body, set: row.set };
 export const RIG_SET = (rig) => OWN_RIGS[rig]?.set ?? null;
 
 export const PACKS = {

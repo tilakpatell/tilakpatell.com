@@ -67,7 +67,7 @@ loader.load = async (url) => {
   return { scene: body(), animations: [] };
 };
 
-const { loadPartyFigure } = await import('./footScene');
+const { loadPartyFigure, troopSpec } = await import('./footScene');
 
 describe('a 2017 hero out on foot', () => {
   const spec = { id: 'luke', name: 'Luke', tall: 1.72, rig: 'walrus', src: { url: '/models/galaxy/bf2017/crew/luke.glb' } };
@@ -177,5 +177,24 @@ describe('a 2017 hero out on foot', () => {
     expect(fig.react('hit', { side: 'left' })).toBeNull();
     fig.dispose();
     level.now = 'low';
+  });
+});
+
+describe('a troop on the game’s body', () => {
+  it('is the cast table’s row at the troop’s own height, and draws its light cut first, never a library clip', async () => {
+    const spec = troopSpec('stormtrooper');
+    expect(spec).toMatchObject({ rig: 'walrus', src: { url: '/models/galaxy/bf2017/crew/stormtrooper.glb' }, cuts: { full: true, lod: true } });
+    expect(spec.tall).toBeCloseTo(1.83, 6);
+    loader.urls.length = 0;
+    fetched.length = 0;
+    const fig = await loadPartyFigure(spec, null);
+    expect(fig?.rig).toBe('walrus');
+    // (the light cut asked for first; here it is missing, so the plain one stands in)
+    expect(loader.urls[0]).toBe('/models/galaxy/bf2017/crew/stormtrooper.lod1.glb');
+    // (going down asks its own packs only: none here has a fall, so nothing plays and nothing is fetched)
+    fig.react('down', { dir: { x: 0, z: -1 }, force: 0.5 });
+    await Promise.resolve();
+    expect(fetched).toEqual([]);
+    fig.dispose();
   });
 });

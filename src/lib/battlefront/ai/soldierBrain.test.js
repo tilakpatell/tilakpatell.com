@@ -52,11 +52,13 @@ describe('the soldier brain', () => {
     expect(i.goal).toEqual([0, -20]);
   });
 
-  it('falls back toward its squad when suppressed with no cover near', () => {
+  it('falls back toward its squad when it hides with no cover near', () => {
+    // (what sends it to hide is the source’s one cause, a target its weapon cannot hurt: tactics.js;
+    // suppression did, by hand, until the source was read)
     const b = bot([0, 0, -50]);
-    b.s.suppressed = 1;
+    b.aiWeapon = { ...b.aiWeapon, validAgainst: 'Soldiers' };
     see(b, 'them', [0, 1.2, -20]);
-    const i = think(b, world(open, { squad: { centre: [-10, -60], posture: 'hold' } }), 1);
+    const i = think(b, world(open, { squad: { centre: [-10, -60], posture: 'hold' }, who: () => ({ kind: 'walker', shielded: true, alive: true }) }), 1);
     expect(i.mode).toBe('hide');
     expect(i.goal).not.toBeNull();
     // further from the threat than it was
