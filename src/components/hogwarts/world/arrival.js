@@ -65,7 +65,8 @@ export function createArrival({ rt = null, scene, camera, house = null, tier = '
   const [qx, qz] = squidAt(route);
   const across = route.at(262);
   const squid = createSquid({ at: [qx, anchors.water, qz], toward: [-across.tz, across.tx] });
-  const cliff = anchors.cave ? createCliff({ at: anchors.cave, water: anchors.water, kit }) : null;
+  // (a cliff of its own where the world has none: `cliff: false` where the castle’s hill comes down to the water)
+  const cliff = anchors.cave && anchors.cliff !== false ? createCliff({ at: anchors.cave, water: anchors.water, kit }) : null;
   // the station and the steps, each at its own place
   const station = createStation({ rt, kit, tier, at: SETS.station });
   const steps = createSteps({ rt, kit, tier, at: SETS.steps });

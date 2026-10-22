@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { handAngles, swing } from './castle';
+import { LEVELS, handAngles, levelAt, swing } from './castle';
 import { bakeLand } from '../land';
 import { heightAt } from '../terrain';
 import { placeById } from '../../rules/places';
@@ -36,5 +36,21 @@ describe('the land, baked', () => {
     expect(land.coverAt(...placeById('forest').at).forest).toBeGreaterThan(0.8);
     // (past the ground’s edge, the field itself)
     expect(land.heightAt(1000, 1000)).toBe(heightAt(1000, 1000));
+  });
+});
+
+describe('the castle’s levels', () => {
+  it('draws the fine cut close, the middle one across the water and the light one far, never flickering on a line', () => {
+    const ultra = LEVELS.ultra;
+    expect(ultra.map(([cut]) => cut)).toEqual(['ultra', 'hq', 'lo']);
+    expect(levelAt(ultra, 50)).toBe(0);
+    expect(levelAt(ultra, 300)).toBe(1);
+    expect(levelAt(ultra, 900)).toBe(2);
+    // (on the line between two, it stays where it was)
+    expect(levelAt(ultra, 165, 0)).toBe(0);
+    expect(levelAt(ultra, 155, 1)).toBe(1);
+    expect(levelAt(ultra, 200, 0)).toBe(1);
+    expect(LEVELS.high.map(([cut]) => cut)).toEqual(['mid', 'lo']);
+    expect(LEVELS.low).toEqual([['lo', Infinity]]);
   });
 });

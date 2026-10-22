@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { at as heroAt } from './castle/hero';
 import { FLATS, HALF, LAKE, LOCH, PATHS, cover, heightAt, isWater, noise2, pathAt, shoreAt, slopeAt } from './terrain';
 import { CASTLE_FLOOR, placeById } from '../rules/places';
 
@@ -27,12 +28,18 @@ describe('the grounds’ heights', () => {
     expect(Math.abs(noise2(5.5, 7.25) - noise2(5.5001, 7.25))).toBeLessThan(1e-3);
   });
 
-  it('stand the castle level on its crag, cliffs to the lake below it', () => {
-    expect(heightAt(-6, -46)).toBe(CASTLE_FLOOR);
-    expect(heightAt(-12, 11)).toBe(CASTLE_FLOOR);
-    // (from the cliff’s top over the Great Hall to the water under it, inside fifty metres)
-    expect(heightAt(-12, 30) - heightAt(-12, 80)).toBeGreaterThan(CASTLE_FLOOR - 4);
-    expect(isWater(-12, 120)).toBe(true);
+  it('stand the castle on its own ground, cliffs to the lake below it', () => {
+    const [cx, , cz] = heroAt('courtyard');
+    expect(Math.abs(heightAt(cx, cz) - CASTLE_FLOOR)).toBeLessThan(0.5);
+    // (from the south front’s foot down its cliff, a ledge at a time: twenty-five metres in twenty-six)
+    expect(heightAt(70, -28) - heightAt(70, -2)).toBeGreaterThan(25);
+    expect(isWater(-60, 60)).toBe(true);
+    // (the viaduct comes down on its knoll; the wooden bridge on the stone circle’s, just under its deck)
+    const [vx, vy, vz] = heroAt('viaductTo');
+    expect(Math.abs(heightAt(vx, vz) - vy)).toBeLessThan(0.5);
+    const [bx, by, bz] = heroAt('bridgeTo');
+    expect(heightAt(bx, bz)).toBeLessThan(by);
+    expect(heightAt(bx, bz)).toBeGreaterThan(by - 4);
   });
 
   it('lay the Black Lake along its spine, deep in the middle, a strand at its edge', () => {
@@ -65,8 +72,8 @@ describe('the grounds’ heights', () => {
     expect(cover(...at('forest')).forest).toBeGreaterThan(0.8);
     expect(cover(...at('moor')).moor).toBeGreaterThan(0.5);
     expect(cover(...at('lawn')).lawn).toBeGreaterThan(0.6);
-    expect(slopeAt(-12, 46)).toBeGreaterThan(1);
-    expect(cover(-12, 46).rock).toBeGreaterThan(0.5);
+    expect(slopeAt(70, -17)).toBeGreaterThan(1);
+    expect(cover(70, -17).rock).toBeGreaterThan(0.5);
   });
 
   it('raise the land into hills past the ground’s edge, under the far range', () => {

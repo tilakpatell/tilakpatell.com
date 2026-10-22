@@ -25,6 +25,8 @@
 // below: a share of its height: what is wholly under it cut away (a plinth)
 // ground: a scan's patch of ground cut away round its footprint
 // recolour: { material, bands }: bands of its atlas repainted (a livery)
+// cutAway: [[x0, z0, x1, z1], …]: what stands in these boxes of its cut's
+//   frame (metres, as placed) left out
 
 // the files a cut is written to, by tier: the suffixes of
 // scripts/gen3d/budget.mjs, so one table reads both
@@ -41,6 +43,10 @@ export const HEROES = {
     uid: '8c5af96a404040c8b42ca628a3c7c867',
     // (a voxel model: cut by class, not by its palette strip; scripts/hogwarts-castle.mjs)
     voxel: { step: 0.05 },
+    // (a stray in the voxel scene far out to the north-west, no part of the
+    // castle; and the walled walk out east, which stood on ground the scene
+    // left out and would float over the lawns)
+    cutAway: [[-140, -215, -90, -165], [98, -120, 160, 26]],
     what: 'Hogwarts on its crag, as the films lay it out: the Great Hall’s long roof along the cliff, the Grand Staircase and the round towers under slate cones, the clock tower’s courtyard, the Astronomy Tower highest, the viaduct, the covered bridge, the boathouse and its stair, the greenhouses and the Owlery',
     size: { along: 'z', metres: 398 },
     // (the far cut no lower: every window is a seam the simplifier keeps, and
@@ -111,7 +117,8 @@ export const HEROES = {
     size: { along: 'y', metres: 16 },
     // (its shape only, painted bark by the world: Meshy left it unpainted;
     // its mound of roots cut away, where the lawn will be)
-    bare: [0.34, 0.26, 0.19],
+    // (linear: an old dark bark)
+    bare: [0.1, 0.072, 0.05],
     below: 0.08,
     cuts: { hq: { tris: 100000, tex: 0 }, mid: { tris: 40000, tex: 0 }, lo: { tris: 12000, tex: 0 } },
   },
@@ -206,7 +213,7 @@ export const HEROES = {
     size: { along: 'y', metres: 3.6 },
     // (its shape only: the scan's eleven tiles of photograph would be eleven
     // draws a ring; the world paints it with the cliff's rock)
-    bare: [0.46, 0.45, 0.42],
+    bare: [0.2, 0.19, 0.17],
     // (the patch of field it was scanned standing in, cut away round it)
     ground: true,
     cuts: { mid: { tris: 4000, tex: 0 }, lo: { tris: 1200, tex: 0 } },

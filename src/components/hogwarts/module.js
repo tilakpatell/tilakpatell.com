@@ -107,22 +107,26 @@ const BOUNDS = { x0: -HALF + 12, x1: HALF - 12, z0: -HALF + 12, z1: HALF - 12 };
 // The arrival's lake on the grounds (world/arrival/shots.js's anchors, in
 // this world's frame): the boats from the south shore's strand straight
 // across the Black Lake toward the castle's cliff, in to the boathouse at
-// its foot; the castle on its crag, its middle and the Astronomy Tower's
-// tip (castle/plan.js), the cave mouth beside the boathouse, the lake at 0.
+// the foot of its hill; the castle on its crag, its middle and the
+// Astronomy Tower's tip (castle/hero.js), the boathouse's arch where the
+// look comes down to the water (no cliff of the arrival's own: the hero
+// castle's hill comes down to the boathouse itself), the lake at 0.
 export const ANCHORS_C = {
   route: [
     [38, 440],
     [34, 404],
     [26, 336],
-    [14, 254],
-    [0, 172],
-    [-12, 112],
-    [-20, 76],
+    [12, 254],
+    [-8, 172],
+    [-30, 112],
+    [-48, 76],
+    [-58, 50],
   ],
-  castle: [0, -40],
-  crown: [-82, 152, -86],
-  cave: [-8, 52],
-  middle: [-10, 96, -30],
+  castle: [31, -102],
+  crown: [-54.6, 139.1, -98.4],
+  cave: [-60, 44],
+  cliff: false,
+  middle: [31, 90, -102],
   shore: { jetty: [38, 446], bank: [46, 470] },
   water: 0,
 };

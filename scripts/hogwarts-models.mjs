@@ -19,7 +19,7 @@
 // A Sketchfab download’s credit is read from the model’s page (its
 // title, author and licence), so nothing here is typed by hand.
 
-import { getBounds, metalRough, prune } from '@gltf-transform/functions';
+import { flatten, getBounds, join as joinMeshes, metalRough, prune } from '@gltf-transform/functions';
 import { existsSync } from 'node:fs';
 import { mkdir, readFile, stat, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
@@ -142,6 +142,13 @@ function trimGround(doc, { reach = 1.25, low = 0.45 } = {}) {
   keepTriangles(prims, (ps) => !ps.some((p) => p[1] < cut && Math.hypot(p[0] - cx, p[2] - cz) > r));
 }
 
+// What stands in the boxes, in the placed frame ([x0, z0, x1, z1] metres),
+// let go: a stray of the source's that is no part of the model
+function cutAway(doc, boxes) {
+  const inBox = (x, z) => boxes.some(([a, b, c, d]) => x >= a && x <= c && z >= b && z <= d);
+  keepTriangles(placedPrims(doc), (p) => !inBox((p[0][0] + p[1][0] + p[2][0]) / 3, (p[0][2] + p[1][2] + p[2][2]) / 3));
+}
+
 // the scene’s children under one node that sets the model to its size
 function place(doc, at) {
   const scene = doc.getRoot().getDefaultScene() ?? doc.getRoot().listScenes()[0];
@@ -192,7 +199,11 @@ async function prepared(nio, spec, tier) {
   // (older uploads are specular-glossiness, which three no longer reads)
   await doc.transform(metalRough(), prune());
   if (spec.recolour) await recolour(doc, spec.recolour);
-  if (spec.bare) bare(doc, spec.bare);
+  if (spec.bare) {
+    bare(doc, spec.bare);
+    // (one paint now, so one mesh: a scan's tiles would be a draw each)
+    await doc.transform(flatten(), joinMeshes({ keepNamed: false }));
+  }
   if (spec.ground) trimGround(doc);
   if (spec.below) trimBelow(doc, spec.below);
   await doc.transform(prune());
@@ -208,6 +219,10 @@ async function cut(nio, name) {
   for (const [tier, { tris, tex }] of Object.entries(spec.cuts)) {
     const doc = await prepared(nio, spec, tier);
     place(doc, at);
+    if (spec.cutAway) {
+      cutAway(doc, spec.cutAway);
+      await doc.transform(prune());
+    }
     const { before, after } = await webReady(doc, { tris, tex });
     const file = join(ROOT, 'public', fileOf(name, tier));
     await mkdir(dirname(file), { recursive: true });

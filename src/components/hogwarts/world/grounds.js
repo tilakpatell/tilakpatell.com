@@ -46,6 +46,7 @@ import { createWeather } from './weather';
 import { createAmbience } from './ambience';
 import { chainFor, gradeNode, tierOf } from './hooks';
 import { createCastle } from './castle/castle';
+import { createPlaced } from './placed';
 import { createDoors } from './castle/doors';
 import { floorAt } from './castle/plan';
 
@@ -147,10 +148,12 @@ export async function createGrounds(rt, { scene, camera, tier = 'high', house = 
 
   // the castle near and far, its doors
   since = performance.now();
-  const castle = createCastle({ house, tier, ground: heightAt });
+  // (the castle’s cuts come in through the world’s loader, each mesh into the lake’s mirror as it does)
+  const castle = createCastle({ house, tier, load: (url) => rt.assets.gltf(url), onMesh: (o) => o.layers.enable(REFLECTED) });
   scene.add(castle.group, castle.far);
-  castle.far.layers.enable(REFLECTED);
-  castle.group.traverse((o) => o.isMesh && o.layers.enable(REFLECTED));
+  // the hut, the Willow, the greenhouses, the stone circle and the station, where the films put them
+  const placed = createPlaced({ load: (url) => rt.assets.gltf(url), tier, ground: heightAt, onMesh: (o) => o.layers.enable(REFLECTED) });
+  scene.add(placed.group);
   const doors = createDoors({ materials: castle.materials, ground: heightAt });
   scene.add(doors.group);
   mark('castle', since);
@@ -294,7 +297,7 @@ export async function createGrounds(rt, { scene, camera, tier = 'high', house = 
       // (a deck or a stair’s step near your height is what you stand on, over the ground or cut into it)
       return floorAt(castle.floors, x, z, y) ?? g;
     },
-    colliders: () => [...castle.colliders, ...doors.colliders()],
+    colliders: () => [...castle.colliders, ...placed.colliders, ...doors.colliders()],
     // (before the frame’s chain draws: the lake’s mirror, on high)
     beforeDraw(renderer) {
       lake.reflect(renderer ?? rt?.gfx?.renderer, scene, camera);
@@ -354,6 +357,7 @@ export async function createGrounds(rt, { scene, camera, tier = 'high', house = 
       nearMat.dispose();
       maps.dispose();
       castle.dispose();
+      placed.dispose();
       doors.dispose();
       lake.dispose();
       sky.dispose();

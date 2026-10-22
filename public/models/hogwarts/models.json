@@ -109,9 +109,9 @@
     "group": "castle",
     "what": "Hogwarts on its crag, as the films lay it out: the Great Hall’s long roof along the cliff, the Grand Staircase and the round towers under slate cones, the clock tower’s courtyard, the Astronomy Tower highest, the viaduct, the covered bridge, the boathouse and its stair, the greenhouses and the Owlery",
     "size": [
-      294.65,
+      278.4,
       150.34,
-      398
+      364.33
     ],
     "made": "sketchfab",
     "by": "Jzax",
@@ -119,23 +119,23 @@
     "cuts": {
       "ultra": {
         "file": "/models/hogwarts/castle/castle.ultra.glb",
-        "tris": 302136,
-        "bytes": 1060292
+        "tris": 285812,
+        "bytes": 1003864
       },
       "hq": {
         "file": "/models/hogwarts/castle/castle.hq.glb",
-        "tris": 159744,
-        "bytes": 618776
+        "tris": 151583,
+        "bytes": 587108
       },
       "mid": {
         "file": "/models/hogwarts/castle/castle.glb",
-        "tris": 69997,
-        "bytes": 311780
+        "tris": 66009,
+        "bytes": 294308
       },
       "lo": {
         "file": "/models/hogwarts/castle/castle.lo.glb",
-        "tris": 40759,
-        "bytes": 199412
+        "tris": 38043,
+        "bytes": 186624
       }
     }
   },
@@ -349,8 +349,8 @@
     "group": "props",
     "what": "a standing stone, scanned from a real one; a ring of them, each turned and sized its own way, is the stone circle at the far end of the covered bridge",
     "size": [
-      1.88,
-      3.59,
+      1.89,
+      3.58,
       1.89
     ],
     "made": "sketchfab",
@@ -359,13 +359,13 @@
     "cuts": {
       "mid": {
         "file": "/models/hogwarts/props/standing-stone.glb",
-        "tris": 3979,
-        "bytes": 31896
+        "tris": 3994,
+        "bytes": 17080
       },
       "lo": {
         "file": "/models/hogwarts/props/standing-stone.lo.glb",
-        "tris": 1191,
-        "bytes": 18316
+        "tris": 1197,
+        "bytes": 6972
       }
     }
   },

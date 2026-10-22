@@ -31,27 +31,27 @@ export const HALF = GROUND / 2;
 export const CASTLE_FLOOR = 44; // m over the lake: the crag’s top, the castle’s ground floor
 
 const E = Math.PI / 2; // (a door facing east opens toward +x)
-const W = -Math.PI / 2;
 const N = Math.PI;
 const S = 0;
 
 export const PLACES = [
-  // the castle and its doors
-  { id: 'castle', name: 'Hogwarts Castle', kind: 'castle', at: [-6, -40], r: 140, y: CASTLE_FLOOR },
-  { id: 'great-doors', name: 'The great doors', kind: 'door', at: [53, 8], r: 6, y: CASTLE_FLOOR, door: 'The Great Hall', room: 'greatHall', faces: E },
-  { id: 'great-hall', name: 'The Great Hall', kind: 'castle', at: [-12, 11], r: 30, y: CASTLE_FLOOR },
-  { id: 'staircase', name: 'The Grand Staircase', kind: 'castle', at: [2, -24], r: 14, y: CASTLE_FLOOR },
-  { id: 'courtyard', name: 'The courtyard', kind: 'castle', at: [44, -52], r: 18, y: CASTLE_FLOOR },
-  { id: 'courtyard-door', name: 'The courtyard door', kind: 'door', at: [16, -24], r: 5, y: CASTLE_FLOOR, door: 'The Grand Staircase', room: 'staircase', faces: E },
-  { id: 'clock-tower', name: 'The clock tower', kind: 'castle', at: [74, -40], r: 10, y: CASTLE_FLOOR },
-  { id: 'astronomy-tower', name: 'The Astronomy Tower', kind: 'castle', at: [-82, -86], r: 10, y: CASTLE_FLOOR },
-  { id: 'viaduct', name: 'The viaduct', kind: 'castle', at: [140, -174], r: 30 },
-  { id: 'viaduct-gate', name: 'The viaduct gate', kind: 'door', at: [61, -113], r: 5, y: CASTLE_FLOOR, door: 'The viaduct', faces: N - E / 2 },
-  { id: 'covered-bridge', name: 'The covered bridge', kind: 'castle', at: [-160, -70], r: 30 },
-  { id: 'bridge-gate', name: 'The bridge’s gate', kind: 'door', at: [-114, -59], r: 5, y: CASTLE_FLOOR, door: 'The covered bridge', faces: W },
-  { id: 'boathouse', name: 'The boathouse', kind: 'door', at: [-25, 46], r: 8, y: 1.2, door: 'The boathouse', room: 'boathouse', faces: N },
-  { id: 'boathouse-stair', name: 'The boathouse steps', kind: 'castle', at: [-12, 43], r: 12 },
-  { id: 'owlery', name: 'The Owlery', kind: 'door', at: [-30, -261], r: 6, y: 50, door: 'The Owlery', room: 'owlery', faces: S },
+  // the castle and its doors: where the hero castle has them (world/castle/hero.js’s
+  // ANCHORS in the world’s frame; hero.test.js holds these to them)
+  { id: 'castle', name: 'Hogwarts Castle', kind: 'castle', at: [31, -102], r: 150, y: CASTLE_FLOOR },
+  { id: 'great-doors', name: 'The great doors', kind: 'door', at: [-54.6, -81.4], r: 6, y: CASTLE_FLOOR, door: 'The Great Hall', room: 'greatHall', faces: S },
+  { id: 'great-hall', name: 'The Great Hall', kind: 'castle', at: [-88.7, -108.3], r: 30, y: CASTLE_FLOOR },
+  { id: 'staircase', name: 'The Grand Staircase', kind: 'castle', at: [30.5, -115.4], r: 14, y: CASTLE_FLOOR },
+  { id: 'courtyard', name: 'The courtyard', kind: 'castle', at: [49.3, -106.5], r: 18, y: CASTLE_FLOOR },
+  { id: 'courtyard-door', name: 'The courtyard door', kind: 'door', at: [42.2, -102], r: 5, y: CASTLE_FLOOR, door: 'The Grand Staircase', room: 'staircase', faces: E },
+  { id: 'clock-tower', name: 'The clock tower', kind: 'castle', at: [78, -70.6], r: 10, y: CASTLE_FLOOR },
+  { id: 'astronomy-tower', name: 'The Astronomy Tower', kind: 'castle', at: [-54.6, -98.4], r: 10, y: CASTLE_FLOOR },
+  { id: 'viaduct', name: 'The viaduct', kind: 'castle', at: [-12, -35], r: 30 },
+  { id: 'viaduct-gate', name: 'The viaduct gate', kind: 'door', at: [-43, -67.1], r: 5, y: CASTLE_FLOOR, door: 'The viaduct', faces: S + E / 2 },
+  { id: 'covered-bridge', name: 'The covered bridge', kind: 'castle', at: [-36.7, -234], r: 30 },
+  { id: 'bridge-gate', name: 'The bridge’s gate', kind: 'door', at: [-36.7, -205.1], r: 5, y: CASTLE_FLOOR, door: 'The covered bridge', faces: N },
+  { id: 'boathouse', name: 'The boathouse', kind: 'door', at: [-60, 29.7], r: 8, y: 1.2, door: 'The boathouse', room: 'boathouse', faces: N },
+  { id: 'boathouse-stair', name: 'The boathouse steps', kind: 'castle', at: [-63, -15], r: 14 },
+  { id: 'owlery', name: 'The Owlery', kind: 'door', at: [26.9, -264], r: 6, y: 85, door: 'The Owlery', room: 'owlery', faces: S },
   // the grounds
   { id: 'lawn', name: 'The lawn', kind: 'grounds', at: [165, -30], r: 70 },
   { id: 'greenhouses', name: 'The greenhouses', kind: 'grounds', at: [150, 42], r: 30 },
@@ -62,7 +62,8 @@ export const PLACES = [
   { id: 'paddock', name: 'The paddock', kind: 'grounds', at: [-284, -248], r: 18 },
   { id: 'pitch', name: 'The Quidditch pitch', kind: 'grounds', at: [300, -50], r: 95 },
   { id: 'changing-rooms', name: 'The changing rooms', kind: 'grounds', at: [300, 40], r: 10 },
-  { id: 'stone-circle', name: 'The stone circle', kind: 'grounds', at: [-225, -82], r: 18 },
+  // (at the wooden bridge’s far end, on its knoll, as the films have it)
+  { id: 'stone-circle', name: 'The stone circle', kind: 'grounds', at: [-40, -282], r: 18 },
   // the lake
   { id: 'lake', name: 'The Black Lake', kind: 'lake', at: [-60, 250], r: 260 },
   { id: 'shore', name: 'The south shore', kind: 'lake', at: [30, 445], r: 40 },

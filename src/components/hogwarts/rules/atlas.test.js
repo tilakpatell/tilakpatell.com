@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { placeById } from './places';
 import { AREAS, BOUNDS, CASTLE, LABELS, LOCH, ROOMS, corridors, inLake, lakeOutline, project, trees, unproject, village } from './atlas';
 import { SPOTS } from './paths';
 
@@ -34,9 +35,10 @@ describe('the Map’s ink', () => {
   });
 
   it('stands every part of the castle on its rock, and every spot inside the Map', () => {
+    const [cx, cz] = placeById('castle').at;
     for (const p of CASTLE) {
       const at = p.at ?? p.from;
-      expect(Math.hypot(at[0] + 6, at[1] + 46), JSON.stringify(p)).toBeLessThan(260);
+      expect(Math.hypot(at[0] - cx, at[1] - cz), JSON.stringify(p)).toBeLessThan(240);
     }
     for (const s of SPOTS) {
       expect(s.at[0]).toBeGreaterThan(BOUNDS[0]);

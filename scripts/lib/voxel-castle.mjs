@@ -165,3 +165,133 @@ export function findWindows(verts, tris, cls, names, { most = 96, step = 1, wide
   for (let t = 0; t < n; t++) if (out[t] === W && !upright(t)) out[t] = S;
   return out;
 }
+
+// The ground a castle needs under it, as a grid of cells (`cell` metres,
+// over [x0, x1) × [z0, z1)), each with the height its ground must stand at:
+// where the cell has a level floor of the castle's near its floor (a court's
+// lawn, a terrace's paving: up to `over` above it), the lowest such (a
+// wall's top is level too, and higher), so the walk stands on what is
+// drawn; else the lowest foot of the castle
+// within `reach` cells (so a hall, which has walls and a roof but no floor,
+// stands on its walls' feet), the feet of piers that go down past
+// `floor - under` left out (they stand in a gorge). What has nothing of the
+// castle over it is not the castle's. `tris` are flat [x, y, z] × 3 a
+// triangle. → { cell, x0, z0, w, h, on: Uint8Array, y: Float32Array,
+// solid: Uint8Array (1 where the cell has no floor: inside a building, or
+// in a wall; what the walk goes round) }
+export function footprintGrid(tris, { cell = 2, floor, under = 12, over = 6, reach = 6, bounds }) {
+  const [x0, z0, x1, z1] = bounds;
+  const w = Math.ceil((x1 - x0) / cell);
+  const h = Math.ceil((z1 - z0) / cell);
+  const any = new Uint8Array(w * h);
+  const foot = new Float32Array(w * h).fill(Infinity);
+  const level = new Float32Array(w * h).fill(Infinity);
+  for (let t = 0; t < tris.length; t += 9) {
+    // (a level face looking up, whose cells it lies over take it as a floor)
+    const ux = tris[t + 3] - tris[t];
+    const uy = tris[t + 4] - tris[t + 1];
+    const uz = tris[t + 5] - tris[t + 2];
+    const vx = tris[t + 6] - tris[t];
+    const vy = tris[t + 7] - tris[t + 1];
+    const vz = tris[t + 8] - tris[t + 2];
+    const ny = uz * vx - ux * vz;
+    const nl = Math.hypot(uy * vz - uz * vy, ny, ux * vy - uy * vx);
+    const flat = nl > 0 && ny / nl > 0.98;
+    let ylo = Infinity;
+    let a = Infinity;
+    let b = -Infinity;
+    let c = Infinity;
+    let d = -Infinity;
+    for (let k = 0; k < 9; k += 3) {
+      ylo = Math.min(ylo, tris[t + k + 1]);
+      a = Math.min(a, tris[t + k]);
+      b = Math.max(b, tris[t + k]);
+      c = Math.min(c, tris[t + k + 2]);
+      d = Math.max(d, tris[t + k + 2]);
+    }
+    const i0 = Math.max(0, Math.floor((a - x0) / cell));
+    const i1 = Math.min(w - 1, Math.floor((b - x0) / cell));
+    const j0 = Math.max(0, Math.floor((c - z0) / cell));
+    const j1 = Math.min(h - 1, Math.floor((d - z0) / cell));
+    const floorLike = flat && ylo >= floor - under && ylo <= floor + over;
+    for (let j = j0; j <= j1; j++)
+      for (let i = i0; i <= i1; i++) {
+        any[j * w + i] = 1;
+        if (ylo >= floor - under) foot[j * w + i] = Math.min(foot[j * w + i], ylo);
+        if (floorLike) level[j * w + i] = Math.min(level[j * w + i], ylo);
+      }
+  }
+  const on = new Uint8Array(w * h);
+  const y = new Float32Array(w * h);
+  const solid = new Uint8Array(w * h);
+  for (let j = 0; j < h; j++)
+    for (let i = 0; i < w; i++) {
+      if (!any[j * w + i]) continue;
+      let low = Infinity;
+      for (let b = -reach; b <= reach; b++)
+        for (let a = -reach; a <= reach; a++) {
+          const x = i + a;
+          const z = j + b;
+          if (x >= 0 && z >= 0 && x < w && z < h) low = Math.min(low, foot[z * w + x]);
+        }
+      if (low === Infinity && level[j * w + i] === Infinity) continue;
+      on[j * w + i] = 1;
+      y[j * w + i] = level[j * w + i] < Infinity ? level[j * w + i] : low;
+      solid[j * w + i] = level[j * w + i] < Infinity ? 0 : 1;
+    }
+  return { cell, x0, z0, w, h, on, y, solid };
+}
+
+// A grid opened by `r` cells (shrunk then grown back): what is narrower
+// than 2r + 1 cells (a viaduct, a bridge, a wall walk) goes, the rest keeps
+// its shape. Square neighbourhoods, so corners stay square.
+export function opened({ w, h, on, ...rest }, r) {
+  // (the heights ride along: a cell kept keeps its own)
+  const pass = (src, keep) => {
+    const out = new Uint8Array(w * h);
+    for (let j = 0; j < h; j++)
+      for (let i = 0; i < w; i++) {
+        let all = true;
+        let any = false;
+        for (let b = -r; b <= r; b++)
+          for (let a = -r; a <= r; a++) {
+            const x = i + a;
+            const y = j + b;
+            const v = x >= 0 && y >= 0 && x < w && y < h ? src[y * w + x] : 0;
+            all &&= v === 1;
+            any ||= v === 1;
+          }
+        out[j * w + i] = keep === 'all' ? (all ? 1 : 0) : any ? 1 : 0;
+      }
+    return out;
+  };
+  return { w, h, ...rest, on: pass(pass(on, 'all'), 'any') };
+}
+
+// A grid covered by rectangles, greedily (the widest run first, grown down
+// while the rows below match), each at one height and of one kind: the
+// cells' heights rounded to `step` metres, a rectangle never spanning two,
+// nor floor and solid. → [[x0, z0, x1, z1, y, solid], …] in metres
+export function rectangles({ cell, x0, z0, w, h, on, y = null, solid = null }, { step = 1 } = {}) {
+  const left = Uint8Array.from(on);
+  // (a level and a kind in one number, solid ones apart by a kilometre)
+  const level = (k) => (y ? Math.round(y[k] / step) * step : 0) + (solid?.[k] ? 1000 : 0);
+  const out = [];
+  for (let j = 0; j < h; j++)
+    for (let i = 0; i < w; i++) {
+      if (!left[j * w + i]) continue;
+      const lv = level(j * w + i);
+      const same = (k) => left[k] && level(k) === lv;
+      let i1 = i;
+      while (i1 + 1 < w && same(j * w + i1 + 1)) i1++;
+      let j1 = j;
+      const full = (z) => {
+        for (let x = i; x <= i1; x++) if (!same(z * w + x)) return false;
+        return true;
+      };
+      while (j1 + 1 < h && full(j1 + 1)) j1++;
+      for (let z = j; z <= j1; z++) for (let x = i; x <= i1; x++) left[z * w + x] = 0;
+      out.push([x0 + i * cell, z0 + j * cell, x0 + (i1 + 1) * cell, z0 + (j1 + 1) * cell, lv >= 1000 - 1e-6 ? lv - 1000 : lv, lv >= 1000 - 1e-6 ? 1 : 0]);
+    }
+  return out;
+}

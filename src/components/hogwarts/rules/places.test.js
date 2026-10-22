@@ -35,15 +35,22 @@ describe('the places', () => {
     expect(heightAt(...placeById('lake').at)).toBeLessThan(-5);
   });
 
-  it('put the castle’s doors on its floor, and the castle on its crag', () => {
-    expect(heightAt(...placeById('castle').at)).toBeCloseTo(CASTLE_FLOOR, 0);
-    for (const id of ['great-hall', 'staircase', 'courtyard', 'clock-tower', 'astronomy-tower']) expect(heightAt(...placeById(id).at)).toBeCloseTo(CASTLE_FLOOR, 0);
+  it('put the castle’s places on its ground, its courtyard on its floor', () => {
+    // (a hall has no floor of the castle’s own: its ground is its walls’ feet, a few metres down)
+    for (const id of ['castle', 'great-hall', 'staircase', 'courtyard', 'clock-tower', 'astronomy-tower', 'great-doors']) {
+      const h = heightAt(...placeById(id).at);
+      expect(h, id).toBeGreaterThan(CASTLE_FLOOR - 9);
+      expect(h, id).toBeLessThan(CASTLE_FLOOR + 1);
+    }
+    expect(Math.abs(heightAt(...placeById('courtyard').at) - CASTLE_FLOOR)).toBeLessThan(0.5);
   });
 
   it('finds the place you stand in, the smallest first, and the nearest of a kind', () => {
     const [x, z] = placeById('great-doors').at;
     expect(placeAt(x, z).id).toBe('great-doors');
-    expect(placeAt(0, -40).id).toBe('castle');
+    // (inside the castle, clear of its smaller places: its middle, out north)
+    const [cx, cz] = placeById('castle').at;
+    expect(placeAt(cx, cz - 48).id).toBe('castle');
     expect(placeAt(9999, 9999)).toBeNull();
     expect(nearest(x + 2, z, { kind: 'door' }).id).toBe('great-doors');
     expect(nearest(x + 200, z + 200, { kind: 'door' })).toBeNull();

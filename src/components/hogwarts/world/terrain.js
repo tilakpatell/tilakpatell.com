@@ -9,13 +9,17 @@
 //                past under the castle’s cliff and up its arm to the
 //                north-east, its shore ragged, a strand at the edge, the
 //                bed falling away under it
-//   the knolls   the stone circle’s on the lake’s north shore west of the
-//                castle, the Owlery’s north of it
-//   the cuts     the ravine the viaduct crosses, and the glen the road runs
-//                down from it to the station at the arm’s head
-//   the crag     the castle’s plateau, level at CASTLE_FLOOR, cliffs to the
-//                lake on the south and west, its shoulder falling gently
-//                east to the lawns and north to the Willow’s slope
+//   the knolls   the stone circle’s at the wooden bridge’s far end and the
+//                Owlery’s beside it, north of the castle; and the spur the
+//                crag runs out along to where the viaduct comes down
+//   the cuts     the gorge under the viaduct, and the glen the road runs
+//                down to the station at the arm’s head
+//   the crag     the hero castle’s own ground (castle/hero.js), each part
+//                at its level (the courts at CASTLE_FLOOR, the north wing on
+//                its terrace, the Owlery on its rock), cliffs in ledges to
+//                the lake and the gorges on the south and west, its shoulder
+//                falling gently east to the lawns and north to the Willow’s
+//                slope; and then the gorge under the viaduct cut through it
 //   the flats    levelled ground where something stands: the pitch, the
 //                greenhouses, the hut, the boathouse’s ledge, the station’s
 //                platform, the willow, Hogsmeade’s field (Lane F’s)
@@ -30,7 +34,8 @@
 //   slopeAt(x, z) → rise over run
 //   LAKE, LOCH (the spine), FLATS, SKIRT (how far past the ground’s edge the land is drawn)
 
-import { CASTLE_FLOOR, HALF, placeById } from '../rules/places';
+import { HALF, placeById } from '../rules/places';
+import { at as heroAt, groundAt } from './castle/hero';
 
 export const LAKE = 0;
 export { HALF }; // (the ground’s half-width, rules/places.js’s: the land is laid out over it)
@@ -61,15 +66,15 @@ export const LOCH = [
 // circle down to the hut, the Owlery’s path, the forest path, and the road
 // from the viaduct’s end down the glen to the station and on to Hogsmeade.
 export const PATHS = [
-  { id: 'lawn', width: 3.2, points: [[66, -8], [96, -10], [130, -18], [170, -30], [215, -42], [252, -48]] },
+  { id: 'lawn', width: 3.2, points: [[19, -3], [66, -8], [96, -10], [130, -18], [170, -30], [215, -42], [252, -48]] },
   { id: 'greenhouses', width: 2.4, points: [[130, -18], [140, 0], [148, 18], [150, 26]] },
   { id: 'pitch-south', width: 2.4, points: [[215, -42], [250, -4], [292, 34]] },
-  { id: 'willow', width: 2.6, points: [[-60, -128], [-96, -150], [-128, -166], [-170, -196], [-212, -218], [-242, -228]] },
-  { id: 'circle', width: 2.2, points: [[-232, -100], [-248, -140], [-252, -186], [-250, -222]] },
-  { id: 'owlery', width: 2, points: [[-40, -128], [-36, -170], [-32, -214], [-30, -252]] },
+  { id: 'willow', width: 2.6, points: [[-104, -132], [-118, -152], [-140, -170], [-170, -196], [-212, -218], [-242, -228]] },
+  { id: 'circle', width: 2.2, points: [[-58, -284], [-110, -276], [-170, -258], [-222, -240], [-248, -232]] },
+  { id: 'owlery', width: 2, points: [[-10, -196], [2, -224], [14, -248], [24, -262]] },
   { id: 'forest', width: 2, points: [[-262, -232], [-300, -252], [-338, -272], [-382, -300], [-420, -320], [-450, -330]] },
-  { id: 'road', width: 4.2, points: [[214, -228], [262, -268], [318, -312], [384, -354], [448, -400], [506, -438], [536, -470], [572, -524], [612, -572], [646, -604], [664, -620]] },
-  { id: 'castle-north', width: 2.6, points: [[-60, -128], [-30, -128], [10, -122], [60, -116], [96, -106]] },
+  { id: 'road', width: 4.2, points: [[19, -3], [70, -6], [138, -28], [176, -96], [200, -170], [214, -228], [262, -268], [318, -312], [384, -354], [448, -400], [506, -438], [536, -470], [572, -524], [612, -572], [646, -604], [664, -620]] },
+  { id: 'castle-north', width: 2.6, points: [[-104, -132], [-96, -170], [-60, -186], [-10, -196], [40, -186], [96, -176], [140, -150]] },
 ];
 
 // The levelled places: [x, z] or a polygon’s middle, how far round it is
@@ -80,25 +85,35 @@ export const FLATS = [
   { id: 'greenhouses', at: at('greenhouses'), r: 30, ease: 16 },
   { id: 'hut', at: [-254, -238], r: 30, ease: 22 },
   { id: 'willow', at: at('willow'), r: 14, ease: 14 },
-  { id: 'boathouse', at: [-25, 54], r: 11, ease: 7, y: 1.2 },
+  { id: 'boathouse', at: placeById('boathouse').at, r: 9, ease: 6, y: 1.2 },
   { id: 'station', at: [548, -472], rx: 16, rz: 48, turn: -0.42, ease: 16, y: 4.6 },
   { id: 'hogsmeade', at: at('hogsmeade'), r: 66, ease: 30 },
 ];
 
-// the crag: its middle, its radii, its turn, and how far its sides fall
-// (metres) to the south (the cliff over the lake), the west, the north and
-// the east (the lawns’ long slope)
-const CRAG = { at: [-6, -46], rx: 128, rz: 90, turn: 0.12, fall: { s: 16, w: 22, n: 64, e: 150 } };
+// the crag’s sides: the metres of run each takes to fall its height, the
+// south and west to the lake and the gorges in cliffs, the north and east in
+// a long shoulder (castle/hero.js gives the ground and its levels)
+// (the east the shorter shoulder: the lawn level under the castle’s east front, the walls rising over it)
+const FALL = { s: 18, w: 22, n: 60, e: 70 };
+const MIDDLE = placeById('castle').at;
+const [VX, VY, VZ] = heroAt('viaductTo');
 const KNOLLS = [
-  { id: 'stone-circle', at: at('stone-circle'), top: 37, flat: 20, r: 70, stretch: 1.25, turn: 0.4 },
-  { id: 'owlery', at: [-30, -266], top: 50, flat: 9, r: 62, stretch: 1.3, turn: 1.1 },
-  // (the far side of the ravine, where the viaduct comes down: the glen runs on from it)
-  { id: 'viaduct-end', at: [232, -246], top: 38, flat: 14, r: 92, stretch: 1.6, turn: -0.7 },
+  // (the wooden bridge comes down on the stone circle’s, at its deck’s height)
+  { id: 'stone-circle', at: at('stone-circle'), top: heroAt('bridgeTo')[1] - 0.6, flat: 22, r: 92, stretch: 1.2, turn: 0.3 },
+  // (its flank kept off the stone circle’s top, where the bridge comes down)
+  { id: 'owlery', at: [heroAt('owlery')[0], heroAt('owlery')[2]], top: heroAt('owlery')[1], flat: 9, r: 54, stretch: 1.2, turn: 1.1 },
 ];
-// the ravine under the viaduct and the glen below it: a line, the floor’s
-// height at its first and last point, the floor’s half width, the banks’ slope
+// The spurs: ridges the crag runs out along, level-topped and steep-sided
+// (rock, not lawn): the one from the terrace’s south-west corner out to
+// where the viaduct comes down. [x, z] each end, the height there, the
+// top’s half width, the sides’ slope.
+const SPURS = [{ id: 'viaduct-spur', from: [34, -36], to: [VX + 2, VZ + 3], y: [VY + 2, VY], half: 5, bank: 1.7 }];
+// the gorge under the viaduct and the glen the road runs down: a line, the
+// floor’s height at its first and last point, the floor’s half width, the
+// banks’ slope
 const CUTS = [
-  { id: 'ravine', line: [[70, -250], [118, -196], [156, -160], [196, -126], [236, -96]], floor: [24, 10], half: 5, bank: 1.7 },
+  // (under the viaduct, from the lake up between the boathouse’s hill and the castle’s south front)
+  { id: 'gorge', line: [[-6, 52], [-8, 12], [-12, -30], [-16, -56]], floor: [0.5, 16], half: 6, bank: 1.5 },
   { id: 'glen', line: [[214, -228], [318, -312], [448, -400], [530, -462], [560, -500]], floor: [33, 4.2], half: 26, bank: 0.42 },
 ];
 
@@ -289,6 +304,16 @@ function boxOf(line, pad) {
   }
   return b;
 }
+function withSpurs(h, x, z) {
+  for (const p of SPURS) {
+    const { d, t } = toSegment(x, z, p.from[0], p.from[1], p.to[0], p.to[1]);
+    const top = p.y[0] + (p.y[1] - p.y[0]) * t;
+    const ridge = top - Math.max(0, d - p.half) * p.bank + fbm(x / 6, z / 6, 2, 81) * 1.6 * smooth((d - p.half) / 8);
+    if (ridge > h) h = ridge;
+  }
+  return h;
+}
+
 function withCuts(h, x, z) {
   for (const c of CUTS) {
     // (a cut reaches no further than its banks could climb to the moor’s top)
@@ -302,33 +327,32 @@ function withCuts(h, x, z) {
   return h;
 }
 
-// the crag’s top over the land: level within its oval, falling at its own
-// rate on each side, a little rock in its cliffs
+// The crag over the land: the castle’s ground at its levels; past its edge
+// each side falls at its own rate (by the angle from the castle’s middle),
+// the steep sides in ledges, each mostly level, its riser rough rock, so a
+// cliff reads as one from the shore and as stone close to.
+const LEDGE = 5.5; // m a ledge
 function crag(x, z) {
-  const c = Math.cos(CRAG.turn);
-  const s = Math.sin(CRAG.turn);
-  const dx = x - CRAG.at[0];
-  const dz = z - CRAG.at[1];
-  const u = dx * c + dz * s;
-  const v = -dx * s + dz * c;
-  if (Math.abs(u) > CRAG.rx + CRAG.fall.e + 20 || Math.abs(v) > CRAG.rz + CRAG.fall.e + 20) return -Infinity;
-  const q = Math.sqrt((u / CRAG.rx) ** 2 + (v / CRAG.rz) ** 2);
-  const ragged = fbm(x / 40, z / 40, 3, 71) * 0.07;
-  const out = (q - 1 - ragged) * Math.min(CRAG.rx, CRAG.rz); // metres outside its edge, near enough
-  if (out <= 0) return CASTLE_FLOOR;
-  // which side: south (+v), west (−u), north (−v), east (+u), blended by the angle
-  const a = Math.atan2(v, u);
-  const { s: fs, w: fw, n: fn, e: fe } = CRAG.fall;
+  const g = groundAt(x, z);
+  if (!g) return -Infinity;
+  if (g.d === 0) return g.y;
+  const a = Math.atan2(z - MIDDLE[1], x - MIDDLE[0]);
   const k = (ang) => Math.max(0, Math.cos(a - ang)) ** 2;
   const ws = k(Math.PI / 2);
   const ww = k(Math.PI);
   const wn = k(-Math.PI / 2);
   const we = k(0);
-  const fall = (fs * ws + fw * ww + fn * wn + fe * we) / (ws + ww + wn + we || 1);
-  const t = out / fall;
+  const fall = (FALL.s * ws + FALL.w * ww + FALL.n * wn + FALL.e * we) / (ws + ww + wn + we || 1);
+  const t = (g.d / fall) * (1 + fbm(x / 30, z / 30, 3, 71) * 0.18);
   if (t >= 1) return -Infinity;
-  const rock = fall < 40 ? fbm(x / 7, z / 7, 2, 73) * 2.5 * Math.sin(Math.PI * t) : 0;
-  return CASTLE_FLOOR * (1 - smooth(t)) + rock;
+  let drop = smooth(t) * g.y;
+  if (fall < 40) {
+    const q = drop / LEDGE;
+    const i = Math.floor(q);
+    drop = (i + smooth((q - i - 0.55) / 0.45)) * LEDGE;
+  }
+  const rock = fall < 40 ? fbm(x / 7, z / 7, 2, 73) * 2.2 * Math.sin(Math.PI * t) : 0;
+  return g.y - drop + rock;
 }
 
 const FLAT_Y = new Map();
@@ -364,8 +388,10 @@ function shaped(x, z) {
   let h = base(x, z);
   h = withLoch(h, x, z);
   h = withKnolls(h, x, z);
-  h = withCuts(h, x, z);
-  return Math.max(h, crag(x, z));
+  h = withSpurs(h, x, z);
+  // (the gorge cuts the crag’s side too: the viaduct’s piers stand in it)
+  h = Math.max(h, crag(x, z));
+  return withCuts(h, x, z);
 }
 
 export function heightAt(x, z) {

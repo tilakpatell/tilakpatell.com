@@ -26,60 +26,26 @@
 //     view: { cx, cz (the middle, metres), scale (px a metre), w, h (px) }
 
 import { EDGES, spotById } from './paths';
+import { placeById } from './places';
+import { OUTLINE as HERO_OUTLINE } from '../world/castle/hero';
+import { BRIDGES as HERO_BRIDGES } from '../world/castle/plan';
+import { PATHS as TERRAIN_PATHS } from '../world/terrain';
+
+const xz = (p) => [p[0], p[2]];
 import { BUILDINGS, SHACK, VILLAGE, buildingAt, frameAt } from './hogsmeade';
 
 export const BOUNDS = [-720, -720, 760, 720];
 
-const E = Math.PI / 2;
 
-// the castle, part by part (world/castle/plan.js’s footprints)
-export const CASTLE = [
-  { kind: 'box', at: [-12, 11], w: 73, d: 25, name: 'greatHall' },
-  { kind: 'box', at: [37, 8], w: 26, d: 30, name: 'entrance' },
-  { kind: 'ring', at: [-55, 6], r: 8.3 },
-  { kind: 'ring', at: [-61, 26], r: 4.8 },
-  { kind: 'ring', at: [58, 24], r: 6.3 },
-  { kind: 'ring', at: [-14, 34], r: 3.9 },
-  { kind: 'box', at: [2, -24], w: 22, d: 22, name: 'staircase' },
-  { kind: 'ring', at: [-34, -22], r: 7.3, name: 'gryffindor' },
-  { kind: 'box', at: [-74, -12], w: 26, d: 20, name: 'charms' },
-  { kind: 'ring', at: [-94, -32], r: 7.8, name: 'ravenclaw' },
-  { kind: 'box', at: [-40, -60], w: 48, d: 18, name: 'library' },
-  { kind: 'ring', at: [-82, -86], r: 8.8, name: 'astronomy' },
-  { kind: 'box', at: [-38, -96], w: 13, d: 13, name: 'defence' },
-  { kind: 'box', at: [-4, -100], w: 30, d: 16, name: 'requirement' },
-  { kind: 'ring', at: [26, -80], r: 6.8, name: 'headmaster' },
-  { kind: 'box', at: [74, -40], w: 13, d: 13, name: 'clock' },
-  { kind: 'ring', at: [44, -52], r: 4.4, name: 'fountain' },
-  { kind: 'ring', at: [-18, -44], r: 3.5 },
-  { kind: 'ring', at: [16, -44], r: 3.1 },
-  { kind: 'ring', at: [-64, -50], r: 4.3 },
-  { kind: 'ring', at: [-104, -10], r: 3.8 },
-  { kind: 'ring', at: [46, -86], r: 3.3 },
-  { kind: 'ring', at: [-20, -114], r: 3.9 },
-  { kind: 'ring', at: [90, -64], r: 3.3 },
-  { kind: 'wall', from: [-58, 33], to: [-18, 36] },
-  { kind: 'wall', from: [-10, 36], to: [50, 38] },
-  { kind: 'wall', from: [-62, -2], to: [-88, -24] },
-  { kind: 'wall', from: [-98, -40], to: [-110, -54] },
-  { kind: 'wall', from: [-112, -64], to: [-88, -80] },
-  { kind: 'wall', from: [-74, -92], to: [-45, -97] },
-  { kind: 'wall', from: [11, -98], to: [21, -86] },
-  { kind: 'wall', from: [32, -84], to: [56, -108] },
-  { kind: 'wall', from: [70, -110], to: [82, -48] },
-  { kind: 'box', at: [-25, 55], w: 14, d: 9, turn: -E, name: 'boathouse' },
-  { kind: 'ring', at: [-30, -268], r: 5.8, name: 'owlery' },
-  { kind: 'box', at: [128, 41], w: 24, d: 10, turn: -E },
-  { kind: 'box', at: [150, 41], w: 24, d: 10, turn: -E },
-  { kind: 'box', at: [172, 41], w: 24, d: 10, turn: -E },
-];
-
+// the castle, part by part: the hero castle’s ground as boxes (world/castle/hero.js),
+// its bridges, the crag round it and its courtyard
+export const CASTLE = HERO_OUTLINE.map((b) => ({ kind: 'box', at: b.at, w: b.w, d: b.d }));
 export const BRIDGES = [
-  { id: 'viaduct', from: [64, -115], to: [214, -232], width: 5.4 },
-  { id: 'covered', from: [-117, -60], to: [-204, -80], width: 3.6 },
+  { id: 'viaduct', from: xz(HERO_BRIDGES.viaduct.from), to: xz(HERO_BRIDGES.viaduct.to), width: 5.4 },
+  { id: 'covered', from: xz(HERO_BRIDGES.covered.from), to: xz(HERO_BRIDGES.covered.to), width: 3.6 },
 ];
-export const CRAG = { at: [-6, -46], rx: 128, rz: 90, turn: 0.12 };
-export const COURTYARD = { at: [44, -52], r: 18 };
+export const CRAG = { at: placeById('castle').at, rx: 150, rz: 110, turn: 0 };
+export const COURTYARD = { at: placeById('courtyard').at, r: 18 };
 
 // the Black Lake’s spine, west to the north-east arm’s head (world/terrain.js’s LOCH)
 export const LOCH = [
@@ -97,17 +63,8 @@ export const LOCH = [
 ];
 
 // the worn ways (world/terrain.js’s PATHS); the road is the carriages’
-export const PATHS = [
-  { id: 'lawn', width: 3.2, points: [[66, -8], [96, -10], [130, -18], [170, -30], [215, -42], [252, -48]] },
-  { id: 'greenhouses', width: 2.4, points: [[130, -18], [140, 0], [148, 18], [150, 26]] },
-  { id: 'pitch-south', width: 2.4, points: [[215, -42], [250, -4], [292, 34]] },
-  { id: 'willow', width: 2.6, points: [[-60, -128], [-96, -150], [-128, -166], [-170, -196], [-212, -218], [-242, -228]] },
-  { id: 'circle', width: 2.2, points: [[-232, -100], [-248, -140], [-252, -186], [-250, -222]] },
-  { id: 'owlery', width: 2, points: [[-40, -128], [-36, -170], [-32, -214], [-30, -252]] },
-  { id: 'forest', width: 2, points: [[-262, -232], [-300, -252], [-338, -272], [-382, -300], [-420, -320], [-450, -330]] },
-  { id: 'castle-north', width: 2.6, points: [[-60, -128], [-30, -128], [10, -122], [60, -116], [96, -106]] },
-];
-export const ROAD = { id: 'road', width: 4.2, points: [[214, -228], [262, -268], [318, -312], [384, -354], [448, -400], [506, -438], [536, -470], [572, -524], [612, -572], [646, -604], [664, -620]] };
+export const PATHS = TERRAIN_PATHS.filter((p) => p.id !== 'road');
+export const ROAD = TERRAIN_PATHS.find((p) => p.id === 'road');
 
 export const GROUNDS = {
   pitch: { at: [300, -50], rx: 46, rz: 82 },
@@ -115,7 +72,7 @@ export const GROUNDS = {
   paddock: { at: [-284, -248], w: 30, d: 22 },
   pumpkins: { at: [-230, -250], r: 8 },
   willow: { at: [-135, -170], r: 9 },
-  circle: { at: [-225, -82], r: 9, stones: 11 },
+  circle: { at: placeById('stone-circle').at, r: 9, stones: 11 },
   station: { at: [548, -472], w: 16, d: 70, turn: -0.42 },
   endRock: { at: [-150, 150], r: 4 },
 };

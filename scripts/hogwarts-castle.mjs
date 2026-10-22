@@ -14,13 +14,16 @@
 //   node scripts/hogwarts-castle.mjs sheet [tris] [name]   one cut in the
 //     classes' colours to scripts/gen3d/cache/stage/<name>.glb, to look at
 //     before anything is cut for the site
+//   node scripts/hogwarts-castle.mjs ground   the ground the castle needs
+//     under it, read off its cut: src/components/hogwarts/world/castle/heroGround.js
 
 import { getBounds } from '@gltf-transform/functions';
 import { MeshoptSimplifier } from 'meshoptimizer';
 import sharp from 'sharp';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { CLASSES, classOf, compact, findWindows, weldPositions } from './lib/voxel-castle.mjs';
+import { CLASSES, classOf, compact, findWindows, footprintGrid, opened, rectangles, weldPositions } from './lib/voxel-castle.mjs';
+import { writeFile } from 'node:fs/promises';
 
 const ROOT = join(fileURLToPath(new URL('.', import.meta.url)), '..');
 const CACHE = join(ROOT, 'scripts', 'gen3d', 'cache');
@@ -146,4 +149,82 @@ if (process.argv[1] === fileURLToPath(import.meta.url) && process.argv[2] === 's
   const d = await voxelDoc(nio, HEROES.castle, Number(tris));
   console.log(getBounds(d.getRoot().listScenes()[0]));
   await nio.write(join(CACHE, 'stage', `${name}.glb`), d);
+}
+
+// The castle's floor (the height its courts and terraces stand at, the
+// most of its flat stone and lawn between `from` and `to`) and the ground
+// it needs under it: each part on its own feet (a hall on its walls', the
+// north wing on its terrace, the Owlery on its crag), the bridges and the
+// viaduct let go (they span gorges), as rectangles a level each in the
+// cut's frame.
+async function ground(nio, { from = 35, to = 65 } = {}) {
+  const doc = await nio.read(join(ROOT, 'public', 'models', 'hogwarts', 'castle', 'castle.hq.glb'));
+  const tris = [];
+  const flat = new Map();
+  let lo = [Infinity, Infinity];
+  let hi = [-Infinity, -Infinity];
+  for (const node of doc.getRoot().listNodes()) {
+    const mesh = node.getMesh();
+    if (!mesh) continue;
+    const m = node.getWorldMatrix();
+    for (const prim of mesh.listPrimitives()) {
+      const name = prim.getMaterial().getName();
+      if (name === 'rock') continue; // (the boathouse's hill is ground of its own, down to the water)
+      const pos = prim.getAttribute('POSITION');
+      const idx = prim.getIndices().getArray();
+      const v = [0, 0, 0];
+      const at = (i) => (pos.getElement(i, v), [m[0] * v[0] + m[4] * v[1] + m[8] * v[2] + m[12], m[1] * v[0] + m[5] * v[1] + m[9] * v[2] + m[13], m[2] * v[0] + m[6] * v[1] + m[10] * v[2] + m[14]]);
+      for (let t = 0; t < idx.length; t += 3) {
+        const [a, b, c] = [at(idx[t]), at(idx[t + 1]), at(idx[t + 2])];
+        tris.push(...a, ...b, ...c);
+        for (const p of [a, b, c]) {
+          lo = [Math.min(lo[0], p[0]), Math.min(lo[1], p[2])];
+          hi = [Math.max(hi[0], p[0]), Math.max(hi[1], p[2])];
+        }
+        // (an upward face's area, by its height to the decimetre)
+        const n = [(b[1] - a[1]) * (c[2] - a[2]) - (b[2] - a[2]) * (c[1] - a[1]), (b[2] - a[2]) * (c[0] - a[0]) - (b[0] - a[0]) * (c[2] - a[2]), (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0])];
+        const len = Math.hypot(...n);
+        if (len > 0 && n[1] / len > 0.98 && a[1] > from && a[1] < to && (name === 'stone' || name === 'grass' || name === 'earth')) {
+          const y = Math.round(a[1] * 10) / 10;
+          flat.set(y, (flat.get(y) ?? 0) + len / 2);
+        }
+      }
+    }
+  }
+  const floor = [...flat].sort((a, b) => b[1] - a[1])[0][0];
+  const grid = opened(footprintGrid(Float32Array.from(tris), { cell: 2, floor, bounds: [lo[0] - 4, lo[1] - 4, hi[0] + 4, hi[1] + 4] }), 3);
+  const rects = rectangles(grid, { step: 1 }).map((r) => r.map((v) => Math.round(v)));
+  const out = join(ROOT, 'src', 'components', 'hogwarts', 'world', 'castle', 'heroGround.js');
+  // (eight a line: the file stays a hundred lines however many there are)
+  const rows = [];
+  for (let i = 0; i < rects.length; i += 8) rows.push(`  ${rects.slice(i, i + 8).map((r) => `[${r.join(', ')}]`).join(', ')},`);
+  await writeFile(
+    out,
+    `// The ground the hero castle needs under it, in its cut's frame (metres:
+// public/models/hogwarts/castle/castle.glb as cut, its footprint's middle
+// on the origin, its foot on y = 0, +z toward the boathouse), read off the
+// cut by scripts/hogwarts-castle.mjs ground: written by it, not by hand.
+//
+//   FLOOR: the height its courts and terraces stand at
+//   CELL: the grid the rectangles were read off, metres
+//   GROUND: [[x0, z0, x1, z1, y, solid], …]: the ground each part stands
+//     on (a court on its lawn, a hall on its walls' feet, the north wing on
+//     its terrace, the Owlery on its crag; its bridges and its viaduct left
+//     out: they span gorges), as rectangles, each at its height; solid (1)
+//     where there is no floor to walk, inside a building or a wall
+
+export const FLOOR = ${floor};
+export const CELL = 2;
+
+export const GROUND = [
+${rows.join('\n')}
+];
+`,
+  );
+  console.log(`floor ${floor} m; ${rects.length} rectangles → ${out}`);
+}
+
+if (process.argv[1] === fileURLToPath(import.meta.url) && process.argv[2] === 'ground') {
+  const { io } = await import('./gen3d/web.mjs');
+  await ground(await io());
 }

@@ -2,6 +2,7 @@ import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useSta
 import { MiniMap, minimapSize } from '../../../runtime/hud';
 import { SCALES, createTrails, drawInk, drawLife, drawPaper, placeName } from './mapInk';
 import { BOUNDS, unproject } from '../rules/atlas';
+import { placeById } from '../rules/places';
 import './map.css';
 
 // The Marauder’s Map (the design’s §4.8): the world’s minimap, the kit’s
@@ -25,7 +26,7 @@ const SHUT = 'Mischief managed';
 const TIMES = { words: 1.25, bloom: 1.3, managed: 1.1 }; // s
 const ZOOM = [0.3, 4.5]; // px a metre, the Map’s widest and closest
 const GROUNDS_MIDDLE = [40, -60]; // (the castle a little left of the middle, the village in the top corner)
-const CASTLE_MIDDLE = [-6, -34];
+const CASTLE_MIDDLE = placeById('castle').at;
 const IN_CASTLE = 150; // m from the castle’s middle: the Map opens on the castle’s plan, else on the grounds round you
 
 // the view the Map opens on, from where you are
