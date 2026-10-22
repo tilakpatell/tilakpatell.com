@@ -7,6 +7,7 @@ import { HOME_RADIUS, ORDER, POSITIONS, REACH, SECTORS, SUN, sectorOf } from './
 
 const inMain = (at) => sectorOf(...at) === 'main';
 import { byId } from './universes';
+import { SPREAD } from './scale';
 import { ENTRY, LANDABLE, airTop } from './entry';
 import { sunFor } from './lighting';
 
@@ -798,6 +799,9 @@ describe('where a new ship starts', () => {
 // (the autopilot's trips are minutes of flight since the spread, scale.js's
 // SPREAD, flown at 60 steps a second: more than vitest's 5 s under load)
 const LONG = 60000;
+// (and their time limits were set at the spread to six: at the same drive the
+// trips are that much longer now)
+const WIDER = SPREAD / 6;
 
 describe('clearPark', () => {
   const park = { x: 10, y: 0, z: 0, heading: 1 };
@@ -858,7 +862,7 @@ describe('autopilot', () => {
       const park = parkAt(id, [s.x, s.z]);
       let done = false;
       let bumps = 0;
-      for (let t = 0; t < 150 && !done; t += 1 / 60) {
+      for (let t = 0; t < 150 * WIDER && !done; t += 1 / 60) {
         const a = autopilot(s, id, park);
         done = a.done;
         const r = step(s, a.input, 1 / 60);
@@ -877,7 +881,7 @@ describe('autopilot', () => {
         let s = { ...spawn(null), y };
         const park = parkAt(id, [s.x, s.z]);
         let done = false;
-        for (let t = 0; t < 150 && !done; t += 1 / 60) {
+        for (let t = 0; t < 150 * WIDER && !done; t += 1 / 60) {
           const a = autopilot(s, id, park);
           done = a.done;
           s = step(s, a.input, 1 / 60).ship;
@@ -914,7 +918,7 @@ describe('autopilot', () => {
     for (const w of WONDERS) {
       const o = SECTORS.rickmorty.origin;
       const from = inMain(w.at) ? spawn(ORDER[0]) : { ...spawn(null), ...parkAt(w.id === 'citadel' ? 'curvesun' : 'citadel', [o[0], o[2] + 500]), speed: 0 };
-      const { s, top } = trip(from, w.id, 200);
+      const { s, top } = trip(from, w.id, 200 * WIDER);
       expect(top, w.id).toBeGreaterThan(SHIP.boost * 2); // on the pulse drive out there
       const g = GOALS[w.id];
       const d = Math.hypot(s.x - g.at[0], s.z - g.at[2]);
@@ -925,7 +929,7 @@ describe('autopilot', () => {
     // and home again from the furthest, at the home system's speeds by the end
     const far = WONDERS.filter((w) => inMain(w.at)).reduce((a, b) => (Math.hypot(a.at[0], a.at[2]) > Math.hypot(b.at[0], b.at[2]) ? a : b));
     const there = { ...spawn(null), ...parkAt(far.id), speed: 0 };
-    const back = trip(there, ORDER[0], 200);
+    const back = trip(there, ORDER[0], 200 * WIDER);
     expect(orbiting(back.s, null)).toBe(ORDER[0]);
   }, LONG);
 
@@ -934,7 +938,7 @@ describe('autopilot', () => {
       let s = { ...spawn(null), pitch: -1.2, bank: Math.PI - 0.2, speed: SHIP.cruise };
       const park = parkAt(id, [s.x, s.z]);
       let done = false;
-      for (let t = 0; t < 150 && !done; t += 1 / 60) {
+      for (let t = 0; t < 150 * WIDER && !done; t += 1 / 60) {
         const a = autopilot(s, id, park);
         done = a.done;
         s = step(s, a.input, 1 / 60).ship;
@@ -959,7 +963,7 @@ describe('autopilot', () => {
       const park = parkAt(id, [s.x, s.z]);
       let done = false;
       // (the longest leg, from the Caribbean out to Invincible at the end of the spiral, takes the best part of 225 seconds of free flight on the map spread to six, scale.js's SPREAD: the jump, nav.js, is the quick way)
-      for (let t = 0; t < 255 && !done; t += 1 / 60) {
+      for (let t = 0; t < 255 * WIDER && !done; t += 1 / 60) {
         const a = autopilot(s, id, park);
         done = a.done;
         s = step(s, a.input, 1 / 60).ship;
@@ -1019,7 +1023,7 @@ describe('open space', () => {
       const park = parkAt(id, [s.x, s.z]);
       let done = false;
       let bumps = 0;
-      for (let t = 0; t < 150 && !done; t += 1 / 60) {
+      for (let t = 0; t < 150 * WIDER && !done; t += 1 / 60) {
         const a = autopilot(s, id, park, OPEN_SPACE);
         done = a.done;
         const r = step(s, a.input, 1 / 60, SOLIDS, OPEN_SPACE);

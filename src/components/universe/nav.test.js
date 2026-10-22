@@ -2,6 +2,11 @@ import { describe, expect, it } from 'vitest';
 import { CHART_VIEWS, DESTINATIONS, DRIVES, HYPER, KINDS, TRANSIT, chartAt, legOf, portalBetween, tourIdsIn, viewFor, chartHeading, destinationById, distanceTo, findDestinations, formatDistance, formatTime, shortDistance, hyperState, onChart, findDestination, goalOf, parkFor, parseDrive, riftExit, riftSpot, tourFrom, tripTime, TOUR_IDS } from './nav';
 import { GOALS, OVERDRIVE, SHIP, SOLIDS, autopilot, inTrench, orbiting, parkAt, spawn, startAt, step } from './ship';
 import { ORDER, SECTORS, sectorOf } from './layout';
+import { SPREAD } from './scale';
+
+// (the trips' time limits were set at the spread to six, scale.js's SPREAD:
+// at the same drive the trips are that much longer now)
+const WIDER = SPREAD / 6;
 import { portalHit, transit } from './portals';
 import { WONDERS } from './deep';
 import { MAW } from './maw';
@@ -19,7 +24,7 @@ const startFor = (id) => (inMain(id) ? spawn('home') : { ...spawn(null), ...park
 
 // flown there by the autopilot on `od` of overdrive: how long it took, the
 // top speed, and anything it hit or went into on the way
-function fly(from, id, od, limit = 120) {
+function fly(from, id, od, limit = 120 * WIDER) {
   let s = from;
   const park = parkFor(id, [s.x, s.z]);
   let top = 0;
@@ -117,7 +122,7 @@ describe('the drives', () => {
       expect(quick.hits, id).toBe(0);
       expect(orbiting(quick.s, null), id).toBe(id);
       expect(quick.t, id).toBeLessThan(cruise.t * 0.65);
-      expect(quick.t, id).toBeLessThan(60); // (about 1.5 times the 34 s it took the Caribbean, the furthest, at the spread to four: scale.js's SPREAD, six since 2026-10-09; under 20 before either)
+      expect(quick.t, id).toBeLessThan(60 * WIDER); // (about 1.5 times the 34 s it took the Caribbean, the furthest, at the spread to four: scale.js's SPREAD, six on 2026-10-09 and eight since 2026-10-22; under 20 before either)
       if (id !== 'starwars') expect(quick.top, id).toBeGreaterThan(SHIP.pulse * (inMain(id) ? 2 : 1)); // (well past the pulse drive; the gate's close to home, and the sector's first worlds to the Citadel)
     }
   }, 60000); // (every world twice over, minutes of flight at 60 steps a second)
@@ -389,7 +394,7 @@ describe('across the sectors', () => {
         expect(t, `${id} by ${drive}`).toBeGreaterThan(TRANSIT);
       }
     }
-    expect(tripTime(home(), 'gazorpazorp', 'super')).toBeLessThan(60);
+    expect(tripTime(home(), 'gazorpazorp', 'super')).toBeLessThan(60 * WIDER);
     expect(tripTime(startFor('gazorpazorp'), 'marvel', 'super')).not.toBeNull();
   });
 
@@ -411,7 +416,7 @@ describe('across the sectors', () => {
     expect(r.done).toBe(true);
     expect(r.hits).toBe(0);
     expect(orbiting(r.s, null)).toBe('gazorpazorp');
-    expect(t + r.t).toBeLessThan(60);
+    expect(t + r.t).toBeLessThan(60 * WIDER);
   });
 
   it('charts the Rick and Morty sector round its own middle', () => {

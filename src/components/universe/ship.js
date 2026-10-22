@@ -74,8 +74,8 @@ import { springStep } from '../../lib/spring';
 export const SHIP = {
   cruise: 3.3, // map units a second (the ship is 0.26 long)
   boost: 12,
-  pulse: 400, // the boost out in the open (300 till the spread to eight, scale.js's SPREAD: a third faster for the gaps a third wider, so a crossing keeps its time)
-  pulseAccel: 160, // map units a second, a second, getting up to it (in the same 2.5 s)
+  pulse: 300, // the boost out in the open
+  pulseAccel: 120, // map units a second, a second, getting up to it
   drop: 340, // the hardest it falls back to what the drive allows, when it's well over it (and harder past the pulse drive: out of super speed)
   settle: 8, // and short of that, how quickly it eases down onto it: the speed it's over by, this many times a second (and a little more, so it gets there)
   reverse: 1.5,

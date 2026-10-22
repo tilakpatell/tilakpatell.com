@@ -123,7 +123,7 @@ export const GUARD = {
   ramNear: 1.5, // map units: how far apart a rammer's last pose and you may be (two ships touching, and a little)
   ramLag: 0.35, // s: and more for each unit a second of your speeds together (a pose is up to 100 ms old, then the trip)
 };
-export const RAM_MAX = 800; // a closing speed, at most (two ships head on, on the pulse drive: ship.js's SHIP.pulse, 400)
+export const RAM_MAX = 600; // a closing speed, at most (two ships head on, on the pulse drive)
 // how many of each message one pilot may send: [a second, at most at once]
 export const RATES = { pose: [20, 30], foot: [20, 30], walk: [20, 30], cur: [25, 40], shot: [10, 12], hit: [10, 12], ram: [3, 4], siege: [2, 6], war: [0.5, 3], fight: [2, 6], hi: [1, 4], ally: [0.5, 3], down: [0.4, 2], pack: [8, 12], hhit: [10, 12], party: [1, 6], psay: [1, 4], quip: [0.5, 3] }; // (the X-wing fires 8 a second; a quip one every two seconds, three at once)
 export const FLOOD = { denied: 60, window: 5000 }; // turned away this often in this long: muted

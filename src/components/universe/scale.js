@@ -33,11 +33,11 @@
 // (2026-10-07) put the nearest fandom 27 s of free flight from home at the
 // pulse drive; six (2026-10-09, the owner's "more distant", 1.5 times that)
 // puts it about 40 s out and the far ones minutes away: the jump (nav.js) is
-// the way across. Eight made free flight a chore at that drive; eight again
-// (2026-10-22, the owner's "vast") leaves the places a third further off and
-// smaller in one another's skies, with more dark between, and the pulse
-// drive goes a third faster in the open (ship.js's SHIP.pulse) so a crossing
-// keeps its time: the nearest fandom is still about 40 s out. Eight is as far
+// the way across. Eight once made free flight a chore; eight again
+// (2026-10-22, the owner's "vast", and "keep trip time longer") leaves the
+// places a third further off and smaller in one another's skies, with more
+// dark between, at the same pulse drive: the nearest fandom about 53 s out
+// and the far ones near three minutes, the jump the quick way. Eight is as far
 // as the far wonders go inside the Expanse's middle sector (lib/space/
 // address.js's SECTOR, which the generated sectors hold to, unchanged for
 // everyone): the map's edge and rim are written from it now, not from this
