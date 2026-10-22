@@ -355,6 +355,34 @@ describe('a place that runs on a climb', () => {
   });
 });
 
+describe('Froopyland', () => {
+  it('lets a visitor through its portal: no Froopylander’s rounds come within its reach of the way in', () => {
+    const d = destinationById('froopyland');
+    // (the nearest point of a segment to a point)
+    const toSeg = ([ax, az], [bx, bz], p) => {
+      const vx = bx - ax;
+      const vz = bz - az;
+      const k = Math.max(0, Math.min(1, ((p.x - ax) * vx + (p.z - az) * vz) / (vx * vx + vz * vz || 1)));
+      return Math.hypot(ax + k * vx - p.x, az + k * vz - p.z);
+    };
+    const hunters = d.extras.filter((e) => e.ai?.hunt);
+    expect(hunters.length).toBeGreaterThan(0);
+    for (const [i, e] of hunters.entries()) {
+      const loop = e.ai.wander;
+      const near = Math.min(...loop.map((p, j) => toSeg(p, loop[(j + 1) % loop.length], d.arrive)));
+      expect(near, `${e.kind} ${i}: ${near.toFixed(2)} m`).toBeGreaterThanOrEqual(e.ai.hunt.near + 1);
+    }
+  });
+  it('keeps Tommy by his spot, and he hands over its achievement', () => {
+    const d = destinationById('froopyland');
+    const tommy = d.people.find((p) => p.id === 'tommy');
+    const spot = d.hotspots.find((h) => h.id === 'tommy');
+    for (const [x, z] of tommy.ai.wander) expect(Math.hypot(x - spot.x, z - spot.z), `${x}, ${z}`).toBeLessThanOrEqual(2.1);
+    expect(d.unlock).toEqual({ tommy: 'froopyland' });
+    expect(d.done).toEqual({ tommy: 'froopyland' });
+  });
+});
+
 describe('a place that plays a rhythm', () => {
   it('has its song at a spot of its own, with its line, and only the song ticks its task', () => {
     const singing = DESTINATIONS.filter((d) => d.rhythm);
