@@ -10,7 +10,7 @@
 //   look(state, dx, dy) → state, turned by a drag of dx, dy pixels
 //   stepWalk(state, input, dt, world) → state
 //     input  { forward (−1…1), strafe (−1…1, + right), run }
-//     world  { floorAt(x, z), level, bounds: { x0, x1, z0, z1 }, solids: [{ at: [x, z], r }] }
+//     world  { floorAt(x, z), level, bounds: { x0, x1, z0, z1 }, solids: [{ at: [x, z], r }], pace? (0…1 of the stride) }
 //   ahead(yaw) → [x, z]: the way you face, along the ground
 
 export const WALK = {
@@ -63,7 +63,8 @@ export function stepWalk(s, input = {}, dt = 0, world) {
   const len = Math.hypot(f, st);
   // (a diagonal is no faster than straight on)
   const n = len > 1 ? 1 / len : 1;
-  const pace = input.run ? WALK.run : WALK.speed;
+  // (the world can hold you back: the dementors’ cold, world.pace a share of your stride)
+  const pace = (input.run ? WALK.run : WALK.speed) * Math.max(0, Math.min(1, world?.pace ?? 1));
   const [ax, az] = ahead(s.yaw);
   const [rx, rz] = right(s.yaw);
   const wx = (ax * f + rx * st) * n * pace;

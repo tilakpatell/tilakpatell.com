@@ -45,6 +45,14 @@ describe('walking on foot', () => {
     expect(s.x).toBeLessThan(-3); // (it slid along the shore the way it was leaning)
   });
 
+  it('is held back by the world’s pace (the dementors’ cold), never pushed past a walk', () => {
+    const free = walkFor(startWalk([0, 20], 0), { forward: 1 }, 2);
+    const held = walkFor(startWalk([0, 20], 0), { forward: 1 }, 2, { ...FIELD, pace: 0.4 });
+    const over = walkFor(startWalk([0, 20], 0), { forward: 1 }, 2, { ...FIELD, pace: 3 });
+    expect(20 - held.z).toBeCloseTo((20 - free.z) * 0.4, 1);
+    expect(over.z).toBeCloseTo(free.z, 5);
+  });
+
   it('goes round a post, never into it', () => {
     const world = { ...FIELD, solids: [{ at: [0, -5], r: 0.5 }] };
     let s = startWalk([0.1, 0], 0);

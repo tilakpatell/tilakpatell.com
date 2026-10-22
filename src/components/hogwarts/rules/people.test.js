@@ -83,6 +83,10 @@ describe('everyone’s day', () => {
     }
     expect(sum / looks).toBeGreaterThan(5);
     expect(ahead / looks).toBeGreaterThan(0.75);
+    // (his round looks into the Great Hall: there’s no hiding in it after curfew)
+    const insides = new Set();
+    for (let t = MON + CURFEW; t < MON + CURFEW + 6; t += 1 / 60) insides.add(at('filch', t).inside);
+    expect(insides.has('greatHall')).toBe(true);
     // (by day he keeps his office and the halls)
     expect(whereIs('filch', MON + 7, 4).place).toBe('filch-office');
   });

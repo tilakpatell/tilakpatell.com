@@ -275,8 +275,8 @@ export function commonRoom(spec) {
         slept = true;
       } }] : []),
       ...(spec.boardAt ? [{ id: 'board', at: spec.boardAt, r: 1.6, verb: 'Read', name: 'The notice board', act: () => {
-        // (the newest notice read out; the rest are there on the board to read)
-        toast(`${notices[0].title}: ${notices[0].text}`);
+        // (the term’s list of things to do, as the board on the shore opens it: Lane F’s play/school.js)
+        tell('board', {});
       } }] : []),
       ...(parts.doors ?? []),
     ];
