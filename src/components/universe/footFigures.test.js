@@ -3,6 +3,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import * as THREE from 'three';
 import { meshyRig } from '../../lib/three/meshyRig.fixture';
+import { bodyOf } from '../../lib/cast/bodies';
 import { closure, glslSites } from '../../runtime/shadingClosure';
 import * as figures from './footFigures';
 import * as classic from './footScene';
@@ -77,7 +78,24 @@ describe('footFigures, the crews’ figures without the ground', () => {
     expect(artoo.bones).toEqual({});
     expect(artoo.model.isGroup).toBe(true);
     expect(partyUrl(figures.PARTY.xwing[1])).toBe(null);
-    expect(partyUrl(figures.PARTY.falcon[1])).toBe('/models/galaxy/crew/han.glb');
+    // (Han is the game's, never a copy made on Rick's clips; Walt is the site's)
+    expect(partyUrl(figures.PARTY.falcon[1])).toBe(null);
+    expect(partyUrl(figures.PARTY.rv[0])).toBe('/models/albuquerque/walt.glb');
+  });
+
+  it('puts the Falcon’s and the X-wing’s people on the game’s bodies, from the one cast table', () => {
+    for (const [ship, id, kind] of [
+      ['falcon', 'chewie', 'chewie'],
+      ['falcon', 'han', 'han'],
+      ['xwing', 'luke', 'luke'],
+    ]) {
+      const spec = figures.PARTY[ship].find((s) => s.id === id);
+      const row = bodyOf(kind);
+      expect(row.source, kind).toBe('game');
+      expect(spec, id).toMatchObject({ rig: 'walrus', pack: row.pack, tall: row.tall, src: { url: row.url } });
+    }
+    // (nobody on the map's Star Wars side is a Meshy or a remaster figure where the game has one)
+    for (const spec of [...figures.PARTY.falcon, ...figures.PARTY.xwing]) expect(spec.src.url ?? '', spec.id).not.toMatch(/\/models\/(cockpit|galaxy\/crew|galaxy\/troops)\//);
   });
 
   it('builds a person from shapes the height asked, standing on the ground', () => {

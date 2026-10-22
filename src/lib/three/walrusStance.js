@@ -7,7 +7,10 @@
 // clip); 'humanoid' puts back what the figure came with.
 //
 //   withStance(fig, { model, clips, loader, enabled }) → fig, with (not
-//   enabled, a phone's levels: always the humanoid's, nothing fetched)
+//   enabled, a phone's levels: always the humanoid's, nothing fetched; but
+//   a gun's stance stands still in the humanoid pack's own pose for that
+//   weapon, HELD, so the gun is in its hands and not hung in the air by an
+//   unarmed idle)
 //     stance(key) → Promise<key it now stands in>
 //     takePack(name) → Promise<[name…]>: a pack's clips (clips-<name>.glb, the
 //       first person's 1p…) added to the figure's own, to play on its animator
@@ -16,6 +19,13 @@ import { PACK_DIR, clipsFor, loadWalrusPacks } from './walrus';
 import { STANCE_KEYS, stanceClips } from './walrusSets/stance';
 
 export const stancePackUrl = (key) => `${PACK_DIR}/clips-stance-${key}.glb`;
+// the humanoid pack's held pose for a stance's weapon, a phone's idle:
+// walrusClips.js's aim.rifle, P_HM_Rifle_StandIdle_01, the rifle stance's
+// own idle where its pack hasn't the loop; a pistol held in both hands in
+// it too, as the pack's pistol pose (P_HM_Pistol_StandIdle_01) leaves the
+// weapon's socket a hand's length out from the hand (seen on the universe's
+// scout troopers at mid, 2026-10-21)
+const HELD = { t: 'aim.rifle', l: 'aim.rifle', p: 'aim.rifle' };
 
 export function withStance(fig, { model = fig.model, clips = fig.clips ?? {}, loader, enabled = true } = {}) {
   let now = 'humanoid';
@@ -26,9 +36,13 @@ export function withStance(fig, { model = fig.model, clips = fig.clips ?? {}, lo
     const token = ++ask;
     if (key === now) return now;
     if (!STANCE_KEYS.includes(key) || !enabled) {
-      fig.anim?.restance(own(laid));
-      laid = [];
-      now = 'humanoid';
+      // (the pack's own pose, never a copy of the idle standing in for it: walrus.js's fallbacks)
+      const held = STANCE_KEYS.includes(key) && !clips[HELD[key]]?.userData?.fallback ? clips[HELD[key]] : null;
+      const idle = held ? Object.assign(held.clone(), { name: 'idle', userData: { ...held.userData, stance: key } }) : null;
+      fig.anim?.restance({ ...own(laid), ...(idle ? { idle } : {}) });
+      laid = idle ? ['idle'] : [];
+      now = idle ? key : 'humanoid';
+      if (idle && fig.act && fig.anim?.actions.idle) fig.act.idle = fig.anim.actions.idle;
       return now;
     }
     const got = await loadWalrusPacks([stancePackUrl(key)], { loader }).catch(() => new Map());
