@@ -5040,5 +5040,77 @@
       "Tilak Patel, with Microsoft TRELLIS.2"
     ],
     "license": "Generated for this site; TRELLIS.2 is MIT, FLUX.1-schnell Apache 2.0"
+  },
+  "hogwarts/cast/dumbledore": {
+    "source": "https://www.meshy.ai",
+    "name": "Dumbledore, a big-headed toy figure for the Hogwarts world, made with Meshy AI from a concept picture drawn on the site owner's machine (FLUX.1-schnell, scripts/gen3d/picture.mjs), rigged with its walk, run and idle (scripts/hogwarts-cast-meshy.mjs)",
+    "authors": [
+      "Tilak Patel, with Meshy AI"
+    ],
+    "license": "Meshy paid-plan output, owned by the site owner; FLUX.1-schnell Apache 2.0"
+  },
+  "hogwarts/cast/mcgonagall": {
+    "source": "https://www.meshy.ai",
+    "name": "Mcgonagall, a big-headed toy figure for the Hogwarts world, made with Meshy AI from a concept picture drawn on the site owner's machine (FLUX.1-schnell, scripts/gen3d/picture.mjs), rigged with its walk, run and idle (scripts/hogwarts-cast-meshy.mjs)",
+    "authors": [
+      "Tilak Patel, with Meshy AI"
+    ],
+    "license": "Meshy paid-plan output, owned by the site owner; FLUX.1-schnell Apache 2.0"
+  },
+  "hogwarts/cast/snape": {
+    "source": "https://github.com/microsoft/TRELLIS.2",
+    "name": "Snape, a big-headed toy figure for the Hogwarts world, made on the site owner's machine from a concept picture drawn there (FLUX.1-schnell, scripts/gen3d/picture.mjs) with TRELLIS.2 (trellis.cpp), baked in Blender and skinned on Meshy's skeleton by scripts/rig/skin.mjs (scripts/hogwarts-cast.mjs)",
+    "authors": [
+      "Tilak Patel, with Microsoft TRELLIS.2"
+    ],
+    "license": "Generated for this site; TRELLIS.2 is MIT, FLUX.1-schnell Apache 2.0"
+  },
+  "hogwarts/cast/flitwick": {
+    "source": "https://www.meshy.ai",
+    "name": "Flitwick, a big-headed toy figure for the Hogwarts world, made with Meshy AI from a concept picture drawn on the site owner's machine (FLUX.1-schnell, scripts/gen3d/picture.mjs), rigged with its walk, run and idle (scripts/hogwarts-cast-meshy.mjs)",
+    "authors": [
+      "Tilak Patel, with Meshy AI"
+    ],
+    "license": "Meshy paid-plan output, owned by the site owner; FLUX.1-schnell Apache 2.0"
+  },
+  "hogwarts/cast/sprout": {
+    "source": "https://www.meshy.ai",
+    "name": "Sprout, a big-headed toy figure for the Hogwarts world, made with Meshy AI from a concept picture drawn on the site owner's machine (FLUX.1-schnell, scripts/gen3d/picture.mjs), rigged with its walk, run and idle (scripts/hogwarts-cast-meshy.mjs)",
+    "authors": [
+      "Tilak Patel, with Meshy AI"
+    ],
+    "license": "Meshy paid-plan output, owned by the site owner; FLUX.1-schnell Apache 2.0"
+  },
+  "hogwarts/cast/hooch": {
+    "source": "https://www.meshy.ai",
+    "name": "Hooch, a big-headed toy figure for the Hogwarts world, made with Meshy AI from a concept picture drawn on the site owner's machine (FLUX.1-schnell, scripts/gen3d/picture.mjs), rigged with its walk, run and idle (scripts/hogwarts-cast-meshy.mjs)",
+    "authors": [
+      "Tilak Patel, with Meshy AI"
+    ],
+    "license": "Meshy paid-plan output, owned by the site owner; FLUX.1-schnell Apache 2.0"
+  },
+  "hogwarts/cast/pince": {
+    "source": "https://www.meshy.ai",
+    "name": "Pince, a big-headed toy figure for the Hogwarts world, made with Meshy AI from a concept picture drawn on the site owner's machine (FLUX.1-schnell, scripts/gen3d/picture.mjs), rigged with its walk, run and idle (scripts/hogwarts-cast-meshy.mjs)",
+    "authors": [
+      "Tilak Patel, with Meshy AI"
+    ],
+    "license": "Meshy paid-plan output, owned by the site owner; FLUX.1-schnell Apache 2.0"
+  },
+  "hogwarts/cast/rosmerta": {
+    "source": "https://www.meshy.ai",
+    "name": "Rosmerta, a big-headed toy figure for the Hogwarts world, made with Meshy AI from a concept picture drawn on the site owner's machine (FLUX.1-schnell, scripts/gen3d/picture.mjs), rigged with its walk, run and idle (scripts/hogwarts-cast-meshy.mjs)",
+    "authors": [
+      "Tilak Patel, with Meshy AI"
+    ],
+    "license": "Meshy paid-plan output, owned by the site owner; FLUX.1-schnell Apache 2.0"
+  },
+  "hogwarts/cast/filch": {
+    "source": "https://github.com/microsoft/TRELLIS.2",
+    "name": "Filch, a big-headed toy figure for the Hogwarts world, made on the site owner's machine from a concept picture drawn there (FLUX.1-schnell, scripts/gen3d/picture.mjs) with TRELLIS.2 (trellis.cpp), baked in Blender and skinned on Meshy's skeleton by scripts/rig/skin.mjs (scripts/hogwarts-cast.mjs)",
+    "authors": [
+      "Tilak Patel, with Microsoft TRELLIS.2"
+    ],
+    "license": "Generated for this site; TRELLIS.2 is MIT, FLUX.1-schnell Apache 2.0"
   }
 }

@@ -14,7 +14,8 @@
 //       progress() → { bytes, total, inFlight, queued, waiting: { url, ms } | null (the request running longest) }, abortAll(), resize(n) }
 //   a 404 rejects at once with { status: 404, missing: true }; an abort with
 //   an AbortError; anything else after three retries (0.5, 1, 2 s; a 429's
-//   Retry-After over the schedule) with the last reason
+//   Retry-After over the schedule) with the last reason (a busy answer's
+//   `status` on it)
 // poolSize(level, lowData, phone) → 2 | 4 | 8
 
 export const WAITS = [500, 1000, 2000];
@@ -101,7 +102,7 @@ export function createAssetFetch({ fetch = globalThis.fetch?.bind(globalThis), s
     try {
       const res = await fetch(entry.url, { signal: ctrl.signal, mode: 'cors', credentials: 'same-origin' });
       if (res.status === 404) return { fail: Object.assign(new Error(`${entry.url}: 404`), { status: 404, missing: true }) };
-      if (res.status === 429 || res.status >= 500) return { again: `HTTP ${res.status}`, wait: retryAfter(res.headers.get('retry-after')) };
+      if (res.status === 429 || res.status >= 500) return { again: `HTTP ${res.status}`, status: res.status, wait: retryAfter(res.headers.get('retry-after')) };
       if (!res.ok) return { fail: Object.assign(new Error(`${entry.url}: HTTP ${res.status}`), { status: res.status }) };
       const told = Number(res.headers.get('content-length')) || null;
       if (!entry.bytes && told && !entry.counted) {
@@ -162,7 +163,8 @@ export function createAssetFetch({ fetch = globalThis.fetch?.bind(globalThis), s
       last = got;
       if (n < retries) await sleep(got.wait ?? waits[Math.min(n, waits.length - 1)]);
     }
-    if (!entry.cancelled) settle(entry, (w) => w.reject(new Error(`${entry.url}: ${last?.again ?? 'failed'}`)));
+    // (a busy answer's status kept on the error: the bucket was up, lib/assetBase keeps it)
+    if (!entry.cancelled) settle(entry, (w) => w.reject(Object.assign(new Error(`${entry.url}: ${last?.again ?? 'failed'}`), last?.status ? { status: last.status } : {})));
   }
 
   function pump() {

@@ -114,7 +114,7 @@ import { preload as preloadPhysics } from '../../lib/physics/world';
 import { device } from '../../lib/device';
 import { AIR, ENTRY, entryPath, entrySpot, fxAt } from './entry';
 import { createReentry } from './reentry';
-import { PARTY, built, figuresWith, getLoader, loadSharedFigure, rigScene, seedFor, templateIn } from './footFigures';
+import { PARTY, built, figuresWith, getLoader, loadSharedFigure, rigScene, seedFor, templateIn, warmGameFigure } from './footFigures';
 
 // (the figures are footFigures.js's, dressed by the classic wardrobe; who
 // steps out of each ship, and the shared models, are its too)
@@ -181,6 +181,12 @@ const SCARED = new Set(['morty', 'jesse']); // the ones who jump at a squad, or 
 // Meshy cast kind ({ meshy }), a model of its own ({ url }: Albuquerque's),
 // or built here ({ built }); a kind with none is the cast's own kind
 export const troopLook = (kind) => Object.values(SIDES).find((s) => s.troops[kind]?.figure)?.troops[kind].figure ?? { meshy: kind };
+// a troop on the 2017 game's body (sides.js's gameTroop) as footFigures.js's
+// loaders take a figure: as tall as foot.js says the troop stands, in metres
+export const troopSpec = (kind) => {
+  const look = troopLook(kind);
+  return { id: kind, tall: TROOPS[kind].tall / METRE, src: { url: look.url }, rig: look.rig, pack: look.pack ?? null, ownRig: look.ownRig ?? null, cuts: look.cuts ?? null };
+};
 
 // A troop going down, in its own frame (react.js's `down`: +z ahead, +x its
 // left): the way the shot that dropped it was going (back, as pushOf has
@@ -1264,15 +1270,20 @@ export function createFoot({ map, emit, reduced = false, small = false, planetOf
     const sideTroops = Object.keys(sideFor(kind)?.troops ?? SIDES.rickmorty.troops);
     const needCast = [...new Set([...specs.filter((s) => s.src.meshy).map((s) => s.src.meshy), ...sideTroops.map((k) => troopLook(k).meshy).filter(Boolean).map((k) => MESHY[k]?.a ?? k)])]; // (the cast loads by asset: a Morty clone is Morty's)
     const castReady = cast.load(null, needCast).catch(() => {});
-    preload(TROOP_CLIPS).catch(() => {});
-    // (the party's own, where they're the site's models)
+    // (the library's falls and flinches, for troops that are the site's: the game's play their own)
+    if (sideTroops.some((k) => !troopLook(k).rig && !troopLook(k).built)) preload(TROOP_CLIPS).catch(() => {});
+    // (the party's own, where they're the site's models; the game's bodies and packs, where they're the game's)
     for (const spec of specs) {
       const url = partyUrl(spec);
       if (url) templateIn(partyModels, url);
+      else warmGameFigure(spec);
     }
-    // (and the ones that are models of their own, Albuquerque's: loaded once, copied for each)
+    // (and the ones that are models of their own, Albuquerque's: loaded once,
+    // copied for each; the game's fetched into the page's cache)
     for (const k of sideTroops) {
-      const url = troopLook(k).url;
+      const look = troopLook(k);
+      if (look.rig) warmGameFigure(troopSpec(k));
+      const url = look.rig ? null : look.url;
       if (!url || troopModels.has(url)) continue;
       const entry = { ready: null };
       troopModels.set(url, entry);
@@ -1325,7 +1336,7 @@ export function createFoot({ map, emit, reduced = false, small = false, planetOf
     const look = troopLook(t.kind);
     const tall = TROOPS[t.kind].tall / METRE; // (metres)
     const seed = seedFor(t.kind);
-    const tpl = look.url ? troopModels.get(look.url)?.ready : null;
+    const tpl = look.url && !look.rig ? troopModels.get(look.url)?.ready : null;
     const c = tpl ? null : look.meshy ? (cast?.make(look.meshy, 0, { tall, seed }) ?? null) : null;
     const group = new THREE.Group();
     let fig = null;
@@ -1351,7 +1362,22 @@ export function createFoot({ map, emit, reduced = false, small = false, planetOf
     // (k: the cast's units in the map's, for its motion's speeds)
     got = { c, b, own, body: c ?? own ?? b, anim: c?.anim ?? own?.anim ?? null, k: c ? c.group.scale.x : 1, group, gp, prevF: null, death: null, blow: 1 };
     troopFigs.set(t.id, got);
+    // (one on the game's body stands in its built look until that body has
+    // come, from the page's cache once the first has: warmParty's)
+    if (look.rig) loadParty(troopSpec(t.kind), cast).then((fig) => wearGameBody(t, got, fig), () => {});
     return got;
+  };
+  // A troop's built stand-in taken off for the game's body, and its gun put
+  // in the new hands; not once it's gone or going down (the stand-in falls)
+  const wearGameBody = (t, got, fig) => {
+    if (!fig) return;
+    if (troopFigs.get(t.id) !== got || got.death || got.swallow || !got.b) return fig.dispose();
+    got.group.remove(got.b.model);
+    got.b.dispose();
+    got.gp?.dispose();
+    got.group.add(fig.model);
+    Object.assign(got, { b: null, own: fig, body: fig, anim: fig.anim ?? null });
+    got.gp = troopGun(t) ? createGunplay(fig, troopGun(t), { unit: METRE, who: null }) : null;
   };
   // a troop's body a frame on (motion in the map's units, as yours is), and
   // once it's placed the bones over its clips

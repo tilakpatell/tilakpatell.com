@@ -165,11 +165,11 @@ export function ground(figure, doc, mode = 'each') {
     const s = ch.getSampler();
     const times = Array.from(s.getInput().getArray());
     const values = Array.from(s.getOutput().getArray());
-    if (ch.getTargetPath() === 'rotation') tracks.push(new THREE.QuaternionKeyframeTrack(`${name}.quaternion`, times, values));
-    else if (name === 'Hips') {
-      tracks.push(new THREE.VectorKeyframeTrack('Hips.position', times, values));
-      hipsCh = ch;
-    }
+    // (every track the clip has, as three.js will play it: a Meshy clip moves each bone's offset and scale too)
+    const path = ch.getTargetPath();
+    if (path === 'rotation') tracks.push(new THREE.QuaternionKeyframeTrack(`${name}.quaternion`, times, values));
+    else if (path === 'translation' || path === 'scale') tracks.push(new THREE.VectorKeyframeTrack(`${name}.${path === 'translation' ? 'position' : 'scale'}`, times, values));
+    if (name === 'Hips' && path === 'translation') hipsCh = ch;
   }
   if (!hipsCh) return [];
   const clip = new THREE.AnimationClip('c', -1, tracks);

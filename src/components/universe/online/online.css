@@ -107,6 +107,10 @@
   font-size: 0.74rem;
   transition: border-color 0.2s, background-color 0.2s;
 }
+/* (with a mouse, as the corner's buttons over it: universe/desk.css) */
+@media (pointer: fine) and (min-width: 768px) {
+  .universe-online-pill { min-height: 36px; padding: 0 0.8rem 0 0.7rem; font-size: 0.7rem; }
+}
 .universe-online-pill:hover { border-color: var(--muted); }
 .universe-online-pill:focus-visible { outline: 2px solid var(--accent-text); outline-offset: 2px; }
 .universe-online-short { display: none; }

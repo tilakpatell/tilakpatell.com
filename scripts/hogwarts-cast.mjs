@@ -230,9 +230,18 @@ const steps = {
     mkdirSync(OUT, { recursive: true });
     const sizes = {};
     for (const [tier, c] of Object.entries(CUTS)) {
-      const doc = await nio.read(join(dirOf(name), `skinned-${tier}.glb`));
+      let doc = await nio.read(join(dirOf(name), `skinned-${tier}.glb`));
       smooth(matte(doc));
-      const { after } = await webReady(doc, { tris: c.faces, tex: c.tex });
+      let { after } = await webReady(doc, { tris: c.faces, tex: c.tex });
+      // (a bake Blender couldn't bring down to its faces, its mesh in pieces at every seam, is cut across them:
+      // at a low cut's size the smear at a seam doesn't show, and a figure over its budget doesn't ship)
+      if (after > c.faces * 1.05) {
+        doc = await nio.read(join(dirOf(name), `skinned-${tier}.glb`));
+        smooth(matte(doc));
+        ({ after } = await webReady(doc, { tris: c.faces, tex: c.tex, acrossSeams: true }));
+        log(`${tier}: cut across the seams to come down to ${c.faces}`);
+      }
+      if (after > c.faces * 1.05) throw new Error(`${name}${c.suffix}.glb has ${Math.round(after)} triangles, over its ${c.faces}`);
       const file = join(OUT, `${name}${c.suffix}.glb`);
       await nio.write(file, doc);
       const bytes = statSync(file).size;
@@ -290,6 +299,9 @@ export function matte(doc) {
   return doc;
 }
 
+// the steps a figure made with Meshy has had made there
+export const MESHY_MADE = new Set(['picture', 'model', 'bake', 'skin', 'cut']);
+
 export async function run(step, names, { fresh = false, log = console.log } = {}) {
   const s = load();
   const order = step === 'all' ? STEPS : [step];
@@ -297,6 +309,11 @@ export async function run(step, names, { fresh = false, log = console.log } = {}
     for (const st of order) {
       if (!steps[st]) throw new Error(`no step ${st} (${[...STEPS, 'all', 'pick'].join(', ')})`);
       Object.assign(s, { [name]: load()[name] ?? s[name] });
+      // (a figure made with Meshy, scripts/hogwarts-cast-meshy.mjs, keeps its model and cuts: only its sheet is this script's)
+      if (s[name]?.cut?.by === 'meshy' && MESHY_MADE.has(st)) {
+        log(`[${name}] ${st}: made with Meshy (scripts/hogwarts-cast-meshy.mjs)`);
+        continue;
+      }
       await steps[st](name, s, { fresh, log: (m) => log(`[${name}] ${st}: ${m}`) });
       saveOne(name, s);
     }

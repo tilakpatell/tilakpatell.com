@@ -94,6 +94,13 @@ describe('the site’s asset pool', () => {
     expect(gone).toHaveBeenCalledTimes(1);
   });
 
+  it('rejects a bucket busy past every retry with its status, so the asset base keeps it', async () => {
+    const pool = createAssetFetch({ fetch: vi.fn(async () => status(429)), sleep: async () => {} });
+    const err = await pool.fetch('/busy').catch((e) => e);
+    expect(err.status).toBe(429);
+    expect(err.missing).toBeUndefined();
+  });
+
   it('fails a URL that can’t be resolved at once, never retried (a relative one with no page, in Node)', async () => {
     const fetch = vi.fn(async () => {
       throw new TypeError('Failed to parse URL from /models/x.glb', { cause: Object.assign(new TypeError('Invalid URL'), { code: 'ERR_INVALID_URL' }) });
