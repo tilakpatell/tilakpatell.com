@@ -38,6 +38,21 @@ describe('the surfaces’ crew', () => {
       expect(SURFACE_MODELS[kind], `${kind}'s catalogue row`).toBeTruthy();
       expect(existsSync(at(`/models/galaxy/surface/${kind}.glb`)), `${kind}'s statue`).toBe(true);
     }
+    // (Tatooine's Jawas, dewbacks and banthas: the game's, each on its own rig
+    // with its pack, over the catalogue's statues; their light and far cuts in
+    // the site, their full cuts waiting on the bucket: every file committed)
+    for (const kind of ['jawa', 'dewback', 'bantha']) {
+      expect(CREW[kind], kind).toMatchObject({ url: `/models/galaxy/bf2017/crew/${kind}.glb`, rig: 'own', ownRig: kind, lod: true, far: true });
+      for (const file of [`crew/${kind}.glb`, `crew/${kind}.lod1.glb`, `crew/${kind}.far.glb`, `clips-${kind}.glb`]) expect(existsSync(at(`/models/galaxy/bf2017/${file}`)), file).toBe(true);
+    }
+    // (and Yoda and Grievous on theirs, Iden Versio on the humanoid one, the
+    // same way: Yoda over the catalogue's statue, the other two new)
+    for (const kind of ['yoda', 'grievous']) {
+      expect(CREW[kind], kind).toMatchObject({ rig: 'own', ownRig: kind, lod: true, far: true });
+      expect(existsSync(at(`/models/galaxy/bf2017/clips-${kind}.glb`)), kind).toBe(true);
+    }
+    expect(CREW.iden).toMatchObject({ rig: 'walrus', lod: true, far: true });
+    for (const kind of ['yoda', 'grievous', 'iden']) for (const cut of ['', '.lod1', '.far']) expect(existsSync(at(`/models/galaxy/bf2017/crew/${kind}${cut}.glb`)), `${kind}${cut}`).toBe(true);
     // (the B1 waits for its markings map: the remaster's, rigged with Meshy)
     expect(CREW.battledroid).toEqual({ url: '/models/galaxy/troops/battledroid.glb', tall: 1.91 });
   });

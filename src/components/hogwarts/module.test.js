@@ -39,10 +39,15 @@ import hogwarts, { KEYS, SPAWN, solidsOf, startOf } from './module';
 import { registerRoom, ROOMS } from './rooms/index';
 import { placeById } from './rules/places';
 
-const fakeRt = () => {
+// (`saved`: what tp-hogwarts holds; a visitor who has seen the arrival starts on the grounds)
+const ARRIVED = { v: 1, data: { house: 'gryffindor', arrived: 1 } };
+const fakeRt = (saved = ARRIVED) => {
   const emitted = [];
+  const store = new Map(saved ? [['tp-hogwarts', saved.data]] : []);
   return {
     emitted,
+    store,
+    saves: { register: vi.fn(), get: (k, fallback = null) => (store.has(k) ? store.get(k) : fallback), set: (k, v) => store.set(k, v) },
     events: { emit: (type, data) => emitted.push({ type, ...data }) },
     input: { bind: vi.fn(), unbind: vi.fn() },
     quality: { tier: 'high' },
@@ -123,15 +128,19 @@ describe('Hogwarts, the world module', () => {
     world.attached();
     const { Group } = await import('three');
     const disposed = vi.fn();
-    registerRoom('test-hall', { name: 'A hall for the test', load: async () => ({ default: { build: () => ({ group: new Group(), start: { at: [0, 0, 5], yaw: 0 }, floorAt: () => -1999, colliders: [], dispose: disposed }) } }) });
+    registerRoom('test-hall', { name: 'A hall for the test', load: async () => ({ default: { build: () => ({ name: 'A hall for the test', group: new Group(), spawn: { at: [0, 0, 5], yaw: 0 }, floorAt: () => 0, colliders: [], floors: [], doors: [], dispose: disposed }) } }) });
     world.walker.place([30, 30], 1);
     // (what was showing outside: the wand's and the broom's own hidden things stay hidden)
     const showing = world.scene.children.filter((o) => o.visible);
     expect(await world.enter('test-hall', 'great-doors')).toBe(true);
     expect(world.room).toBe('test-hall');
-    expect(rt.emitted.at(-1)).toMatchObject({ type: 'enter', room: 'test-hall', name: 'A hall for the test' });
-    expect(world.scene.children.filter((o) => o.visible)).toHaveLength(1);
-    expect(world.walker.state.z).toBe(5);
+    expect(rt.emitted.filter((e) => e.type === 'room').at(-1)).toMatchObject({ id: 'test-hall', name: 'A hall for the test' });
+    // (the grounds and the things on the lawn gone; what you carry, the lights and the room left)
+    const inside = world.scene.children.filter((o) => o.visible && !o.isLight);
+    expect(inside.some((o) => o.name.startsWith('hogwarts-'))).toBe(false);
+    expect(showing.filter((o) => inside.includes(o)).length).toBeLessThan(showing.length / 2);
+    expect(inside.some((o) => o.position.y < -1000)).toBe(true);
+    expect(world.rooms.walker.state.z).toBe(5);
     world.leave();
     expect(world.room).toBeNull();
     expect(disposed).toHaveBeenCalled();
@@ -142,6 +151,20 @@ describe('Hogwarts, the world module', () => {
     expect(rt.emitted.at(-1)).toMatchObject({ type: 'toast' });
     delete ROOMS['test-hall'];
     world.dispose();
+  });
+
+  it('plays the arrival on a first visit, from the station, and opens at its beat for ?at=', async () => {
+    const rt = fakeRt(null);
+    const world = await hogwarts.create(rt, {});
+    world.attached();
+    expect(rt.emitted.find((e) => e.type === 'arrival')).toMatchObject({ on: true, part: 'station' });
+    world.dispose();
+    const back = fakeRt();
+    const hall = await hogwarts.create(back, { at: 'hall' });
+    hall.attached();
+    hall.step(1 / 60, snap());
+    expect(back.emitted.find((e) => e.type === 'arrival')).toMatchObject({ on: true, beat: 'hall' });
+    hall.dispose();
   });
 
   it('walks round a wall as a row of stones', () => {

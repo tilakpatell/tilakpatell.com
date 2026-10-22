@@ -1,6 +1,8 @@
 // The tactics’ own rules as the game’s AI source has them, written again in the
 // site’s words for the soldier brain (`soldierBrain.js`): which tactics a bot
-// has, and when close combat is entered, held and left. The source is
+// has, when close combat is entered, held and left, what sends a bot to hide
+// and for how long, and which firing patterns it draws and how they pull the
+// trigger. The source is
 // BattleAI’s soldier (an earlier build than the 2017 game’s;
 // `docs/superpowers/evidence/bf-ai-source/README.md` sets every rule against
 // it): the numbers are the tactics rows’ (ai.json), and the few the
@@ -12,6 +14,12 @@
 //     k: { since, now, inCover, toCover, seen, lineOfFire, sinceSeen, ahead, height, turn, inVehicle }
 //   aheadOf(at, vel, seen) → [x, y, z]   the target’s place close combat measures to
 //   turnFrom(vel, to) → degrees          the angle between the way a bot moves and the way to its target
+//   validAgainst(kind, target) → bool    whether an AI weapon can hurt a target (not: the bot hides)
+//   hideHold(row, rand) → seconds        hideClock(clock, …)     stillHiding(clock, …) → bool
+//   patternWeapon(aiWeapon) → the patterns’ weapon name | null
+//   intensityFor({ fired, attacking, tactics }) → 'High' | 'Medium'
+//   TICK                                 seconds a pattern bit lasts
+//   pulls(pattern, bit, held) → bool     whether a bit asks the gun for a shot
 
 // A tactic is open to a bot only where its template’s tactics row holds its
 // settings (`Reason/Tactics.cpp`, `TacticInfo`’s constructor sets a tactic’s
@@ -58,3 +66,90 @@ export function turnFrom(vel, to) {
   const c = ((vel[0] / v) * to[0] + (vel[2] / v) * to[1]) / t;
   return (Math.acos(Math.max(-1, Math.min(1, c))) * 180) / Math.PI;
 }
+
+// What makes a bot hide (`Brain/AISystem.cpp`, the knowledge update, from
+// `Gather/AiProperties.cpp`’s `canDamageTarget`): a target its AI weapon is
+// not valid against (`Reason/TargetInfo.cpp`, `TargetInfo::isWeaponValidAgainst`);
+// health and suppression are read by no tactic. Every AI weapon row in the
+// records is valid against all (26 of 26, `AI/BattleAI/Weapons/**`
+// `#AIWeaponData.ValidAgainst`; ai.json drops the field), so in this game a
+// soldier is never sent to hide by it; a row with its own `validAgainst` is
+// read where one has it.
+//   target: { inVehicle, shielded } (an entity on foot is neither)
+export function validAgainst(kind = 'All', { inVehicle = false, shielded = false } = {}) {
+  switch (kind) {
+    case 'Nothing':
+      return false;
+    case 'Soldiers':
+      return !inVehicle;
+    case 'SoldiersAndUnshieldedVehicles':
+      return !inVehicle || !shielded;
+    case 'UnshieldedVehicles':
+      return inVehicle && !shielded;
+    case 'ShieldedVehicles':
+      return inVehicle && shielded;
+    case 'AllVehicles':
+      return inVehicle;
+    default:
+      return true;
+  }
+}
+
+// A hide draws its hold between the row’s `MinimumTimeActive` and
+// `MaximumTimeActive` as it begins (`Reason/Tactics.cpp`, `TacticInfo::set`);
+// `Brain/AISystem.cpp` pushes the limit on for as long as the cause holds, and
+// `useTactic` drops the tactic once past it: so a bot hides while its cause
+// holds and the drawn hold more.
+//   hideClock(clock, { cause, was, now, row, rand })     stillHiding(clock, { cause, was, now }) → bool
+export const hideHold = (row, rand) => {
+  const lo = row?.MinimumTimeActive ?? 0;
+  const hi = row?.MaximumTimeActive ?? lo;
+  return lo + rand() * (hi - lo);
+};
+
+export function hideClock(clock, { cause, was, now, row, rand }) {
+  if (!was) clock.hold = hideHold(row, rand);
+  if (cause) clock.until = now + clock.hold;
+}
+
+export const stillHiding = (clock, { cause, was, now }) => !!cause || (!!was && now <= (clock.until ?? -Infinity));
+
+// The patterns a bot fires are its AI weapon row’s own class
+// (`Reason/WeaponFiringInfo.cpp`, `getWeaponFiringInfo`): `AI_Rifle` is an
+// SMG, `AI_SMG` an assault rifle, `AI_Heavy` a machine gun.
+export const patternWeapon = (aiWeapon) => (typeof aiWeapon?.class === 'string' ? aiWeapon.class.replace(/^WeaponClass_/, '') : null);
+
+// The attack rows whose `CombatIntensity` is set (the records:
+// `AI/BattleAI/Tactics/<row>#AttackSettings.CombatIntensity`, transcribed
+// because ai.json drops the field); every other row’s is none.
+export const ATTACK_INTENSITY = {
+  Heavy_Tactics: 'High',
+  Imperial_Grunt_Heavy_Tactics: 'High',
+  Assault_PvE_Tactics: 'High',
+  Heavy_PvE_Tactics: 'High',
+  Officer_PvE_Tactics: 'High',
+  Specialist_PvE_Tactics: 'High',
+};
+
+// The intensity a bot’s next pattern is drawn from: High until it has fired
+// once (`getWeaponFiringInfo`); then the attack row’s own while it attacks
+// (`Brain/AISystem.cpp`), else its combat group’s, Medium while alerted
+// (`Reason/CombatIntensity.cpp`, `updateCombatIntensity`; a bot with a target
+// is alerted).
+export function intensityFor({ fired, attacking, tactics }) {
+  if (!fired) return 'High';
+  return (attacking && ATTACK_INTENSITY[tactics]) || 'Medium';
+}
+
+// A pattern’s bit is one AI tick: `Shared/FiringPatternData.ddf` gives its
+// delay in ticks of a thirtieth of a second, and `Execute/WeaponControl.cpp`,
+// `updateWeaponControlState`, steps one bit a tick.
+export const TICK = 1 / 30;
+
+// What a bit does (`updateWeaponControlState`): it holds the trigger down for
+// its tick, and the pattern sets the weapon’s fire logic, single fire for a
+// pattern marked single and automatic for the rest. So a single pattern fires
+// once at each press however long its bits hold the trigger, and an automatic
+// one fires at the gun’s own rate for as long as they hold it. → the trigger
+// asks for a shot this tick?
+export const pulls = (pattern, bit, held) => !!bit && (!pattern?.single || !held);

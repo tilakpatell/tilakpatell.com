@@ -87,9 +87,10 @@
 //              and metres (a hilt or a blaster, modelled for the Wep_Root
 //              socket with its grip at the origin and its barrel up +y)
 //
-// It refuses the sequel era (the site shows none of it). Look at what came
-// out with node scripts/glb-shot.mjs <file> out.png three, through the dev
-// server (npx vite --port 5188 --strictPort --host 127.0.0.1).
+// It refuses the sequel era (the site shows none of it), and the campaign's
+// third act with it. Look at what came out with node scripts/glb-shot.mjs
+// <file> out.png three, through the dev server (npx vite --port 5188
+// --strictPort --host 127.0.0.1).
 
 import { Logger, NodeIO } from '@gltf-transform/core';
 import { ALL_EXTENSIONS, KHRMaterialsSpecular, KHRTextureBasisu } from '@gltf-transform/extensions';
@@ -102,7 +103,7 @@ import { dirname, join as path, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { overCaps } from './lib/bf2017-caps.mjs';
 import { parseArgs } from './lib/args.mjs';
-import { isSequel, cutsFor, fullCuts, partsOf, readManifest } from './lib/bf2017-manifest.mjs';
+import { isActThree, isSequel, cutsFor, fullCuts, partsOf, readManifest } from './lib/bf2017-manifest.mjs';
 import { glbJson, imagePath, inBucket, localPath, mapPath } from './lib/bf2017-paths.mjs';
 import { resolveImage, specularFactorOf, weaponMaterial } from './lib/bf2017-textures.mjs';
 import { meshBindings } from './lib/bf2017-variations.mjs';
@@ -589,7 +590,7 @@ export async function importModel(name, opts) {
   const entry = manifest.get(name);
   if (!entry) throw new Error(`${name}: not in the manifest (node scripts/bf2017-fetch.mjs --list '<glob>')`);
   const rig = Boolean(opts.rig);
-  const parts = typeof opts.parts === 'string' ? partsOf(manifest, name, opts.parts.split(',')).filter((p) => !isSequel(p.name)) : [];
+  const parts = typeof opts.parts === 'string' ? partsOf(manifest, name, opts.parts.split(',')).filter((p) => !isSequel(p.name) && !isActThree(p.name)) : [];
   const metres = opts.metres !== undefined && opts.metres !== true ? Number(opts.metres) : Number((entry.max[1] - entry.min[1]).toFixed(3));
   const tex = Number(opts.tex ?? 1024);
   const maps = Number(opts.maps ?? tex / 2);
@@ -763,6 +764,11 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   }
   if (isSequel(name)) {
     console.error(`${name} is sequel-era; the site shows none of it (autopilot rules)`);
+    process.exit(2);
+  }
+  // (and the campaign's third act, the sequel era's: Iden Versio comes in from act 1)
+  if (isActThree(name)) {
+    console.error(`${name} is the campaign’s third act, the sequel era’s; the site shows none of it (HANDOFF-battlefront.md, the owner’s rules)`);
     process.exit(2);
   }
   importModel(name, args).catch((e) => {

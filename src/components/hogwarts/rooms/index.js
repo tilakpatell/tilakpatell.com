@@ -25,7 +25,7 @@
 export const ROOM_ORIGIN = [0, -2000, 0];
 
 export const ROOMS = {
-  // greatHall: { name: 'The Great Hall', load: () => import('./greatHall.js') },
+  greatHall: { name: 'The Great Hall', load: () => import('./greatHall.js') },
   // staircase: { name: 'The Grand Staircase', load: () => import('./staircase.js') },
 };
 

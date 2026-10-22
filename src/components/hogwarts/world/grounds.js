@@ -270,6 +270,8 @@ export async function createGrounds(rt, { scene, camera, tier = 'high', house = 
       return clock;
     },
     places: PLACES,
+    // (the sky, for the arrival’s moon over the Astronomy Tower)
+    sky,
     land,
     castle,
     doors,

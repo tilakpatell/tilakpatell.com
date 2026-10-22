@@ -47,6 +47,15 @@
 // when one is done 'lesson' { type: 'lesson', id, quest, done } and its
 // 'points'. The development hook adds lesson(id) and lessons() (its state).
 //
+// The arrival (Lane D, world/arrival.js): the first-years' night on rails,
+// from the station across the Black Lake to the boathouse, up the stair and
+// into the Great Hall for the Sorting; played on a first visit and from an
+// arrival's beat in `at` (?at=hall), its sets anchored to the grounds
+// (ANCHORS_C). The rooms (Lane D, rooms/host.js) are built far below as you
+// go in, the grounds hidden and their lights down, with a walk of their
+// own; Esc is the way out, back where you stood, turned to face out. The
+// world adds arrive(at), answer(i), skip() and `arrival`, `rooms`.
+//
 // Where the rest hooks in (the lanes after the grounds): the arrival
 // (Lane D) is a ride before the walk; the rooms register in rooms/index.js
 // and load through their doors, the grounds hidden while you’re in one;
@@ -68,7 +77,10 @@ import { practiceSet } from './play/props';
 import { createFeel } from '../../lib/three/feel';
 import { ARRIVE, parseAt } from './rules/clock';
 import { HALF, placeById } from './rules/places';
-import { ROOM_ORIGIN, loadRoom, roomName } from './rooms/index';
+import { ROOMS } from './rooms/index';
+import { ROOM_ORIGIN as ROOM_AT, LOCAL, createRoomHost } from './rooms/host';
+import { createArrival } from './world/arrival';
+import { BEATS, PARTS } from './rules/arrival';
 
 export { KEYS };
 
@@ -76,6 +88,31 @@ export { KEYS };
 // front, the castle up the slope to the west with the lake beyond it
 export const SPAWN = { at: [196, -14], yaw: 1.36 };
 const BOUNDS = { x0: -HALF + 12, x1: HALF - 12, z0: -HALF + 12, z1: HALF - 12 };
+
+// The arrival's lake on the grounds (world/arrival/shots.js's anchors, in
+// this world's frame): the boats from the south shore's strand straight
+// across the Black Lake toward the castle's cliff, in to the boathouse at
+// its foot; the castle on its crag, its middle and the Astronomy Tower's
+// tip (castle/plan.js), the cave mouth beside the boathouse, the lake at 0.
+export const ANCHORS_C = {
+  route: [
+    [38, 440],
+    [34, 404],
+    [26, 336],
+    [14, 254],
+    [0, 172],
+    [-12, 112],
+    [-20, 76],
+  ],
+  castle: [0, -40],
+  crown: [-82, 152, -86],
+  cave: [-8, 52],
+  middle: [-10, 96, -30],
+  shore: { jetty: [38, 446], bank: [46, 470] },
+  water: 0,
+};
+// (the night the arrival puts the world's clock on to: the first night, the windows all lit)
+const ARRIVAL_NIGHT = 21.5;
 const REACH = 26; // m round you the walls are looked at for the walk
 const STEP_AROUND = 0.7; // m between the stones a wall is walked round as
 
@@ -112,7 +149,7 @@ export function startOf(at) {
 export default {
   id: 'hogwarts',
   shading: 'nodes',
-  mb: 9,
+  mb: 23,
   label: 'Hogwarts: the castle on its crag over the Black Lake, its grounds, the lake and the forest’s edge',
   async create(rt, props = {}) {
     const reduced = Boolean(props.reduced);
@@ -124,21 +161,23 @@ export default {
     const start = startOf(props.at);
     camera.position.set(start.at[0], 60, start.at[1]);
 
+    const before = new Set(scene.children);
     const grounds = await createGrounds(rt, { scene, camera, tier, house, hour: start.hour, week: Number(props.week) || 1 });
+    // (what the grounds stand in the scene: hidden under a room, shown on the arrival's lake)
+    const outside = scene.children.filter((o) => !before.has(o) && !o.isLight);
+    const lights = scene.children.filter((o) => !before.has(o) && o.isLight);
     const post = rt.gfx?.post?.(grounds.passes) ?? null;
     const renderer = rt.gfx?.renderer ?? null;
 
     rt.input?.bind?.({ ...KEYS, ...WAND_KEYS, ...BROOM_KEYS });
     const touch = { x: 0, y: 0, rise: false, sink: false, catch: false };
     // what the walk stands on and goes round: the grounds (a bridge’s deck or
-    // a stair’s step near the height you were at), or a room’s while you’re in one
+    // a stair’s step near the height you were at); a room has its own (rooms/host.js)
     let lastY = null;
-    let room = null; // { id, name, built, mod, from }
     // (the castle’s standing parts once; the gates, which open and shut, each frame)
     const castleWalls = solidsOf(grounds.castle?.colliders ?? []);
-    let walls = castleWalls;
     const ground = {
-      floorAt: (x, z) => (room?.built.floorAt ? room.built.floorAt(x, z) : grounds.groundAt(x, z, lastY)),
+      floorAt: (x, z) => grounds.groundAt(x, z, lastY),
       level: 0,
       bounds: BOUNDS,
       solids: [],
@@ -156,12 +195,16 @@ export default {
     // the feel's knocks and punches on the camera after the walk has placed it
     const floorAt = (x, z) => ground.floorAt(x, z);
     const feel = createFeel({ baseFov: camera.fov, calm: reduced });
+    // (what the player carries and casts with is theirs in a room too: the wand in hand, its light, its sparks)
+    const mine = new Set(scene.children);
     const wand = createWand({ rt, scene, camera, house, floorAt, tell, feel });
+    const carried = new Set(scene.children.filter((o) => !mine.has(o)));
     wand.place(practiceSet({ at: start.at, yaw: start.yaw, floorAt, house, rt }));
 
     // the broom, and Quidditch on it; their motes and the Snitch's glint in a
     // pool of their own (the wand's is busy with its own sparks)
     const air = createCards({ count: 400, parent: scene });
+    for (const o of scene.children) if (o === air.mesh || o === air.group) carried.add(o);
     const broom = createBroom({ rt, scene, camera, house, floorAt, level: 0, solids: castleWalls, bounds: { x0: BOUNDS.x0 - 150, x1: BOUNDS.x1 + 150, z0: BOUNDS.z0 - 150, z1: BOUNDS.z1 + 150 }, feel, reduced, cards: air });
     // (a match on the pitch's place on the lawn, until the grounds' second task builds its hoops and stands there)
     const said = createSaid({ rt, camera, tell });
@@ -171,12 +214,12 @@ export default {
     const broomThing = () => wand.things.get('broom');
     const nearBroom = () => {
       const th = broomThing();
-      if (!th || broom.riding || th.held || th.gone || room) return false;
+      if (!th || broom.riding || th.held || th.gone || rooms.room) return false;
       const p = th.object.position;
       return Math.hypot(p.x - walker.state.x, p.z - walker.state.z) <= BROOM_REACH;
     };
     const fly = () => {
-      if (broom.riding || room) return;
+      if (broom.riding || rooms.room) return;
       const th = broomThing();
       if (th) {
         th.object.visible = false;
@@ -221,23 +264,32 @@ export default {
       else act = true;
     };
 
-    // into a room through a door, and out again the way you came
-    let outside = [];
-    const enter = async (id, from = null) => {
-      if (busy || room) return false;
+    // the rooms behind the doors (Lane D, rooms/host.js): built far below as
+    // you go in, the grounds hidden and their lights down while you're inside;
+    // a door's room is the registry's (rooms/index.js) or the host's own
+    // (what's hidden under a room: whatever is showing as you first go in, the
+    // grounds and the things on the lawn, the broom and the pitch alike, but
+    // not what you carry nor the arrival's own (it hides its sets itself) nor a
+    // light (the host dims the grounds'; hiding one would build every shader
+    // again); and only that, so what was hidden already stays hidden coming
+    // out; a room gone into from another keeps the list it had)
+    const under = [];
+    let arrivalOwn = new Set();
+    const rooms = createRoomHost({ rt, scene, camera, house, tier, reduced, outside: under, lights, tell, load: (id) => (ROOMS[id] ?? LOCAL[id])?.load?.() });
+    const hostEnter = rooms.enter;
+    rooms.enter = (...args) => {
+      if (!rooms.room) under.splice(0, under.length, ...scene.children.filter((o) => o.visible && !o.isLight && !carried.has(o) && !arrivalOwn.has(o)));
+      return hostEnter(...args);
+    };
+    let back = null; // where you stood outside, turned to face out
+    // (`from`: the door gone in by, its id, or the host's own options: where to stand, whether to walk)
+    const enter = async (id, from = {}) => {
+      const opts = typeof from === 'string' ? { from } : (from ?? {});
+      if (busy || rooms.room) return false;
       busy = true;
+      back = { at: [walker.state.x, walker.state.z], yaw: walker.state.yaw + Math.PI };
       try {
-        const mod = await loadRoom(id);
-        const built = await mod.build(rt, house, { tier, renderer, from, origin: ROOM_ORIGIN, hour: grounds.hour, leave: () => world.leave() });
-        outside = scene.children.filter((o) => o.visible);
-        for (const o of outside) o.visible = false;
-        scene.add(built.group);
-        room = { id, name: roomName(id) ?? mod.name ?? id, built, mod, from, back: { at: [walker.state.x, walker.state.z], yaw: walker.state.yaw + Math.PI } };
-        const s = built.start ?? built.spawn ?? null;
-        if (s) walker.place(s.at.length === 3 ? [s.at[0], s.at[2]] : s.at, s.yaw ?? 0);
-        walls = solidsOf(built.colliders ?? []);
-        tell('enter', { room: id, name: room.name });
-        return true;
+        return Boolean(await rooms.enter(id, opts));
       } catch {
         tell('toast', { text: 'Locked. Not today.' });
         return false;
@@ -246,17 +298,19 @@ export default {
       }
     };
     const leave = () => {
-      if (!room) return false;
-      scene.remove(room.built.group);
-      room.built.dispose?.();
-      for (const o of outside) o.visible = true;
-      outside = [];
-      walker.place(room.back.at, room.back.yaw);
-      room = null;
-      walls = castleWalls;
-      tell('leave', {});
+      if (!rooms.room) return false;
+      rooms.leave();
+      if (back) walker.place(back.at, back.yaw);
+      back = null;
       return true;
     };
+
+    // the arrival (Lane D, world/arrival.js) on the grounds' lake
+    const beforeArrival = new Set(scene.children);
+    const arrival = createArrival({ rt, scene, camera, house, tier, reduced, anchors: ANCHORS_C, heightAt: (x, z) => grounds.groundAt(x, z), sky: grounds.sky, lake: outside, hide: [], rooms, tell, saves: rt.saves, night: () => grounds.setHour(ARRIVAL_NIGHT), dim: () => {} });
+    arrivalOwn = new Set(scene.children.filter((o) => !beforeArrival.has(o)));
+    const known = (at) => Boolean(at) && (PARTS.includes(at) || BEATS.some((x) => x.id === at));
+    if (known(props.at) || !arrival.save.arrived) arrival.start(known(props.at) ? props.at : null);
 
     const world = {
       ready: rt.gfx?.compile?.(scene, camera),
@@ -266,10 +320,23 @@ export default {
       },
       step(dt, input) {
         const pressed = (name) => KEYS[name].some((c) => input?.pressed?.has?.(c));
+        const awake = Boolean(input?.pressed?.size || input?.pointer?.drag);
+        // (the arrival on its rails: the grounds go on round it, the walk waits)
+        if (arrival.active) {
+          arrival.step(dt, (name) => (name === 'skip' ? input?.pressed?.has?.('Enter') : pressed(name)));
+          if (!rooms.room) grounds.step(dt, { at: null, act: false, awake });
+          return;
+        }
+        // (inside a room: its walk and its life; Esc is the way out, back where you came in)
+        if (rooms.room) {
+          if (pressed('menu')) world.leave();
+          else rooms.step(dt, input, touch, pressed);
+          return;
+        }
         if (pressed('menu')) tell('menu');
         // (the walls near you, and the gates as they stand this frame)
         const s0 = walker.state;
-        ground.solids = near(room ? walls : [...walls, ...solidsOf(grounds.doors?.colliders() ?? [])], s0.x, s0.z);
+        ground.solids = near([...castleWalls, ...solidsOf(grounds.doors?.colliders() ?? [])], s0.x, s0.z);
         const stick = input?.stick ?? touch;
         const pad = { x: stick.x || touch.x, y: stick.y || touch.y, rise: touch.rise, sink: touch.sink, catch: touch.catch };
         // (a lesson has E while it runs; let go of it is its too)
@@ -300,9 +367,7 @@ export default {
         air.update(dt, camera);
         const s = walker.state;
         lastY = ground.floorAt(s.x, s.z);
-        const awake = Boolean(input?.pressed?.size || input?.pointer?.drag);
-        const out = grounds.step(dt, { at: room || broom.riding ? null : [s.x, lastY, s.z], act: act && !busy, awake });
-        room?.built.step?.(dt, { at: [s.x, lastY, s.z], act, hour: grounds.hour });
+        const out = grounds.step(dt, { at: broom.riding ? null : [s.x, lastY, s.z], act: act && !busy, awake });
         act = false;
         // (the one prompt: the broom at your feet before the grounds' doors, none while you fly)
         const prompt = broom.riding ? null : nearBroom() ? { label: 'The broom', verb: 'Fly', key: 'E' } : out.prompt ? { label: out.prompt.name, verb: out.prompt.verb, key: out.prompt.key } : null;
@@ -311,11 +376,11 @@ export default {
           tell('near', { door: prompt });
         }
         if (out.toast) tell('toast', { text: out.toast });
-        if (out.enter) enter(out.enter.room, out.enter.from);
+        if (out.enter) enter(out.enter.room, { from: out.enter.from });
       },
       draw(f) {
         const r = f?.renderer ?? renderer;
-        if (!room) grounds.beforeDraw(r);
+        if (!rooms.room) grounds.beforeDraw(r);
         if (post) post.render();
         else r?.render(scene, camera);
       },
@@ -324,7 +389,7 @@ export default {
       walker,
       grounds,
       get room() {
-        return room?.id ?? null;
+        return rooms.room ? rooms.id : null;
       },
       anchor: () => camera.position.toArray(),
       lowerQuality() {},
@@ -342,6 +407,12 @@ export default {
       },
       enter,
       leave,
+      // the arrival: the Menu's “The arrival”, the Sorting card's answers, Enter's skip
+      arrive: (at = null) => arrival.start(at),
+      answer: (i) => arrival.answer(i),
+      skip: () => arrival.skip(),
+      arrival,
+      rooms,
       wand,
       // the wheel's pick, and the touch buttons held and let go
       choose: (id) => wand.choose(id),
@@ -366,11 +437,8 @@ export default {
       quidditch,
       dispose() {
         rt.input?.unbind?.();
-        if (room) {
-          scene.remove(room.built.group);
-          room.built.dispose?.();
-          room = null;
-        }
+        arrival.dispose();
+        rooms.dispose();
         wand.dispose();
         quidditch.dispose();
         lessons.dispose();
@@ -387,7 +455,16 @@ export default {
       const state = () => {
         const r = renderer?.info?.render ?? {};
         const s = walker.state;
-        return { at: [s.x, lastY ?? 0, s.z].map((v) => Math.round(v * 100) / 100), yaw: s.yaw, pitch: s.pitch, speed: s.speed, near: shown?.label ?? null, room: room?.id ?? null, hour: grounds.hour, week: grounds.stats().week, tier, calls: r.drawCalls ?? r.calls ?? 0, triangles: r.triangles ?? 0, memory: renderer?.info?.memory ?? null };
+        return { at: [s.x, lastY ?? 0, s.z].map((v) => Math.round(v * 100) / 100), yaw: s.yaw, pitch: s.pitch, speed: s.speed, near: shown?.label ?? null, room: rooms.id ?? null, hour: grounds.hour, week: grounds.stats().week, tier, calls: r.drawCalls ?? r.calls ?? 0, triangles: r.triangles ?? 0, memory: renderer?.info?.memory ?? null };
+      };
+      const roomView = (name) => {
+        const p = rooms.room?.poses?.[name];
+        if (!p) return null;
+        rooms.walker?.place([p.at[0], p.at[2]], 0);
+        camera.position.set(p.at[0] + ROOM_AT[0], p.at[1] + ROOM_AT[1], p.at[2] + ROOM_AT[2]);
+        camera.lookAt(p.look[0] + ROOM_AT[0], p.look[1] + ROOM_AT[1], p.look[2] + ROOM_AT[2]);
+        rooms.hold = true;
+        return p;
       };
       const goTo = (id) => {
         const p = placeById(id);
@@ -402,8 +479,19 @@ export default {
           fixed = null;
           walker.place([x, z], yaw);
         },
-        // (a camera put anywhere, a boat on the lake among them, looking at a point; view(null) gives the walk back)
-        view: (at, look) => void (fixed = at ? { at, look } : null),
+        // (a camera put anywhere, a boat on the lake among them, looking at a point; view(null) gives the walk
+        // back; or, in a room, view(name): stand at one of the room's named views, its eye and where it looks)
+        view: (at, look) => {
+          if (typeof at === 'string') return roomView(at);
+          fixed = at ? { at, look } : null;
+          return null;
+        },
+        // (room(id): go in; info(): the room's own count; arrive(at): the arrival from a beat; arrival(): where it is)
+        room: (id, opts) => rooms.enter(id, opts).then((r) => r?.info?.() ?? null),
+        info: () => rooms.room?.info?.() ?? null,
+        arrive: (at) => arrival.start(at),
+        arrival: () => arrival.info(),
+        answer: (i) => arrival.answer(i),
         go: goTo,
         time: (h) => grounds.setHour(parseAt(h) ?? Number(h)),
         term: (w) => grounds.setWeek(w),
