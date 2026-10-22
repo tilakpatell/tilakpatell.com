@@ -51,6 +51,14 @@ describe('grassNodes, the twin of grass', () => {
     expect(nodes.grassGeometry({ side: 4, size: 2 }).getIndex()).toBeNull();
   });
 
+  it('gives every blade one normal, straight up, read once a draw: a hook that reads the geometry’s finds it', () => {
+    for (const shape of ['tri', 'blade']) {
+      const n = nodes.grassGeometry({ side: 4, size: 2, shape }).getAttribute('normal');
+      expect(n.isInstancedBufferAttribute).toBe(true);
+      expect(Array.from(n.array)).toEqual([0, 1, 0]);
+    }
+  });
+
   it('grows them four to a tuft: each two-by-two block of cells round one root, a few centimetres off it', () => {
     const side = 8;
     const size = 4;

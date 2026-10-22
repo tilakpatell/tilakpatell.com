@@ -44,9 +44,39 @@ for (const path of paths) {
         canvases: [...document.querySelectorAll('canvas')].filter((c) => c.width * c.height > 1).length,
       };
     });
+    // (what three warns of as it builds a draw: a lit mesh with no normals, a mapped one with no uv;
+    // every scene the renderer is asked to draw for a few frames, looked through)
+    const bare = await page.evaluate(async () => {
+      const r = window.__RUNTIME__?.gfx?.renderer;
+      if (!r) return null;
+      const scenes = new Set();
+      const render = r.render;
+      r.render = function (scene, ...rest) {
+        scenes.add(scene);
+        return render.call(this, scene, ...rest);
+      };
+      await new Promise((done) => setTimeout(done, 4000));
+      r.render = render;
+      const out = { normal: new Set(), uv: new Set() };
+      const path = (o) => {
+        const names = [];
+        for (let p = o; p && names.length < 4; p = p.parent) names.push(p.name || p.type);
+        return names.join(' < ');
+      };
+      for (const scene of scenes)
+        scene.traverse?.((o) => {
+          if (!(o.isMesh || o.isPoints || o.isLine) || !o.geometry?.attributes) return;
+          const mats = [o.material].flat();
+          const a = o.geometry.attributes;
+          const label = `${path(o)}/${mats.map((m) => m?.type).join('+')}`;
+          if (!a.normal && mats.some((m) => m && /Lambert|Standard|Phong|Physical|Toon/.test(m.type))) out.normal.add(label);
+          if (!a.uv && mats.some((m) => m?.map || m?.normalMap || m?.alphaMap || m?.emissiveMap || m?.roughnessMap)) out.uv.add(label);
+        });
+      return { scenes: scenes.size, normal: [...out.normal].slice(0, 10), uv: [...out.uv].slice(0, 10) };
+    });
     await page.screenshot({ path: `${out}/${name}.png`, timeout: 120000 });
     const uniq = (a) => [...new Set(a)];
-    row = { path, ...said, errors: uniq(errors).slice(0, 6), warnings: uniq(warnings).slice(0, 8), nWarnings: warnings.length };
+    row = { path, ...said, errors: uniq(errors).slice(0, 6), warnings: uniq(warnings).slice(0, 8), nWarnings: warnings.length, bare };
     await ctx.close();
   } catch (e) {
     row = { path, fail: String(e.message ?? e).slice(0, 300) };

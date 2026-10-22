@@ -95,7 +95,10 @@ export async function open(b, path, { phone = false, quality = process.env.QUALI
           const f = GPUDevice.prototype[k];
           GPUDevice.prototype[k] = function (...a) {
             window.__PIPES__++;
-            return f.apply(this, a);
+            const made = f.apply(this, a);
+            // (a pipeline the chip would not make, said: three's guard otherwise leaves its object undrawn, silently)
+            if (made?.catch) made.catch((e) => console.error(`WebGPU error: pipeline ${a[0]?.label ?? ''} not made: ${String(e?.message ?? e).slice(0, 300)}`));
+            return made;
           };
         }
         const make = a.requestDevice.bind(a);
