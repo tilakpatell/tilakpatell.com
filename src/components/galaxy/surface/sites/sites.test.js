@@ -22,10 +22,13 @@ import { LIGHTS, PICTURED, gamePictureOf } from '../../../../data/bf2017/light/i
 
 const SHIPS = new Set([...GALAXY_KINDS, ...BUILT_KINDS]);
 const placeable = (kind) => Boolean(PROPS[kind] || SURFACE_MODELS[kind]);
-// (the nature kit's models: a scatter row that names one is drawn from the
-// kit, so a typo in its name fails here and not in a browser)
-const KIT = JSON.parse(readFileSync(new URL('../../../../../public/kit/naturemega/index.json', import.meta.url), 'utf8')).models;
-const kitName = (model) => (typeof model === 'string' && model.startsWith('kit:naturemega/') ? model.slice('kit:naturemega/'.length) : null);
+// (a kit's models, the nature kit's and the city kit's: a scatter row that
+// names one is drawn from its kit, so a typo in its name fails here and not
+// in a browser)
+const kitModels = (pack) => JSON.parse(readFileSync(new URL(`../../../../../public/kit/${pack}/index.json`, import.meta.url), 'utf8')).models;
+const KIT = kitModels('naturemega');
+const KITS = { naturemega: KIT, city: kitModels('city') };
+const kitRef = (model) => (typeof model === 'string' ? /^kit:([a-z0-9-]+)\/(\S+)$/i.exec(model) : null);
 const WEATHER = ['sand', 'snow', 'rain', 'ash', 'embers', 'motes', 'spray', 'pollen'];
 
 describe('the worlds you can land on', () => {
@@ -91,9 +94,9 @@ describe('the worlds you can land on', () => {
         // (one of the drop's library objects, `game:<name>`: imported and published)
         for (const t of site.things_all) expect(isGame(t.model) ? Boolean(SURFACE_MODELS[t.model]) : placeable(t.kind), `${t.kind} ${t.model ?? ''}`).toBe(true);
         for (const s of site.scatter) {
-          const kit = kitName(s.model);
+          const kit = kitRef(s.model);
           if (isGame(s.model)) expect(Boolean(SURFACE_MODELS[s.model]), `scatter ${s.model}`).toBe(true);
-          else if (kit) expect(Boolean(KIT[kit]), `scatter ${s.model}`).toBe(true);
+          else if (kit) expect(Boolean(KITS[kit[1]]?.[kit[2]]), `scatter ${s.model}`).toBe(true);
           else expect(Boolean(SCATTER[s.kind] || placeable(s.kind)), `scatter ${s.kind}`).toBe(true);
         }
         // (a person may be a crew figure, which actors.js tries first)

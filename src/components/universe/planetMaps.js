@@ -3,7 +3,8 @@
 // and the finer set a planet wears near (nearMaps.js), swapped in place.
 //
 //   mapFile(name, level) → the file for a planet map at lib/detail's level
-//   loadTextures({ small, level }) → the textures (any that fail are just missing)
+//   loadTextures({ small, level, onStep }) → the textures (any that fail are just missing;
+//     onStep(k) hears the share of them in, 0 to 1, for the map's loading screen)
 //   mapsOf(id), nearSet(id, level) → a planet's maps, and the finer ones it wears near
 //   mapSwapper(group, T, names) → swap(T2 | null)
 
@@ -18,7 +19,7 @@ const BASE = '/textures/universe/';
 // graphics card (lib/detail's 'ultra'), so a planet filling the screen and
 // the Milky Way behind it stay sharp as the camera comes in. The fandoms'
 // own maps are baked by scripts/build-fandom-planets.mjs (Middle-earth,
-// Breaking Bad, the Caribbean, C-137, the Office, Music, Marvel) at all
+// Breaking Bad, the Caribbean, C-137, the Office, Music, Marvel, Hogwarts' world) at all
 // three sizes; Earth's, the sun's and the sky's by
 // scripts/build-universe-textures.py (--hq for the -hq set); Cybertron's and
 // Invincible's by their own scripts (Invincible's relief with an -hq;
@@ -28,15 +29,15 @@ const BASE = '/textures/universe/';
 // galaxy/sky.js's sky. 'sky' itself, with its stars, is the Earth's.
 const map = (names, opts) => names.map((n) => [n, opts]);
 const MAPS = Object.fromEntries([
-  ...map(['music', 'middleearth', 'marvel', 'breakingbad', 'caribbean', 'office', 'rickmorty'], { sm: true, hq: true, xl: true, colour: true }),
+  ...map(['music', 'middleearth', 'marvel', 'breakingbad', 'caribbean', 'office', 'rickmorty', 'potter'], { sm: true, hq: true, xl: true, colour: true }),
   ...map(['middleearth-clouds', 'rickmorty-clouds', 'earth', 'earth-night', 'sun'], { sm: true, hq: true, colour: true }),
-  ...map(['middleearth-normal', 'office-normal', 'breakingbad-normal', 'caribbean-clouds', 'earth-clouds'], { sm: true, hq: true, colour: false }),
-  ...map(['caribbean-normal', 'invincible-normal'], { sm: false, hq: true, colour: false }),
+  ...map(['middleearth-normal', 'office-normal', 'breakingbad-normal', 'caribbean-clouds', 'earth-clouds', 'potter-clouds'], { sm: true, hq: true, colour: false }),
+  ...map(['caribbean-normal', 'invincible-normal', 'potter-normal'], { sm: false, hq: true, colour: false }),
   ...map(['transformers-normal'], { sm: true, hq: false, colour: false }),
   ...map(['middleearth-night', 'breakingbad-night', 'transformers', 'invincible', 'invincible-night', 'sky-glow'], { sm: true, hq: false, colour: true }),
   ...map(['breakingbad-clouds', 'invincible-clouds'], { sm: true, hq: false, colour: false }),
-  ...map(['middleearth-glow', 'caribbean-night', 'rickmorty-glow', 'invincible-glow', 'plates', 'hull'], { sm: false, hq: false, colour: true }),
-  ...map(['plates-normal', 'plates-rough', 'hull-normal', 'hull-rough', 'paper-normal', 'transformers-glow-sm', 'middleearth-rough', 'office-rough', 'breakingbad-rough', 'caribbean-rough', 'earth-rough', 'rickmorty-rough', 'invincible-rough'], { sm: false, hq: false, colour: false }),
+  ...map(['middleearth-glow', 'caribbean-night', 'rickmorty-glow', 'invincible-glow', 'potter-night', 'potter-glow', 'plates', 'hull'], { sm: false, hq: false, colour: true }),
+  ...map(['plates-normal', 'plates-rough', 'hull-normal', 'hull-rough', 'paper-normal', 'transformers-glow-sm', 'middleearth-rough', 'office-rough', 'breakingbad-rough', 'caribbean-rough', 'earth-rough', 'rickmorty-rough', 'invincible-rough', 'potter-rough'], { sm: false, hq: false, colour: false }),
 ]);
 
 export const MAP_NAMES = Object.keys(MAPS);
@@ -94,7 +95,7 @@ function finerSet(id, level) {
     .map(({ name, colour, files: [file, fallback] }) => ({ name, file, ...(fallback ? { fallback } : {}), colour }));
 }
 
-export async function loadTextures({ small = false, level = small ? 'mid' : detailLevel() } = {}) {
+export async function loadTextures({ small = false, level = small ? 'mid' : detailLevel(), onStep = null } = {}) {
   const T = { small }; // (and whether this is a phone, for the builders)
   const get = async (name, file, colour, fallback = null) => {
     try {
@@ -106,11 +107,13 @@ export async function loadTextures({ small = false, level = small ? 'mid' : deta
       if (fallback) await get(name, fallback, colour);
     }
   };
+  const all = Object.entries(MAPS);
+  let done = 0;
   await Promise.all(
-    Object.entries(MAPS).map(([name, { colour }]) => {
+    all.map(([name, { colour }]) => {
       const file = mapFile(name, level, { xl: false });
       const standard = mapFile(name, 'high');
-      return get(name, file, colour, file !== standard ? standard : null);
+      return get(name, file, colour, file !== standard ? standard : null).then(() => onStep?.(++done / all.length));
     }),
   );
   return T;

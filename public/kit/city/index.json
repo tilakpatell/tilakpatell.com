@@ -1,0 +1,848 @@
+{
+  "pack": "city",
+  "licence": "CC0-1.0",
+  "source": "Quaternius, Downtown City MegaKit (https://quaternius.com)",
+  "models": {
+    "Building_Large_2": {
+      "family": "building",
+      "file": "building.glb",
+      "parts": [
+        "main",
+        "main",
+        "main",
+        "main",
+        "main",
+        "main",
+        "main",
+        "main",
+        "main",
+        "main",
+        "main",
+        "main"
+      ],
+      "tris": 27519,
+      "tris1": 10,
+      "radius": 13.259,
+      "height": 28,
+      "trunk": 13.206,
+      "kind": "building"
+    },
+    "Building_Medium_2_001": {
+      "family": "building",
+      "file": "building-2.glb",
+      "parts": [
+        "main",
+        "main",
+        "main",
+        "main",
+        "main",
+        "main",
+        "main",
+        "main",
+        "main",
+        "main",
+        "main",
+        "main"
+      ],
+      "tris": 25612,
+      "tris1": 10,
+      "radius": 9.964,
+      "height": 24.998,
+      "trunk": 9.489,
+      "kind": "building"
+    },
+    "Building_Small_1": {
+      "family": "building",
+      "file": "building-3.glb",
+      "parts": [
+        "main",
+        "main",
+        "main",
+        "main",
+        "main",
+        "main",
+        "main",
+        "main",
+        "main",
+        "main",
+        "main",
+        "main",
+        "main"
+      ],
+      "tris": 18344,
+      "tris1": 10,
+      "radius": 9.573,
+      "height": 17.014,
+      "trunk": 9.573,
+      "kind": "building"
+    },
+    "Decal_ArrowForwardLeft": {
+      "family": "decal",
+      "file": "decal.glb",
+      "parts": [
+        "leaves"
+      ],
+      "tris": 10,
+      "tris1": 8,
+      "radius": 1.605,
+      "height": -0.13,
+      "trunk": 1.506,
+      "kind": "decal"
+    },
+    "Decal_ArrowForwardRight": {
+      "family": "decal",
+      "file": "decal.glb",
+      "parts": [
+        "leaves"
+      ],
+      "tris": 10,
+      "tris1": 8,
+      "radius": 1.605,
+      "height": -0.13,
+      "trunk": 1.506,
+      "kind": "decal"
+    },
+    "Decal_ArrowStraight": {
+      "family": "decal",
+      "file": "decal.glb",
+      "parts": [
+        "leaves"
+      ],
+      "tris": 2,
+      "tris1": 2,
+      "radius": 1.275,
+      "height": -0.13,
+      "trunk": 1.275,
+      "kind": "decal"
+    },
+    "Decal_ArrowTurnLeft": {
+      "family": "decal",
+      "file": "decal.glb",
+      "parts": [
+        "leaves"
+      ],
+      "tris": 4,
+      "tris1": 4,
+      "radius": 1.598,
+      "height": -0.13,
+      "trunk": 1.598,
+      "kind": "decal"
+    },
+    "Decal_ArrowTurnRight": {
+      "family": "decal",
+      "file": "decal.glb",
+      "parts": [
+        "leaves"
+      ],
+      "tris": 4,
+      "tris1": 4,
+      "radius": 1.598,
+      "height": -0.13,
+      "trunk": 1.598,
+      "kind": "decal"
+    },
+    "Decal_Bikelane": {
+      "family": "decal",
+      "file": "decal.glb",
+      "parts": [
+        "leaves"
+      ],
+      "tris": 8,
+      "tris1": 6,
+      "radius": 2.045,
+      "height": -0.13,
+      "trunk": 2.045,
+      "kind": "decal"
+    },
+    "Decal_BrokenLine_Straight": {
+      "family": "decal",
+      "file": "decal.glb",
+      "parts": [
+        "leaves"
+      ],
+      "tris": 2,
+      "tris1": 0,
+      "radius": 3.002,
+      "height": -0.13,
+      "trunk": 3.002,
+      "kind": "decal"
+    },
+    "Decal_Crosswalk": {
+      "family": "decal",
+      "file": "decal.glb",
+      "parts": [
+        "leaves"
+      ],
+      "tris": 2,
+      "tris1": 2,
+      "radius": 3.537,
+      "height": -0.148,
+      "trunk": 3.537,
+      "kind": "decal"
+    },
+    "Decal_Crosswalk_Wide": {
+      "family": "decal",
+      "file": "decal.glb",
+      "parts": [
+        "leaves"
+      ],
+      "tris": 4,
+      "tris1": 4,
+      "radius": 6.166,
+      "height": -0.148,
+      "trunk": 6.166,
+      "kind": "decal"
+    },
+    "Decal_Curve_2Lane_Stripe": {
+      "family": "decal",
+      "file": "decal.glb",
+      "parts": [
+        "leaves"
+      ],
+      "tris": 32,
+      "tris1": 8,
+      "radius": 6.223,
+      "height": -0.148,
+      "trunk": 6.223,
+      "kind": "decal"
+    },
+    "Decal_Curve_4LaneShort": {
+      "family": "decal",
+      "file": "decal.glb",
+      "parts": [
+        "leaves"
+      ],
+      "tris": 48,
+      "tris1": 12,
+      "radius": 6.435,
+      "height": -0.148,
+      "trunk": 6.435,
+      "kind": "decal"
+    },
+    "Decal_Curve_4LaneShort_DoubleYellow": {
+      "family": "decal",
+      "file": "decal.glb",
+      "parts": [
+        "leaves"
+      ],
+      "tris": 48,
+      "tris1": 12,
+      "radius": 6.503,
+      "height": -0.148,
+      "trunk": 6.503,
+      "kind": "decal"
+    },
+    "Decal_Curve_4LaneShort_Stripe": {
+      "family": "decal",
+      "file": "decal.glb",
+      "parts": [
+        "leaves"
+      ],
+      "tris": 48,
+      "tris1": 12,
+      "radius": 10.465,
+      "height": -0.148,
+      "trunk": 10.465,
+      "kind": "decal"
+    },
+    "Decal_DoubleYellow_Straight": {
+      "family": "decal",
+      "file": "decal.glb",
+      "parts": [
+        "leaves"
+      ],
+      "tris": 2,
+      "tris1": 2,
+      "radius": 3.006,
+      "height": -0.11,
+      "trunk": 3.006,
+      "kind": "decal"
+    },
+    "Decal_Only": {
+      "family": "decal",
+      "file": "decal.glb",
+      "parts": [
+        "leaves"
+      ],
+      "tris": 2,
+      "tris1": 2,
+      "radius": 1.606,
+      "height": -0.13,
+      "trunk": 1.606,
+      "kind": "decal"
+    },
+    "Decal_Slow": {
+      "family": "decal",
+      "file": "decal.glb",
+      "parts": [
+        "leaves"
+      ],
+      "tris": 2,
+      "tris1": 2,
+      "radius": 1.629,
+      "height": -0.13,
+      "trunk": 1.629,
+      "kind": "decal"
+    },
+    "Decal_Stop": {
+      "family": "decal",
+      "file": "decal.glb",
+      "parts": [
+        "leaves"
+      ],
+      "tris": 2,
+      "tris1": 2,
+      "radius": 1.664,
+      "height": -0.13,
+      "trunk": 1.664,
+      "kind": "decal"
+    },
+    "Prop_ACUnit": {
+      "family": "prop",
+      "file": "prop.glb",
+      "parts": [
+        "main"
+      ],
+      "tris": 136,
+      "tris1": 34,
+      "radius": 0.479,
+      "height": 0.6,
+      "trunk": 0.479,
+      "kind": "prop"
+    },
+    "Prop_Bollard": {
+      "family": "prop",
+      "file": "prop.glb",
+      "parts": [
+        "main"
+      ],
+      "tris": 190,
+      "tris1": 47,
+      "radius": 0.157,
+      "height": 0.892,
+      "trunk": 0.107,
+      "kind": "prop"
+    },
+    "Prop_Drain": {
+      "family": "prop",
+      "file": "prop.glb",
+      "parts": [
+        "main"
+      ],
+      "tris": 10,
+      "tris1": 10,
+      "radius": 0.414,
+      "height": 0.04,
+      "trunk": 0.414,
+      "kind": "prop"
+    },
+    "Prop_ManholeCover": {
+      "family": "prop",
+      "file": "prop.glb",
+      "parts": [
+        "main"
+      ],
+      "tris": 118,
+      "tris1": 28,
+      "radius": 0.654,
+      "height": 0.019,
+      "trunk": 0.463,
+      "kind": "prop"
+    },
+    "Prop_Planter_Single": {
+      "family": "prop",
+      "file": "prop.glb",
+      "parts": [
+        "main",
+        "main"
+      ],
+      "tris": 118,
+      "tris1": 30,
+      "radius": 1.414,
+      "height": 0.6,
+      "trunk": 1.312,
+      "kind": "prop"
+    },
+    "Sidewalk_Corner_Flat_3m": {
+      "family": "sidewalk",
+      "file": "sidewalk.glb",
+      "parts": [
+        "main"
+      ],
+      "tris": 97,
+      "tris1": 24,
+      "radius": 2.128,
+      "height": 0,
+      "trunk": 2.128,
+      "kind": "street"
+    },
+    "Sidewalk_Corner_Flat_3m_Stripe": {
+      "family": "sidewalk",
+      "file": "sidewalk.glb",
+      "parts": [
+        "leaves"
+      ],
+      "tris": 14,
+      "tris1": 4,
+      "radius": 2.404,
+      "height": -0.148,
+      "trunk": 2.404,
+      "kind": "street"
+    },
+    "Sidewalk_Corner_Round_3m": {
+      "family": "sidewalk",
+      "file": "sidewalk.glb",
+      "parts": [
+        "main"
+      ],
+      "tris": 177,
+      "tris1": 43,
+      "radius": 2.128,
+      "height": 0,
+      "trunk": 2.128,
+      "kind": "street"
+    },
+    "Sidewalk_Corner_Round_3m_Stripe": {
+      "family": "sidewalk",
+      "file": "sidewalk.glb",
+      "parts": [
+        "leaves"
+      ],
+      "tris": 24,
+      "tris1": 6,
+      "radius": 2.404,
+      "height": -0.146,
+      "trunk": 2.404,
+      "kind": "street"
+    },
+    "Sidewalk_NoCurb_3m": {
+      "family": "sidewalk",
+      "file": "sidewalk.glb",
+      "parts": [
+        "main"
+      ],
+      "tris": 42,
+      "tris1": 10,
+      "radius": 2.121,
+      "height": 0,
+      "trunk": 2.121,
+      "kind": "street"
+    },
+    "Sidewalk_Planter": {
+      "family": "sidewalk",
+      "file": "sidewalk.glb",
+      "parts": [
+        "main",
+        "main"
+      ],
+      "tris": 598,
+      "tris1": 150,
+      "radius": 1.324,
+      "height": 0.506,
+      "trunk": 1.239,
+      "kind": "street"
+    },
+    "Sidewalk_Straight_3m": {
+      "family": "sidewalk",
+      "file": "sidewalk.glb",
+      "parts": [
+        "main"
+      ],
+      "tris": 60,
+      "tris1": 14,
+      "radius": 2.125,
+      "height": 0,
+      "trunk": 2.125,
+      "kind": "street"
+    },
+    "Sidewalk_Straight_3m_Stripe": {
+      "family": "sidewalk",
+      "file": "sidewalk.glb",
+      "parts": [
+        "leaves"
+      ],
+      "tris": 2,
+      "tris1": 2,
+      "radius": 1.503,
+      "height": -0.148,
+      "trunk": 1.503,
+      "kind": "street"
+    },
+    "Street_2Lane": {
+      "family": "street",
+      "file": "street.glb",
+      "parts": [
+        "main",
+        "leaves",
+        "main"
+      ],
+      "tris": 220,
+      "tris1": 57,
+      "radius": 6.708,
+      "height": 0,
+      "trunk": 6.708,
+      "kind": "street"
+    },
+    "Street_2Lane_noSidewalk": {
+      "family": "street",
+      "file": "street.glb",
+      "parts": [
+        "main",
+        "leaves"
+      ],
+      "tris": 16,
+      "tris1": 6,
+      "radius": 4.243,
+      "height": -0.148,
+      "trunk": 4.243,
+      "kind": "street"
+    },
+    "Street_4Lane": {
+      "family": "street",
+      "file": "street.glb",
+      "parts": [
+        "main",
+        "leaves",
+        "main"
+      ],
+      "tris": 252,
+      "tris1": 66,
+      "radius": 9.487,
+      "height": 0,
+      "trunk": 9.487,
+      "kind": "street"
+    },
+    "Street_4Lane_noSidewalk": {
+      "family": "street",
+      "file": "street.glb",
+      "parts": [
+        "main",
+        "leaves"
+      ],
+      "tris": 12,
+      "tris1": 6,
+      "radius": 6.708,
+      "height": -0.148,
+      "trunk": 6.708,
+      "kind": "street"
+    },
+    "Street_4WayIntersection": {
+      "family": "street",
+      "file": "street.glb",
+      "parts": [
+        "main",
+        "leaves",
+        "main"
+      ],
+      "tris": 892,
+      "tris1": 219,
+      "radius": 17.442,
+      "height": 0,
+      "trunk": 13.59,
+      "kind": "street"
+    },
+    "Street_Asphalt_6x6": {
+      "family": "street",
+      "file": "street.glb",
+      "parts": [
+        "main"
+      ],
+      "tris": 2,
+      "tris1": 2,
+      "radius": 4.243,
+      "height": -0.15,
+      "trunk": 4.243,
+      "kind": "street"
+    },
+    "Street_Asphalt_9x9": {
+      "family": "street",
+      "file": "street.glb",
+      "parts": [
+        "main"
+      ],
+      "tris": 2,
+      "tris1": 2,
+      "radius": 6.364,
+      "height": -0.15,
+      "trunk": 6.364,
+      "kind": "street"
+    },
+    "Street_Asphalt_Curve_2Lane": {
+      "family": "street",
+      "file": "street.glb",
+      "parts": [
+        "main"
+      ],
+      "tris": 48,
+      "tris1": 12,
+      "radius": 7.071,
+      "height": -0.15,
+      "trunk": 7.071,
+      "kind": "street"
+    },
+    "Street_Asphalt_Curve_4Lane_Short": {
+      "family": "street",
+      "file": "street.glb",
+      "parts": [
+        "main"
+      ],
+      "tris": 49,
+      "tris1": 12,
+      "radius": 11.314,
+      "height": -0.15,
+      "trunk": 11.314,
+      "kind": "street"
+    },
+    "Street_Curve_2Lane": {
+      "family": "street",
+      "file": "street.glb",
+      "parts": [
+        "main",
+        "leaves",
+        "main"
+      ],
+      "tris": 505,
+      "tris1": 126,
+      "radius": 8.485,
+      "height": 0,
+      "trunk": 8.485,
+      "kind": "street"
+    },
+    "Street_Curve_2Lane_Curb": {
+      "family": "street",
+      "file": "street.glb",
+      "parts": [
+        "main"
+      ],
+      "tris": 224,
+      "tris1": 55,
+      "radius": 8.485,
+      "height": 0,
+      "trunk": 8.485,
+      "kind": "street"
+    },
+    "Street_Curve_4LaneShort": {
+      "family": "street",
+      "file": "street.glb",
+      "parts": [
+        "main",
+        "leaves",
+        "main"
+      ],
+      "tris": 634,
+      "tris1": 157,
+      "radius": 12.728,
+      "height": 0,
+      "trunk": 12.728,
+      "kind": "street"
+    },
+    "Street_Curve_4Lane_Short_Curb": {
+      "family": "street",
+      "file": "street.glb",
+      "parts": [
+        "main"
+      ],
+      "tris": 336,
+      "tris1": 84,
+      "radius": 12.728,
+      "height": 0,
+      "trunk": 12.728,
+      "kind": "street"
+    },
+    "Street_TIntersection": {
+      "family": "street",
+      "file": "street.glb",
+      "parts": [
+        "main",
+        "leaves",
+        "main"
+      ],
+      "tris": 858,
+      "tris1": 214,
+      "radius": 16.306,
+      "height": 0,
+      "trunk": 14.37,
+      "kind": "street"
+    }
+  },
+  "materials": {
+    "Building_Large_2_Facade": {
+      "alpha": "opaque",
+      "leaf": false,
+      "wind": null,
+      "maps": {
+        "colour": "1024x1024"
+      }
+    },
+    "Building_Medium_2_001_Facade": {
+      "alpha": "opaque",
+      "leaf": false,
+      "wind": null,
+      "maps": {
+        "colour": "1024x1024"
+      }
+    },
+    "Building_Small_1_Facade": {
+      "alpha": "opaque",
+      "leaf": false,
+      "wind": null,
+      "maps": {
+        "colour": "1024x1024"
+      }
+    },
+    "MI_Asphalt": {
+      "alpha": "opaque",
+      "leaf": false,
+      "wind": null,
+      "maps": {
+        "colour": "1024x1024",
+        "normal": "1024x1024"
+      }
+    },
+    "MI_Concrete": {
+      "alpha": "opaque",
+      "leaf": false,
+      "wind": null,
+      "maps": {
+        "colour": "1024x1024",
+        "normal": "1024x1024"
+      }
+    },
+    "MI_Dirt": {
+      "alpha": "opaque",
+      "leaf": false,
+      "wind": null,
+      "maps": {
+        "colour": "1024x1024",
+        "normal": "1024x1024"
+      }
+    },
+    "MI_FakeInterior_1": {
+      "alpha": "opaque",
+      "leaf": false,
+      "wind": null,
+      "maps": {
+        "colour": "512x512"
+      }
+    },
+    "MI_FakeInterior_2": {
+      "alpha": "opaque",
+      "leaf": false,
+      "wind": null,
+      "maps": {
+        "colour": "512x512"
+      }
+    },
+    "MI_FakeInterior_3": {
+      "alpha": "opaque",
+      "leaf": false,
+      "wind": null,
+      "maps": {
+        "colour": "512x512"
+      }
+    },
+    "MI_FakeInterior_4": {
+      "alpha": "opaque",
+      "leaf": false,
+      "wind": null,
+      "maps": {
+        "colour": "512x512"
+      }
+    },
+    "MI_Glass": {
+      "alpha": "opaque",
+      "leaf": false,
+      "wind": null,
+      "maps": {}
+    },
+    "MI_InteriorFloor": {
+      "alpha": "opaque",
+      "leaf": false,
+      "wind": null,
+      "maps": {
+        "colour": "1024x1024",
+        "normal": "1024x1024"
+      }
+    },
+    "MI_InteriorWall": {
+      "alpha": "opaque",
+      "leaf": false,
+      "wind": null,
+      "maps": {
+        "colour": "1024x1024",
+        "normal": "1024x1024"
+      }
+    },
+    "MI_Ornaments": {
+      "alpha": "opaque",
+      "leaf": false,
+      "wind": null,
+      "maps": {
+        "colour": "1024x1024",
+        "normal": "1024x1024"
+      }
+    },
+    "MI_RedBrick": {
+      "alpha": "opaque",
+      "leaf": false,
+      "wind": null,
+      "maps": {
+        "colour": "1024x1024",
+        "normal": "1024x1024"
+      }
+    },
+    "MI_RedBrick_Pale": {
+      "alpha": "opaque",
+      "leaf": false,
+      "wind": null,
+      "maps": {
+        "colour": "1024x1024",
+        "normal": "1024x1024"
+      }
+    },
+    "MI_StreetDecals": {
+      "alpha": "mask",
+      "leaf": true,
+      "wind": null,
+      "maps": {
+        "colour": "512x512"
+      }
+    },
+    "MI_Trim": {
+      "alpha": "opaque",
+      "leaf": false,
+      "wind": null,
+      "maps": {
+        "colour": "1024x1024",
+        "normal": "1024x1024"
+      }
+    },
+    "MI_Trim_Dark": {
+      "alpha": "opaque",
+      "leaf": false,
+      "wind": null,
+      "maps": {
+        "colour": "1024x1024",
+        "normal": "1024x1024"
+      }
+    },
+    "MI_Trim_Green": {
+      "alpha": "opaque",
+      "leaf": false,
+      "wind": null,
+      "maps": {
+        "colour": "1024x1024",
+        "normal": "1024x1024"
+      }
+    },
+    "MI_Trim_MetalConcrete": {
+      "alpha": "opaque",
+      "leaf": false,
+      "wind": null,
+      "maps": {
+        "colour": "1024x1024",
+        "normal": "1024x1024"
+      }
+    }
+  }
+}

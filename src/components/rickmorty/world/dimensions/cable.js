@@ -4,10 +4,27 @@
 // Gazorpazorpfield's kitchen), the Real Fake Doors on their stand, the Lil'
 // Bits counter, the shmlo show's couch, cameras on tripods, lights on
 // trusses, and the control booth by the way in. The people on the channels
-// are models placed from ./destinations.js.
+// are models placed from ./destinations.js. Its game is a running order
+// (./destinations.js's `sequence`, played by ./stage.js): a red on-air lamp
+// over each set, lit as its set goes on.
 
-import { BALL, fitText } from '../interiors/shell';
+import * as THREE from 'three';
+import { BALL, BOX, fitText } from '../interiors/shell';
+import { mergeParts } from '../kit';
 import { specks, stage } from './stage';
+
+// a set's on-air lamp: [set, dx, dz, y, on a stand of its own]: over the
+// flats along the north wall, on the doors' middle frame, and on a stand by
+// the counter and by the couch
+const LAMPS = [
+  ['set-ants', -18, -14.8, 3.62],
+  ['set-legs', -4.5, -14.8, 3.62],
+  ['set-sneezy', 8, -14.8, 3.62],
+  ['set-field', 18, -14.8, 3.62],
+  ['set-doors', 0, -4.5, 2.56],
+  ['set-bits', 8, 12.2, 2.6, true],
+  ['set-shmlo', -17.9, 8, 2.6, true],
+];
 
 const LIGHT = { sun: [0xfff4e0, 0.95], hemi: [0xf0e8ff, 0x3a3a44, 1.8], fog: null, background: 0x0c0c12 };
 
@@ -64,6 +81,19 @@ export async function buildCable(kit) {
     }
   });
   R.frame(...P(0, (A.z1 - A.z0) / 2 - 0.14), Math.PI, { list: 'fixed' }).box(0x060608, 0, 1.4, 0, 8, 3, 0.1).decal('cable-screens', 0, 2.9, 0.07, 7.8, 2.8, { bright: true });
+
+  // the on-air lamps, each its own mesh for the running order to light
+  const lamps = {};
+  for (const [set, dx, dz, y, stand] of LAMPS) {
+    if (stand) R.frame(...P(dx, dz), 0).cyl(0x2a2a30, 0, 0, 0, 0.05, y - 0.17);
+    const lit = [];
+    R.frame(...P(dx, dz), 0, { glows: lit }).glow(BOX, 0xff3a3a, 1.6, 0, y, 0, 0, 1.1, 0.34, 0.12);
+    const lamp = new THREE.Mesh(R.own(mergeParts(lit)), R.own(new THREE.MeshBasicMaterial({ vertexColors: true })));
+    lamp.material.color.setScalar(0.15);
+    R.add(lamp, { ink: false });
+    lamps[set] = lamp;
+  }
+  S.sequence({ lamps });
 
   S.people();
   return S.done(LIGHT, () => {});

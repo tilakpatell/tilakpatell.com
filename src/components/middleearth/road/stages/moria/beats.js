@@ -22,8 +22,9 @@ export const BEATS = [
   { id: 'drums', kind: 'drums', at: 34, hold: 6, rig: 'follow', reach: 12, fx: [{ kind: 'shake', at: 0, seconds: 1.4 }], deed: { verb: 'press', label: 'Bar the door', at: 1, lines: ['moria-door'] } },
   // the Dwarrowdelf’s pillars going on into the dark
   { id: 'dwarrowdelf', kind: 'dwarrowdelf', at: 50, hold: 8, rig: 'crane', reach: 18, params: { seconds: 7, top: 12, lookAt: [0, 6, 74], above: true } },
-  // down the broken stair to the abyss
-  { id: 'stair', kind: 'stair', at: 78, hold: 0, rig: 'follow', reach: 14 },
+  // down the broken stair to the abyss, seen from over the deep beside it (behind them the
+  // follow's place was inside the steps above, and its boom came in onto the last walker's back)
+  { id: 'stair', kind: 'stair', at: 78, hold: 0, rig: 'side', reach: 14 },
   // the fire behind them: Gandalf turns them out onto the bridge
   { id: 'run', kind: 'run', at: 94, hold: 0, rig: 'follow', reach: 10, clip: 'gandalfRun' },
   // the Bridge of Khazad-dûm: the Balrog, the staff down, the bridge breaks, the whip

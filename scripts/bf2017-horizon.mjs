@@ -43,14 +43,14 @@ import { MeshoptDecoder, MeshoptEncoder, MeshoptSimplifier } from 'meshoptimizer
 import { readInstances } from '../src/lib/level/instances.js';
 import { splitTextures } from '../src/components/galaxy/surface/level/levelPack.js';
 import { parseArgs } from './lib/args.mjs';
+import { assetBase } from './lib/bucket.mjs';
 import { CELL_TRIS, CELL_TRIS_LO, COARSE, horizonCells, impostorsOf, lastFile } from './lib/bf2017-horizon.mjs';
 import { compose, mergeInto, multiply, newGroup } from './lib/horizon-merge.mjs';
 import { VIEWS } from './lib/impostor-layout.mjs';
 import { dropLevels, ktx2Info } from './lib/ktx2-levels.mjs';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
-const BASE =
-  process.env.ASSET_BASE ?? process.env.VITE_ASSET_BASE ?? (process.env.SUPABASE_URL ? `${process.env.SUPABASE_URL}/storage/v1/object/public/site-assets` : 'https://jzabcqboyemokwifmjmp.supabase.co/storage/v1/object/public/site-assets');
+const BASE = assetBase();
 // _source: the design's §4 N4 (2,048 on high and ultra); the smaller tiers
 // a step and two under, as the pack's own maps are (lod.js's texSizeFor)
 const ATLAS_ROWS = { low: 512, mid: 1024, high: 2048, ultra: 2048 };

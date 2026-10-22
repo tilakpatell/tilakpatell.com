@@ -125,7 +125,16 @@ function queryRow(root, name) {
   const terms = asset.objects
     .filter((o, i) => i !== asset.root && o)
     .map((o) => {
-      if (Array.isArray(o.X)) return { term: o.XStyle ?? o.$type, from: o.FromPosition ?? null, to: o.ToPosition ?? null, x: o.X, score: o.Score };
+      // (the direction an angle or a projection is measured from, the filter as its set flags, a switched-off
+      // term and an X taken from the weapon's preferred range: what cover.js scores by, as the game's
+      // CoverQueryScoreBase holds them)
+      if (Array.isArray(o.X)) {
+        const filter = Object.entries(o.Filter ?? {})
+          .filter(([, v]) => v === true)
+          .map(([k]) => k);
+        const xSource = o.CurveXSource && o.CurveXSource !== 'CoverQueryCurveXSource_Custom' ? o.CurveXSource.replace('CoverQueryCurveXSource_', '') : null;
+        return { term: o.XStyle ?? o.$type, from: o.FromPosition ?? null, to: o.ToPosition ?? null, ref: o.ReferenceDirection ?? null, x: o.X, score: o.Score, filter, ...(o.Enabled === false ? { enabled: false } : {}), ...(xSource ? { xSource } : {}) };
+      }
       // (a curve as its points; a spline's tangents kept, a linear one's are the editor's)
       if (o.$type === 'FloatCurve') {
         const pts = o.Points ?? [];

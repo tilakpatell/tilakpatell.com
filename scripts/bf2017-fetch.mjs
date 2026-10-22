@@ -1,5 +1,5 @@
 // Fetches models from the Star Wars Battlefront II (2017) drop (the private
-// bf2017-assets bucket on the owner's Supabase) into lab/assets/bf2017/,
+// bf2017-assets bucket on the owner's R2, scripts/lib/bucket.mjs) into lab/assets/bf2017/,
 // which git ignores: nothing fetched is committed as it comes; it goes
 // through scripts/bf2017-import.mjs first. A model is asked for by its
 // manifest name; the fetch takes its LOD files, the textures its GLBs name
@@ -50,8 +50,8 @@
 // half file and the next one resumes; lab/assets/bf2017/.index.json writes
 // down what is on disk, so a second pass over a set asks for nothing it has.
 //
-// The keys: SUPABASE_URL and BF2017_KEY (or SUPA_KEY, the same key under the
-// name the cloud sessions hold it by) from the environment, never printed.
+// The keys: R2_ACCESS_KEY_ID and R2_SECRET_ACCESS_KEY (R2's S3 keys) from
+// the environment, never printed.
 // A texture none of whose sources the bucket holds yet is `missing`, not an
 // error: the upload is still running, and the import says what it lacks.
 
@@ -63,6 +63,7 @@ import { parseArgs } from './lib/args.mjs';
 import { animEntry, animPath, globRe } from './lib/bf2017-anims.mjs';
 import { partsOf, readManifest } from './lib/bf2017-manifest.mjs';
 import { dataPath, globDir, globMatch, globRegExp, imageUris, inBucket, isCurrent, jobsFor, localPath, namesOfType, objectUrl, readIndex, summaryLine, textureSources, writeIndex } from './lib/bf2017-paths.mjs';
+import { NO_KEYS, bucketEnv, folder, list } from './lib/bucket.mjs';
 import { createPool } from './lib/pool.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -71,22 +72,22 @@ const MANIFEST = 'web/models.jsonl';
 const ANIMS = 'web/anims.jsonl';
 const INDEX = '.index.json';
 
+// { base, fetch }: R2's endpoint and a fetch that signs each request
 export function keys() {
-  const base = process.env.SUPABASE_URL;
-  const key = process.env.BF2017_KEY || process.env.SUPA_KEY;
-  if (!base || !key) {
-    console.error('Set SUPABASE_URL and BF2017_KEY in .env.local and run with node --env-file=.env.local.');
+  const env = bucketEnv();
+  if (!env) {
+    console.error(NO_KEYS);
     process.exit(2);
   }
-  return { base, headers: { apikey: key, Authorization: `Bearer ${key}` } };
+  return env;
 }
 
 // Every request goes through one pool (scripts/lib/pool.mjs): six at once,
 // each retried on a fault, a 429 or a 5xx, written to a .part and renamed
-// when whole. Supabase answers 400 (and sometimes 404) for an object it
-// hasn't got: that is `missing`, the upload not there yet, not a failure.
+// when whole, and signed at each try (the job's fetch). A 404 is an object
+// the bucket hasn't got: `missing`, the upload not there yet, not a failure.
 let shared = null;
-const poolOf = (size = 6) => (shared ??= createPool({ size, missing: [400, 404] }));
+const poolOf = (size = 6) => (shared ??= createPool({ size, missing: [404] }));
 
 // What this run did, for the summary line and the index.
 const run = { fetched: 0, kept: 0, missing: 0, failed: 0, bytes: 0, index: null, verify: false, root: null };
@@ -112,33 +113,22 @@ export async function getObject(env, root, bucketPath, { size = null } = {}) {
   const onDisk = await sizeOf(file);
   if (onDisk != null) {
     if (!run.verify && isCurrent(index, bucketPath, null, onDisk)) return note({ file, bytes: onDisk, state: 'kept' });
-    const head = await poolOf().run({ url, method: 'HEAD', headers: env.headers });
+    const head = await poolOf().run({ url, method: 'HEAD', fetch: env.fetch });
     if (head.status === 'missing') return note({ file, bytes: 0, state: 'missing' });
     if (head.status === 'fetched' && Number(head.headers.get('content-length')) === onDisk) {
       index[bucketPath] = { bytes: onDisk, at: new Date().toISOString() };
       return note({ file, bytes: onDisk, state: 'kept' });
     }
   }
-  const got = await poolOf().run({ url, headers: env.headers, size, to: file });
+  const got = await poolOf().run({ url, fetch: env.fetch, size, to: file });
   if (got.status === 'fetched') index[bucketPath] = { bytes: got.bytes, at: new Date().toISOString() };
   else if (got.status === 'missing') delete index[bucketPath];
   return note({ file, bytes: got.bytes, state: got.status, error: got.error });
 }
 
-// The objects in one folder of the bucket (Storage's list call, a page at a time)
+// The objects in one folder of the bucket, by name (its subfolders left out)
 export async function listFolder(env, prefix) {
-  const out = [];
-  for (let offset = 0; ; offset += 1000) {
-    const res = await fetch(`${env.base.replace(/\/+$/, '')}/storage/v1/object/list/${BUCKET}`, {
-      method: 'POST',
-      headers: { ...env.headers, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prefix, limit: 1000, offset, sortBy: { column: 'name', order: 'asc' } }),
-    });
-    if (!res.ok) throw new Error(`list ${prefix}: ${res.status}`);
-    const page = await res.json();
-    out.push(...page.filter((o) => o.id).map((o) => o.name));
-    if (page.length < 1000) return out;
-  }
+  return (await folder(env.fetch, BUCKET, prefix)).filter((o) => o.id).map((o) => o.name);
 }
 
 const say = (r) => console.log(`${relative(ROOT, r.file).padEnd(110)} ${String(r.bytes).padStart(10)}  ${r.state}${r.error ? `  (${r.error})` : ''}`);
@@ -232,31 +222,9 @@ export async function fetchModel(env, root, manifest, name, { lod = 'all', parts
 }
 
 // The index read before a run and written after it, and the summary line.
-// Every object under a bucket folder, its sub-folders walked (Storage lists
-// one level at a time; a folder comes back with no id).
-const PAGE = 1000;
-async function listUnder(env, prefix) {
-  const out = [];
-  for (let offset = 0; ; offset += PAGE) {
-    let page = null;
-    for (let tries = 0; !page; tries++) {
-      const res = await fetch(`${env.base.replace(/\/+$/, '')}/storage/v1/object/list/${BUCKET}`, {
-        method: 'POST',
-        headers: { ...env.headers, 'content-type': 'application/json' },
-        body: JSON.stringify({ prefix, limit: PAGE, offset, sortBy: { column: 'name', order: 'asc' } }),
-      }).catch(() => null);
-      if (res?.ok) page = await res.json();
-      else if (tries >= 3) throw new Error(`list ${prefix}: ${res ? res.status : 'no answer'}`);
-      else await new Promise((r) => setTimeout(r, 1000 * 2 ** tries));
-    }
-    for (const e of page) {
-      const path = `${prefix}/${e.name}`;
-      if (e.id) out.push(path);
-      else out.push(...(await listUnder(env, path)));
-    }
-    if (page.length < PAGE) return out;
-  }
-}
+// Every object under a bucket folder, its sub-folders' too (one listing,
+// a thousand keys a page)
+const listUnder = async (env, prefix) => (await list(env.fetch, BUCKET, `${prefix}/`)).files.map((f) => f.key);
 
 // Bucket paths through the pool, one line each.
 const getAll = (env, root, paths) =>

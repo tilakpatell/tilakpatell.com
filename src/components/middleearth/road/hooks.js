@@ -85,11 +85,15 @@ export function gradeNode(tex, uVision) {
   return vec4(clamp(tinted.mul(vignette), 0, 1), 1);
 }
 
+// (SMAA on every tier, TRAA on none: the wind moves the grass in its vertices, and
+// TRAA, reading the blades as racing, took each frame nearly whole, jitter and all;
+// at rest every hill and tree against the sky crawled with it, measured on WebGPU at
+// twice SMAA's flicker, the grain the owner saw)
 const TIERS = {
   low: ['render', 'bloom', 'output'],
   mid: ['render', 'bloom', 'smaa', 'output'],
-  high: ['render', 'ao', 'bloom', 'grade', 'traa', 'output'],
-  ultra: ['render', 'ao', 'bloom', 'godrays', 'dof', 'grade', 'traa', 'output'],
+  high: ['render', 'ao', 'bloom', 'grade', 'smaa', 'output'],
+  ultra: ['render', 'ao', 'bloom', 'godrays', 'dof', 'grade', 'smaa', 'output'],
 };
 
 export function chainFor(tier, backend, { scene = null, camera = null, grade = null, sun = null } = {}) {
@@ -99,16 +103,11 @@ export function chainFor(tier, backend, { scene = null, camera = null, grade = n
     if (kind === 'grade' && !grade) continue;
     // (god rays need the sun’s shadow map: a sun that casts none has no rays to give)
     if (kind === 'godrays' && !sun?.castShadow) continue;
-    // (where TRAA cannot be built, SMAA stands in for it, as the chain itself does)
-    if (cannot.has(kind)) {
-      if (kind === 'traa' && !cannot.has('smaa')) out.push({ kind: 'smaa' });
-      continue;
-    }
+    if (cannot.has(kind)) continue;
     if (kind === 'render') out.push({ kind, scene, camera });
     else if (kind === 'bloom') out.push({ kind, strength: BLOOM.strength, radius: BLOOM.radius, threshold: BLOOM.threshold });
     else if (kind === 'grade') out.push({ kind, node: grade });
-    // (soft and denoised: the grass moves in its vertices, which TRAA cannot settle, and it was
-    // grain; a contact shadow, short and three quarters strong: wider and whole, it darkened
+    // (soft and denoised: half-resolution AO left alone was grain; a contact shadow, short and three quarters strong: wider and whole, it darkened
     // a field of blades a fifth below the mid tier's, which draws none)
     else if (kind === 'ao') out.push({ kind, radius: 0.5, scale: 0.75, denoise: true });
     else if (kind === 'godrays') out.push({ kind, light: sun, strength: 0.2 });

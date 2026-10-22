@@ -8,7 +8,8 @@
 //
 // createPool({ size, retries, waits, timeout, fetch, sleep, missing, files, now })
 //   → { run(job) → Promise<result>, stats() → { done, missing, failed, retried, bytes, seconds } }
-//   job: { url, method = 'GET', headers, body, bytes?, size?, to?, peek? }
+//   job: { url, method = 'GET', headers, body, bytes?, size?, to?, peek?, fetch? }
+//     fetch: this job's own (one that signs each try for the bucket), else the pool's
 //     peek: the headers alone, the body let go unread (the asset check asks
 //       one byte of a file this way: a CDN that answers the range with the
 //       whole file, a 200, is then sent nothing of it)
@@ -23,8 +24,8 @@
 //
 // Retried: a thrown error (network, timeout), a 429, a 5xx, a short body.
 // Final: `missing` (404, or what the caller says the store uses for it:
-// Supabase answers 400 for an object it hasn't got), and any other 4xx,
-// since a refusal does not change on asking again.
+// Supabase Storage, the buckets' home until 2026-10-21, answered 400), and
+// any other 4xx, since a refusal does not change on asking again.
 
 import { mkdir, rename, rm, writeFile } from 'node:fs/promises';
 import { dirname } from 'node:path';
@@ -64,7 +65,7 @@ export function createPool({ size = 6, retries = 3, waits = WAITS, timeout = TIM
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(new Error('timed out')), timeout(job.bytes ?? job.size));
     try {
-      const res = await fetch(job.url, { method: job.method ?? 'GET', headers: job.headers, body: job.body, signal: ctrl.signal });
+      const res = await (job.fetch ?? fetch)(job.url, { method: job.method ?? 'GET', headers: job.headers, body: job.body, signal: ctrl.signal });
       if (missing.includes(res.status)) {
         await res.body?.cancel?.().catch(() => {});
         return { final: { status: 'missing', bytes: 0, http: res.status } };

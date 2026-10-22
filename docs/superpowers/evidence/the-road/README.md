@@ -492,3 +492,149 @@ Twelve stages were pictured mid-walk afresh (`lab/road/shots.mjs`), and four thi
 
 From behind the fall, at Faramir's window, the fall read as a pale fog: three broad bands falling down a sheet. It is now threads of water, in two layers (360 and 140 across its 8 m, a few centimetres each with the camera a metre and a half off), each thread at its own pace and phase. They are thinner between, so the light beyond shows through, with white foam at its foot. `ithilien-henneth-before-desktop.webp`, `ithilien-henneth-desktop.webp` (walked into, 3 s in).
 
+## The grain on WebGPU (2026-10-21)
+
+The owner's backend is WebGPU, and every picture here till now was the node renderer on WebGL 2. The lab draws on WebGPU now (`GPU=webgpu`, `lab/road/common.mjs`), and `lab/road/probe-grain.mjs` measures the flicker: six frames of Hobbiton at 40 m on high, the walk stopped, each pixel's change from frame to frame.
+
+| WebGPU, high | mean | pixels over 6 | the sky and hills |
+| --- | --- | --- | --- |
+| TRAA (before) | 1.19 | 4.21% | 0.32 |
+| none | 0.60 | 1.99% | 0.01 |
+| SMAA (after) | 0.68 | 2.30% | 0.01 |
+
+Under TRAA every edge crawled: the hills and the trees against the sky, Bag End's roof and its fence (`grain-hobbiton-traa-webgpu.webp`). A view of the velocity buffer showed why the grass did. The hills read still, but the wind's blades were moving fast every frame, so TRAA took them nearly whole, jitter and all. High and ultra end in SMAA now, as they did on WebGL 2. What still changes is what moves: Frodo, and the grass in the wind (`grain-hobbiton-smaa-webgpu.webp`; the frame, `hobbiton-smaa-webgpu.webp`).
+
+## A road underfoot, grass in blades, the kit's trees (2026-10-21)
+
+Toward the owner's "focus more on the foliage and look of the world … making the roads better. Adding texture".
+
+- **The road**: it was the ground map's paint, a metre a texel, so a soft brown band. `track.js` lays a ribbon down it, shaded in the road's own frame, with a row for each of twelve stages (`stages/tracks.js`):
+  - The Shire's lanes have two wheel ruts and the grass down the crown.
+  - The wild's paths have one trodden line, packed pale.
+  - All have stones with the shade at their foot, an edge broken into the verge, and water in Bree's ruts.
+  - The first version drew nothing: wound face down, it was culled from every camera, as Gorgoroth's cracks were. `track.test.js` holds every triangle face up.
+  - Pictures:
+    - Hobbiton at 60 m, before and after: `road-lane-before-desktop.webp`, `road-lane-desktop.webp`. The kit's oaks and the verge's tufts are in the after too.
+    - Its lane at eye height: `road-lane-eye-desktop.webp`, from `lab/road/probe-look.mjs`, which holds the camera over a road's middle.
+    - The Shire's edge: `road-lane-field-desktop.webp`.
+- **The grass**: one broad triangle a blade, spread evenly, was a carpet of green cones at every verge. Each is now a curved blade tapering to its tip, four to a tuft, leaning its own way, a tip yellow here and there (grassNodes' `shape: 'blade'`, `tufts`).
+- **The trees**: the chapters' round ones by the lane are the nature kit's leafy ones, where they stood: Hobbiton's twelve oaks, Rivendell's fourteen birches and the Ford's thirty. The older pack's birches, balls of yellow on a stick, are the kit's `Birch_1` to `Birch_5` everywhere. Rivendell from its bridge, before and after: `rivendell-birches-before-desktop.webp`, `rivendell-birches-desktop.webp`.
+- **The verges**: nothing grew nearer a road's middle than 6 m. A row may line the road now (`verge`), so the Shire's lanes have long tufts, flowers, clover and stones by them, the wild's paths heath and stones, Lothlórien elanor, Ithilien its herbs.
+- **The White City and the Mountain** wear the site's photo scans, as their chapters dress them. The Road built both undressed. The city from the Pelennor, before and after: `minas-tirith-dressed-before-desktop.webp`, `minas-tirith-dressed-desktop.webp`. Its road has its own darker earth (a track row's `dirt`): in the Pelennor's pale soil it read as sand.
+- **The far ground**: the photo scans end at 80 m, from 120. A two-metre scan's repeat showed as a lattice on Weathertop's hill at dusk.
+
+
+## A laptop's own chip (2026-10-22)
+
+Toward the owner's "check for lighting and WebGPU shaders in laptop conditions without a dedicated GPU", for the Road and the Middle-earth chapters.
+
+**Where a laptop's chip lands.** Nothing here changes it; it is the 2026-10-13 design's.
+
+- Auto reads the chip by its name (`lib/gpuGrade`). An Iris Xe or a Radeon 740M scores 40, and UHD and the built-in Vegas less. Those are Low, and renderer tier T0 for `'name'` with no probe.
+- A Radeon 680M (60), 780M (71), Intel's Arc graphics (85, 90), an Apple M1 (60) or M2 (80), or a Snapdragon X1-85 (55) is Auto ultra by its name. The one-second probe then holds one over 8 ms at Low (T0, `'slow'`), and under the rest the GPU clock's controller steps the resolution down.
+
+**The lab as such a chip.** WebGPU on Dawn's SwiftShader adapter, held to WebGPU's default limits (`LIMITS=default` in `lab/road/common.mjs`). That is 16 sampled textures and 16 samplers a stage, 8 storage buffers, 32 bytes of colour attachment a sample and 16 inter-stage variables, the least a built-in chip has. The Road was surveyed at Low and High, and every chapter's page at Low. No pipeline was refused at those limits. What was wrong:
+
+| | before | after |
+| --- | --- | --- |
+| A ride through Ithilien, Cirith Ungol and Gorgoroth | 2,256 errors, "buffer used in submit while destroyed"; the frame frozen from there on (`laptop-frozen-before-webgpu.webp`: Cirith Ungol and Gorgoroth, the same frame) | none |
+| Pipelines over eight places, Caradhras to the Anduin and back | 1,032; the scene under 3 to 8 lights, by place | 528; the same 6 lights everywhere |
+| Moria at 90 m | black, 74% of the frame crushed at Low and at High (`laptop-moria-deeps-before-webgpu.webp`) | 34% at Low: the company on the stair, seen from beside it, lit by the fire below |
+| Lothlórien's chapter, on WebGPU at Low and High | the company black; a white Lambert stand-in on the ground black (`laptop-lorien-chapter-before-webgpu.webp`, `laptop-lorien-unlit-before-webgpu.webp`) | lit, the ground in the sun (`laptop-lorien-chapter-webgpu.webp`) |
+
+- **The frozen frame**: three's Sprites share one geometry, made once. A stage given back with its geometries freed (Ithilien's, as the ride left it) took that one too, and every sprite still drawn was left on destroyed buffers: Cirith Ungol's Phial, Mount Doom's glow, the orc camps' fires. On WebGPU each frame's submit then failed. `BUFFERS=1` labelled every buffer, and `probe-destroyed.mjs` found the sprites drawn on dead ones. `runtime/webgpu.js`'s `keepSpriteGeometry` keeps it.
+- **The pipelines**: three keys every lit shader by the ids of the lights it is drawn under. A stage's own point lights coming into the scene and going, a neighbour's shown and then not, built every material on the Road again at each seam: seconds of missing objects on a slow chip. They draw through `lamps.js`'s pool now (`probe-seam.mjs`).
+- **The chapters' black company**: `lib/three/pipelineGuard.js` builds a held-out object's shader after the frame. three's `Lighting` puts a scene's lights back to what it held before each render, which was none, so those shaders were built unlit. The guard now leaves a scene's lights in place once its render is over. WebGL 2 builds in the frame and never showed it; the Road kept its lights because its `compileAsync` sets them.
+- **The deeps**: Moria's black air left the house look nothing to measure light against (`daylight.js`'s `refFloor`). Its stair is shot from beside it (`laptop-moria-tomb-webgpu.webp` is the tomb in its shaft of light; `laptop-cirith-phial-webgpu.webp` is Shelob's lair by the Phial).
+- **Warnings a laptop's console showed, gone**:
+  - "PostProcessing has been renamed", once a chain.
+  - A Gollum model asked for that has not been made: four requests a visit.
+  - Moria's way-walls without roles.
+  - Lambert's `roughness`.
+  - Minas Tirith's chapter renaming a shader variable, eight times.
+  - The Shire's grass without a normal. Three put a zero there, and a hook's normalize made it NaN, which a chip may draw black.
+- **Left, the chapters'**:
+  - The Shire's glints and fireflies, and one mesh in Lothlórien, have a map and no uv. On WebGPU a point is a pixel, so the glints are specks.
+  - Moria's and Minas Tirith's chapters ask `toNonIndexed` of geometry that already is.
+
+Every stage at Low on WebGPU, held to the default limits, after all of it: `laptop-low-webgpu-sheet.webp`, with no error. Gorgoroth's plain at 90 m is still dark under the pall at Low, the walkers dim shapes.
+
+**No invisible walls.** `lab/road/probe-walls.mjs` walks every stage's lane, |x| ≤ 3 m, every 0.5 m, from where the walkers stand: the land, or the stair, quay or bridge a stage carries them on. It checks each cell of the solid grid from 0.45 m to 3.2 m up. Rays first look for what is drawn there; where they find nothing, the cell itself is tested against every shown triangle.
+
+- Of 6,907 solid cells, the rays missed 616. Those are thin posts, rails and balusters elsewhere in their half-metre cells, and the inside of rock and stone.
+- Two missed the exact test, one at the Ford and one on the Anduin. Looked at alone, both hold the stage's own drawn statics: the probe had rounded those points across a cell's edge.
+- None is a wall no one can see. Measured from the land alone, the Havens' quay, Cirith Ungol's stair and the refuge rock read as hundreds of walls, being inside the floor the walkers are carried on.
+
+Each stage's cost against the others, at Low on WebGPU (`probe-pace.mjs`). This is software's frames, so it only ranks the stages. Hobbiton, the Shire's edge and Bree ask the most: 400 to 700 thousand triangles at Low, 1.4 to 2 million at High.
+
+| stage | × the lightest | stage | × the lightest |
+| --- | --- | --- | --- |
+| Bree | 4.8 | Moria | 1.5 |
+| the Shire's edge | 4.7 | the Anduin | 1.5 |
+| Hobbiton | 4.2 | the Ford | 1.4 |
+| Weathertop | 2.7 | Cirith Ungol | 1.4 |
+| Lothlórien | 2.6 | the Havens | 1.2 |
+| Rivendell | 2.4 | Ithilien | 1.2 |
+| Minas Tirith | 2.2 | the Marshes | 1.2 |
+| Caradhras | 2.1 | Gorgoroth | 1.0 |
+
+## Every beat walked into, and the buildings close (2026-10-22)
+
+Toward the owner's "check the buildings and check everything".
+
+**Every beat.** `lab/road/beat-tour.mjs` looked at all 80 beats with a shot of their own: the placed shots, the cranes, the low, the side and the lead. It works as a visitor comes to each one. The ride is set 3 m short of the beat and walked into it, so the beat plays. The frame is kept at the beat's moment: where its deed waits, at the top of a crane's rise, or a few seconds into a held shot. Each frame's light is measured as `light-survey.mjs` measures it.
+
+The first tour put the ride on each beat's mark. That counts the beat as long done, so none of them played: cranes stayed at their foot and no deed waited. In software the world also steps only 50 ms a frame, so the shots were still easing in from the follow. Those frames looked wrong and the Road was not.
+
+Of the 80, seven did read wrong (`beats-reframed-desktop.webp`, before and after):
+
+| beat | what was wrong | now |
+| --- | --- | --- |
+| Ithilien, the Cross-roads | the low rig looks up the road, and the king sits 6 m off it: sky, and the edge of his plinth | low by the road, the hobbits before him, looking up at him |
+| Rivendell, Narsil | the same: the hall of the shards is 9.5 m off the road | the hall, Frodo before it |
+| Rivendell, Bilbo | the side shot lined the file up between the camera and his bench: Aragorn where Bilbo was | from up the road, Bilbo at his desk |
+| the Anduin, the Seat of Seeing | the camera stood among the Seat's pillars, aimed under the vision's four pictures, which were cut off at the top | over Frodo's shoulder, aimed at them |
+| Cirith Ungol, the betrayal | the camera stood inside the stair's cliff: a green slab, 55% of the frame black | down the stair from above, Gollum before the two |
+| Cirith Ungol, the Tower | Frodo sat on a dark lane, nothing lit: 44% black | one of the orcs' torches left burning by him |
+| Ithilien, the king himself | a stack of boxes, wearing the wood scan | below |
+
+Every other beat reads as its moment, among them:
+- Gandalf's cart behind Frodo;
+- the Black Rider over the roots;
+- Butterbur at the Pony's door;
+- the Nine at the Ford;
+- the Doors of Durin lit;
+- Balin's tomb in its shaft of light;
+- the Balrog on the Bridge;
+- Galadriel at the Mirror;
+- the Argonath;
+- the faces in the marsh;
+- Shelob before the Phial;
+- the Eagles down to the rock;
+- the White Tree;
+- the ship going west.
+
+`beats-all-desktop.webp` is every one. The tour's own two misses are retaken there: Hobbiton's opening was still in its black, and the Eagles were taken after the ride had gone on into Minas Tirith.
+
+Some dark beats are dark by design and still read: the Bridge, the dwarrowdelf crane, Gorgoroth's last slope. In an 800 × 500 lab window the deed's card can cover the middle of the frame (the stone trolls behind it). It sits 8 rem above the foot, below the middle on a desktop screen.
+
+**The buildings close.** `lab/road/building-tour.mjs` holds the camera on each stage's landmarks, up close, 31 views in all.
+
+The stages' parts wear the photo scans by `roleOf` their shape and colour. A warm grey reads as wood there, so Ithilien's seated king and the rock round Henneth Annûn wore the wood scan; they are stone and rock now. The king is rebuilt as a seated figure:
+- a throne with a back to his shoulder blades, and arms;
+- thighs, shins and feet;
+- arms down to his hands on his knees;
+- the orcs' round stone for a head, with its one red eye;
+- his own head fallen before him, crowned with flowers;
+- turned to look across the road at those coming up it.
+
+The Tower of Cirith Ungol has a spike at each corner of each tier, against the red. `buildings-reframed-desktop.webp` shows both, before and after.
+
+Looked at and right: Bree's gate and the Pony, the Green Dragon and the Party Field's pavilion, Amon Sûl's ring, the Ford's bridge and its deck, Rivendell's bridge, council, arch and the hall of the shards, the Doors, Mazarbul, Lothlórien's dais and Mirror, the Argonath and the Seat, Henneth Annûn's curtain, Minas Morgul in its vale, the Watchers, the Morannon, the Havens' quay.
+
+**The chapters on a laptop's chip.** These are the last of the warnings the 2026-10-22 survey above left, on WebGPU held to the default limits. The Shire's, Moria's, Minas Tirith's and Lothlórien's chapters now raise none:
+- the Shire's mushroom and spoon glints are sprites, where a point was a pixel wide on WebGPU;
+- Lothlórien's lantern posts carry their uv, which the elfwood's map and normal map read;
+- Moria's and Minas Tirith's chapters no longer ask `toNonIndexed` of geometry that already is.
+
+**And**: a jump (the ribbon, a stage's key) tells the page where the ride is in the same frame. It no longer waits for the next quarter second's progress.

@@ -19,10 +19,11 @@ import { morgul as buildMorgul, orcColumnGeo, rockGeo } from '../../../towns/cir
 import { columnGeo } from '../../../towns/marshes/props';
 import { BEACONS } from '../../beacons';
 import { C, merged, mergeStatics, part } from '../parts';
+import { wearParts } from '../../partsWear';
 
 const THREADS = [360, 140]; // the fall's threads of water across its width, fine and coarse (a few cm each, the camera a metre and a half off)
 export const FALL = { x: -9, z: 70.5, w: 8, h: 6 }; // the curtain across the hollow’s mouth (the camera inside it, at z 72)
-export const KING = { at: [-6, 92] }; // the seated king by the Cross-roads, on the right
+export const KING = { at: [-6, 92], facing: 2.4 }; // the seated king by the Cross-roads, on the right, facing (a yaw from +z) across the road and down it
 export const MORGUL = { at: [150, 166], scale: 0.42 }; // the dead city in its vale on the left
 export const HOST = { from: [118, 160], to: [24, 140], rows: 30, files: 4 }; // out of the vale towards the road
 export const HARAD = { from: [-40, -20], to: [-40, 110], rows: 24, files: 3 }; // the southern road below on the right
@@ -32,17 +33,18 @@ export function buildProps({ K, road, heightAt, tier = 'high' }) {
   const group = new THREE.Group();
   group.name = 'ithilien:props';
   const low = tier === 'low';
-  const material = road.material({ vertexColors: true, flatShading: true });
+  const material = wearParts(road.material({ vertexColors: true, flatShading: true }), { tier });
 
   // Henneth Annûn: a hollow of rock beside the path, the fall across its mouth
   const rocks = [];
   const y0 = heightAt(FALL.x, FALL.z);
   // (two jambs of rock either side of the curtain, the camera between them behind it)
-  for (const s of [-1, 1]) rocks.push(part(new THREE.BoxGeometry(1.4, FALL.h + 1, 2.4), C(0xa89c86), { at: [FALL.x + s * (FALL.w / 2 + 0.7), y0 + (FALL.h + 1) / 2 - 0.5, FALL.z + 1] }));
-  rocks.push(part(rockGeo(7), C(0xb0a690), { at: [FALL.x - FALL.w / 2 - 2.5, y0 + 1, FALL.z + 1.5], scale: [1.4, 2.2, 1.4] }));
-  rocks.push(part(rockGeo(8), C(0xb0a690), { at: [FALL.x + FALL.w / 2 + 2.5, y0 + 1, FALL.z + 1.5], scale: [1.4, 2.2, 1.4] }));
+  // (rock, all of it: a warm grey reads as wood to roleOf)
+  for (const s of [-1, 1]) rocks.push(part(new THREE.BoxGeometry(1.4, FALL.h + 1, 2.4), C(0xa89c86), { at: [FALL.x + s * (FALL.w / 2 + 0.7), y0 + (FALL.h + 1) / 2 - 0.5, FALL.z + 1], role: 'rock' }));
+  rocks.push(part(rockGeo(7), C(0xb0a690), { at: [FALL.x - FALL.w / 2 - 2.5, y0 + 1, FALL.z + 1.5], scale: [1.4, 2.2, 1.4], role: 'rock' }));
+  rocks.push(part(rockGeo(8), C(0xb0a690), { at: [FALL.x + FALL.w / 2 + 2.5, y0 + 1, FALL.z + 1.5], scale: [1.4, 2.2, 1.4], role: 'rock' }));
   // the lintel over the mouth the water pours from
-  rocks.push(part(new THREE.BoxGeometry(FALL.w + 3, 1.8, 3), C(0xa89c86), { at: [FALL.x, y0 + FALL.h + 0.8, FALL.z + 1] }));
+  rocks.push(part(new THREE.BoxGeometry(FALL.w + 3, 1.8, 3), C(0xa89c86), { at: [FALL.x, y0 + FALL.h + 0.8, FALL.z + 1], role: 'rock' }));
   group.add(merged(rocks, material, 'ithilien:henneth'));
   const tFall = uniform(0);
   const fallMat = new MeshBasicNodeMaterial({ transparent: true, depthWrite: false, side: THREE.DoubleSide });
@@ -63,22 +65,45 @@ export function buildProps({ K, road, heightAt, tier = 'high' }) {
   fall.position.set(FALL.x, y0 + FALL.h / 2, FALL.z);
   group.add(fall);
 
-  // the Cross-roads’ king: a seated stone giant, an orc-daub where his head was, his own fallen and crowned
+  // the Cross-roads’ king: a seated stone giant on his throne, his hands on his knees, looking across
+  // the road at those coming up it; a rough round stone where his head was, daubed with one red eye;
+  // his own head fallen before him, crowned with flowers
   const k = [];
-  const kx = KING.at[0];
-  const kz = KING.at[1];
-  const ky = heightAt(kx, kz);
+  const ky = heightAt(...KING.at);
   const stone = C(0xc0b49c); // (warm: under the Road’s cool sky a grey stone reads violet)
-  k.push(part(new THREE.BoxGeometry(3.2, 1.2, 3.2), C(0xa89c86), { at: [kx, ky + 0.6, kz] }));
-  k.push(part(new THREE.BoxGeometry(2.2, 2, 1.6), stone, { at: [kx, ky + 2.2, kz - 0.3] }));
-  k.push(part(new THREE.BoxGeometry(1.8, 3, 1.4), stone, { at: [kx, ky + 4.6, kz - 0.6] }));
-  for (const s of [-1, 1]) k.push(part(new THREE.BoxGeometry(0.6, 2.6, 0.6), stone, { at: [kx + s * 1.2, ky + 4.4, kz - 0.4], pitch: -0.3 }));
-  k.push(part(new THREE.DodecahedronGeometry(0.75, 0), C(0x3a2a24), { at: [kx, ky + 6.7, kz - 0.6] }));
-  k.push(part(new THREE.DodecahedronGeometry(0.75, 1), stone, { at: [kx + 2.2, ky + 0.6, kz + 1.6], roll: 0.4 }));
+  const plinth = C(0xa89c86);
+  // (each part placed in his own frame: x across him, z the way he faces)
+  const kc = Math.cos(KING.facing);
+  const ks = Math.sin(KING.facing);
+  const onKing = ([x, y, z]) => [KING.at[0] + x * kc + z * ks, ky + y, KING.at[1] - x * ks + z * kc];
+  const carved = (geometry, colour, where, role = 'stone') => k.push(part(geometry, colour, { at: onKing(where), yaw: KING.facing, role }));
+  carved(new THREE.BoxGeometry(3.4, 1, 3.6), plinth, [0, 0.5, 0]);
+  // the throne: its seat, its back to his shoulder blades (his shoulders and head clear of it), its arms
+  carved(new THREE.BoxGeometry(2.8, 0.6, 2.2), stone, [0, 1.3, -0.4]);
+  carved(new THREE.BoxGeometry(2.8, 2.5, 0.5), plinth, [0, 2.85, -1.5]);
+  for (const s of [-1, 1]) carved(new THREE.BoxGeometry(0.4, 0.9, 2), plinth, [s * 1.6, 2.05, -0.3]);
+  for (const s of [-1, 1]) {
+    // his thighs along the seat, his shins down to the plinth, his feet on it
+    carved(new THREE.BoxGeometry(0.8, 0.7, 2), stone, [s * 0.5, 1.95, 0.2]);
+    carved(new THREE.BoxGeometry(0.7, 1.4, 0.7), stone, [s * 0.5, 1.65, 1]);
+    carved(new THREE.BoxGeometry(0.75, 0.35, 1), stone, [s * 0.5, 1.17, 1.25]);
+    // his arms down from the shoulder, his forearms along his thighs, his hands on his knees
+    carved(new THREE.BoxGeometry(0.55, 1.7, 0.6), stone, [s * 1.15, 3.55, -0.55]);
+    carved(new THREE.BoxGeometry(0.5, 0.5, 1.6), stone, [s * 1.05, 2.55, 0.15]);
+    carved(new THREE.BoxGeometry(0.55, 0.3, 0.6), stone, [s * 0.95, 2.45, 1.05]);
+  }
+  carved(new THREE.BoxGeometry(1.5, 2.5, 1.1), stone, [0, 3.55, -0.7]);
+  carved(new THREE.BoxGeometry(2.5, 0.55, 1.25), stone, [0, 4.9, -0.7]);
+  // (the daub, and its eye)
+  carved(new THREE.DodecahedronGeometry(0.66, 1), C(0x8a7a66), [0, 5.75, -0.65], 'rock');
+  carved(new THREE.SphereGeometry(0.17, 8, 6), C(0xb02a1c), [0.12, 5.85, 0], 'none');
+  const head = onKing([1.3, 0, 2.9]);
+  head[1] = heightAt(head[0], head[2]) + 0.6;
+  k.push(part(new THREE.DodecahedronGeometry(0.75, 1), stone, { at: head, roll: 0.4, role: 'stone' }));
   // (the trailing flowers in a crown on it, white and gold)
   for (let i = 0; i < 9; i++) {
     const a = (i / 9) * Math.PI * 2;
-    k.push(part(new THREE.IcosahedronGeometry(0.13, 0), C(i % 2 ? 0xf4f0e0 : 0xe8c84a), { at: [kx + 2.2 + Math.cos(a) * 0.62, ky + 1.15, kz + 1.6 + Math.sin(a) * 0.62] }));
+    k.push(part(new THREE.IcosahedronGeometry(0.13, 0), C(i % 2 ? 0xf4f0e0 : 0xe8c84a), { at: [head[0] + Math.cos(a) * 0.62, head[1] + 0.55, head[2] + Math.sin(a) * 0.62] }));
   }
   group.add(merged(k, material, 'ithilien:king'));
 

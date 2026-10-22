@@ -316,6 +316,10 @@ export async function create(canvas, ctx) {
   // cascades, contact shadows, the level's volumes, the chain's record).
   // Awaited before the first draw.
   let stack = null;
+  // (your holder and your mate's, for the stack's contact shadows: tracked
+  // by whichever comes second, since the stack can land during one of the
+  // awaits before the two of you are made)
+  const held = [];
   // (the world's picture: a page's, the site's, or the game's own where the
   // world is under its light and the site has its records, nodes/picture.js;
   // a site's `picture` that only names its file, lane P's, is read there)
@@ -330,7 +334,7 @@ export async function create(canvas, ctx) {
       stack = made;
       // (the stack draws the sun's shadow wherever the level does: a phone's too)
       if (stack?.parts.cascades) renderer.shadowMap.enabled = true;
-      for (const p of people) stack?.track(p.holder);
+      for (const h of held) stack?.track(h);
     })
     .catch((e) => {
       if (import.meta.env.DEV) console.warn('surface light stack failed', e);
@@ -398,7 +402,7 @@ export async function create(canvas, ctx) {
   // (on a world drawn from the game's level, what the game places itself is left to it)
   const scattered = site.scatter.filter((s) => !(site.level && s.game)).map((s) => {
     // (a row that says where each stands, a city's: city.js)
-    if (s.items) return { s, items: s.items.map((it) => ({ at: it.at, yaw: it.yaw ?? 0, scale: it.scale ?? 1, sink: s.sink ?? 0.1, stretch: 1, ...(it.box ? { box: it.box } : {}) })) };
+    if (s.items) return { s, items: s.items.map((it) => ({ at: it.at, yaw: it.yaw ?? 0, scale: it.scale ?? 1, sink: s.sink ?? 0.1, stretch: it.stretch ?? 1, ...(it.box ? { box: it.box } : {}) })) };
     const items = [];
     const [r0, r1] = s.within ?? [20, site.reach];
     const [cx, cz] = s.at ?? [0, 0]; // (a row round a place: its own clearing is still kept)
@@ -889,6 +893,8 @@ export async function create(canvas, ctx) {
   for (const p of people) {
     p.holder.visible = false;
     scene.add(p.holder);
+    held.push(p.holder);
+    stack?.track(p.holder);
   }
   // the gun's numbers (weaponRules.js), with the mods they picked and the hero's perks
   const weaponOf = (spec, fig) => {

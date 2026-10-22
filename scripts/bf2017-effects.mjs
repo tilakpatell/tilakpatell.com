@@ -18,9 +18,8 @@
 // without either the script stops: effects in the wrong frame are worse
 // than none. --root reads the extras from the export instead of the bucket. --dry prints the counts and writes nothing.
 //
-// The keys: SUPABASE_URL and BF2017_KEY (or SUPA_KEY, the same key under
-// the name the cloud sessions hold it by), from .env.local when it is
-// there, else from the environment; the script says which, never prints
+// The keys: R2_ACCESS_KEY_ID and R2_SECRET_ACCESS_KEY (lib/bucket.mjs),
+// from .env.local when it is there, else from the environment; the script says which, never prints
 // them, and stops plainly without them.
 
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
@@ -28,6 +27,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { effectsJson } from './lib/bf2017-effects.mjs';
 import { objectUrl } from './lib/bf2017-paths.mjs';
+import { bucketEnv } from './lib/bucket.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const BUCKET = 'bf2017-assets';
@@ -59,11 +59,10 @@ function keys() {
     }
     from = '.env.local';
   }
-  const base = process.env.SUPABASE_URL;
-  const key = process.env.BF2017_KEY || process.env.SUPA_KEY;
-  if (!base || !key) stop(`no bucket key: set SUPABASE_URL and BF2017_KEY in .env.local (read: ${from})`);
+  const env = bucketEnv();
+  if (!env) stop(`no bucket key: set R2_ACCESS_KEY_ID and R2_SECRET_ACCESS_KEY (lib/bucket.mjs) in .env.local (read: ${from})`);
   console.log(`keys from ${from}`);
-  return { base, headers: { apikey: key, Authorization: `Bearer ${key}` } };
+  return env;
 }
 
 // ── the frame ──
@@ -81,7 +80,7 @@ function frame() {
 }
 
 async function get(env, path) {
-  const res = await fetch(objectUrl(env.base, BUCKET, path), { headers: env.headers });
+  const res = await env.fetch(objectUrl(env.base, BUCKET, path));
   if (!res.ok) stop(`${path}: ${res.status} from the bucket`, 1);
   return res.json();
 }

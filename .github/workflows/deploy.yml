@@ -1,4 +1,4 @@
-name: Deploy to GitHub Pages
+name: Deploy
 
 on:
   push:
@@ -12,26 +12,39 @@ on:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
   # the last deploy that went out, read from the Actions API for the assets check
   actions: read
 
-# A deploy takes about forty minutes, and a merge to main lands more often
-# than that when several sessions work at once: with the running deploy
+# A deploy took about forty minutes then (about twelve by 2026-10-21), and a
+# merge to main lands more often than that when several sessions work at once: with the running deploy
 # cancelled by each new one, nothing reached the site for hours (2026-10-13:
 # five merges, four deploys cancelled, none finished). So the running one
 # finishes, and of those waiting only the newest is kept.
 concurrency:
-  group: pages
+  group: deploy
   cancel-in-progress: false
 
+# The public bucket's address, where the build sends the heavy files and the
+# assets check asks for them: `tilak-assets` on Cloudflare R2, at its own
+# domain, since 2026-10-22 (docs/decisions/2026-10-21-heavy-assets-on-r2.md).
+# A URL, not a secret; until then it was the repository variable ASSET_BASE,
+# pointing at Supabase Storage.
+env:
+  ASSET_BASE: https://assets.tilakpatell.com
+
+# One job: lint, test and build `main`, then the build's files to Cloudflare,
+# the Worker tilakpatell-com (wrangler.jsonc: the files and nothing else, and
+# the account; docs/stack/cloudflare.md). Its environment, `cloudflare`,
+# lists each deploy in the repository's Deployments with the site's address,
+# marked done when the upload has gone through. (Until 2026-10-21 the files
+# went to GitHub Pages, and then to the Worker too while the domain moved:
+# docs/decisions/2026-10-21-cloudflare-for-the-site.md.)
 jobs:
-  build-and-deploy:
+  deploy:
     runs-on: ubuntu-latest
     environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+      name: cloudflare
+      url: https://tilakpatell.com
     steps:
       - uses: actions/checkout@v7
 
@@ -54,7 +67,7 @@ jobs:
       # 77,545 files: half an hour each, and, if the CDN counts a one-byte
       # range as the whole file, the bucket's 14 GB of egress a deploy; the
       # month's 28 deploys and its 387 GB of cached egress are that sum.)
-      - if: ${{ vars.ASSET_BASE != '' }}
+      - if: ${{ env.ASSET_BASE != '' }}
         id: last-deploy
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -70,10 +83,9 @@ jobs:
           fi
           echo "since=$since" >> "$GITHUB_OUTPUT"
           echo "assets check since: ${since:-(every file)}"
-      - if: ${{ vars.ASSET_BASE != '' }}
+      - if: ${{ env.ASSET_BASE != '' }}
         run: node scripts/assets-check.mjs ${SINCE:+--since "$SINCE"}
         env:
-          ASSET_BASE: ${{ vars.ASSET_BASE }}
           SINCE: ${{ steps.last-deploy.outputs.since }}
       - run: npm run build
         env:
@@ -82,20 +94,23 @@ jobs:
           # the tables). Unset, the build makes no client and the game plays without it
           VITE_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
-          # the public bucket site-assets (a variable, not a secret): where the
+          # the public bucket (the workflow's ASSET_BASE, above): where the
           # heavy models are asked first, and where the game-derived files
           # live (scripts/assets-upload.mjs, scripts/assets-publish.mjs).
           # Unset, every file comes from the site as before
-          VITE_ASSET_BASE: ${{ vars.ASSET_BASE }}
+          VITE_ASSET_BASE: ${{ env.ASSET_BASE }}
       # every WebAssembly binary the build publishes valid, and every one a
-      # chunk asks for there (scripts/wasm-check.mjs; Pages serves .wasm as
-      # application/wasm, docs/stack/webassembly.md)
+      # chunk asks for there (scripts/wasm-check.mjs; the Worker serves .wasm
+      # as application/wasm, docs/stack/webassembly.md)
       - run: node scripts/wasm-check.mjs dist
 
-      - uses: actions/configure-pages@v6
-      - uses: actions/upload-pages-artifact@v5
-        with:
-          path: dist
-
-      - id: deployment
-        uses: actions/deploy-pages@v5
+      # Wrangler sends only the files the Worker doesn't hold already (the
+      # first time, 11,362 files in under four minutes; after, about 30 s).
+      # (Its free plan takes 20,000 files and 25 MiB a file: on 2026-10-21
+      # wrangler counted 12,279 of dist/'s 11,565, and none over.)
+      - name: The build to Cloudflare
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          [ -n "$CLOUDFLARE_API_TOKEN" ] || { echo "::error::the secret CLOUDFLARE_API_TOKEN is missing (docs/stack/cloudflare.md)"; exit 1; }
+          npx --yes wrangler@4.149.0 deploy

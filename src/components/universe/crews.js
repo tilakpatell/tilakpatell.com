@@ -842,6 +842,10 @@ export const CREWS = [
         ['morty', 'Rick, a guy in a cape just flew past us. Fast.'],
         ['rick', 'Viltrumites, Morty. Don’t make eye contact. Don’t make any contact.'],
       ],
+      potter: [
+        ['morty', 'Rick, there’s a castle down there, all lit up over a lake! And owls, Rick. So many owls.'],
+        ['rick', 'A school for wizards, Morty. Seven years of homework and the stairs move. Hard pass.'],
+      ],
     },
   },
   {
@@ -1588,6 +1592,10 @@ export const CREWS = [
         ['luke', 'Two of them, flying round it with no ships at all.'],
         ['r2', '[an alarmed, rising whistle]'],
       ],
+      potter: [
+        ['luke', 'A red train winding through the hills to a castle on a lake. That looks like a place to learn things.'],
+        ['r2', '[a hopeful, rising beep]'],
+      ],
     },
   },
   {
@@ -2293,6 +2301,10 @@ export const CREWS = [
       invincible: [
         ['han', 'A guy who punches through starships with his bare hands. Let’s not, Chewie.'],
         ['chewie', '[a worried moan]'],
+      ],
+      potter: [
+        ['han', 'They send the post by owl down there. And people say the Falcon’s unreliable.'],
+        ['chewie', '[a long, amused growl]'],
       ],
     },
   },
@@ -3109,6 +3121,10 @@ export const CREWS = [
       invincible: [
         ['jesse', 'Yo, that dude just flew through a building.'],
         ['walt', 'Then we do not owe him money, Jesse. Keep it that way.'],
+      ],
+      potter: [
+        ['jesse', 'Yo, Mr. White, there’s a whole castle down there on a lake. Is that a school?'],
+        ['walt', 'A boarding school with Potions on the timetable, Jesse. I would have run that department in a week.'],
       ],
     },
   },

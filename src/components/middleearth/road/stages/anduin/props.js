@@ -23,6 +23,7 @@ import { camp as buildCamp } from '../../../towns/amonhen/camp';
 import { beechGeo, pineGeo } from '../../../towns/amonhen/forest';
 import { eyeColour } from '../../creatures/eye';
 import { C, merged, mergeStatics, part } from '../parts';
+import { wearParts } from '../../partsWear';
 
 export const ARGONATH = { z: 72, scale: 0.6 }; // m: the Kings, either side of the river (at 0.6 the chapter’s: 55 m to their hands, close enough to the river to be seen from it)
 export const SEAT = { at: [-7, 118] }; // the Seat of Seeing, its steps (+x) to the road
@@ -47,7 +48,7 @@ function visions() {
 export function buildProps({ K, road, heightAt, level, tier = 'high' }) {
   const group = new THREE.Group();
   group.name = 'anduin:props';
-  const material = road.material({ vertexColors: true, flatShading: true });
+  const material = wearParts(road.material({ vertexColors: true, flatShading: true }), { tier });
 
   // the Argonath, facing up the river at the boats coming down it
   const rocks = [riverRockGeo(3), riverRockGeo(7), riverRockGeo(12)];

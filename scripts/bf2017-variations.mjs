@@ -13,8 +13,8 @@
 //          mesh's default into the pack's tex/ at the tier's sizes (else
 //          only the maps the pack already has are named, the rest null)
 //
-// The records come from the bucket into lab/assets/bf2017/ (SUPABASE_URL and
-// SUPA_KEY or BF2017_KEY; NODE_USE_ENV_PROXY=1 behind a proxy).
+// The records come from the bucket into lab/assets/bf2017/ (R2_ACCESS_KEY_ID
+// and R2_SECRET_ACCESS_KEY; NODE_USE_ENV_PROXY=1 behind a proxy).
 
 import { existsSync } from 'node:fs';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';

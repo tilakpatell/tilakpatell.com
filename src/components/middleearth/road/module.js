@@ -17,14 +17,14 @@
 // The world adds: goTo(stageId), setAuto(on), press(name, down) (the touch
 // buttons), carryOn() (from a few metres before a moment the ride was left
 // inside: ./carry.js), restart(), skipToEnd(); and set(s), `s`, `scene` for the checks.
-// In development, window.__ROAD__ = { set(s), info(), world, weather, ambience, vision(on), fast(k) }.
+// In development, window.__ROAD__ = { set(s), info(), world, weather, ambience, vision(on), fast(k), grid(), group(), land(), floor(x, z) }.
 
 import * as THREE from 'three';
 import { PACE, newClock, step as stepClock } from './clock';
 import { SAVE, recent, resume, ridden as riddenOf, savedAt, shouldOffer } from './entry';
 import { carryFrom } from './carry';
-import { LOOK_LIMIT, pose, settleLook } from './director';
-import { keyLight, light as lightAt, shadeOf, skyLight } from './daylight';
+import { ABOVE_GROUND, LOOK_LIMIT, pose, settleLook } from './director';
+import { keyLight, light as lightAt, refFloor, shadeOf, skyLight } from './daylight';
 import { at as lineAt, sOf, total } from './line';
 import { createSky } from './sky';
 import { createLands } from './lands';
@@ -42,6 +42,7 @@ import { clipFor, walkers as walkersAt } from './fellowship';
 import { STAGES, modeAt, stageById } from './stages/index';
 import { BEATS_OF } from './stages/registry';
 import { createScenes } from './scenes';
+import { createLamps } from './lamps';
 import { createDoing } from './doing';
 import { createClear, tooNear } from './clear';
 import { LINES } from './voicelines';
@@ -136,7 +137,9 @@ export default {
     // the stage’s sound, the beats’ clips and the cast’s lines, on the runtime’s bus
     const ambience = createAmbience(rt);
     // the written stages’ scenes and their beats (scenes.js)
-    const scenes = createScenes({ rt, road, lands, weather, ambience, tier, sky, backdrop: mountains });
+    // (their lamps through a pool of lights the scene always has, so no seam builds every shader again: lamps.js)
+    const lamps = createLamps(scene);
+    const scenes = createScenes({ rt, road, lands, weather, ambience, tier, sky, backdrop: mountains, lamps });
     // the black the Road’s first words are said over, lifting: a shell round the camera
     const veilMat = new MeshBasicNodeMaterial({ color: 0x000000, transparent: true, opacity: 0, depthTest: false, depthWrite: false, side: THREE.BackSide, fog: false });
     const veil = new THREE.Mesh(new THREE.SphereGeometry(1, 12, 8), veilMat);
@@ -283,6 +286,8 @@ export default {
       scene.fog.density = l.fog.density * (1 + 0.35 * vision.amount * (1 + vision.pulse));
       house.sky({ low: scene.fog.color, high: scene.fog.color, sunDir });
       house.light({ sun, hemi });
+      // (never measured against less than the shade's floor stands for: daylight.js's refFloor)
+      refFloor(house.uniforms.uLookRef.value);
       // (the shade from the light there is: a clear day’s pale lilac, a fainter blue under the moon)
       house.set({ shadow: shade.setRGB(...shadeOf(l, key)) });
     };
@@ -365,6 +370,10 @@ export default {
       const eye = inLand([leader.at[0], leader.at[1] + 1.1, leader.at[2]]);
       const stand = clear.camera(inLand(p.at), eye, { rig: b?.rig ?? 'follow', lookAt: inLand(p.lookAt) }, grid, dt);
       camera.position.set(stand[0] + landAt.x, stand[1] + landAt.y, stand[2] + landAt.z);
+      // (and over the land, whatever eased it or pulled it in: the director keeps the shot it wants
+      // over it, but an ease between two shots, or a boom pulled in across a crest, went under a
+      // hill, its faces culled from below; a shot placed down in the land, `under`, aside)
+      if (!b?.params?.under) camera.position.y = Math.max(camera.position.y, lands.heightAt(camera.position.x, camera.position.z) + ABOVE_GROUND);
       camera.lookAt(...p.lookAt);
       // (nor in a figure: one the camera comes into is not drawn while it's there)
       const eyeAt = camera.position.toArray();
@@ -389,6 +398,7 @@ export default {
       sun.target.position.copy(camera.position);
       cascades?.follow();
       cascades?.update(camera);
+      lamps.update(camera);
       sky.update(camera, dt);
       return here;
     };
@@ -436,6 +446,8 @@ export default {
       clear.reset();
       jumped = true;
       relight();
+      // (the page told where the ride now is at once: the ribbon and the stage's name, not a quarter second on)
+      sinceProgress = PROGRESS_EVERY;
       report(frame(), 0);
     };
 
@@ -598,6 +610,7 @@ export default {
         for (const k of kits.values()) k.dispose();
         sky.dispose();
         scenes.dispose();
+        lamps.dispose();
         weather.dispose();
         veil.geometry.dispose();
         veilMat.dispose();
@@ -615,7 +628,9 @@ export default {
         const r = rt.gfx.renderer?.info?.render ?? {};
         return { calls: r.drawCalls ?? r.calls ?? 0, triangles: r.triangles ?? 0, vision: vision.amount, shot: shot?.key ?? null, mode: clock.mode, s: clock.s, stage: lineAt(STAGES, clock.s).stage, walkers: cast.size, lands: lands.stats, scatter: scatter.stats, since: lastSince, solids: scenes.solids(lineAt(STAGES, clock.s).index)?.filled() ?? null, boom: clear.boom, camera: camera.position.toArray().map((v) => Math.round(v * 100) / 100) };
       };
-      window.__ROAD__ = { world, set: (s) => world.set(s), info, weather, ambience, vision: (on) => void (visionOn = Boolean(on)), passes, fast: (k = 1) => void (labPace = Math.max(0, k)) };
+      // (and the stage the ride is in: its solid grid and its group, for lab/road/probe-walls.mjs)
+      const here = () => lineAt(STAGES, clock.s).index;
+      window.__ROAD__ = { world, set: (s) => world.set(s), info, weather, ambience, vision: (on) => void (visionOn = Boolean(on)), passes, fast: (k = 1) => void (labPace = Math.max(0, k)), grid: () => scenes.solids(here()), group: () => lands.groupOf(here()), land: () => lands.landOf(here()), floor: (x, z) => scenes.floor(here(), x, z) };
     }
     return world;
   },

@@ -1,0 +1,26 @@
+// The site on Cloudflare: the Worker tilakpatell-com, the build's files
+// uploaded by .github/workflows/deploy.yml (docs/stack/cloudflare.md). A path
+// with no file answers with dist/404.html; a folder's index.html answers at
+// its path with the slash; public/_headers holds the cache rule and lets any
+// site read the files. Code runs for /audio/* alone (cloudflare/worker.js:
+// the part of a file a Range asks for, which Safari's <audio> needs); every
+// other request is a file, with no code run and nothing counted.
+{
+  "name": "tilakpatell-com",
+  // (the owner's account: an id, not a key, so it can be read here; the token
+  // is the repository's secret CLOUDFLARE_API_TOKEN)
+  "account_id": "b12a527ca9fde882ef12c5c60f75f2e8",
+  // (the newest the pinned wrangler's local runtime knows: a Worker of files
+  // alone runs no code of its own, so the date changes nothing it does)
+  "compatibility_date": "2026-10-13",
+  "main": "cloudflare/worker.js",
+  "workers_dev": true,
+  // (one address, the workers.dev one: no address for each version uploaded)
+  "preview_urls": false,
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
+    "not_found_handling": "404-page",
+    "run_worker_first": ["/audio/*"]
+  }
+}

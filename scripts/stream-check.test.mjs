@@ -18,8 +18,9 @@ describe('the stream check’s numbers', () => {
       'http://s/models/galaxy/surface/atat.ultra.glb',
       'http://s/models/galaxy/surface/crate.glb',
       'https://p.supabase.co/storage/v1/object/public/site-assets/abcdef123456/models/galaxy/crew/luke.lod1.glb',
+      'https://assets.tilakpatell.com/abcdef123456/models/galaxy/crew/rebel.lod1.glb',
     ];
-    expect(lowerCuts(urls, ultra)).toEqual(['/models/galaxy/crew/luke.lod1.glb', '/models/galaxy/surface/atat.glb']);
+    expect(lowerCuts(urls, ultra)).toEqual(['/models/galaxy/crew/luke.lod1.glb', '/models/galaxy/crew/rebel.lod1.glb', '/models/galaxy/surface/atat.glb']);
     expect(failures({ ...good, lower: ['/models/galaxy/surface/atat.glb'] })[0]).toMatch(/lower cut/);
     // (a phone may take the small cut)
     expect(failures({ ...good, lower: ['/x.lod1.glb'] }, LIMITS.phone)).toEqual([]);

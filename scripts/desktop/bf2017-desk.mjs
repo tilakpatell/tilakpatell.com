@@ -23,15 +23,18 @@
 //
 // The export and its tools live on the desktop, never in this repository:
 // BF2_EXPORT (default ~/Downloads/BF2_Extract) holds web/, web_opt/, tool/
-// (ktx2_encode.py, upload_supabase.py, bf2export), maps_work/ and logs/.
-// The bucket's keys are the runner's .env (SUPABASE_URL and
-// SUPABASE_SERVICE_KEY, or SUPA_KEY), never the repository's, never printed.
+// (ktx2_encode.py, bf2export), maps_work/ and logs/. What it makes goes to
+// the private bucket bf2017-assets on R2 through scripts/bucket-put.mjs
+// (the export's tool/upload_supabase.py sent it to Supabase until
+// 2026-10-21). The bucket's keys are the runner's .env (R2_ACCESS_KEY_ID and
+// R2_SECRET_ACCESS_KEY), never the repository's, never printed.
 
 import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { homedir, tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { keysOf } from '../lib/bucket.mjs';
 import { REPO, deps, fresh, git, keepAwake, pullRequest, push, summary, waitForGpu, workspace } from './lib.mjs';
 
 export const JOBS = ['panoramas', 'atlases', 'textures', 'uastc', 'depots', 'gate'];
@@ -57,17 +60,19 @@ export function desk(env = process.env) {
 // The bucket's keys, as present or not: the values never leave this function
 // but into a child's environment (childEnv).
 export function keyState(env = process.env) {
-  const key = env.SUPABASE_SERVICE_KEY || env.SUPA_KEY || env.BF2017_KEY;
-  const project = env.SUPABASE_PROJECT ?? env.SUPABASE_URL?.match(/^https:\/\/([a-z0-9]+)\.supabase\.co/)?.[1] ?? null;
-  return { url: Boolean(env.SUPABASE_URL), key: Boolean(key), project };
+  return { key: Boolean(keysOf(env)) };
 }
 
-// The environment a child gets: the site's scripts read SUPA_KEY and the
-// desktop's uploader SUPABASE_SERVICE_KEY; the runner's .env may set either.
+// The environment a child gets: every script and the uploader read the same
+// two names (lib/bucket.mjs), so the runner's is passed as it is.
 export function childEnv(env = process.env) {
-  const key = env.SUPABASE_SERVICE_KEY || env.SUPA_KEY || env.BF2017_KEY;
-  return key ? { ...env, SUPA_KEY: env.SUPA_KEY || key, SUPABASE_SERVICE_KEY: env.SUPABASE_SERVICE_KEY || key } : { ...env };
+  return { ...env };
 }
+
+// The uploader's arguments for a list of files under the export's web_opt/:
+// each to bf2017-assets under web/, recorded in web_opt/upload_state.tsv
+// → [script, …args], for step(process.execPath, …)
+export const uploadArgs = (d, list) => [join(REPO, 'scripts', 'bucket-put.mjs'), '--root', d.webOpt, '--list', list, '--bucket', 'bf2017-assets', '--prefix', 'web/'];
 
 export function args(argv = process.argv.slice(2)) {
   const has = (f) => argv.includes(f);
@@ -104,9 +109,8 @@ export function onPath(cmd) {
 export function preflight(needs, env = process.env, { exists = existsSync, which = onPath } = {}) {
   return needs.map((n) => {
     if (n.keys) {
-      const k = keyState(env);
-      const ok = k.url && k.key;
-      return { name: n.name, ok, detail: `SUPABASE_URL ${k.url ? 'set' : 'missing'}, key ${k.key ? 'set' : 'missing'}`, fix: ok ? undefined : n.fix };
+      const ok = keyState(env).key;
+      return { name: n.name, ok, detail: `R2_ACCESS_KEY_ID and R2_SECRET_ACCESS_KEY ${ok ? 'set' : 'missing'}`, fix: ok ? undefined : n.fix };
     }
     const ok = n.file ? exists(n.file) : which(n.cmd);
     return { name: n.name, ok, detail: n.file ?? n.cmd, fix: ok ? undefined : n.fix };
@@ -258,9 +262,9 @@ export function encodeClass(t, colourSet = new Set()) {
 export const ktxOf = (file) => file.replace(/\.png$/i, '.ktx2');
 
 // Encode a list of the export's textures with its own encoder and send the
-// KTX2 to the bucket with its own uploader, as lane D's pass did:
+// KTX2 to the bucket, as lane D's pass did:
 //   python tool/ktx2_encode.py --list <tsv> --max N --workers W --tmp web_opt/_ktxtmp
-//   python tool/upload_supabase.py --root web_opt --list <txt> --project P --bucket bf2017-assets --prefix web/
+//   node scripts/bucket-put.mjs --root web_opt --list <txt> --bucket bf2017-assets --prefix web/
 // `rows`: index rows ({ name, file, srgb, format }). → { made: [row], failed: [row] }
 export function encodeAndUpload(rows, { d, env, log, list, max = 2048, workers = 14, extra = [] }) {
   const colourFile = join(d.webOpt, 'ktx2_color.txt');
@@ -278,8 +282,7 @@ export function encodeAndUpload(rows, { d, env, log, list, max = 2048, workers =
   if (made.length) {
     const up = join(d.webOpt, `_${list}_upload.txt`);
     writeFileSync(up, `${made.map((t) => ktxOf(t.file)).join('\n')}\n`);
-    const project = keyState(env).project;
-    step(d.python, [join(d.tool, 'upload_supabase.py'), '--root', d.webOpt, '--list', up, ...(project ? ['--project', project] : []), '--bucket', 'bf2017-assets', '--prefix', 'web/'], { env, log });
+    step(process.execPath, uploadArgs(d, up), { env, log });
   }
   return { made, failed };
 }
@@ -307,15 +310,14 @@ export function bf2017Checks(env = process.env, io = {}) {
       { name: 'the export (BF2_EXPORT)', file: d.root, fix: 'set BF2_EXPORT in the runner\'s .env to the export folder (default ~\\Downloads\\BF2_Extract)' },
       { name: "the export's texture index", file: join(d.web, 'textures.jsonl'), fix: 'the export writes web/textures.jsonl' },
       { name: "the export's encoder (tool/ktx2_encode.py)", file: join(d.tool, 'ktx2_encode.py'), fix: 'the export keeps its tools in tool/' },
-      { name: "the export's uploader (tool/upload_supabase.py)", file: join(d.tool, 'upload_supabase.py'), fix: 'the export keeps its tools in tool/' },
       { name: 'the exporter (tool/bf2export.csproj)', file: join(d.tool, 'bf2export.csproj'), fix: 'the exporter, on Frosty\'s SDK, in the export\'s tool/' },
-      { name: "the uploader's record (web_opt/upload_state.tsv)", file: join(d.webOpt, 'upload_state.tsv'), fix: 'written by the uploader\'s first run' },
+      { name: "the uploader's record (web_opt/upload_state.tsv)", file: join(d.webOpt, 'upload_state.tsv'), fix: "written by the uploader's first run (scripts/bucket-put.mjs)" },
       { name: 'the depot probe (maps_work/shaderdepots.jsonl)', file: join(d.mapsWork, 'shaderdepots.jsonl'), fix: "the exporter's depot probe writes it" },
       { name: 'python', cmd: d.python, fix: 'Python 3 on PATH (or set PYTHON)' },
       { name: 'texconv (BC6H to half floats)', cmd: d.texconv, fix: 'winget install Microsoft.DirectXTex, or set TEXCONV' },
       { name: 'toktx (UASTC)', cmd: env.TOKTX ?? 'toktx', fix: 'winget install KhronosGroup.KTX-Software, or set TOKTX' },
       { name: 'ffmpeg', cmd: 'ffmpeg', fix: 'winget install Gyan.FFmpeg' },
-      { name: "the bucket's keys", keys: true, fix: "SUPABASE_URL and SUPABASE_SERVICE_KEY in the runner's .env (~\\actions-runner\\.env), then restart the runner" },
+      { name: "the bucket's keys", keys: true, fix: "R2_ACCESS_KEY_ID and R2_SECRET_ACCESS_KEY (R2's S3 keys) in the runner's .env (~\\actions-runner\\.env), then restart the runner" },
       { name: 'Chrome (the gate)', file: d.chrome, fix: 'install Google Chrome, or set CHROME' },
     ],
     env,

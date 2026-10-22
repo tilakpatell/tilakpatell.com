@@ -164,6 +164,7 @@ describe('the adventure’s story', () => {
     expect(lockNote('vat')).toBe('Opens after episode 5, “Heat”.');
     expect(lockNote('jerryboree')).toBe('Opens after episode 6, “Bad deals”.');
     expect(lockNote('cablestudio')).toBe('Opens after episode 7, “The Jerry problem”.');
+    expect(lockNote('fantasy')).toBe('Opens after episode 8, “Prime time”.');
     expect(lockNote('annex')).toBe('Opens after episode 1, “Wiped”.');
     expect(lockNote('customs')).toBe(null);
     expect(lockNote('nope')).toBe(null);
@@ -207,7 +208,7 @@ describe('the real story', () => {
     expect(out.at(-1)).toEqual({ type: 'end' });
   });
 
-  it('opens episode 3’s places after episode 2, episode 4’s after episode 3, episode 5’s after episode 4, episode 6’s after episode 5, episode 7’s after episode 6, and every place once episode 7, the last built, is done', () => {
+  it('opens episode 3’s places after episode 2, episode 4’s after episode 3, episode 5’s after episode 4, episode 6’s after episode 5, episode 7’s after episode 6, episode 8’s after episode 7, and every place once episode 8, the last built, is done', () => {
     let s = fresh();
     let out = [];
     for (const id of ['diner', 'basement', 'mindblowers', 'customs']) ({ state: s, out } = feed(s, { type: 'task', id }));
@@ -260,8 +261,16 @@ describe('the real story', () => {
     expect(out).toEqual([{ type: 'step', episode: 6, step: 1 }]);
     expect(objective(s)).toEqual({ text: EPISODES[6].steps[1].text, to: null });
     ({ state: s, out } = feed(s, { type: 'task', id: 'gloopynoops' }));
-    expect(out).toEqual([{ type: 'done', episode: 6 }]); // (no card: episode 8 isn't built)
-    for (const id of ['cablestudio', 'schwifty', 'dream', 'citadel', 'squanch', 'evilrick']) expect(dialOpen(s, id), id).toBe(true);
+    expect(out).toEqual([{ type: 'done', episode: 6 }, { type: 'episode', episode: 7 }]);
+    for (const id of ['cablestudio', 'schwifty', 'dream']) expect(dialOpen(s, id), id).toBe(true);
+    for (const id of ['fantasy', 'froopyland', 'dim35c', 'citadel', 'squanch', 'evilrick']) expect(dialOpen(s, id), id).toBe(false);
+    expect(objective(s)).toEqual({ text: EPISODES[7].steps[0].text, to: null });
+    ({ state: s, out } = feed(s, { type: 'task', id: 'cablestudio' }));
+    expect(out).toEqual([{ type: 'step', episode: 7, step: 1 }]);
+    expect(objective(s)).toEqual({ text: EPISODES[7].steps[1].text, to: null });
+    ({ state: s, out } = feed(s, { type: 'task', id: 'schwifty' }));
+    expect(out).toEqual([{ type: 'done', episode: 7 }]); // (no card: episode 9 isn't built)
+    for (const id of ['fantasy', 'froopyland', 'dim35c', 'citadel', 'squanch', 'evilrick']) expect(dialOpen(s, id), id).toBe(true);
     expect(objective(s)).toBe(null);
   });
 
@@ -299,10 +308,16 @@ describe('the real story', () => {
     expect(newsOf(six.out)).toEqual({ say: [{ kind: 'say', who: EPISODES[5].outro[0][0], text: EPISODES[5].outro[0][1] }], card: 6 });
     // St. Gloopy Noops known too, the Jerryboree not: it waits at the Jerryboree
     expect(feed({ ...s, wins: ['chase'] }, win, { known: { tasks: ['roy', 'rickall', 'wong', 'sewer', 'microverse', 'anatomy', 'gromflomites', 'needful', 'vat', 'gloopynoops'], citadel: [] } }).state).toMatchObject({ episode: 6, step: 0 });
-    // and both known, through episode 7: Rick's line, no card
+    // and both known, through episode 7: Rick's line, and episode 8's card
     const seven = feed({ ...s, wins: ['chase'] }, win, { known: { tasks: ['roy', 'rickall', 'wong', 'sewer', 'microverse', 'anatomy', 'gromflomites', 'needful', 'vat', 'jerryboree', 'gloopynoops'], citadel: [] } });
     expect(seven.state).toMatchObject({ episode: 7, step: 0 });
-    expect(newsOf(seven.out)).toEqual({ say: [{ kind: 'say', who: EPISODES[6].outro[0][0], text: EPISODES[6].outro[0][1] }], card: null });
+    expect(newsOf(seven.out)).toEqual({ say: [{ kind: 'say', who: EPISODES[6].outro[0][0], text: EPISODES[6].outro[0][1] }], card: 7 });
+    // Get Schwifty known too, the cable studio not: it waits at the cable studio
+    expect(feed({ ...s, wins: ['chase'] }, win, { known: { tasks: ['roy', 'rickall', 'wong', 'sewer', 'microverse', 'anatomy', 'gromflomites', 'needful', 'vat', 'jerryboree', 'gloopynoops', 'schwifty'], citadel: [] } }).state).toMatchObject({ episode: 7, step: 0 });
+    // and both known, through episode 8: Morty's line, no card
+    const eight = feed({ ...s, wins: ['chase'] }, win, { known: { tasks: ['roy', 'rickall', 'wong', 'sewer', 'microverse', 'anatomy', 'gromflomites', 'needful', 'vat', 'jerryboree', 'gloopynoops', 'cablestudio', 'schwifty'], citadel: [] } });
+    expect(eight.state).toMatchObject({ episode: 8, step: 0 });
+    expect(newsOf(eight.out)).toEqual({ say: [{ kind: 'say', who: EPISODES[7].outro[0][0], text: EPISODES[7].outro[0][1] }], card: null });
   });
 
   it('keeps a chase won early, and opens episode 5 at the Gromflomite base', () => {
@@ -339,10 +354,25 @@ describe('the real story', () => {
     expect(out).toEqual([{ type: 'done', episode: 5 }, { type: 'episode', episode: 6 }, { type: 'step', episode: 6, step: 1 }]);
     // (episode 7 begun and not over in the same out: its card)
     expect(newsOf(out).card).toBe(6);
-    // St. Gloopy Noops done early too: episode 7 over in the same out, Rick's line and no card
+    // St. Gloopy Noops done early too: episode 7 over in the same out, Rick's line and episode 8's card
     const both = feed(s, { type: 'task', id: 'vat' }, { known: { tasks: ['jerryboree', 'gloopynoops'], citadel: [] } });
     expect(both.state).toMatchObject({ episode: 7, step: 0 });
+    expect(both.out.map((o) => o.type)).toEqual(['done', 'episode', 'step', 'done', 'episode']);
+    expect(newsOf(both.out)).toEqual({ say: [{ kind: 'say', who: EPISODES[6].outro[0][0], text: EPISODES[6].outro[0][1] }], card: 7 });
+  });
+
+  it('counts the cable studio done early, and opens episode 8 at Get Schwifty', () => {
+    // (done on Free roam, or by watching before its game was built: it's in tp-c137-done)
+    const s = { ...fresh(), episode: 6, step: 1 };
+    const { state, out } = feed(s, { type: 'task', id: 'gloopynoops' }, { known: { tasks: ['cablestudio'], citadel: [] } });
+    expect(state).toMatchObject({ episode: 7, step: 1 });
+    expect(out).toEqual([{ type: 'done', episode: 6 }, { type: 'episode', episode: 7 }, { type: 'step', episode: 7, step: 1 }]);
+    // (episode 8 begun and not over in the same out: its card)
+    expect(newsOf(out).card).toBe(7);
+    // Get Schwifty done early too: episode 8 over in the same out, Morty's line and no card
+    const both = feed(s, { type: 'task', id: 'gloopynoops' }, { known: { tasks: ['cablestudio', 'schwifty'], citadel: [] } });
+    expect(both.state).toMatchObject({ episode: 8, step: 0 });
     expect(both.out.map((o) => o.type)).toEqual(['done', 'episode', 'step', 'done']);
-    expect(newsOf(both.out)).toEqual({ say: [{ kind: 'say', who: EPISODES[6].outro[0][0], text: EPISODES[6].outro[0][1] }], card: null });
+    expect(newsOf(both.out)).toEqual({ say: [{ kind: 'say', who: EPISODES[7].outro[0][0], text: EPISODES[7].outro[0][1] }], card: null });
   });
 });

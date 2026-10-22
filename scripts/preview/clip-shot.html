@@ -17,7 +17,12 @@
   <body>
     <!-- A figure's clips, a row each, four moments across, for
          scripts/clip-shot.mjs (through the dev server):
-         ?url=/models/…glb&clips=idle,walk&w=240&h=320 (no clips: all of them) -->
+         ?url=/models/…glb&clips=idle,walk&w=240&h=320 (no clips: all of them)
+         &pack=/models/…/clips-<rig>.glb: the clips from a pack instead (a 2017
+         figure’s body carries none: its rig’s pack, played by bone name)
+         A file with no clips at all (a statue) is one row, `still`, seen
+         from four sides, so it can stand beside a sheet that walks (&still:
+         any file so, its clips left out). -->
     <script type="module">
       import * as THREE from 'three';
       import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
@@ -27,8 +32,11 @@
       const W = Number(q.get('w') ?? 240);
       const H = Number(q.get('h') ?? 320);
       const STEPS = [0, 0.25, 0.5, 0.75];
-      const gltf = await new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).loadAsync(q.get('url'));
-      const names = q.get('clips') ? q.get('clips').split(',') : gltf.animations.map((c) => c.name);
+      const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
+      const gltf = await loader.loadAsync(q.get('url'));
+      if (q.get('pack')) gltf.animations = (await loader.loadAsync(q.get('pack'))).animations;
+      const still = !gltf.animations.length || q.has('still');
+      const names = still ? ['still'] : q.get('clips') ? q.get('clips').split(',') : gltf.animations.map((c) => c.name);
       const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
       renderer.setSize(W * STEPS.length, H * names.length);
       renderer.setScissorTest(true);
@@ -47,9 +55,34 @@
       const box = new THREE.Box3().setFromObject(root);
       const h = box.max.y - box.min.y;
       root.position.y -= box.min.y;
+      // (its floor as wide as it is long: a beast is longer than it is tall)
+      const span = Math.max(h, box.max.x - box.min.x, box.max.z - box.min.z);
+      floor.scale.setScalar(Math.max(1, span / 2));
       const cam = new THREE.PerspectiveCamera(30, W / H, 0.01, 100);
       const mixer = new THREE.AnimationMixer(root);
       const info = [];
+      // three-quarters from the front, the whole figure in frame: far enough
+      // for its height in the camera’s height and its widest across in its
+      // width, whichever needs more, and half its depth on
+      const frame = (b) => {
+        const mid = b.getCenter(new THREE.Vector3());
+        const size = b.getSize(new THREE.Vector3());
+        const across = Math.hypot(size.x, size.z);
+        const up = Math.tan(THREE.MathUtils.degToRad(cam.fov / 2));
+        const away = 1.12 * Math.max(size.y / 2 / up, across / 2 / (up * cam.aspect)) + across / 4;
+        cam.position.copy(mid).add(new THREE.Vector3(0.55, 0.25, 0.85).normalize().multiplyScalar(away));
+        cam.lookAt(mid);
+      };
+      // (a statue: four sides of it, a quarter turn apart, in the clips’ four columns)
+      if (still)
+        STEPS.forEach((f, col) => {
+          root.rotation.y = f * Math.PI * 2;
+          root.updateMatrixWorld(true);
+          frame(new THREE.Box3().setFromObject(root));
+          renderer.setViewport(col * W, 0, W, H);
+          renderer.setScissor(col * W, 0, W, H);
+          renderer.render(scene, cam);
+        });
       names.forEach((name, row) => {
         const clip = gltf.animations.find((c) => c.name === name);
         if (!clip) return;
@@ -64,19 +97,21 @@
         const hips = bone(/hips/i)?.getWorldPosition(new THREE.Vector3());
         const d = head && hips ? head.sub(hips).normalize() : null;
         info.push(`${name} ${clip.duration.toFixed(1)}s${d ? ` head ${d.toArray().map((v) => v.toFixed(2)).join(',')}` : ''}`);
+        // (framed by its skin as it stands halfway through: a clip that
+        // turns a beast side on, as the game’s own rigs do, stays in frame;
+        // the skeletons brought up to the pose first, which a render does)
+        root.traverse((o) => o.isSkinnedMesh && o.skeleton.update());
+        const posed = new THREE.Box3().setFromObject(root, true);
         STEPS.forEach((f, col) => {
           mixer.setTime(clip.duration * f);
-          // three-quarters from the front, the whole figure in frame
-          const d = h * 2.4;
-          cam.position.set(d * 0.55, h * 0.7, d * 0.85);
-          cam.lookAt(0, h * 0.5, 0);
+          frame(posed);
           const y = (names.length - 1 - row) * H;
           renderer.setViewport(col * W, y, W, H);
           renderer.setScissor(col * W, y, W, H);
           renderer.render(scene, cam);
         });
       });
-      document.title = JSON.stringify(info);
+      document.title = JSON.stringify(still ? ['still'] : info);
       window.__done = true;
     </script>
   </body>

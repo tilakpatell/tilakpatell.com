@@ -48,7 +48,7 @@
 // A level with no terrain record (the space levels) builds no ground layer:
 // its pack is the instances alone, and its README says so.
 //
-// The keys as the fetch takes them (SUPABASE_URL, BF2017_KEY or SUPA_KEY),
+// The keys as the fetch takes them (R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY),
 // never printed. A map the bucket has not got yet is said so and exits 3:
 // the uploader sends the maps in passes.
 

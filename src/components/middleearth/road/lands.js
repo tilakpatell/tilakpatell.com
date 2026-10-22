@@ -23,6 +23,7 @@ import { STAGES } from './stages/index';
 import { FRAME_BACK, SEAM, landJob, riverLevel, run } from './terrain';
 import { groundJob } from './ground';
 import { soilOf } from './stages/soils';
+import { trackOf } from './stages/tracks';
 import { lifeOf } from './stages/life';
 import { createBirds } from './birds';
 import { createHerd } from './herds';
@@ -50,10 +51,11 @@ export function createLands({ scene, house = null, tier = 'high', budget = 6, wi
     const from = i === 0 ? -FRAME_BACK : 0;
     const to = i === STAGES.length - 1 ? land.end + FRAME_BACK : land.end;
     // (painted in its soil’s colours, or as the stage says: its greens, its dirt, its snow)
-    const ground = yield* groundJob(land, { house, tier, soil: soilOf(id), own: STAGES[i].ground?.paint ?? null, mounds: STAGES[i].ground?.mounds ?? null, wind, from, to });
+    const ground = yield* groundJob(land, { house, tier, soil: soilOf(id), own: STAGES[i].ground?.paint ?? null, mounds: STAGES[i].ground?.mounds ?? null, wind, track: trackOf(id), from, to });
     const group = new THREE.Group();
     group.name = `road:${id}`;
     group.add(ground.mesh);
+    if (ground.track) group.add(ground.track.mesh);
     if (ground.blades) group.add(ground.blades.mesh);
     // its rivers, each a ribbon down its channel, banks and all
     const waters = (land.rivers ?? []).map((r) => {
@@ -83,7 +85,8 @@ export function createLands({ scene, house = null, tier = 'high', budget = 6, wi
       }
     }
     // what grows on it, placed once (its stage’s seed, so a stage is the same every ride)
-    const items = scatter ? placements(rowsFor(id), land, land.road, rngOf(1000 + i), { tier }) : [];
+    // (over its own ground alone: past its ends the neighbour's is drawn)
+    const items = scatter ? placements(rowsFor(id), land, land.road, rngOf(1000 + i), { tier, from, to }) : [];
     return { land, ground, group, items, waters, birds, herds };
   }
   const finish = (i, value) => {

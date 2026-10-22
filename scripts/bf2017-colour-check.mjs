@@ -22,8 +22,8 @@
 //   published the KTX2 files src/data/galaxyAssets.json names (the crew's maps,
 //             the published packs), each asked for its first kilobyte at its
 //             public URL (the DFD is in the header), audited the same way;
-//             --base the bucket (else VITE_ASSET_BASE / ASSET_BASE, else the
-//             project's site-assets from SUPABASE_URL). Read-only: a wrong
+//             --base the bucket (else VITE_ASSET_BASE / ASSET_BASE, else
+//             site-assets' own domain, lib/bucket.mjs). Read-only: a wrong
 //             published file is re-made by its writer and published again
 //
 // One line a folder (files, colour sRGB/linear, data linear/sRGB, unknown,
@@ -33,6 +33,7 @@ import { existsSync, readdirSync, readFileSync, statSync, writeFileSync } from '
 import { join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from './lib/args.mjs';
+import { assetBase } from './lib/bucket.mjs';
 import { auditKtx2, gameWord, loadGameWord, summarise, wantedTransfer, withTransfer } from './lib/ktx2-colour.mjs';
 import { readManifest } from './lib/asset-manifest.mjs';
 import { remotePath } from '../src/lib/assetPath.js';
@@ -174,11 +175,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     wrong += s.wrong.length;
   }
   if (args.published) {
-    const base = args.base ?? process.env.VITE_ASSET_BASE ?? process.env.ASSET_BASE ?? (process.env.SUPABASE_URL ? `${process.env.SUPABASE_URL}/storage/v1/object/public/site-assets` : null);
-    if (!base) {
-      console.error('No base for the published files: --base, VITE_ASSET_BASE, ASSET_BASE or SUPABASE_URL.');
-      process.exit(2);
-    }
+    const base = args.base ?? assetBase();
     const { summary: s, missing, rows } = await auditPublished(readManifest(join(ROOT, 'src/data/galaxyAssets.json')), base, headBytes);
     console.log(`${'published (galaxyAssets.json)'.padEnd(40)} ${String(s.files).padStart(5)} files  colour sRGB ${s.colour.srgb} linear ${s.colour.linear}  data linear ${s.data.linear} sRGB ${s.data.srgb}  unknown ${s.unknown}  wrong ${s.wrong.length}  unreachable ${missing.length}`);
     for (const r of rows.filter((x) => !x.ok)) console.log(`  wrong  ${r.name}: ${r.kind} tagged ${r.transfer}, wants ${r.wanted} (re-make it with its writer and publish)`);

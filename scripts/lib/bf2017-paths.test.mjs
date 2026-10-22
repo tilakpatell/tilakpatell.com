@@ -34,8 +34,8 @@ describe('the 2017 drop’s paths', () => {
   });
 
   it('builds the object URL with each segment encoded', () => {
-    expect(objectUrl('https://p.supabase.co', 'bf2017-assets', 'web/models/at-at/a b.glb')).toBe('https://p.supabase.co/storage/v1/object/bf2017-assets/web/models/at-at/a%20b.glb');
-    expect(objectUrl('https://p.supabase.co/', 'b', 'x')).toBe('https://p.supabase.co/storage/v1/object/b/x');
+    expect(objectUrl('https://a.r2.cloudflarestorage.com', 'bf2017-assets', 'web/models/at-at/a b.glb')).toBe('https://a.r2.cloudflarestorage.com/bf2017-assets/web/models/at-at/a%20b.glb');
+    expect(objectUrl('https://a.r2.cloudflarestorage.com/', 'b', 'x(1)')).toBe('https://a.r2.cloudflarestorage.com/b/x%281%29');
   });
 
   it('reads the manifest’s paths as bucket paths', () => {

@@ -10,8 +10,8 @@
 //
 //   NODE_USE_ENV_PROXY=1 node scripts/bf2017-ground.mjs hoth [--fetch]
 //
-// The keys: as scripts/bf2017-fetch.mjs reads them (SUPABASE_URL, and
-// BF2017_KEY or SUPA_KEY), never printed.
+// The keys: as scripts/bf2017-fetch.mjs reads them (R2_ACCESS_KEY_ID and
+// R2_SECRET_ACCESS_KEY), never printed.
 
 import { execFileSync } from 'node:child_process';
 import { createRequire } from 'node:module';

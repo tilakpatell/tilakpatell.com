@@ -11,9 +11,9 @@
 //
 //   (no flag)  the fetch form: the manifests from the bucket (into
 //              lab/assets/bf2017/, git-ignored, kept between runs) and a
-//              walk of its listing; needs SUPABASE_URL and BF2017_KEY (or
-//              SUPA_KEY) in the environment, never printed. NODE_USE_ENV_PROXY=1
-//              behind a proxy.
+//              listing of it; needs R2_ACCESS_KEY_ID and R2_SECRET_ACCESS_KEY
+//              (lib/bucket.mjs) in the environment, never printed.
+//              NODE_USE_ENV_PROXY=1 behind a proxy.
 //   listing    a saved walk (path<TAB>bytes a line) in place of a new one
 //   root       the desktop's web_opt (the uploader's mirror): the manifests
 //              from there and its upload_state.tsv as the listing; no key
@@ -25,7 +25,7 @@
 //
 // The site's consumers are read from the working tree (readConsumers), and
 // the clip packs published to site-assets (not in git) from that public
-// bucket by galaxyAssets.json's hashes, read-only, when SUPABASE_URL is set.
+// bucket by galaxyAssets.json's hashes, read-only, at its own domain (or ASSET_BASE).
 
 import { existsSync, readdirSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
@@ -33,31 +33,17 @@ import { fileURLToPath } from 'node:url';
 import { gunzipSync, gzipSync } from 'node:zlib';
 import { parseArgs } from './lib/args.mjs';
 import { publishedPath } from './lib/asset-manifest.mjs';
+import { assetBase, list } from './lib/bucket.mjs';
 import { classify, consumersOf, ledgerMarkdown, listingOf, normalise, rowsOf, summarise, usedTextures } from './lib/bf2017-coverage.mjs';
 import { LANES, OWNERS } from './lib/bf2017-owners.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = 'docs/superpowers/evidence/bf2017-coverage';
-const PAGE = 1000;
-
-// Every object under a bucket folder: `list(prefix, offset)` answers one page
-// of Storage's list call ({ name, id }; a folder has no id), a thousand at most.
-export async function walkListing(list, prefix) {
-  const out = [];
-  const folders = [prefix];
-  while (folders.length) {
-    const at = folders.shift();
-    for (let offset = 0; ; offset += PAGE) {
-      const page = await list(at, offset);
-      for (const e of page) {
-        const path = `${at}/${e.name}`;
-        if (e.id) out.push(e.bytes != null ? { path, bytes: e.bytes } : path);
-        else folders.push(path);
-      }
-      if (page.length < PAGE) break;
-    }
-  }
-  return out;
+// Every object under a bucket folder, with its bytes: `listAll(prefix)`
+// answers every key under it at once (lib/bucket.mjs's list: S3 lists the
+// folders' contents too, a thousand keys a page, so nothing is walked).
+export async function walkListing(listAll, prefix) {
+  return (await listAll(`${prefix}/`)).map((f) => ({ path: f.key, bytes: f.size }));
 }
 
 // The strings of a JSON value that a walk finds, under the keys `want` names (all, by default)
@@ -218,19 +204,8 @@ async function fromBucket(args) {
   let listing;
   if (args.listing) listing = readFileSync(args.listing, 'utf8').split('\n').filter(Boolean);
   else {
-    const list = async (prefix, offset) => {
-      for (let tries = 0; ; tries++) {
-        const res = await fetch(`${env.base.replace(/\/+$/, '')}/storage/v1/object/list/bf2017-assets`, {
-          method: 'POST',
-          headers: { ...env.headers, 'content-type': 'application/json' },
-          body: JSON.stringify({ prefix, limit: PAGE, offset, sortBy: { column: 'name', order: 'asc' } }),
-        }).catch(() => null);
-        if (res?.ok) return (await res.json()).map((e) => ({ name: e.name, id: e.id, bytes: e.metadata?.size }));
-        if (tries >= 4) throw new Error(`list ${prefix}: ${res ? res.status : 'no answer'}`);
-        await new Promise((r) => setTimeout(r, 1000 * 2 ** tries));
-      }
-    };
-    const found = [...(await walkListing(list, 'web')), ...(await walkListing(list, 'test')), { path: 'data.tsv', bytes: text['data.tsv'].length }];
+    const listAll = async (prefix) => (await list(env.fetch, 'bf2017-assets', prefix)).files;
+    const found = [...(await walkListing(listAll, 'web')), ...(await walkListing(listAll, 'test')), { path: 'data.tsv', bytes: text['data.tsv'].length }];
     listing = found.map((f) => (typeof f === 'string' ? f : `${f.path}\t${f.bytes ?? 0}`));
     const saved = join(cache, 'web/listing.tsv');
     mkdirSync(dirname(saved), { recursive: true });
@@ -253,9 +228,8 @@ function fromRoot(dir) {
 }
 
 async function publishedPack(path, entry) {
-  const base = process.env.SUPABASE_URL;
-  if (!base || !entry?.hash) return null;
-  const res = await fetch(`${base.replace(/\/+$/, '')}/storage/v1/object/public/site-assets/${publishedPath(path, entry.hash)}`).catch(() => null);
+  if (!entry?.hash) return null;
+  const res = await fetch(`${assetBase()}/${publishedPath(path, entry.hash)}`).catch(() => null);
   return res?.ok ? Buffer.from(await res.arrayBuffer()) : null;
 }
 

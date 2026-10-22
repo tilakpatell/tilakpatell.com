@@ -23,8 +23,8 @@
 // bf2017-lut.mjs re-cuts a record's LUTs alone. Downloads are kept under
 // lab/assets/bf2017/ (git-ignored).
 //
-// The keys: SUPABASE_URL and BF2017_KEY (or SUPA_KEY) from the environment,
-// never printed. Behind a proxy, NODE_USE_ENV_PROXY=1.
+// The keys: R2_ACCESS_KEY_ID and R2_SECRET_ACCESS_KEY (lib/bucket.mjs) from
+// the environment, never printed. Behind a proxy, NODE_USE_ENV_PROXY=1.
 
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -32,6 +32,7 @@ import { fileURLToPath } from 'node:url';
 import { gunzipSync } from 'node:zlib';
 import sharp from 'sharp';
 import { mergeVE, pickEntries, pickVariants, probeStats, readHdr, readVE, shrinkFace, toComponents, weatherKey, writeHdr, lutStrip, halveLut, clipFaces } from './lib/bf2017-light.mjs';
+import { NO_KEYS, bucketEnv, objectUrl } from './lib/bucket.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const CACHE = join(ROOT, 'lab/assets/bf2017');
@@ -52,22 +53,20 @@ if (!world || !map) {
   process.exit(2);
 }
 
-const base = process.env.SUPABASE_URL;
-const key = process.env.BF2017_KEY || process.env.SUPA_KEY;
-if (!base || !key) {
-  console.error('Set SUPABASE_URL and BF2017_KEY (or SUPA_KEY) in the environment.');
+const env = bucketEnv();
+if (!env) {
+  console.error(NO_KEYS);
   process.exit(2);
 }
-const headers = { apikey: key, Authorization: `Bearer ${key}` };
 
 // One object, from the cache or the bucket; null when the bucket hasn't it.
 async function get(path) {
   const file = join(CACHE, path);
   if (existsSync(file)) return readFileSync(file);
-  const url = `${base.replace(/\/+$/, '')}/storage/v1/object/${BUCKET}/${path.split('/').map(encodeURIComponent).join('/')}`;
+  const url = objectUrl(BUCKET, path);
   for (let i = 0; i < 4; i++) {
     try {
-      const res = await fetch(url, { headers });
+      const res = await env.fetch(url);
       if (res.status >= 400 && res.status < 500) return null;
       if (res.ok) {
         const body = Buffer.from(await res.arrayBuffer());

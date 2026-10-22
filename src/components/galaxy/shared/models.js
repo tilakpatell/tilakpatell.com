@@ -18,3 +18,6 @@ export { createKit } from '../surface/kit';
 export { FIGURES, buildFigure } from '../surface/figures';
 // the ships
 export { GALAXY_KINDS, buildGalaxyShip } from '../fleet';
+// a kind's far copy and its turn (the universe map's fleet flies the game's
+// fighters so: universe/glbFleet.js)
+export { farCut } from '../models';

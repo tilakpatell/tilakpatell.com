@@ -19,8 +19,8 @@
 // files it lists under `web/`, or the bucket's layout fetched into
 // lab/assets/bf2017: `data.tsv` and `data/<Name>.json.gz`); else --bucket,
 // the private bf2017-assets bucket itself (`data/<Name>.json.gz`, the
-// records by name; `data.tsv`, for the EmitterGraphs' replacements), with SUPABASE_URL and
-// BF2017_KEY (or SUPA_KEY) from .env.local or the environment, never
+// records by name; `data.tsv`, for the EmitterGraphs' replacements), with R2_ACCESS_KEY_ID and
+// R2_SECRET_ACCESS_KEY (lib/bucket.mjs) from .env.local or the environment, never
 // printed. The fixtures: --root scripts/fixtures/bf2017/fx.
 //
 // --sheets (with --root): each texture the effects name, from the export's
@@ -39,6 +39,7 @@ import { gunzipSync } from 'node:zlib';
 import { effectJson, emitterRefs, fileName, nearestDocument, rawReport, readIndex, sheetSizes, sheetSources } from './lib/bf2017-emitters.mjs';
 import { SET_CAP, SHEET_CAP, SHEET_SIZE, setWeight, sheetFile } from '../src/lib/three/particles/sheets.js';
 import { dataPath, objectUrl } from './lib/bf2017-paths.mjs';
+import { bucketEnv, folder } from './lib/bucket.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const BUCKET = 'bf2017-assets';
@@ -69,11 +70,10 @@ function keys() {
     }
     from = '.env.local';
   }
-  const base = process.env.SUPABASE_URL;
-  const key = process.env.BF2017_KEY || process.env.SUPA_KEY;
-  if (!base || !key) stop(`no export and no bucket key: pass --root <export>, or set SUPABASE_URL and BF2017_KEY in .env.local (read: ${from})`);
+  const env = bucketEnv();
+  if (!env) stop(`no export and no bucket key: pass --root <export>, or set R2_ACCESS_KEY_ID and R2_SECRET_ACCESS_KEY (lib/bucket.mjs) in .env.local (read: ${from})`);
   console.log(`keys from ${from}`);
-  return { base, headers: { apikey: key, Authorization: `Bearer ${key}` } };
+  return env;
 }
 
 function source() {
@@ -109,7 +109,7 @@ function source() {
   if (!argv.includes('--bucket')) stop('say where the export is: --root <export> on the desktop, or --bucket with the key');
   const env = keys();
   const fetchKey = async (path) => {
-    const res = await fetch(objectUrl(env.base, BUCKET, path), { headers: env.headers });
+    const res = await env.fetch(objectUrl(env.base, BUCKET, path));
     return res.ok ? Buffer.from(await res.arrayBuffer()) : null;
   };
   // The bucket's keys are case-sensitive, but a folder keeps one spelling
@@ -119,8 +119,7 @@ function source() {
   const listed = new Map();
   const list = async (prefix) => {
     if (!listed.has(prefix)) {
-      const res = await fetch(`${env.base.replace(/\/+$/, '')}/storage/v1/object/list/${BUCKET}`, { method: 'POST', headers: { ...env.headers, 'content-type': 'application/json' }, body: JSON.stringify({ prefix, limit: 1000 }) });
-      listed.set(prefix, res.ok ? (await res.json()).map((o) => o.name) : []);
+      listed.set(prefix, await folder(env.fetch, BUCKET, prefix).then((es) => es.map((o) => o.name), () => []));
     }
     return listed.get(prefix);
   };

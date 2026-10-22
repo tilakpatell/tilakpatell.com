@@ -20,6 +20,7 @@ export const BRIEFED = new Set([
   '/fly', // planet flight (scripts/flight-island.mjs removes this row)
   '/caribbean',
   '/invincible',
+  '/hogwarts',
   '/middle-earth',
   '/middle-earth/place',
   '/middle-earth/road',

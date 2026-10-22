@@ -12,8 +12,8 @@
 //
 // --kind defaults to the world's (weather.js's WEATHER_KIND). --data reads
 // a local file (lab/assets/bf2017/data/…, as `bf2017-fetch.mjs data` leaves
-// it) in place of the bucket's. The keys: SUPABASE_URL and BF2017_KEY (or
-// SUPA_KEY) from the environment, never printed; in a cloud session Node's
+// it) in place of the bucket's. The keys: R2_ACCESS_KEY_ID and
+// R2_SECRET_ACCESS_KEY (lib/bucket.mjs) from the environment, never printed; in a cloud session Node's
 // fetch needs NODE_USE_ENV_PROXY=1.
 
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
@@ -22,6 +22,7 @@ import { fileURLToPath } from 'node:url';
 import { gunzipSync } from 'node:zlib';
 import { kindOf, weatherParams, weatheringRecord } from '../src/lib/three/surface/weather.js';
 import { objectUrl } from './lib/bf2017-paths.mjs';
+import { NO_KEYS, bucketEnv } from './lib/bucket.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const argv = process.argv.slice(2);
@@ -43,10 +44,9 @@ const unzip = (buf) => (buf[0] === 0x1f && buf[1] === 0x8b ? gunzipSync(buf) : b
 async function read() {
   const local = arg('data');
   if (local) return JSON.parse(unzip(readFileSync(local)).toString('utf8'));
-  const base = process.env.SUPABASE_URL;
-  const key = process.env.BF2017_KEY || process.env.SUPA_KEY;
-  if (!base || !key) stop('no bucket key: set SUPABASE_URL and BF2017_KEY (or SUPA_KEY)');
-  const res = await fetch(objectUrl(base, 'bf2017-assets', `data/${ve}.json.gz`), { headers: { apikey: key, Authorization: `Bearer ${key}` } });
+  const env = bucketEnv();
+  if (!env) stop(`no bucket key: ${NO_KEYS}`);
+  const res = await env.fetch(objectUrl(env.base, 'bf2017-assets', `data/${ve}.json.gz`));
   if (!res.ok) stop(`data/${ve}.json.gz: ${res.status} from the bucket`, 1);
   return JSON.parse(unzip(Buffer.from(await res.arrayBuffer())).toString('utf8'));
 }

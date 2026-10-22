@@ -11,8 +11,8 @@ export { entered, left } from '../../beats';
 export const BEATS = [
   // the first stair, straight up the cliff in the dark
   { id: 'stair', kind: 'stair', at: 0, hold: 0, rig: 'follow', reach: 30 },
-  // near the top: Gollum’s word in Frodo’s ear, Sam sent back down
-  { id: 'betrayal', kind: 'betrayal', at: 40, hold: 8, rig: 'seat', reach: 10, params: { at: [2.2, 1.6, 36], lookAt: [-0.5, 1.2, 42], above: true }, lines: ['cirith-gollum'], deed: { verb: 'press', label: 'Brush the crumbs off Sam’s cloak', at: 3, lines: ['cirith-crumbs'] } },
+  // near the top: Gollum’s word in Frodo’s ear, Sam sent back down (looked at down the stair from above them: beside it the camera stood in the cliff)
+  { id: 'betrayal', kind: 'betrayal', at: 40, hold: 8, rig: 'seat', reach: 10, params: { at: [0.4, 1.7, 44.5], lookAt: [-0.3, 0.9, 39.5], above: true }, lines: ['cirith-gollum'], deed: { verb: 'press', label: 'Brush the crumbs off Sam’s cloak', at: 3, lines: ['cirith-crumbs'] } },
   // into the tunnel: the webs, the Phial lit
   { id: 'tunnel', kind: 'tunnel', at: 62, hold: 0, rig: 'follow', reach: 14 },
   // Shelob out of the side passage; the sting; Sam with the light, and she goes

@@ -12,8 +12,8 @@
 //   only   just these sheets and meshes, by site name
 //   count  how many of the drop's effect textures the bucket holds, and stop
 //
-// The keys: SUPABASE_URL and BF2017_KEY (or SUPA_KEY) from the environment,
-// never printed. A file over 64 KB goes to the public bucket through
+// The keys: R2_ACCESS_KEY_ID and R2_SECRET_ACCESS_KEY (lib/bucket.mjs) from
+// the environment, never printed. A file over 64 KB goes to the public bucket through
 // scripts/assets-publish.mjs, not into git; the run says which.
 
 import { Logger, NodeIO } from '@gltf-transform/core';
@@ -27,6 +27,7 @@ import { fileURLToPath } from 'node:url';
 import { parseArgs } from './lib/args.mjs';
 import { readManifest } from './lib/bf2017-manifest.mjs';
 import { inBucket, localPath, objectUrl } from './lib/bf2017-paths.mjs';
+import { NO_KEYS, bucketEnv, list } from './lib/bucket.mjs';
 import { dropLevels, ktx2Info } from './lib/ktx2-levels.mjs';
 import { COMMIT_CAP, EFFECT_CAP, MESHES, OUT_DIR, SET_CAP, SHEETS, SITE_DIR, TABLE, WANTED, bareGlb, dropFor, meshFile, sheetFile, tableEntry, tableModule, upCount, wantedSizes } from './lib/bf2017-fx.mjs';
 import { writeCredit } from './lib/catalog-write.mjs';
@@ -40,13 +41,12 @@ const WAITS = [1000, 2000, 4000];
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 function keys() {
-  const base = process.env.SUPABASE_URL;
-  const key = process.env.BF2017_KEY || process.env.SUPA_KEY;
-  if (!base || !key) {
-    console.error('Set SUPABASE_URL and BF2017_KEY (or SUPA_KEY) and run with node --env-file=.env.local.');
+  const env = bucketEnv();
+  if (!env) {
+    console.error(NO_KEYS);
     process.exit(2);
   }
-  return { base, headers: { apikey: key, Authorization: `Bearer ${key}` } };
+  return env;
 }
 
 // one object to lab/, kept when there; null when the bucket hasn't it
@@ -56,7 +56,7 @@ async function get(env, bucketPath) {
   for (let i = 0; ; i++) {
     let res = null;
     try {
-      res = await fetch(objectUrl(env.base, BUCKET, bucketPath), { headers: env.headers });
+      res = await env.fetch(objectUrl(env.base, BUCKET, bucketPath));
     } catch (e) {
       if (i >= WAITS.length) throw e;
     }
@@ -71,18 +71,10 @@ async function get(env, bucketPath) {
   }
 }
 
-// every object under a folder of the bucket (Supabase's list, a page at a time)
+// every object under a folder of the bucket (one listing, a thousand keys a page)
 async function listed(env, prefix, into = new Set()) {
-  for (let offset = 0; ; offset += 1000) {
-    const res = await fetch(`${env.base.replace(/\/+$/, '')}/storage/v1/object/list/${BUCKET}`, { method: 'POST', headers: { ...env.headers, 'content-type': 'application/json' }, body: JSON.stringify({ prefix, limit: 1000, offset }) });
-    if (!res.ok) throw new Error(`listing ${prefix}: ${res.status}`);
-    const page = await res.json();
-    for (const e of page) {
-      if (e.id) into.add(`${prefix}/${e.name}`);
-      else await listed(env, `${prefix}/${e.name}`, into);
-    }
-    if (page.length < 1000) return into;
-  }
+  for (const f of (await list(env.fetch, BUCKET, `${prefix}/`)).files) into.add(f.key);
+  return into;
 }
 
 async function loadJsonl(env, bucketPath) {

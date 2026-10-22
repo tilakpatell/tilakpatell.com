@@ -15,7 +15,7 @@
 //
 //   node scripts/bf2017-textures.mjs [role …]      (every role by default)
 //
-// The keys: SUPABASE_URL and BF2017_KEY (or SUPA_KEY) from the environment.
+// The keys: R2_ACCESS_KEY_ID and R2_SECRET_ACCESS_KEY (lib/bucket.mjs) from the environment.
 
 import { existsSync } from 'node:fs';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';

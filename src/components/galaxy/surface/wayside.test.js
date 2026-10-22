@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import * as THREE from 'three';
 import { REGION, laidOn, regionsAround, waysideAt } from './wayside';
+import { SPAN as TOWN } from './town';
 import { PROPS } from './props';
 import { SURFACE_MODELS } from './catalog';
 
@@ -36,14 +37,14 @@ describe('waysideAt', () => {
         expect(w.at[0]).toBeGreaterThanOrEqual(i * REGION);
         expect(w.at[0]).toBeLessThanOrEqual((i + 1) * REGION);
         expect(w.things.length).toBeGreaterThanOrEqual(3);
-        for (const t of w.things) expect(Math.hypot(t.at[0] - w.at[0], t.at[1] - w.at[1])).toBeLessThan(15);
+        for (const t of w.things) expect(Math.hypot(t.at[0] - w.at[0], t.at[1] - w.at[1])).toBeLessThan(w.kind === 'town' ? TOWN : 15);
       }
   });
 
-  it('turns up camps, ruins and downed fighters on a green world, outposts and wrecks on a bare one', () => {
+  it('turns up camps, ruins, downed fighters and towns on a green world, outposts, wrecks and towns on a bare one', () => {
     const kinds = (site) => new Set(regions(site).filter(Boolean).map((w) => w.kind));
-    expect([...kinds(green)].sort()).toEqual(['camp', 'ruin', 'wreck']);
-    expect([...kinds(bare)].sort()).toEqual(['camp', 'outpost', 'wreck']);
+    expect([...kinds(green)].sort()).toEqual(['camp', 'ruin', 'town', 'wreck']);
+    expect([...kinds(bare)].sort()).toEqual(['camp', 'outpost', 'town', 'wreck']);
     const ships = regions(bare).filter((w) => w?.kind === 'wreck').map((w) => w.things[0]);
     expect(ships.every((t) => t.kind === 'downed' && Math.abs(t.opts.roll) >= 0.3 && t.lie === t.opts.metres * 0.45)).toBe(true);
     expect(new Set(ships.map((t) => t.opts.ship))).toEqual(new Set(['xwing', 'ywing', 'tie']));
@@ -94,6 +95,13 @@ describe('regionsAround', () => {
 describe('laidOn', () => {
   it('stands a thing on the land’s own height', () => {
     expect(laidOn({ kind: 'tent', at: [10, 20] }, (x, z) => x + z)).toEqual({ kind: 'tent', at: [10, 20], abs: true, y: 30 });
+  });
+
+  it('stands a house on the lowest of the land round it, no corner over a slope', () => {
+    // (the land rising to +x and +z: its lowest 4 m round is 4·√2 down, to the south-west)
+    const t = laidOn({ kind: 'tathouse', at: [10, 20], seat: 4 }, (x, z) => x + z);
+    expect(t.abs).toBe(true);
+    expect(t.y).toBeCloseTo(30 - 4 * Math.SQRT2, 6);
   });
 
   it('lays a long thing along the slope under it, its nose up the hill and its side to the slope across', () => {

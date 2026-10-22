@@ -24,8 +24,8 @@
 //            tiles, the HUD's art) and src/data/bf2017/bitmaps.json
 //
 // What it reads comes through scripts/bf2017-fetch.mjs into
-// lab/assets/bf2017/web/ (run here when missing). SUPABASE_URL and SUPA_KEY
-// (or BF2017_KEY) from the environment for that fetch, never printed.
+// lab/assets/bf2017/web/ (run here when missing). R2_ACCESS_KEY_ID and
+// R2_SECRET_ACCESS_KEY from the environment for that fetch, never printed.
 
 import { execFileSync } from 'node:child_process';
 import { copyFileSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';

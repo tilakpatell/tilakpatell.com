@@ -12,7 +12,8 @@
 import * as THREE from 'three';
 import { westGate } from '../../../towns/moria/gate';
 import { cliffGeo } from '../../../towns/rivendell/valley';
-import { mergeStatics } from '../parts';
+import { mergeStatics, roled } from '../parts';
+import { wearParts } from '../../partsWear';
 
 export const GATE_AT = 160; // m: the cliff’s face across the road
 export const GATE_SCALE = 1.3; // the chapter’s doors 5 m tall; the films’ greater
@@ -31,12 +32,12 @@ export function buildProps({ K, road, heightAt, tier = 'high' }) {
   group.add(gate.group);
 
   // the mountain’s wall on from the cliff either side, its face to the road (one instanced draw)
-  const material = road.material({ vertexColors: true, flatShading: true, color: 0x8a8c94 });
+  const material = wearParts(road.material({ vertexColors: true, flatShading: true, color: 0x8a8c94 }), { tier });
   const wall = [];
   const step = tier === 'low' ? 18 : 12;
   for (let x = 26, i = 0; x <= 150; x += step, i++)
     for (const side of [-1, 1]) wall.push([side * x, GATE_AT + 4 + (i % 3) * 3, 1.6 + (i % 4) * 0.15, 3.2 + ((i * 5) % 7) * 0.2, side * ((i % 5) - 2) * 0.05]);
-  const cliffs = new THREE.InstancedMesh(cliffGeo(5), material, wall.length);
+  const cliffs = new THREE.InstancedMesh(roled(cliffGeo(5), 'rock'), material, wall.length);
   const m = new THREE.Matrix4();
   const q = new THREE.Quaternion();
   wall.forEach(([x, z, sxz, sy, turn], i) => {

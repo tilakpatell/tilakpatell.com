@@ -1,4 +1,4 @@
-// The site's game-derived files to the public bucket `site-assets`, by
+// The site's game-derived files to the public bucket (`tilak-assets` on R2; `site-assets` on Supabase until 2026-10-21), by
 // content hash, and the manifest that says so (src/data/galaxyAssets.json).
 // The files are what the 2017 pipeline made (scripts/bf2017-import.mjs: a
 // kind's GLB and its .lod1, .far and .ultra cuts, credited to the game, the
@@ -12,7 +12,7 @@
 // .gitignore's marked block is rewritten (scripts/assets-ignore.mjs), so the
 // published files leave git.
 //
-//   node scripts/assets-publish.mjs [--dry] [--only '<glob over site paths>'] [--bucket site-assets]
+//   node scripts/assets-publish.mjs [--dry] [--only '<glob over site paths>'] [--bucket tilak-assets]
 //     [--manifest <file>] [--files '<glob>']
 //
 //   dry       what would go, and nothing sent
@@ -23,10 +23,12 @@
 //             (a check that wants something in the bucket before phase 1's
 //             heroes are there; never for the site's manifest)
 //
-// The keys: SUPABASE_URL and SUPA_KEY (or BF2017_KEY) from the environment,
-// for the uploads only, never printed; the bucket is read with no key at all.
-// It makes the bucket (public) the first time. Then: node
-// scripts/assets-check.mjs, and commit the manifest and .gitignore.
+// The keys: R2_ACCESS_KEY_ID and R2_SECRET_ACCESS_KEY (R2's S3 keys,
+// lib/bucket.mjs) from the environment, never printed. The bucket is made by
+// hand on R2 and is public through its own domain (docs/stack/cloudflare.md);
+// whether a hash is up there is asked of R2 itself, so no "not there" is ever
+// left in the CDN's cache. Then: node scripts/assets-check.mjs, and commit the
+// manifest and .gitignore.
 
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { extname, join, resolve } from 'node:path';
@@ -35,14 +37,15 @@ import { parseArgs } from './lib/args.mjs';
 import { globMatch } from './lib/bf2017-paths.mjs';
 import { MANIFEST, diff, gameFiles, hashOf, publishedPath, readManifest, writeManifest } from './lib/asset-manifest.mjs';
 import { KINDS } from './assets-upload.mjs';
+import { NO_KEYS, assetBase, bucketEnv, objectUrl } from './lib/bucket.mjs';
 import { createPool } from './lib/pool.mjs';
 
-export const BUCKET = 'site-assets';
-// A year. Supabase keeps only the max-age of what it is sent (an `immutable`
-// is dropped) and serves `public, max-age=31536000` on a GET; the path's
-// hash is what makes the file immutable. (A HEAD there always says
-// no-cache, so assets-check.mjs asks for one byte instead.)
-export const CACHE = 'max-age=31536000';
+export const BUCKET = 'tilak-assets';
+// A year, and never changed: the path's hash is what makes the file
+// immutable. R2 keeps the header as it is sent and answers with it. (Until
+// 2026-10-21 Supabase kept only the max-age and served `public,
+// max-age=31536000`; assets-check.mjs holds both to the year.)
+export const CACHE = 'public, max-age=31536000, immutable';
 const TYPES = { ...KINDS, '.json': 'application/json', '.bin': 'application/octet-stream', '.webm': 'video/webm', '.wasm': 'application/wasm', '.mp3': 'audio/mpeg' };
 
 const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
@@ -56,19 +59,12 @@ export const onlyMatch = (only) => {
   return (path) => ms.some((m) => m(path));
 };
 
-export const publicBase = (url, bucket = BUCKET) => `${url.replace(/\/+$/, '')}/storage/v1/object/public/${bucket}`;
-
-// The bucket, made public if it isn't there: one POST, the service key's.
-export async function ensureBucket(url, headers, bucket = BUCKET, fetch = globalThis.fetch) {
-  const had = await fetch(`${url}/storage/v1/bucket/${bucket}`, { headers });
-  if (had.ok) {
-    const b = await had.json();
-    if (!b.public) throw new Error(`the bucket ${bucket} is there but not public`);
-    return false;
-  }
-  const made = await fetch(`${url}/storage/v1/bucket`, { method: 'POST', headers: { ...headers, 'content-type': 'application/json' }, body: JSON.stringify({ id: bucket, name: bucket, public: true }) });
-  if (!made.ok) throw new Error(`couldn't make the bucket ${bucket}: HTTP ${made.status} ${(await made.text()).slice(0, 200)}`);
-  return true;
+// The bucket is there (R2's HeadBucket): made by hand, with its domain and
+// its CORS, which the S3 calls can't make or show.
+export async function ensureBucket(bucket = BUCKET, fetch = globalThis.fetch) {
+  const had = await fetch(objectUrl(bucket, '').replace(/\/$/, ''), { method: 'HEAD' });
+  if (had.status === 404) throw new Error(`the bucket ${bucket} isn't on R2: make it there first (docs/stack/cloudflare.md)`);
+  if (!had.ok) throw new Error(`the bucket ${bucket}: HTTP ${had.status}`);
 }
 
 // The work, with the network handed in (a pool, or a test's stand-in).
@@ -76,8 +72,8 @@ export async function ensureBucket(url, headers, bucket = BUCKET, fetch = global
 // → { sent, there, failed, manifest }: the new manifest has every file that
 //   is in the bucket now and every earlier entry not touched (a checkout
 //   without the files keeps what was published before)
-export async function publish({ files, manifest, pool, url, bucket = BUCKET, headers, publicDir, log = console.log }) {
-  const base = publicBase(url, bucket);
+//   fetch: the one that signs (lib/bucket.mjs), handed to each of the pool's jobs
+export async function publish({ files, manifest, pool, fetch, bucket = BUCKET, publicDir, log = console.log }) {
   const { add, change, same } = diff(manifest, files);
   const next = { ...manifest };
   const failed = [];
@@ -88,16 +84,17 @@ export async function publish({ files, manifest, pool, url, bucket = BUCKET, hea
     [...add, ...change].map(async (f) => {
       const key = publishedPath(f.path, f.hash);
       // (a hash already up there, from a run cut off before its manifest, is not sent again)
-      const head = await pool.run({ url: `${base}/${key}`, method: 'HEAD' });
+      const head = await pool.run({ url: objectUrl(bucket, key), method: 'HEAD', fetch });
       if (head.status === 'fetched' && Number(head.headers.get('content-length')) === f.bytes) {
         there++;
       } else {
         const body = readFileSync(join(publicDir, f.path));
         const up = await pool.run({
-          url: `${url}/storage/v1/object/${bucket}/${key.split('/').map(encodeURIComponent).join('/')}`,
-          method: 'POST',
-          headers: { ...headers, 'content-type': TYPES[extname(f.path).toLowerCase()] ?? 'application/octet-stream', 'cache-control': CACHE, 'x-upsert': 'true' },
+          url: objectUrl(bucket, key),
+          method: 'PUT',
+          headers: { 'content-type': TYPES[extname(f.path).toLowerCase()] ?? 'application/octet-stream', 'cache-control': CACHE },
           body,
+          fetch,
         });
         if (up.status !== 'fetched') {
           failed.push({ ...f, error: up.error ?? up.status });
@@ -132,16 +129,14 @@ async function main() {
     for (const f of [...plan.add, ...plan.change]) console.log(`  would send ${publishedPath(f.path, f.hash)}  ${mb(f.bytes)}`);
     return 0;
   }
-  const url = (process.env.SUPABASE_URL || '').replace(/\/+$/, '');
-  const key = process.env.SUPA_KEY || process.env.BF2017_KEY;
-  if (!url || !key) {
-    console.error('Set SUPABASE_URL and SUPA_KEY (the project’s secret key, for the upload only) in the environment.');
+  const env = bucketEnv();
+  if (!env) {
+    console.error(NO_KEYS);
     return 2;
   }
-  const headers = { apikey: key, Authorization: `Bearer ${key}` };
-  if (await ensureBucket(url, headers, bucket)) console.log(`made the public bucket ${bucket}`);
-  const pool = createPool({ size: 4, missing: [400, 404] });
-  const r = await publish({ files, manifest, pool, url, bucket, headers, publicDir });
+  await ensureBucket(bucket, env.fetch);
+  const pool = createPool({ size: 4 });
+  const r = await publish({ files, manifest, pool, fetch: env.fetch, bucket, publicDir });
   // (last: the manifest names only what is in the bucket now)
   writeManifest(manifestFile, r.manifest);
   console.log(`sent ${r.sent} · there already ${r.there} · failed ${r.failed.length} · wrote ${ours ? MANIFEST : manifestFile}`);
@@ -149,7 +144,7 @@ async function main() {
     const { ignoreFile } = await import('./assets-ignore.mjs');
     ignoreFile(ROOT);
   }
-  console.log(`VITE_ASSET_BASE (the repository variable ASSET_BASE): ${publicBase(url, bucket)}`);
+  console.log(`VITE_ASSET_BASE (deploy.yml's ASSET_BASE): ${assetBase()}`);
   return r.failed.length ? 1 : 0;
 }
 

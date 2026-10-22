@@ -14,6 +14,7 @@
 import * as THREE from 'three';
 import { rockGeo, webGeo } from '../../../towns/cirithungol/props';
 import { C, merged, mergeStatics, part } from '../parts';
+import { wearParts } from '../../partsWear';
 
 export const STAIR = { from: 2, to: 54, step: 0.55 }; // m along the road: the steps
 export const LAIR = { from: 58, to: 112, r: 3.4, side: [5, 88] }; // the tunnel over the road; her side passage’s mouth [x, z]
@@ -29,7 +30,7 @@ export function buildProps({ K, road, heightAt, tier = 'high' }) {
   const group = new THREE.Group();
   group.name = 'cirith-ungol:props';
   const low = tier === 'low';
-  const material = road.material({ vertexColors: true, flatShading: true });
+  const material = wearParts(road.material({ vertexColors: true, flatShading: true }), { tier });
   const { mats } = K;
   const m = new THREE.Matrix4();
   const q = new THREE.Quaternion();
@@ -76,7 +77,7 @@ export function buildProps({ K, road, heightAt, tier = 'high' }) {
   }
   arch.computeVertexNormals();
   // (black and wet: the Cirith Ungol chapter's own rock, lit only by the Phial)
-  const lair = new THREE.Mesh(arch, road.material({ map: K.tex.rock ?? K.tex.stone, normalMap: K.tex.rockN ?? K.tex.stoneN, color: 0x403a34, roughness: 0.55, side: THREE.BackSide }));
+  const lair = new THREE.Mesh(arch, road.material({ map: K.tex.rock ?? K.tex.stone, normalMap: K.tex.rockN ?? K.tex.stoneN, color: 0x403a34, side: THREE.BackSide }));
   lair.position.set(0, heightAt(0, (LAIR.from + LAIR.to) / 2) - 0.4, (LAIR.from + LAIR.to) / 2);
   lair.name = 'cirith-ungol:lair';
   group.add(lair);
@@ -105,8 +106,14 @@ export function buildProps({ K, road, heightAt, tier = 'high' }) {
   const [tx, tz] = TOWER.at;
   const ty = heightAt(tx, tz) - 2;
   const black = C(0x2a2624);
-  [[14, 12], [11, 14], [8, 12], [5.5, 10]].reduce((y, [w, h]) => {
+  [[14, 12], [11, 14], [8, 12], [5.5, 10]].reduce((y, [w, h], i) => {
     t.push(part(new THREE.BoxGeometry(w, h, w), black, { at: [tx, y + h / 2, tz], yaw: 0.2 }));
+    // (a spike at each corner of the tier, leaning out: the tower's jagged outline against the red)
+    for (let c = 0; c < 4; c++) {
+      const a = 0.2 + Math.PI / 4 + (c * Math.PI) / 2;
+      const r = w * 0.66;
+      t.push(part(new THREE.ConeGeometry(0.5 + i * 0.05, 4 - i * 0.4, 4), black, { at: [tx + Math.sin(a) * r, y + h + 1.4, tz + Math.cos(a) * r], yaw: a, pitch: 0.28 }));
+    }
     return y + h;
   }, ty);
   for (const s of [-1, 1]) t.push(part(new THREE.ConeGeometry(1.2, 9, 5), black, { at: [tx + s * 2.2, ty + 52, tz], roll: s * -0.25 }));

@@ -17,6 +17,7 @@ import { flet as buildFlet, lantern } from '../../../towns/lorien/flets';
 import { mirror as buildMirror } from '../../../towns/lorien/mirror';
 import { boat as buildBoat } from '../../../towns/lorien/boat';
 import { C, merged, mergeStatics, part } from '../parts';
+import { wearParts } from '../../partsWear';
 
 export const RISE = 18; // m: the flet over the ground
 export const DAIS = { tree: [-9, 80], r: 12 }; // the greatest mallorn, its flet over the road
@@ -72,7 +73,7 @@ export function buildProps({ K, road, heightAt, tier = 'high' }) {
   group.add(wood);
 
   // the stairs up and down: treads on two stringers, posts to the ground, a handrail
-  const woodMat = road.material({ vertexColors: true, flatShading: true });
+  const woodMat = wearParts(road.material({ vertexColors: true, flatShading: true }), { tier });
   const geos = [];
   const flight = (z0, z1, y0, y1) => {
     const run = z1 - z0;

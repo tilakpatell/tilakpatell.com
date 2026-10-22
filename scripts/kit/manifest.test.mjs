@@ -91,6 +91,13 @@ describe('a pack’s manifest', () => {
     expect(materials.Bark_Birch).toEqual({ alpha: 'opaque', leaf: false, wind: 'tree', maps: { colour: '8x8', normal: '8x8' } });
   });
 
+  it('lists a LOD1’s own material though no model’s parts wear it, and no other such', () => {
+    const [fam] = tiny();
+    const { materials } = buildManifest('tiny', [{ ...fam, materials: { ...fam.materials, Birch_1_Facade: { leaf: false, wind: false, far: true, maps: { colour: [16, 16] } }, Unworn: { leaf: false, wind: false, maps: {} } } }]);
+    expect(materials.Birch_1_Facade).toEqual({ alpha: 'opaque', leaf: false, wind: null, maps: { colour: '16x16' } });
+    expect(materials.Unworn).toBeUndefined();
+  });
+
   it('bends a material as a tree when any tree wears it, as a shrub when only low things do, and not at all otherwise', () => {
     const part = (material, part = 'leaves') => ({ part, material, tris: 10, tris1: 4 });
     const model = (name, ...parts) => ({ name, positions: new Float32Array([0, 0, 0, 1, 1, 1]), parts });

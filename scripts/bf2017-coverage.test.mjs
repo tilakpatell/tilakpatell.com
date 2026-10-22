@@ -6,23 +6,11 @@ import { checkLedger, readConsumers, resolveLevels, walkListing } from './bf2017
 import { normalise } from './lib/bf2017-coverage.mjs';
 
 describe('walkListing', () => {
-  it('keeps going past a full page and walks into folders', async () => {
+  it('asks for everything under the folder at once, and keeps each key with its bytes', async () => {
     const asked = [];
-    const list = async (prefix, offset) => {
-      asked.push([prefix, offset]);
-      if (prefix === 'web/x') {
-        const all = [...Array.from({ length: 1001 }, (_, i) => ({ name: `f${String(i).padStart(4, '0')}.glb`, id: `i${i}` })), { name: 'sub', id: null }];
-        return all.slice(offset, offset + 1000);
-      }
-      if (prefix === 'web/x/sub') return offset ? [] : [{ name: 'deep.glb', id: 'd' }];
-      return [];
-    };
-    const paths = await walkListing(list, 'web/x');
-    expect(paths).toHaveLength(1002);
-    expect(new Set(paths).size).toBe(1002);
-    expect(paths).toContain('web/x/f1000.glb');
-    expect(paths).toContain('web/x/sub/deep.glb');
-    expect(asked).toContainEqual(['web/x', 1000]);
+    const listAll = async (prefix) => (asked.push(prefix), [{ key: 'web/x/f0.glb', size: 3 }, { key: 'web/x/sub/deep.glb', size: 9 }]);
+    expect(await walkListing(listAll, 'web/x')).toEqual([{ path: 'web/x/f0.glb', bytes: 3 }, { path: 'web/x/sub/deep.glb', bytes: 9 }]);
+    expect(asked).toEqual(['web/x/']);
   });
 });
 

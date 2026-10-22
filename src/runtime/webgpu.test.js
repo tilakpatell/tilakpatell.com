@@ -45,7 +45,7 @@ vi.mock('../lib/three/light/passes.js', () => ({
   }),
 }));
 
-const { adapterLimits, buildPostProcessing, createWebGPU, isFallback, RAISED_LIMITS } = await import('./webgpu');
+const { adapterLimits, buildPostProcessing, createWebGPU, isFallback, keepSpriteGeometry, RAISED_LIMITS } = await import('./webgpu');
 const { mipBias, setMipState } = await import('../lib/three/mipBias');
 
 const fakeCanvas = () => ({ addEventListener: vi.fn(), removeEventListener: vi.fn() });
@@ -184,6 +184,21 @@ describe('the node renderer’s observer', () => {
     o.equals(ro);
     map.offset.x = 0.5;
     expect(o.equals(ro)).toBe(false);
+  });
+});
+
+describe('keepSpriteGeometry', () => {
+  it('the sprites’ one geometry outlives any sprite given back', async () => {
+    const THREE = await import('three');
+    const shared = keepSpriteGeometry();
+    expect(new THREE.Sprite().geometry).toBe(shared);
+    const gone = vi.fn();
+    shared.addEventListener('dispose', gone);
+    // (as disposeTree frees a group's every geometry, a sprite's among them)
+    new THREE.Sprite().geometry.dispose();
+    expect(gone).not.toHaveBeenCalled();
+    expect(keepSpriteGeometry()).toBe(shared);
+    shared.removeEventListener('dispose', gone);
   });
 });
 

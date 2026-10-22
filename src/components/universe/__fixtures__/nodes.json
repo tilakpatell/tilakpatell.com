@@ -228,6 +228,18 @@
   "place": "rmportal"
  },
  {
+  "id": "ramp:potter",
+  "kind": "ramp",
+  "at": [
+   -23574.29878,
+   -1118.859622,
+   -26805.436439
+  ],
+  "region": "wanderer",
+  "name": "Hogwarts",
+  "place": "potter"
+ },
+ {
   "id": "ramp:middleearth",
   "kind": "ramp",
   "at": [

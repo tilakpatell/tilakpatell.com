@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { LIGHTS, SHADE, keyLight, light, shadeOf } from './daylight';
+import { LIGHTS, REF_LEAST, SHADE, keyLight, light, refFloor, shadeOf } from './daylight';
 import { sOf } from './line';
 import { STAGES } from './stages/index';
 
@@ -102,5 +102,17 @@ describe('daylight: the sky, the sun and the air along the Road', () => {
     // (blue: its blue over its red more than the day’s lilac has it)
     expect(bree[2] / bree[0]).toBeGreaterThan(noon[2] / noon[0]);
     for (const id of ['moria', 'cirith-ungol', 'gorgoroth']) expect(luma(shadeOf(light(STAGES, sOf(STAGES, id, 60)))), id).toBeGreaterThanOrEqual(SHADE.least - 1e-9);
+  });
+
+  it('the light the look measures by: never under the shade floor’s, a day’s left as it is', () => {
+    const luma = (c) => 0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b;
+    // (Moria's black air: the reference the house falls to, and a red glimmer under the pall)
+    expect(luma(refFloor({ r: 1e-3, g: 1e-3, b: 1e-3 }))).toBeCloseTo(REF_LEAST, 6);
+    const red = refFloor({ r: 0.02, g: 0.005, b: 0.002 });
+    expect(luma(red)).toBeCloseTo(REF_LEAST, 6);
+    expect(red.r / red.g).toBeCloseTo(4, 6);
+    expect(refFloor({ r: 0, g: 0, b: 0 })).toEqual({ r: REF_LEAST, g: REF_LEAST, b: REF_LEAST });
+    const day = { r: 0.9, g: 0.85, b: 0.8 };
+    expect(refFloor({ ...day })).toEqual(day);
   });
 });

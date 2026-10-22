@@ -16,10 +16,10 @@ export const BEATS = [
   { id: 'council', kind: 'council', at: 78, hold: 20, rig: 'seat', cut: 0, reach: 12, params: { at: [-0.5, 2.6, 80], lookAt: [-9, 1, 85.5], above: true }, lines: ['rivendell-elrond', 'rivendell-boromir'], deed: { verb: 'press', label: 'Stand up and say you’ll carry it', at: 7.5, lines: ['rivendell-frodo'] } },
   // Gimli on his feet as the hold ends (the clip after the voices, never under one)
   { id: 'axe', kind: 'axe', at: 79, hold: 0, rig: 'seat', reach: 6, params: { at: [-0.5, 2.6, 80], lookAt: [-9, 1, 85.5], above: true }, clip: 'andMyAxe' },
-  // the shards of Narsil on their cloth
-  { id: 'narsil', kind: 'narsil', at: 100, hold: 8, rig: 'low', reach: 10, deed: { verb: 'press', label: 'Touch the shards of Narsil', at: 2, lines: ['rivendell-narsil'] } },
-  // Bilbo on a bench with his book
-  { id: 'bilbo', kind: 'bilbo', at: 116, hold: 8, rig: 'side', reach: 12, lines: ['rivendell-bilbo'], deed: { verb: 'press', label: 'Take Sting from Bilbo', at: 3, lines: ['rivendell-sting'] } },
+  // the shards of Narsil on their cloth (low by the road, Frodo before the hall: the low rig looks up the road, and the hall is off it)
+  { id: 'narsil', kind: 'narsil', at: 100, hold: 8, rig: 'wide', reach: 10, params: { at: [1.6, 0.9, 95.5], lookAt: [-9, 1.6, 103.5], above: true }, deed: { verb: 'press', label: 'Touch the shards of Narsil', at: 2, lines: ['rivendell-narsil'] } },
+  // Bilbo on a bench with his book (looked at from up the road: from the side the file stood between)
+  { id: 'bilbo', kind: 'bilbo', at: 116, hold: 8, rig: 'seat', reach: 12, params: { at: [2.2, 1.5, 123.5], lookAt: [6, 1.1, 119.2], above: true }, lines: ['rivendell-bilbo'], deed: { verb: 'press', label: 'Take Sting from Bilbo', at: 3, lines: ['rivendell-sting'] } },
   // winter’s first light: nine walk out under the arch, you behind them
   { id: 'setout', kind: 'setout', at: 138, hold: 6, rig: 'lead', reach: 14 },
 ];

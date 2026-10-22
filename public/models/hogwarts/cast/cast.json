@@ -1,0 +1,204 @@
+{
+  "about": "Hogwarts’ cast on the site’s shared skeleton (Meshy’s 24 bones, under an Armature scaled to metres), made by scripts/hogwarts-cast.mjs. Load a figure as src/components/middleearth/road/cast.js loads one: NAME.glb (or the cut for the device’s detail: hq for high, plain for mid, lo for low) and its own idle, walk and run beside it; every other clip through lib/three/clipLibrary.js’s forFigure, with `hipsY` given to createAnimator (it stands a standing clip’s soles on the floor; the Hips bone’s own height sinks them a few centimetres). Scale it to `height` metres, crown to sole. `tall` marks a figure far over a person’s height (2.6 m): give it the doors, seats and camera distance of its size, never squeeze it to a person’s. A `tint` is applied to the base colour as its entry says.",
+  "figures": {
+    "harry": {
+      "height": 1.45,
+      "kind": "student",
+      "house": "gryffindor",
+      "cuts": {
+        "hq": "harry.hq.glb",
+        "mid": "harry.glb",
+        "lo": "harry.lo.glb"
+      },
+      "clips": {
+        "idle": "harry-idle.glb",
+        "walk": "harry-walk.glb",
+        "run": "harry-run.glb"
+      },
+      "hipsY": 49.4
+    },
+    "ron": {
+      "height": 1.52,
+      "kind": "student",
+      "house": "gryffindor",
+      "cuts": {
+        "hq": "ron.hq.glb",
+        "mid": "ron.glb",
+        "lo": "ron.lo.glb"
+      },
+      "clips": {
+        "idle": "ron-idle.glb",
+        "walk": "ron-walk.glb",
+        "run": "ron-run.glb"
+      },
+      "hipsY": 52.7
+    },
+    "hermione": {
+      "height": 1.42,
+      "kind": "student",
+      "house": "gryffindor",
+      "cuts": {
+        "hq": "hermione.hq.glb",
+        "mid": "hermione.glb",
+        "lo": "hermione.lo.glb"
+      },
+      "clips": {
+        "idle": "hermione-idle.glb",
+        "walk": "hermione-walk.glb",
+        "run": "hermione-run.glb"
+      },
+      "hipsY": 33.8
+    },
+    "hagrid": {
+      "height": 2.6,
+      "kind": "staff",
+      "tall": true,
+      "cuts": {
+        "hq": "hagrid.hq.glb",
+        "mid": "hagrid.glb",
+        "lo": "hagrid.lo.glb"
+      },
+      "clips": {
+        "idle": "hagrid-idle.glb",
+        "walk": "hagrid-walk.glb",
+        "run": "hagrid-run.glb"
+      },
+      "hipsY": 91.2
+    },
+    "dumbledore": {
+      "height": 1.85,
+      "kind": "staff",
+      "cuts": {
+        "hq": "dumbledore.hq.glb",
+        "mid": "dumbledore.glb",
+        "lo": "dumbledore.lo.glb"
+      },
+      "clips": {
+        "idle": "dumbledore-idle.glb",
+        "walk": "dumbledore-walk.glb",
+        "run": "dumbledore-run.glb"
+      },
+      "hipsY": 79.4
+    },
+    "mcgonagall": {
+      "height": 1.72,
+      "kind": "staff",
+      "cuts": {
+        "hq": "mcgonagall.hq.glb",
+        "mid": "mcgonagall.glb",
+        "lo": "mcgonagall.lo.glb"
+      },
+      "clips": {
+        "idle": "mcgonagall-idle.glb",
+        "walk": "mcgonagall-walk.glb",
+        "run": "mcgonagall-run.glb"
+      },
+      "hipsY": 67.1
+    },
+    "snape": {
+      "height": 1.85,
+      "kind": "staff",
+      "cuts": {
+        "hq": "snape.hq.glb",
+        "mid": "snape.glb",
+        "lo": "snape.lo.glb"
+      },
+      "clips": {
+        "idle": "snape-idle.glb",
+        "walk": "snape-walk.glb",
+        "run": "snape-run.glb"
+      },
+      "hipsY": 64.5
+    },
+    "flitwick": {
+      "height": 0.9,
+      "kind": "staff",
+      "cuts": {
+        "hq": "flitwick.hq.glb",
+        "mid": "flitwick.glb",
+        "lo": "flitwick.lo.glb"
+      },
+      "clips": {
+        "idle": "flitwick-idle.glb",
+        "walk": "flitwick-walk.glb",
+        "run": "flitwick-run.glb"
+      },
+      "hipsY": 38
+    },
+    "sprout": {
+      "height": 1.6,
+      "kind": "staff",
+      "cuts": {
+        "hq": "sprout.hq.glb",
+        "mid": "sprout.glb",
+        "lo": "sprout.lo.glb"
+      },
+      "clips": {
+        "idle": "sprout-idle.glb",
+        "walk": "sprout-walk.glb",
+        "run": "sprout-run.glb"
+      },
+      "hipsY": 51.7
+    },
+    "hooch": {
+      "height": 1.7,
+      "kind": "staff",
+      "cuts": {
+        "hq": "hooch.hq.glb",
+        "mid": "hooch.glb",
+        "lo": "hooch.lo.glb"
+      },
+      "clips": {
+        "idle": "hooch-idle.glb",
+        "walk": "hooch-walk.glb",
+        "run": "hooch-run.glb"
+      },
+      "hipsY": 70.1
+    },
+    "filch": {
+      "height": 1.7,
+      "kind": "staff",
+      "cuts": {
+        "hq": "filch.hq.glb",
+        "mid": "filch.glb",
+        "lo": "filch.lo.glb"
+      },
+      "clips": {
+        "idle": "filch-idle.glb",
+        "walk": "filch-walk.glb",
+        "run": "filch-run.glb"
+      },
+      "hipsY": 59.7
+    },
+    "pince": {
+      "height": 1.7,
+      "kind": "staff",
+      "cuts": {
+        "hq": "pince.hq.glb",
+        "mid": "pince.glb",
+        "lo": "pince.lo.glb"
+      },
+      "clips": {
+        "idle": "pince-idle.glb",
+        "walk": "pince-walk.glb",
+        "run": "pince-run.glb"
+      },
+      "hipsY": 81.9
+    },
+    "rosmerta": {
+      "height": 1.65,
+      "kind": "staff",
+      "cuts": {
+        "hq": "rosmerta.hq.glb",
+        "mid": "rosmerta.glb",
+        "lo": "rosmerta.lo.glb"
+      },
+      "clips": {
+        "idle": "rosmerta-idle.glb",
+        "walk": "rosmerta-walk.glb",
+        "run": "rosmerta-run.glb"
+      },
+      "hipsY": 69.5
+    }
+  }
+}

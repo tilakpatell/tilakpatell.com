@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+import { Lighting } from 'three/webgpu';
 import { guardOf, guardPipelines, rendererAs } from './pipelineGuard';
 
 // three's renderer, as far as the guard sees it: Pipelines asked with no
@@ -88,6 +89,7 @@ const fakeRenderer = ({ webgl = false } = {}) => {
     _objects: objects,
     _bindings: bindings,
     _currentRenderContext: {},
+    lighting: new Lighting(),
     backend: { isWebGLBackend: webgl },
     getMRT() {
       return this._mrt;
@@ -308,6 +310,43 @@ describe('guardPipelines', () => {
     expect(built).toHaveBeenCalledTimes(2);
     guard.dispose();
     expect(renderer._bindings.deleteForRender).toBe(three);
+  });
+
+  it('leaves a frame’s lights in its scene’s node once it is over, so a shader built after the frame is lit', () => {
+    const r = fakeRenderer();
+    const sceneLit = { isScene: true };
+    const [sun, sky, torch] = [{ id: 1 }, { id: 2 }, { id: 3 }];
+    const node = r.lighting.getNode(sceneLit);
+    // (three's own: a render over, the node has what it had before, none)
+    r.lighting.beginRender(sceneLit);
+    node.setLights([sun, sky]);
+    r.lighting.finishRender(sceneLit);
+    expect(node.getLights()).toEqual([]);
+    const guard = guardPipelines(r);
+    r.lighting.beginRender(sceneLit);
+    node.setLights([sun, sky]);
+    // (a render inside it, of the same scene under other lights, still gives the outer's back)
+    r.lighting.beginRender(sceneLit);
+    node.setLights([torch]);
+    r.lighting.finishRender(sceneLit);
+    expect(node.getLights()).toEqual([sun, sky]);
+    r.lighting.finishRender(sceneLit);
+    expect(node.getLights()).toEqual([sun, sky]);
+    // (and a scene drawn inside another's render, a chain's pass inside its quad's, keeps its own)
+    const quad = { isScene: true };
+    const passScene = { isScene: true };
+    r.lighting.beginRender(quad);
+    r.lighting.beginRender(passScene);
+    r.lighting.getNode(passScene).setLights([torch]);
+    r.lighting.finishRender(passScene);
+    r.lighting.finishRender(quad);
+    expect(r.lighting.getNode(passScene).getLights()).toEqual([torch]);
+    expect(r.lighting.getNode(quad).getLights()).toEqual([]);
+    guard.dispose();
+    r.lighting.beginRender(sceneLit);
+    node.setLights([torch]);
+    r.lighting.finishRender(sceneLit);
+    expect(node.getLights()).toEqual([sun, sky]);
   });
 
   it('does nothing on the WebGL 2 backend or the classic renderer, and can be undone', () => {

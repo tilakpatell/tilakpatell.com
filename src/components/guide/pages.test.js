@@ -4,6 +4,7 @@ import { GUIDES, guideMeta } from './routes';
 import { keyTokens } from './keys';
 import { WORLDS } from '../worlds/worlds';
 import { ABOUT } from './abouts';
+import { C137 } from './c137';
 import { BRIEFED } from '../tour/brief';
 import { BRIEFS } from '../tour/briefs';
 
@@ -42,6 +43,14 @@ describe('which guide a page gets', () => {
     expect(rows.find(([k]) => k === 'Space')?.[1]).toMatch(/jump/i);
     expect(rows.find(([k]) => k === 'double Space')?.[1]).toMatch(/dodge/i);
     expect(guideFor('/battlefront/hoth/galacticAssault/deeper')).toBe(null);
+  });
+
+  it('keeps C-137’s keys and tips in a file of their own', () => {
+    const g = guideFor('/c-137');
+    expect(g.keys).toBe(C137.keys);
+    expect(g.touch).toBe(C137.touch);
+    expect(g.tips).toBe(C137.tips);
+    expect(g.about).toBe(ABOUT['/c-137']);
   });
 
   it('has none for a page it doesn’t know', () => {

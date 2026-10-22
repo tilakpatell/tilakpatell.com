@@ -40,7 +40,7 @@
 //             whose skeleton is read from its imported body's light cut)
 //   only      just these site names (a test's, or a re-pack of a few)
 //   root      where the fetch keeps the bucket (a clip not there is fetched,
-//             with SUPABASE_URL and BF2017_KEY or SUPA_KEY in the environment)
+//             with R2_ACCESS_KEY_ID and R2_SECRET_ACCESS_KEY in the environment)
 //
 // It prints each clip's site name, the game's, its frames and bytes, the
 // pack's total, and every site name the game had nothing for (the loader

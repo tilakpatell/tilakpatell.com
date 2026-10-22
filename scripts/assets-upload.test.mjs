@@ -4,7 +4,8 @@ import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { freshManifest, hashOf, manifestOf, planUpload, readManifest, remoteFiles, run, writeManifest } from './assets-upload.mjs';
+import { freshManifest, hashOf, manifestOf, planUpload, r2Bucket, readManifest, remoteFiles, run, writeManifest } from './assets-upload.mjs';
+import { ENDPOINT } from './lib/bucket.mjs';
 
 const SCRIPT = fileURLToPath(new URL('./assets-upload.mjs', import.meta.url));
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
@@ -25,35 +26,21 @@ function tree() {
   return root;
 }
 
-// the bucket's API as supabase-js gives it, over a Map
+// the bucket as run() asks of it (r2Bucket's face), over a Map
 function fakeBucket(keys = []) {
-  const objects = new Map(keys.map((k) => [k, { cacheControl: '31536000' }]));
+  const objects = new Map(keys.map((k) => [k, 'model/gltf-binary']));
   const calls = { upload: [], remove: [] };
   return {
     objects,
     calls,
-    async list(prefix = '', { limit = 100, offset = 0 } = {}) {
-      const at = prefix ? `${prefix}/` : '';
-      const names = new Map();
-      for (const k of objects.keys()) {
-        if (!k.startsWith(at)) continue;
-        const rest = k.slice(at.length);
-        const cut = rest.indexOf('/');
-        names.set(cut < 0 ? rest : rest.slice(0, cut), cut < 0 ? 'f' : null);
-      }
-      const data = [...names].sort().map(([name, id]) => ({ name, id }));
-      return { data: data.slice(offset, offset + limit), error: null };
-    },
-    async upload(key, body, opts) {
-      calls.upload.push({ key, bytes: body.length, ...opts });
-      if (objects.has(key)) return { data: null, error: { message: 'The resource already exists' } };
-      objects.set(key, opts);
-      return { data: { path: key }, error: null };
+    keys: async () => [...objects.keys()],
+    async upload(key, body, type) {
+      calls.upload.push({ key, bytes: body.length, type });
+      objects.set(key, type);
     },
     async remove(list) {
       calls.remove.push(...list);
       for (const k of list) objects.delete(k);
-      return { data: list, error: null };
     },
   };
 }
@@ -102,14 +89,14 @@ describe('the asset upload', () => {
     expect(freshManifest(m, pub)).toEqual({ 'kit/big.glb': m['kit/big.glb'] });
   });
 
-  it('uploads the new with a year’s cache and no overwrite, writes the manifest, and prunes only when asked', async () => {
+  it('uploads the new, never a key the bucket holds, writes the manifest, and prunes only when asked', async () => {
     const root = tree();
     const big = hashOf(bytes(70_000, 1));
     const bucket = fakeBucket([`${big}/kit/big.glb`, '000000000000/kit/old.glb']);
     const said = [];
     const code = await run({ root, argv: [], env: {}, bucket, log: (s) => said.push(s) });
     expect(code).toBe(0);
-    expect(bucket.calls.upload).toEqual([{ key: `${hashOf(bytes(90_000, 2))}/hq/tex/rock.jpg`, bytes: 90_000, cacheControl: '31536000', upsert: false, contentType: 'image/jpeg' }]);
+    expect(bucket.calls.upload).toEqual([{ key: `${hashOf(bytes(90_000, 2))}/hq/tex/rock.jpg`, bytes: 90_000, type: 'image/jpeg' }]);
     expect(bucket.calls.remove).toEqual([]);
     expect(Object.keys(readManifest(join(root, 'src/data/assets-manifest.json')))).toEqual(['hq/tex/rock.jpg', 'kit/big.glb']);
     expect(said.join('\n')).toMatch(/remote: 2 files, 0\.2 MB/);
@@ -158,6 +145,24 @@ describe('the asset upload', () => {
     expect(said.join('\n')).toMatch(/not pruning: no deployed manifest/);
   });
 
+  it('on R2: lists every key, puts each with its type and a year’s cache, and deletes a prune one by one', async () => {
+    const asked = [];
+    const fetch = async (url, init = {}) => {
+      asked.push([init.method ?? 'GET', url, init.headers]);
+      return new Response(url.includes('list-type') ? '<ListBucketResult><Contents><Key>abc/kit/a.glb</Key><Size>3</Size></Contents><IsTruncated>false</IsTruncated></ListBucketResult>' : null);
+    };
+    const b = r2Bucket(fetch);
+    expect(await b.keys()).toEqual(['abc/kit/a.glb']);
+    await b.upload('def/kit/b.glb', Buffer.from('x'), 'model/gltf-binary');
+    await b.remove(['abc/kit/a.glb', 'ghi/kit/c.glb']);
+    expect(asked.slice(1).map(([m, u]) => [m, u])).toEqual([
+      ['PUT', `${ENDPOINT}/tilak-assets/def/kit/b.glb`],
+      ['DELETE', `${ENDPOINT}/tilak-assets/abc/kit/a.glb`],
+      ['DELETE', `${ENDPOINT}/tilak-assets/ghi/kit/c.glb`],
+    ]);
+    expect(asked[1][2]).toEqual({ 'content-type': 'model/gltf-binary', 'cache-control': 'public, max-age=31536000, immutable' });
+  });
+
   it('with --dry, uploads nothing and writes nothing', async () => {
     const root = tree();
     const bucket = fakeBucket();
@@ -176,7 +181,7 @@ describe('the asset upload', () => {
   it('without the key in the shell, says what to set and exits 2', () => {
     const r = spawnSync(process.execPath, [SCRIPT], { env: { PATH: process.env.PATH }, encoding: 'utf8' });
     expect(r.status).toBe(2);
-    expect(r.stdout).toMatch(/SUPABASE_SERVICE_ROLE_KEY/);
+    expect(r.stdout).toMatch(/R2_ACCESS_KEY_ID/);
   });
 
   it('no tracked file or workflow holds a secret key or its role', () => {

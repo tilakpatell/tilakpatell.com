@@ -14,7 +14,7 @@
 export const RIGS = ['follow', 'lead', 'side', 'low', 'crane', 'wide', 'seat', 'ride'];
 export const LOOK_LIMIT = { yaw: 0.96, pitch: 0.44, seat: 0.35 }; // ±55°, ±25°, ±20°
 export const FOV = { walk: 50, seat: 38, eagle: 62 };
-const CLEAR = 0.4; // m over the ground at least
+export const ABOVE_GROUND = 0.4; // m over the ground at least (the module holds the camera there too, after its ease and its boom)
 const EYE = 1; // m: the height on a walker the rigs look at
 const LOW_TILT = (20 * Math.PI) / 180;
 const LOW_SIDE = 0.9; // m to the lead's left the low shot stands
@@ -91,7 +91,7 @@ export function pose(ctx) {
   const yaw = clamp(look.yaw, seat ? LOOK_LIMIT.seat : LOOK_LIMIT.yaw);
   const pitch = clamp(look.pitch, seat ? LOOK_LIMIT.seat : LOOK_LIMIT.pitch);
   // (kept over the land, but for a placed shot down in it: a chamber under the plain, `under`)
-  const floor = ctx.params?.under ? -Infinity : (heightAt?.(at[0], at[2]) ?? -Infinity) + CLEAR;
+  const floor = ctx.params?.under ? -Infinity : (heightAt?.(at[0], at[2]) ?? -Infinity) + ABOVE_GROUND;
   const lifted = at[1] < floor ? floor - at[1] : 0;
   const stand = [at[0], at[1] + lifted, at[2]];
   const aim = looked(stand, [lookAt[0], lookAt[1] + lifted, lookAt[2]], yaw, pitch);

@@ -119,13 +119,13 @@ export const ACHIEVEMENTS = {
   nuptia: { name: 'Love, scanned', desc: 'Took the test on Nuptia 4, and kept clear of the mythologs' },
   gloopynoops: { name: 'Visiting hours', desc: 'Visited Shrimply Pibbles at St. Gloopy Noops' },
   resort: { name: 'Out of the field', desc: 'Rode the Whirly Dirly at the Immortality Field Resort' },
-  schwifty: { name: 'I like what you got', desc: 'Took the mic at the Get Schwifty show' },
+  schwifty: { name: 'I like what you got', desc: 'Kept the heads’ meter up to the end of the song at the Get Schwifty show' },
   evilrick: { name: 'Close Rick-counters', desc: 'Freed the dome’s Mortys and beat Evil Rick in his lair' },
   evilmorty: { name: 'The one behind him', desc: 'Spoke to the Morty with the eyepatch before his yellow portal took him' },
   cronenberg: { name: 'Rick Potion #9', desc: 'Took the shovel and spoke to the Beth who stayed in Cronenberg World' },
   blooddome: { name: 'A man now', desc: 'Beat Hemorrhage in the Blood Dome' },
   prison: { name: 'Nine more seasons', desc: 'Sprang Rick from the Brainalyzer without a guard seeing' },
-  cablestudio: { name: 'Between takes', desc: 'Watched three channels being made at the cable studio' },
+  cablestudio: { name: 'Between takes', desc: 'Put the channels on air before the cable studio went live' },
   dream: { name: 'Scary Terry night', desc: 'Found three things in Mr. Goldenfold’s dream with Scary Terry on your heels' },
   agency: { name: 'Pickle Riiick', desc: 'Sprang Jaguar from his cell at the agency' },
   meeseeksgolf: { name: 'Caaan do', desc: 'Pressed the Meeseeks box on the golf course and got home before they got you' },
@@ -303,6 +303,13 @@ export const ACHIEVEMENTS = {
   stressrelief: { name: 'Stress relief', desc: 'Got out by the stairwell in Dwight’s fire drill' },
   hoops: { name: 'Office vs. warehouse', desc: 'Sank three free throws out of five in the warehouse' },
   bestboss: { name: 'Best Week in the Office', desc: 'Won a Dundie from Michael, in his office' },
+  // Hogwarts (hogwarts/): the term's (play/school.js) and the Map's
+  'hp-sorted': { name: 'Sorted', desc: 'Was sorted into a house at Hogwarts' },
+  'hp-map': { name: 'Up to no good', desc: 'Opened the Marauder’s Map with the words' },
+  'hp-snitch': { name: 'Seeker', desc: 'Caught the Snitch in a Quidditch match at Hogwarts' },
+  'hp-patronus': { name: 'Expecto Patronum', desc: 'Drove the dementors off the shore of the Black Lake' },
+  'hp-head': { name: 'Head of house', desc: 'Did everything there is to do in a term at Hogwarts, and won your house the Cup' },
+  'hp-cards': { name: 'Collector', desc: 'Found all twenty Chocolate Frog cards at Hogwarts and in Hogsmeade' },
 };
 
 const PAGES = ['/', '/experience', '/projects', '/travel', '/contact', '/terminal'];

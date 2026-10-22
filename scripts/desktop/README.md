@@ -157,7 +157,7 @@ as gen3d does; a run with nothing new opens none.
 | job | makes | from | into |
 | --- | --- | --- | --- |
 | `panoramas` | the 15 sky panoramas (4,096 × 1,024 and 2,048 × 512) and 16 fog gradients the light records name, HDR: RGBA16F KTX2 | the exporter’s `.dds` (or `.hdr`, `.exr`) of each, under `raw\`, `hdr\` or `web\` (or `BF2_HDR`), through texconv | the bucket (`web/hdr/…`), `public/textures/galaxy/bf2017/hdr/` published by hash, each world’s `<world>.picture.json` gaining `hdr` |
-| `atlases` | the Enlighten sets (irradiance, three direction maps, sky visibility: 868 maps in 176 sets) in the bucket; the irradiance HDR too where its `.dds` is there | the export’s PNGs and `tool\ktx2_encode.py`, `tool\upload_supabase.py` | the bucket (`web/…`), the coverage ledger again |
+| `atlases` | the Enlighten sets (irradiance, three direction maps, sky visibility: 868 maps in 176 sets) in the bucket; the irradiance HDR too where its `.dds` is there | the export’s PNGs and `tool\ktx2_encode.py`, then `scripts/bucket-put.mjs` | the bucket (`web/…`), the coverage ledger again |
 | `textures` | the 3,301 textures the ledger has `not-uploaded` (the atlases aside) in the bucket | the same encoder and uploader | the bucket, the coverage ledger again |
 | `uastc` | the packs’ 220 colour maps as UASTC at 2,048, measured (PSNR) against the BC7 master and the served ETC1S, kept at 3 dB or better | the export’s PNGs, toktx | each pack’s `tex/<slug>.2048.uastc.ktx2` published by hash, its `level.json` `tex` row gaining `ultra` |
 | `depots` | the depot probe resolved, the share said of all and of the rest | `maps_work\shaderdepots.jsonl` | `src/data/bf2017/shaderParams.json` |
@@ -169,14 +169,16 @@ What they need on the desktop, all checked by the doctor’s `bf2017` group
 (a “no” there, never a red doctor, since gen3d and voices don’t need them):
 
 - the export at `BF2_EXPORT` (default `~\Downloads\BF2_Extract`), with its
-  `web\textures.jsonl`, `tool\` (`ktx2_encode.py`, `upload_supabase.py`,
-  `bf2export.csproj`), `web_opt\upload_state.tsv` and `maps_work\`;
+  `web\textures.jsonl`, `tool\` (`ktx2_encode.py`, `bf2export.csproj`),
+  `web_opt\upload_state.tsv` and `maps_work\` (the upload is the
+  repository’s `scripts/bucket-put.mjs`, to R2, which keeps that record:
+  the export’s `upload_supabase.py` sent to Supabase until 2026-10-21);
 - texconv (`winget install Microsoft.DirectXTex`), toktx
   (`winget install KhronosGroup.KTX-Software`), ffmpeg, Python, Chrome;
 - the bucket’s keys in the runner’s `.env` (`~\actions-runner\.env`:
-  `SUPABASE_URL=…` and `SUPABASE_SERVICE_KEY=…`, then restart the runner),
-  never in the repository; the jobs pass them on to the scripts as
-  `SUPA_KEY` too and never print them.
+  `R2_ACCESS_KEY_ID=…` and `R2_SECRET_ACCESS_KEY=…`, R2’s S3 keys, then
+  restart the runner), never in the repository; the jobs pass them on to
+  the scripts as they are and never print them.
 
 By hand on the desktop: `node scripts\desktop\bf2017-<job>.mjs --dry` for
 the plan, `--only hoth --limit 2 --no-pr` to make a little in this checkout

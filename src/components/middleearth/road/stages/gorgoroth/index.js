@@ -18,6 +18,7 @@
 
 import * as THREE from 'three';
 import { createDoomKit } from '../../../towns/doom/props';
+import { dress, rolesFor } from '../../../../../lib/three/coreNodes';
 import { createTownKit } from '../../townKit';
 import { createGollum } from '../../creatures/gollum';
 import { marchColumn } from '../columns';
@@ -64,6 +65,9 @@ export function build({ road, heightAt, rt, tier = 'high', backdrop = null }) {
       return m;
     },
   });
+
+  // (its rock, ash and iron in the site's photo scans, as the chapter dresses them)
+  dress(kit.mats ?? {}, rolesFor(kit.mats ?? {}), { strength: 0.3, normal: 0.6, keep: true, tier }).catch(() => {});
 
   // the Mountain ahead, its west road turned to the walkers
   const mountain = kit.mountDoom();
