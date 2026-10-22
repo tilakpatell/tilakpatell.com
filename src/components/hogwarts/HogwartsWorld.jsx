@@ -228,9 +228,9 @@ export default function HogwartsWorld() {
   const foot = onRide ? (
     arrival.skippable ? <Prompt k="Enter" verb="Straight to the castle" touch={touch} onClick={() => api()?.skip()} /> : null
   ) : room ? (
-    <Prompt k="Esc" verb="Leave" thing={room.name} touch={touch} onClick={() => api()?.leave()} alt={door ? <Prompt k="E" verb="Go in" thing={door.label} touch={touch} onClick={() => api()?.go?.()} /> : null} />
+    <Prompt k="Esc" verb="Leave" thing={room.name} touch={touch} onClick={() => api()?.leave()} alt={door ? <Prompt k="E" verb={door.verb ?? 'Go in'} thing={door.label} touch={touch} onClick={() => api()?.go?.()} /> : null} />
   ) : door ? (
-    <Prompt k="E" verb="Go in" thing={door.label} touch={touch} onClick={() => api()?.go()} />
+    <Prompt k="E" verb={door.verb ?? 'Go in'} thing={door.label} touch={touch} onClick={() => api()?.go()} />
   ) : null;
 
   return (
