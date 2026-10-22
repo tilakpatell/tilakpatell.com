@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import * as THREE from 'three';
-import { disposeBuilt, lampPools, mergeStatics, waterOn } from './parts';
+import { C, ROLE, disposeBuilt, lampPools, merged, mergeStatics, part, roleOf, waterOn } from './parts';
 import { landFor } from '../terrain';
 
 const box = (mat, x, uv = true) => {
@@ -126,5 +126,39 @@ describe('lampPools', () => {
     pools.set(1);
     expect(pools.mesh.visible).toBe(true);
     pools.dispose();
+  });
+
+  it('says what each part is made of, for the scans: grey built work stone, brown wood, a rough stone rock, a bright thing nothing', () => {
+    const boxGeo = () => new THREE.BoxGeometry(1, 1, 1);
+    expect(roleOf(boxGeo(), C(0x8c8880))).toBe(ROLE.stone);
+    expect(roleOf(boxGeo(), C(0x45403a))).toBe(ROLE.stone);
+    expect(roleOf(boxGeo(), C(0x6e5a46))).toBe(ROLE.wood);
+    expect(roleOf(boxGeo(), C(0xc9bba0))).toBe(ROLE.wood);
+    expect(roleOf(new THREE.DodecahedronGeometry(0.5, 0), C(0x8c8880))).toBe(ROLE.rock);
+    expect(roleOf(boxGeo(), C(0xffd884))).toBe(ROLE.none);
+    expect(roleOf(boxGeo(), C(0xf4f6fa))).toBe(ROLE.none);
+    // (each vertex carries it, and a part may say its own)
+    const g = part(boxGeo(), C(0x8c8880), { role: 'wood' });
+    expect(new Set(g.getAttribute('aRole').array)).toEqual(new Set([ROLE.wood]));
+  });
+
+  it('merges a part made some other way with the rest, wearing nothing', () => {
+    const plain = new THREE.BoxGeometry(1, 1, 1).toNonIndexed();
+    plain.deleteAttribute('uv');
+    plain.setAttribute('color', new THREE.BufferAttribute(new Float32Array(plain.attributes.position.count * 3), 3));
+    const mesh = merged([part(new THREE.BoxGeometry(1, 1, 1), C(0x8c8880)), plain], new THREE.MeshBasicMaterial(), 'mixed');
+    const roles = mesh.geometry.getAttribute('aRole').array;
+    expect(roles.length).toBe(mesh.geometry.getAttribute('position').count);
+    expect(new Set(roles)).toEqual(new Set([ROLE.stone, ROLE.none]));
+    // (and on its own, all of it none)
+    expect(new Set(merged([plain.clone()], new THREE.MeshBasicMaterial(), 'alone').geometry.getAttribute('aRole').array)).toEqual(new Set([ROLE.none]));
+  });
+
+  it('keeps a part’s role through the statics’ merge', () => {
+    const root = new THREE.Group();
+    const mat = new THREE.MeshBasicMaterial();
+    root.add(merged([part(new THREE.BoxGeometry(1, 1, 1), C(0x6e5a46))], mat, 'a'));
+    mergeStatics(root);
+    expect(root.children[0].geometry.getAttribute('aRole')).toBeTruthy();
   });
 });

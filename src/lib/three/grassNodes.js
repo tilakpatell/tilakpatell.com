@@ -86,6 +86,10 @@ export function grassGeometry({ side = 280, size = 40, seed = 7, shape = 'tri', 
   const g = new THREE.BufferGeometry();
   g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
   g.setAttribute('aBlade', new THREE.BufferAttribute(blade, 3));
+  // (one normal for every blade, straight up, read once a draw: a hook that reads a geometry's own
+  // normal, the house's bounce among them, found none, and three put a zero there, which a
+  // normalize turns to NaN, black or not by the chip; a blade's shading normal is normalLocal's)
+  g.setAttribute('normal', new THREE.InstancedBufferAttribute(new Float32Array([0, 1, 0]), 3));
   if (index) {
     const idx = new Uint32Array(n * index.length);
     for (let k = 0; k < n; k++) for (let i = 0; i < index.length; i++) idx[k * index.length + i] = k * per + index[i];

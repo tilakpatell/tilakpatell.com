@@ -85,7 +85,8 @@ export function createLands({ scene, house = null, tier = 'high', budget = 6, wi
       }
     }
     // what grows on it, placed once (its stage’s seed, so a stage is the same every ride)
-    const items = scatter ? placements(rowsFor(id), land, land.road, rngOf(1000 + i), { tier }) : [];
+    // (over its own ground alone: past its ends the neighbour's is drawn)
+    const items = scatter ? placements(rowsFor(id), land, land.road, rngOf(1000 + i), { tier, from, to }) : [];
     return { land, ground, group, items, waters, birds, herds };
   }
   const finish = (i, value) => {

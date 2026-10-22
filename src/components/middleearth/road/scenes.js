@@ -6,7 +6,7 @@
 // beat reached plays its clip and its lines, and the scene reads how long
 // since each began.
 //
-//   createScenes({ rt, road, lands, weather, ambience, tier, sky }) → {
+//   createScenes({ rt, road, lands, weather, ambience, tier, sky, backdrop, lamps }) → {
 //     at(index, local, dt, { speed, jumped, waits }) → { since, fx, shot }  (fx: fxAt’s; shot: rigAt’s, or null;
 //       waits: the beats whose deed is undone, held at its moment till it’s done, doing.js’s)
 //     floor(index, x, z) → the height the stage’s scene stands the walkers on there, or null (the land’s)
@@ -46,7 +46,14 @@ const solid = (o) => o.isMesh && !o.isSkinnedMesh && !o.userData.ink && !o.userD
 // the build's solid triangles into the grid, in the land's frame, a slice at a time
 function* fill(root, frame, grid) {
   const meshes = [];
-  root.traverse((o) => solid(o) && meshes.push(o));
+  // (nothing hidden, nor under a hidden group or one that moves: a beat's figure or prop, not yet
+  // shown, was a wall no one could see; the grid is filled once, from what stands)
+  const walk = (o) => {
+    if (!o.visible || o.userData.moves) return;
+    if (solid(o)) meshes.push(o);
+    for (const c of o.children) walk(c);
+  };
+  walk(root);
   const inv = new THREE.Matrix4();
   const m = new THREE.Matrix4();
   const one = new THREE.Matrix4();
@@ -95,7 +102,7 @@ const SCENES = {
   havens: () => import('./stages/havens/index.js'),
 };
 
-export function createScenes({ rt, road, lands, weather, ambience, tier, sky = null, backdrop = null }) {
+export function createScenes({ rt, road, lands, weather, ambience, tier, sky = null, backdrop = null, lamps = null }) {
   const made = new Map(); // index → { scene | null, group (the land’s it is in), gone }
   let current = -1;
   let last = 0;
@@ -113,6 +120,8 @@ export function createScenes({ rt, road, lands, weather, ambience, tier, sky = n
         if (entry.gone) return;
         entry.scene = build({ road, heightAt: land.field, land, waters: lands.watersOf?.(i) ?? [], rt, weather, ambience, tier, sky, backdrop });
         group.add(entry.scene.group);
+        // (its lights drawn through the pool the scene always has: lamps.js)
+        lamps?.take(entry.scene.group);
         // (what it left standing, into its grid over the next frames)
         entry.grid = createSolids({ from: -PAST, to: STAGES[i].length + PAST, ground: land.field });
         entry.filling = fill(entry.scene.group, group, entry.grid);
@@ -128,6 +137,7 @@ export function createScenes({ rt, road, lands, weather, ambience, tier, sky = n
     const e = made.get(i);
     if (!e) return;
     e.gone = true;
+    if (e.scene) lamps?.give(e.scene.group);
     e.scene?.dispose();
     made.delete(i);
   };

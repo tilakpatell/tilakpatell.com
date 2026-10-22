@@ -18,6 +18,7 @@ import { riverLevel } from '../../terrain';
 import { createTownKit } from '../../townKit';
 import { FAR, GAP, HOLLOW, LANDING, RAFT, buildProps } from './props';
 import { BEATS } from './beats';
+import { wearParts } from '../../partsWear';
 
 const RAFT_AT = { from: LANDING.z[1] + RAFT.d / 2, to: FAR.z[0] - RAFT.d / 2, lead: 2.4 }; // its middle: at the near stage, at the far, and ahead of the walker’s mark
 const ROOTS = { from: 114, stop: HOLLOW[1] + 1.6, x: -0.4, come: 5, look: 11, gone: 34 }; // the Rider down the lane to stand over the hollow: from, where, its seconds
@@ -35,7 +36,7 @@ const smooth = (x) => {
 export function build({ road, heightAt, land, rt, weather, ambience, tier = 'high' }) {
   const group = new THREE.Group();
   group.name = 'stage:shire-edge';
-  const material = road.material({ vertexColors: true, flatShading: true });
+  const material = wearParts(road.material({ vertexColors: true, flatShading: true }), { tier });
   const town = createTownKit(road, rt?.gfx?.renderer ?? null);
   const river = land?.rivers?.[0] ?? null;
   const along = river ? riverLevel(heightAt, river) : null;

@@ -51,9 +51,10 @@ const WHITE = [1, 0.97, 0.92];
 const TABLE = {
   hobbiton: [L({ el: 0.35, colour: WARM, fog: [0.82, 0.86, 0.8], density: 0.002 }), { el: -0.3, ambient: 0.08, fog: [0.025, 0.032, 0.06], density: 0.004 }],
   'shire-edge': [L({ el: 0.12, colour: GOLD, fog: [0.9, 0.78, 0.6], density: 0.003 }), { el: 0.22, ambient: 0.3, fog: [0.6, 0.64, 0.68], density: 0.012 }],
-  // (Bree’s night and Weathertop’s a little lighter than dark: the town and the hill read by moonlight, the walkers not black)
+  // (Bree’s night and Weathertop’s a little lighter than dark: the town and the hill read by moonlight, the walkers not black;
+  // Weathertop's dusk and night lifted to Bree's: the hill's face to the camera, in its own shade, was an olive murk)
   bree: [L({ el: -0.35, colour: GREY, ambient: 0.13, fog: [0.03, 0.035, 0.045], density: 0.01 }), { el: 0.05, ambient: 0.2, fog: [0.5, 0.52, 0.56], density: 0.008 }],
-  weathertop: [L({ el: 0.06, colour: GOLD, ambient: 0.22, fog: [0.7, 0.55, 0.45], density: 0.003 }), { el: -0.4, ambient: 0.11, fog: [0.03, 0.035, 0.065], density: 0.003 }],
+  weathertop: [L({ el: 0.06, colour: GOLD, ambient: 0.28, fog: [0.7, 0.55, 0.45], density: 0.003 }), { el: -0.4, ambient: 0.13, fog: [0.03, 0.035, 0.065], density: 0.003 }],
   ford: [L({ el: 0.4, colour: GREY, ambient: 0.32, fog: [0.62, 0.64, 0.62], density: 0.006 }), { el: 0.5, ambient: 0.38, fog: [0.75, 0.82, 0.88], density: 0.002 }],
   rivendell: [L({ el: 0.35, colour: GOLD, ambient: 0.36, fog: [0.85, 0.75, 0.6], density: 0.002 }), { el: 0.1, ambient: 0.3, fog: [0.8, 0.84, 0.9], density: 0.003 }],
   caradhras: [L({ el: 0.6, colour: COLD, ambient: 0.42, fog: [0.8, 0.86, 0.95], density: 0.002 }), { el: -0.05, ambient: 0.12, fog: [0.12, 0.14, 0.2], density: 0.004 }],
@@ -150,4 +151,24 @@ export function shadeOf(l, key = keyLight(l)) {
   const want = Math.min(SHADE.day, Math.max(SHADE.least, (full / Math.PI) * (key.moon ? SHADE.moon : SHADE.sun)));
   const got = lumOf(c);
   return got > 0 ? c.map((v) => (v * want) / got) : [want, want, want];
+}
+
+// The full light the look measures a point against (houseNodes' uLookRef,
+// the sun's and the sky light's over pi), held at least to the light the
+// shade's floor stands for (the shade is SHADE.sun of its full light): under
+// Moria's black air the sky light is none, the reference fell to nothing,
+// and every glimmer on a wall read as full light, so the shade never came
+// and the deeps went black where the shade is meant to keep them shapes.
+// `c` a colour ({ r, g, b }, linear), lifted in place, its hue kept.
+export const REF_LEAST = SHADE.least / SHADE.sun;
+export function refFloor(c) {
+  const l = 0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b;
+  if (l >= REF_LEAST) return c;
+  const k = l > 1e-6 ? REF_LEAST / l : 0;
+  if (k) {
+    c.r *= k;
+    c.g *= k;
+    c.b *= k;
+  } else c.r = c.g = c.b = REF_LEAST;
+  return c;
 }

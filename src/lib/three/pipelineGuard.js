@@ -224,6 +224,38 @@ export function guardPipelines(renderer, { invalidate = null, run = RUN } = {}) 
     return origDelete.call(this, ro);
   };
   if (typeof origDelete === 'function' && typeof bindings.delete === 'function') bindings.deleteForRender = deleteBuilt;
+  // three keeps a scene's lights in one node, and a render over puts back
+  // what it held before (Lighting's beginRender and finishRender, for a
+  // render inside a render). So between frames a scene drawn once a frame
+  // holds no lights, and a shader built off the frame was built unlit:
+  // every lit material of Middle-earth's chapters drew black on WebGPU,
+  // their ground only the house look's shade (the Road kept its lights
+  // because compileAsync sets them and puts nothing back). The lights a
+  // frame's render drew under stay in the scene's node once that scene's
+  // render is over (a chain's passes draw the scene inside the render of
+  // their quad, a scene of its own); a render of the same scene inside
+  // one still gives back the outer's.
+  const lighting = renderer.lighting;
+  const origBegin = lighting?.beginRender;
+  const origFinish = lighting?.finishRender;
+  const depth = new WeakMap(); // scene → its renders under way
+  const own = (scene) => Boolean(scene?.isScene || scene?.isGroup);
+  const beginCounting = function (scene) {
+    if (own(scene)) depth.set(scene, (depth.get(scene) ?? 0) + 1);
+    return origBegin.call(this, scene);
+  };
+  const finishKeeping = function (scene) {
+    const drawn = this.getNode(scene).getLights();
+    origFinish.call(this, scene);
+    if (!own(scene)) return;
+    const d = Math.max(0, (depth.get(scene) ?? 1) - 1);
+    depth.set(scene, d);
+    if (d === 0) this.getNode(scene).setLights(drawn);
+  };
+  if (deferred && typeof origBegin === 'function' && typeof origFinish === 'function') {
+    lighting.beginRender = beginCounting;
+    lighting.finishRender = finishKeeping;
+  }
   const guard = {
     pending: () => pending,
     held: () => held,
@@ -236,6 +268,10 @@ export function guardPipelines(renderer, { invalidate = null, run = RUN } = {}) 
         if (nodes._processBuildQueue === processInRuns) nodes._processBuildQueue = origProcess;
       }
       if (bindings && bindings.deleteForRender === deleteBuilt) bindings.deleteForRender = origDelete;
+      if (lighting && lighting.finishRender === finishKeeping) {
+        lighting.beginRender = origBegin;
+        lighting.finishRender = origFinish;
+      }
       delete pipelines.__guard;
     },
   };

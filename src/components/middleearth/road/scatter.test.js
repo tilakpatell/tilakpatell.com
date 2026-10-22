@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { roadOf } from './line';
-import { buildHeights } from './terrain';
+import { FRAME_BACK, buildHeights, landFor } from './terrain';
 import { CLEAR, VERGE, placements, rngOf, rowsFor } from './scatter';
 import { trackOf } from './stages/tracks';
 import { SCATTER } from './stages/tables';
@@ -88,6 +88,21 @@ describe('the scatter’s placements', () => {
 
   it('is the same for the same seed', () => {
     expect(placements([tree], flat, road, rngOf(11))).toEqual(placements([tree], flat, road, rngOf(11)));
+  });
+
+  it('plants a stage only over its own ground: never past its ends, where the neighbour’s is drawn', () => {
+    for (const [i, st] of STAGES.entries()) {
+      const land = landFor(st.id, { res: 8, wide: 256 });
+      // (as lands.js: the first stage's ground runs on behind it, the last's ahead)
+      const from = i === 0 ? -FRAME_BACK : 0;
+      const to = i === STAGES.length - 1 ? land.end + FRAME_BACK : land.end;
+      const items = placements(rowsFor(st.id), land, land.road, rngOf(1000 + i), { from, to });
+      expect(items.length, st.id).toBeGreaterThan(0);
+      for (const it of items) {
+        expect(it.z, `${st.id} ${it.model}`).toBeGreaterThanOrEqual(from - 1e-6);
+        expect(it.z, `${st.id} ${it.model}`).toBeLessThanOrEqual(to + 1e-6);
+      }
+    }
   });
 
   it('lines the road with a verge’s row, near to far off its middle, down its whole length', () => {

@@ -15,7 +15,7 @@
 
 import * as THREE from 'three';
 import { MeshBasicNodeMaterial } from 'three/webgpu';
-import { C, merged, mergeStatics, part } from '../parts';
+import { C, merged, mergeStatics, part, roled } from '../parts';
 import { bridge as buildBridge, colonnade, court, gate, house, lamp, pavilion, terrace } from '../../../towns/rivendell/build';
 import { cliffGeo } from '../../../towns/rivendell/valley';
 
@@ -108,7 +108,7 @@ export function buildProps({ K, material, heightAt, tier = 'high' }) {
   const m = new THREE.Matrix4();
   const wall = [];
   for (let z = -30, i = 0; z <= 200; z += 15, i++) wall.push([-152 - (i % 3) * 5, z, 1.25 + (i % 4) * 0.12, 2.7 + ((i * 5) % 7) * 0.12]);
-  const cliffs = new THREE.InstancedMesh(cliffGeo(3), material, wall.length);
+  const cliffs = new THREE.InstancedMesh(roled(cliffGeo(3), 'rock'), material, wall.length);
   wall.forEach(([x, z, sxz, sy], i) => {
     m.compose(new THREE.Vector3(x, heightAt(x, z) - 4, z), new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI / 2 + ((i % 5) - 2) * 0.06), new THREE.Vector3(sxz, sy, sxz));
     cliffs.setMatrixAt(i, m);

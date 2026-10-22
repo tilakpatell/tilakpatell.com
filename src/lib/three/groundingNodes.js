@@ -105,7 +105,7 @@ function hookMasks(material, u, { mover, tag }) {
     (_, builder) => {
       let gV = readMasks(u, positionWorld);
       if (mover) gV = select(positionWorld.y.lessThan(u.uMoverRange.x).or(positionWorld.y.greaterThan(u.uMoverRange.y)), vec2(1, 1), gV);
-      reads.set(builder, vec2(0, 0).toVar('gV').assign(gV));
+      reads.set(builder, vec2(0, 0).toVar().assign(gV));
       return null;
     },
     `${tag}:read`,

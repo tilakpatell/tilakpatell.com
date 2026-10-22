@@ -35,6 +35,23 @@ import { createJitter } from '../lib/three/jitter';
 
 export const hasWebGPU = () => typeof navigator !== 'undefined' && Boolean(navigator.gpu);
 
+// Every THREE.Sprite draws the one geometry three makes with the first
+// (Sprite.js's own), and the node renderer never makes its buffers again
+// once it is disposed: a group given back with every geometry in it freed
+// (lib/three's disposeTree, a Road stage left behind) took it with the
+// sprite it held, and every sprite still drawn was left on buffers
+// destroyed. On WebGPU each frame's submit then failed (the Road froze on
+// one frame past Ithilien, under the Phial's glow and Orodruin's). It is
+// three's, kept for the page, so it is never freed.
+export function keepSpriteGeometry() {
+  const shared = new THREE.Sprite().geometry;
+  if (!shared.userData.kept) {
+    shared.dispose = () => {};
+    shared.userData.kept = true;
+  }
+  return shared;
+}
+
 // the chain as data → a PostProcessing graph; `ready` resolves once the
 // nodes are loaded, and render() draws nothing until then. A chain with any
 // of the game light's passes goes to buildLitPost.
@@ -46,7 +63,7 @@ export function buildPostProcessing(renderer, passes) {
   let post = null;
   let scenePass = null;
   const ready = Promise.all([import('three/webgpu'), import('three/tsl'), import('three/addons/tsl/display/BloomNode.js')]).then(([webgpu, tsl, bloomMod]) => {
-    post = new webgpu.PostProcessing(renderer);
+    post = new (webgpu.RenderPipeline ?? webgpu.PostProcessing)(renderer);
     let node = null;
     for (const p of passes) {
       if (p.kind === 'render') {
@@ -142,6 +159,7 @@ export const isFallback = (adapter, device = null) => Boolean(device?.adapterInf
 // 'extended' tone-mapping mode, so an HDR display shows the chain's range)
 export async function createWebGPU(canvas, { budget, onLost, alpha = true, toneMapping = THREE.NeutralToneMapping, exposure = 1, forceWebGL = false, reversedDepth = null, temporal = true, hdr = false, invalidate = null } = {}) {
   const { WebGPURenderer, NodeMaterialObserver } = await import('three/webgpu');
+  keepSpriteGeometry();
   // (a texture a world slides along its surface is drawn where it is: ./textureWatch.js)
   watchTextures(NodeMaterialObserver);
   // A device is made with its adapter's own limits where the defaults are

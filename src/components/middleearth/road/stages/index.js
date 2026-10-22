@@ -116,6 +116,13 @@ export const STAGES = [
         { at: [6.2, 119], r: 4 },
         { at: [-34, 94], r: 12 },
       ],
+      // (and no grass up through their paving: the blades stood all over the Council's floor;
+      // a little inside each floor's edge, the grass easing back in under its rim)
+      bare: [
+        { at: [-9, 85], r: 6.4 },
+        { at: [-9.5, 103.5], r: 5.5 },
+        { at: [6.2, 119], r: 3 },
+      ],
     },
   },
   // (stages 7 to 10 shorter than the table’s first lengths: their holds are

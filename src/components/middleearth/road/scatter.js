@@ -5,7 +5,8 @@
 // names another kit (`pack: 'nature'`: the older Stylized Nature Pack’s
 // maples, birches and dead trees).
 //
-//   placements(rows, land, road, rng, { tier, reach }) → [{ model, x, y, z, yaw, scale, tint, pack? }]
+//   placements(rows, land, road, rng, { tier, reach, from, to }) → [{ model, x, y, z, yaw, scale, tint, pack? }]
+//     (from and to: the stage's own ground along z, lands.js's; the land's whole length else)
 //     (pure: density per 100 m², in clumps, never within CLEAR of the road,
 //     off steep ground and out of the water, `reach` metres either side of
 //     the road at most; low halves the counts and drops the grass, mid thins it;
@@ -54,7 +55,7 @@ const share = (row, tier) => {
 // area as `per100` says; the low things that line a lane (flowers, tufts,
 // pebbles), nearer the road than CLEAR, never nearer than VERGE.
 export const VERGE = 1.1; // m: the nearest a verge's row grows to the road's middle
-function verge(row, land, road, rng, tier, out) {
+function verge(row, land, road, rng, tier, out, from = -Infinity, to = Infinity) {
   const field = land.field ?? land.heightAt;
   const [near, far] = [Math.max(VERGE, row.verge[0]), row.verge[1]];
   const off = distanceTo(road, far + 1);
@@ -62,7 +63,8 @@ function verge(row, land, road, rng, tier, out) {
   const clump = Math.max(1, row.clump ?? 1);
   const spread = row.spread ?? 1;
   const [s0, s1] = row.scale ?? [1, 1];
-  const [z0, z1] = row.z ?? [-Infinity, Infinity];
+  const z0 = Math.max(from, row.z?.[0] ?? -Infinity);
+  const z1 = Math.min(to, row.z?.[1] ?? Infinity);
   for (let n = 0; n < count; n += clump) {
     const p = road.pointAt(rng() * road.length);
     const [tx, , tz] = p.tangent;
@@ -87,22 +89,25 @@ function verge(row, land, road, rng, tier, out) {
   }
 }
 
-export function placements(rows, land, road, rng, { tier = 'high', reach = REACH } = {}) {
+export function placements(rows, land, road, rng, { tier = 'high', reach = REACH, from = land.z0, to = land.z0 + land.d } = {}) {
   const off = distanceTo(road, CLEAR);
   const field = land.field ?? land.heightAt;
   const x0 = Math.max(land.x0, -reach);
   const x1 = Math.min(land.x0 + land.w, reach);
-  const z0 = land.z0;
-  const z1 = land.z0 + land.d;
+  // (only over the stage's own ground, `from` to `to`, as ground.js draws it: its land runs on
+  // 40 m past each end, under the neighbour's ground, and what grew there stood on the wrong
+  // land, trees up to sixty metres off the ground drawn)
+  const z0 = Math.max(land.z0, from);
+  const z1 = Math.min(land.z0 + land.d, to);
   const out = [];
   for (const row of rows) {
     // (a row at its own places, `at: [[x, z, scale], …]`: the stage's own trees, where its builder put them)
     if (row.at) {
-      for (const [x, z, s = 1] of row.at) out.push({ model: row.model, x, y: field(x, z), z, yaw: rng() * Math.PI * 2, scale: s * (row.scale?.[0] ?? 1), tint: row.tint ?? null, ...(row.pack ? { pack: row.pack } : {}) });
+      for (const [x, z, s = 1] of row.at) if (z >= z0 && z <= z1) out.push({ model: row.model, x, y: field(x, z), z, yaw: rng() * Math.PI * 2, scale: s * (row.scale?.[0] ?? 1), tint: row.tint ?? null, ...(row.pack ? { pack: row.pack } : {}) });
       continue;
     }
     if (row.verge) {
-      verge(row, land, road, rng, tier, out);
+      verge(row, land, road, rng, tier, out, z0, z1);
       continue;
     }
     // (a row’s own band, inside the stage’s: a field of corn, a wood)

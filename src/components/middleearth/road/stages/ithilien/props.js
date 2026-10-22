@@ -19,6 +19,7 @@ import { morgul as buildMorgul, orcColumnGeo, rockGeo } from '../../../towns/cir
 import { columnGeo } from '../../../towns/marshes/props';
 import { BEACONS } from '../../beacons';
 import { C, merged, mergeStatics, part } from '../parts';
+import { wearParts } from '../../partsWear';
 
 const THREADS = [360, 140]; // the fall's threads of water across its width, fine and coarse (a few cm each, the camera a metre and a half off)
 export const FALL = { x: -9, z: 70.5, w: 8, h: 6 }; // the curtain across the hollow’s mouth (the camera inside it, at z 72)
@@ -32,7 +33,7 @@ export function buildProps({ K, road, heightAt, tier = 'high' }) {
   const group = new THREE.Group();
   group.name = 'ithilien:props';
   const low = tier === 'low';
-  const material = road.material({ vertexColors: true, flatShading: true });
+  const material = wearParts(road.material({ vertexColors: true, flatShading: true }), { tier });
 
   // Henneth Annûn: a hollow of rock beside the path, the fall across its mouth
   const rocks = [];

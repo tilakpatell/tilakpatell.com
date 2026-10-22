@@ -24,7 +24,7 @@ import { createAnimator } from '../../../lib/three/animator';
 import { faceAhead, heading } from '../../../lib/three/clipLibrary';
 import { inkHull } from '../../../lib/three/inkNodes';
 import { holdItem } from '../../../lib/three/held';
-import { moveFor } from '../castRules';
+import { castFor, moveFor } from '../castRules';
 import { gearFor, makeGear, wear } from './gear';
 
 const DIR = '/models/middleearth/cast';
@@ -44,6 +44,8 @@ export const heightOf = (name) => HEIGHTS[KINDS[name] ?? 'man'];
 const templates = new Map(); // name → Promise<template | null>
 
 function template(name, rt) {
+  // (one the cast has no file for is not asked after: Gollum, till his is made, is the stages' own, creatures/gollum.js)
+  if (castFor(name) === null) return Promise.resolve(null);
   if (templates.has(name)) return templates.get(name);
   const urls = [`${DIR}/${name}.glb`, ...LOCO.map((c) => `${DIR}/${name}-${c}.glb`)];
   const p = Promise.all(urls.map((u) => Promise.resolve(rt.assets?.gltf?.(u)).catch(() => null)))

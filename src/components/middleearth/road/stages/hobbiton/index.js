@@ -18,6 +18,7 @@ import { HEIGHTS } from '../../cast';
 import { createTownKit } from '../../townKit';
 import { disposeBuilt } from '../parts';
 import { TREE, buildCart, buildProps } from './props';
+import { wearParts } from '../../partsWear';
 
 const LANE = 2.4; // m: the cart keeps the lane’s far half from the side shot, coming down it
 const CART = { from: 75, k: 0.4 }; // the cart’s z = from − k × local: it comes on as the walker goes
@@ -36,7 +37,7 @@ function dragonAt(u, heightAt, out) {
 export function build({ road, heightAt, rt, weather, tier = 'high' }) {
   const group = new THREE.Group();
   group.name = 'stage:hobbiton';
-  const material = road.material({ vertexColors: true, flatShading: true });
+  const material = wearParts(road.material({ vertexColors: true, flatShading: true }), { tier });
   // the town kit in the Shire chapter’s materials, its windows and lanterns lit as the evening comes
   const town = createTownKit(road, rt?.gfx?.renderer ?? null);
   const props = buildProps({ K: town.K, material, heightAt, tier });
@@ -55,6 +56,8 @@ export function build({ road, heightAt, rt, weather, tier = 'high' }) {
   gandalf.group.rotation.y = Math.PI;
   gandalf.set({ base: 'sit.ground', speed: 0 });
   cart.add(gandalf.group);
+  // (it comes down the lane: nothing of it stands in the stage's solid grid)
+  cart.userData.moves = true;
   group.add(cart);
 
   // the dancers on the field, round the tree (four on low)
