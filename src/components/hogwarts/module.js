@@ -78,6 +78,8 @@ import { createArrival } from './world/arrival';
 import { ANCHORS_A } from './world/arrival/shots';
 import { BEATS, PARTS } from './rules/arrival';
 import { createNight } from './play/night';
+import { createSchool } from './play/school';
+import { createNoticeBoard } from './world/noticeBoard';
 import { frameYaw, fromRoom } from './rules/paths';
 
 export { KEYS };
@@ -124,26 +126,48 @@ export default {
     const ground = { floorAt, level: LEVEL, bounds: BOUNDS, solids: shore.solids };
     const walker = createWalker({ camera, world: ground, at: SPAWN.at, yaw: SPAWN.yaw, reduced });
 
-    // what's said before the page listens is held for it (fromScene's way)
+    // what's said before the page listens is held for it (fromScene's way);
+    // the term and the night hear everything on its way out (Lane F's `ears`)
     let held = [];
+    let ears = null;
     const tell = (type, data = {}) => {
+      ears?.(type, data);
       if (held) held.push([type, data]);
       else rt.events?.emit?.(type, data);
     };
 
+    // the term (Lane F, play/school.js): the week, the house points and the
+    // quests, kept in tp-hogwarts beside the Sorting's keys; it knows which
+    // spells you've learnt, so it's here before the wand
+    const hours = () => 19.9 + clock / 60;
+    const school = createSchool({ saves: rt.saves, tell, week: props.week ?? null });
+
     // the wand, and the things beside the jetty for it to take hold of;
     // the feel's knocks and punches on the camera after the walk has placed it
     const feel = createFeel({ baseFov: camera.fov, calm: reduced });
-    const wand = createWand({ rt, scene, camera, house, floorAt, tell, feel });
+    const wand = createWand({ rt, scene, camera, house, houseName: school.house, floorAt, tell, feel, learnt: school.learnt });
     wand.place(practiceSet({ at: SPAWN.at, yaw: SPAWN.yaw, floorAt, house, rt }));
+
+    // the notice board (Lane F, world/noticeBoard.js): to the right of where
+    // you come up from the boats, past the practice set, turned to face you
+    const boardAt = (() => {
+      const [x, z] = [6.8, 2.4];
+      const c = Math.cos(SPAWN.yaw);
+      const s = Math.sin(SPAWN.yaw);
+      const at = [SPAWN.at[0] + x * c - z * s, SPAWN.at[1] - x * s - z * c];
+      return { at: [at[0], floorAt(...at), at[1]], yaw: Math.atan2(SPAWN.at[0] - at[0], SPAWN.at[1] - at[1]) };
+    })();
+    const board = createNoticeBoard({ house, tier, renderer: rt.gfx?.renderer ?? null, ...boardAt });
+    scene.add(board.group);
+    ground.solids = [...shore.solids, ...board.solids];
+    board.set(school.view());
 
     // the night half (Lane F, play/night.js): the castle’s people on their days
     // for the Marauder’s Map. The shore’s dusk is the arrival night’s, its clock
     // read as the world’s hours from 19:54 (Lane C’s rules/clock.js’s ARRIVE)
-    const week = props.week ?? 1;
     const night = createNight({
-      timeOf: () => 19.9 + clock / 60,
-      weekOf: () => week,
+      timeOf: hours,
+      weekOf: () => school.week,
       // (in a room, its walk in its own frame turned onto the Map's: rules/paths.js's ROOM_FRAMES)
       me: () => {
         const inRoom = Boolean(rooms.room && rooms.walker);
@@ -152,6 +176,7 @@ export default {
         return { x, z, yaw: w.yaw + (inRoom ? frameYaw(rooms.id) : 0), moving: w.speed > 0.3, inside: inRoom ? rooms.id : null };
       },
     });
+
     // the broom, and Quidditch on it; their motes and the Snitch's glint in a
     // pool of their own (the wand's is busy with its own sparks)
     const air = createCards({ count: 400, parent: scene });
@@ -193,7 +218,7 @@ export default {
     };
     // (Buckbeak's ride goes out over the lake and round the far castle)
     const places = { lake: [CASTLE.at[0] * 0.4, LEVEL, CASTLE.at[1] * 0.4], castle: [CASTLE.at[0], 40, CASTLE.at[1]] };
-    const lessons = createLessons({ rt, scene, camera, house, houseName: 'gryffindor', wand, broom, walker, floorAt, tell, said, cards: air, feel, figure: null, fly, places });
+    const lessons = createLessons({ rt, scene, camera, house, houseName: school.house, wand, broom, walker, floorAt, tell, said, cards: air, feel, figure: null, fly, places });
     // where a lesson is held: until the grounds and the rooms give each its
     // place, a stretch of the shingle by the jetty, looking along the shore
     // (so a duel or a ride's start isn't out on the water); you're put there
@@ -206,7 +231,30 @@ export default {
     // the rooms behind the doors (Lane D, rooms/host.js): built far below as
     // you go in, the shore hidden and its lights down while you're inside
     // (every room is told the house and the Sorting's password: the common rooms' doors ask for it)
-    const rooms = createRoomHost({ rt, scene, camera, house, tier, reduced, outside: [sky.mesh, shore.group, lake.mesh, castle.group, boats.group], lights: [key, hemi], tell, context: () => ({ house: arrival.save.house, password: arrival.save.password, hour: 21 }), out: () => world.out() });
+    const rooms = createRoomHost({ rt, scene, camera, house, tier, reduced, outside: [sky.mesh, shore.group, lake.mesh, castle.group, boats.group, board.group], lights: [key, hemi], tell, context: () => ({ house: arrival.save.house, password: arrival.save.password, hour: 21 }), out: () => world.out() });
+    // the Great Hall as the term has it: the hourglasses at every house’s
+    // points, the twelve trees at Christmas, and at the leaving feast the
+    // tables laid and the banners in the colours of the house that won
+    const dress = (settle = false) => {
+      if (rooms.id !== 'greatHall' || !rooms.room?.set) return;
+      const v = school.view();
+      rooms.room.set({ points: v.totals, settle, christmas: v.christmas, ...(v.leaving && v.feasted ? { feast: true, cup: v.standings[0]?.house ?? null } : {}) });
+    };
+    // the leaving feast: in the Great Hall, wherever you were; the Cup’s card comes with it
+    const feast = async () => {
+      if (arrival.active) return null;
+      const cup = school.feast();
+      if (!cup) return null;
+      if (rooms.id !== 'greatHall') await rooms.enter('greatHall', { props: { feast: true, points: cup.totals, cup: cup.winner } }).catch(() => null);
+      dress();
+      return cup;
+    };
+    // (the term hears everything from here on; what it says back dresses the board and the Great Hall)
+    ears = (type, data) => {
+      school.hear(type, data);
+      if (type === 'school') board.set(data);
+      if (type === 'school' || type === 'room') dress(type === 'room');
+    };
 
     // the arrival (Lane D, world/arrival.js): the night of the first-years, on
     // rails, from the station to the Sorting; played on a first visit, from
@@ -276,11 +324,13 @@ export default {
     const promptNow = () => {
       if (broom.riding) return null;
       if (nearBroom()) return 'broom';
+      if (board.near(walker.state.x, walker.state.z)) return 'board';
       return nearDoor(walker.state.x, walker.state.z) ? 'door' : null;
     };
     const go = () => {
       const what = promptNow();
       if (what === 'broom') fly();
+      else if (what === 'board') tell('board', {});
       else if (what === 'door') {
         tell('go', { door: { label: DOOR.label } });
         // (the boats: the arrival from the push off; Enter skips it to the steps once it has been seen)
@@ -295,7 +345,7 @@ export default {
       const now = promptNow();
       if (now !== near) {
         near = now;
-        tell('near', { door: near === 'broom' ? { verb: 'Fly', label: 'The broom' } : near === 'door' ? { label: DOOR.label } : null });
+        tell('near', { door: near === 'broom' ? { verb: 'Fly', label: 'The broom' } : near === 'board' ? { verb: 'Read', label: 'The notice board' } : near === 'door' ? { label: DOOR.label } : null });
       }
     };
 
@@ -371,6 +421,7 @@ export default {
         feel.update(dt, camera);
         wand.step(dt, input);
         night.step(dt);
+        school.step(dt, hours());
         air.update(dt, camera);
         clock += dt;
         // (the light moves slowly: a few times a second is plenty)
@@ -424,6 +475,10 @@ export default {
       wand,
       // the Marauder’s Map’s view of everyone (hud/MaraudersMap.jsx reads it every frame)
       map: () => night.view(),
+      // the term's view for the HUD, and the leaving feast held (the Menu's, until the Great Hall holds it)
+      school: () => school.view(),
+      feast,
+      nextYear: () => school.nextYear(Math.floor(hours() / 24)),
       // the wheel's pick, and the touch buttons held and let go
       choose: (id) => wand.choose(id),
       press(name, down) {
@@ -460,6 +515,7 @@ export default {
         shore.dispose();
         castle.dispose();
         boats.dispose();
+        board.dispose();
         wand.dispose();
         quidditch.dispose();
         lessons.dispose();
@@ -505,6 +561,9 @@ export default {
         cast: (spell, at) => wand.cast(spell, at),
         wand: () => wand.state(),
         night: () => night.view(),
+        school: () => school.view(),
+        term: (w) => school.setWeek(w),
+        hear: (type, data) => tell(type, data),
         fly: () => world.fly(),
         practice: () => world.practice(),
         match: (n) => world.match(n),

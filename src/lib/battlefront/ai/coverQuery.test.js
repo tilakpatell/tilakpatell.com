@@ -77,7 +77,11 @@ describe('cover queries in the game’s selection form', () => {
     const s = newSoldier(cls, { id: 'me', team: 1, at: [spot.at[0], 0, spot.at[2]], weapon: weaponOf(rb, cls.weapon), rand: seeded(1) });
     const b = createBrain(s, { ai, rand: seeded(1) });
     b.me.beliefs.them = { id: 'them', at: { x: 10, y: 1.2, z: -30 }, vel: { x: 0, y: 0, z: 0 }, confidence: 1, visible: true, seenAt: 0, hostile: true };
-    const i = think(b, { nav, lineClear: (a, c) => lineClear(nav, a, c), shields, squad: { centre: [0, 10], posture: 'retreat' }, objective: null, enemies: [[10, -30]], taken: new Map() }, 1);
+    // (set to flee by an enemy grenade come down beside it, the source’s panic, where its squad’s retreat did by
+    // hand: panic.js)
+    const w = { nav, lineClear: (a, c) => lineClear(nav, a, c), shields, squad: { centre: [0, 10], posture: 'hold' }, objective: null, enemies: [[10, -30]], taken: new Map(), grenades: [{ at: [spot.at[0] + 1, 0, spot.at[2]], team: 2, collided: true, dead: false, row: { radius: 6 } }] };
+    think(b, w, 1);
+    const i = think(b, w, 1.3);
     expect(i.mode).toBe('hide');
     expect(i.stance).toBe('crouch');
   });

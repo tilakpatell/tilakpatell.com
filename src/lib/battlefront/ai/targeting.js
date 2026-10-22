@@ -11,10 +11,22 @@
 //
 // and the score then scaled by HumanPreferenceScale (2.5) for a human player.
 // Only beliefs are scored (the bot's senses, `lib/ai/perception`), never the
-// truth, so a target the senses have not met is never picked. A bot keeps
-// its target for `Shooting.KeepFiringAtPlayerTime` (4 s) or `…AtAITime` (2 s)
-// before it switches. The squad's target coordinator (`EnableTargetCoordinator`)
-// lets at most `VisibleTargetLimit` of a squad (1: all of it) share a target.
+// truth, so a target the senses have not met is never picked.
+//
+// Which it takes is the game's AI code's rule (`Reason/TargetSelection.cpp`,
+// `selectTargets`; NOTES.md, "The bots' minds against the AI source"): an enemy
+// seen within `VisibleTargetLimit` seconds (1 in multiplayer, a third in PvE:
+// `Shared/AISystem.ddf`'s `SquadTargettingData`) counts as seen, scaled so and
+// tried first, the best of them by the scores; the target it has is kept while
+// it is one of them and none scores higher (the current target's scale standing
+// for the source's 2 m of slack), and kept while no enemy is seen at all; with
+// no target, one seen longer ago, and failing that one only heard or told of.
+// (It replaced a hold of `KeepFiringAtPlayerTime` 4 s or `…AtAITime` 2 s
+// before any switch: those are how long a bot standing still fires on at a
+// target out of sight, `tactics.js`'s `keepFiring`.) The squad's target
+// coordinator (`EnableTargetCoordinator`, the records' later field) hands each
+// member its own best: `VisibleTargetLimit` is seconds, not the share of a
+// squad it was read as, and the records hold no share.
 //
 // Read by hand, `source: "hand"` in NOTES.md: the system's `SuppressionScore`
 // (front 0.5, back 0.7) as a bonus on the score for a target facing the bot
@@ -27,6 +39,10 @@
 
 import { curveAt } from './curve.js';
 
+// whether a belief counts as seen: in sight now, or seen within the visible limit, on the senses' own clock
+// (`perception.js`'s `me.now`; a brain with none counts what is in sight now alone)
+export const seenWithin = (brain, b, limit) => !!b?.visible || (brain.me?.now != null && brain.me.now - (b?.seenAt ?? -Infinity) <= limit);
+
 export function scoreTargets(brain, seen, { system, who = () => null, current = null }) {
   const T = system.targeting;
   const me = brain.s.at;
@@ -36,7 +52,7 @@ export function scoreTargets(brain, seen, { system, who = () => null, current = 
     const e = who(b.id);
     if (e && e.alive === false) continue;
     let d = Math.hypot(b.at.x - me[0], b.at.z - me[2]);
-    if (b.visible) d *= T.targetVisibleDistScale;
+    if (seenWithin(brain, b, T.visibleTargetLimit ?? 0)) d *= T.targetVisibleDistScale;
     if (b.id === current) d *= T.currentTargetDistScale;
     if (b.at.y - me[1] > T.elevationAboveThreshold) d *= T.elevationDistScaleY;
     const human = !!e && e.bot === false;
@@ -52,15 +68,16 @@ export function scoreTargets(brain, seen, { system, who = () => null, current = 
   return out.sort((a, b) => b.score - a.score || (a.id < b.id ? -1 : 1));
 }
 
-// how long a bot holds the target it has before it may switch
-const keepFor = (system, e) => (e && e.bot === false ? system.shooting.keepFiringAtPlayerTime : system.shooting.keepFiringAtAITime);
-
 export function pickTarget(brain, seen, { system, who = () => null, now = 0, assigned = null }) {
   const scores = scoreTargets(brain, seen, { system, who, current: brain.target ?? null });
-  const has = (id) => id != null && scores.some((s) => s.id === id);
-  let id = null;
-  if (has(brain.target) && now - (brain.targetSince ?? -Infinity) < keepFor(system, who(brain.target))) id = brain.target;
-  else id = has(assigned) ? assigned : (scores[0]?.id ?? null);
+  const by = new Map(seen.map((b) => [b.id, b]));
+  const limit = system.targeting?.visibleTargetLimit ?? 0;
+  const visible = scores.filter((s) => seenWithin(brain, by.get(s.id), limit));
+  const current = scores.find((s) => s.id === brain.target) ?? null;
+  // (the coordinator's word, where it names one of those seen)
+  const given = visible.find((s) => s.id === assigned) ?? null;
+  const once = scores.find((s) => Number.isFinite(by.get(s.id)?.seenAt)) ?? null;
+  const id = (given ?? visible[0] ?? current ?? once ?? scores[0])?.id ?? null;
   if (id !== brain.target) {
     brain.target = id;
     brain.targetSince = now;
@@ -75,7 +92,8 @@ export function coordinate(scores, { system }) {
     for (const [m, list] of scores) if (list[0]) out.set(m, list[0].id);
     return out;
   }
-  const cap = Math.max(1, Math.ceil(T.visibleTargetLimit * scores.size - 1e-9));
+  // (the records hold no share of a squad for it: every member may take the same target)
+  const cap = scores.size;
   const count = new Map();
   // the surest pick first, each taking its best target not yet full
   const order = [...scores].filter(([, l]) => l.length).sort((a, b) => b[1][0].score - a[1][0].score);
