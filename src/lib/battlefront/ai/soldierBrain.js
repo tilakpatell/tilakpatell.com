@@ -37,13 +37,10 @@
 
 import { pick } from '../../ai/utility.js';
 import { createSenses } from '../../ai/perception.js';
-import { lead } from '../../combat/aim.js';
-import { findPath, heightAt, walkable, cellAt, nearestWalkable } from '../nav.js';
-import { meshNearest, meshPath } from '../meshNav.js';
-import { fieldTo, legAlong } from '../navField.js';
-import { chestOf, move } from '../soldier.js';
+import { heightAt, walkable } from '../nav.js';
+import { chestOf, eyeOf } from '../soldier.js';
 import { kickAim } from '../weapons.js';
-import { clock, profile } from '../core.js';
+import { AVOID, FAR, LEG, NEAR_GOAL, REPLAN, SEARCH_CELLS, navigate, spotNear } from './soldierWay.js';
 import { pickCover, queryFor } from './cover.js';
 import { pickTarget } from './targeting.js';
 import { queryFor as gameQuery, runQuery } from './coverQuery.js';
@@ -51,11 +48,15 @@ import { skirmishRole, pressAbility } from './skirmish.js';
 import { TICK, aheadOf, available, closeCombat, hideClock, intensityFor, patternWeapon, pulls, stillHiding, turnFrom, validAgainst } from './tactics.js';
 import { sensingOf, sightOf } from './sensing.js';
 import { DEFAULT } from './difficulty.js';
+import { DEFAULT_MOVE, MOVE_FIRE, STILL, aimY, firesOnTheMove, holdsFire, keepFiring, reacquired, weaponRange } from './trigger.js';
+import { holdLastSeen } from './memory.js';
+import { FLEE_DONE, panicStep, panicking } from './panic.js';
+import { asksNewCover, coverTimes, hideCoverTurned, inPreferredRange } from './coverRequest.js';
 import { AHEAD, FACING, TARGET, aimPoint, burstStep, createAim, createBurst, createEvasion, createLof, crouched, groundOk, lofStep, mayFire, noiseOf, strafeSide, takeRoll, viewMiss, viewPoint, viewStep, weaponClass } from './autoPlayer.js';
 
-// a walkable spot near a place: on the level's navmesh at the soldier's height where the battle has
-// one (the floor it is on, not the one over it: meshNav.js), else the navgrid's
-const spotNear = (nav, x, z, r, y) => (nav?.mesh ? meshNearest(nav, x, z, r, y) : null) ?? nearestWalkable(nav, x, z, r);
+// (a bot's way to its goal, `navigate`, with `spotNear` and the path's knobs, is `soldierWay.js`'s, split out
+// under the size rule; the knobs are re-exported here under the names they had)
+export { AVOID, FAR, LEG, REPLAN, SEARCH_CELLS };
 
 // The class a soldier plays → the game's AI template for it.
 export const ROLES = { assault: 'rifleman', heavy: 'heavy', officer: 'officer', specialist: 'sniper' };
@@ -73,31 +74,18 @@ export const SIGHT = 100; // metres a bot sees (the templates' sensing areas are
 export const CONE = 0.25; // the cosine of a bot's half view angle (about 75° either side)
 const HEARING = 40; // metres a shot is heard
 export const AIM_SETTLE = 2; // seconds on one target for the aim box to shrink from its max to its min
-export const REPLAN = 1.5; // seconds a path is kept before it is planned again
 // (the share of health under which a bot hid, by hand, until the source showed that no tactic reads health
 // and only a target its weapon cannot hurt sends a bot to hide: tactics.js. Kept for its readers; the brain
 // no longer hides by it, nor by suppression, which the same rule retired)
 export const HIDE_HEALTH = 0.4;
 export const STRAFE = 4; // metres a bot attacking in the open steps aside
 const WANDER = 30; // metres round the objective a bot with nothing to do searches
-const NEAR_GOAL = 0.8;
 // A bot with a task this far outside its radius goes there rather than
 // fight, unless the enemy is inside FIGHT_AWAY; it interacts only with no
 // enemy believed inside INTERACT_CLEAR (the commander's rule). By hand.
 const TASK_SLACK = 10;
 const FIGHT_AWAY = 20;
 const INTERACT_CLEAR = 10;
-// A goal further than this is walked to by legs of LEG metres, each its own
-// search, so a long walk across a Galactic Assault map never floods A*. By hand.
-export const FAR = 80;
-export const LEG = 40;
-// How near the round of the place it was sent to a bot leaves that place's field for a search of its own, m (by hand).
-const SENT_NEAR = 4;
-// The cells one of those searches may open before it gives up, by hand.
-export const SEARCH_CELLS = 6000;
-// A waypoint cell a bot has failed to step into (open on the grid, too
-// narrow for its body) is left out of its paths this long, by hand.
-export const AVOID = 10;
 
 export function createBrain(s, { ai, role: given = null, rand = Math.random, aimScale = 1, system: sys = null, difficulty = null, pve = false, ap = null }) {
   // a Skirmish bot plays its class's PvE template, tactics and AI weapon, under the PvE AI system
@@ -142,7 +130,10 @@ export function createBrain(s, { ai, role: given = null, rand = Math.random, aim
     preferred: aiWeapon?.outdoorPreferredRange ?? aiWeapon?.preferredRange ?? system?.preferredRange ?? null,
     rand,
     // (an AutoPlayer's sight is its tracker's field of view, AP_TargetTrackerFieldOfViewDegrees to either side: the code's half angle)
-    senses: createSenses({ sight: { range: SIGHT, cone: ap ? Math.cos(ap.fov * (Math.PI / 180)) : CONE, far: 1 }, hearing: { range: HEARING }, memory: template.targetLostTime, intuition: 2.5 }),
+    // (a soldier bot's belief of an enemy out of sight fades from the moment it is lost, over its template's
+    // `TargetLostTime`, held where it was seen, memory.js: the senses' 2.5 s of following the truth, by hand,
+    // stays an AutoPlayer's alone)
+    senses: createSenses({ sight: { range: SIGHT, cone: ap ? Math.cos(ap.fov * (Math.PI / 180)) : CONE, far: 1 }, hearing: { range: HEARING }, memory: template.targetLostTime, intuition: ap ? 2.5 : 0 }),
     // (a soldier bot's cone, the game's: its difficulty row's, the multiplayer default where none is set;
     // set on its senses at each think by whether its side is alerted. An AutoPlayer keeps its tracker's)
     sensing: ap || !ai.difficulties ? null : sensingOf(difficulty?.row ?? ai.difficulties[DEFAULT]),
@@ -161,9 +152,21 @@ export function createBrain(s, { ai, role: given = null, rand = Math.random, aim
     held: false,
     fired: false,
     intensity: 'High',
+    // (the trigger's and the flee's state, the source's: trigger.js and panic.js. The AI weapon's range bounds
+    // the trigger; the attack row's move settings say whether it fires on its way to a cover; the panic's
+    // causes and times are the difficulty row's, the multiplayer default where none is set)
+    aiRange: weaponRange(pveWeapon ?? aiWeapon),
+    moveFire: MOVE_FIRE.attack[template.tactics] ?? DEFAULT_MOVE,
+    sightTrack: {},
+    panicRow: difficulty?.row ?? ai.difficulties?.[DEFAULT] ?? null,
+    panicState: { panic: null, over: 0 },
+    thoughtAt: null,
+    fleeTo: null,
+    fleeCoverSince: null,
+    // (the attack's cover timers, and when it came to its cover: coverRequest.js)
+    coverTimes: null,
+    inCoverSince: null,
     cover: null,
-    coverSince: 0,
-    coverStay: 0,
     strafe: 1,
     strafeAt: 0,
     path: null,
@@ -248,9 +251,12 @@ export function aimAt(brain, from, belief, now, who = null) {
     brain.aimTarget = belief.id;
     brain.aimSince = now;
   }
-  const speed = brain.s.weapon?.firing?.speed ?? 700;
-  const vel = [belief.vel?.x ?? 0, 0, belief.vel?.z ?? 0];
-  const p = lead(tgt, vel, from, speed) ?? tgt;
+  // (a soldier's eye less the system's `AimOffsetY`, where it is or was last seen, and no lead: trigger.js. It
+  // replaced the chest, led for the bolt's speed. A target not on foot keeps the chest the senses hold; a
+  // soldier the world does not name is read on the bot's own body)
+  const body = who ? (who.kind == null || who.kind === 'soldier' ? who : null) : brain.s;
+  if (body?.at) tgt[1] = aimY(tgt[1], { eyeOverChest: eyeOf(body)[1] - chestOf(body)[1], offset: brain.system?.targeting?.aimOffsetY ?? 0 });
+  const p = tgt;
   const dist = Math.hypot(p[0] - from[0], p[2] - from[2]);
   const settle = brain.difficulty?.settle(dist) ?? AIM_SETTLE;
   const [bw, bh] = aimBox(brain.aiWeapon.accuracyHitBox, dist, Math.min(1, (now - brain.aimSince) / Math.max(1e-3, settle)));
@@ -266,10 +272,11 @@ export function aimAt(brain, from, belief, now, who = null) {
 
 // (close combat first, then flee and hide, as the behaviour tree tries them: `combat_Tactics`. Each is
 // offered only where the template's row holds it, and close combat is the source's test, worked out in
-// think: tactics.js)
+// think: tactics.js; flee is a panic's, kept until the bot has sat in its flee cover 2 s: panic.js. It
+// replaced flee on the squad's posture turned to retreat)
 const OPTIONS = [
   { id: 'close', rank: 6, considerations: [(c) => (c.closeCombat ? 1 : 0)] },
-  { id: 'flee', rank: 5, considerations: [(c) => (c.canFlee && c.target && c.posture === 'retreat' ? 1 : 0)] },
+  { id: 'flee', rank: 5, considerations: [(c) => (c.flee ? 1 : 0)] },
   { id: 'hide', rank: 4, considerations: [(c) => (c.hide ? 1 : 0)] },
   { id: 'interact', rank: 3.5, considerations: [(c) => (c.interact ? 1 : 0)] },
   { id: 'attack', rank: 2, considerations: [(c) => (c.target && c.dist <= c.engage && (!c.away || c.dist <= FIGHT_AWAY) ? 1 : 0), (c) => 0.5 + 0.5 * c.confidence] },
@@ -447,6 +454,9 @@ export function think(brain, world, now) {
     brain.sideAlerted = true;
     Object.assign(brain.senses.sight, sightOf(brain.sensing, true));
   }
+  // (an enemy out of sight is held where it was last seen: memory.js; the sim's senses do it as they run,
+  // and this is for a world whose own do not)
+  holdLastSeen(brain.me);
   const s = brain.s;
   const me = flat(s.at);
   const seen = Object.values(brain.me.beliefs ?? {}).filter((x) => x.hostile);
@@ -465,6 +475,11 @@ export function think(brain, world, now) {
   const e = b ? (world.who?.(b.id) ?? null) : null;
   const hideCause = !!e && !validAgainst(brain.aiWeapon?.validAgainst, { inVehicle: e.kind != null && e.kind !== 'soldier', shielded: !!e.shielded });
   const wasHiding = brain.current === 'hide';
+  // (flee's one cause, a panic, and its end, 2 s in its flee cover, after which it hides there: panic.js)
+  const panic = panicStep(brain.panicState, { at: s.at, team: s.team, grenades: world.grenades ?? [], suppressed: s.suppressed, tactics: brain.tactics.suppression, dt: now - (brain.thoughtAt ?? now), now, row: brain.panicRow, rand: brain.rand });
+  brain.thoughtAt = now;
+  const fleeDone = brain.current === 'flee' && brain.fleeCoverSince != null && now - brain.fleeCoverSince > FLEE_DONE;
+  const sinceSeen = !b || b.visible ? 0 : (brain.me.now ?? now) - (b.seenAt ?? -Infinity);
   const ctx = {
     task: !!task,
     away: !!task && fromTask > (task.radius ?? 0) + TASK_SLACK,
@@ -473,9 +488,10 @@ export function think(brain, world, now) {
     dist,
     engage: brain.tactics.engage?.distance ?? 40,
     closeCombat: !!b && available(brain.tactics, 'closeCombat') && closeCombat(brain.tactics.closeCombat, closeInput(brain, world, b, { me, tgt, clear, now })),
-    canFlee: available(brain.tactics, 'flee'),
-    // (hiding while its cause holds and the row's drawn hold after: the sheet's T6 and T7 together)
-    hide: !!b && available(brain.tactics, 'hide') && stillHiding(brain.hiding, { cause: hideCause, was: wasHiding, now }),
+    flee: !!b && available(brain.tactics, 'flee') && !fleeDone && (panicking(panic, now) || brain.current === 'flee'),
+    // (hiding while its cause holds and the row's drawn hold after: the sheet's T6 and T7 together; a flee
+    // done begins one, `isHideValid`'s way in from flee)
+    hide: !!b && available(brain.tactics, 'hide') && stillHiding(brain.hiding, { cause: hideCause || fleeDone, was: wasHiding, now }),
     posture: world.squad?.posture ?? 'hold',
     suppressed: s.suppressed,
     health: s.hp / s.hpMax,
@@ -484,9 +500,12 @@ export function think(brain, world, now) {
   const choice = pick(OPTIONS, ctx, { current: brain.current, rank: (o) => o.rank });
   let mode = choice?.id ?? 'follow';
   // (close combat's clock starts as it begins; a hide draws its hold as it begins and runs it from its cause)
-  if (mode === 'hide') hideClock(brain.hiding, { cause: hideCause, was: wasHiding, now, row: brain.tactics.hide, rand: brain.rand });
+  if (mode === 'hide') hideClock(brain.hiding, { cause: hideCause || fleeDone, was: wasHiding, now, row: brain.tactics.hide, rand: brain.rand });
   if (mode === 'close' && brain.current !== 'close') brain.closeSince = now;
   if (mode !== 'close') brain.closeSince = null;
+  // (a flee's place and its time there, and the attack's cover timers, are each that tactic's own)
+  if (mode !== 'flee') brain.fleeTo = brain.fleeCoverSince = null;
+  if (mode !== 'attack') brain.coverTimes = brain.inCoverSince = null;
   brain.current = mode;
   const intent = { mode, target: b?.id ?? null, goal: null, stance: 'stand', fire: false, aim: null, sprint: false, interact: false };
   const range = brain.s.weapon?.range ?? 200;
@@ -497,30 +516,43 @@ export function think(brain, world, now) {
     pickCover(world.nav, coverCtx(brain.queries[state]));
   if (b) {
     intent.aim = aimAt(brain, from, b, now, world.who?.(b.id) ?? null);
-    // (a new target's first shot waits the difficulty's reaction at its distance)
-    const ready = !brain.difficulty || now - brain.targetSince >= brain.difficulty.reaction(dist);
-    intent.fire = ready && b.visible && dist <= range && clear;
+    // (a new target's first shot waits the difficulty's reaction at its distance, and one spotted again away
+    // from where it was lost its reacquire time; out of sight, a bot standing fires on at where it was last
+    // seen for the keep-firing time; past its AI weapon's range, none: trigger.js. A bot sidestepping in the
+    // open stands, as the source has it, closeInput's reading)
+    const back = reacquired(brain.sightTrack, { id: b.id, seen: !!b.visible, at: v3(b), threshold: brain.difficulty?.row?.targeting?.reaquireTargetDistanceThreshold ?? Infinity, now });
+    const ready = !brain.difficulty || (now - brain.targetSince >= brain.difficulty.reaction(dist) && now - back >= brain.difficulty.reacquire(dist));
+    const standing = Math.hypot(s.vel[0], s.vel[2]) < STILL || (mode === 'attack' && !brain.cover);
+    const sight = b.visible ? clear : !holdsFire({ seen: false, standing, sinceSeen, keep: keepFiring(brain.system) }) && world.lineClear(from, v3(b));
+    intent.fire = ready && dist <= brain.aiRange && sight;
     // (a Skirmish bot's class abilities; the online fill's AutoPlayers press the officer's turret alone: ai/throw.js)
     if (s.abilities.list.length > 1) intent.ability = pressAbility(brain, { target: b, now, world, autoPlayer: !brain.pve });
   }
   if (mode === 'flee') {
     const slot = findCover('flee');
-    intent.goal = slot ? flat(slot.at) : fallBack(world.nav, me, tgt, world.squad?.centre, 15, s.at[1]);
+    // (with no flee cover in reach, a place away from the panic's, or the threat, kept for the flee: by hand,
+    // and its own cover for the flee's 2 s)
+    brain.fleeTo = slot ? flat(slot.at) : (brain.fleeTo ?? fallBack(world.nav, me, panic?.from ? [panic.from[0], panic.from[2]] : tgt, world.squad?.centre, 15, s.at[1]));
+    intent.goal = brain.fleeTo;
     intent.sprint = true;
     // (no fire on the way: every multiplayer flee row's move settings say so; in its cover it fires as
     // an attacking bot does, the behaviour tree's `combatFlee_Hide`)
     const could = intent.fire;
     intent.fire = false;
-    // (fled into the cover its query chose: it hides there)
-    if (slot && d2(me, intent.goal) < NEAR_GOAL) {
+    // (come to its flee cover: it waits there, crouched, until the flee is done and it hides)
+    if (d2(me, intent.goal) < NEAR_GOAL) {
+      brain.fleeCoverSince ??= now;
       intent.mode = mode = 'hide';
       intent.stance = 'crouch';
       intent.sprint = false;
       intent.fire = could;
-      brain.cover = slot;
-    }
+      brain.cover = slot ?? null;
+    } else brain.fleeCoverSince = null;
   } else if (mode === 'hide') {
-    const keep = brain.cover && world.taken?.get(brain.cover) === s.id;
+    // (a cover its target has come round past half the row's angle is given up: coverRequest.js)
+    const angle = brain.tactics.hide?.InvalidateCoverAngle ?? 180;
+    const turned = (sl) => (angle >= 180 && world.shields ? !world.shields(sl, tgt) : hideCoverTurned(sl, tgt, angle));
+    const keep = brain.cover && world.taken?.get(brain.cover) === s.id && !turned(brain.cover);
     const slot = keep ? brain.cover : findCover('hide');
     intent.goal = slot ? flat(slot.at) : fallBack(world.nav, me, tgt, world.squad?.centre, 8, s.at[1]);
     intent.stance = 'crouch';
@@ -531,24 +563,30 @@ export function think(brain, world, now) {
   } else if (mode === 'close') {
     intent.goal = tgt;
   } else if (mode === 'attack') {
+    // (a new cover only once in this one past its drawn time, and then only out of its weapon's preferred range
+    // of the target or with the target lost its drawn time, never with it too close; or for one that no longer
+    // shields: coverRequest.js. It replaced a new query every drawn 1 to 3 s of the outdoor block)
     const here = brain.cover;
-    const stale = here && (now - brain.coverSince > brain.coverStay || !world.shields(here, tgt));
-    let slot = here && !stale ? here : null;
-    if (!slot) {
+    const atCover = !!here && d2(me, flat(here.at)) < NEAR_GOAL;
+    brain.inCoverSince = atCover ? (brain.inCoverSince ?? now) : null;
+    brain.coverTimes ??= coverTimes(brain.tactics.attack, brain.rand);
+    const ask =
+      !here ||
+      !world.shields(here, tgt) ||
+      asksNewCover({ inCover: atCover, timeInCover: atCover ? now - brain.inCoverSince : 0, stay: brain.coverTimes.stay, inRange: inPreferredRange(brain.preferred, flat(here.at), tgt), sinceSeen, lost: brain.coverTimes.lost, tooClose: dist < (brain.tactics.attack?.['CoverRequestSettings.MinimumDistanceToTarget'] ?? 0) });
+    let slot = here;
+    if (ask) {
       slot = findCover('attack');
-      if (slot !== here) {
-        brain.coverSince = now;
-        const c = brain.tactics.attack ?? {};
-        const lo = c['OutdoorCoverRequestSettings.MinimumTimeInCoverToRequest'] ?? 1;
-        const hi = c['OutdoorCoverRequestSettings.MaximumTimeInCoverToRequest'] ?? 6;
-        brain.coverStay = lo + brain.rand() * (hi - lo);
-      }
+      brain.coverTimes = coverTimes(brain.tactics.attack, brain.rand);
+      if (slot !== here) brain.inCoverSince = null;
     }
     brain.cover = slot;
     if (slot) {
       intent.mode = mode = 'cover';
       intent.goal = flat(slot.at);
       intent.stance = slot.height === 'crouch' ? 'crouch' : 'stand';
+      // (on its way there it fires only by its attack row's move settings: trigger.js)
+      if (d2(me, intent.goal) >= NEAR_GOAL) intent.fire = intent.fire && firesOnTheMove(brain.moveFire, dist);
     } else {
       // in the open: step aside across the line of fire, the side changing every few seconds
       const ax = tgt[0] - me[0];
@@ -601,91 +639,6 @@ export function think(brain, world, now) {
   if (mode !== 'cover' && mode !== 'hide') brain.cover = mode === 'attack' ? brain.cover : null;
   brain.intent = intent;
   return intent;
-}
-
-// still bots' cells, which a path routes round (never the goal's own)
-function blockedCells(world, s, goal, avoid = null) {
-  const out = new Set(avoid ?? []);
-  const gc = cellAt(world.nav, goal[0], goal[1]);
-  const gi = gc ? gc[1] * world.nav.cols + gc[0] : -1;
-  for (const o of world.others ?? []) {
-    if (o === s || !o.alive || o.moving) continue;
-    if (Math.hypot(o.at[0] - s.at[0], o.at[2] - s.at[2]) > 30) continue;
-    const c = cellAt(world.nav, o.at[0], o.at[2]);
-    if (!c) continue;
-    const i = c[1] * world.nav.cols + c[0];
-    if (i !== gi) out.add(i);
-  }
-  return out;
-}
-
-function plan(brain, world, s, goal, now) {
-  const t0 = clock();
-  const from = flat(s.at);
-  const blocked = blockedCells(world, s, goal, now < (brain.avoidUntil ?? -Infinity) ? brain.avoid : null);
-  const d = d2(from, goal);
-  // (sent to a place that stays, a post or a fixed objective (its order says so), and not yet round it: its way is the place's
-  // field first, which goes round what one search does not, a way too long for its cells and a wall thinner
-  // than a cell, which the search walks into (a bot sent past either stood at the wall). navField.js: one
-  // field for every bot sent there, kept on the navgrid; round the place itself a search of its own is
-  // enough. A place that moves, a walker's or a crowd's middle, has no field: one would be made for each
-  // place it passes)
-  const t = world.task;
-  const sent = t?.stays && d2(goal, t.at) <= (t.radius ?? 0) + 2 && d2(from, t.at) > (t.radius ?? 0) + SENT_NEAR ? t.at : null;
-  let path = null;
-  // (the level's own navmesh where the battle has one: its way, the floors one over another told apart; no
-  // way on it, the base shut behind its gates, is a straight leg that the mesh's walls stop)
-  const meshed = world.nav?.mesh ? meshPath(world.nav, from, goal, { fromY: s.at[1] }) : undefined;
-  if (meshed) path = meshed;
-  if (meshed === undefined && sent) {
-    const f = fieldTo(world.nav, sent);
-    path = f ? legAlong(world.nav, f, from, LEG) : null;
-    if (path && path.length < 2) path = null;
-  }
-  if (meshed === undefined && !path && d <= FAR) path = findPath(world.nav, from, goal, { blocked, max: SEARCH_CELLS });
-  // too far for one search, or walled off for now, and no field's way: a leg in a line toward it
-  if (meshed === undefined && !path) {
-    const k = Math.min(1, LEG / (d || 1));
-    const mid = nearestWalkable(world.nav, from[0] + (goal[0] - from[0]) * k, from[1] + (goal[1] - from[1]) * k, 8);
-    path = mid ? findPath(world.nav, from, mid, { blocked, max: SEARCH_CELLS }) : null;
-  }
-  brain.path = path ?? [from, goal];
-  brain.pathGoal = goal;
-  brain.pathAt = now;
-  brain.wp = 1;
-  if (profile.on) profile.path += clock() - t0;
-}
-
-function navigate(brain, world, s, goal, dt, now) {
-  if (!goal) return move(s, [0, 0], dt, world.nav);
-  if (d2(flat(s.at), goal) < NEAR_GOAL) {
-    brain.stuck = 0;
-    return move(s, [0, 0], dt, world.nav);
-  }
-  if (!brain.path || !brain.pathGoal || d2(brain.pathGoal, goal) > 2 || now - brain.pathAt > REPLAN || brain.stuck > 1) plan(brain, world, s, goal, now);
-  while (brain.wp < brain.path.length - 1 && d2(flat(s.at), brain.path[brain.wp]) < 0.6) brain.wp++;
-  const wp = brain.path[Math.min(brain.wp, brain.path.length - 1)];
-  const moved = move(s, [wp[0] - s.at[0], wp[1] - s.at[2]], dt, world.nav);
-  brain.stuck = moved < 0.01 ? brain.stuck + dt : 0;
-  if (brain.stuck > 3) {
-    // nothing works: the cell it could not enter is left out a while, and a fresh path somewhere else near
-    const wc = cellAt(world.nav, wp[0], wp[1]);
-    if (wc) {
-      if (now >= (brain.avoidUntil ?? -Infinity)) brain.avoid = new Set();
-      brain.avoid.add(wc[1] * world.nav.cols + wc[0]);
-      brain.avoidUntil = now + AVOID;
-    }
-    const a = brain.rand() * Math.PI * 2;
-    const spot = spotNear(world.nav, s.at[0] + Math.cos(a) * 6, s.at[2] + Math.sin(a) * 6, 6, s.at[1]);
-    const way = world.nav?.mesh && spot ? meshPath(world.nav, flat(s.at), spot, { fromY: s.at[1] }) : undefined;
-    if (way) brain.path = way;
-    else if (spot && walkable(world.nav, spot[0], spot[1])) brain.path = findPath(world.nav, flat(s.at), spot, { blocked: brain.avoid }) ?? [flat(s.at), spot];
-    brain.wp = 1;
-    brain.pathGoal = goal;
-    brain.pathAt = now;
-    brain.stuck = 0;
-  }
-  return moved;
 }
 
 export function act(brain, intent, s, dt, world, now) {
