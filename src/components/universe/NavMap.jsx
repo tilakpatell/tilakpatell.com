@@ -319,7 +319,7 @@ export default function NavMap({ where, drive, onDrive, selected = null, live = 
 
   return createPortal(
     <div className="navmap dark-scope" role="dialog" aria-modal="true" aria-labelledby="navmap-title" data-mode={mode} style={{ '--pick': picked?.color ?? '#9fd8ff' }}>
-      <div className="navmap-frame">
+      <div className="navmap-frame dialog">
         <header className="navmap-head">
           <div>
             <p className="navmap-kicker">{NAV.kicker}</p>

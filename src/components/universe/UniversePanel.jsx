@@ -163,7 +163,7 @@ export default function UniversePanel({ universe, wonder = null, onFly = null, o
 
   if (tucked) {
     return (
-      <aside ref={panel} className="universe-panel" data-tour="panel" aria-label={universe ? universe.label : 'About the map'} data-tucked="">
+      <aside ref={panel} className="universe-panel dialog overflow-y-auto" data-tour="panel" aria-label={universe ? universe.label : 'About the map'} data-tucked="">
         <button type="button" className="universe-untuck" onClick={() => toggle(false)} aria-expanded="false">
           <span className="eyebrow truncate" style={universe ? { color: universe.accent } : undefined}>
             {universe ? universe.label : 'The universe'}
@@ -180,7 +180,7 @@ export default function UniversePanel({ universe, wonder = null, onFly = null, o
   // a wonder, from a link out to it (/universe/aurelia): what it is, and the way there
   if (!universe && wonder) {
     return (
-      <aside ref={panel} className="universe-panel" data-tour="panel" aria-label={wonder.name}>
+      <aside ref={panel} className="universe-panel dialog overflow-y-auto" data-tour="panel" aria-label={wonder.name}>
         {onTuck && <Tuck onTuck={toggle} />}
         <div className="universe-links flex flex-wrap items-center gap-x-4 gap-y-1">
           <button type="button" className="universe-back" onClick={onWhole}>
@@ -213,7 +213,7 @@ export default function UniversePanel({ universe, wonder = null, onFly = null, o
 
   if (!universe) {
     return (
-      <aside ref={panel} className="universe-panel" data-tour="panel" aria-label="About the map">
+      <aside ref={panel} className="universe-panel dialog overflow-y-auto" data-tour="panel" aria-label="About the map">
         {onTuck && <Tuck onTuck={toggle} />}
         <p className="eyebrow">The universe</p>
         <h2 className="universe-title">My whole site, as a universe</h2>
@@ -313,7 +313,7 @@ export default function UniversePanel({ universe, wonder = null, onFly = null, o
   const before = byId(prev(universe.id));
   const after = byId(next(universe.id));
   return (
-    <aside ref={panel} className="universe-panel" data-tour="panel" aria-label={universe.label}>
+    <aside ref={panel} className="universe-panel dialog overflow-y-auto" data-tour="panel" aria-label={universe.label}>
       {onTuck && <Tuck onTuck={toggle} />}
       <div className="universe-links flex flex-wrap items-center gap-x-4 gap-y-1">
         <button type="button" className="universe-back" onClick={onWhole}>

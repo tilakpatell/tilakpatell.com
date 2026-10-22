@@ -1,7 +1,9 @@
 /* The nav map (NavMap.jsx): the universe's chart table. The galaxy's
    holotable's cousin (galaxy.css's .holomap), in a neutral blue-white so
    each place's own colour is what reads; the course is drawn the way the
-   drive goes (a bright straight jump, dashes for super speed, dots cruising). */
+   drive goes (a bright straight jump, dashes for super speed, dots cruising).
+   Its frame is a .dialog, the colour's: its glass, edge, corners, shadow and
+   dress (styles/dialogs.css); the blue is navigation's, on what you pick. */
 .navmap {
   position: fixed;
   z-index: var(--z-cover);
@@ -19,11 +21,12 @@
   gap: 0.65rem;
   width: min(1220px, 100%);
   height: min(880px, 100%);
+  position: relative; /* (the colour's dress is drawn on its ::before, inset to it) */
   padding: 1rem 1.1rem 1.1rem;
-  border: 1px solid rgb(159 216 255 / 0.3);
-  border-radius: 18px;
-  background: radial-gradient(110% 80% at 25% 0%, rgb(40 60 120 / 0.32), transparent 60%), rgb(3 6 16 / 0.97);
-  box-shadow: 0 0 60px rgb(80 150 255 / 0.12), inset 0 0 40px rgb(80 150 255 / 0.05);
+  border: 1px solid color-mix(in srgb, var(--saber) 22%, var(--border));
+  border-radius: var(--r-card);
+  background: radial-gradient(110% 80% at 25% 0%, color-mix(in srgb, var(--saber) 12%, transparent), transparent 60%), color-mix(in srgb, var(--glass-solid) 97%, transparent);
+  box-shadow: var(--shadow-dialog);
   color: #dce9ff;
   overflow: hidden;
 }
@@ -38,7 +41,7 @@
   width: 36px;
   height: 36px;
   border: 1px solid rgb(159 216 255 / 0.35);
-  border-radius: 50%;
+  border-radius: var(--r-btn);
   color: #cfe9ff;
 }
 .navmap-close:hover { background: rgb(159 216 255 / 0.12); }
@@ -51,7 +54,7 @@
   height: 32px;
   padding: 0 0.7rem;
   border: 1px solid rgb(159 216 255 / 0.25);
-  border-radius: 999px;
+  border-radius: var(--r-btn);
   color: #cfe9ff;
   font-size: 0.74rem;
 }
@@ -76,7 +79,7 @@
   height: 30px;
   padding: 0 0.7rem;
   border: 1px solid rgb(159 216 255 / 0.22);
-  border-radius: 999px;
+  border-radius: var(--r-btn);
   color: #cfe9ff;
   font-size: 0.74rem;
 }
@@ -87,8 +90,8 @@
 .navmap-modes,
 .navmap-filters > .navmap-views,
 .navmap-tap { display: none; }
-.navmap-modes { gap: 2px; padding: 2px; border: 1px solid rgb(159 216 255 / 0.25); border-radius: 10px; }
-.navmap-modes button { display: inline-flex; align-items: center; gap: 0.3rem; height: 34px; padding: 0 0.65rem; border-radius: 8px; color: #cfe9ff; font-size: 0.76rem; }
+.navmap-modes { gap: 2px; padding: 2px; border: 1px solid rgb(159 216 255 / 0.25); border-radius: min(var(--r-btn), 10px); }
+.navmap-modes button { display: inline-flex; align-items: center; gap: 0.3rem; height: 34px; padding: 0 0.65rem; border-radius: min(var(--r-btn), 8px); color: #cfe9ff; font-size: 0.76rem; }
 .navmap-modes button[aria-pressed='true'] { background: rgb(159 216 255 / 0.18); color: #fff; }
 .navmap-tap { margin: 0; color: rgb(220 233 255 / 0.72); font-size: 0.8rem; line-height: 1.45; }
 .navmap-search {
@@ -99,8 +102,8 @@
   height: 34px;
   padding: 0 0.7rem;
   border: 1px solid rgb(159 216 255 / 0.25);
-  border-radius: 10px;
-  background: rgb(4 10 24 / 0.8);
+  border-radius: min(var(--r-btn), 10px);
+  background: color-mix(in srgb, var(--glass-solid) 80%, #000);
   color: #9fd8ff;
 }
 .navmap-search input { flex: 1; min-width: 0; border: 0; background: none; color: #fff; font-size: 0.85rem; outline: none; }
@@ -239,9 +242,9 @@
   overflow-y: auto;
   overscroll-behavior: contain;
   padding: 0.9rem;
-  border: 1px solid rgb(159 216 255 / 0.18);
-  border-radius: 12px;
-  background: rgb(5 12 28 / 0.72);
+  border: 1px solid var(--border);
+  border-radius: var(--r-panel);
+  background: color-mix(in srgb, var(--glass-solid) 70%, #000);
 }
 .navmap-side > * { flex-shrink: 0; }
 .navmap-status { padding-bottom: 0.75rem; border-bottom: 1px solid rgb(159 216 255 / 0.12); }
@@ -256,7 +259,7 @@
   min-height: 72px;
   padding: 0.5rem 0.3rem;
   border: 1px solid rgb(159 216 255 / 0.2);
-  border-radius: 10px;
+  border-radius: min(var(--r-panel), 10px);
   color: #cfe9ff;
   text-align: center;
 }
@@ -269,7 +272,7 @@
 .navmap-drive-name { font-size: 0.72rem; font-weight: 600; line-height: 1.1; }
 .navmap-drive-time { font-family: var(--font-mono); font-size: 0.68rem; opacity: 0.8; }
 .navmap-drive-about { margin: -0.2rem 0 0; color: rgb(220 233 255 / 0.65); font-size: 0.74rem; line-height: 1.45; }
-.navmap-note { margin: 0; padding: 0.45rem 0.6rem; border-radius: 8px; background: rgb(255 207 122 / 0.1); color: #ffdca0; font-size: 0.74rem; line-height: 1.4; }
+.navmap-note { margin: 0; padding: 0.45rem 0.6rem; border-radius: min(var(--r-panel), 8px); background: rgb(255 207 122 / 0.1); color: #ffdca0; font-size: 0.74rem; line-height: 1.4; }
 .navmap-pick { display: flex; flex-direction: column; gap: 0.35rem; }
 .navmap-back { align-self: flex-start; display: inline-flex; align-items: center; gap: 0.3rem; margin-bottom: 0.3rem; color: #9fd8ff; font-size: 0.74rem; }
 .navmap-back:hover { text-decoration: underline; text-underline-offset: 2px; }
@@ -292,7 +295,7 @@
   margin: 0 0 2px;
   padding: 0.4rem 0.4rem 0.3rem;
   border-bottom: 1px solid rgb(159 216 255 / 0.12);
-  background: rgb(6 12 27); /* (the side panel's glass, solid: the rows scroll under it) */
+  background: color-mix(in srgb, var(--glass-solid) 70%, #000); /* (the side panel's own glass: the rows scroll under it) */
   color: #9fd8ff;
   font-family: var(--font-mono);
   font-size: 0.62rem;
@@ -309,7 +312,7 @@
   width: 100%;
   min-height: 34px;
   padding: 0.2rem 0.4rem;
-  border-radius: 8px;
+  border-radius: min(var(--r-panel), 8px);
   color: #e8f2ff;
   font-size: 0.8rem;
   text-align: left;
@@ -328,7 +331,7 @@
    button held at the foot of the panel as it scrolls. */
 @media (max-width: 820px) {
   .navmap { padding: 8px; }
-  .navmap-frame { height: 100%; padding: 0.75rem; gap: 0.5rem; border-radius: 14px; }
+  .navmap-frame { height: 100%; padding: 0.75rem; gap: 0.5rem; border-radius: min(var(--r-card), 14px); }
   .navmap-head { align-items: center; gap: 0.5rem; }
   .navmap-head .navmap-kicker { display: none; }
   .navmap-title { margin: 0; font-size: 1.1rem; white-space: nowrap; }
@@ -368,7 +371,7 @@
   .navmap[data-mode='chart'] .navmap-list-box > :not(.navmap-tap) { display: none; }
   .navmap[data-mode='chart'] .navmap-tap { display: block; }
   .navmap-list button { min-height: 44px; font-size: 0.86rem; }
-  .navmap .navmap-pick > .navmap-go { position: sticky; z-index: 1; bottom: 0; box-shadow: 0 0 0 6px rgb(6 12 27); } /* (over a theme's own .btn-primary, styles/feel.css) */
+  .navmap .navmap-pick > .navmap-go { position: sticky; z-index: 1; bottom: 0; box-shadow: 0 0 0 6px color-mix(in srgb, var(--glass-solid) 70%, #000); } /* (over a theme's own .btn-primary, styles/feel.css) */
   .navmap-keys { display: none; }
 }
 @media (hover: none) {

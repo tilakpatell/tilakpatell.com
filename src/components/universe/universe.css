@@ -254,7 +254,7 @@ body:has(.universe-panel) .guide-btn { display: none; }
   margin: 1.25rem -1.25rem -1.25rem;
   padding: 0.15rem 1.25rem env(safe-area-inset-bottom, 0px);
   border-top: 1px solid var(--border);
-  background: rgb(6 8 16);
+  background: var(--glass-solid); /* (the panel's glass, solid, so what scrolls under it is hidden) */
 }
 .universe-exits .universe-back { min-height: 44px; margin: 0; }
 .universe-models ul { display: grid; gap: 0.35rem; margin: 0.5rem 0 0; padding: 0 3.25rem 0 0; list-style: none; } /* clear of the guide's button in the corner */
@@ -1086,7 +1086,7 @@ body:has(.universe-panel) .guide-btn { display: none; }
   margin: 0;
   padding: 0.6rem 1rem 0.6rem 0.6rem;
   border: 1px solid color-mix(in srgb, var(--who) 40%, transparent);
-  border-radius: 16px;
+  border-radius: var(--r-card); /* (the colour's corners, as the panel's) */
   background: var(--hud-sheet-bg); /* (no blur: see .universe-panel) */
 }
 .universe-comms[data-motion] .universe-line { animation: universe-line 0.25s ease-out; }
