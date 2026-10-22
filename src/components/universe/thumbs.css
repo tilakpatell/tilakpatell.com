@@ -205,7 +205,8 @@
     border-radius: var(--r-card);
   }
   :root .universe-page:not(.galaxy-page) .universe-panel[data-tucked] { top: calc(var(--nav-h) + 8px); width: var(--tab-w); height: 44px; padding-bottom: 0; }
-  :root .universe-page:not(.galaxy-page) :is(.universe-flat, .loading-veil.universe-loading) { right: calc(var(--panel-w) + 24px); bottom: 0; }
+  :root .universe-page:not(.galaxy-page) .universe-flat { right: calc(var(--panel-w) + 24px); bottom: 0; }
+  :root .universe-page:not(.galaxy-page) .loading-veil.universe-loading { --veil-r: calc(var(--panel-w) + 24px); --veil-b: 0px; }
   :root .universe-page:not(.galaxy-page) .universe-comms { left: var(--hud-edge); right: calc(var(--panel-w) + var(--hud-edge) + 12px); }
   /* with a ship: the whole screen. The site's bar steps aside (the panel,
      or its bar, has the ways back to the page: the classic site, the
