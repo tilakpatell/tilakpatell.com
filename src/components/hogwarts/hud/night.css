@@ -116,3 +116,23 @@
     transition: none;
   }
 }
+
+/* a butterbeer’s warmth: amber at the edge of the view, going down over a minute */
+.hogwarts-warm {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, transparent 52%, rgb(255 170 70 / 0.22) 80%, rgb(255 150 50 / 0.42) 100%);
+  animation: hogwarts-warm 60s linear both;
+}
+.hogwarts-warm[data-still] {
+  animation: hogwarts-warm 60s steps(4) both;
+}
+@keyframes hogwarts-warm {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}

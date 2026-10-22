@@ -106,11 +106,13 @@ import { createSchool } from './play/school';
 import { createNoticeBoard, noticesFor } from './world/noticeBoard';
 import { createCurfew } from './play/curfew';
 import { createPresence } from './play/presence';
+import { createCardSpots } from './play/cards';
 import { createDementors, playNotes } from './world/grounds/dementors';
 import { drain, pull } from './rules/dementors';
 import { afterHours } from './rules/curfew';
 import { shoreAt } from './world/terrain';
 import { LOCAL as ROOMS_BUILT } from './rooms/host';
+import { snowAt } from './rules/hogsmeade';
 import { frameYaw, fromRoom } from './rules/paths';
 
 export { KEYS };
@@ -353,8 +355,9 @@ export default {
     // out; a room gone into from another keeps the list it had)
     const under = [];
     let arrivalOwn = new Set();
-    // (every room is told the house, the Sorting's password, the hour and the week: the common rooms' doors ask for the password)
-    const rooms = createRoomHost({ rt, scene, camera, house, tier, reduced, outside: under, lights, tell, load: (id) => (ROOMS[id] ?? LOCAL[id])?.load?.(), context: () => ({ house: arrival.save.house, password: arrival.save.password, hour: grounds.hour, week: grounds.stats().week }), out: () => world.out() });
+    // (every room is told the house and the Sorting’s password, the common rooms’ doors ask for it; and
+    // the hour, the week, the snow and what you’ve found, Hogsmeade’s rooms read them)
+    const rooms = createRoomHost({ rt, scene, camera, house, tier, reduced, outside: under, lights, tell, load: (id) => (ROOMS[id] ?? LOCAL[id])?.load?.(), context: () => ({ house: arrival.save.house, password: arrival.save.password, hour: grounds.hour, week: school.week, snow: snowAt(school.week), houseName: school.house, found: school.found() }), out: () => world.out() });
     const hostEnter = rooms.enter;
     rooms.enter = (...args) => {
       if (!rooms.room) under.splice(0, under.length, ...scene.children.filter((o) => o.visible && !o.isLight && !carried.has(o) && !arrivalOwn.has(o)));
@@ -407,6 +410,8 @@ export default {
     // Snape walking their rounds where you can see them, and the cloak
     const dementors = createDementors({ rt, scene, house, floorAt, shoreAt, reduced });
     const presence = createPresence({ rt, scene, house });
+    // the Chocolate Frog cards hidden in the room you go into (play/cards.js)
+    const cardSpots = createCardSpots({ tell });
     let cloaked = false;
     const wear = (on) => {
       if ((on && !school.cloak) || on === cloaked) return;
@@ -496,6 +501,7 @@ export default {
         if (school.week !== grounds.stats().week) grounds.setWeek(school.week);
       }
       if (type === 'school' || type === 'room') dress(type === 'room');
+      if (type === 'room') cardSpots.dress(rooms.room, data?.id ?? null, { house: school.house, found: school.cards });
       if (type === 'patronus') dementors.patronus();
     };
 
@@ -532,6 +538,7 @@ export default {
           school.step(dt, hours());
           nightWatch(dt);
           dementorsStep(dt);
+          cardSpots.step(dt);
           return;
         }
         if (pressed('cloak')) wear(!cloaked);
@@ -667,6 +674,7 @@ export default {
         board.dispose();
         dementors.dispose();
         presence.dispose();
+        cardSpots.dispose();
         wand.dispose();
         quidditch.dispose();
         lessons.dispose();
