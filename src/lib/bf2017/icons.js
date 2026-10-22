@@ -32,6 +32,7 @@ export const ICON_FOR = {
   'hero:anakin': 'Weapons/Weapons_AnakinLightsaber',
   'hero:palpatine': 'Weapons/Weapons_EmperorForceLightning',
   'hero:yoda': 'Weapons/Weapons_YodaLightSaber',
+  'hero:grievous': 'Weapons/Weapons_GrievousLightsaber',
   'hero:han': 'Weapons/Weapons_DL-44',
   'hero:leia': 'Weapons/Weapons_Defender',
   'hero:chewie': 'Weapons/Weapons_Bowcaster',
@@ -62,6 +63,9 @@ export const ICON_FOR = {
   'ability:dookuWeaken': 'Abilities/Dooku_Ability_03',
   'ability:landoSharpShot': 'Abilities/Lando_Ability_02',
   'ability:bosskGrenade': 'Abilities/Bosk_Ability_01',
+  'ability:yodaRush': 'Abilities/Yoda_Ability_03',
+  'ability:grievousRush': 'Abilities/Grievous_Ability_03',
+  'ability:grievousAdvance': 'Abilities/Grievous_Ability_02',
   'ability:detonator': 'TrooperAbilityIcons/SC_Troopers_12_ThermalDetonator',
   'ability:medpack': 'Shared/PassiveAbility_Health',
   // the classes, the sides, the vehicles

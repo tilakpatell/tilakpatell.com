@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { SEQUEL, cutsFor, fullCuts, isSequel, partsOf, readManifest } from './bf2017-manifest.mjs';
+import { SEQUEL, cutsFor, fullCuts, isActThree, isSequel, partsOf, readManifest } from './bf2017-manifest.mjs';
 
 const VADER = 'characters/hero/darthvader/darthvader_01/darthvader_01_mesh';
 const HILT = 'gameplay/equipment/heroes/lightsaberlukeskywalker/lightsaberlukeskywalker_meshp_mesh';
@@ -93,5 +93,15 @@ describe('the 2017 manifest', () => {
     expect(isSequel('Gameplay/Kits/Hero/Luke/Kit_Hero_Luke')).toBe(false);
     expect(isSequel('Gameplay/Kits/Hero/DarthVader/Kit_Hero_DarthVader')).toBe(false);
     expect(isSequel('Gameplay/Kits/MP/Assault/Kit_L_Assault_Orig_HO')).toBe(false);
+  });
+
+  it('knows the campaign’s third act, which is the sequel era’s, by its folders', () => {
+    expect(isActThree('a3/characters/hero/iden/act3/iden_act3_01/iden_act3_01_mesh')).toBe(true);
+    expect(isActThree('characters/hero/iden/act3/iden_act3_01/iden_act3_01_1p_mesh')).toBe(true);
+    expect(isActThree('A3_Levels/SP/x')).toBe(true);
+    expect(isActThree('characters/hero/iden/act1/iden_act1_01/iden_act1_01_mesh')).toBe(false);
+    expect(isActThree('characters/hero/iden/act2/iden_act2_01/iden_act2_01_mesh')).toBe(false);
+    // (a whole segment, or its first word: a name that merely holds the letters is not the act)
+    expect(isActThree('characters/npc/humans/ba3x/ba3x_01_mesh')).toBe(false);
   });
 });

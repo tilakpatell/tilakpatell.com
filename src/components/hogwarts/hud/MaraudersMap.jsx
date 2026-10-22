@@ -1,5 +1,5 @@
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
-import { MiniMap, fitCanvas, minimapSize } from '../../../runtime/hud';
+import { MiniMap, minimapSize } from '../../../runtime/hud';
 import { SCALES, createTrails, drawInk, drawLife, drawPaper, placeName } from './mapInk';
 import { BOUNDS, unproject } from '../rules/atlas';
 import './map.css';
@@ -23,7 +23,6 @@ import './map.css';
 const OPEN = 'I solemnly swear that I am up to no good';
 const SHUT = 'Mischief managed';
 const TIMES = { words: 1.25, bloom: 1.3, managed: 1.1 }; // s
-const LIFE_MS = 33; // the footprints at about thirty a second
 const ZOOM = [0.3, 4.5]; // px a metre, the Map’s widest and closest
 const GROUNDS_MIDDLE = [40, -60]; // (the castle a little left of the middle, the village in the top corner)
 const CASTLE_MIDDLE = [-6, -34];
@@ -122,17 +121,18 @@ const MaraudersMap = forwardRef(function MaraudersMap({ source, touch = false, n
 });
 export default MaraudersMap;
 
-// The Map unfolded: its paper (CSS), the ink (one canvas, drawn again when
-// the view moves or the ink is spreading) and the footprints (another,
-// thirty times a second); dragged to look about, the wheel or the buttons
-// to come in close or stand back
+// The Map unfolded: its paper (CSS), and over it the kit’s MiniMap part
+// stretched to the sheet, the ink (kept in a canvas of its own, drawn again
+// only when the view moves or the ink is spreading) and the footprints
+// thirty times a second; dragged to look about, the wheel or the buttons to
+// come in close or stand back
 function Sheet({ source, phase, reduced, narrow, onShut }) {
-  const ink = useRef(null);
-  const life = useRef(null);
+  const sheet = useRef(null);
   const title = useRef(null);
-  const view = useRef({ cx: 0, cz: 0, scale: SCALES.near, w: 0, h: 0, follow: true, dirty: true });
+  const view = useRef({ cx: 0, cz: 0, scale: SCALES.near, w: 0, h: 0, follow: true, dirty: true, placed: false });
   const trails = useRef(createTrails());
   const drag = useRef(null);
+  const ink = useRef({ canvas: null, key: '' });
   const since = useRef(performance.now());
   const phaseRef = useRef(phase);
   useEffect(() => {
@@ -141,73 +141,77 @@ function Sheet({ source, phase, reduced, narrow, onShut }) {
     view.current.dirty = true;
   }, [phase]);
 
-  useEffect(() => {
-    // (where the Map first opens: in the castle, on you and close enough to read
-    // its plan by; out on the grounds, on you and the castle both)
-    const s = source();
-    const box = ink.current?.getBoundingClientRect();
-    if (s?.me) Object.assign(view.current, frameFor(s.me, box?.width || 800, box?.height || 560));
-    let raf = 0;
-    let last = -Infinity;
-    const tick = (t) => {
-      raf = requestAnimationFrame(tick);
-      if (t - last < LIFE_MS) return;
-      last = t;
+  // Drawn on the kit’s MiniMap clock (its paced beat, thirty a second here:
+  // the frames are the runtime’s, not a loop of the Map’s own), the ink
+  // drawn once into a canvas of its own whenever the view moves and laid
+  // down each beat under the footprints
+  const draw = useCallback(
+    (ctx, w) => {
+      const h = ctx.canvas.clientHeight;
       const v = view.current;
       const s = source();
-      const age = (t - since.current) / 1000;
+      if (!w || !h) return '';
+      if (!v.placed && s?.me) {
+        // (where the Map first opens: in the castle, on you and close enough to
+        // read its plan by; out on the grounds, on you and the castle both)
+        Object.assign(v, frameFor(s.me, w, h), { placed: true });
+      }
+      const now = performance.now();
+      const age = (now - since.current) / 1000;
       const p = phaseRef.current;
       // the ink spreading out as it opens, drawing back in as it’s managed
       const reveal = reduced ? (p === 'open' ? 1 : 0) : p === 'swear' ? 0 : p === 'open' ? Math.min(1, age / TIMES.bloom) : Math.max(0, 1 - age / TIMES.managed);
       if (s?.me && v.follow) {
-        if (Math.abs(v.cx - s.me.x) > 0.05 || Math.abs(v.cz - s.me.z) > 0.05) v.dirty = true;
         v.cx = s.me.x;
         v.cz = s.me.z;
       }
       clampView(v);
-      const a = ink.current;
-      const b = life.current;
-      if (!a || !b) return;
-      const boxA = fitCanvas(a);
-      const boxB = fitCanvas(b);
-      if (!boxA || !boxB) return;
-      if (v.w !== boxA.w || v.h !== boxA.h) v.dirty = true;
-      v.w = boxA.w;
-      v.h = boxA.h;
-      if (v.dirty || reveal < 1) {
-        const c = a.getContext('2d');
-        c.setTransform(boxA.s, 0, 0, boxA.s, 0, 0);
-        c.clearRect(0, 0, v.w, v.h);
-        drawInk(c, v, { reveal });
-        v.dirty = reveal < 1;
+      v.w = w;
+      v.h = h;
+      const ratio = Math.min(3, window.devicePixelRatio || 1);
+      const key = [v.cx.toFixed(2), v.cz.toFixed(2), v.scale.toFixed(4), w, h, ratio, reveal.toFixed(3)].join('|');
+      const kept = ink.current;
+      if (kept.key !== key) {
+        const c = (kept.canvas ??= document.createElement('canvas'));
+        c.width = Math.round(w * ratio);
+        c.height = Math.round(h * ratio);
+        const ic = c.getContext('2d');
+        ic.setTransform(ratio, 0, 0, ratio, 0, 0);
+        ic.clearRect(0, 0, w, h);
+        if (reveal > 0) drawInk(ic, v, { reveal });
+        kept.key = key;
       }
-      const c = b.getContext('2d');
-      c.setTransform(boxB.s, 0, 0, boxB.s, 0, 0);
-      c.clearRect(0, 0, v.w, v.h);
-      c.globalAlpha = reveal;
-      if (s && reveal > 0) drawLife(c, v, { people: s.people, me: s.me, trails: trails.current, now: t / 1000, night: s.night });
-      c.globalAlpha = 1;
+      ctx.drawImage(kept.canvas, 0, 0, w, h);
+      if (s && reveal > 0) {
+        ctx.globalAlpha = reveal;
+        drawLife(ctx, v, { people: s.people, me: s.me, trails: trails.current, now: now / 1000, night: s.night });
+        ctx.globalAlpha = 1;
+      }
       const hour = s?.hour;
       const text = hour == null ? '' : `${String(Math.floor(hour) % 24).padStart(2, '0')}:${String(Math.floor((hour % 1) * 60)).padStart(2, '0')}${s.night ? ' · after curfew' : ''}`;
       if (title.current && title.current.textContent !== text) title.current.textContent = text;
-    };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, [source, reduced]);
+      return '';
+    },
+    [source, reduced],
+  );
 
   const zoomTo = (scale, follow = view.current.follow, centre = null) => {
-    Object.assign(view.current, { scale, follow, dirty: true });
+    Object.assign(view.current, { scale, follow, placed: true });
     if (centre) Object.assign(view.current, { cx: centre[0], cz: centre[1] });
     trails.current.clear();
   };
+  const local = (e) => {
+    const r = sheet.current.getBoundingClientRect();
+    return [e.clientX - r.left, e.clientY - r.top];
+  };
   const onWheel = (e) => {
     const v = view.current;
-    const r = ink.current.getBoundingClientRect();
-    const at = unproject(v, e.clientX - r.left, e.clientY - r.top);
+    const [px, py] = local(e);
+    const at = unproject(v, px, py);
     const scale = Math.min(ZOOM[1], Math.max(ZOOM[0], v.scale * Math.exp(-e.deltaY * 0.0015)));
     // (zoom about the point under the pointer)
-    v.cx = at[0] - (e.clientX - r.left - v.w / 2) / scale;
-    v.cz = at[1] - (e.clientY - r.top - v.h / 2) / scale;
+    v.cx = at[0] - (px - v.w / 2) / scale;
+    v.cz = at[1] - (py - v.h / 2) / scale;
     zoomTo(scale, false);
   };
   const onDown = (e) => {
@@ -221,7 +225,6 @@ function Sheet({ source, phase, reduced, narrow, onShut }) {
     if (Math.hypot(e.clientX - d.x, e.clientY - d.y) > 3) v.follow = false;
     v.cx = d.cx - (e.clientX - d.x) / v.scale;
     v.cz = d.cz - (e.clientY - d.y) / v.scale;
-    v.dirty = true;
   };
   const onUp = () => (drag.current = null);
 
@@ -229,8 +232,9 @@ function Sheet({ source, phase, reduced, narrow, onShut }) {
   return (
     <div className="hogwarts-map" data-phase={phase} data-reduced={reduced || undefined} data-narrow={narrow || undefined} role="dialog" aria-label="The Marauder’s Map">
       <div className="hogwarts-map-paper">
-        <canvas ref={ink} className="hogwarts-map-ink" aria-hidden="true" />
-        <canvas ref={life} className="hogwarts-map-life" aria-hidden="true" onWheel={onWheel} onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp} />
+        <div ref={sheet} className="hogwarts-map-sheet" onWheel={onWheel} onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp}>
+          <MiniMap className="hogwarts-map-full" hz={30} draw={draw} label="The Marauder’s Map: drag to look about" />
+        </div>
         {words && (
           <p key={words} className="hogwarts-map-words" aria-live="polite">
             {words}
@@ -242,11 +246,15 @@ function Sheet({ source, phase, reduced, narrow, onShut }) {
         </p>
       </div>
       <div className="hogwarts-map-tools">
-        <button type="button" className="hogwarts-map-btn" onClick={() => {
+        <button
+          type="button"
+          className="hogwarts-map-btn"
+          onClick={() => {
             const me = source()?.me;
             const inside = me && Math.hypot(me.x - CASTLE_MIDDLE[0], me.z - CASTLE_MIDDLE[1]) < IN_CASTLE;
             zoomTo(SCALES.castle, Boolean(inside), inside ? null : CASTLE_MIDDLE);
-          }}>
+          }}
+        >
           The castle
         </button>
         <button type="button" className="hogwarts-map-btn" onClick={() => zoomTo(SCALES.grounds, false, GROUNDS_MIDDLE)}>

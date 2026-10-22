@@ -26,7 +26,8 @@
 //   route(from, to) → [spot ids] from one to the other along the edges (the shortest), or null
 //   rideBetween(a, b) → whether the way from one spot to the next is the carriages’
 //   pathOf(ids, from?, fromId?) → { points: [[x, z]…], lengths (cumulative), length, rides: [bool a stretch] }
-//   toRoom(room, [x, z]) → [x, z] in the room’s own frame; fromRoom(room, [x, z]) → the Map’s
+//   toRoom(room, [x, z]) → [x, z] in the room’s own frame; fromRoom(room, [x, z]) → the Map’s;
+//   frameYaw(room) → how far the room’s frame is turned on the Map’s (a heading in it plus this is the Map’s)
 //   indoorAt(a, b, k) → what a walk k of the way from spot a to spot b is in
 
 import { VILLAGE, buildingAt, frameAt, SHACK } from './hogsmeade';
@@ -301,6 +302,7 @@ export function toRoom(room, [x, z]) {
   const s = Math.sin(f.yaw);
   return [c * dx - s * dz, s * dx + c * dz];
 }
+export const frameYaw = (room) => frameOf(room).yaw;
 export function fromRoom(room, [x, z]) {
   const f = frameOf(room);
   const c = Math.cos(f.yaw);
