@@ -14,14 +14,14 @@
 .hangar-xp > span { position: absolute; inset: 0; background: var(--engine, #e8eefc); transform-origin: left; scale: var(--v, 0) 1; }
 .hangar-credits { color: var(--text); font-family: var(--font-mono); font-size: 0.82rem; font-variant-numeric: tabular-nums; }
 /* (the skill points free: a way to the Skills tab, lit while there are some) */
-.hangar-points { min-height: 30px; padding: 0 0.7rem; border: 1px solid var(--yard-line); border-radius: 999px; color: var(--muted); font-family: var(--font-mono); font-size: 0.76rem; }
+.hangar-points { min-height: 30px; padding: 0 0.7rem; border: 1px solid var(--yard-line); border-radius: var(--r-btn); color: var(--muted); font-family: var(--font-mono); font-size: 0.76rem; }
 .hangar-points[data-free] { border-color: var(--engine, #e8eefc); color: var(--text); background: color-mix(in srgb, var(--engine, #e8eefc) 16%, transparent); }
 @media (pointer: coarse) {
   .hangar-points { min-height: 44px; }
 }
 
 .hangar-tabs { display: flex; gap: 0.25rem; padding: 0.4rem 0.75rem; overflow-x: auto; border-bottom: 1px solid var(--yard-line); scrollbar-width: none; }
-.hangar-tabs [role='tab'] { flex: none; min-height: 36px; padding: 0 1rem; border-radius: 999px; color: var(--muted); font-size: 0.82rem; }
+.hangar-tabs [role='tab'] { flex: none; min-height: 36px; padding: 0 1rem; border-radius: var(--r-btn); color: var(--muted); font-size: 0.82rem; }
 .hangar-tabs [role='tab']:hover { color: var(--text); background: color-mix(in srgb, var(--text) 5%, transparent); }
 .hangar-tabs [role='tab'][aria-selected='true'] { color: var(--text); background: color-mix(in srgb, var(--engine, #e8eefc) 20%, transparent); }
 @media (pointer: coarse) {
@@ -45,7 +45,7 @@
 .hangar-page h3 { margin: 0 0 0.5rem; color: var(--muted); font-family: var(--font-mono); font-size: 0.72rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; }
 .hangar-note { margin: 0; color: var(--muted); font-size: 0.82rem; }
 .hangar-chips { display: flex; flex-wrap: wrap; gap: 0.4rem; }
-.hangar-chips button { min-height: 36px; padding: 0 0.8rem; border: 1px solid var(--yard-line); border-radius: 999px; color: var(--text); font-size: 0.8rem; }
+.hangar-chips button { min-height: 36px; padding: 0 0.8rem; border: 1px solid var(--yard-line); border-radius: var(--r-btn); color: var(--text); font-size: 0.8rem; }
 .hangar-chips button[aria-pressed='true'] { border-color: var(--engine, #e8eefc); background: color-mix(in srgb, var(--engine, #e8eefc) 18%, transparent); }
 .hangar-chips button:disabled { color: var(--muted); }
 @media (pointer: coarse) {
@@ -100,7 +100,7 @@
 .hangar-lines li[data-line='secondary'] .hangar-line-name { color: #9fd8ff; }
 .hangar-lines li[data-line='ordnance'] .hangar-line-name { color: #ffc070; }
 .hangar-line-does { grid-area: does; color: var(--muted); font-size: 0.8rem; }
-.hangar-lines button { grid-area: go; min-height: 36px; padding: 0 0.8rem; border: 1px solid var(--yard-line); border-radius: 999px; color: var(--text); font-size: 0.78rem; }
+.hangar-lines button { grid-area: go; min-height: 36px; padding: 0 0.8rem; border: 1px solid var(--yard-line); border-radius: var(--r-btn); color: var(--text); font-size: 0.78rem; }
 @media (pointer: coarse) {
   .hangar-lines button { min-height: 44px; }
 }
@@ -229,7 +229,7 @@
 .skill-take:disabled { border-color: var(--yard-line); background: transparent; color: var(--muted); }
 
 .hangar-skills-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem; }
-.hangar-reset { min-height: 36px; padding: 0 1rem; border: 1px solid var(--yard-line); border-radius: 999px; color: var(--text); font-size: 0.8rem; }
+.hangar-reset { min-height: 36px; padding: 0 1rem; border: 1px solid var(--yard-line); border-radius: var(--r-btn); color: var(--text); font-size: 0.8rem; }
 .hangar-reset:disabled { color: var(--muted); }
 @media (pointer: coarse) {
   .hangar-reset { min-height: 44px; }

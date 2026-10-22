@@ -26,7 +26,7 @@ export function InstallCard({ name, why, state, pack, progress, error, onInstall
   const size = sizeText(pack.bytes);
   const time = timeText(pack.bytes);
   return (
-    <aside className="world-gate" role="dialog" aria-modal="false" aria-labelledby="world-gate-title">
+    <aside className="world-gate dialog" role="dialog" aria-modal="false" aria-labelledby="world-gate-title">
       <button type="button" className="world-gate-x" aria-label="Keep it light" onClick={onLight}>
         <RiCloseLine aria-hidden="true" />
       </button>

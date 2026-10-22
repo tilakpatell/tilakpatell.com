@@ -124,7 +124,7 @@ export default function Online({ online, ship = null, floating = false }) {
 
 function Card({ title, onClose, children }) {
   return (
-    <section className="universe-online-card" aria-label={title}>
+    <section className="universe-online-card dialog overflow-y-auto" aria-label={title}>
       <div className="universe-online-head">
         <p className="eyebrow">{title}</p>
         <button type="button" className="universe-online-x" onClick={onClose} aria-label="Close">
