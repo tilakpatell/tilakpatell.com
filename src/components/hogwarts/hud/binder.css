@@ -1,0 +1,151 @@
+/* The binder of Chocolate Frog cards (hud/Binder.jsx): parchment and ink as
+   the HUD is skinned, the cards themselves gold-edged and five-sided at the
+   top as the frogs’ cards are, the empty pockets dashed with their hint. */
+
+.hogwarts-binder {
+  position: absolute;
+  inset: 4.5rem 1rem 1rem;
+  margin: 0 auto;
+  max-width: 64rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 1rem 1.1rem;
+  border-radius: 14px;
+  background: rgb(233 222 196 / 0.95);
+  color: #2a1d12;
+  box-shadow: 0 10px 40px rgb(0 0 0 / 0.45);
+  pointer-events: auto;
+  overflow: hidden;
+}
+.hogwarts-binder-head {
+  display: flex;
+  align-items: baseline;
+  gap: 0.8rem;
+}
+.hogwarts-binder-title {
+  margin: 0;
+  font: 700 1.25rem/1.2 Cinzel, Georgia, serif;
+}
+.hogwarts-binder-count {
+  margin: 0;
+  font: italic 0.95rem/1.2 Georgia, serif;
+  flex: 1;
+}
+.hogwarts-binder-pockets {
+  list-style: none;
+  margin: 0;
+  padding: 0.2rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(10.5rem, 1fr));
+  gap: 0.7rem;
+  overflow-y: auto;
+}
+.hogwarts-binder-pockets li {
+  min-height: 13.5rem;
+  display: flex;
+}
+
+.hogwarts-card-face,
+.hogwarts-card-empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.7rem 0.6rem 0.6rem;
+  clip-path: polygon(50% 0, 100% 9%, 100% 100%, 0 100%, 0 9%);
+}
+.hogwarts-card-face {
+  background:
+    linear-gradient(#f6ecd2, #e8d6a8) padding-box,
+    linear-gradient(135deg, #b8892c, #f2d27a 45%, #8a6416) border-box;
+  border: 3px solid transparent;
+  text-align: center;
+}
+.hogwarts-card-portrait {
+  width: 3.4rem;
+  height: 3.4rem;
+  margin-top: 0.6rem;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: radial-gradient(circle at 35% 30%, #5b4632, #2a1d12);
+  border: 2px solid #b8892c;
+  color: #f2d27a;
+  font: 700 1.1rem/1 Cinzel, Georgia, serif;
+}
+.hogwarts-card-name {
+  margin: 0.2rem 0 0;
+  font: 700 0.92rem/1.15 Cinzel, Georgia, serif;
+}
+.hogwarts-card-title {
+  margin: 0;
+  font: italic 0.78rem/1.2 Georgia, serif;
+  color: #5b4632;
+}
+.hogwarts-card-text {
+  margin: 0.25rem 0 0;
+  font: 0.74rem/1.3 Georgia, serif;
+}
+.hogwarts-card-empty {
+  justify-content: center;
+  border: 2px dashed rgb(42 29 18 / 0.35);
+  background: rgb(42 29 18 / 0.05);
+  text-align: center;
+}
+.hogwarts-card-empty span {
+  font: 700 1.6rem/1 Cinzel, Georgia, serif;
+  opacity: 0.35;
+}
+.hogwarts-card-empty p {
+  margin: 0;
+  font: italic 0.74rem/1.3 Georgia, serif;
+  opacity: 0.8;
+}
+
+/* the card just found, on its own for a moment */
+.hogwarts-card-new {
+  position: absolute;
+  right: 1rem;
+  bottom: 5.5rem;
+  width: 12rem;
+  display: flex;
+  flex-direction: column;
+  pointer-events: none;
+  animation: hogwarts-card-in 0.5s ease-out both;
+}
+.hogwarts-card-new .hogwarts-card-face {
+  min-height: 14rem;
+  box-shadow: 0 8px 30px rgb(0 0 0 / 0.45);
+}
+.hogwarts-card-eyebrow {
+  margin: 0 0 0.3rem;
+  text-align: center;
+  font: 600 0.75rem/1.2 Cinzel, Georgia, serif;
+  color: #f2d27a;
+  text-shadow: 0 1px 3px rgb(0 0 0 / 0.8);
+}
+@keyframes hogwarts-card-in {
+  from {
+    opacity: 0;
+    transform: translateY(1rem) rotate(-4deg);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hogwarts-card-new {
+    animation: none;
+  }
+}
+@media (max-width: 639px) {
+  .hogwarts-binder {
+    inset: 4rem 0.5rem 0.5rem;
+  }
+  .hogwarts-binder-pockets {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
