@@ -144,7 +144,7 @@ async function main() {
     const { ignoreFile } = await import('./assets-ignore.mjs');
     ignoreFile(ROOT);
   }
-  console.log(`VITE_ASSET_BASE (the repository variable ASSET_BASE): ${assetBase()}`);
+  console.log(`VITE_ASSET_BASE (deploy.yml's ASSET_BASE): ${assetBase()}`);
   return r.failed.length ? 1 : 0;
 }
 

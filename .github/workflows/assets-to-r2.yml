@@ -118,14 +118,6 @@ jobs:
       R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
       BUCKETS: ${{ matrix.bucket }}
     steps:
-      # (the manifests alone: the public bucket's files are copied by their names)
-      - uses: actions/checkout@v7
-        with:
-          sparse-checkout: |
-            src/data/galaxyAssets.json
-            src/data/assets-manifest.json
-          sparse-checkout-cone-mode: false
-
       # (one version, held to its published checksum)
       - name: rclone 1.70.3
         run: |
@@ -167,11 +159,10 @@ jobs:
             echo "made the bucket $d"
           done
 
-      # The public bucket first by the names its manifests give (every file the
-      # site asks for: no listing on either side, each asked for by its key),
-      # then every bucket by a listing, for whatever else it holds. Supabase
-      # lists slowly (77,545 files took thirteen minutes), so the names go
-      # first. The stats every minute, at the level the log shows.
+      # Every bucket by a listing (the public bucket's files the site asks for
+      # come faster by name through the public job, from Supabase's CDN:
+      # asked here one by one, each took a request of the S3 address's ten a
+      # second). The stats every minute, at the level the log shows.
       - name: Copy
         run: |
           # (where a Supabase bucket lands on R2)
@@ -182,12 +173,7 @@ jobs:
           for b in $BUCKETS; do
             echo "::group::$b"
             same=()
-            if [ "$b" = site-assets ]; then
-              same=(--size-only)
-              python3 -c 'import json; ks = {"%s/%s" % (e["hash"], p) for f in ("src/data/galaxyAssets.json", "src/data/assets-manifest.json") for p, e in json.load(open(f)).items()}; print("\n".join(sorted(ks)))' > "$RUNNER_TEMP/keys.txt"
-              echo "by name: $(wc -l < "$RUNNER_TEMP/keys.txt") files the manifests give"
-              rclone copy "supabase:$b" "r2:$(to "$b")" --files-from "$RUNNER_TEMP/keys.txt" --no-traverse "${same[@]}" "${opts[@]}" || echo "::warning::$b: a file the manifests give wasn't copied by name; the listing below tries again"
-            fi
+            [ "$b" = site-assets ] && same=(--size-only)
             rclone copy "supabase:$b" "r2:$(to "$b")" --fast-list "${same[@]}" "${opts[@]}"
             echo "::endgroup::"
           done

@@ -24,6 +24,14 @@ concurrency:
   group: deploy
   cancel-in-progress: false
 
+# The public bucket's address, where the build sends the heavy files and the
+# assets check asks for them: `tilak-assets` on Cloudflare R2, at its own
+# domain, since 2026-10-22 (docs/decisions/2026-10-21-heavy-assets-on-r2.md).
+# A URL, not a secret; until then it was the repository variable ASSET_BASE,
+# pointing at Supabase Storage.
+env:
+  ASSET_BASE: https://assets.tilakpatell.com
+
 # One job: lint, test and build `main`, then the build's files to Cloudflare,
 # the Worker tilakpatell-com (wrangler.jsonc: the files and nothing else, and
 # the account; docs/stack/cloudflare.md). Its environment, `cloudflare`,
@@ -59,7 +67,7 @@ jobs:
       # 77,545 files: half an hour each, and, if the CDN counts a one-byte
       # range as the whole file, the bucket's 14 GB of egress a deploy; the
       # month's 28 deploys and its 387 GB of cached egress are that sum.)
-      - if: ${{ vars.ASSET_BASE != '' }}
+      - if: ${{ env.ASSET_BASE != '' }}
         id: last-deploy
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -75,10 +83,9 @@ jobs:
           fi
           echo "since=$since" >> "$GITHUB_OUTPUT"
           echo "assets check since: ${since:-(every file)}"
-      - if: ${{ vars.ASSET_BASE != '' }}
+      - if: ${{ env.ASSET_BASE != '' }}
         run: node scripts/assets-check.mjs ${SINCE:+--since "$SINCE"}
         env:
-          ASSET_BASE: ${{ vars.ASSET_BASE }}
           SINCE: ${{ steps.last-deploy.outputs.since }}
       - run: npm run build
         env:
@@ -87,11 +94,11 @@ jobs:
           # the tables). Unset, the build makes no client and the game plays without it
           VITE_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
-          # the public bucket site-assets (a variable, not a secret): where the
+          # the public bucket (the workflow's ASSET_BASE, above): where the
           # heavy models are asked first, and where the game-derived files
           # live (scripts/assets-upload.mjs, scripts/assets-publish.mjs).
           # Unset, every file comes from the site as before
-          VITE_ASSET_BASE: ${{ vars.ASSET_BASE }}
+          VITE_ASSET_BASE: ${{ env.ASSET_BASE }}
       # every WebAssembly binary the build publishes valid, and every one a
       # chunk asks for there (scripts/wasm-check.mjs; the Worker serves .wasm
       # as application/wasm, docs/stack/webassembly.md)

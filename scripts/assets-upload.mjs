@@ -151,7 +151,7 @@ async function main() {
   const shown = spawnSync('git', ['show', `origin/main:${MANIFEST}`], { cwd: root, encoding: 'utf8' });
   const deployed = shown.status === 0 ? JSON.parse(shown.stdout) : null;
   const code = await run({ root, argv: process.argv.slice(2), bucket: r2Bucket(env.fetch), deployed });
-  console.log(`VITE_ASSET_BASE (the repository variable ASSET_BASE): ${assetBase()}`);
+  console.log(`VITE_ASSET_BASE (deploy.yml's ASSET_BASE): ${assetBase()}`);
   return code;
 }
 
