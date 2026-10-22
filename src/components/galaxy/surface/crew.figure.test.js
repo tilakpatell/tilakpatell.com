@@ -40,10 +40,20 @@ const { METRE } = await import('../../universe/foot');
 
 describe('a crew figure out on a world', () => {
   it("is a copy of its file's one figure, so a battle's troopers share theirs", async () => {
-    await crewFigure('battledroid', 0);
+    // (the Hutts' men: the battle droid this was shown by is the game's B1
+    // now, on its own rig, and goes through the game's loader, below)
+    await crewFigure('mercenary', 0);
     expect(made.at(-1).how).toBe('shared');
     await crewFigure('tusken', 0);
     expect(made.at(-1).how).toBe('shared');
+  });
+
+  it('takes the B1 through the game’s loader, on its own rig, as it does the B2', async () => {
+    made.length = 0;
+    await crewFigure('battledroid', 0);
+    expect(made.at(-1).how).toBe('own');
+    await crewFigure('superdroid', 0);
+    expect(made.at(-1).how).toBe('own');
   });
 
   it('takes a 2017 soldier through the game-skeleton loader, its cuts told, and passes its cutAt on', async () => {

@@ -301,6 +301,12 @@ export const ACHIEVEMENTS = {
   stressrelief: { name: 'Stress relief', desc: 'Got out by the stairwell in Dwight’s fire drill' },
   hoops: { name: 'Office vs. warehouse', desc: 'Sank three free throws out of five in the warehouse' },
   bestboss: { name: 'Best Week in the Office', desc: 'Won a Dundie from Michael, in his office' },
+  // Hogwarts (hogwarts/): the term's (play/school.js) and the Map's
+  'hp-sorted': { name: 'Sorted', desc: 'Was sorted into a house at Hogwarts' },
+  'hp-map': { name: 'Up to no good', desc: 'Opened the Marauder’s Map with the words' },
+  'hp-snitch': { name: 'Seeker', desc: 'Caught the Snitch in a Quidditch match at Hogwarts' },
+  'hp-patronus': { name: 'Expecto Patronum', desc: 'Drove the dementors off the shore of the Black Lake' },
+  'hp-head': { name: 'Head of house', desc: 'Did everything there is to do in a term at Hogwarts, and won your house the Cup' },
 };
 
 const PAGES = ['/', '/experience', '/projects', '/travel', '/contact', '/terminal'];
