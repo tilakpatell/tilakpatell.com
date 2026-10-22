@@ -78603,7 +78603,3 @@ scripts/twin-parity/out/
 # the Rust ports’ build folders (lane X2: scripts/wasm-build.mjs writes the .wasm into src/lib/wasm/<name>/)
 /wasm/*/target
 /tmp
-
-# Hogwarts' cuts over 4 MB go to the bucket, not git (scripts/hogwarts-models.mjs)
-/public/models/hogwarts/**/*.ultra.glb
-/public/models/hogwarts/castle/castle.hq.glb

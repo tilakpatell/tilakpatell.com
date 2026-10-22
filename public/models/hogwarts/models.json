@@ -1,4 +1,29 @@
 {
+  "bench": {
+    "url": "/models/hogwarts/hall/bench.glb",
+    "group": "hall",
+    "what": "a plain oak bench, one along each side of a house table",
+    "size": [
+      3.6,
+      0.94,
+      0.76
+    ],
+    "made": "sketchfab",
+    "by": "MaX3Dd",
+    "license": "CC-BY-4.0",
+    "cuts": {
+      "mid": {
+        "file": "/models/hogwarts/hall/bench.glb",
+        "tris": 2040,
+        "bytes": 120312
+      },
+      "lo": {
+        "file": "/models/hogwarts/hall/bench.lo.glb",
+        "tris": 699,
+        "bytes": 38460
+      }
+    }
+  },
   "boat": {
     "url": "/models/hogwarts/props/boat.glb",
     "group": "props",
@@ -24,40 +49,118 @@
       }
     }
   },
-  "castle": {
-    "url": "/models/hogwarts/castle/castle.glb",
+  "boathouse": {
+    "url": "/models/hogwarts/castle/boathouse.glb",
     "group": "castle",
-    "what": "Hogwarts on its crag, as the films show it from across the lake: the Great Hall’s long roof, the round towers under slate cones, the viaduct, the clock tower and the Astronomy Tower highest",
+    "what": "the boathouse at the cliff’s foot: a gabled stone house over the water, its pointed arch for the boats, the chimney and the lantern by the door",
     "size": [
-      240,
-      180.26,
-      172.34
+      12.12,
+      11.02,
+      18
     ],
     "made": "meshy",
     "by": "made for this site",
     "license": "Meshy paid-plan output, owned by the site owner",
     "cuts": {
+      "hq": {
+        "file": "/models/hogwarts/castle/boathouse.hq.glb",
+        "tris": 54954,
+        "bytes": 2181776
+      },
+      "mid": {
+        "file": "/models/hogwarts/castle/boathouse.glb",
+        "tris": 20488,
+        "bytes": 1475468
+      },
+      "lo": {
+        "file": "/models/hogwarts/castle/boathouse.lo.glb",
+        "tris": 12277,
+        "bytes": 620296
+      }
+    }
+  },
+  "candle": {
+    "url": "/models/hogwarts/hall/candle.glb",
+    "group": "hall",
+    "what": "one of the floating candles, white wax run down its sides",
+    "size": [
+      0.06,
+      0.32,
+      0.05
+    ],
+    "made": "sketchfab",
+    "by": "Batuhan13",
+    "license": "CC-BY-4.0",
+    "cuts": {
+      "mid": {
+        "file": "/models/hogwarts/hall/candle.glb",
+        "tris": 1038,
+        "bytes": 20676
+      },
+      "lo": {
+        "file": "/models/hogwarts/hall/candle.lo.glb",
+        "tris": 200,
+        "bytes": 10232
+      }
+    }
+  },
+  "castle": {
+    "url": "/models/hogwarts/castle/castle.glb",
+    "group": "castle",
+    "what": "Hogwarts on its crag, as the films lay it out: the Great Hall’s long roof along the cliff, the Grand Staircase and the round towers under slate cones, the clock tower’s courtyard, the Astronomy Tower highest, the viaduct, the covered bridge, the boathouse and its stair, the greenhouses and the Owlery",
+    "size": [
+      294.65,
+      150.34,
+      398
+    ],
+    "made": "sketchfab",
+    "by": "Jzax",
+    "license": "CC-BY-4.0",
+    "cuts": {
       "ultra": {
         "file": "/models/hogwarts/castle/castle.ultra.glb",
-        "tris": 304112,
-        "bytes": 7548508,
-        "bucket": true
+        "tris": 302136,
+        "bytes": 1060292
       },
       "hq": {
         "file": "/models/hogwarts/castle/castle.hq.glb",
-        "tris": 124328,
-        "bytes": 4992412,
-        "bucket": true
+        "tris": 159744,
+        "bytes": 618776
       },
       "mid": {
         "file": "/models/hogwarts/castle/castle.glb",
-        "tris": 62131,
-        "bytes": 1955132
+        "tris": 69997,
+        "bytes": 311780
       },
       "lo": {
         "file": "/models/hogwarts/castle/castle.lo.glb",
-        "tris": 20560,
-        "bytes": 688904
+        "tris": 40759,
+        "bytes": 199412
+      }
+    }
+  },
+  "express-coach": {
+    "url": "/models/hogwarts/props/express-coach.glb",
+    "group": "props",
+    "what": "one of the Express’s carriages, a corridor coach of the old Great Western kind with its doors and its windows in a row",
+    "size": [
+      19.25,
+      3.92,
+      2.61
+    ],
+    "made": "sketchfab",
+    "by": "ThomasBeerens",
+    "license": "CC-BY-NC-4.0",
+    "cuts": {
+      "mid": {
+        "file": "/models/hogwarts/props/express-coach.glb",
+        "tris": 24008,
+        "bytes": 568876
+      },
+      "lo": {
+        "file": "/models/hogwarts/props/express-coach.lo.glb",
+        "tris": 10366,
+        "bytes": 371996
       }
     }
   },
@@ -92,7 +195,7 @@
     "what": "a greenhouse, glass over an iron frame under a barrel roof",
     "size": [
       24,
-      15.33,
+      15.39,
       11.85
     ],
     "made": "sketchfab",
@@ -106,33 +209,88 @@
       },
       "lo": {
         "file": "/models/hogwarts/props/greenhouse.lo.glb",
-        "tris": 8818,
-        "bytes": 226988
+        "tris": 12500,
+        "bytes": 257828
       }
     }
   },
   "hagrid-hut": {
     "url": "/models/hogwarts/props/hagrid-hut.glb",
     "group": "props",
-    "what": "Hagrid’s hut: the round stone hut and its annex under conical roofs, the chimney, the pumpkins by the door",
+    "what": "Hagrid’s hut: the round stone hut and its smaller twin under steep slate cones, the plank door, the woodpile and the barrels by the step",
     "size": [
-      9,
-      8.93,
-      7.41
+      12,
+      7.86,
+      14.95
     ],
-    "made": "sketchfab",
-    "by": "TheCurc",
-    "license": "CC-BY-4.0",
+    "made": "meshy",
+    "by": "made for this site",
+    "license": "Meshy paid-plan output, owned by the site owner",
     "cuts": {
+      "hq": {
+        "file": "/models/hogwarts/props/hagrid-hut.hq.glb",
+        "tris": 61306,
+        "bytes": 1798820
+      },
       "mid": {
         "file": "/models/hogwarts/props/hagrid-hut.glb",
-        "tris": 8188,
-        "bytes": 1359704
+        "tris": 20533,
+        "bytes": 1018984
       },
       "lo": {
         "file": "/models/hogwarts/props/hagrid-hut.lo.glb",
-        "tris": 4381,
-        "bytes": 985156
+        "tris": 12505,
+        "bytes": 489580
+      }
+    }
+  },
+  "hourglass": {
+    "url": "/models/hogwarts/hall/hourglass.glb",
+    "group": "hall",
+    "what": "a house-points hourglass, taller than a man, a gilt frame round its glass",
+    "size": [
+      2.27,
+      3.2,
+      2.27
+    ],
+    "made": "sketchfab",
+    "by": "noitamina_",
+    "license": "CC-BY-4.0",
+    "cuts": {
+      "mid": {
+        "file": "/models/hogwarts/hall/hourglass.glb",
+        "tris": 13996,
+        "bytes": 67104
+      },
+      "lo": {
+        "file": "/models/hogwarts/hall/hourglass.lo.glb",
+        "tris": 4166,
+        "bytes": 26552
+      }
+    }
+  },
+  "house-table": {
+    "url": "/models/hogwarts/hall/house-table.glb",
+    "group": "hall",
+    "what": "a length of a house table, dark oak on trestles; four of them end to end make one house’s table",
+    "size": [
+      7.5,
+      1.04,
+      1.37
+    ],
+    "made": "sketchfab",
+    "by": "Kevin.Piemontois",
+    "license": "CC-BY-4.0",
+    "cuts": {
+      "mid": {
+        "file": "/models/hogwarts/hall/house-table.glb",
+        "tris": 3410,
+        "bytes": 252588
+      },
+      "lo": {
+        "file": "/models/hogwarts/hall/house-table.lo.glb",
+        "tris": 1802,
+        "bytes": 94000
       }
     }
   },
@@ -158,6 +316,86 @@
         "file": "/models/hogwarts/hall/sorting-hat.lo.glb",
         "tris": 5999,
         "bytes": 134512
+      }
+    }
+  },
+  "stand": {
+    "url": "/models/hogwarts/props/stand.glb",
+    "group": "props",
+    "what": "a Quidditch stand: a timber tower on braced legs, a viewing box at the top under a steep striped canvas roof, bunting round its rail",
+    "size": [
+      8.35,
+      22,
+      8.19
+    ],
+    "made": "meshy",
+    "by": "made for this site",
+    "license": "Meshy paid-plan output, owned by the site owner",
+    "cuts": {
+      "mid": {
+        "file": "/models/hogwarts/props/stand.glb",
+        "tris": 36840,
+        "bytes": 1241696
+      },
+      "lo": {
+        "file": "/models/hogwarts/props/stand.lo.glb",
+        "tris": 26589,
+        "bytes": 732328
+      }
+    }
+  },
+  "standing-stone": {
+    "url": "/models/hogwarts/props/standing-stone.glb",
+    "group": "props",
+    "what": "a standing stone, scanned from a real one; a ring of them, each turned and sized its own way, is the stone circle at the far end of the covered bridge",
+    "size": [
+      1.88,
+      3.59,
+      1.89
+    ],
+    "made": "sketchfab",
+    "by": "megalitharchive",
+    "license": "CC-BY-4.0",
+    "cuts": {
+      "mid": {
+        "file": "/models/hogwarts/props/standing-stone.glb",
+        "tris": 3979,
+        "bytes": 31896
+      },
+      "lo": {
+        "file": "/models/hogwarts/props/standing-stone.lo.glb",
+        "tris": 1191,
+        "bytes": 18316
+      }
+    }
+  },
+  "station": {
+    "url": "/models/hogwarts/props/station.glb",
+    "group": "props",
+    "what": "Hogsmeade station: the brick booking hall under its slate roof and chimneys, the iron canopy over the platform, the red doors",
+    "size": [
+      30,
+      12.38,
+      12.84
+    ],
+    "made": "meshy",
+    "by": "made for this site",
+    "license": "Meshy paid-plan output, owned by the site owner",
+    "cuts": {
+      "hq": {
+        "file": "/models/hogwarts/props/station.hq.glb",
+        "tris": 54293,
+        "bytes": 2006616
+      },
+      "mid": {
+        "file": "/models/hogwarts/props/station.glb",
+        "tris": 19954,
+        "bytes": 1291592
+      },
+      "lo": {
+        "file": "/models/hogwarts/props/station.lo.glb",
+        "tris": 14346,
+        "bytes": 631364
       }
     }
   },
@@ -189,30 +427,30 @@
   "willow": {
     "url": "/models/hogwarts/props/willow.glb",
     "group": "props",
-    "what": "the Whomping Willow: a squat gnarled trunk twisted on itself, its limbs a crown of long whips",
+    "what": "the Whomping Willow: a squat gnarled trunk twisted on itself, knuckled limbs, its crown a fan of long whips",
     "size": [
-      18.09,
-      15.96,
-      18.43
+      13.24,
+      16.15,
+      14.42
     ],
-    "made": "gen3d",
+    "made": "meshy",
     "by": "made for this site",
-    "license": "Generated for this site; TRELLIS.2 is MIT",
+    "license": "Meshy paid-plan output, owned by the site owner",
     "cuts": {
       "hq": {
         "file": "/models/hogwarts/props/willow.hq.glb",
-        "tris": 83842,
-        "bytes": 383112
+        "tris": 91873,
+        "bytes": 1004856
       },
       "mid": {
         "file": "/models/hogwarts/props/willow.glb",
-        "tris": 41931,
-        "bytes": 196752
+        "tris": 35648,
+        "bytes": 479940
       },
       "lo": {
         "file": "/models/hogwarts/props/willow.lo.glb",
-        "tris": 12539,
-        "bytes": 63004
+        "tris": 10417,
+        "bytes": 168048
       }
     }
   }

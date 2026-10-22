@@ -9,7 +9,7 @@
 //   node --env-file=.env.local scripts/meshy-hogwarts.mjs <step> [name …]
 //
 // Steps: models (30 credits each: image to 3D, or multi-image to 3D from
-// two to four pictures), remesh (each of a model's `cuts`, lighter copies
+// two to four pictures, or text to 3D for a model with a `prompt`), remesh (each of a model's `cuts`, lighter copies
 // made by Meshy from the same task), fetch (free: the raw GLB to
 // scripts/gen3d/cache/meshy/<name>.glb, cut for the site afterwards by
 // scripts/gen3d/web.mjs, as the desktop's models are), balance. Each task's
@@ -40,6 +40,13 @@ export const MODELS = {
   station: { from: ['station.png'], poly: 60000, texture: '2k', cuts: [20000], as: 'Hogsmeade station' },
   'hagrid-hut': { from: ['hagrid-hut.png'], poly: 60000, texture: '2k', cuts: [20000], as: 'Hagrid’s hut' },
   willow: { from: ['willow.png'], poly: 100000, texture: '2k', cuts: [40000, 12000], as: 'the Whomping Willow' },
+  // (from words: nothing to photograph; a preview, then its paint)
+  stand: {
+    prompt: 'a tall medieval wooden spectator tower beside a sports field: a square timber frame on four tall legs braced with crossed beams, wrapped from the ground to the top in long scarlet and gold striped canvas drapes, an open viewing box with a railing at the top under a steep pointed canvas roof with a pennant',
+    poly: 40000,
+    cuts: [12000],
+    as: 'a Quidditch stand',
+  },
 };
 
 const keyOf = (account) => process.env[account];
@@ -75,6 +82,25 @@ async function payer(credits) {
   throw new Error(`no account has ${credits} credits`);
 }
 
+// A model from words (text to 3D): its preview (the shape), then its refine
+// (the paint), each kept in the task list as it is asked, so a run cut off
+// between them picks up at the refine. 30 credits in all.
+async function fromWords(n, m, s) {
+  if (!s[`${n}:preview`]) {
+    const account = await payer(COST);
+    const { result } = await api(account, 'POST', '/v2/text-to-3d', { mode: 'preview', prompt: m.prompt, art_style: 'realistic', ai_model: 'latest', should_remesh: true, topology: 'triangle', target_polycount: m.poly });
+    s[`${n}:preview`] = { task: result, account };
+    await save(s);
+    console.log(`${n}: preview asked (${account})`);
+  }
+  const { task, account } = s[`${n}:preview`];
+  await wait(account, '/v2/text-to-3d', task, `${n} preview`);
+  const { result } = await api(account, 'POST', '/v2/text-to-3d', { mode: 'refine', preview_task_id: task, enable_pbr: true });
+  s[n] = { task: result, account, words: true };
+  await save(s);
+  console.log(`${n}: refine asked`);
+}
+
 const steps = {
   async balance() {
     for (const a of ACCOUNTS) if (keyOf(a)) console.log(`${a}: ${(await api(a, 'GET', '/v1/balance')).balance} credits`);
@@ -83,6 +109,10 @@ const steps = {
     for (const n of names) {
       if (s[n]?.task) continue;
       const m = MODELS[n];
+      if (m.prompt) {
+        await fromWords(n, m, s);
+        continue;
+      }
       const files = m.from.map((f) => join(PREP, f));
       const missing = files.filter((f) => !existsSync(f));
       if (missing.length) {
@@ -145,7 +175,7 @@ const steps = {
       const out = join(RAW, `${n}.glb`);
       if (existsSync(out)) continue;
       try {
-        const t = await wait(s[n].account, s[n].multi ? '/v1/multi-image-to-3d' : '/v1/image-to-3d', s[n].task, n);
+        const t = await wait(s[n].account, s[n].words ? '/v2/text-to-3d' : s[n].multi ? '/v1/multi-image-to-3d' : '/v1/image-to-3d', s[n].task, n);
         await mkdir(RAW, { recursive: true });
         const r = await fetch(t.model_urls.glb);
         if (!r.ok) throw new Error(`download ${r.status}`);

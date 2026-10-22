@@ -36,7 +36,7 @@ describe('the 3D models that are other people’s', () => {
   it('are each in the site, and each used by a page that shows its credit', () => {
     const GAME_FILES = new Set(Object.keys(USED).map((n) => gameUrl(n)));
     const code = sources().join('\n');
-    const shown = { universe: 'components/universe/UniversePanel.jsx', 'middle-earth': 'components/middleearth/MapHub.jsx', invincible: 'pages/Invincible.jsx', avengers: 'pages/Avengers.jsx', earth: 'pages/Earth.jsx', galaxy: 'components/galaxy/GalaxyPanel.jsx', 'galaxy-surface': 'pages/GalaxySurface.jsx', 'c-137': 'components/rickmorty/wardrobe/WardrobeControls.jsx', cybertron: 'pages/Cybertron.jsx', dickansh: 'pages/Dickansh.jsx', mario64: 'pages/Mario64.jsx' };
+    const shown = { universe: 'components/universe/UniversePanel.jsx', 'middle-earth': 'components/middleearth/MapHub.jsx', invincible: 'pages/Invincible.jsx', avengers: 'pages/Avengers.jsx', earth: 'pages/Earth.jsx', galaxy: 'components/galaxy/GalaxyPanel.jsx', 'galaxy-surface': 'pages/GalaxySurface.jsx', 'c-137': 'components/rickmorty/wardrobe/WardrobeControls.jsx', cybertron: 'pages/Cybertron.jsx', dickansh: 'pages/Dickansh.jsx', mario64: 'pages/Mario64.jsx', hogwarts: 'pages/Hogwarts.jsx' };
     for (const [name, m] of Object.entries(CREDITS)) {
       // (a pack credited whole, a level's hundreds of meshes: its folders,
       // each in the site and loaded from by the code)

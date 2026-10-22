@@ -26,5 +26,15 @@
     "account": "MESHY_API_KEY_ACC_3",
     "@40000": "01a1602a-fdd4-7454-a736-5778b1cef5b1",
     "@12000": "01a1602a-ffd1-753a-8532-0b1e78653fd1"
+  },
+  "stand:preview": {
+    "task": "01a16136-1281-768c-85d2-fb4b257037a8",
+    "account": "MESHY_API_KEY_ACC_3"
+  },
+  "stand": {
+    "task": "01a16137-3ba7-712f-9b56-7c9e4d46cd64",
+    "account": "MESHY_API_KEY_ACC_3",
+    "words": true,
+    "@12000": "01a16137-f849-717a-8685-55cda7a0b396"
   }
 }
