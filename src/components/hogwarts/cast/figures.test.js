@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { HEIGHTS, STAND_IN, cutFor, forgetFigures, heightOf, manifest, moveFor } from './figures';
+import { HEIGHTS, STAND_IN, cutFor, cutOf, forgetFigures, heightOf, manifest, moveFor } from './figures';
+import CAST from '../../../../public/models/hogwarts/cast/cast.json';
 import { NAMES } from '../rules/lines';
 
 describe('the cast’s figures', () => {
@@ -42,5 +43,20 @@ describe('the cast’s figures', () => {
     expect(moveFor(1, 1, 3)).toBeGreaterThan(0.3);
     expect(moveFor(1, 1, 3)).toBeLessThan(0.55);
     expect(moveFor(10, 1, 3)).toBe(1);
+  });
+
+  it('takes Lane B’s cut for the tier: hq on high, the plain one on mid, lo on low', () => {
+    const entry = CAST.figures.snape;
+    expect(cutOf(entry, 'high')).toBe('snape.hq.glb');
+    expect(cutOf(entry, 'ultra')).toBe('snape.hq.glb');
+    expect(cutOf(entry, 'mid')).toBe('snape.glb');
+    expect(cutOf(entry, 'low')).toBe('snape.lo.glb');
+    expect(cutOf({ cuts: { mid: 'x.glb' } }, 'high')).toBe('x.glb');
+    expect(cutOf(null, 'high')).toBeNull();
+    // (every figure Lane B lists has its cuts and its own walk)
+    for (const [name, e] of Object.entries(CAST.figures)) {
+      expect(cutOf(e, 'mid'), name).toBeTruthy();
+      expect(e.clips?.walk, name).toBeTruthy();
+    }
   });
 });

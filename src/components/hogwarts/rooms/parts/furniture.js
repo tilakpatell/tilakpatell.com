@@ -14,6 +14,8 @@
 //   doors(kit, { at, ry, w, h, open }) (open: 0…1, the leaves swung in)
 //   bookcase(kit, { at, ry, w, h, shelves }) → [{ at, ry, w }]: the shelves, for the books
 //   bed(kit, { at, ry, hangings })
+//   rod(kit, mat, a, b, r, { seg }) a round bar from one point to another (a chain, a rope, a tripod’s leg)
+//   chain(kit, a, b, { link }) a run of iron links from a to b
 
 import * as THREE from 'three';
 
@@ -189,4 +191,32 @@ export function bed(kit, { at, ry = 0, hangings = '#7a1c22', len = 2.1, w = 1.2 
   const cloth = kit.paint(hangings, { rough: 0.95, side: THREE.DoubleSide });
   for (const x of [-w / 2 + 0.06, w / 2 - 0.06]) for (const z of [-len / 2 + 0.2, len / 2 - 0.2]) f.box(cloth, x, 0.3, z, 0.08, 1.95, 0.4);
   f.box(cloth, 0, 1.9, 0, w + 0.06, 0.35, len + 0.06);
+}
+
+// a round bar from a to b (in the room’s frame), its geometry turned onto the line
+export function rod(kit, mat, a, b, r = 0.02, { seg = 6 } = {}) {
+  const d = new THREE.Vector3(b[0] - a[0], b[1] - a[1], b[2] - a[2]);
+  const len = d.length();
+  if (len < 1e-4) return;
+  const g = new THREE.CylinderGeometry(r, r, len, seg, 1);
+  g.translate(0, len / 2, 0);
+  g.applyQuaternion(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), d.normalize()));
+  g.translate(...a);
+  kit.add(mat, g);
+}
+
+// iron links from a to b, each turned a quarter to the last, as a chain hangs
+export function chain(kit, a, b, { link = 0.07, mat = 'iron' } = {}) {
+  const d = new THREE.Vector3(b[0] - a[0], b[1] - a[1], b[2] - a[2]);
+  const n = Math.max(2, Math.round(d.length() / link));
+  const q = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), d.clone().normalize());
+  for (let i = 0; i < n; i++) {
+    const k = (i + 0.5) / n;
+    const g = new THREE.TorusGeometry(link * 0.42, link * 0.1, 4, 8);
+    g.scale(0.7, 1, 1);
+    g.rotateY(i % 2 ? Math.PI / 2 : 0);
+    g.applyQuaternion(q);
+    g.translate(a[0] + d.x * k, a[1] + d.y * k, a[2] + d.z * k);
+    kit.add(mat, g);
+  }
 }
