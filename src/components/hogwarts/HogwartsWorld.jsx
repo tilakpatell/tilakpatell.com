@@ -7,9 +7,11 @@ import { wayOut } from '../worlds/worlds';
 import hogwartsModule from './module';
 import SortingCard from './hud/SortingCard';
 import WandCard, { Scarf } from './hud/WandCard';
+import WordCard from './hud/WordCard';
 import SpellWheel from './hud/SpellWheel';
 import { houseColours } from './rules/sorting';
 import './hud/match.css';
+import Night from './hud/Night';
 import MaraudersMap from './hud/MaraudersMap';
 import PointsChip from './hud/PointsChip';
 import Feast from './hud/Feast';
@@ -55,6 +57,7 @@ const LESSON_ITEMS = [
   ['buckbeak', 'Buckbeak'],
   ['duel', 'The duelling club'],
   ['boggart', 'The boggart'],
+  ['patronus', 'The Patronus'],
 ];
 // the quests a lesson is, for Things to do’s “Go there” (until the term sends you to their rooms)
 const LESSON_FOR = { flying: 'flying', feather: 'charms', potion: 'potions', mandrakes: 'herbology', buckbeak: 'buckbeak', duel: 'duel', boggart: 'boggart' };
@@ -73,6 +76,7 @@ export default function HogwartsWorld() {
   const [list, setList] = useState(false);
   const [arrival, setArrival] = useState(null);
   const [caption, setCaption] = useState(null);
+  const [word, setWord] = useState(null);
   const [ask, setAsk] = useState(null);
   const [sorted, setSorted] = useState(null);
   const [house, setHouse] = useState(null);
@@ -88,6 +92,11 @@ export default function HogwartsWorld() {
   const [said, setSaid] = useState(null);
   const [next, setNext] = useState(1);
   const [objective, setObjective] = useState(null);
+  // the night’s (Lane F): who half sees you, the cloak, the dementors’ cold, the cut back to bed
+  const [watched, setWatched] = useState(null);
+  const [cloaked, setCloaked] = useState(false);
+  const [cold, setCold] = useState(0);
+  const [cut, setCut] = useState(0);
   // the term's view (play/school.js): the week, the quests, the points; it changes now and then, not every frame
   const [term, setTerm] = useState(null);
   const [cup, setCup] = useState(null);
@@ -131,10 +140,17 @@ export default function HogwartsWorld() {
     } else if (e.type === 'house') {
       setHouse(e.house);
       setWand(e.wand);
-    } else if (e.type === 'room') setRoom(e.id ? e : null);
+    } else if (e.type === 'room') {
+      setRoom(e.id ? e : null);
+      setWord(null);
+    } else if (e.type === 'word') setWord(e.title ? e : null);
     else if (e.type === 'wheel') setWheel(e.open);
     else if (e.type === 'broom') setRiding(e.riding);
     else if (e.type === 'objective') setObjective(e.text);
+    else if (e.type === 'watched') setWatched(e.k > 0 ? e : null);
+    else if (e.type === 'cloak') setCloaked(Boolean(e.on));
+    else if (e.type === 'cold') setCold(e.k);
+    else if (e.type === 'cut') setCut((n) => n + 1);
     else if (e.type === 'school') {
       setTerm(e);
       chip.current?.readout(e);
@@ -219,10 +235,12 @@ export default function HogwartsWorld() {
   const holdFeast = () => {
     Promise.resolve(api()?.feast?.()).then((c) => c && setCup(c));
   };
-  const canGo = (q) => !onRide && !room && q.open && (Boolean(LESSON_FOR[q.id]) || (q.id === 'cup' && term?.leaving));
+  const canGo = (q) => !onRide && !room && q.open && (Boolean(LESSON_FOR[q.id]) || q.id === 'patronus' || (q.id === 'cup' && term?.leaving));
   const goTo = (q) => {
     setList(false);
     if (q.id === 'cup') holdFeast();
+    // (the Patronus: the lesson until it’s learnt, then the shore after dark)
+    else if (q.id === 'patronus') api()?.goTo?.('patronus');
     else api()?.lesson(LESSON_FOR[q.id]);
   };
   const foot = onRide ? (
@@ -268,6 +286,8 @@ export default function HogwartsWorld() {
               {!onRide && <MenuItem onClick={() => api()?.arrive()}>The arrival</MenuItem>}
               {/* (up the road to the village on a Hogsmeade weekend, until the grounds’ road reaches it) */}
               {!onRide && [term?.list?.find((q) => q.id === 'hogsmeade')].some((q) => q?.open || q?.done) && room?.id !== 'hogsmeade' && <MenuItem onClick={() => api()?.enter('hogsmeade')}>Hogsmeade</MenuItem>}
+              {!onRide && <MenuItem onClick={() => api()?.wait?.(21.5)}>Wait for nightfall</MenuItem>}
+              {!onRide && term?.cloak && <MenuItem onClick={() => api()?.cloak?.()} aria-keyshortcuts="I">{cloaked ? 'Take the cloak off' : 'Put the cloak on'}</MenuItem>}
               {/* (the broom and the classes are the shore's, until the term's lane sends you to them in their rooms) */}
               {!onRide && !room && !riding && <MenuItem onClick={() => api()?.fly()}>Fly</MenuItem>}
               {!onRide && !room && <MenuItem onClick={() => api()?.lesson('flying')}>The flying lesson</MenuItem>}
@@ -328,11 +348,13 @@ export default function HogwartsWorld() {
       >
         <Scarf house={house} />
         <Toast toast={toast} className="hogwarts-toast" />
+        {!onRide && <Night watched={watched} cloaked={cloaked} cold={cold} cut={cut} reduced={reduced} />}
         {!onRide && <MaraudersMap ref={map} source={night} touch={touch} narrow={narrow} reduced={reduced} onOpen={() => unlock('hp-map')} />}
         {caption && <Bubble key={caption.key} name={caption.name} line={caption.text} className="hp-said" />}
         {ask != null && <SortingCard q={ask} tall={portrait} onAnswer={(i) => api()?.answer(i)} />}
         {sorted && ask == null && <SortingCard result={sorted} />}
         {wandFull && wand && <WandCard wand={wand} size="full" />}
+        {word && <WordCard ask={word} onSay={(text) => api()?.word(text)} onClose={() => setWord(null)} />}
         {said && <Bubble key={said.key} ref={onBubble} className="hogwarts-bubble" name={said.name} line={said.line} />}
         {choices && (
           <div className="hogwarts-choices" role="group" aria-label={choices.title}>

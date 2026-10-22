@@ -66,12 +66,16 @@ describe('the soldier brain', () => {
     expect(i.fire).toBe(false);
   });
 
-  it('flees when its squad breaks', () => {
+  it('flees an enemy grenade come down beside it, away from the grenade', () => {
+    // (what sends it to flee is the source’s, a panic, and the multiplayer rows panic at grenades alone:
+    // panic.js; its squad’s posture turned to retreat did, by hand, until the source was read)
     const b = bot([0, 0, -50]);
     see(b, 'them', [0, 1.2, -20]);
-    const i = think(b, world(open, { squad: { centre: [0, -50], posture: 'retreat' } }), 1);
+    const w = world(open, { grenades: [{ at: [2, 0, -50], team: 2, collided: true, dead: false, row: { radius: 6 } }] });
+    think(b, w, 1);
+    const i = think(b, w, 1.3);
     expect(i.mode).toBe('flee');
-    expect(i.goal[1]).toBeLessThan(-50);
+    expect(i.goal[0]).toBeLessThan(0);
   });
 
   it('follows its leader with no enemy in mind', () => {

@@ -33,6 +33,8 @@ export const LESSONS = {
   buckbeak: { name: 'Buckbeak', quest: 6, where: 'paddock', load: () => import('./lessons/buckbeak.js') },
   duel: { name: 'The duelling club', quest: 8, where: 'defence', load: () => import('./lessons/duel.js') },
   boggart: { name: 'The boggart', quest: 9, where: 'defence', load: () => import('./lessons/boggart.js') },
+  // (Lane F’s: the boggart again, as a dementor, to learn Expecto Patronum on before the shore)
+  patronus: { name: 'The Patronus', quest: 11, where: 'defence', load: () => import('./lessons/patronus.js') },
 };
 
 export function createLessons(ctx) {

@@ -1,10 +1,12 @@
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { onSite } from '../../../../scripts/lib/asset-manifest.mjs';
 import PUBLISHED from '../../../data/galaxyAssets.json';
 import { describe, expect, it } from 'vitest';
 import { CREW, fileOf } from './crew';
 import { faceOf, filesOf } from './crewList';
 import { SURFACE_MODELS } from './catalog';
+import BONE_SETS from '../../../data/bf2017/physics/bones.json';
+import { OWN_RIGS } from '../../../lib/three/walrusClips';
 
 const at = (path) => new URL(`../../../../public${path}`, import.meta.url);
 // (in public/, or published to the bucket: a checkout without its files, as CI's, takes the manifest's word)
@@ -53,7 +55,27 @@ describe('the surfaces’ crew', () => {
     }
     expect(CREW.iden).toMatchObject({ rig: 'walrus', lod: true, far: true });
     for (const kind of ['yoda', 'grievous', 'iden']) for (const cut of ['', '.lod1', '.far']) expect(existsSync(at(`/models/galaxy/bf2017/crew/${kind}${cut}.glb`)), `${kind}${cut}`).toBe(true);
-    // (the B1 waits for its markings map: the remaster's, rigged with Meshy)
-    expect(CREW.battledroid).toEqual({ url: '/models/galaxy/troops/battledroid.glb', tall: 1.91 });
+    // (the B1 is the game's on its own rig, its skin's tan on its grey map,
+    // over the remaster's rigged with Meshy: its light and far cuts and its
+    // pack committed, its full cut waiting on the bucket)
+    expect(CREW.battledroid).toMatchObject({ url: '/models/galaxy/bf2017/crew/battledroid.glb', rig: 'own', ownRig: 'b1', lod: true, far: true });
+    for (const file of ['crew/battledroid.glb', 'crew/battledroid.lod1.glb', 'crew/battledroid.far.glb', 'clips-b1.glb']) expect(existsSync(at(`/models/galaxy/bf2017/${file}`)), file).toBe(true);
+  });
+
+  it('hits the B1 where the game does: its rig names the skeleton the game’s B1 capsules are fitted to, and each of its cuts has every bone they ride on', () => {
+    // (a bolt finds an own-rig figure’s capsules by its skeleton’s name,
+    // boltPlay.js’s gameBodies, and puts each on the bone it names: a bone
+    // the swapped body lacked would drop that capsule, and the droid would
+    // be shot through there)
+    const set = BONE_SETS.sets.find((x) => x.skeleton?.endsWith(`/${OWN_RIGS.b1.skeleton}`));
+    expect(set?.id).toBe('defaultsoldierbonecollision_b1');
+    const nodes = (file) => {
+      const glb = readFileSync(at(file));
+      return new Set(JSON.parse(glb.subarray(20, 20 + glb.readUInt32LE(12)).toString()).nodes.map((n) => n.name));
+    };
+    for (const cut of ['', '.lod1', '.far']) {
+      const has = nodes(`/models/galaxy/bf2017/crew/battledroid${cut}.glb`);
+      for (const c of set.bones.filter((b) => b.hiLod)) expect(has.has(c.bone), `battledroid${cut}: ${c.bone}`).toBe(true);
+    }
   });
 });

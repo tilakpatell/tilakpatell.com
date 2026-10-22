@@ -103,6 +103,33 @@ describe('the term in the world', () => {
     expect(late.view().year).toBe(2);
   });
 
+  it('sends the cloak at Christmas if it hasn’t been found, once', () => {
+    const { s, of } = school({ week: 6 });
+    s.hear('sorted', { house: 'ravenclaw' });
+    s.step(1 / 60, 0);
+    s.step(1 / 60, 0.1);
+    expect(s.cloak).toBe(true);
+    expect(of('toast').filter((e) => /parcel/.test(e.text))).toHaveLength(1);
+    expect(s.view().list.find((q) => q.id === 'night').done).toBe(false);
+    expect(school({ week: 5 }).s.cloak).toBe(false);
+  });
+
+  it('moves the week on for a night in your four-poster', () => {
+    const { s } = school();
+    s.hear('sleep', { house: 'ravenclaw' });
+    expect(s.week).toBe(2);
+  });
+
+  it('doesn’t count a common room you were marched to as found', () => {
+    const { s } = school();
+    s.hear('sorted', { house: 'ravenclaw' });
+    s.hear('led', {});
+    s.hear('room', { id: 'ravenclaw', name: 'The Ravenclaw common room' });
+    expect(s.view().list[0].done).toBe(false);
+    s.hear('room', { id: 'ravenclaw', name: 'The Ravenclaw common room' });
+    expect(s.view().list[0].done).toBe(true);
+  });
+
   it('keeps the cards found, each once', () => {
     const { s, of } = school();
     s.hear('pickup', { id: 'card', card: 'merlin' });
