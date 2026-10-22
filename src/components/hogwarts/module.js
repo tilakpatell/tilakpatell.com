@@ -82,11 +82,13 @@ import { createSchool } from './play/school';
 import { createNoticeBoard, noticesFor } from './world/noticeBoard';
 import { createCurfew } from './play/curfew';
 import { createPresence } from './play/presence';
+import { createCardSpots } from './play/cards';
 import { createDementors, playNotes } from './world/grounds/dementors';
 import { drain, pull } from './rules/dementors';
 import { afterHours } from './rules/curfew';
 import { inland } from './rules/shore';
 import { LOCAL as ROOMS_BUILT } from './rooms/host';
+import { snowAt } from './rules/hogsmeade';
 import { frameYaw, fromRoom } from './rules/paths';
 
 export { KEYS };
@@ -242,8 +244,9 @@ export default {
 
     // the rooms behind the doors (Lane D, rooms/host.js): built far below as
     // you go in, the shore hidden and its lights down while you're inside
-    // (every room is told the house and the Sorting's password: the common rooms' doors ask for it)
-    const rooms = createRoomHost({ rt, scene, camera, house, tier, reduced, outside: [sky.mesh, shore.group, lake.mesh, castle.group, boats.group, board.group], lights: [key, hemi], tell, context: () => ({ house: arrival.save.house, password: arrival.save.password, hour: 21 }), out: () => world.out() });
+    // (every room is told the house and the Sorting’s password, the common rooms’ doors ask for it; and
+    // the hour, the week, the snow and what you’ve found, Hogsmeade’s rooms read them)
+    const rooms = createRoomHost({ rt, scene, camera, house, tier, reduced, outside: [sky.mesh, shore.group, lake.mesh, castle.group, boats.group, board.group], lights: [key, hemi], tell, context: () => ({ house: arrival.save.house, password: arrival.save.password, hour: hours() % 24, week: school.week, snow: snowAt(school.week), houseName: school.house, found: school.found() }), out: () => world.out() });
     // the Great Hall as the term has it: the hourglasses at every house’s
     // points, the twelve trees at Christmas, and at the leaving feast the
     // tables laid and the banners in the colours of the house that won
@@ -268,6 +271,8 @@ export default {
     // Snape walking their rounds where you can see them, and the cloak
     const dementors = createDementors({ rt, scene, house, floorAt, shoreAt: inland, reduced });
     const presence = createPresence({ rt, scene, house });
+    // the Chocolate Frog cards hidden in the room you go into (play/cards.js)
+    const cardSpots = createCardSpots({ tell });
     let cloaked = false;
     const wear = (on) => {
       if ((on && !school.cloak) || on === cloaked) return;
@@ -351,6 +356,7 @@ export default {
       school.hear(type, data);
       if (type === 'school') board.set(data);
       if (type === 'school' || type === 'room') dress(type === 'room');
+      if (type === 'room') cardSpots.dress(rooms.room, data?.id ?? null, { house: school.house, found: school.cards });
       if (type === 'patronus') dementors.patronus();
     };
 
@@ -427,6 +433,7 @@ export default {
       return nearDoor(walker.state.x, walker.state.z) ? 'door' : null;
     };
     const go = () => {
+      if (rooms.room) return rooms.act();
       const what = promptNow();
       if (what === 'broom') fly();
       else if (what === 'board') tell('board', {});
@@ -490,6 +497,7 @@ export default {
           school.step(dt, hours());
           nightWatch(dt);
           dementorsStep(dt);
+          cardSpots.step(dt);
           // (a room standing in the world, the Astronomy Tower’s top: the lake and the light go on round it)
           if (Array.isArray(rooms.room?.origin)) {
             windTime.value += dt;
@@ -630,6 +638,7 @@ export default {
         board.dispose();
         dementors.dispose();
         presence.dispose();
+        cardSpots.dispose();
         wand.dispose();
         quidditch.dispose();
         lessons.dispose();

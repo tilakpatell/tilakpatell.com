@@ -87,6 +87,8 @@ export function manifest(rt) {
 }
 
 const templates = new Map();
+// (Lane B’s three cuts: the high one for high and ultra, the low one for low)
+export const cutFor = (rt) => ({ ultra: 'hq', high: 'hq', mid: 'mid', low: 'lo' })[rt?.quality?.tier ?? 'high'] ?? 'mid';
 
 export function loadFigure(name, rt) {
   if (templates.has(name)) return templates.get(name);
@@ -106,7 +108,7 @@ export function loadFigure(name, rt) {
 }
 
 // Lane B’s cut for the device’s detail: hq on high and up, the plain one on mid, lo on low
-export const cutOf = (entry, tier = 'high') => (entry?.cuts ? (tier === 'low' ? entry.cuts.lo : tier === 'mid' ? entry.cuts.mid : (entry.cuts.hq ?? entry.cuts.mid)) ?? entry.cuts.mid ?? null : null);
+export const cutOf = (entry, tier = 'high') => (entry?.cuts ? (entry.cuts[cutFor({ quality: { tier } })] ?? entry.cuts.mid ?? null) : null);
 
 async function made(name, g, files, entry = null) {
   const scene = g?.scene;

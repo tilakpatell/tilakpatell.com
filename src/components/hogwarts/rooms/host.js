@@ -37,6 +37,12 @@
 // at the origin). A door with `act` does what it says (a stair climbed, a
 // password asked) rather than lead anywhere; `level` is the floor the walk
 // may not step down from (a landing’s edge), read every step.
+// Lane F’s, for Hogsmeade: a room may list `spots` ([{ id, at, r, verb, label }],
+// things to use: E by one calls the room’s use(id)), a door may say where in
+// the next room it comes out (`toAt`, `toYaw`), a door `to: 'out'` with a verb
+// is a way out to the grounds (the road home, the Willow’s roots), a room may
+// bring its own `fog` (an outdoor set’s), and a room marked `hub` in LOCAL (the
+// village’s street) is a fresh start: Esc from it goes out, not back.
 
 import { Color } from 'three';
 import { createWalker } from '../play/walk';
@@ -59,7 +65,19 @@ export const LOCAL = {
   requirement: { name: 'The Room of Requirement', load: () => import('./requirement.js') },
   owlery: { name: 'The Owlery', load: () => import('./owlery.js') },
   astronomy: { name: 'The top of the Astronomy Tower', load: () => import('./astronomy.js') },
+  // Hogsmeade (Lane F): the village as an outdoor set, three insides, the Shack and the passage to it
+  hogsmeade: { name: 'Hogsmeade', hub: true, load: () => import('./hogsmeade.js') },
+  honeydukes: { name: 'Honeydukes', load: () => import('./honeydukes.js') },
+  broomsticks: { name: 'The Three Broomsticks', load: () => import('./broomsticks.js') },
+  hogshead: { name: 'The Hog’s Head', load: () => import('./hogshead.js') },
+  shack: { name: 'The Shrieking Shack', load: () => import('./shack.js') },
+  tunnel: { name: 'The passage under the Willow', load: () => import('./tunnel.js') },
 };
+
+// a room’s things to use as doors that act, read each step (a sweet taken is gone
+// from the room’s list): their reach a little shorter than a door’s, and a door
+// in reach wins over them, being later in the list
+const doorsOf = (r) => [...(r.spots ?? []).map((p) => ({ id: `spot:${p.id}`, at: p.at, r: (p.r ?? 1) - NEAR * 0.5, name: p.label, verb: p.verb ?? 'Use', act: () => r.use?.(p.id) })), ...(r.doors ?? [])];
 
 export function solidsOf(colliders = []) {
   const out = [];
@@ -110,7 +128,7 @@ export function createRoomHost({ rt, scene, camera, house, tier = 'high', reduce
     }
     if (hide) {
       wasFog = scene.fog;
-      scene.fog = null;
+      scene.fog = room?.fog ?? null;
     } else if (wasFog) scene.fog = wasFog;
   };
 
@@ -184,8 +202,9 @@ export function createRoomHost({ rt, scene, camera, house, tier = 'high', reduce
         built?.dispose?.();
         return null;
       }
-      // (gone in from another room: remember where, so Esc goes back to it)
-      if (room && from) behind.push({ id, at: walker ? [walker.state.x, walker.state.z] : null, yaw: walker?.state.yaw ?? 0 });
+      // (gone in from another room: remember where, so Esc goes back to it; a hub starts afresh)
+      if (LOCAL[roomId]?.hub) behind.length = 0;
+      else if (room && from) behind.push({ id, at: walker ? [walker.state.x, walker.state.z] : null, yaw: walker?.state.yaw ?? 0 });
       if (room) host.leave({ quiet: true, keep: true });
       room = built;
       id = roomId;
@@ -241,7 +260,10 @@ export function createRoomHost({ rt, scene, camera, house, tier = 'high', reduce
     act() {
       if (!near || !room) return false;
       if (near.act) near.act();
-      else if (near.to !== 'out') host.enter(near.to, { from: id }).catch(() => tell('toast', { text: near.locked ?? 'Locked. Not today.' }));
+      else if (near.to === 'out') {
+        if (near.verb) out();
+      } else if (behind.length && behind[behind.length - 1].id === near.to) host.back();
+      else host.enter(near.to, { from: id, at: near.toAt ?? null, yaw: near.toYaw ?? null }).catch(() => tell('toast', { text: near.locked ?? 'Locked. Not today.' }));
       return true;
     },
     // a word typed into the HUD’s card (a password, a riddle’s answer), for the room that asked
@@ -267,17 +289,23 @@ export function createRoomHost({ rt, scene, camera, house, tier = 'high', reduce
         const [x, z] = host.frame([walker.state.x, walker.state.z]);
         // (the nearest door in reach: on a landing a room’s door and the stairs’ feet stand close together)
         let door = null;
-        let best = Infinity;
-        for (const d of room.doors ?? []) {
-          const dist = Math.hypot(x - d.at[0], z - d.at[1]);
-          if (dist < (d.r ?? 1.5) + NEAR && dist - (d.r ?? 1.5) < best) {
-            best = dist - (d.r ?? 1.5);
-            door = d;
+        // (a door in reach wins over a room’s things to use, as the list had it; among either, the nearest)
+        const inReach = (list) => {
+          let best = Infinity;
+          let found = null;
+          for (const d of list) {
+            const dist = Math.hypot(x - d.at[0], z - d.at[1]);
+            if (dist < (d.r ?? 1.5) + NEAR && dist - (d.r ?? 1.5) < best) {
+              best = dist - (d.r ?? 1.5);
+              found = d;
+            }
           }
-        }
+          return found;
+        };
+        door = inReach(room.doors ?? []) ?? inReach(doorsOf(room).filter((d) => String(d.id).startsWith('spot:')));
         if ((door?.id ?? null) !== (near?.id ?? null) || (door && door.name !== near?.name)) {
           near = door;
-          tell('near', { door: door && (door.act || door.to !== 'out') ? { label: door.name, verb: door.verb ?? null, room: door.to ?? null } : null });
+          tell('near', { door: door && (door.act || door.to !== 'out' || door.verb) ? { label: door.name, verb: door.verb ?? null, room: door.to ?? null } : null });
         }
         if (pressed('act')) host.act();
       }

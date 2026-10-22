@@ -12,7 +12,8 @@
 //   readSave(saves) → the save’s object (never null); writeSave(saves, patch) → merged in, nothing else touched
 //   createSchool({ saves, tell, house, week, day }) → {
 //     hear(type, data) → the world’s events, step(dt, t) (t: world hours), view() → the HUD’s view,
-//     house, week, learnt, knows(spell), feast() → the Cup (the leaving feast held), sleep(day), setWeek(w), nextYear(day) }
+//     house, week, learnt, knows(spell), feast() → the Cup (the leaving feast held), sleep(day), setWeek(w), nextYear(day),
+//     found() → { sweets, butterbeer, shack, cards, cloak } (what the rooms need to know you have) }
 //   hears: 'points' (always your house’s, unless marked rival), 'lesson', 'result', 'house', 'sorted', 'room' and
 //     'enter' (a room gone into), 'learnt', 'driven', 'pickup', 'caught', 'restricted', 'book', 'willow',
 //     'frozen', 'butterbeer', 'sweet', 'led' (the next room is one you were marched to)
@@ -22,7 +23,7 @@
 import { TERM, advance as termOn, isChristmas, isLeaving, newTerm, seasonOf, weekLabel } from '../rules/term';
 import { apply, newPoints, standings, totals, winner, words } from '../rules/points';
 import { QUESTS, advance as questOn, doneCount, listFor, newQuests, objectiveOf } from '../rules/quests';
-import { find } from '../rules/cards';
+import { CARDS, find } from '../rules/cards';
 
 export const SAVE_KEY = 'tp-hogwarts';
 export const KEYS = ['term', 'points', 'quests', 'cards', 'learnt', 'cloak'];
@@ -91,6 +92,7 @@ export function createSchool({ saves = null, tell = () => {}, house: given = nul
       feasted,
       year: term.year,
       cloak,
+      cards: [...cards],
     };
     tell('school', view);
   };
@@ -193,6 +195,7 @@ export function createSchool({ saves = null, tell = () => {}, house: given = nul
           const r = find(cards, e.card);
           cards = r.found;
           if (r.fresh) tell('card', { id: e.card });
+          if (r.fresh && cards.length === CARDS.length) tell('achievement', { id: 'hp-cards' });
         }
         quest({ type: 'pickup', id: e.id });
         break;
@@ -281,6 +284,11 @@ export function createSchool({ saves = null, tell = () => {}, house: given = nul
     },
     get cloak() {
       return cloak;
+    },
+    // what the rooms need to know you’ve found: Hogsmeade’s sweets and butterbeer, the cards, the cloak
+    found() {
+      const got = quests.hogsmeade?.got ?? [];
+      return { sweets: got.filter((k) => k.startsWith('sweets:')).map((k) => k.slice(7)), butterbeer: got.includes('butterbeer'), shack: got.includes('shack'), cards: [...cards], cloak };
     },
     get cards() {
       return cards;
