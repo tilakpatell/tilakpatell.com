@@ -56,6 +56,8 @@ const LESSON_ITEMS = [
   ['duel', 'The duelling club'],
   ['boggart', 'The boggart'],
 ];
+// the quests a lesson is, for Things to do’s “Go there” (until the term sends you to their rooms)
+const LESSON_FOR = { flying: 'flying', feather: 'charms', potion: 'potions', mandrakes: 'herbology', buckbeak: 'buckbeak', duel: 'duel', boggart: 'boggart' };
 export default function HogwartsWorld() {
   const { pathname } = useLocation();
   const [params] = useSearchParams();
@@ -64,7 +66,8 @@ export default function HogwartsWorld() {
   const portrait = useMediaQuery('(orientation: portrait)');
   // (the address is read once: ?at=hall opens the arrival in the Great Hall)
   const narrow = useMediaQuery('(max-width: 639px)');
-  const [props] = useState(() => ({ reduced, at: params.get('at'), week: parseWeek(params) ?? 1 }));
+  // (?week= sets the term’s week for the visit; without it, the week the save has)
+  const [props] = useState(() => ({ reduced, at: params.get('at'), week: parseWeek(params) }));
   const [door, setDoor] = useState(null);
   const [toast, setToast] = useState(null);
   const [list, setList] = useState(false);
@@ -103,6 +106,7 @@ export default function HogwartsWorld() {
 
   const onEvent = useCallback((e) => {
     if (e.type === 'near') setDoor(e.door);
+    else if (e.type === 'board') setList(true);
     else if (e.type === 'menu') menu.current?.querySelector('.hud-btn')?.click();
     else if (e.type === 'toast') setToast({ key: Date.now(), text: e.text });
     else if (e.type === 'arrival') {
@@ -211,6 +215,16 @@ export default function HogwartsWorld() {
   }, [wandFull]);
 
   const onRide = Boolean(arrival);
+  // the leaving feast: the world takes you into the Great Hall for it, then the Cup’s card
+  const holdFeast = () => {
+    Promise.resolve(api()?.feast?.()).then((c) => c && setCup(c));
+  };
+  const canGo = (q) => !onRide && !room && q.open && (Boolean(LESSON_FOR[q.id]) || (q.id === 'cup' && term?.leaving));
+  const goTo = (q) => {
+    setList(false);
+    if (q.id === 'cup') holdFeast();
+    else api()?.lesson(LESSON_FOR[q.id]);
+  };
   const foot = onRide ? (
     arrival.skippable ? <Prompt k="Enter" verb="Straight to the castle" touch={touch} onClick={() => api()?.skip()} /> : null
   ) : room ? (
@@ -245,7 +259,7 @@ export default function HogwartsWorld() {
             <div className="hogwarts-tools">
             {!onRide && <PointsChip ref={chip} house={term?.house ?? 'gryffindor'} />}
             <Menu className="hogwarts-menu" way={wayOut(pathname)} todo={{ onOpen: () => setList(true), done: term?.done ?? 0, total: term?.total ?? 0 }}>
-              {!onRide && term?.leaving && <MenuItem onClick={() => setCup(api()?.feast() ?? null)}>The leaving feast</MenuItem>}
+              {!onRide && term?.leaving && <MenuItem onClick={holdFeast}>The leaving feast</MenuItem>}
               {!onRide && (
                 <MenuItem onClick={() => map.current?.open()} aria-keyshortcuts="M">
                   The Marauder’s Map
@@ -330,7 +344,7 @@ export default function HogwartsWorld() {
         )}
         <Letterbox on={ride} />
         {!onRide && !room && <SpellWheel part="wheel" ref={ring} open={wheel} active={spell} onChoose={choose} touch={touch} />}
-        {list && <QuestList className="hogwarts-list" title="Things to do" sub={term ? `${term.label}: ${term.done} of ${term.total} done.` : 'The term begins once you’re across the lake.'} quests={term?.list ?? []} next={term?.objective?.id ?? null} onClose={() => setList(false)} onGo={() => {}} />}
+        {list && <QuestList className="hogwarts-list" title="Things to do" sub={term ? `${term.label}: ${term.done} of ${term.total} done.` : 'The term begins once you’re across the lake.'} quests={term?.list ?? []} next={term?.objective?.id ?? null} onClose={() => setList(false)} canGo={canGo} onGo={goTo} />}
         {cup && (
           <Feast
             cup={cup}

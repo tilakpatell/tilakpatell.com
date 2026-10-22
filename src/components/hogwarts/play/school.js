@@ -13,6 +13,9 @@
 //   createSchool({ saves, tell, house, week, day }) → {
 //     hear(type, data) → the world’s events, step(dt, t) (t: world hours), view() → the HUD’s view,
 //     house, week, learnt, knows(spell), feast() → the Cup (the leaving feast held), sleep(day), setWeek(w), nextYear(day) }
+//   hears: 'points' (always your house’s, unless marked rival), 'lesson', 'result', 'house', 'sorted', 'room' and
+//     'enter' (a room gone into), 'learnt', 'driven', 'pickup', 'caught', 'restricted', 'book', 'willow',
+//     'frozen', 'butterbeer', 'sweet'
 //   tells: 'toast', 'school' (the view), 'cup' (a point won or lost, with the totals), 'week', 'quest', 'card', 'achievement'
 //   view(): { house, week, label, season, totals, standings, list, objective, done, total, christmas, leaving, feasted }
 
@@ -44,7 +47,8 @@ const WEEK_LINE = (w) => (w === TERM.christmas ? `${weekLabel(w)}, with snow on 
 export function createSchool({ saves = null, tell = () => {}, house: given = null, week = null, day = 0 } = {}) {
   let forced = week;
   const save = readSave(saves);
-  const house = given ?? (typeof save.house === 'string' ? save.house : 'gryffindor');
+  // (the house the Sorting gave, from the save; a Sorting in this visit sets it again)
+  let house = given ?? (typeof save.house === 'string' ? save.house : 'gryffindor');
   let term = isObject(save.term) ? { ...newTerm({ day }), ...save.term } : newTerm({ day });
   // (?week= sets the week for the visit without writing it)
   if (forced) term = { ...term, week: forced, began: day };
@@ -131,7 +135,14 @@ export function createSchool({ saves = null, tell = () => {}, house: given = nul
     const e = data && typeof data === 'object' ? data : {};
     switch (type) {
       case 'points':
-        score({ type: 'points', ...e });
+        // (whatever house the teller had in mind when it was made: every point the
+        // world gives or takes is for something you did, so it’s your house’s,
+        // and a lesson begun before the Sorting pays the house the Hat chose)
+        score({ type: 'points', ...e, house: e.rival && HOUSES[e.house] ? e.house : house });
+        break;
+      case 'room':
+        // (the rooms’ host says which room you’re in; the quests read it as a room gone into)
+        if (e.id) quest({ type: 'enter', room: e.id });
         break;
       case 'lesson':
         if (e.done === false) break;
@@ -141,8 +152,19 @@ export function createSchool({ saves = null, tell = () => {}, house: given = nul
       case 'result':
         if (e.caught === 'you' || e.caught === 'us') tell('achievement', { id: 'hp-snitch' });
         break;
+      case 'house':
+        if (HOUSES[e.house] && e.house !== house) {
+          house = e.house;
+          points = { ...points, house };
+          dirty = true;
+        }
+        break;
       case 'sorted':
-        quest({ type: 'sorted', house: e.house ?? house });
+        if (HOUSES[e.house]) {
+          house = e.house;
+          points = { ...points, house };
+        }
+        quest({ type: 'sorted', house });
         tell('achievement', { id: 'hp-sorted' });
         break;
       case 'learnt':
