@@ -203,11 +203,15 @@ jobs:
         run: |
           # (where a Supabase bucket lands on R2)
           to() { case "$1" in site-assets) echo tilak-assets ;; *) echo "$1" ;; esac; }
+          # (Supabase's S3 address held to ten requests a second here too: the
+          # first emptying, at thirty-two at once with no limit, took an hour
+          # over 967 files)
+          opts=(--fast-list --checkers 16 --tpslimit 10 --tpslimit-burst 10 --retries 5 --low-level-retries 20 --stats 60s --stats-one-line --stats-log-level NOTICE)
           for b in $BUCKETS; do
             echo "::group::$b"
-            rclone check "supabase:$b" "r2:$(to "$b")" --one-way --size-only --fast-list --checkers 32 || { echo "::error::$b: not every file is on R2 at its size; nothing deleted from it"; exit 1; }
-            rclone delete "supabase:$b" --fast-list --checkers 32 --retries 5 --stats 60s --stats-one-line
-            echo "$b on Supabase now: $(rclone size "supabase:$b" --fast-list --json)"
+            rclone check "supabase:$b" "r2:$(to "$b")" --one-way --size-only "${opts[@]}" || { echo "::error::$b: not every file is on R2 at its size; nothing deleted from it"; exit 1; }
+            rclone delete "supabase:$b" "${opts[@]}"
+            echo "$b on Supabase now: $(rclone size "supabase:$b" --fast-list --tpslimit 10 --json)"
             echo "::endgroup::"
           done
 
