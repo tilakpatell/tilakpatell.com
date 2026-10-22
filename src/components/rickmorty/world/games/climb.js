@@ -41,9 +41,9 @@ export const TUNING = Object.freeze({
 
 // what the HUD's line says: the mood of the stair under him or next up; past them, how high
 export const WORDS = Object.freeze({
-  still: "The stair’s keeping still: up you go",
-  shiver: "It’s shivering: it’s about to bite",
-  bite: "It’s biting: wait till it keeps still",
+  still: 'The stair’s keeping still: up you go',
+  shiver: 'It’s shivering: it’s about to bite',
+  bite: 'It’s biting: wait till it keeps still',
   up: (m, top) => `${m} m up the beanstalk: the giants are at ${top} m`,
 });
 
@@ -53,66 +53,36 @@ const BEAT = TUNING.still + TUNING.shiver + TUNING.bite;
 function over(l, x, z) {
   const dx = x - l.x;
   const dz = z - l.z;
-  if (l.kind === "circle" || l.r != null)
-    return Math.hypot(dx, dz) < l.r + TUNING.edge;
+  if (l.kind === 'circle' || l.r != null) return Math.hypot(dx, dz) < l.r + TUNING.edge;
   const t = l.turn || 0;
   const lx = dx * Math.cos(t) - dz * Math.sin(t);
   const lz = dx * Math.sin(t) + dz * Math.cos(t);
-  return (
-    Math.abs(lx) < l.w / 2 + TUNING.edge && Math.abs(lz) < l.d / 2 + TUNING.edge
-  );
+  return Math.abs(lx) < l.w / 2 + TUNING.edge && Math.abs(lz) < l.d / 2 + TUNING.edge;
 }
 
 export function standingOn(ledges, m) {
   if (!m || m.air) return null;
   let on = null;
-  for (const l of ledges)
-    if (
-      Math.abs(m.y - l.top) <= TUNING.level &&
-      over(l, m.x, m.z) &&
-      (!on || l.top > on.top)
-    )
-      on = l;
+  for (const l of ledges) if (Math.abs(m.y - l.top) <= TUNING.level && over(l, m.x, m.z) && (!on || l.top > on.top)) on = l;
   return on?.id ?? null;
 }
 
 // (the options may carry `perks`; none is read yet)
-export function newClimb({
-  ledges = [],
-  stairs = [],
-  top = null,
-  foot = null,
-} = {}) {
+export function newClimb({ ledges = [], stairs = [], top = null, foot = null } = {}) {
   const peak = ledges.find((l) => l.id === top)?.top ?? 0;
-  return {
-    phase: "idle",
-    t: 0,
-    on: null,
-    stand: 0,
-    high: 0,
-    near: false,
-    ledges,
-    stairs,
-    top,
-    foot,
-    peak,
-    told: false,
-    events: [],
-  };
+  return { phase: 'idle', t: 0, on: null, stand: 0, high: 0, near: false, ledges, stairs, top, foot, peak, told: false, events: [] };
 }
 
 export function stairPose(g, i) {
   const tau = g.t - i * TUNING.lag;
-  if (tau < 0) return { mood: "still", k: 0 };
+  if (tau < 0) return { mood: 'still', k: 0 };
   const c = tau % BEAT;
-  if (c < TUNING.still) return { mood: "still", k: c / TUNING.still };
-  if (c < TUNING.still + TUNING.shiver)
-    return { mood: "shiver", k: (c - TUNING.still) / TUNING.shiver };
-  return { mood: "bite", k: (c - TUNING.still - TUNING.shiver) / TUNING.bite };
+  if (c < TUNING.still) return { mood: 'still', k: c / TUNING.still };
+  if (c < TUNING.still + TUNING.shiver) return { mood: 'shiver', k: (c - TUNING.still) / TUNING.shiver };
+  return { mood: 'bite', k: (c - TUNING.still - TUNING.shiver) / TUNING.bite };
 }
 
-export const moods = (g) =>
-  Object.fromEntries(g.stairs.map((s, i) => [s.id, stairPose(g, i).mood]));
+export const moods = (g) => Object.fromEntries(g.stairs.map((s, i) => [s.id, stairPose(g, i).mood]));
 
 const topOf = (g, id) => g.ledges.find((l) => l.id === id)?.top ?? 0;
 export function nextStair(g) {
@@ -122,43 +92,32 @@ export function nextStair(g) {
 }
 
 export function stepClimb(prev, { morty = null } = {}, dt = 1 / 60) {
-  if (prev.phase === "won" || prev.phase === "lost")
-    return { ...prev, events: [] };
-  const g = {
-    ...prev,
-    events: [],
-    t: prev.t + Math.min(Math.max(dt, 0), TUNING.frame),
-  };
+  if (prev.phase === 'won' || prev.phase === 'lost') return { ...prev, events: [] };
+  const g = { ...prev, events: [], t: prev.t + Math.min(Math.max(dt, 0), TUNING.frame) };
   g.on = standingOn(g.ledges, morty);
   // (on a ledge, its top; on the ground, nothing; in the air, where he was)
   g.stand = g.on ? topOf(g, g.on) : morty && !morty.air ? 0 : prev.stand;
-  g.near = Boolean(
-    g.foot &&
-    morty &&
-    Math.hypot(morty.x - g.foot.x, morty.z - g.foot.z) <= TUNING.near,
-  );
-  if (g.phase === "idle" && g.on) {
-    g.phase = "run";
-    g.events.push({ type: "start" });
+  g.near = Boolean(g.foot && morty && Math.hypot(morty.x - g.foot.x, morty.z - g.foot.z) <= TUNING.near);
+  if (g.phase === 'idle' && g.on) {
+    g.phase = 'run';
+    g.events.push({ type: 'start' });
   }
-  if (g.phase !== "run") return g;
+  if (g.phase !== 'run') return g;
   g.high = Math.max(g.high, g.stand);
   if (g.on === g.top) {
-    g.phase = "won";
-    g.events.push({ type: "won" });
+    g.phase = 'won';
+    g.events.push({ type: 'won' });
     return g;
   }
-  const bitten = g.stairs.findIndex(
-    (s, i) => s.steps.includes(g.on) && stairPose(g, i).mood === "bite",
-  );
+  const bitten = g.stairs.findIndex((s, i) => s.steps.includes(g.on) && stairPose(g, i).mood === 'bite');
   if (bitten >= 0) {
-    g.phase = "lost";
-    g.events.push({ type: "lost", why: "bitten", stair: g.stairs[bitten].id });
+    g.phase = 'lost';
+    g.events.push({ type: 'lost', why: 'bitten', stair: g.stairs[bitten].id });
     return g;
   }
   // (back on the ground from high enough: said once, and nothing lost but the height)
   if (!g.on && morty && !morty.air && g.stand === 0) {
-    if (g.high >= TUNING.fall) g.events.push({ type: "fell", from: g.high });
+    if (g.high >= TUNING.fall) g.events.push({ type: 'fell', from: g.high });
     g.high = 0;
   }
   return g;
@@ -167,26 +126,15 @@ export function stepClimb(prev, { morty = null } = {}, dt = 1 / 60) {
 // won: say so every frame till the task's kept (a frame in a fade is lost);
 // lost: once, and not while Morty's fading
 export function climbNews(g, { done, fading }) {
-  if (g.phase === "won") return done ? null : "done";
-  if (g.phase === "lost" && !fading && !g.told) return "caught";
+  if (g.phase === 'won') return done ? null : 'done';
+  if (g.phase === 'lost' && !fading && !g.told) return 'caught';
   return null;
 }
 
 export function climbReadout(g, words = WORDS) {
-  if (!g || !(g.phase === "run" || (g.phase === "idle" && g.near)))
-    return { on: false, vitals: null, line: "" };
+  if (!g || !(g.phase === 'run' || (g.phase === 'idle' && g.near))) return { on: false, vitals: null, line: '' };
   const i = nextStair(g);
   const mood = i >= 0 ? stairPose(g, i).mood : null;
-  const line = mood
-    ? words[mood]
-    : words.up(Math.round(g.stand), Math.round(g.peak));
-  return {
-    on: true,
-    vitals: {
-      value: g.peak ? Math.round((100 * g.stand) / g.peak) : 0,
-      max: 100,
-      low: mood === "shiver" || mood === "bite",
-    },
-    line,
-  };
+  const line = mood ? words[mood] : words.up(Math.round(g.stand), Math.round(g.peak));
+  return { on: true, vitals: { value: g.peak ? Math.round((100 * g.stand) / g.peak) : 0, max: 100, low: mood === 'shiver' || mood === 'bite' }, line };
 }
