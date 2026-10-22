@@ -29,7 +29,7 @@ import { scatter } from '../../../../lib/combat/accuracy';
 import { NEAR, bodyOf as boltBody, farExchange, nearBy } from './bolts';
 import { createMinds, createNavWindow } from './brain';
 import { createDirector } from './director';
-import { aimError, fightStep, grudge, indexBodies, squadsOf, suppress } from './fight';
+import { aimError, felt, fightStep, grudge, indexBodies, squadsOf, suppress } from './fight';
 import { createFigures } from './groundFigures';
 import { createPopulation } from './population';
 import { standingOf } from './standing';
@@ -185,7 +185,11 @@ export function createGround({ parent, world, site, effects, tier = 'high', kit 
     // soldier lands; a soldier's bolt at a wall sparks
     bolt(e) {
       const t = e.body?.ref;
-      if (e.type === 'hit' && t?.ground === api && !t.down && e.bolt.side !== 'you') struck(t, e.bolt.damage, { x: e.bolt.dir[0], z: e.bolt.dir[2] }, { y: e.at[1] });
+      if (e.type === 'hit' && t?.ground === api && !t.down && e.bolt.side !== 'you') {
+        // (it knows where the shot came from: fight.js's felt)
+        felt(t.soldier, pop?.soldiers.get(e.bolt.owner), e.bolt.from, minds);
+        struck(t, e.bolt.damage, { x: e.bolt.dir[0], z: e.bolt.dir[2] }, { y: e.at[1] });
+      }
       else if (e.type === 'solid' && e.bolt.tag?.ground) sparks?.(e.at, BOLT[e.bolt.side] ?? '#ffffff');
     },
     parry: () => ({ parried: false, broke: false }),
@@ -347,7 +351,9 @@ export function createGround({ parent, world, site, effects, tier = 'high', kit 
       if (!b.tag?.ground) continue;
       for (const id of nearBy(b.tag.last, b.pos, struckBy, b.tag.near, b.owner)) {
         const v = figures.get(id);
-        if (v && !v.down) suppress(v.soldier, time, minds?.suppressionOf(b.owner) ?? 0);
+        if (!v || v.down) continue;
+        suppress(v.soldier, time, minds?.suppressionOf(b.owner) ?? 0);
+        felt(v.soldier, pop?.soldiers.get(b.owner), b.from, minds);
       }
       b.tag.last = b.pos.slice();
     }

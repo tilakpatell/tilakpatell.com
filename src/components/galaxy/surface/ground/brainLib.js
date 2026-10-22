@@ -10,6 +10,8 @@
 //   buildNav, heightAt, shields, walkable   src/lib/battlefront/nav.js (the navgrid)
 //   newSoldier                       src/lib/battlefront/soldier.js (the brain's own soldier)
 //   STEP, THINK                      src/lib/battlefront/core.js (a frame of the sim, a think)
+//   TICK                             src/lib/battlefront/ai/tactics.js (an AI tick: a firing pattern's bit)
+//   sightOf                          src/lib/battlefront/ai/sensing.js (the cone, alerted or not)
 //   aiRows() → ai.json's rows        classOf(id) → classes.json's row
 
 import { aiOf, classOf as classRow, loadRulebook } from '../../../../lib/battlefront/rulebook.js';
@@ -19,6 +21,8 @@ export { difficultyFor } from '../../../../lib/battlefront/ai/difficulty.js';
 export { buildNav, heightAt, shields, walkable } from '../../../../lib/battlefront/nav.js';
 export { newSoldier } from '../../../../lib/battlefront/soldier.js';
 export { STEP, THINK } from '../../../../lib/battlefront/core.js';
+export { TICK } from '../../../../lib/battlefront/ai/tactics.js';
+export { sightOf } from '../../../../lib/battlefront/ai/sensing.js';
 
 export const aiRows = () => aiOf(loadRulebook());
 export const classOf = (id) => classRow(loadRulebook(), id);

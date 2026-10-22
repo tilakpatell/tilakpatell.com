@@ -11,7 +11,7 @@ import { weaponOf } from '../weaponRules';
 import { createBolts, farExchange } from './bolts';
 import { createDirector } from './director';
 import { flatMinds } from './fixtures/minds';
-import { aimError, fightStep, grudge, squadsOf } from './fight';
+import { aimError, felt, fightStep, grudge, squadsOf } from './fight';
 import { covertFor } from './landing';
 import { createPopulation } from './population';
 import { standingOf } from './standing';
@@ -102,8 +102,10 @@ function playOn(id, effects, { seed = 11 } = {}) {
     }
     const targets = [...pop.soldiers.values()].filter((s) => s.alive).map((s) => ({ id: s.id, x: s.b.x, y: 0, z: s.b.z, r: 0.45, h: 1.8, side: s.side }));
     for (const e of bolts.step(DT, { bodies: targets })) {
-      const v = e.type === 'hit' ? pop.soldiers.get(e.target) : null;
-      if (v?.alive && hurt(v, e.bolt.damage) === 'down') kill(v);
+      const v = e.type === 'hit' || e.type === 'near' ? pop.soldiers.get(e.target) : null;
+      // (a hit or a near miss tells it where the shot came from: fight.js's felt, as the scene has it)
+      if (v?.alive) felt(v, pop.soldiers.get(e.bolt.owner), e.bolt.from, minds);
+      if (e.type === 'hit' && v?.alive && hurt(v, e.bolt.damage) === 'down') kill(v);
     }
     if (far) {
       const squadOf = (q) => [...pop.soldiers.values()].filter((s) => s.squad === q && s.alive);

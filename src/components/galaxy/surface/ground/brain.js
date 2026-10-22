@@ -34,7 +34,7 @@
 //   taskOf(s) → { at, spot, radius, reach }: its errand, as a commander's task
 //   createMinds({ lib, ai, difficulty, nav: () => nav, seesThrough })
 //     → { ai, difficulty, name, taken, stats, setDifficulty(name),
-//         ready(), mindOf(s, rand), frame({ bodies, soldiers, war, t }), worldFor(s, { posture, squads }),
+//         ready(), alerted, alert(s), wake(s), mindOf(s, rand), frame({ bodies, soldiers, war, t }), worldFor(s, { posture, squads }),
 //         sync(s), think(s, world, now), act(s, intent, world, dt, now) → the shot's aim or null,
 //         suppressionOf(id) }
 
@@ -157,13 +157,26 @@ export function createMinds({ lib, ai, difficulty = 'normal', nav = () => null, 
   let others = [];
   const enemyLists = new Map();
   const humans = new Map();
-  const step = lib.STEP;
   const minds = {
     ai,
     name: difficulty,
     difficulty: lib.difficultyFor(difficulty, ai),
     taken,
     stats,
+    // (the squads alerted: a soldier sees by the wider alerted cone once one of its squad has
+    // seen an enemy, and so for the visit: the game's combat group, a side in a round there,
+    // a squad here, where a world's posts and patrols keep their own watch. sensing.js)
+    alerted: new Set(),
+    alert: (s) => s.squad != null && minds.alerted.add(s.squad),
+    // (a soldier of an alerted squad sees by the alerted cone from its next look, thinking or not: the
+    // brain's own rule, which it reads only as it thinks, put on its senses here)
+    wake(s) {
+      const b = s.bot?.brain;
+      if (!b?.sensing || b.sideAlerted || s.squad == null || !minds.alerted.has(s.squad)) return false;
+      b.sideAlerted = true;
+      Object.assign(b.senses.sight, lib.sightOf(b.sensing, true));
+      return true;
+    },
     at: null, // (the clock of the frame gathered last: fight.js gathers a frame once a step)
     // (the navgrid is in: before it, nobody can be walked by the brain)
     ready: () => Boolean(nav()),
@@ -184,7 +197,7 @@ export function createMinds({ lib, ai, difficulty = 'normal', nav = () => null, 
       if (s.me) brain.me = s.me;
       else s.me = brain.me;
       s.senses = brain.senses;
-      s.bot = { brain, body, thinkAt: -Infinity, acc: 0, shotAt: -Infinity, every: everyOf(t), shot: null };
+      s.bot = { brain, body, thinkAt: -Infinity, shotAt: -Infinity, every: everyOf(t), shot: null };
       byId.set(s.id, s);
       return s.bot;
     },
@@ -229,6 +242,7 @@ export function createMinds({ lib, ai, difficulty = 'normal', nav = () => null, 
         lineClear: (a, b) => !seesThrough || seesThrough({ x: a[0], z: a[2] }, { x: b[0], z: b[2] }),
         shields: lib.shields,
         squad: { centre: q ? [q.centre.x, q.centre.z] : null, leader, posture },
+        alerted: s.squad != null && minds.alerted.has(s.squad),
         leaderAt: lead?.alive ? [lead.b.x, lead.b.z] : null,
         objective: task.at,
         task,
@@ -259,22 +273,17 @@ export function createMinds({ lib, ai, difficulty = 'normal', nav = () => null, 
       m.thinkAt = now + lib.THINK;
       return m.brain.intent;
     },
-    // a step of the brain's body: it walks every frame; its trigger is pressed
-    // a sim frame at a time (the patterns' bits are the sim's frames, STEP s),
-    // and between them the pattern is left where it was
+    // a step of the brain's body, every frame at the frame's time: the brain
+    // runs its firing pattern's bits an AI tick at a time inside it (tactics.js's
+    // TICK), so the trigger keeps the game's pace however often the ground steps
     act(s, intent, world, dt, now) {
       const m = s.bot;
       m.now = now;
-      m.acc += dt;
-      const pressed = m.acc >= step - 1e-9;
-      if (pressed) m.acc = Math.min(m.acc - step, step);
-      const keep = pressed ? null : [m.brain.pattern, m.brain.frame];
       m.shot = null;
       const t0 = clock();
-      lib.act(m.brain, pressed ? intent : { ...intent, fire: false }, m.body, dt, world, now);
+      lib.act(m.brain, intent, m.body, dt, world, now);
       stats.act += clock() - t0;
       stats.acts += 1;
-      if (keep) [m.brain.pattern, m.brain.frame] = keep;
       return m.shot;
     },
     // the suppression a near miss of this one's gives (its tactics'), you and your mate the player's (the Rebel soldier's tactics: bots.js)

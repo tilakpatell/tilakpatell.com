@@ -166,6 +166,20 @@ export const suppress = (s, now, value = 0) => {
   if (value > 0) s.suppression = Math.min(1, (s.suppression ?? 0) + value);
 };
 
+// A felt shot, a soldier's bolt that hit it or went close by: it believes
+// in the shooter where the shot came from, as the sim's bots do (bots.js's
+// `felt`), and its squad is alerted (sensing.js), so a soldier shot at from
+// past its unalerted sight turns on whoever shot. from: [x, y, z], the
+// bolt's start.
+export function felt(s, shooter, from, minds = null) {
+  if (!s?.alive || !shooter || shooter.id === s.id) return;
+  s.me ??= { pos: P(s.b.x, s.b.z), dir: null, beliefs: {}, now: 0 };
+  const was = s.me.beliefs[shooter.id];
+  if (was?.visible) return;
+  s.me.beliefs[shooter.id] = { id: shooter.id, at: { x: from[0], y: from[1], z: from[2] }, vel: { x: 0, y: 0, z: 0 }, seenAt: s.me.now ?? 0, heardAt: s.me.now ?? 0, confidence: 1, visible: false, timer: was?.timer ?? 0, kind: null, faction: shooter.side ?? null, hostile: true };
+  minds?.alert(s);
+}
+
 // at: where you were when you shot (they know it, as if they'd heard it)
 export function grudge(s, squads, now, at = null) {
   const ids = squads?.membersOf ? squads.membersOf(s.id) : [s.id];
@@ -230,6 +244,7 @@ export function fightStep(s, world, dt, rand = Math.random) {
   const m = minds.mindOf(s, rand);
   // (its nerves settle over its own tactics' time, as the sim's bots' do: bots.js)
   if (s.suppression) s.suppression = Math.max(0, s.suppression - dt / (m.brain.tactics.suppression?.time ?? 10));
+  minds.wake(s);
   s.senseAcc = (s.senseAcc ?? s.mind?.sense ?? 0) + dt;
   if (s.senseAcc >= SENSE || !s.me) {
     senseAll(s, world, s.senseAcc);
@@ -248,7 +263,11 @@ export function fightStep(s, world, dt, rand = Math.random) {
   }
   // (where it last had a clear line to it: a sight the senses haven't caught up with, the line gone, keeps the last)
   const line = !world.seesThrough || world.seesThrough(P(s.b.x, s.b.z), P(threat.x, threat.z));
-  if (threat.visible) s.engagedUntil = now + ENGAGED;
+  if (threat.visible) {
+    s.engagedUntil = now + ENGAGED;
+    // (an enemy in sight alerts its squad, whose eyes then reach the alerted cone: sensing.js)
+    minds.alert(s);
+  }
   if (threat.visible && line) s.lost = { id: threat.id, x: threat.x, z: threat.z, at: now, shot: false, line: true };
   const posture = world.squads?.postureOf?.(s.id) ?? 'hold';
   const reach = s.leash + t.range;
@@ -367,7 +386,13 @@ export function squadsOf(soldiers, { reach = 18, war = 'gcw', near = 80 } = {}) 
         for (const id of squad.members) st.known.add(id);
         st.losses *= Math.pow(0.5, dt / 60); // (losses fade over a minute or two)
         const mine = squad.members.map((id) => ids.get(id));
-        const foes = all.filter((e) => e.alive && relation(squad.side, e.side, war) === 'enemy' && Math.hypot(e.b.x - squad.centre.x, e.b.z - squad.centre.z) < near);
+        // (a squad on the game's brain weighs the enemies its soldiers believe in, as the sim's squads do
+        // (lib/battlefront/ai/squad.js's update), so a raid is not broken by a garrison it has not met;
+        // one without, every enemy near)
+        const minded = mine.some((s) => s?.bot);
+        const believed = new Set();
+        if (minded) for (const s of mine) for (const b of Object.values(s?.me?.beliefs ?? {})) if (b.hostile && b.confidence > 0) believed.add(b.id);
+        const foes = all.filter((e) => e.alive && relation(squad.side, e.side, war) === 'enemy' && Math.hypot(e.b.x - squad.centre.x, e.b.z - squad.centre.z) < near && (!minded || believed.has(e.id)));
         const value = (s) => (s.b ? s.hp / s.hpMax : 1);
         const c = confidence(
           squad,

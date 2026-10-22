@@ -87,6 +87,17 @@ describe('the director', () => {
     run(d, 2, { you: far, population });
     expect(population.sent.filter((s) => s.specs[0].home === pad.posts[0])).toHaveLength(1);
   });
+  test('every post of a turf lost and you by its middle: its reinforcement comes from out past you, never waits for ever', () => {
+    const d = createDirector({ turfs, effects: F, tier: 'high', rand: () => 0.5 });
+    const population = popOf();
+    for (let i = 0; i < pad.posts.length; i++) population.dead.add(`pad:p${i}:0`).add(`pad:p${i}:1`);
+    const you = { x: pad.at[0] + 10, z: pad.at[1] };
+    run(d, REINFORCE * 3, { you, population });
+    const sent = population.sent.filter((s) => s.specs[0].home === pad.posts[0]);
+    expect(sent).toHaveLength(1);
+    const from = sent[0].specs[0].at;
+    expect(Math.hypot(from[0] - you.x, from[1] - you.z)).toBeGreaterThanOrEqual(60);
+  });
   test('seen on an enemy-held world: a hunt, then calm once nobody has had you for a while', () => {
     const hostile = { ...F, side: 'rebel', front: false };
     const d = createDirector({ turfs: turfsOf(SITE, hostile, kit), effects: hostile, tier: 'high', rand: () => 0.5 });

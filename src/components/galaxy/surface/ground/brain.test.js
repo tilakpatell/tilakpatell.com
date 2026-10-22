@@ -186,7 +186,7 @@ describe('the brain on the ground', () => {
     expect(inside).toBe(0);
     expect(Math.hypot(s.b.x, s.b.z - 20)).toBeLessThan(1.5);
   });
-  test('the trigger is pressed a sim frame at a time, however often the ground steps', () => {
+  test('the trigger keeps the game’s pace, a pattern’s bit an AI tick, however often the ground steps', () => {
     const { minds } = flatMinds();
     const s = mk('stormtrooper', 'empire', 0, 0);
     const m = minds.mindOf(s);
@@ -195,10 +195,27 @@ describe('the brain on the ground', () => {
     m.brain.frame = 0;
     for (let k = 1; k <= 120; k++) {
       minds.sync(s);
-      minds.act(s, { mode: 'attack', goal: null, stance: 'stand', fire: false, aim: null }, minds.worldFor(s), 1 / 120, k / 120);
+      minds.act(s, { mode: 'attack', goal: null, stance: 'stand', fire: true, aim: [0, 1.2, 20] }, minds.worldFor(s), 1 / 120, k / 120);
     }
-    // (a second at 120 frames a second: the sim's twenty)
-    expect(m.brain.frame).toBe(Math.round(1 / lib.STEP));
+    // (a second at 120 frames a second: the brain's thirty ticks, tactics.js)
+    expect(m.brain.frame).toBe(Math.round(1 / lib.TICK));
+  });
+  test('a squad one of whose soldiers has seen an enemy sees by the alerted cone, every one of it; another squad does not', () => {
+    const { minds } = flatMinds();
+    const a = mk('stormtrooper', 'empire', 0, 0);
+    const b = mk('stormtrooper', 'empire', 4, 0);
+    const c = mk('stormtrooper', 'empire', 100, 0);
+    b.squad = a.squad;
+    for (const s of [a, b, c]) minds.mindOf(s);
+    const calm = a.senses.sight.range;
+    expect(calm).toBe(ai.difficulties['multiplayer:normal'].common.sensingConeRange);
+    minds.alert(a);
+    for (const s of [a, b, c]) minds.wake(s);
+    expect(b.senses.sight.range).toBe(ai.difficulties['multiplayer:normal'].common.sensingConeRangeWhenAlerted);
+    expect(b.senses.sight.cone).toBeCloseTo(Math.cos((ai.difficulties['multiplayer:normal'].common.sensingConeAngleWhenAlerted * Math.PI) / 180));
+    expect(c.senses.sight.range).toBe(calm);
+    expect(minds.worldFor(b).alerted).toBe(true);
+    expect(minds.worldFor(c).alerted).toBe(false);
   });
   test('the difficulty is one setting, and every brain takes it', () => {
     const { minds } = flatMinds();
