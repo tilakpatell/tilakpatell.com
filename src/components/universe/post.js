@@ -97,6 +97,7 @@ import { LOOK } from './look';
 import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
 import { blueNoiseTexture } from '../../lib/three/noise';
 import { guardOf } from '../../lib/three/frameGuard';
+import { RCAS_STOPS, drawnRatio, rcasStops, samplesAt, upscaling } from '../../lib/three/finish';
 import { precompile } from '../../lib/three/renderer';
 
 export const LIGHT = new THREE.Vector3(-0.6, 0.62, 0.48).normalize(); // the key light, upper left
@@ -149,27 +150,9 @@ export const edgeWeight = ([u, v], aspect) => smooth(0.55, 1, Math.hypot((u - 0.
 
 export const aberrationFor = ({ rush = 0, hit = 0, tier = 'high' } = {}) => (tier === 'low' ? 0 : 0.0006 + 0.0054 * rush + 0.0034 * hit);
 
-// The finish's numbers (`upscale`). How sharp the scene is drawn: the most
-// it may be, a share of it by the pace, never under SOFTEST (nor over the
-// most, where that's under SOFTEST itself)
-export const drawnRatio = (top, sharp = 1) => Math.min(top, Math.max(SOFTEST, top * sharp));
-// multisampling by the pixels the scene is drawn at, a CSS pixel's worth:
-// at 1.75 and over a stair is too small to see (and four samples on a
-// half-float target cost more than the rest of the frame there); over a
-// screen's own 1.25, two; under, four (two at most on a small screen,
-// whose chip has less to give), as a picture brought up shows its stairs
-// bigger. Never more than `cap` (the visitor's video settings)
-export function samplesAt(ratio, { small = false, cap = Infinity } = {}) {
-  const want = ratio >= 1.75 ? 0 : ratio >= 1.25 || small ? 2 : 4;
-  return Math.max(0, Math.min(want, cap));
-}
-// whether the canvas is sharper than the scene, so it's brought up (a
-// hair's give, so a ratio worked out two ways isn't an upscale of 1.0001)
-export const upscaling = (drawn, canvas) => drawn < canvas - 1e-3;
-// RCAS's strength, in stops of its lobe's weight (0 the most, 2 none):
-// FidelityFX's own default (_source: GPUOpen's ffx_fsr1.h,
-// FSR_RCAS_DEFAULT_SHARPNESS, and three's FSR1Node)
-export const RCAS_STOPS = 0.2;
+// The finish's numbers (`upscale`): lib/three/finish.js, shared with the
+// galaxy's node twin, which can't reach this file's GLSL
+export { RCAS_STOPS, drawnRatio, rcasStops, samplesAt, upscaling } from '../../lib/three/finish';
 
 // EASU (FSR 1's edge-adaptive spatial upsampling), from three r186's
 // FSR1Node (examples/jsm/tsl/display), itself after GPUOpen's ffx_fsr1.h:
@@ -665,6 +648,8 @@ export function createPost(renderer, scene, camera, { small = false, bloom: look
           up.graded.setSize(Math.max(1, Math.round(read.width)), Math.max(1, Math.round(read.height)));
           const px = renderer.getDrawingBufferSize(new THREE.Vector2());
           up.wide.setSize(Math.max(1, px.x), Math.max(1, px.y));
+          // (sharpened as hard as it was brought up: lib/three/finish's rcasStops)
+          grade.rcas.uniforms.uSharp.value = 2 ** -rcasStops(ratio / full);
           grade.up = up;
         } else if (upscale) grade.up = null;
       }

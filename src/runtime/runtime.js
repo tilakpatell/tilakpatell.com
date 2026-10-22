@@ -448,7 +448,10 @@ export function createRuntime({ makeBackend, loop: makeLoop = createLoop, input,
     // (`calibrate: false`, the QA scripts' ?calibrate=off: no walk, the world
     // drawn at its sharpest step, so a measured run is the same on any chip)
     if (!gfx?.renderer || !calibrating || mod.calibrate === false || !quality.setLevel) return;
-    const key = calibrationKey(gfx.renderer, mod.id, gfx.size.w, gfx.size.h);
+    // (kept under the module's id, or the name it calibrates as: a new one
+    // when its picture is drawn another way, so a level kept from the old
+    // way, which only ever steps down, isn't held over the new)
+    const key = calibrationKey(gfx.renderer, mod.calibrateAs ?? mod.id, gfx.size.w, gfx.size.h);
     const kept = recall(key);
     const setLevel = (l) => {
       quality.setLevel(l);

@@ -2,7 +2,7 @@
 // written for lib/three/useScene (create(canvas, ctx) → { render(ms, now)
 // → bool, ... }) into a world module without changing it.
 //
-// A world module: { id, shading: 'glsl' | 'nodes', mb, label?, ratio?, sharpness?, canvas?, antialias?, create(rt, props) }
+// A world module: { id, shading: 'glsl' | 'nodes', mb, label?, ratio?, sharpness?, canvas?, calibrateAs?, antialias?, create(rt, props) }
 // (`label` says what the canvas shows, for a screen reader; `ratio` caps its
 // pixel ratio; `sharpness: 'own'`: when frames run late its world draws
 // softer through its own passes, told the level by lowerQuality, and the
@@ -13,6 +13,8 @@
 // world's passes (more pixels there, folded down to the screen's, or fewer,
 // brought up to it), so a canvas bigger than the screen never costs a weak
 // chip its last passes and the browser's own fold down;
+// `calibrateAs`: the name its calibration is kept under, where not its id
+// (a new one when its picture is drawn another way, lib/three/calibrate);
 // `antialias`: the classic canvas multisampled or not, whatever the
 // budget's, for a module whose pictures drew on canvases of their own).
 // A world: { ready?, resize(w, h), step?(dt, input, now), draw(frame),
@@ -48,7 +50,7 @@ export function validateWorld(world) {
   return world;
 }
 
-// fromScene(id, create, { shading, mb, label, ratio, sharpness, canvas }): the scene's
+// fromScene(id, create, { shading, mb, label, ratio, sharpness, canvas, calibrateAs }): the scene's
 // render(ms, now) is the world's draw, its answer is wants(); ctx gets the
 // runtime as `rt` (its renderer, saves, sounds, assets), the canvas's box
 // as `el`, the runtime's invalidate and lost, and the quality floor as
@@ -60,7 +62,7 @@ export function validateWorld(world) {
 // replacing. The scene itself is `world.scene`, for the page's calls; a
 // scene's `tune()` is the world's, for the ?debug panel.
 const HELD = 200; // events kept at most before a page is listening
-export function fromScene(id, create, { shading = 'glsl', mb = 0, label, ratio, sharpness, canvas } = {}) {
+export function fromScene(id, create, { shading = 'glsl', mb = 0, label, ratio, sharpness, canvas, calibrateAs } = {}) {
   return {
     id,
     shading,
@@ -69,6 +71,7 @@ export function fromScene(id, create, { shading = 'glsl', mb = 0, label, ratio, 
     ...(ratio ? { ratio } : {}),
     ...(sharpness ? { sharpness } : {}),
     ...(canvas ? { canvas } : {}),
+    ...(calibrateAs ? { calibrateAs } : {}),
     async create(rt, props = {}) {
       let scene = null;
       let held = [];

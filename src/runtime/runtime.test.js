@@ -1136,6 +1136,25 @@ describe('calibration switched off (the QA scripts: ?calibrate=off)', () => {
     expect(steps).toHaveLength(1);
   });
 
+  it('keeps a level under the name a module calibrates as, where it gives one', async () => {
+    const kept = new Map();
+    vi.stubGlobal('localStorage', { getItem: (k) => kept.get(k) ?? null, setItem: (k, v) => kept.set(k, v) });
+    try {
+      const { rt, quality } = make();
+      quality.setLevel = vi.fn();
+      await rt.mount({ id: 'galaxy', calibrateAs: 'galaxy-fsr', create: () => fakeWorld() }, {}, fakeHost());
+      await settled();
+      await rt.mount({ id: 'plain', create: () => fakeWorld() }, {}, fakeHost());
+      await settled();
+      const keys = Object.keys(JSON.parse(kept.get('tp-calibration')));
+      expect(keys.some((k) => k.includes('|galaxy-fsr|'))).toBe(true);
+      expect(keys.some((k) => k.includes('|galaxy|'))).toBe(false);
+      expect(keys.some((k) => k.includes('|plain|'))).toBe(true);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
   it('skips the walk and leaves the world at its sharpest step', async () => {
     const { rt, quality } = make({ calibrate: false });
     quality.setLevel = vi.fn();

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { presetValues } from '../../lib/video.js';
+import { presetValues } from './video.js';
 import { fromVideo } from './videoLook';
 
 const AS_DRAWN = { grain: 1, aberration: 1, bloom: true, samples: Infinity };

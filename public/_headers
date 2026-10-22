@@ -10,8 +10,16 @@
 /assets/*
   Cache-Control: public, max-age=31536000, immutable
 
-# The pictures the worlds draw with, whose names stay when they change (the
-# universe map's planets and sky, the CC0 sets, the HDR skies, the fonts):
+# The worlds' pictures again, each under its content's hash
+# (scripts/site-hashes.mjs copies them there at build, and the loaders ask
+# there first): the same year, never asked again, and a picture changed by a
+# deploy is a new path. docs/decisions/2026-10-22-pictures-fresh-in-the-background.md
+/h/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# The pictures the worlds draw with, under their own names, which stay when
+# they change (what's asked by its own path: a page's picture, a font, a
+# loader that doesn't ask for the hashed copy, or after that copy failed):
 # stale at once, as the default has them, but a copy kept from the last week
 # is drawn with straight away while the browser asks again behind it, so a
 # returning visitor's world isn't waiting on hundreds of 304s before its

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { SLOW_RATE, WAIT_MS, assetUrl, forgetDown, isDown, markDown, waitFor, withFallback } from './assetBase';
+import { SLOW_RATE, WAIT_MS, assetUrl, forgetDown, hereUrl, isDown, markDown, waitFor, withFallback } from './assetBase';
 
 const BASE = 'https://x.supabase.co/storage/v1/object/public/assets';
 const manifest = { 'kit/crate.glb': { hash: 'aaaaaaaaaaaa', bytes: 70000 }, 'hq/tex/rock.jpg': { hash: 'bbbbbbbbbbbb', bytes: 90000 } };
@@ -141,3 +141,39 @@ describe('the wait for the bucket’s first answer', () => {
   });
 });
 
+
+describe('the site’s own copies under their hash (scripts/site-hashes.mjs)', () => {
+  const site = { 'textures/universe/earth.webp': 'cccccccccccc', 'kit/crate.glb': 'dddddddddddd' };
+
+  it('names the hashed path of a picture the site holds so, and nothing for anything else', () => {
+    expect(hereUrl('/textures/universe/earth.webp', { site })).toBe('/h/cccccccccccc/textures/universe/earth.webp');
+    expect(hereUrl('textures/universe/earth.webp', { site })).toBe('/h/cccccccccccc/textures/universe/earth.webp');
+    expect(hereUrl('/textures/universe/moon.webp', { site })).toBeNull();
+    expect(hereUrl('/textures/universe/earth.webp?v=2', { site })).toBeNull();
+    expect(hereUrl('https://elsewhere.test/textures/universe/earth.webp', { site })).toBeNull();
+    expect(hereUrl('/textures/universe/earth.webp')).toBeNull(); // (the committed hashes are none: the build fills them)
+  });
+
+  it('asks the hashed path first, the bucket before it for what the bucket holds', async () => {
+    const asked = [];
+    const load = withFallback((url) => (asked.push(url), Promise.resolve(url)), { ...opts, site });
+    expect(await load('/textures/universe/earth.webp')).toBe('/h/cccccccccccc/textures/universe/earth.webp');
+    expect(await load('/kit/crate.glb')).toBe(`${BASE}/aaaaaaaaaaaa/kit/crate.glb`);
+    expect(asked).toEqual(['/h/cccccccccccc/textures/universe/earth.webp', `${BASE}/aaaaaaaaaaaa/kit/crate.glb`]);
+  });
+
+  it('falls back to the picture’s own path once its hashed one fails, and the bucket stays up', async () => {
+    const asked = [];
+    const load = withFallback((url) => (asked.push(url), url.startsWith('/h/') ? Promise.reject(new Error('404')) : Promise.resolve(`bytes of ${url}`)), { ...opts, site });
+    await expect(load('/textures/universe/earth.webp')).resolves.toBe('bytes of /textures/universe/earth.webp');
+    expect(asked).toEqual(['/h/cccccccccccc/textures/universe/earth.webp', '/textures/universe/earth.webp']);
+    expect(isDown()).toBe(false);
+  });
+
+  it('stops for a world left mid-load, with no second ask', async () => {
+    const abort = Object.assign(new Error('left'), { name: 'AbortError' });
+    const load = vi.fn(() => Promise.reject(abort));
+    await expect(withFallback(load, { ...opts, site })('/textures/universe/earth.webp')).rejects.toBe(abort);
+    expect(load).toHaveBeenCalledTimes(1);
+  });
+});

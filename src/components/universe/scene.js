@@ -115,7 +115,7 @@ import { createLazy, standIn, wanted as nearEnough } from './nearby';
 import { loadSteps } from './loadSteps';
 import { buildSun } from './sun';
 import { MAP_LENS, aberrationFor, createPost, spaceEnvironment } from './post';
-import { fromVideo } from './videoLook';
+import { fromVideo } from '../../lib/videoLook';
 import { grainFor } from '../../lib/three/noise';
 import { createFlare, flareWeight, occluded } from '../../lib/three/flare';
 import { exposureFor, sunShareOf } from '../../lib/three/exposure';
@@ -660,7 +660,7 @@ export async function create(canvas, ctx) {
   // ratio)
   const mostRatio = () => ctx.rt?.quality?.ratioUnder?.(2, { unscaled: true }) ?? pixelRatio(2);
   const post = createPost(renderer, scene, camera, { small, ratio: mostRatio(), upscale: true, top: mostRatio });
-  // the visitor's video settings, what they turned of them (./videoLook.js):
+  // the visitor's video settings, what they turned of them (lib/videoLook.js):
   // the grain, the aberration, the bloom and the multisampling, at the start
   // and live from the settings (onVideo, below)
   let video = fromVideo(ctx.rt?.video, qualityNow().level);

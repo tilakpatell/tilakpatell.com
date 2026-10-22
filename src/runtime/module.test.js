@@ -110,6 +110,8 @@ describe('fromScene', () => {
     const mod = fromScene('universe', () => scene(), { ratio: 2, sharpness: 'own', canvas: 'screen' });
     expect(validateModule(mod)).toMatchObject({ ratio: 2, sharpness: 'own', canvas: 'screen' });
     expect(fromScene('x', () => scene())).not.toHaveProperty('canvas');
+    expect(fromScene('galaxy', () => scene(), { calibrateAs: 'galaxy-fsr' })).toMatchObject({ calibrateAs: 'galaxy-fsr' });
+    expect(fromScene('x', () => scene())).not.toHaveProperty('calibrateAs');
   });
 
   it('a scene without the optional methods still makes a whole world', async () => {

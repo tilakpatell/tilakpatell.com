@@ -1,17 +1,18 @@
-// The visitor's video settings (lib/video.js) as the universe map draws
-// them: only what they turned away from the quality level's own row, so a
-// level picked whole keeps the map's look as it was (the Low row's grain
-// off and bloom off are the node worlds', not the map's, as lib/device's
-// budget takes only the overrides too). Pure, so it's tested without a
-// canvas; scene.js applies it at the start and whenever a control is turned
-// (its onVideo), with no reload.
+// The visitor's video settings (lib/video.js) as the space worlds draw them
+// (the universe map and the galaxy, through universe/post.js's finish):
+// only what they turned away from the quality level's own row, so a level
+// picked whole keeps a world's look as it was (the Low row's grain off and
+// bloom off are the lit worlds', not these, as lib/device's budget takes
+// only the overrides too). Pure, so it's tested without a canvas; each
+// scene applies it at the start and whenever a control is turned (its
+// onVideo), with no reload.
 //
 //   fromVideo(values, level) → { grain, aberration, bloom, samples }
 //   grain: how much of the map's own film grain (1, 0.5 or 0); aberration:
 //   1 or 0; bloom: on or off; samples: the most a pixel the map multisamples
 //   with (Infinity: as post.js's samplesAt has it)
 
-import { presetValues } from '../../lib/video.js';
+import { presetValues } from './video.js';
 
 const GRAIN = { off: 0, low: 0.5, full: 1 };
 

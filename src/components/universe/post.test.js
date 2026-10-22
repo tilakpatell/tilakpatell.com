@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import * as THREE from 'three';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 import { guard } from '../../lib/three/frameGuard';
-import { MAP_LENS, RCAS_STOPS, aberrationFor, bloomSize, createPost, drawnRatio, edgeWeight, samplesAt, toe, upscaling } from './post';
+import { MAP_LENS, RCAS_STOPS, aberrationFor, bloomSize, createPost, edgeWeight, rcasStops, toe } from './post';
 
 // just enough of a renderer for the composer to be built (nothing is drawn)
 const renderer = () => ({
@@ -167,29 +167,7 @@ describe('the finished render', () => {
   });
 });
 
-describe('the finish (the map’s: FSR 1 up to a canvas of the screen’s pixels)', () => {
-  it('multisamples by the sharpness drawn at: none where a stair is too small to see, more as it grows, under the visitor’s cap', () => {
-    expect(samplesAt(2)).toBe(0);
-    expect(samplesAt(1.75)).toBe(0);
-    expect(samplesAt(1.5)).toBe(2);
-    expect(samplesAt(1.25)).toBe(2);
-    expect(samplesAt(1.08)).toBe(4);
-    expect(samplesAt(0.75)).toBe(4);
-    expect(samplesAt(0.75, { small: true })).toBe(2);
-    expect(samplesAt(0.75, { cap: 2 })).toBe(2);
-    expect(samplesAt(1.5, { cap: 0 })).toBe(0);
-  });
-
-  it('draws at a share of the most it may, never under the softest, never over the most', () => {
-    expect(drawnRatio(1.5, 1)).toBe(1.5);
-    expect(drawnRatio(1.5, 0.6)).toBeCloseTo(0.9);
-    expect(drawnRatio(1, 0.5)).toBe(0.6);
-    expect(drawnRatio(0.5, 1)).toBe(0.5); // (a render resolution picked under the softest)
-    expect(upscaling(0.9, 1)).toBe(true);
-    expect(upscaling(1.5, 1)).toBe(false);
-    expect(upscaling(1 - 1e-6, 1)).toBe(false);
-  });
-
+describe('the finish (the map’s: FSR 1 up to a canvas of the screen’s pixels; its numbers are lib/three/finish’s)', () => {
   it('is off by default: the galaxy’s last pass is the plain grade, as it was', () => {
     const post = createPost(renderer(), new THREE.Scene(), new THREE.PerspectiveCamera());
     expect(gradeOf(post).easu).toBeUndefined();
@@ -212,6 +190,7 @@ describe('the finish (the map’s: FSR 1 up to a canvas of the screen’s pixels
     expect(post.finish).toEqual({ up: true, samples: 4, cap: Infinity });
     expect([grade.up.graded.width, grade.up.graded.height]).toEqual([720, 540]);
     expect([grade.up.wide.width, grade.up.wide.height]).toEqual([64, 64]); // (the renderer's drawing buffer)
+    expect(grade.rcas.uniforms.uSharp.value).toBeCloseTo(2 ** -rcasStops(0.9)); // (brought up a little: sharpened gently)
     post.sharpness = 1;
     post.render(800, 600);
     expect(post.finish.up).toBe(false);
