@@ -29,7 +29,7 @@ import { createPortraits } from './portraits';
 import { createFire } from './parts/fire';
 import { createWindows } from './parts/glass';
 import { roomEnv, wearEnv } from './parts/env';
-import { ROOM_ORIGIN } from './host';
+import { ROOM_ORIGIN } from './origin';
 
 const H = SHAFT.half;
 const TOP = SHAFT.floor * SHAFT.floors + 2; // m: the shaft’s ceiling

@@ -32,8 +32,9 @@
 
 import { Color } from 'three';
 import { createWalker } from '../play/walk';
+import { ROOM_ORIGIN } from './origin';
 
-export const ROOM_ORIGIN = [0, -2000, 0];
+export { ROOM_ORIGIN };
 
 export const LOCAL = {
   greatHall: { name: 'The Great Hall', load: () => import('./greatHall.js') },
