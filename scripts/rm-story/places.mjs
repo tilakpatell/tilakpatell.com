@@ -18,10 +18,13 @@ export const wayIn = (d) => d.arrive.z;
 export const home = (d) => [d.back.x, d.back.z - 0.8, -N];
 
 // the places, as the page has them: their files import without extensions,
-// as Vite resolves them, so Vite reads them (as scripts/battlefront-balance.mjs does)
+// as Vite resolves them, so Vite reads them (as scripts/battlefront-balance.mjs does).
+// (with a cache of its own and nothing for the browser to optimise: the dev
+// server the check drives shares the repo's node_modules/.vite, and a second
+// optimiser there pulls its bundles out from under the page mid-load)
 export async function loadPlaces(root) {
   const { createServer } = await import('vite');
-  const vite = await createServer({ root, server: { middlewareMode: true, hmr: false, ws: false, watch: null }, appType: 'custom', logLevel: 'error' });
+  const vite = await createServer({ root, cacheDir: 'node_modules/.vite-rm-story', optimizeDeps: { noDiscovery: true, include: [] }, server: { middlewareMode: true, hmr: false, ws: false, watch: null }, appType: 'custom', logLevel: 'error' });
   let destinationById;
   try {
     ({ destinationById } = await vite.ssrLoadModule('/src/components/rickmorty/world/dimensions/destinations.js'));
