@@ -18,7 +18,9 @@
 // 'learnt', spell }`, `{ type: 'driven' }`, `{ type: 'butterbeer' }`, `{
 // type: 'sweet', id }`, `{ type: 'feast' }`, `{ type: 'week', week }`.
 //
-//   QUESTS: [{ id, n, title, where, place, blurb, steps: [{ id, text, count? }], points, paid, needs: { quests, week } }]
+//   QUESTS: [{ id, n, title, where, place, blurb, steps: [{ id, text, count? }], points, paid, needs: { quests, sorted, week } }]
+//     needs.sorted: open once you’re sorted, the common room found or not (the
+//     lessons don’t wait on a password)
 //     paid: 'quest' (this machine gives the points when it’s done) or 'lesson' (the lesson gives its own)
 //   questById(id)
 //   newQuests() → { [id]: { step, got, done } }
@@ -50,11 +52,11 @@ export const QUESTS = [
     paid: 'quest',
     needs: { quests: [], week: 1 },
   },
-  { id: 'flying', n: 2, title: 'Up!', where: 'The lawn', place: 'lawn', blurb: 'The flying lesson with Madam Hooch: call the broom up and fly the three rings.', steps: [step('lesson', 'Fly the rings round the lawn', (e) => isLesson(e, 'flying'))], points: 10, paid: 'lesson', needs: { quests: ['sorting'], week: 1 } },
-  { id: 'feather', n: 3, title: 'The feather', where: 'The Charms classroom', place: 'charms', blurb: 'Wingardium Leviosa on your feather, all the way to the ceiling.', steps: [step('lesson', 'Float your feather to the ceiling', (e) => isLesson(e, 'charms'))], points: 10, paid: 'lesson', needs: { quests: ['sorting'], week: 1 } },
-  { id: 'potion', n: 4, title: 'A potion', where: 'The Potions dungeon', place: 'potions', blurb: 'A Cure for Boils from the board, in the right order, without melting the cauldron.', steps: [step('lesson', 'Brew a Cure for Boils', (e) => isLesson(e, 'potions'))], points: 10, paid: 'lesson', needs: { quests: ['sorting'], week: 1 } },
-  { id: 'mandrakes', n: 5, title: 'Mandrakes', where: 'The greenhouses', place: 'greenhouses', blurb: 'Earmuffs on, and four Mandrakes repotted before their crying gets through.', steps: [step('lesson', 'Repot four Mandrakes', (e) => isLesson(e, 'herbology'))], points: 10, paid: 'lesson', needs: { quests: ['sorting'], week: 2 } },
-  { id: 'buckbeak', n: 6, title: 'Buckbeak', where: 'The paddock', place: 'paddock', blurb: 'Bow to the Hippogriff and wait for him to bow back. Then hold on.', steps: [step('lesson', 'Bow to Buckbeak, and ride', (e) => isLesson(e, 'buckbeak'))], points: 10, paid: 'lesson', needs: { quests: ['sorting'], week: 3 } },
+  { id: 'flying', n: 2, title: 'Up!', where: 'The lawn', place: 'lawn', blurb: 'The flying lesson with Madam Hooch: call the broom up and fly the three rings.', steps: [step('lesson', 'Fly the rings round the lawn', (e) => isLesson(e, 'flying'))], points: 10, paid: 'lesson', needs: { quests: [], sorted: true, week: 1 } },
+  { id: 'feather', n: 3, title: 'The feather', where: 'The Charms classroom', place: 'charms', blurb: 'Wingardium Leviosa on your feather, all the way to the ceiling.', steps: [step('lesson', 'Float your feather to the ceiling', (e) => isLesson(e, 'charms'))], points: 10, paid: 'lesson', needs: { quests: [], sorted: true, week: 1 } },
+  { id: 'potion', n: 4, title: 'A potion', where: 'The Potions dungeon', place: 'potions', blurb: 'A Cure for Boils from the board, in the right order, without melting the cauldron.', steps: [step('lesson', 'Brew a Cure for Boils', (e) => isLesson(e, 'potions'))], points: 10, paid: 'lesson', needs: { quests: [], sorted: true, week: 1 } },
+  { id: 'mandrakes', n: 5, title: 'Mandrakes', where: 'The greenhouses', place: 'greenhouses', blurb: 'Earmuffs on, and four Mandrakes repotted before their crying gets through.', steps: [step('lesson', 'Repot four Mandrakes', (e) => isLesson(e, 'herbology'))], points: 10, paid: 'lesson', needs: { quests: [], sorted: true, week: 2 } },
+  { id: 'buckbeak', n: 6, title: 'Buckbeak', where: 'The paddock', place: 'paddock', blurb: 'Bow to the Hippogriff and wait for him to bow back. Then hold on.', steps: [step('lesson', 'Bow to Buckbeak, and ride', (e) => isLesson(e, 'buckbeak'))], points: 10, paid: 'lesson', needs: { quests: [], sorted: true, week: 3 } },
   {
     id: 'willow',
     n: 7,
@@ -71,17 +73,17 @@ export const QUESTS = [
     paid: 'quest',
     needs: { quests: ['feather'], week: 2 },
   },
-  { id: 'duel', n: 8, title: 'The duelling club', where: 'The Defence classroom', place: 'defence', blurb: 'Three rounds against Malfoy on the platform. Protego on the beat.', steps: [step('lesson', 'Win the duel against Malfoy', (e) => isLesson(e, 'duel'))], points: 20, paid: 'lesson', needs: { quests: ['sorting'], week: 3 } },
-  { id: 'boggart', n: 9, title: 'The boggart', where: 'The Defence classroom', place: 'defence', blurb: 'Whatever comes out of the wardrobe, find the joke that makes it ridiculous.', steps: [step('lesson', 'Laugh the boggart back into the wardrobe', (e) => isLesson(e, 'boggart'))], points: 10, paid: 'lesson', needs: { quests: ['sorting'], week: 4 } },
+  { id: 'duel', n: 8, title: 'The duelling club', where: 'The Defence classroom', place: 'defence', blurb: 'Three rounds against Malfoy on the platform. Protego on the beat.', steps: [step('lesson', 'Win the duel against Malfoy', (e) => isLesson(e, 'duel'))], points: 20, paid: 'lesson', needs: { quests: [], sorted: true, week: 3 } },
+  { id: 'boggart', n: 9, title: 'The boggart', where: 'The Defence classroom', place: 'defence', blurb: 'Whatever comes out of the wardrobe, find the joke that makes it ridiculous.', steps: [step('lesson', 'Laugh the boggart back into the wardrobe', (e) => isLesson(e, 'boggart'))], points: 10, paid: 'lesson', needs: { quests: [], sorted: true, week: 4 } },
   {
     id: 'night',
     n: 10,
     title: 'After hours',
     where: 'The Restricted Section',
     place: 'restricted',
-    blurb: 'Find the cloak, then the Restricted Section after curfew, read the roped book and get back to bed unseen.',
+    blurb: 'Find the cloak (in the room of hidden things, or it finds you at Christmas), then the Restricted Section after curfew, the roped book read, and back to bed unseen.',
     steps: [
-      step('cloak', 'Find the cloak in the room of hidden things', (e) => e.type === 'pickup' && e.id === 'cloak'),
+      step('cloak', 'Find the cloak', (e) => e.type === 'pickup' && e.id === 'cloak'),
       step('restricted', 'Reach the Restricted Section after curfew', (e) => e.type === 'restricted'),
       step('book', 'Read the roped book without waking it', (e) => (e.type === 'book' && e.quiet ? true : e.type === 'caught' ? 'back' : false)),
       step('back', 'Back to your common room unseen', (e, c) => (e.type === 'enter' && isCommon(e.room, c.house) ? true : e.type === 'caught' ? 'back' : false)),
@@ -90,7 +92,7 @@ export const QUESTS = [
     backTo: 'restricted',
     points: 20,
     paid: 'quest',
-    needs: { quests: ['sorting'], week: 2 },
+    needs: { quests: [], sorted: true, week: 2 },
   },
   {
     id: 'patronus',
@@ -119,7 +121,7 @@ export const QUESTS = [
     ],
     points: 15,
     paid: 'quest',
-    needs: { quests: ['sorting'], week: 3 },
+    needs: { quests: [], sorted: true, week: 3 },
   },
   { id: 'cup', n: 13, title: 'The House Cup', where: 'The Great Hall', place: 'great-hall', blurb: 'When the term is out, the leaving feast: the hourglasses settle and the hall takes the winner’s colours.', steps: [step('feast', 'Be at the leaving feast', (e) => e.type === 'feast')], points: 0, paid: 'quest', needs: { quests: [], week: 12 } },
 ];
@@ -131,8 +133,11 @@ export const newQuests = () => Object.fromEntries(QUESTS.map((q) => [q.id, { ste
 
 const of = (state, id) => state?.[id] ?? { step: 0, got: [], done: false };
 
+const isSorted = (state) => of(state, 'sorting').done || of(state, 'sorting').step >= 1;
+
 export function isOpen(state, quest, ctx = {}) {
   if ((ctx.week ?? 1) < (quest.needs.week ?? 1)) return false;
+  if (quest.needs.sorted && !isSorted(state)) return false;
   return quest.needs.quests.every((id) => of(state, id).done);
 }
 
@@ -218,7 +223,8 @@ export function listFor(state, ctx = {}) {
   return QUESTS.map((q) => {
     const s = of(state, q.id);
     const open = isOpen(state, q, ctx);
-    const waits = (ctx.week ?? 1) < (q.needs.week ?? 1) ? `From week ${q.needs.week}` : `After ${q.needs.quests.map((id) => questById(id).title).join(' and ')}`;
+    const before = q.needs.quests.filter((id) => !of(state, id).done).map((id) => `“${questById(id).title}”`);
+    const waits = (ctx.week ?? 1) < (q.needs.week ?? 1) ? `From week ${q.needs.week}` : q.needs.sorted && !isSorted(state) ? 'Once you’re sorted' : `After ${before.join(' and ')}`;
     return { id: q.id, name: `${q.n}. ${q.title}`, where: q.where, blurb: q.blurb, done: s.done, open: open && !s.done, locked: open ? null : waits };
   });
 }

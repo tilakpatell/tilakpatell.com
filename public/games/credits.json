@@ -5113,6 +5113,22 @@
     ],
     "license": "Generated for this site; TRELLIS.2 is MIT, FLUX.1-schnell Apache 2.0"
   },
+  "hogwarts/creatures/dementor": {
+    "source": "https://www.meshy.ai",
+    "name": "A dementor for the Hogwarts world, made with Meshy AI from a written description of its look (scripts/hogwarts-creatures-meshy.mjs)",
+    "authors": [
+      "Tilak Patel, with Meshy AI"
+    ],
+    "license": "Meshy paid-plan output, owned by the site owner"
+  },
+  "hogwarts/creatures/norris": {
+    "source": "https://www.meshy.ai",
+    "name": "Mrs Norris, the caretaker’s cat for the Hogwarts world, made with Meshy AI from a written description of its look (scripts/hogwarts-creatures-meshy.mjs)",
+    "authors": [
+      "Tilak Patel, with Meshy AI"
+    ],
+    "license": "Meshy paid-plan output, owned by the site owner"
+  },
   "hogwarts/willow": {
     "source": "https://www.meshy.ai",
     "name": "the Whomping Willow: a squat gnarled trunk twisted on itself, knuckled limbs, its crown a fan of long whips, generated for this site with Meshy AI from reference photographs",

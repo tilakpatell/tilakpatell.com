@@ -1,0 +1,13 @@
+{
+  "dementor": {
+    "acc": "MESHY_API_KEY_ACC_3",
+    "preview": "01a16143-abe8-7702-b25d-4a20d272e8c9",
+    "skull": "01a16144-fa53-7325-a140-d1ffffe269fe",
+    "refine": "01a16146-be23-776e-a4f7-57856f32f368"
+  },
+  "norris": {
+    "acc": "MESHY_API_KEY_ACC_3",
+    "preview": "01a16145-ad2b-7611-8513-40f756e63590",
+    "refine": "01a16147-7df0-71d9-9b00-bd581d666a25"
+  }
+}

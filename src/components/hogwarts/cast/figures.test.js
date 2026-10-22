@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest';
-import { HEIGHTS, STAND_IN, heightOf, moveFor } from './figures';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { HEIGHTS, STAND_IN, cutFor, forgetFigures, heightOf, manifest, moveFor } from './figures';
 import { NAMES } from '../rules/lines';
 
 describe('the cast’s figures', () => {
@@ -18,6 +18,23 @@ describe('the cast’s figures', () => {
     expect(heightOf('firstyear')).toBeLessThan(1.5);
     expect(heightOf('mcgonagall')).toBeGreaterThan(1.6);
     for (const h of Object.values(HEIGHTS)) expect(h).toBeGreaterThan(0.5);
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    forgetFigures();
+  });
+
+  it('reads Lane B’s cast.json, its figures under `figures` with their cuts and clips', async () => {
+    forgetFigures();
+    const json = { about: '…', figures: { filch: { height: 1.7, cuts: { hq: 'filch.hq.glb', mid: 'filch.glb', lo: 'filch.lo.glb' }, clips: { idle: 'filch-idle.glb' } } } };
+    vi.stubGlobal('fetch', async () => ({ ok: true, json: async () => json }));
+    const list = await manifest(null);
+    expect(list.filch.cuts.hq).toBe('filch.hq.glb');
+    expect(list.about).toBeUndefined();
+    expect(cutFor({ quality: { tier: 'low' } })).toBe('lo');
+    expect(cutFor({ quality: { tier: 'ultra' } })).toBe('hq');
+    expect(cutFor(null)).toBe('hq');
   });
 
   it('paces the feet as locomotion reads them: still, walking, running', () => {

@@ -24,6 +24,8 @@
 //             { type: 'caught', by, toast, to } and { type: 'points', house, delta, why }
 //   filchAt(state, base) → Filch’s place: his own (rules/people.js’s) or where his hurry has got him
 
+import { words } from './points';
+
 export const CURFEW = { from: 21, to: 6 };
 export const NOTICE = 0.7; // s: a moment in sight is caught; less is a fright
 export const FINE = 20;
@@ -46,13 +48,14 @@ export const PEEVES_LINES = {
   cloaked: ['A cloak, is it? Very pretty. Caretaker! Come and see the pretty cloak!', 'Nobody there, nobody there, and nobody’s breathing very loudly! Argus!', 'I can see your feet, invisible person. Mr Filch can’t. Mr Filch!'],
 };
 
-// what the toast says when you’re caught, by who caught you
+// what the toast says when you’re caught, by who caught you (the number said, as a teacher says it)
+const SAID = words(FINE);
 const CAUGHT = {
-  filch: (h) => `Filch’s lantern found you, and ${FINE} points went from ${h}.`,
-  cat: (h) => `Mrs Norris sat and stared until Filch came: ${FINE} points from ${h}.`,
-  prefect: (h) => `A prefect marched you back to bed and took ${FINE} points from ${h}.`,
-  snape: (h) => `Snape found you in the dark and took ${FINE} points from ${h} without a word.`,
-  bump: (h) => `Filch walked straight into you, cloak and all: ${FINE} points from ${h}.`,
+  filch: (h) => `Filch’s lantern found you, and ${SAID} points went from ${h}.`,
+  cat: (h) => `Mrs Norris sat and stared until Filch came: ${SAID} points from ${h}.`,
+  prefect: (h) => `A prefect marched you back to bed and took ${SAID} points from ${h}.`,
+  snape: (h) => `Snape found you in the dark and took ${SAID} points from ${h} without a word.`,
+  bump: (h) => `Filch walked straight into you, cloak and all: ${SAID} points from ${h}.`,
 };
 const HOUSE_NAME = { gryffindor: 'Gryffindor', hufflepuff: 'Hufflepuff', ravenclaw: 'Ravenclaw', slytherin: 'Slytherin' };
 

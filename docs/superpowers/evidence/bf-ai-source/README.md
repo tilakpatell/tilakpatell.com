@@ -25,7 +25,7 @@ The names and the fields agree wherever both hold a class, so the tree is the ga
 
 ## The sheet
 
-Verdicts: **same** (the site does what the source does), **differs** (corrected, with the commit’s row; or left, with why), **silent** (the source does not hold the rule; the records’ reading stands). “Fixed (1)” is this lane’s first pull request, “fixed (2)” its second, “fixed (3)” its third; “next lane” a later pull request, in the list at the end.
+Verdicts: **same** (the site does what the source does), **differs** (corrected, with the commit’s row; or left, with why), **silent** (the source does not hold the rule; the records’ reading stands). “Fixed (1)” is this lane’s first pull request, “fixed (2)” its second, “fixed (3)” its third, “fixed (4)” its fourth; “next lane” a later pull request, in the list at the end.
 
 ### The tactics: which, in what order, for how long
 
@@ -99,11 +99,11 @@ Verdicts: **same** (the site does what the source does), **differs** (corrected,
 | S1 | the squad’s alert | a wave at the template’s `AlertPropagationSpeed` | `Reason/CombatReasoning.cpp`, `updateCombatGroupAlertState`: a combat group (by default the whole side) alerted at once when any member sees its target | silent: the propagation speed is the records’ later field |
 | S2 | the squad’s confidence and posture | the site’s (`lib/ai/squad`), which turns flee on | none: the tree has no posture | differs, fixed (3) with T9: the posture no longer sends a bot to flee |
 | S3 | the combat intensity | none | `Reason/CombatIntensity.cpp`, `updateCombatIntensity`: Medium for an alerted group, none otherwise | differs, fixed (2), with P2 |
-| U1 | suppression | a near miss adds the shooter’s `SuppressionValue`, faded over the target’s `ContinuousSuppressionTime` | `Gather/AIPlayerInfo.cpp`, `AIPlayerInfo::updateWeaponSuppression`: `SuppressionValue` is the level a soldier’s own suppression must stay over for `ContinuousSuppressionTime` before it panics (so the heavy’s 1 means never); the meter is the soldier’s, outside BattleAI | differs, half fixed (3): the row’s `SuppressionValue` and `ContinuousSuppressionTime` are read as the source reads them, the level and the time over it before a panic (`panic.js`; only the co-op rows panic so); what a near miss adds to the meter is still the site’s reading, left until the soldier’s own suppression records are read |
+| U1 | suppression | a near miss adds the shooter’s `SuppressionValue`, faded over the target’s `ContinuousSuppressionTime` | `Gather/AIPlayerInfo.cpp`, `AIPlayerInfo::updateWeaponSuppression`: `SuppressionValue` is the level a soldier’s own suppression must stay over for `ContinuousSuppressionTime` before it panics (so the heavy’s 1 means never); the meter is the soldier’s, outside BattleAI | differs, half fixed (3): the row’s `SuppressionValue` and `ContinuousSuppressionTime` are read as the source reads them, the level and the time over it before a panic (`panic.js`; only the co-op rows panic so); what a near miss adds to the meter is still the site’s reading. Open after (4): the records were read (the AI body’s `SoldierSuppressionComponentData`, the bolt’s `WeaponSuppressionData`), but neither they nor the tree hold how an amount is made from them; that is the suppression component’s update, in the executable alone (NOTES names every field) |
 | U2 | `EngageSettings.SuppressionValue` | unused | `updateCombatGroupEngagedState`: over it a soldier counts as shot at, which only marks it engaged | same in effect |
 | C1 | the selection-form cover queries (`coverQuery.js`) | the records’ scores | not in the tree | silent |
-| C2 | a negative score in the older-form queries (`cover.js`) | added to the total | `Reason/CoverRequestJob/CoverRequestJob.cpp`, `applyScore`: any score below 0 rejects the cover | differs, next lane |
-| C3 | the older form’s angle | measured from the line between the bot and the target, by hand | `CoverRequestJob.cpp`, `scoreCoverRequests` (`angleRelativeDirectionDeg`): from the score’s own `ReferenceDirection`, which `ai.json` does not carry | differs, next lane (the extractor first) |
+| C2 | a negative score in the older-form queries (`cover.js`) | added to the total | `Reason/CoverRequestJob/CoverRequestJob.cpp`, `applyScore`: any score below 0 rejects the cover | differs, fixed (4); a step’s edge read as `Brain/Utils/PiecewiseLinear.h` reads it, too |
+| C3 | the older form’s angle | measured from the line between the bot and the target, by hand | `CoverRequestJob.cpp`, `scoreCoverRequests` (`angleRelativeDirectionDeg`) and `isApplicable`: from the score’s own `ReferenceDirection`, on the cover kinds and edges its `Filter` names, a switched-off score skipped, a preferred-range X from the weapon | differs, fixed (4): the extractor carries the four fields into `ai.json` from the records, the rulebook made again from the local export |
 | C4 | when an attacking bot asks for a new cover | after a drawn 1 to 3 s (the outdoor block), or when its slot stops shielding | `Reason/CoverStateUpdate.cpp`, `CoverState::updateAttackCoverRequestState` and `updateTimers`: after the drawn time in cover and only if the cover is outside the weapon’s preferred range of the target or the target has been lost for its drawn time, never within `MinimumDistanceToTarget`; the default block unless the level says indoor or outdoor | differs, fixed (3): a new goal cover only past the drawn time in cover (the default block’s 1 to 3 s) and out of the weapon’s preferred range of the target or with it lost its drawn time (1 to 3 s), never inside `MinimumDistanceToTarget`; a slot that no longer shields is left at once, as before (`coverRequest.js`) |
 | C5 | a hide cover turned | kept while held | `CoverStateUpdate.cpp` (the hide update, `InvalidateCoverAngle`): a hide cover the target has come round past half that angle is given up | differs, fixed (3): every row’s 180° is the half-plane a slot shields, so a hide cover is given up once it no longer shields; a narrower angle by `coverRequest.js`’s `hideCoverTurned` |
 | C6 | covers taken by others | not offered | `TacticCoverEvaluator.cpp`, `bookCovers` | same |
@@ -144,10 +144,18 @@ Each a tested rule in its own file beside the brain (`targeting.js`, `trigger.js
 
 The hero test (“Luke runs down three troopers and cuts them”) plays seed 2, where it played 1: with the troopers aiming at the eye and firing on at a target lost from sight, seed 1’s troopers die before a cut. Over eight seeds Luke kills all three every time and cuts in seeds 2, 4, 6 and 8; his own rules are unchanged.
 
+## The corrections in the fourth pull request
+
+The older-form cover scorer (`cover.js`, the brain’s fallback when the game’s selection-form query offers nothing), and the extractor that feeds it. Each a tested rule (`cover.test.js`; `scripts/lib/bf2017-rulebook-ai.test.mjs`, on two query records copied into its fixtures) and a row in NOTES.
+
+1. **A negative score rejects** (C2): any term scoring a slot below nothing rules it out, as `applyScore` does, where it was added to the total; the curves’ steps read at their edge as `PiecewiseLinear::evaluate` reads them.
+2. **Each term by its own record** (C3): `scripts/lib/bf2017-rulebook-ai.mjs` now carries an older-form term’s `ReferenceDirection`, its `Filter` (the set flags), a switched-off `Enabled` and a `WeaponPreferredRange` X into `ai.json`, and the rulebook was made again from the local export (`node scripts/bf2017-data.mjs ai --root …/BF2_Extract/web`: the cover queries’ terms and the date are all that changed). `cover.js` measures an angle or a projection from that reference (the cover’s facing is the slot’s normal), applies a term only to the cover kinds and edges its filter names, skips a switched-off term and takes a preferred-range X from the weapon. By hand, said in NOTES: the navgrid’s slots are stand covers with their top blocked or crouch covers with it open, and their sides, which the navgrid does not know, count by the best they could be.
+3. **The suppression meter’s amount** (U1’s other half) stays open. The soldier’s own suppression records were read (NOTES names every field), but how its suppression component makes an amount from them is in neither the records nor the AI tree: that component’s update is in the executable alone.
+
 ## What is left
 
-- **The older-form cover scorer** (C2, C3, `cover.js`, the fallback when the game’s query offers nothing): a negative score should reject the cover; the angle’s reference direction is the record’s, which the extractor (`scripts/`, another lane’s) must first carry into `ai.json`.
-- **The suppression meter** (U1’s other half): what a near miss adds is still the shooter’s `SuppressionValue`, by hand; the soldier’s own suppression records are to be read first. In the multiplayer rows no panic reads it, so a multiplayer round does not move by it.
+- **The older-form cover scorer’s sides**: the fourth pull request scores `cover.js` by the source (C2, C3), but the navgrid’s slots do not know whether their left and right edges are blocked, so a term that asks counts by the best the sides could be; the level’s own cover slots (their edges are in the game’s cover data) would settle it.
+- **The suppression meter** (U1’s other half): what a near miss adds is still the shooter’s `SuppressionValue`, by hand. The soldier’s own suppression records are read now and their numbers are in NOTES (the AI body’s `Gameplay/Characters/StormTrooperAI#SoldierSuppressionComponentData`: a 2.5 m sphere, a 2 s fall-off delay, a decay of 1; the bolt’s `BlasterProjectile_Default_Rifle#WeaponSuppressionData`: a multiplier of 10 from 12 to 50 m), but how the soldier’s suppression component turns them into an amount is in neither the records nor the AI tree, whose soldier and weapon code only read the level: a decompile of that component’s update in the executable closes it. In the multiplayer rows no panic reads the meter, so a multiplayer round does not move by it.
 
 ## The balance before and after: the first pull request
 
@@ -256,3 +264,39 @@ Galactic Assault (the Empire attacks):
 What moved, and why it should have: a bot no longer drops its target the moment its hold runs out, nor turns from it to a nearer one it only heard of; it keeps the one it sees, and when that one ducks out of sight a bot standing fires on at where it went for 4 s. It holds a cover inside its weapon’s range for as long as it sees its target, where it went looking for another every one to three seconds, and so spends less of the fight walking. None of it favours a side, and the sides come together: in Skirmish the Empire’s kills rise by three a round to the Rebels’ one fewer (16.5 – 13.5 from 17.6 – 10.2), and four rounds of ten now go to the Empire where two did. In Galactic Assault the attacking Empire, crossing the open under defenders who now keep their covers and their targets, still loses every round, but it trades better: 15 more kills a round, and the defenders spend its 150 reinforcements a minute and a half sooner (all twenty rounds end, where nineteen did). Flee moves nothing here: no grenade is thrown in these runs (the bots’ grenade is the Skirmish logic’s), so no bot panics, where before a squad that judged itself beaten could send its bots running. The single seeds swing more than the means, a battle being chaotic; no mean moves past the spread between seeds.
 
 The bots’ seeds (`npm run test:ai -- src/lib/battlefront`, the Skirmish and Galactic Assault arena tests): 20 of 20 on the branch in 2 minutes 19 seconds, stuck 0 and off the navgrid 0 in every round, every round ending in its result, the arena test’s seed 1 inside its 90 s; on `main` they were the second pull request’s branch’s, stuck 0.
+
+## The balance before and after: the fourth pull request
+
+`main` at `92e25472c` (the third pull request merged), run again for this one: its tables are the third pull request’s branch column, row for row. Both assaults ran in four processes.
+
+Skirmish, kills a side and the bots alive at the end:
+
+| seed | main | branch |
+| --- | --- | --- |
+| 1 | 10 – 20, 0 – 10 alive | 8 – 20, 0 – 12 |
+| 2 | 17 – 15, 5 – 3 | 16 – 15, 5 – 4 |
+| 3 | 20 – 12, 8 – 0 | 20 – 11, 9 – 0 |
+| 4 | 12 – 20, 0 – 8 | 13 – 19, 1 – 7 |
+| 5 | 15 – 16, 4 – 5 | 20 – 11, 9 – 0 |
+| 6 | 20 – 5, 15 – 0 | 20 – 8, 12 – 0 |
+| 7 | 19 – 7, 13 – 1 | 20 – 15, 5 – 0 |
+| 8 | 17 – 12, 8 – 3 | 18 – 15, 5 – 2 |
+| 9 | 20 – 9, 11 – 0 | 20 – 12, 8 – 0 |
+| 10 | 15 – 19, 1 – 5 | 20 – 14, 6 – 0 |
+| mean | kills 16.5 to 13.5; more alive: Rebels 6, Empire 4 | kills 17.5 to 14.0; Rebels 8, Empire 2 |
+
+Stuck 0 and off the navgrid 0 in both.
+
+Galactic Assault (the Empire attacks):
+
+| | main | branch |
+| --- | --- | --- |
+| results | the Rebels 20 (all by wiping the Empire’s reinforcements), the Empire 0, none 0 | the same |
+| median round | 13.95 min | 13.15 min |
+| kills | 151.9 (Rebels) to 224.7 (Empire) | 149.9 to 210.8 |
+| seed 1 (the arena test’s round) | the Rebels at 13.1 min, 150 – 210 | the Rebels at 12.6 min, 150 – 172 |
+| stuck, off the navgrid | 0, 0 | 0, 0 |
+
+What moved, and why it should have: the fallback scorer no longer offers a slot the game’s own query would throw out (one whose facing is turned from the target, one beside an enemy), and it scores the rest by the slot’s facing rather than by the line to the bot, so a bot it sends to cover goes to one that faces the threat squarely. The side that holds still and uses cover gains by it: in Galactic Assault the defending Rebels, who take their covers on the arena’s solids as the attack crosses the open, give up 14 fewer kills a round to the Empire (210.8 from 224.7) and spend its reinforcements most of a minute sooner (13.15 minutes from 13.95; seed 1, the arena test’s, 12.6 from 13.1). In Skirmish both sides gain a kill a round or less and the Rebels’ usual edge on this arena widens by one round of ten (8 from 6); no mean moves past the spread between seeds, a battle being chaotic. Nothing moves for the suppression meter, which nothing here changes.
+
+The bots’ seeds (`npm run test:ai -- src/lib/battlefront`, the Skirmish and Galactic Assault arena tests): 20 of 20 on the branch, twice (2 minutes 5 seconds, then 1 minute 58 seconds), stuck 0 and off the navgrid 0 in every round, the arena test’s seed 1 inside its 90 s; on `main` they were the third pull request’s branch’s, stuck 0.
