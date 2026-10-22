@@ -15,7 +15,7 @@
 //     house, week, learnt, knows(spell), feast() → the Cup (the leaving feast held), sleep(day), setWeek(w), nextYear(day) }
 //   hears: 'points' (always your house’s, unless marked rival), 'lesson', 'result', 'house', 'sorted', 'room' and
 //     'enter' (a room gone into), 'learnt', 'driven', 'pickup', 'caught', 'restricted', 'book', 'willow',
-//     'frozen', 'butterbeer', 'sweet'
+//     'frozen', 'butterbeer', 'sweet', 'led' (the next room is one you were marched to)
 //   tells: 'toast', 'school' (the view), 'cup' (a point won or lost, with the totals), 'week', 'quest', 'card', 'achievement'
 //   view(): { house, week, label, season, totals, standings, list, objective, done, total, christmas, leaving, feasted }
 
@@ -61,6 +61,7 @@ export function createSchool({ saves = null, tell = () => {}, house: given = nul
   let feasted = Boolean(term.feast);
   let dirty = false;
   let seen = -1; // (the world’s day, as the clock last said)
+  let led = false; // (marched back to bed: the next room you’re put in isn’t one you found)
 
   const keep = () => {
     dirty = false;
@@ -143,8 +144,17 @@ export function createSchool({ saves = null, tell = () => {}, house: given = nul
         score({ type: 'points', ...e, house: e.rival && HOUSES[e.house] ? e.house : house });
         break;
       case 'room':
-        // (the rooms’ host says which room you’re in; the quests read it as a room gone into)
-        if (e.id) quest({ type: 'enter', room: e.id });
+        // (the rooms’ host says which room you’re in; the quests read it as a room gone into,
+        // unless you were marched there: a common room found for you isn’t found unaided)
+        if (e.id && led) led = false;
+        else if (e.id) quest({ type: 'enter', room: e.id });
+        break;
+      case 'led':
+        led = true;
+        break;
+      case 'sleep':
+        // (a night in your four-poster: the week moves on)
+        weeks(termOn(term, { type: 'sleep', day: seen >= 0 ? seen : term.began }));
         break;
       case 'lesson':
         if (e.done === false) break;

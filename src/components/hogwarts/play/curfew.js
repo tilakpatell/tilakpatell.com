@@ -13,13 +13,19 @@
 import { newCurfew, step as stepCurfew } from '../rules/curfew';
 
 const HEARD = 'Somewhere close, a shuffle quickens: Filch has heard something.';
+const LED = 8; // s you’re in someone’s charge after being caught (the room you’re sent to loads in that time)
 
 export function createCurfew({ tell = () => {}, onCaught = () => {} } = {}) {
   let state = newCurfew();
   let shown = 0; // the eye as the page last had it (0 shut … 1 wide), stepped so it isn’t told every frame
+  let led = 0; // s of being walked back to bed: nobody catches you twice on the way
 
   return {
     step(dt, { hour, player, figures, house }) {
+      if (led > 0) {
+        led = Math.max(0, led - dt);
+        return;
+      }
       const r = stepCurfew(state, { hour, dt, player, figures, house });
       state = r.state;
       for (const e of r.events) {
@@ -29,6 +35,7 @@ export function createCurfew({ tell = () => {}, onCaught = () => {} } = {}) {
         else if (e.type === 'caught') {
           tell('toast', { text: e.toast });
           tell('caught', { by: e.by });
+          led = LED;
           onCaught(e);
         }
       }

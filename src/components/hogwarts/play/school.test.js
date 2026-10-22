@@ -114,6 +114,22 @@ describe('the term in the world', () => {
     expect(school({ week: 5 }).s.cloak).toBe(false);
   });
 
+  it('moves the week on for a night in your four-poster', () => {
+    const { s } = school();
+    s.hear('sleep', { house: 'ravenclaw' });
+    expect(s.week).toBe(2);
+  });
+
+  it('doesn’t count a common room you were marched to as found', () => {
+    const { s } = school();
+    s.hear('sorted', { house: 'ravenclaw' });
+    s.hear('led', {});
+    s.hear('room', { id: 'ravenclaw', name: 'The Ravenclaw common room' });
+    expect(s.view().list[0].done).toBe(false);
+    s.hear('room', { id: 'ravenclaw', name: 'The Ravenclaw common room' });
+    expect(s.view().list[0].done).toBe(true);
+  });
+
   it('keeps the cards found, each once', () => {
     const { s, of } = school();
     s.hear('pickup', { id: 'card', card: 'merlin' });

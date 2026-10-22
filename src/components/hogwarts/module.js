@@ -79,7 +79,7 @@ import { ANCHORS_A } from './world/arrival/shots';
 import { BEATS, PARTS } from './rules/arrival';
 import { createNight } from './play/night';
 import { createSchool } from './play/school';
-import { createNoticeBoard } from './world/noticeBoard';
+import { createNoticeBoard, noticesFor } from './world/noticeBoard';
 import { createCurfew } from './play/curfew';
 import { createPresence } from './play/presence';
 import { createDementors, playNotes } from './world/grounds/dementors';
@@ -247,10 +247,12 @@ export default {
     // the Great Hall as the term has it: the hourglasses at every house’s
     // points, the twelve trees at Christmas, and at the leaving feast the
     // tables laid and the banners in the colours of the house that won
+    // (and any other room with a notice board, a common room’s, gets the week’s notices pinned to it)
     const dress = (settle = false) => {
-      if (rooms.id !== 'greatHall' || !rooms.room?.set) return;
+      if (!rooms.room?.set) return;
       const v = school.view();
-      rooms.room.set({ points: v.totals, settle, christmas: v.christmas, ...(v.leaving && v.feasted ? { feast: true, cup: v.standings[0]?.house ?? null } : {}) });
+      if (rooms.id !== 'greatHall') rooms.room.set({ notices: noticesFor(v).notes });
+      else rooms.room.set({ points: v.totals, settle, christmas: v.christmas, ...(v.leaving && v.feasted ? { feast: true, cup: v.standings[0]?.house ?? null } : {}) });
     };
     // the leaving feast: in the Great Hall, wherever you were; the Cup’s card comes with it
     const feast = async () => {
@@ -277,6 +279,8 @@ export default {
       tell('cut', {});
       wear(false);
       if (ROOMS_BUILT[school.house]) {
+        // (led there: the term doesn’t count it as your common room found)
+        tell('led', {});
         rooms.enter(school.house).catch(() => {});
         return;
       }
