@@ -157,6 +157,7 @@ export function createBrain(s, { ai, role: given = null, rand = Math.random, aim
     // causes and times are the difficulty row's, the multiplayer default where none is set)
     aiRange: weaponRange(pveWeapon ?? aiWeapon),
     moveFire: MOVE_FIRE.attack[template.tactics] ?? DEFAULT_MOVE,
+    fleeFire: MOVE_FIRE.flee[template.tactics] ?? DEFAULT_MOVE,
     sightTrack: {},
     panicRow: difficulty?.row ?? ai.difficulties?.[DEFAULT] ?? null,
     panicState: { panic: null, over: 0 },
@@ -536,9 +537,10 @@ export function think(brain, world, now) {
     intent.goal = brain.fleeTo;
     intent.sprint = true;
     // (no fire on the way: every multiplayer flee row's move settings say so; in its cover it fires as
-    // an attacking bot does, the behaviour tree's `combatFlee_Hide`)
+    // an attacking bot does, the behaviour tree's `combatFlee_Hide`. The Skirmish heavy's row fires on the
+    // way at a target inside 30 m: trigger.js)
     const could = intent.fire;
-    intent.fire = false;
+    intent.fire = could && firesOnTheMove(brain.fleeFire, dist);
     // (come to its flee cover: it waits there, crouched, until the flee is done and it hides)
     if (d2(me, intent.goal) < NEAR_GOAL) {
       brain.fleeCoverSince ??= now;

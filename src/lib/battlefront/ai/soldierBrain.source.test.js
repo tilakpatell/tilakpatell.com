@@ -270,6 +270,21 @@ describe('flee', () => {
     expect(['flee', 'hide']).toContain(think(b, world(), 4).mode);
     expect(think(b, world(), 6.2).mode).toBe('hide');
   });
+
+  it('fires on the way only where its flee row’s move settings say so: the Skirmish heavy’s, inside 30 m', () => {
+    const fleeing = (b) => {
+      see(b, 'them', [0, 1.2, -25]);
+      const w = world({ grenades: [grenade([2, 0, -50])] });
+      think(b, w, 1);
+      return think(b, w, 1.3);
+    };
+    const heavy = fleeing(bot([0, 0, -50], { pve: true }, 'd-orig-heavy'));
+    expect(heavy.mode).toBe('flee');
+    expect(heavy.fire).toBe(true);
+    const rifle = fleeing(bot([0, 0, -50]));
+    expect(rifle.mode).toBe('flee');
+    expect(rifle.fire).toBe(false);
+  });
 });
 
 describe('the aim', () => {
