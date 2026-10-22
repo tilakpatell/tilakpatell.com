@@ -8,7 +8,7 @@
 // write a line, an owl takes it, and a reply is on your common room’s board
 // the morning after you’ve slept (rules/post.js, in the world’s save).
 //
-// TODO(hogwarts cast): the owls are a stand-in drawn here until Lane B’s owl
+// (hogwarts cast) The owls are a stand-in drawn here until Lane B’s owl
 // (its props, B5) is in public/models/hogwarts; the head-turning stays.
 
 import * as THREE from 'three';
