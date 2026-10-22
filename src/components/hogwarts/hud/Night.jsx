@@ -9,13 +9,24 @@ import './night.css';
 // being walked back to bed. Overlays on the world, never over the kit’s
 // parts: pointer events pass through all of them.
 //
-//   <Night watched={{ k, by } | null} cloaked cold={0…1} cut={n (bumped for each cut)} reduced />
+// And a butterbeer’s warmth: an amber glow at the edge of the view for a
+// minute, fading as it goes down.
+//
+//   <Night watched={{ k, by } | null} cloaked cold={0…1} cut={n (bumped for each cut)} warm={n (bumped for each butterbeer)} reduced />
 
 const WHO = { filch: 'Filch’s lantern', cat: 'Mrs Norris', prefect: 'A prefect', snape: 'Professor Snape', bump: 'Filch' };
 const CUT_FOR = 1600; // ms the black lasts
+const WARM_FOR = 60000; // ms a butterbeer keeps you warm
 
-export default function Night({ watched = null, cloaked = false, cold = 0, cut = 0, reduced = false }) {
+export default function Night({ watched = null, cloaked = false, cold = 0, cut = 0, warm = 0, reduced = false }) {
   const [black, setBlack] = useState(false);
+  const [glow, setGlow] = useState(0);
+  useEffect(() => {
+    if (!warm) return undefined;
+    setGlow(warm);
+    const t = setTimeout(() => setGlow(0), WARM_FOR);
+    return () => clearTimeout(t);
+  }, [warm]);
   useEffect(() => {
     if (!cut) return undefined;
     setBlack(true);
@@ -25,6 +36,7 @@ export default function Night({ watched = null, cloaked = false, cold = 0, cut =
   return (
     <>
       {cold > 0.02 && <div className="hogwarts-cold" style={{ '--cold': cold }} aria-hidden="true" />}
+      {glow > 0 && <div key={glow} className="hogwarts-warm" data-still={reduced || undefined} aria-hidden="true" />}
       {cloaked && <div className="hogwarts-cloaked" data-still={reduced || undefined} aria-hidden="true" />}
       {cloaked && (
         <p className="hogwarts-cloak-chip">
