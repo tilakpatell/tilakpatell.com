@@ -10,6 +10,8 @@ import WandCard, { Scarf } from './hud/WandCard';
 import SpellWheel from './hud/SpellWheel';
 import { houseColours } from './rules/sorting';
 import './hud/match.css';
+import MaraudersMap from './hud/MaraudersMap';
+import { parseWeek } from './rules/term';
 import '@fontsource/cinzel/600.css';
 import '@fontsource/cinzel/700.css';
 import './hogwarts.css';
@@ -38,6 +40,9 @@ const lineFor = (text) => Math.max(2800, 900 + text.length * 52);
 // On a broom: the Menu's Snitch practice and a match, the match's line
 // under the title (the score, or how far the Snitch is), the commentator in
 // the kit's Bubble over his box, and on touch Up, Down and Catch.
+// The Marauder’s Map (hud/MaraudersMap.jsx) is the minimap, opened on M,
+// from the Menu or with a tap of its disc; it reads the world’s night every
+// frame through `map()`, never through React.
 const SAID_FOR = 5000; // ms a commentator's line stays up
 // the classes on the Menu, until the term's lane sends you to them in their rooms
 const LESSON_ITEMS = [
@@ -55,7 +60,8 @@ export default function HogwartsWorld() {
   const touch = useMediaQuery('(hover: none) and (pointer: coarse)');
   const portrait = useMediaQuery('(orientation: portrait)');
   // (the address is read once: ?at=hall opens the arrival in the Great Hall)
-  const [props] = useState(() => ({ reduced, at: params.get('at') }));
+  const narrow = useMediaQuery('(max-width: 639px)');
+  const [props] = useState(() => ({ reduced, at: params.get('at'), week: parseWeek(params) ?? 1 }));
   const [door, setDoor] = useState(null);
   const [toast, setToast] = useState(null);
   const [list, setList] = useState(false);
@@ -83,6 +89,7 @@ export default function HogwartsWorld() {
   const bubble = useRef(null);
   const card = useRef(null);
   const ring = useRef(null);
+  const map = useRef(null);
 
   const onEvent = useCallback((e) => {
     if (e.type === 'near') setDoor(e.door);
@@ -131,6 +138,7 @@ export default function HogwartsWorld() {
   }, []);
   const { host, status, rt } = useWorld(hogwartsModule, { props, onEvent });
   const api = useCallback(() => (rt?.current?.module === hogwartsModule ? rt.current.world : null), [rt]);
+  const night = useCallback(() => api()?.map?.() ?? null, [api]);
   const choose = useCallback((id) => {
     api()?.choose(id);
     setSpell(id);
@@ -210,6 +218,11 @@ export default function HogwartsWorld() {
         tools={
           <div ref={menu} className="hp-tools">
             <Menu className="hogwarts-menu" way={wayOut(pathname)} todo={{ onOpen: () => setList(true), done: 0, total: 0 }}>
+              {!onRide && (
+                <MenuItem onClick={() => map.current?.open()} aria-keyshortcuts="M">
+                  The Marauder’s Map
+                </MenuItem>
+              )}
               {!onRide && <MenuItem onClick={() => api()?.arrive()}>The arrival</MenuItem>}
               {/* (the broom and the classes are the shore's, until the term's lane sends you to them in their rooms) */}
               {!onRide && !room && !riding && <MenuItem onClick={() => api()?.fly()}>Fly</MenuItem>}
@@ -270,6 +283,7 @@ export default function HogwartsWorld() {
       >
         <Scarf house={house} />
         <Toast toast={toast} className="hogwarts-toast" />
+        {!onRide && <MaraudersMap ref={map} source={night} touch={touch} narrow={narrow} reduced={reduced} />}
         {caption && <Bubble key={caption.key} name={caption.name} line={caption.text} className="hp-said" />}
         {ask != null && <SortingCard q={ask} tall={portrait} onAnswer={(i) => api()?.answer(i)} />}
         {sorted && ask == null && <SortingCard result={sorted} />}
