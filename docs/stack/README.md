@@ -9,6 +9,8 @@ WebAssembly is the browser’s own, not a package, and so has no row; its page i
 
 Cloudflare (the DNS, the Worker that serves the site, and wrangler, run with `npx` by the deploy) is no package either; its page is [cloudflare.md](cloudflare.md), with what it costs.
 
+Cloudflare R2, the bucket the raw city packs are kept in, is S3’s API signed by `scripts/r2-packs.mjs` with Node’s own `crypto`, not a package, and so has no row; its page is [../assets/city-packs.md](../assets/city-packs.md).
+
 <!-- census:start -->
 | package | version | page | files |
 | --- | --- | --- | --- |

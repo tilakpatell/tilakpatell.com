@@ -120,6 +120,16 @@ Choices the plan didn't make, and why:
 - **Simplify crosses UV seams** (meshopt's `Permissive`): without it the
   bark, hundreds of UV islands, stops at 79-96 % and no tree's LOD1 makes 40 %;
   with it every part reaches the quarter at 0.1-0.4 % error.
+- **A city building's LOD1 is a box wearing pictures of itself**
+  (`lod: { building: { facade: true } }`, `facade.mjs`): its four sides and
+  its roof drawn on the CPU from its own textured triangles, an
+  orthographic picture a face, into one 1024 atlas (its material
+  `<Name>_Facade`, a far copy's own, listed in the manifest though no
+  model's parts wear it), ten triangles in all. Simplified as a tree is, to
+  a twentieth, the Downtown kit's tenements tore their walls open; kept
+  whole by their borders they stayed at four fifths; a sixth held to a
+  hundredth in error kept them whole at some 5,000 triangles, and the
+  city's 191 of them were then a million triangles a frame on their own.
 - **Normals in 8 bits**, not meshopt `medium`'s 10: a family is mostly its
   geometry, and at 10 bits the megakit came to 12.8 MiB, over its 12.
 - **Five space atlases, five materials**: the pack's files embed atlases up

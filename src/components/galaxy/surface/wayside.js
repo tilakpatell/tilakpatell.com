@@ -1,7 +1,8 @@
 // What you come on out in the free roam, past a world's core (roam.js): a
 // kilometre square region at a time, seeded by the world and the region
 // alone, so it is the same every visit, holds one place or none, a camp, a
-// downed starfighter, an outpost or a ruin, by what kind of world it is.
+// downed starfighter, an outpost, a ruin or a small town (town.js), by what
+// kind of world it is.
 // Pure: the scene puts a region's things in (`abs`, on the land's own height,
 // so they sit on the ground as the ground is drawn when you get there) as it
 // comes within sight (docs/superpowers/specs/2026-10-20-galaxy-living-free-
@@ -15,9 +16,12 @@
 //     (a thing's `lie`: metres each way the scene lays it along the land's slope)
 //   regionsAround(x, z, reach) → [[rx, rz]] whose middles are within reach
 //   laidOn(thing, height) → the thing on the land's own height (`abs`, `y`),
-//     one with a `lie` pitched and rolled to the land's slope under it
+//     one with a `lie` pitched and rolled to the land's slope under it, one
+//     with a `seat` (a house's) on the lowest of the land round it, so no
+//     corner of it hangs over a slope
 
 import { seeded } from '../../../lib/seeded.js';
+import { SPAN as TOWN, townOf } from './town.js';
 
 export const REGION = 1000;
 const CHANCE = 0.55; // of a region holding a place
@@ -26,7 +30,7 @@ const CORE = 300; // metres past the world's reach before the first
 const TRIES = 8; // spots in its region a place may try for flat ground
 const FLAT = 0.12; // the most its ground may rise across it, a metre a metre
 // (the metres across a place that must be flat: a ship's its length)
-const SPAN = { camp: 10, outpost: 12, ruin: 12 };
+const SPAN = { camp: 10, outpost: 12, ruin: 12, town: TOWN };
 
 // a place's things, about its middle and turned with it: [kind, x, z, more]
 const KITS = {
@@ -64,8 +68,8 @@ const SHIPS = [
   ['tie', 6.3],
 ];
 // which a world's kind of land turns up, and how often
-const GREEN = { camp: 0.4, ruin: 0.35, wreck: 0.25 };
-const BARE = { wreck: 0.35, outpost: 0.35, camp: 0.3 };
+const GREEN = { camp: 0.3, ruin: 0.25, wreck: 0.2, town: 0.25 };
+const BARE = { wreck: 0.3, outpost: 0.25, camp: 0.2, town: 0.25 };
 const LUSH = new Set(['plains', 'temperate', 'conifer', 'jungle', 'swamp', 'tropical']);
 
 const pick = (rand, odds) => {
@@ -112,7 +116,7 @@ export function waysideAt(site, rx, rz, height = null) {
   }
   const c = Math.cos(yaw);
   const s = Math.sin(yaw);
-  const things = KITS[kind].map(([k, dx, dz, more = {}]) => ({
+  const things = (kind === 'town' ? townOf(rand, site) : KITS[kind]).map(([k, dx, dz, more = {}]) => ({
     kind: k === '$ship' ? 'downed' : k,
     // (a ship laid along the land under its length: `lie`)
     ...(k === '$ship' ? { opts: { ship, metres, roll }, lie: metres * 0.45 } : {}),
@@ -135,9 +139,14 @@ export function regionsAround(x, z, reach) {
 // (a long thing laid along the land, `lie` metres each way: pitched up the
 // slope ahead of it and rolled to the slope across it, so a downed ship's
 // ends neither hang over a drop nor dig in deep)
+const lowest = (height, x, z, r) => {
+  let y = height(x, z);
+  for (let i = 0; i < 8; i++) y = Math.min(y, height(x + Math.cos((i / 8) * Math.PI * 2) * r, z + Math.sin((i / 8) * Math.PI * 2) * r));
+  return y;
+};
 export function laidOn(t, height) {
   const [x, z] = t.at;
-  const out = { ...t, abs: true, y: height(x, z) };
+  const out = { ...t, abs: true, y: t.seat ? lowest(height, x, z, t.seat) : height(x, z) };
   const L = t.lie ?? 0;
   if (!L) return out;
   const f = [Math.sin(t.yaw ?? 0), Math.cos(t.yaw ?? 0)];
