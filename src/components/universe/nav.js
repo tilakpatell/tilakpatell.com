@@ -24,7 +24,7 @@ import { MAW, parkNear } from './maw';
 import { WONDERS, reachOf } from './deep';
 import { HOME_RADIUS, ORDER, POSITIONS, REACH, SECTORS, mapSectorOf, sectorOf } from './layout';
 import { MOONS, byId } from './universes';
-import { LENGTH } from './scale';
+import { LENGTH, SPREAD } from './scale';
 import { pilotId } from './pilotGoal';
 import { SYSTEM_MARKS, SYSTEM_NAMES } from '../galaxy/names';
 
@@ -301,7 +301,10 @@ export function distanceTo(ship, id) {
 // jump goes to the portal, and the hyperdrive's charging by the far side, so
 // on from there at super speed)
 export const TRANSIT = 0.6; // seconds through a portal (the flash)
-export function tripTime(ship, id, drive = 'super', { limit = 150, dt = 1 / 30 } = {}) {
+// (`limit`: how many seconds it flies before it gives up and the nav map says
+// a dash; it grows with the spread, scale.js's SPREAD, so the far worlds'
+// cruise still has a time: 150 at six, 200 at eight)
+export function tripTime(ship, id, drive = 'super', { limit = 25 * SPREAD, dt = 1 / 30 } = {}) {
   id = goalOf(id);
   if (!ship || !GOALS[id]) return null;
   const leg = legOf(ship, id);

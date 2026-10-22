@@ -16,8 +16,8 @@ import {
   sectorKey,
 } from "../../../lib/space/address";
 
-// 120,000 is the universe's spread to six (scale.js's SPREAD): the authored map's edge is 54,000 out,
-// so sector 0,0 must reach past it.
+// 120,000 was the universe's spread to six (scale.js's SPREAD); the authored map's edge is written
+// from it now, 59,000 out (universe/layout.js), so sector 0,0 reaches past it.
 export { SECTOR };
 
 export const sectorAt = (x, z) => {

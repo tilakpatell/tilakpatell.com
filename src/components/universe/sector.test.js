@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { BODIES, MAP_RADIUS, ORDER, POSITIONS, REACH, SECTORS, SECTOR_OF, SECTOR_RADIUS, inSector, sectorOf, sectorOut } from './layout';
 import { WONDERS, reachOf } from './deep';
+import { SECTOR } from '../../lib/space/address';
 import { OPEN_SPACE, SPACE, spawn, step } from './ship';
 
 describe('the sectors', () => {
@@ -26,6 +27,14 @@ describe('the sectors', () => {
     const o = SECTORS.rickmorty.origin;
     for (const id of rm) expect(Math.hypot(POSITIONS[id][0] - o[0], POSITIONS[id][2] - o[2]) + REACH[id], id).toBeLessThanOrEqual(SECTOR_RADIUS.rickmorty + 1e-9);
     expect(SECTOR_RADIUS.rickmorty).toBeLessThan(SECTORS.rickmorty.edge);
+  });
+
+  it('fits the main map inside the Expanse’s middle sector, and the Rick and Morty pocket in the one past it', () => {
+    // (lib/space/address.js's SECTOR is written out from scale.js's SPREAD: the two grow together)
+    expect(SECTORS.main.edge).toBeLessThan(SECTOR / 2);
+    const rm = SECTORS.rickmorty;
+    expect(-rm.origin[2] - rm.edge).toBeGreaterThanOrEqual(SECTOR / 2);
+    expect(-rm.origin[2] + rm.edge).toBeLessThan(SECTOR * 1.5);
   });
 
   it('puts every wonder in the sector it says, inside that sector’s edge', () => {

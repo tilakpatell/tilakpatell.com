@@ -129,8 +129,8 @@ export const RATES = { pose: [20, 30], foot: [20, 30], walk: [20, 30], cur: [25,
 export const FLOOD = { denied: 60, window: 5000 }; // turned away this often in this long: muted
 export const FLAG = { hidden: 1, boost: 2, safe: 4, lane: 8 };
 // how far out a pilot can be, level, and how fast they can go: the universe
-// spread six times wider (scale.js's SPREAD: places reach 54,000 out, the
-// Rick and Morty sector sits at z −66,000) and the fastest ever ran at
+// spread eight times wider (scale.js's SPREAD: the map's edge is 59,000 out,
+// the Rick and Morty sector sits at z −66,000) and the fastest ever ran at
 // 4,000 a second, so a little past both
 export const FAR = 90000;
 export const FAST = 5000;
