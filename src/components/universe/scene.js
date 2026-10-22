@@ -114,7 +114,7 @@ import { MODEL_PLANETS, buildPlanet, loadModel, loadModels, loadTextures } from 
 import { createLazy, standIn, wanted as nearEnough } from './nearby';
 import { loadSteps } from './loadSteps';
 import { buildSun } from './sun';
-import { MAP_LENS, aberrationFor, createPost, spaceEnvironment } from './post';
+import { MAP_LENS, aberrationFor, createPost, createSpaceEnvironment } from './post';
 import { grainFor } from '../../lib/three/noise';
 import { createFlare, flareWeight, occluded } from '../../lib/three/flare';
 import { exposureFor, sunShareOf } from '../../lib/three/exposure';
@@ -147,7 +147,7 @@ import { createLandmarks } from './landmarks';
 import { aimFrom, aimTargets, jumpPhase, nameShows } from './aim';
 import { aligned, steerToward } from '../galaxy/space';
 import { createSectorPortals } from './sectorPortals';
-import { GUN, gunHit, gunTransit } from './gunPortal';
+import { CROSS, GUN, gunHit, gunTransit } from './gunPortal';
 import { createGunPortal } from './gunPortalFx';
 import { createCurve } from './curve';
 import { createSectorFleet } from './sectorFleetView';
@@ -647,7 +647,8 @@ export async function create(canvas, ctx) {
   const T = await loadTextures({ small, onStep: steps.maps });
 
   // what metal reflects, and the passes after the scene (post.js)
-  let env = spaceEnvironment(renderer, T['sky-glow']);
+  const envMaker = createSpaceEnvironment(renderer, T['sky-glow']);
+  let env = envMaker.make();
   scene.environment = env.texture;
   // (multisampled as at the ratio the map will draw at, module.js's 2 at
   // most, lib/device's answer: made at a handover, the renderer is still at
@@ -4254,13 +4255,31 @@ export async function create(canvas, ctx) {
     if (then && !travel(then.id, then.drive === 'hyper' ? 'super' : then.drive) && pilotId(then.id)) pilotGone(then.id, then.name); // (a pilot gone while it went through)
   };
 
+  // into a Rick portal (the gun's, or a sector's): the page plays his portal
+  // jump over the map from where the goo fills the view (gunPortal.js's
+  // CROSS), and the ship's out the other side under its flash, when the page
+  // says (crossNow) or CROSS.most seconds on if it never does. Till then it
+  // flies on into the goo, and nothing else takes it through anything
+  let crossing = null; // { go, until }
+  const cross = (go) => {
+    if (crossing) return;
+    crossing = { go, until: wall() + CROSS.most };
+    emit({ type: 'crossing', from: CROSS.from });
+  };
+  const crossNow = () => {
+    const c = crossing;
+    crossing = null;
+    // (shot down, landed or gone off to the map since: nothing to take through)
+    if (c && state.ship && flying() && !onFoot() && !state.crash) c.go();
+  };
+
   // Rick's portal gun (P, or the HUD's Portal button): in any ship, flying
   // (Rick's cruiser, or whoever's got hold of one: crews.js has how), a
   // portal splats open ahead on the way it's going (gunPortal.js), on Rick's
   // dimension from anywhere at home, on home from there. False if it can't
   // be fired now (on foot, mid-jump, too soon)
   const portalGun = () => {
-    if (!state.kind || !flying() || onFoot() || state.crash || state.jump || state.held || state.view === 'map') return false;
+    if (!state.kind || !flying() || onFoot() || state.crash || state.jump || state.held || crossing || state.view === 'map') return false;
     if (state.clock - gunAt < GUN.cool || !gunPortal.fire(state.ship)) return false;
     gunAt = state.clock;
     heard();
@@ -4281,6 +4300,7 @@ export async function create(canvas, ctx) {
   };
 
   const fly = (dt, t) => {
+    if (crossing && wall() >= crossing.until) crossNow();
     if (state.crash) return crashing(dt);
     // out of the cockpit through Rick's portal: the cruiser comes out in
     // his dimension, as soon as it's flying (it may still be being made)
@@ -4404,10 +4424,10 @@ export async function create(canvas, ctx) {
     // into another ship (shipHits.js): a glance, or a ram
     if (!state.jump && !state.held && !state.dive && state.view !== 'map') shipsHit(before, state.ship, dt);
     if (state.crash) return true;
-    if (!state.jump && !state.held) {
+    if (!state.jump && !state.held && !crossing) {
       const into = portalHit(before, state.ship);
-      if (into) portalThrough(into);
-      else if (gunPortal.spot && gunHit(before, state.ship, gunPortal.spot, gunPortal.age)) gunThrough();
+      if (into) cross(() => portalThrough(into));
+      else if (gunPortal.spot && gunHit(before, state.ship, gunPortal.spot, gunPortal.age)) cross(gunThrough);
     }
     // into a planet's air (entry.js): at a speed it can land at, straight on
     // into its world (flyInto); any faster it's no way in (it goes on into
@@ -4986,7 +5006,7 @@ export async function create(canvas, ctx) {
     // neighbourhood to another's): its glow where the star is, in its colour
     if (l.key.id !== envStar && !lightNow.first) {
       envStar = l.key.id;
-      const next = spaceEnvironment(renderer, T['sky-glow'], { light: lightTo.set(...l.key.dir).negate().applyAxisAngle(Y_AXIS, state.yaw), colour: l.key.colour });
+      const next = envMaker.make({ light: lightTo.set(...l.key.dir).negate().applyAxisAngle(Y_AXIS, state.yaw), colour: l.key.colour });
       scene.environment = next.texture;
       env.dispose();
       env = next;
@@ -6123,6 +6143,10 @@ export async function create(canvas, ctx) {
     portalGun() {
       return portalGun();
     },
+    // the page's portal jump at its flash: out the far side of the portal flown into
+    crossNow() {
+      crossNow();
+    },
     // the phone's Ship button (G on foot): a door, or back in the ship
     out() {
       heard();
@@ -6307,6 +6331,7 @@ export async function create(canvas, ctx) {
       disposeTree(scene);
       post.dispose();
       env.dispose();
+      envMaker.dispose();
       // (the renderer and its canvas are the runtime's: put as they were once
       // the map has gone, unless the next world has them by then. A handover
       // makes the next world before it lets the map go, and places it in the

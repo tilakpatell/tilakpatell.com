@@ -366,6 +366,8 @@ export default function Universe({ ask = false }) {
     if (e.type === 'launch' && !tucked && window.matchMedia?.(PHONE_FLIGHT).matches) tuck(true);
     // (the hello says what you are to the others: useOnline.js reads it again)
     if (e.type === 'event' && e.id === 'standing') window.dispatchEvent(new Event('tp:standing'));
+    // (a portal open ahead: its jump's code fetched now, so flying in doesn't wait on it)
+    if (e.type === 'event' && e.id === 'portalgun') import('../components/jumps/PortalJump');
     if (e.type === 'event' && e.id === 'standing' && goodStanding(e.sub) && stood.once(`${e.side}:${e.sub}`)) pay('standingUp', 1, e.side);
     // a trip to a pilot over (with them, gone, or the stick taken back): the follow's done
     if ((e.type === 'arrived' || e.type === 'jumped' || e.type === 'lost') && followRef.current && e.id === `pilot:${followRef.current}`) follow(null);
@@ -402,7 +404,12 @@ export default function Universe({ ask = false }) {
       stopTour();
     }
     if (e.type === 'map') setCharting((o) => !o);
-    else if (e.type === 'jump') {
+    else if (e.type === 'crossing') {
+      // into a Rick portal (the gun's, or a sector's): his portal jump over
+      // the map from the goo filling the view, and the ship out the far side
+      // under its flash (the scene goes anyway if this never says)
+      window.dispatchEvent(jumpEvent('portal', { from: e.from, onPeak: () => map.current.crossNow?.() }));
+    } else if (e.type === 'jump') {
       window.dispatchEvent(jumpEvent(crew?.jump));
       if (!jumped.current) {
         jumped.current = true;

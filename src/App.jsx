@@ -22,7 +22,7 @@ import { isPaletteKey } from './lib/palette';
 import { guideKeyFor } from './components/guide/routes';
 import { introPlaying } from './lib/stale';
 import { isMapPath, saveStart } from './lib/view';
-import { jumpStyle } from './components/jumps/styles';
+import { jumpFrom, jumpStyle } from './components/jumps/styles';
 import WorldGate from './components/worlds/WorldGate';
 import Ambience from './components/ambience/Ambience';
 import { categoryAt, isFeedMove } from './components/feed/feed';
@@ -135,6 +135,7 @@ function Lightspeed() {
   const { unlock } = useAchievements();
   const [on, setOn] = useState(0);
   const [style, setStyle] = useState('hyper');
+  const [from, setFrom] = useState(0); // (ms along its timeline a jump starts at: jumps/styles.js's jumpFrom)
   const seq = useRef([]);
   const waiting = useRef(null); // the page's onPeak, till it's called
   const peak = useCallback(() => {
@@ -150,7 +151,9 @@ function Lightspeed() {
         waiting.current = e.detail.onPeak;
         e.detail.taken = true;
       }
-      setStyle(prefersReducedMotion() ? 'hyper' : jumpStyle(e?.detail?.style));
+      const reduced = prefersReducedMotion();
+      setStyle(reduced ? 'hyper' : jumpStyle(e?.detail?.style));
+      setFrom(reduced ? 0 : jumpFrom(e?.detail?.from));
       setOn(Date.now());
     };
     const onKey = (e) => {
@@ -177,6 +180,7 @@ function Lightspeed() {
       <Jump
         key={on}
         sound
+        from={from}
         onPeak={peak}
         onDone={() => {
           peak();

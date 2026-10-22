@@ -223,7 +223,8 @@ export default function UniverseMap({ selected, onSelect, onOpen, handle, frozen
   }, [footHint]);
 
   // what the page needs from the map: whether it's drawing, the dive in,
-  // and Escape and the whole map while flying
+  // Escape and the whole map while flying, and a Rick portal's far side
+  // under its jump's flash
   useEffect(() => {
     if (!handle) return;
     handle.current = {
@@ -233,6 +234,7 @@ export default function UniverseMap({ selected, onSelect, onOpen, handle, frozen
       whole: () => view.current?.whole?.() ?? false,
       travel: (id, d) => view.current?.travel?.(id, d) ?? false,
       where: () => view.current?.where?.() ?? null,
+      crossNow: () => view.current?.crossNow?.(),
     };
   }, [handle, on, view]);
 

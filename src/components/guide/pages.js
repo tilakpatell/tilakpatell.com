@@ -104,7 +104,7 @@ export const PAGES = {
   '/universe': {
     about: ABOUT['/universe'],
     keys: [
-      { label: 'Flying', rows: [...fly(), ['hold S', 'Drop out of a lane'], ['hold W', 'Carry on through a junction'], ['M', 'The nav map: pick a place and a drive'], ['J', 'Jump to the place picked'], ['E / Enter', 'Land or dock where you are'], ['H', 'The Hangar: crew, arms, powers and the shipyard'], ['C', 'The Hangar, on your crew'], ['O', 'Flight settings'], ['Esc', 'Back out to the whole universe']] },
+      { label: 'Flying', rows: [...fly(), ['hold S', 'Drop out of a lane'], ['hold W', 'Carry on through a junction'], ['M', 'The nav map: pick a place and a drive'], ['J', 'Jump to the place picked'], ['P', 'Rick’s portal gun: a portal ahead to his dimension (or home); fly into it'], ['E / Enter', 'Land or dock where you are'], ['H', 'The Hangar: crew, arms, powers and the shipyard'], ['C', 'The Hangar, on your crew'], ['O', 'Flight settings'], ['Esc', 'Back out to the whole universe']] },
       { label: 'On foot', rows: [['W A S D', 'Walk'], ['Q E', 'Step sideways'], ['Shift', 'Run'], ['Space', 'Jump'], ['Click, then the mouse', 'Look round (Esc lets go)'], ['F / Click', 'Fire'], ['X', 'Play the other one of your crew'], ['B', 'Rick’s next gadget: the portal gun, the freeze ray, the shrink ray'], ['V', 'Out of their eyes'], ['G', 'Through a door, or back into the ship'], ['Enter', 'Into the planet’s page']] },
     ],
     touch: [

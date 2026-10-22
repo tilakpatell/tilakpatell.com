@@ -30,7 +30,8 @@
 // Unchecked, the blur smears one bad pixel into blocks of black across the
 // screen, bigger at each of its levels.
 //
-// spaceEnvironment(renderer, sky, { light, colour }) is what shiny things
+// spaceEnvironment(renderer, sky, { light, colour }) (or, made again and
+// again, createSpaceEnvironment's make) is what shiny things
 // reflect: the Milky Way, brought up, with the key light's glow where the
 // key light is (`light`, the way toward it; `colour`, its star's, linear
 // [r, g, b]) and a cool fill opposite, so metal catches the same light the
@@ -569,27 +570,49 @@ export function createPost(renderer, scene, camera, { small = false, bloom: look
   };
 }
 
-export function spaceEnvironment(renderer, sky, { light = LIGHT, colour = null } = {}) {
+export function spaceEnvironment(renderer, sky, opts) {
+  const maker = createSpaceEnvironment(renderer, sky);
+  const rt = maker.make(opts);
+  maker.dispose();
+  return rt;
+}
+
+// The same, made again and again (the universe map, each time the star that
+// lights you changes): one generator and one little scene kept between, the
+// star moved and tinted, so a remake draws with shaders already made. Made
+// afresh each time, the generator's blur and the spheres' shaders were
+// compiled again in the frame it happened (five programs: the frame through
+// Rick's portal, which crosses to the Curve's sun, was the slowest of a flight).
+//
+// createSpaceEnvironment(renderer, sky) → { make({ light, colour }) → a PMREM
+//   render target (yours to dispose), dispose() }
+export function createSpaceEnvironment(renderer, sky) {
   const env = new THREE.Scene();
   const made = [];
-  const add = (geo, mat, pos) => {
+  const add = (geo, mat) => {
     const m = new THREE.Mesh(geo, mat);
-    if (pos) m.position.copy(pos);
     env.add(m);
     made.push(geo, mat);
+    return m;
   };
   add(
     new THREE.SphereGeometry(10, 48, 24),
     sky ? new THREE.MeshBasicMaterial({ map: sky, side: THREE.BackSide, color: new THREE.Color(3, 3, 3.4) }) : new THREE.MeshBasicMaterial({ color: '#0b0f1c', side: THREE.BackSide }),
   );
-  // (a star's colour as a tint, half way: its brightest channel kept at the white's)
-  const hot = new THREE.Color(9, 8.2, 7.2);
-  if (colour) hot.multiply(new THREE.Color(...colour.map((c) => 0.5 + (0.5 * c) / Math.max(...colour, 1e-3))));
-  add(new THREE.SphereGeometry(1.5, 24, 12), new THREE.MeshBasicMaterial({ color: hot }), light.clone().normalize().multiplyScalar(7));
-  add(new THREE.SphereGeometry(2.2, 24, 12), new THREE.MeshBasicMaterial({ color: new THREE.Color(0.35, 0.45, 1.1) }), FILL.clone().multiplyScalar(7));
+  const star = add(new THREE.SphereGeometry(1.5, 24, 12), new THREE.MeshBasicMaterial());
+  add(new THREE.SphereGeometry(2.2, 24, 12), new THREE.MeshBasicMaterial({ color: new THREE.Color(0.35, 0.45, 1.1) })).position.copy(FILL).multiplyScalar(7);
   const pmrem = new THREE.PMREMGenerator(renderer);
-  const rt = pmrem.fromScene(env, 0.02);
-  pmrem.dispose();
-  for (const thing of made) thing.dispose();
-  return rt;
+  return {
+    make({ light = LIGHT, colour = null } = {}) {
+      // (a star's colour as a tint, half way: its brightest channel kept at the white's)
+      star.material.color.setRGB(9, 8.2, 7.2);
+      if (colour) star.material.color.multiply(new THREE.Color(...colour.map((c) => 0.5 + (0.5 * c) / Math.max(...colour, 1e-3))));
+      star.position.copy(light).normalize().multiplyScalar(7);
+      return pmrem.fromScene(env, 0.02);
+    },
+    dispose() {
+      pmrem.dispose();
+      for (const thing of made) thing.dispose();
+    },
+  };
 }

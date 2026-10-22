@@ -18,6 +18,8 @@ import { T, clampStart, darkAt, flashAt, holdStart, jumpStarted } from '../hyper
 // page. `fallback(ctx, t, clock, view, u)` paints a frame on a 2D canvas
 // where WebGL won't start, or gives out before the flash (after it the page
 // has already changed, so the jump just ends). `view` is { W, H, aspect }.
+// `from`: ms along the timeline its first frame is at (jumps/styles.js's
+// jumpFrom: a jump whose opening the scene has already drawn).
 // Reduced motion isn't handled here: App plays the site's crossfade instead.
 
 const VERT = 'attribute vec2 p; void main() { gl_Position = vec4(p, 0.0, 1.0); }';
@@ -69,7 +71,7 @@ function startGL(canvas, frag, names) {
   };
 }
 
-export default function JumpCanvas({ frag, uniforms, fallback, onPeak, onDone }) {
+export default function JumpCanvas({ frag, uniforms, fallback, onPeak, onDone, from = 0 }) {
   const box = useRef(null);
   const cbs = useRef({ onPeak, onDone, uniforms, fallback });
   cbs.current = { onPeak, onDone, uniforms, fallback };
@@ -122,7 +124,8 @@ export default function JumpCanvas({ frag, uniforms, fallback, onPeak, onDone })
     const frame = (now) => {
       if (start) start = clampStart(start, last, now);
       else {
-        start = t0 = now;
+        t0 = now;
+        start = now - from;
         jumpStarted(); // (a page waiting on its dark times its fallback from here)
       }
       last = now;
@@ -162,7 +165,7 @@ export default function JumpCanvas({ frag, uniforms, fallback, onPeak, onDone })
       gl?.dispose();
       canvas.remove();
     };
-  }, [frag]);
+  }, [frag, from]);
 
   // Rendered at the top of the page, above the nav and everything else (the
   // same place, and style, as the jump to lightspeed's canvas).

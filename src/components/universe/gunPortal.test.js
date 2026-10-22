@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { GUN, gunHit, gunOpen, gunSpot, gunTransit, worldSpot } from './gunPortal';
+import { CROSS, GUN, gunHit, gunOpen, gunSpot, gunTransit, worldSpot } from './gunPortal';
+import { T } from '../hyperspace3d/timeline';
+import { portalAt } from '../jumps/timing';
 import { POSITIONS, inSector, sectorOf } from './layout';
 import { SHIP, SOLIDS, noseOf } from './ship';
 import { MOONS } from './universes';
@@ -95,5 +97,21 @@ describe('the portal gun', () => {
     const [fx, , fz] = noseOf(o);
     const to = [home[0] - o.x, home[2] - o.z];
     expect((fx * to[0] + fz * to[1]) / Math.hypot(...to)).toBeGreaterThan(0.95);
+  });
+});
+
+describe('flying into a Rick portal', () => {
+  it('starts its jump with the portal about the screen’s height and closing in, before the flash', () => {
+    expect(CROSS.from).toBeGreaterThan(T.drift);
+    expect(CROSS.from).toBeLessThan(T.jump);
+    const { grow, open, inside } = portalAt(CROSS.from / 1000, { aspect: 16 / 9 });
+    expect(grow).toBeGreaterThan(0.4);
+    expect(grow).toBeLessThan(0.65);
+    expect(open).toBe(1);
+    expect(inside).toBe(0);
+  });
+
+  it('goes through on its own only well after the jump would have had it through', () => {
+    expect(CROSS.most * 1000).toBeGreaterThan(T.jump + 20 - CROSS.from + 1000);
   });
 });
