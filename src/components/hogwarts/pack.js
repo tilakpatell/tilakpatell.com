@@ -6,9 +6,11 @@ export const PACK = {
   // the MegaKit's files the shore plants (rules/shore.js's rows): its rocks, pebbles, grass, ferns and pines
   // and the night’s creatures (world/grounds/dementorFigure.js, play/presence.js)
   urls: ['/kit/naturemega/index.json', '/kit/naturemega/rock.glb', '/kit/naturemega/pebble.glb', '/kit/naturemega/grass.glb', '/kit/naturemega/fern.glb', '/kit/naturemega/pine.glb', '/models/hogwarts/creatures/dementor.glb', '/models/hogwarts/creatures/norris.glb'],
-  // the castle's people stood in by Middle-earth's cast until Lane B's are in (cast/figures.js's STAND_IN): each figure and its idle, walk and run
-  globs: ['/models/hogwarts/cast/*.glb', '/models/hogwarts/cast/cast.json', '/models/middleearth/cast/frodo*.glb', '/models/middleearth/cast/pippin*.glb', '/models/middleearth/cast/rosie*.glb', '/models/middleearth/cast/sam*.glb', '/models/middleearth/cast/merry*.glb', '/models/middleearth/cast/hobbit*.glb', '/models/middleearth/cast/gandalfwhite*.glb', '/models/middleearth/cast/galadriel*.glb', '/models/middleearth/cast/aragorn*.glb', '/models/middleearth/cast/gimli*.glb', '/models/middleearth/cast/bilbo*.glb', '/models/middleearth/cast/eowyn*.glb', '/models/middleearth/cast/arwen*.glb', '/models/middleearth/cast/butterbur*.glb', '/models/middleearth/cast/theoden*.glb', '/models/middleearth/cast/boromir*.glb', '/models/middleearth/cast/goblin*.glb'],
+  // the castle's people stood in by Middle-earth's cast until Lane B's are in (cast/figures.js's STAND_IN): each figure and its idle, walk and run;
+  // the weather's particle sheets (world/weather.js, the Road's, the site's own); and the photo scans the grounds and the castle
+  // wear (world/ground.js, world/castle/materials.js: by role, so named by the index)
+  globs: ['/models/hogwarts/cast/*.glb', '/models/hogwarts/cast/cast.json', '/models/middleearth/cast/frodo*.glb', '/models/middleearth/cast/pippin*.glb', '/models/middleearth/cast/rosie*.glb', '/models/middleearth/cast/sam*.glb', '/models/middleearth/cast/merry*.glb', '/models/middleearth/cast/hobbit*.glb', '/models/middleearth/cast/gandalfwhite*.glb', '/models/middleearth/cast/galadriel*.glb', '/models/middleearth/cast/aragorn*.glb', '/models/middleearth/cast/gimli*.glb', '/models/middleearth/cast/bilbo*.glb', '/models/middleearth/cast/eowyn*.glb', '/models/middleearth/cast/arwen*.glb', '/models/middleearth/cast/butterbur*.glb', '/models/middleearth/cast/theoden*.glb', '/models/middleearth/cast/boromir*.glb', '/models/middleearth/cast/goblin*.glb', '/models/middleearth/fx/*', '/cc0/galaxy/grass/*', '/cc0/galaxy/needles/*', '/cc0/galaxy/gravel/*', '/cc0/galaxy/rock/*', '/cc0/castle/ashlar/*', '/cc0/castle/rubble/*', '/cc0/castle/slate/*'],
   // (the kit's files are named by its manifest, not the source; the stand-ins above by cast/figures.js from a name;
-  // Lane B's own cast by its cast.json, its cuts and clips)
-  computed: ['/kit', '/models/middleearth/cast', '/models/hogwarts/cast'],
+  // Lane B's own cast by its cast.json, its cuts and clips; the castle's scans by their role)
+  computed: ['/kit', '/models/middleearth/cast', '/models/hogwarts/cast', '/cc0/castle'],
 };

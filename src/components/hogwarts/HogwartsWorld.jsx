@@ -68,7 +68,8 @@ export default function HogwartsWorld() {
   const reduced = useReducedMotion();
   const touch = useMediaQuery('(hover: none) and (pointer: coarse)');
   const portrait = useMediaQuery('(orientation: portrait)');
-  // (the address is read once: ?at=hall opens the arrival in the Great Hall)
+  // (the address is read once: ?at= an arrival’s beat (?at=hall opens it in the Great Hall), an hour or a
+  // place to stand at on the grounds; ?week= the term’s week: module.js reads both)
   const narrow = useMediaQuery('(max-width: 639px)');
   // (?week= sets the term’s week for the visit; without it, the week the save has)
   const [props] = useState(() => ({ reduced, at: params.get('at'), week: parseWeek(params) }));
@@ -327,7 +328,7 @@ export default function HogwartsWorld() {
           ) : (
             <>
               <SpellWheel part="card" ref={card} active={spell} touch={touch} />
-              {door ? <Prompt k="E" verb={door.verb ?? 'Go in'} thing={door.label} touch={touch} onClick={() => api()?.go()} /> : <span />}
+              {door ? <Prompt k={door.key ?? 'E'} verb={door.verb ?? 'Go in'} thing={door.label} touch={touch} onClick={() => api()?.go()} /> : <span />}
             </>
           )
         }

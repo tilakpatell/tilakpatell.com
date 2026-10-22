@@ -1,77 +1,62 @@
-// The castle far off across the water, drawn: ./silhouette.js's parts
-// merged by what they're made of into four draws (the crag's rock, the
-// stone, the slate and the lit glass), in the house's look on the node
-// renderer. The windows glow warm, over the house bloom's threshold, and
-// brighten as the dark comes on (`windows`, rules/dusk.js's); each keeps
-// its own warmth, so the castle reads as rooms with people in them, not a
-// sign. Past 300 m this is the whole castle; Lane C's near castle takes
-// over closer in (the design's §4.3).
+// The castle far off: the whole of it as one mesh and one draw, the plan
+// (plan.js) built at the kit’s far cut (fewer sides round a tower, no
+// merlons, sills, steps or pinnacles), every part’s colour baked into its
+// vertices, and its windows in the same mesh, lit by the same night as the
+// near castle’s (each window on its own threshold, so the far castle comes
+// on at dusk one window at a time too). Past `FAR` metres from the castle
+// this is all that is drawn of it, and on low it is the castle at every
+// distance. The landing (the planet’s shore, far across the water) draws
+// the same.
 //
-//   createFarCastle({ house, at: [x, z], yaw }) → { group, set(light), dispose }
+//   FAR: { low, mid, high, ultra }: metres from the castle past which only this is drawn (0: always)
+//   buildFarGeometry({ ground }) → BufferGeometry (its `aLit` 2 where nothing shines)
+//   createFarCastle({ house, ground, night }) → { mesh, group (the same: Lane A’s name), material, set(night), dispose }
+//     night: a uniform node to share (the near castle’s uNight), else its own;
+//     set takes the windows’ 0…1, or a light with its `windows` (rules/clock.js’s light())
 
 import * as THREE from 'three';
-import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
-import { MeshBasicNodeMaterial } from 'three/webgpu';
-import { attribute, uniform, vec3 } from 'three/tsl';
-import { castleParts } from './silhouette';
+import { MeshLambertNodeMaterial } from 'three/webgpu';
+import { attribute, mix, sin, smoothstep, step, uniform, vec3 } from 'three/tsl';
+import { createMesh } from './mesh';
+import { PARTS } from './parts';
+import { PLAN } from './plan';
+import { heightAt } from '../terrain';
+import { seeded } from '../../../../lib/seeded';
 
-// a role's parts as one geometry, each part's colour in its vertices (a
-// window's a little warmer or cooler than the next, by its seed)
-function merged(parts, role, rand) {
-  const list = parts
-    .filter((p) => p.role === role)
-    .map((p) => {
-      const g = p.g.index ? p.g.toNonIndexed() : p.g.clone();
-      for (const name of Object.keys(g.attributes)) if (name !== 'position' && name !== 'normal') g.deleteAttribute(name);
-      if (!g.attributes.normal) g.computeVertexNormals();
-      const c = new THREE.Color().setStyle(p.color, THREE.SRGBColorSpace);
-      if (role === 'glass') c.multiplyScalar(0.65 + rand() * 0.55);
-      const a = new Float32Array(g.attributes.position.count * 3);
-      for (let i = 0; i < a.length; i += 3) a.set([c.r, c.g, c.b], i);
-      g.setAttribute('color', new THREE.BufferAttribute(a, 3));
-      return g;
-    });
-  return list.length ? mergeGeometries(list) : null;
+export const FAR = { low: 0, mid: 150, high: 300, ultra: 420 };
+
+export function buildFarGeometry({ ground = heightAt } = {}) {
+  const mesh = createMesh();
+  const ctx = { mesh, ground, far: true, rng: seeded(11) };
+  for (const p of PLAN) PARTS[p.kind](ctx, p);
+  return mesh.merged({ glass: ['glass'] });
 }
 
-export function createFarCastle({ house, at = [0, 0], yaw = 0, seed = 7 } = {}) {
-  let s = seed;
-  const rand = () => ((s = (s * 16807) % 2147483647) / 2147483647);
-  const parts = castleParts({ seed });
-  const group = new THREE.Group();
-  group.name = 'castle:far';
-  group.position.set(at[0], 0, at[1]);
-  group.rotation.y = yaw;
-  const uGlow = uniform(1);
-  const solid = house.material({ vertexColors: true });
-  const glass = new MeshBasicNodeMaterial({ fog: true });
-  // (the window's own colour, lifted over 1 so the bloom haloes it, by how dark it's got)
-  glass.colorNode = attribute('color', 'vec3').mul(uGlow).mul(vec3(3.2, 2.6, 2.0));
-  const geos = [];
-  for (const role of ['rock', 'stone', 'roof']) {
-    const g = merged(parts, role, rand);
-    if (!g) continue;
-    geos.push(g);
-    const mesh = new THREE.Mesh(g, solid);
-    mesh.name = `castle:${role}`;
-    group.add(mesh);
-  }
-  const lit = merged(parts, 'glass', rand);
-  geos.push(lit);
-  const windows = new THREE.Mesh(lit, glass);
-  windows.name = 'castle:windows';
-  group.add(windows);
-  for (const p of parts) p.g.dispose();
-
+export function createFarCastle({ house = null, ground = heightAt, night = null } = {}) {
+  const geometry = buildFarGeometry({ ground });
+  const uNight = night ?? uniform(0);
+  const material = house ? house.material({ vertexColors: true }) : new MeshLambertNodeMaterial({ vertexColors: true });
+  // (the stone a touch darker than its tone: the near castle’s scans and its weathering darken it about so much)
+  material.color.setScalar(0.86);
+  const aLit = attribute('aLit', 'float');
+  const glass = step(aLit, 1.5);
+  const on = smoothstep(aLit.sub(0.05), aLit.add(0.05), uNight).mul(glass);
+  const hue = mix(vec3(1.0, 0.42, 0.12), vec3(1.0, 0.62, 0.3), sin(aLit.mul(97.3)).mul(0.5).add(0.5));
+  // (a little brighter than the near windows: a far window is a pixel or two, and must still read)
+  material.emissiveNode = hue.mul(on).mul(3.2);
+  const mesh = new THREE.Mesh(geometry, material);
+  mesh.name = 'hogwarts:castle:far';
   return {
-    group,
-    set(light) {
-      uGlow.value = 0.55 + 0.6 * light.windows;
+    mesh,
+    group: mesh,
+    material,
+    uNight,
+    set(n) {
+      if (!night) uNight.value = typeof n === 'number' ? n : (n?.windows ?? 0);
     },
     dispose() {
-      for (const g of geos) g.dispose();
-      solid.dispose();
-      glass.dispose();
+      geometry.dispose();
+      material.dispose();
     },
   };
 }

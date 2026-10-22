@@ -14,6 +14,7 @@ Everything in this folder is CC0 (public domain): free to use, no credit require
   - `casa-wall`: Poly Haven `beige_wall_001` (Dimitrios Savva, Rico Cilliers)
   - `casa-floor`: Poly Haven `floor_tiles_08` (Rob Tuytel)
 - `galaxy/<role>/{color,normal,arm}.webp`: the surfaces the galaxy's worlds build their own buildings and props from (`scripts/galaxy-textures.mjs`; the colour maps made into detail maps, so each part keeps its own colour), all from Poly Haven: `adobe` `patterned_clay_plaster`, `stone` `large_sandstone_blocks_01`, `rock` `rock_face`, `metal` `metal_plate_02`, `paint` `blue_metal_plate`, `bark` `bark_brown_02`, `wood` `weathered_planks`, `concrete` `concrete_wall_008`, the bases' floors, `tiles` `large_floor_tiles_02` and `deck` `metal_plate`, and the worlds' own rock, `redrock` `rock_boulder_cracked` (Geonosis's spires, hives and arena) and `mossrock` `mossy_rock` (Endor's boulders). Their real sizes are in `galaxy/index.json`.
+- `castle/<role>/{color,normal,arm}.webp`: Hogwarts’ castle’s own (`src/components/hogwarts/world/castle/materials.js`), made the galaxy’s way (`scripts/galaxy-textures.mjs`’s `CASTLE_ROLES`), all from Poly Haven: `ashlar` `stone_brick_wall_001` (Dimitrios Savva, Rico Cilliers; its walls’ dressed blocks), `rubble` `castle_wall_slates` (Rob Tuytel; the plinths, the viaduct’s piers, the Owlery) and `slate` `roof_slates_03` (Rob Tuytel; its roofs and cones), 1.6 MB the three. Their real sizes are in `castle/index.json`.
 
 Elsewhere, also CC0:
 
