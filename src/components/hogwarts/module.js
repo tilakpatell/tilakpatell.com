@@ -5,7 +5,7 @@
 // four boats, and a shingle shore to walk. The rules are pure files under
 // rules/; this file composes the drawing (world/) and the player (play/).
 //
-// Props: { reduced }.
+// Props: { reduced, at } (at: an arrival beat or part, 'hall' among them: the arrival opened there).
 //
 // Events to the page (rt.events): 'near' { door: { label } | null } as the
 // way in at the boats comes into reach or goes, 'go' { door } when it's
@@ -14,6 +14,11 @@
 // The world adds: go() (the prompt's button), stick(x, y) (the touch
 // stick), and `scene`, `walker` for the checks. In development,
 // window.__HOGWARTS__ = { state(), place(x, z, yaw), dusk(s), world }.
+//
+// The night half (play/night.js, Lane F) keeps the castle’s people on their
+// days (rules/people.js) and the world adds map(): the Marauder’s Map’s
+// view of everyone and you, on the Map’s frame, read every frame by
+// hud/MaraudersMap.jsx; the development hook adds night() for the same.
 //
 // The wand (play/wandfx.js) is stepped beside the walker: its events
 // ('spell', 'toast', 'points', 'wand', 'wheel' and the rest it lists) go to
@@ -67,14 +72,24 @@ import { createLessons } from './play/lessons';
 import { practiceSet } from './play/props';
 import { createFeel } from '../../lib/three/feel';
 import { BOUNDS, CASTLE, DOOR, LEVEL, SPAWN, floorAt, heightAt, nearDoor } from './rules/shore';
-import { lightAt } from './rules/dusk';
+import { DUSK, lightAt } from './rules/dusk';
+import { ROOM_ORIGIN as ROOM_AT, createRoomHost } from './rooms/host';
+import { createArrival } from './world/arrival';
+import { ANCHORS_A } from './world/arrival/shots';
+import { BEATS, PARTS } from './rules/arrival';
+import { createNight } from './play/night';
+import { frameYaw, fromRoom } from './rules/paths';
 
 export { KEYS };
+
+// where the shore’s own frame sits on the Map’s (the grounds’, rules/places.js’s): its
+// waterline on the Black Lake’s south shore, across the water from the castle
+const MAP_SHORE = [24, 445];
 
 export default {
   id: 'hogwarts',
   shading: 'nodes',
-  mb: 2,
+  mb: 21,
   label: 'Hogwarts: the shore of the Black Lake at dusk, the castle lit across the water',
   create(rt, props = {}) {
     const reduced = Boolean(props.reduced);
@@ -122,6 +137,21 @@ export default {
     const wand = createWand({ rt, scene, camera, house, floorAt, tell, feel });
     wand.place(practiceSet({ at: SPAWN.at, yaw: SPAWN.yaw, floorAt, house, rt }));
 
+    // the night half (Lane F, play/night.js): the castle’s people on their days
+    // for the Marauder’s Map. The shore’s dusk is the arrival night’s, its clock
+    // read as the world’s hours from 19:54 (Lane C’s rules/clock.js’s ARRIVE)
+    const week = props.week ?? 1;
+    const night = createNight({
+      timeOf: () => 19.9 + clock / 60,
+      weekOf: () => week,
+      // (in a room, its walk in its own frame turned onto the Map's: rules/paths.js's ROOM_FRAMES)
+      me: () => {
+        const inRoom = Boolean(rooms.room && rooms.walker);
+        const w = inRoom ? rooms.walker.state : walker.state;
+        const [x, z] = inRoom ? fromRoom(rooms.id, [w.x, w.z]) : [w.x + MAP_SHORE[0], w.z + MAP_SHORE[1]];
+        return { x, z, yaw: w.yaw + (inRoom ? frameYaw(rooms.id) : 0), moving: w.speed > 0.3, inside: inRoom ? rooms.id : null };
+      },
+    });
     // the broom, and Quidditch on it; their motes and the Snitch's glint in a
     // pool of their own (the wand's is busy with its own sparks)
     const air = createCards({ count: 400, parent: scene });
@@ -173,6 +203,40 @@ export default {
       return lessons.start(id, { p: [STATION.at[0], floorAt(...STATION.at), STATION.at[1]], yaw: STATION.yaw });
     };
 
+    // the rooms behind the doors (Lane D, rooms/host.js): built far below as
+    // you go in, the shore hidden and its lights down while you're inside
+    const rooms = createRoomHost({ rt, scene, camera, house, tier, reduced, outside: [sky.mesh, shore.group, lake.mesh, castle.group, boats.group], lights: [key, hemi], tell });
+
+    // the arrival (Lane D, world/arrival.js): the night of the first-years, on
+    // rails, from the station to the Sorting; played on a first visit, from
+    // the boats when you take them after that, and from its beat for ?at=
+    const mooring = [boats.group.getObjectByName('boats:hulls'), boats.group.children.find((c) => c.type === 'Group')];
+    const arrival = createArrival({
+      rt,
+      scene,
+      camera,
+      house,
+      tier,
+      reduced,
+      anchors: ANCHORS_A,
+      heightAt,
+      sky,
+      lake: [shore.group, lake.mesh, castle.group, boats.group],
+      hide: mooring,
+      rooms,
+      tell,
+      saves: rt.saves,
+      night: () => {
+        clock = Math.max(clock, DUSK.length + 30);
+        relight();
+      },
+      dim: (k) => {
+        lightK = k;
+        relight();
+      },
+    });
+    let lightK = 1; // (the arrival's: the moon's light down where it can't reach)
+
     let clock = 0;
     let light = null;
     const keyDir = new THREE.Vector3();
@@ -186,12 +250,15 @@ export default {
       castle.set(light);
       keyDir.set(...light.key.dir);
       key.color.setRGB(...light.key.colour, THREE.SRGBColorSpace);
-      key.intensity = light.key.intensity;
+      key.intensity = light.key.intensity * lightK;
       hemi.color.setRGB(...light.hemi.sky, THREE.SRGBColorSpace);
       hemi.groundColor.setRGB(...light.hemi.ground, THREE.SRGBColorSpace);
-      hemi.intensity = light.hemi.intensity;
-      scene.fog.color.setRGB(...light.fog.colour, THREE.SRGBColorSpace);
-      scene.fog.density = light.fog.density;
+      hemi.intensity = light.hemi.intensity * lightK;
+      // (none while a room is up: the host keeps the grounds' fog and puts it back on the way out)
+      if (scene.fog) {
+        scene.fog.color.setRGB(...light.fog.colour, THREE.SRGBColorSpace);
+        scene.fog.density = light.fog.density;
+      }
       // (the house's fog takes the sky's own colours: the horizon low, the zenith
       // high, and the sunset's glow toward where the sun went down)
       sunDir.set(...light.sun.dir);
@@ -213,7 +280,11 @@ export default {
     const go = () => {
       const what = promptNow();
       if (what === 'broom') fly();
-      else if (what === 'door') tell('go', { door: { label: DOOR.label } });
+      else if (what === 'door') {
+        tell('go', { door: { label: DOOR.label } });
+        // (the boats: the arrival from the push off; Enter skips it to the steps once it has been seen)
+        arrival.start('pushoff');
+      }
     };
     const frame = (dt) => {
       key.position.copy(camera.position).addScaledVector(keyDir, 200);
@@ -229,6 +300,8 @@ export default {
 
     relight();
     frame(0);
+    const known = (at) => Boolean(at) && (PARTS.includes(at) || BEATS.some((b) => b.id === at));
+    if (known(props.at) || !arrival.save.arrived) arrival.start(known(props.at) ? props.at : null);
 
     let since = 0;
     const world = {
@@ -239,6 +312,29 @@ export default {
       },
       step(dt, input) {
         const pressed = (name) => KEYS[name].some((c) => input?.pressed?.has?.(c));
+        // (the arrival on its rails: the night held, the shore drawn where it's on the lake)
+        if (arrival.active) {
+          clock += dt;
+          // (the night's light, but not while the arrival is in a room: the room has its own)
+          if (!rooms.room && (since += dt) > 0.25) {
+            since = 0;
+            relight();
+          }
+          arrival.step(dt, (name) => (name === 'skip' ? input?.pressed?.has?.('Enter') : pressed(name)));
+          if (!rooms.room) {
+            windTime.value += dt;
+            lake.update(dt);
+            boats.update(clock);
+            frame(dt);
+          }
+          return;
+        }
+        // (inside a room: its walk and its life; Esc is the way out, back where you came in)
+        if (rooms.room) {
+          if (pressed('menu')) world.leave();
+          else rooms.step(dt, input, touch, pressed);
+          return;
+        }
         if (pressed('menu')) tell('menu');
         const stick = input?.stick ?? touch;
         const pad = { x: stick.x || touch.x, y: stick.y || touch.y, rise: touch.rise, sink: touch.sink, catch: touch.catch };
@@ -263,6 +359,7 @@ export default {
         said.update();
         feel.update(dt, camera);
         wand.step(dt, input);
+        night.step(dt);
         air.update(dt, camera);
         clock += dt;
         // (the light moves slowly: a few times a second is plenty)
@@ -292,7 +389,22 @@ export default {
       },
       // the prompt's own button, and the touch stick
       go,
+      // into a room (rooms/host.js) and out again, back on the shore where you stood
+      enter: (id, opts) => rooms.enter(id, opts),
+      // the arrival: the Menu's “The arrival”, the Sorting card's answers, Enter's skip
+      arrive: (at = null) => arrival.start(at),
+      answer: (i) => arrival.answer(i),
+      skip: () => arrival.skip(),
+      arrival,
+      leave() {
+        rooms.leave();
+        walker.place([walker.state.x, walker.state.z], walker.state.yaw);
+        relight();
+      },
+      rooms,
       wand,
+      // the Marauder’s Map’s view of everyone (hud/MaraudersMap.jsx reads it every frame)
+      map: () => night.view(),
       // the wheel's pick, and the touch buttons held and let go
       choose: (id) => wand.choose(id),
       press(name, down) {
@@ -319,6 +431,8 @@ export default {
         touch.y = y;
       },
       dispose() {
+        arrival.dispose();
+        rooms.dispose();
         rt.input?.unbind?.();
         if (exposureWas != null) renderer.toneMappingExposure = exposureWas;
         sky.dispose();
@@ -349,6 +463,18 @@ export default {
         clock = sec;
         relight();
       };
+      // (room(id): go in; view(pose): stand at one of the room's named views, its eye and where it looks; info(): the room's own count)
+      const room = (id, opts) => rooms.enter(id, opts).then((r) => r?.info?.() ?? null);
+      const view = (name) => {
+        const p = rooms.room?.poses?.[name];
+        if (!p) return null;
+        rooms.walker && (rooms.walker.place([p.at[0], p.at[2]], 0));
+        camera.position.set(p.at[0] + ROOM_AT[0], p.at[1] + ROOM_AT[1], p.at[2] + ROOM_AT[2]);
+        camera.lookAt(p.look[0] + ROOM_AT[0], p.look[1] + ROOM_AT[1], p.look[2] + ROOM_AT[2]);
+        rooms.hold = true;
+        return p;
+      };
+      // (arrive(at): the arrival from a beat; arrival(): where it is)
       window.__HOGWARTS__ = {
         world,
         state,
@@ -356,11 +482,18 @@ export default {
         dusk,
         cast: (spell, at) => wand.cast(spell, at),
         wand: () => wand.state(),
+        night: () => night.view(),
         fly: () => world.fly(),
         practice: () => world.practice(),
         match: (n) => world.match(n),
         lesson: (id) => world.lesson(id),
         lessons: () => lessons.state(),
+        room,
+        view,
+        info: () => rooms.room?.info?.() ?? null,
+        arrive: (at) => arrival.start(at),
+        arrival: () => arrival.info(),
+        answer: (i) => arrival.answer(i),
         quidditch: () => ({ ...quidditch.state(), rider: broom.rider && { p: broom.rider.p.map((v) => Math.round(v * 10) / 10), spd: Math.round(broom.rider.spd * 3.6), mode: broom.rider.mode } }),
       };
     }

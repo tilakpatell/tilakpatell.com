@@ -6,7 +6,8 @@
   display: grid;
   place-items: center;
   padding: 1.5rem;
-  background: radial-gradient(ellipse at center, color-mix(in srgb, var(--glass-solid) 72%, transparent), color-mix(in srgb, var(--scrim-ink) 94%, transparent));
+  /* (--veil-at: where the card sits, for a veil whose card is off its middle: the universe map's) */
+  background: radial-gradient(ellipse at var(--veil-at, center), color-mix(in srgb, var(--glass-solid) 72%, transparent), color-mix(in srgb, var(--scrim-ink) 94%, transparent));
   color: #e9edf2;
   opacity: 1;
   transition: opacity 0.45s ease;

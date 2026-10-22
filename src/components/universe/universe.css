@@ -1,6 +1,7 @@
 /* ─── The universe map ───────────────────────────────────────────────────── */
 @import './hud.css';
 @import './thumbs.css';
+@import './desk.css';
 
 /* The flat map: Home's teaser and the 3D-off map */
 .minimap { position: relative; width: 100%; aspect-ratio: 2 / 1; }
@@ -82,8 +83,7 @@
 }
 
 /* the open part of the page, for what isn't the scene */
-.universe-flat,
-.loading-veil.universe-loading {
+.universe-flat {
   position: absolute;
   top: var(--nav-h);
   left: 0;
@@ -95,10 +95,24 @@
   padding: 1.5rem;
 }
 .universe-flat .minimap { max-width: 900px; }
-/* the map's veil at the panel's depth, under it (the panel comes later in
-   the page): at the veil's own 5 it lay over the tucked bar in the corner,
-   and its "Show the panel" and "?" took no press till the map was drawing */
-.loading-veil.universe-loading { z-index: 2; }
+/* The map's veil covers the whole map, edge to edge as the canvas it stands
+   in for: boxed to the open part, it stopped at the panel's left edge and
+   under the site's bar, and a laptop saw the page's black in a band down
+   the right and along the top. The open part is its padding instead (the
+   --veil-r and --veil-b the phone's rules set), so the card and its glow
+   still sit where the planets will. At the panel's depth, under it (the
+   panel comes later in the page): at the veil's own 5 it lay over the
+   tucked bar in the corner, and its "Show the panel" and "?" took no press
+   till the map was drawing */
+.loading-veil.universe-loading {
+  --veil-r: calc(var(--panel-w) + 24px);
+  --veil-b: 0px;
+  --veil-at: calc((100% - var(--veil-r)) / 2) calc(var(--nav-h) + (100% - var(--nav-h) - var(--veil-b)) / 2);
+  z-index: 2;
+  inset: 0;
+  margin: 0;
+  padding: calc(var(--nav-h) + 1.5rem) calc(var(--veil-r) + 1.5rem) calc(var(--veil-b) + 1.5rem) 1.5rem;
+}
 
 /* the planets' names, moved by the scene */
 .universe-labels {
@@ -245,7 +259,9 @@ body:has(.universe-panel) .guide-btn { display: none; }
 .universe-exits .universe-back { min-height: 44px; margin: 0; }
 .universe-models ul { display: grid; gap: 0.35rem; margin: 0.5rem 0 0; padding: 0 3.25rem 0 0; list-style: none; } /* clear of the guide's button in the corner */
 .universe-enter { width: 100%; justify-content: center; }
-.universe-card { margin: 0; padding: 0; list-style: none; }
+/* (its gap under the button above it is set here, not by the panel's mt-4:
+   a margin of 0 here beat the utility, and the card sat on the button) */
+.universe-card { margin: 1rem 0 0; padding: 0; list-style: none; }
 .universe-card .fun-card { min-height: 0; }
 .station-list { display: grid; gap: 0.15rem; margin: 0; padding: 0; list-style: none; }
 .station-list a { display: grid; gap: 0.05rem; padding: 0.45rem 0.6rem; margin: 0 -0.6rem; border-radius: 10px; font-size: 0.88rem; line-height: 1.3; transition: background-color 0.2s; }
@@ -1257,8 +1273,8 @@ body:has(.universe-panel) .guide-btn { display: none; }
     border-bottom: 0;
     border-radius: var(--r-card) var(--r-card) 0 0;
   }
-  .universe-flat,
-  .loading-veil.universe-loading { right: 0; bottom: var(--sheet-h); }
+  .universe-flat { right: 0; bottom: var(--sheet-h); }
+  .loading-veil.universe-loading { --veil-r: 0px; --veil-b: var(--sheet-h); }
   .universe-boost { right: var(--hud-edge); bottom: calc(var(--sheet-h) + 16px); }
   .universe-fire { right: 104px; bottom: calc(var(--sheet-h) + 22px); }
   .universe-weapon { right: 110px; bottom: calc(var(--sheet-h) + 96px); }
