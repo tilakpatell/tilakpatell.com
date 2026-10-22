@@ -26,6 +26,8 @@ import { countOf, createRoomKit } from '../kit';
 import { createFire } from '../parts/fire';
 import { roomEnv, wearEnv } from '../parts/env';
 import { createGhost, GHOSTS } from '../../cast/ghosts';
+import { SAVE } from '../../rules/save';
+import { noticeOf, sleep, waiting } from '../../rules/post';
 
 export const NOTICES = [
   { title: 'Flying lessons', text: 'First years, Thursday, on the lawn. Madam Hooch will not be lending anyone her own broom.' },
@@ -264,7 +266,13 @@ export function commonRoom(spec) {
     const fires = (parts.fires ?? []).map((f) => createFire({ tier, ...f }));
     for (const f of fires) group.add(f.group);
     const flats = [];
-    let notices = props.notices ?? NOTICES;
+    // (the week’s notices, and a reply by owl pinned over them once you’ve slept on a letter: rules/post.js)
+    const saved = () => rt?.saves?.get?.(SAVE.key, null) ?? null;
+    const withPost = (list) => {
+      const n = noticeOf(saved());
+      return n ? [n, ...list.filter((x) => !x.title.startsWith('By owl'))] : list;
+    };
+    let notices = withPost(props.notices ?? NOTICES);
     let board = null;
     if (browser() && parts.board) {
       board = flat(paintBoard(notices), { renderer, ...parts.board });
@@ -311,7 +319,12 @@ export function commonRoom(spec) {
       ...(spec.bed ? [{ id: 'bed', at: spec.bed, r: 1.4, verb: 'Sleep', name: spec.bedName ?? 'Your four-poster', act: () => {
         // (the term’s lane moves the week on; until then the night passes and says so)
         tell('sleep', { house: spec.house ?? null });
-        toast(slept ? 'You sleep again. Nobody wakes you this time either.' : 'You sleep. The castle creaks, the fire burns down, and the morning comes.');
+        const save = saved();
+        if (waiting(save)) {
+          rt?.saves?.set?.(SAVE.key, sleep(save));
+          room.set({ notices: withPost(notices) });
+          toast('In the morning there’s an owl at the window with a reply. It’s pinned to the board.');
+        } else toast(slept ? 'You sleep again. Nobody wakes you this time either.' : 'You sleep. The castle creaks, the fire burns down, and the morning comes.');
         slept = true;
       } }] : []),
       ...(spec.boardAt ? [{ id: 'board', at: spec.boardAt, r: 1.6, verb: 'Read', name: 'The notice board', act: () => {
@@ -344,7 +357,7 @@ export function commonRoom(spec) {
       set(p = {}) {
         for (const l of live) l.set?.(p);
         if (!p.notices?.length || p.notices === notices) return;
-        notices = p.notices;
+        notices = withPost(p.notices);
         if (!board || !browser()) return;
         const tex = canvasTexture(paintBoard(notices), renderer, { wrap: false });
         tex.colorSpace = THREE.SRGBColorSpace;
@@ -352,6 +365,8 @@ export function commonRoom(spec) {
         board.mesh.material.map = tex;
         board.mesh.material.needsUpdate = true;
       },
+      // (a word typed into the HUD’s card, for the room that asked: the Owlery’s letter)
+      word: (text) => parts.word?.(text),
       info: () => ({ ...countOf(group) }),
       dispose() {
         gone = true;

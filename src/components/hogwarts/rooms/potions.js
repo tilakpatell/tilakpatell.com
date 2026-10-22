@@ -10,7 +10,7 @@
 
 import * as THREE from 'three';
 import { MeshBasicNodeMaterial } from 'three/webgpu';
-import { attribute, float, fract, mix, mx_fractal_noise_float, positionWorld, sin, smoothstep, time, uv, vec3, length } from 'three/tsl';
+import { attribute, cameraProjectionMatrix, float, fract, length, mix, modelViewMatrix, mx_fractal_noise_float, positionGeometry, positionWorld, sin, smoothstep, time, uv, vec3, vec4 } from 'three/tsl';
 import { CURE_FOR_BOILS } from '../rules/potions';
 import { LINES, NAMES } from '../rules/lines';
 import { bookcase, chair } from './parts/furniture';
@@ -45,16 +45,18 @@ function brewMaterial() {
   return m;
 }
 
-// the steam: soft cards rising from each cauldron, each on its own clock
+// the steam: soft cards rising from each cauldron, each on its own clock,
+// turned to the camera (aSteam: the cauldron’s x and z, its phase, its seed)
 function steamMaterial() {
   const m = new MeshBasicNodeMaterial({ transparent: true, depthWrite: false, fog: false, blending: THREE.AdditiveBlending });
   m.userData.noHouse = true;
-  const s = attribute('aSteam', 'vec2');
-  const life = fract(time.mul(0.16).add(s.x));
+  const s = attribute('aSteam', 'vec4');
+  const life = fract(time.mul(0.16).add(s.z));
   const r = length(uv().sub(0.5)).mul(2);
-  const wisp = smoothstep(1, 0.1, r).mul(mx_fractal_noise_float(vec3(uv().mul(3), time.mul(0.3).add(s.y)), 2).mul(0.5).add(0.6));
-  m.colorNode = vec3(0.75, 0.8, 0.72).mul(wisp).mul(smoothstep(0, 0.15, life)).mul(smoothstep(1, 0.5, life)).mul(0.16);
-  m.positionNode = attribute('position', 'vec3').mul(life.mul(1.6).add(0.6)).add(vec3(sin(time.mul(0.7).add(s.y.mul(6))).mul(0.12), life.mul(1.7), 0));
+  const wisp = smoothstep(1, 0.1, r).mul(mx_fractal_noise_float(vec3(uv().mul(3), time.mul(0.3).add(s.w)), 2).mul(0.5).add(0.6));
+  m.colorNode = vec3(0.75, 0.8, 0.72).mul(wisp).mul(smoothstep(0, 0.15, life)).mul(smoothstep(1, 0.5, life)).mul(0.2);
+  const centre = vec3(s.x.add(sin(time.mul(0.7).add(s.w.mul(6))).mul(0.12)), float(1.6).add(life.mul(1.7)), s.y);
+  m.vertexNode = cameraProjectionMatrix.mul(modelViewMatrix.mul(vec4(centre, 1)).add(vec4(positionGeometry.xy.mul(life.mul(1.6).add(0.6)), 0, 0)));
   return m;
 }
 
@@ -69,7 +71,7 @@ export default commonRoom({
   ],
   spawn: { at: [0, 0, L - 1.4], yaw: 0 },
   places: [{ id: 'potions', name: 'The Potions dungeon', at: [0, 0], r: 10 }],
-  light: { hemi: [0x8aa898, 0x0e100c, 0.55], points: [[0, 3.0, -8.4, 0xffb070, 6], [-4.4, 1.6, 1, 0xff8a40, 5], [4.4, 1.6, 6, 0xff8a40, 5], [0, 3.6, 4, 0x6ad89a, 4]] },
+  light: { hemi: [0x9ab8a8, 0x1a1c14, 0.95], points: [[0, 3.0, -8.4, 0xffb070, 9], [-4.4, 2.0, 1, 0xff8a40, 8], [4.4, 2.0, 6, 0xff8a40, 8], [0, 3.6, 4, 0x6ad89a, 6]] },
   poses: {
     benches: { at: [0, 1.7, 9.6], look: [0, 1.0, -8] },
     desk: { at: [1.6, 1.5, -3], look: [0, 1.5, -10] },
@@ -111,14 +113,15 @@ export default commonRoom({
     const brewMat = brewMaterial();
     const discGeo = new THREE.CircleGeometry(0.3, 16);
     discGeo.rotateX(-Math.PI / 2);
-    const brews = instanced(discGeo, brewMat, CAULDRONS.map((c) => ({ at: [c.x, 1.43, c.z] })), { colours: CAULDRONS.map((_, i) => BREW[i % BREW.length]) });
+    const brews = instanced(discGeo, brewMat, CAULDRONS.map((c) => ({ at: [c.x, 1.49, c.z] })), { colours: CAULDRONS.map((_, i) => BREW[i % BREW.length]) });
     group.add(brews);
     // the steam off them, three wisps a cauldron
     const steamGeo = new THREE.PlaneGeometry(0.5, 0.5);
-    const wisps = CAULDRONS.flatMap((c, i) => [0, 1, 2].map((k) => ({ c, s: [(i * 0.37 + k * 0.33) % 1, i + k] })));
-    steamGeo.setAttribute('aSteam', new THREE.InstancedBufferAttribute(new Float32Array(wisps.flatMap((w) => w.s)), 2));
+    const wisps = CAULDRONS.flatMap((c, i) => [0, 1, 2].map((k) => [c.x, c.z, (i * 0.37 + k * 0.33) % 1, i + k]));
+    steamGeo.setAttribute('aSteam', new THREE.InstancedBufferAttribute(new Float32Array(wisps.flat()), 4));
     const steamMat = steamMaterial();
-    const steam = instanced(steamGeo, steamMat, wisps.map((w) => ({ at: [w.c.x, 1.5, w.c.z] })));
+    // (each card’s place is its attribute: the instances stand at the origin)
+    const steam = instanced(steamGeo, steamMat, wisps.map(() => ({ at: [0, 0, 0] })));
     steam.renderOrder = 3;
     steam.frustumCulled = false;
     group.add(steam);

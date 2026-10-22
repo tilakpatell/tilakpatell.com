@@ -148,7 +148,7 @@ export default {
       me: () => {
         const inRoom = Boolean(rooms.room && rooms.walker);
         const w = inRoom ? rooms.walker.state : walker.state;
-        const [x, z] = inRoom ? fromRoom(rooms.id, [w.x, w.z]) : [w.x + MAP_SHORE[0], w.z + MAP_SHORE[1]];
+        const [x, z] = inRoom ? fromRoom(rooms.id, rooms.frame([w.x, w.z])) : [w.x + MAP_SHORE[0], w.z + MAP_SHORE[1]];
         return { x, z, yaw: w.yaw + (inRoom ? frameYaw(rooms.id) : 0), moving: w.speed > 0.3, inside: inRoom ? rooms.id : null };
       },
     });
@@ -334,6 +334,16 @@ export default {
         if (rooms.room) {
           if (pressed('menu')) world.leave();
           else rooms.step(dt, input, touch, pressed);
+          // (a room standing in the world, the Astronomy Tower’s top: the lake and the light go on round it)
+          if (rooms.room?.at) {
+            clock += dt;
+            windTime.value += dt;
+            lake.update(dt);
+            if ((since += dt) > 0.25) {
+              since = 0;
+              relight();
+            }
+          }
           return;
         }
         if (pressed('menu')) tell('menu');
@@ -432,7 +442,8 @@ export default {
       bubble: (el) => said.bubble(el),
       lesson,
       lessons,
-      pick: (n) => lessons.pick(n),
+      // (a choice on the HUD's card: a room's that asked, the Room of Requirement's, else the lesson's)
+      pick: (n) => (rooms.room?.pick ? rooms.room.pick(n) : lessons.pick(n)),
       broom,
       quidditch,
       stick(x, y) {
@@ -477,9 +488,11 @@ export default {
       const view = (name) => {
         const p = rooms.room?.poses?.[name];
         if (!p) return null;
-        rooms.walker && (rooms.walker.place([p.at[0], p.at[2]], 0));
-        camera.position.set(p.at[0] + ROOM_AT[0], p.at[1] + ROOM_AT[1], p.at[2] + ROOM_AT[2]);
-        camera.lookAt(p.look[0] + ROOM_AT[0], p.look[1] + ROOM_AT[1], p.look[2] + ROOM_AT[2]);
+        // (a room standing in the world has its own origin: the Astronomy Tower's top)
+        const o = rooms.room.at ?? ROOM_AT;
+        rooms.walker && (rooms.walker.place([p.at[0] + o[0], p.at[2] + o[2]], 0));
+        camera.position.set(p.at[0] + o[0], p.at[1] + o[1], p.at[2] + o[2]);
+        camera.lookAt(p.look[0] + o[0], p.look[1] + o[1], p.look[2] + o[2]);
         rooms.hold = true;
         return p;
       };

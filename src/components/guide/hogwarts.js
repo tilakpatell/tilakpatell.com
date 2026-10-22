@@ -28,8 +28,9 @@ export const HOGWARTS_KEYS = [
   {
     label: 'In the castle',
     rows: [
-      ['E', 'Take a stair, knock, speak to a portrait, read the notice board: what the prompt says'],
-      ['Type, then Enter', 'Say a password or a riddle’s answer to the door that asks'],
+      ['E', 'Take a stair, knock, read the notice board, look through a telescope: what the prompt says'],
+      ['Type, then Enter', 'Say a password or a riddle’s answer to the door that asks, or write a letter in the Owlery'],
+      ['1 2 3', 'Think of what you need, at the bare wall on the seventh floor'],
       ['Esc', 'Leave the room you’re in, back the way you came'],
     ],
   },

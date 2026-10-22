@@ -8,7 +8,8 @@
 // drawn in code.
 //
 //   STAND_IN: { name: middle-earth figure }    HEIGHTS: { name: metres }
-//   manifest(rt) → Promise<{ name: { file, height? } }>  (Lane B’s cast.json, or {})
+//   manifest(rt) → Promise<{ name: entry }>  (Lane B’s cast.json’s figures: height, cuts, clips, hipsY; or {})
+//   cutOf(entry, tier) → the file of Lane B’s cut for the tier (hq on high, the plain on mid, lo on low)
 //   heightOf(name) → metres
 //   loadFigure(name, rt) → Promise<template | null>
 //   figure(name, { rt, height, seed, ink, material }) → { group, ready, set({ base, speed }),
@@ -73,9 +74,11 @@ export function manifest(rt) {
     listed = Promise.resolve(typeof fetch === 'function' ? fetch(`${OWN}/cast.json`) : null)
       .then((r) => (r?.ok ? r.json() : {}))
       .then((j) => {
-        // (a list of { name, file } or a map of name → entry: whichever Lane B writes)
+        // (Lane B writes { about, figures: { name: { height, cuts, clips, hipsY, tint } } };
+        // a list of { name, file } is read too)
         const list = Array.isArray(j) ? j : Array.isArray(j?.figures) ? j.figures : null;
         if (list) return Object.fromEntries(list.filter((e) => e?.name).map((e) => [e.name, e]));
+        if (j?.figures && typeof j.figures === 'object') return j.figures;
         return j && typeof j === 'object' ? j : {};
       })
       .catch(() => ({}));
@@ -90,24 +93,29 @@ export function loadFigure(name, rt) {
   const p = manifest(rt)
     .then((list) => {
       const own = list[name];
-      if (own) return { model: `${OWN}/${own.file ?? `${name}.glb`}`, clips: [] };
+      if (own) return { model: `${OWN}/${cutOf(own, rt?.quality?.tier) ?? own.file ?? `${name}.glb`}`, clips: LOCO.map((c) => (own.clips?.[c] ? `${OWN}/${own.clips[c]}` : null)), entry: own };
       const me = STAND_IN[name] ?? 'hobbit';
-      return { model: `${ME}/${me}.glb`, clips: LOCO.map((c) => `${ME}/${me}-${c}.glb`) };
+      return { model: `${ME}/${me}.glb`, clips: LOCO.map((c) => `${ME}/${me}-${c}.glb`), entry: null };
     })
-    .then(({ model, clips }) => Promise.all([model, ...clips].map((u) => Promise.resolve(rt?.assets?.gltf?.(u)).catch(() => null))))
-    .then(([g, ...files]) => made(name, g, files))
+    .then(({ model, clips, entry }) => Promise.all([model, ...clips].map((u) => (u ? Promise.resolve(rt?.assets?.gltf?.(u)).catch(() => null) : null))).then((files) => [entry, ...files]))
+    .then(([entry, g, ...files]) => made(name, g, files, entry))
     .catch(() => null);
   templates.set(name, p);
   p.then((t) => !t && templates.get(name) === p && templates.delete(name));
   return p;
 }
 
-async function made(name, g, files) {
+// Lane B’s cut for the device’s detail: hq on high and up, the plain one on mid, lo on low
+export const cutOf = (entry, tier = 'high') => (entry?.cuts ? (tier === 'low' ? entry.cuts.lo : tier === 'mid' ? entry.cuts.mid : (entry.cuts.hq ?? entry.cuts.mid)) ?? entry.cuts.mid ?? null : null);
+
+async function made(name, g, files, entry = null) {
   const scene = g?.scene;
   const hips = scene?.getObjectByName('Hips');
   if (!hips?.parent) return null;
   scene.updateMatrixWorld(true);
   const up = new THREE.Vector3(0, 1, 0).applyQuaternion(hips.parent.getWorldQuaternion(new THREE.Quaternion()).invert());
+  // (Lane B gives the hips’ height that stands a clip’s soles on the floor: the bone’s own sinks them a little)
+  const hipsY = entry?.hipsY ?? hips.position.y;
   const own = {};
   LOCO.forEach((c, i) => {
     const a = files[i]?.animations?.[0];
@@ -116,7 +124,7 @@ async function made(name, g, files) {
   // (a figure of the shared rig without its own walk takes the library’s, fitted to its hips)
   if (!own.idle || !own.walk) {
     const key = `hogwarts:${name}`;
-    const got = await Promise.all(LOCO.map((c) => forFigure(c, { hipsY: hips.position.y, up, key }).catch(() => null)));
+    const got = await Promise.all(LOCO.map((c) => forFigure(c, { hipsY, up, key }).catch(() => null)));
     LOCO.forEach((c, i) => {
       if (!own[c] && got[i]) own[c] = got[i];
     });
@@ -128,7 +136,7 @@ async function made(name, g, files) {
   const crown = scene.getObjectByName('head_end') ?? scene.getObjectByName('Head');
   const top = (crown ? crown.getWorldPosition(new THREE.Vector3()).y : box.max.y) - ground;
   if (!(top > 0.1)) return null;
-  return { name, scene, own, up, hipsY: hips.position.y, ahead: own.walk ? heading(own.walk, up) : null, top, ground };
+  return { name, scene, own, up, hipsY, ahead: own.walk ? heading(own.walk, up) : null, top, ground, height: entry?.height ?? null };
 }
 
 export const forgetFigures = () => {
@@ -154,7 +162,7 @@ export function moveFor(speed, walk, run) {
   return 1;
 }
 
-export function figure(name, { rt = null, height = heightOf(name), seed = 0, ink = (rt?.quality?.tier ?? 'high') !== 'low', material = null } = {}) {
+export function figure(name, { rt = null, height = null, seed = 0, ink = (rt?.quality?.tier ?? 'high') !== 'low', material = null } = {}) {
   const group = new THREE.Group();
   group.name = `hogwarts:${name}`;
   let st = null;
@@ -176,7 +184,8 @@ export function figure(name, { rt = null, height = heightOf(name), seed = 0, ink
       o.frustumCulled = false; // (a skinned mesh’s bounds don’t follow its pose)
       o.castShadow = !material;
     });
-    const k = height / Math.max(tpl.top, 1e-3);
+    // (the height asked for, else Lane B’s for its figure, else the cast’s as this lane reads it)
+    const k = (height ?? tpl.height ?? heightOf(name)) / Math.max(tpl.top, 1e-3);
     model.scale.setScalar(k);
     model.position.y = -tpl.ground * k;
     group.add(model);
