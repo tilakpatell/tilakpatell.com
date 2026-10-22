@@ -53,27 +53,43 @@ describe('targeting: the AI system’s target scores', () => {
     expect(scoreTargets(brain, [up, level], { system, who })[0].id).toBe(level.id);
   });
 
-  it('holds a target for the system’s keep-firing time before it switches', () => {
-    const a = belief('a', [0, 0, 30]);
-    const near = belief('b', [0, 0, 10]);
-    const held = { s: { id: 'me', at: [0, 0, 0] }, target: 'a', targetSince: 0 };
-    ents.set('a', { id: 'a', bot: true, hp: 100, hpMax: 100, alive: true, at: [0, 0, 30] });
-    expect(pickTarget(held, [a, near], { system, who, now: 1 })).toBe('a');
-    expect(pickTarget(held, [a, near], { system, who, now: system.shooting.keepFiringAtAITime + 0.1 })).toBe('b');
-    expect(pickTarget({ s: held.s }, [], { system, who, now: 0 })).toBe(null);
+  // (the source's selection, `TargetSelection.cpp`'s `selectTargets`, on the records' scores; it replaced a
+  // hold of the keep-firing time before any switch, which the source spends on firing at a target unseen)
+  const seenAt = (id, at, ago, clock = 10) => ({ ...belief(id, at, ago === 0), seenAt: ago == null ? -Infinity : clock - ago });
+  const held = (target) => ({ s: { id: 'me', at: [0, 0, 0] }, target, targetSince: 0, me: { now: 10 } });
+
+  it('keeps the target it has while it is seen and no seen one scores higher, whatever the time held', () => {
+    expect(system.targeting.visibleTargetLimit).toBe(1);
+    const a = seenAt('a', [0, 0, 30], 0);
+    // (2 m nearer: inside the current target's own scale, the records' stand-in for the source's 2 m of slack)
+    expect(pickTarget(held('a'), [a, seenAt('b', [0, 0, 28], 0)], { system, who, now: 100 })).toBe('a');
+    expect(pickTarget(held('a'), [a, seenAt('b', [0, 0, 10], 0)], { system, who, now: 0.5 })).toBe('b');
   });
 
-  it('the coordinator spreads a squad over its targets by the visible limit, and lets all fire when the limit is whole', () => {
+  it('counts an enemy seen within the visible limit as seen, and leaves an unseen target for a seen one', () => {
+    // (half a second out of sight is inside the multiplayer row's second; two seconds is not)
+    expect(pickTarget(held('a'), [seenAt('a', [0, 0, 30], 0.5), seenAt('b', [0, 0, 29], 0)], { system, who })).toBe('a');
+    expect(pickTarget(held('a'), [seenAt('a', [0, 0, 30], 2), seenAt('b', [0, 0, 60], 0)], { system, who })).toBe('b');
+    // (the PvE row's limit is a third of a second)
+    expect(pickTarget(held('a'), [seenAt('a', [0, 0, 30], 0.5), seenAt('b', [0, 0, 60], 0)], { system: ai.systemPvE, who })).toBe('b');
+  });
+
+  it('keeps an unseen target while no enemy is seen; with none, takes one seen before over one only heard', () => {
+    expect(pickTarget(held('a'), [seenAt('a', [0, 0, 30], 5), seenAt('b', [0, 0, 5], 8)], { system, who })).toBe('a');
+    expect(pickTarget(held(null), [seenAt('heard', [0, 0, 5], null), seenAt('once', [0, 0, 40], 5)], { system, who })).toBe('once');
+    expect(pickTarget(held(null), [seenAt('heard', [0, 0, 5], null)], { system, who })).toBe('heard');
+    expect(pickTarget({ s: { id: 'me', at: [0, 0, 0] } }, [], { system, who, now: 0 })).toBe(null);
+  });
+
+  it('the coordinator hands each member its own best: the visible limit is seconds, and the records hold no share', () => {
     const scores = new Map([
       ['m1', [{ id: 'x', score: 9 }, { id: 'y', score: 5 }]],
       ['m2', [{ id: 'x', score: 8 }, { id: 'y', score: 6 }]],
       ['m3', [{ id: 'x', score: 7 }, { id: 'y', score: 6.5 }]],
     ]);
     expect([...coordinate(scores, { system }).values()]).toEqual(['x', 'x', 'x']);
-    // (the PvE row switches the coordinator off: each its own best)
     expect([...coordinate(scores, { system: ai.systemPvE }).values()]).toEqual(['x', 'x', 'x']);
-    const spread = coordinate(scores, { system: { ...ai.systemPvE, targeting: { ...ai.systemPvE.targeting, enableTargetCoordinator: true } } });
-    expect(spread.get('m1')).toBe('x');
-    expect(new Set(spread.values())).toEqual(new Set(['x', 'y']));
+    const on = coordinate(scores, { system: { ...ai.systemPvE, targeting: { ...ai.systemPvE.targeting, enableTargetCoordinator: true } } });
+    expect([...on.values()]).toEqual(['x', 'x', 'x']);
   });
 });

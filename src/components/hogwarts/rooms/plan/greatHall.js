@@ -82,7 +82,8 @@ export function hallPlan({ tier = 'high' } = {}) {
   const great = { x: 0, z: -HALF_L, y: 3.6, w: 8, h: 11.5 };
   // three banners over each table, high under the vault
   const banners = tables.flatMap((t) => [-9, 3, 15].map((z) => ({ house: t.house, at: [t.x, HALL.wall + 3.4, z], w: 1.7, h: 5.2 })));
-  const doors = [{ id: 'out', at: [0, HALF_L - 0.6], r: 2.6, to: 'out', name: 'The Entrance Hall', faces: 0 }];
+  // (the great doors at the hall's foot open on the Entrance Hall, the Grand Staircase's ground floor)
+  const doors = [{ id: 'out', at: [0, HALF_L - 0.6], r: 2.6, to: 'staircase', name: 'The Entrance Hall', verb: 'Go out to', faces: 0 }];
   const places = [
     { id: 'high-table', name: 'The high table', at: [0, staffZ], r: 6 },
     ...tables.map((t) => ({ id: `${t.house}-table`, name: `The ${t.house[0].toUpperCase()}${t.house.slice(1)} table`, at: [t.x, 0], r: 3 })),

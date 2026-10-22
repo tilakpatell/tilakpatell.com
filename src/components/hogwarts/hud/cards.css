@@ -174,3 +174,40 @@
 .hud:has(.hp-wand) .hud-bubble.hp-said { bottom: calc(var(--hud-foot, 88px) + 8.5rem); }
 .hud-bubble.hp-said b { display: block; font: 700 0.74rem/1.2 Cinzel, Georgia, serif; letter-spacing: 0.12em; text-transform: uppercase; color: var(--hp-house, #6b4a2a); margin-bottom: 0.2rem; }
 .hp-tools { display: flex; flex-direction: column; align-items: flex-end; gap: 0.25rem; }
+
+/* a word said to a door: the password, the riddle's answer */
+.hp-word {
+  top: max(var(--hud-under, 72px), 16vh);
+  width: min(92vw, 520px);
+  padding: 1rem 1.2rem 1.1rem;
+}
+.hp-word-prompt { margin: 0 0 0.7rem; font-family: Georgia, 'Times New Roman', serif; font-size: 1rem; line-height: 1.4; }
+.hp-word-row { display: flex; gap: 0.5rem; align-items: stretch; }
+.hp-word-input {
+  flex: 1;
+  min-width: 0;
+  min-height: 40px;
+  padding: 0.4rem 0.7rem;
+  font: 1rem Georgia, 'Times New Roman', serif;
+  color: var(--hp-ink);
+  background: rgb(255 250 236 / 0.9);
+  border: 1px solid rgb(90 70 48 / 0.5);
+  border-radius: 4px;
+}
+.hp-word-input:focus-visible { outline: 2px solid var(--hp-accent-2); outline-offset: 1px; }
+.hp-word-say,
+.hp-word-close {
+  min-height: 40px;
+  padding: 0 0.9rem;
+  font: 600 0.85rem Cinzel, Georgia, serif;
+  letter-spacing: 0.06em;
+  color: #fff8e8;
+  background: var(--hp-accent);
+  border: 0;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.hp-word-close { padding: 0 0.7rem; color: var(--hp-ink); background: transparent; border: 1px solid rgb(90 70 48 / 0.4); }
+@media (pointer: coarse) {
+  .hp-word-input, .hp-word-say, .hp-word-close { min-height: 44px; }
+}

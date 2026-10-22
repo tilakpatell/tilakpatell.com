@@ -181,3 +181,147 @@ describe('the firing patterns', () => {
     expect(b.frame).toBe(0);
   });
 });
+
+// The third pull request's rules: the trigger, what a bot keeps of a target out of sight, flee, the aim, cover.
+const grenade = (at, team = 2) => ({ at, team, collided: true, dead: false, row: { radius: 6 } });
+const lost = (brain, id, at, ago) => {
+  see(brain, id, at, false);
+  brain.me.now = 10;
+  brain.me.beliefs[id].seenAt = 10 - ago;
+};
+
+describe('the trigger', () => {
+  it('fires on at a target out of sight for the keep-firing time while the bot stands, and not on the move', () => {
+    const b = bot([0, 0, 0]);
+    lost(b, 'them', [0, 1.2, 20], 3);
+    expect(think(b, world(), 1).fire).toBe(true);
+    const c = bot([0, 0, 0]);
+    lost(c, 'them', [0, 1.2, 20], 5);
+    expect(think(c, world(), 1).fire).toBe(false);
+    // (advancing on one past the engage distance: moving, it fires only in sight; a sidestep in the open counts
+    // as standing, as the source has that bot standing)
+    const d = bot([0, 0, 0]);
+    d.s.vel = [3, 0, 0];
+    lost(d, 'them', [0, 1.2, 60], 1);
+    const i = think(d, world(), 1);
+    expect(i.mode).toBe('advance');
+    expect(i.fire).toBe(false);
+  });
+
+  it('is held past the AI weapon’s range, not the gun’s: AI_Rifle’s 250 m', () => {
+    const b = bot([0, 0, 0]);
+    expect(b.s.weapon.range).toBe(200);
+    see(b, 'them', [0, 1.2, 220]);
+    expect(think(b, world(), 1).fire).toBe(true);
+    const c = bot([0, 0, 0]);
+    see(c, 'them', [0, 1.2, 260]);
+    expect(think(c, world(), 1).fire).toBe(false);
+  });
+
+  it('waits the difficulty’s reacquire time for a target spotted again away from where it was lost', () => {
+    const b = bot([0, 0, 0], { difficulty: { reaction: () => 0, reacquire: () => 0.5, settle: () => 1, aim: {}, row: { targeting: { reaquireTargetDistanceThreshold: 1 } } } });
+    see(b, 'them', [0, 1.2, 20]);
+    expect(think(b, world(), 1).fire).toBe(true);
+    b.me.beliefs.them.visible = false;
+    think(b, world(), 1.2);
+    see(b, 'them', [4, 1.2, 20]);
+    expect(think(b, world(), 1.4).fire).toBe(false);
+    expect(think(b, world(), 2).fire).toBe(true);
+  });
+});
+
+describe('a target out of sight', () => {
+  it('is held where it was last seen, not followed', () => {
+    const b = bot([0, 0, 0]);
+    see(b, 'them', [0, 1.2, 20]);
+    think(b, world(), 1);
+    // (the senses would move it; the brain keeps the place it was seen)
+    Object.assign(b.me.beliefs.them, { visible: false, at: { x: 6, y: 1.2, z: 24 } });
+    think(b, world(), 1.2);
+    expect(b.me.beliefs.them.at).toEqual({ x: 0, y: 1.2, z: 20 });
+  });
+});
+
+describe('flee', () => {
+  it('is a panic’s: an enemy grenade come down beside the bot, after the drawn moment, and not its squad’s retreat', () => {
+    const b = bot([0, 0, -50]);
+    see(b, 'them', [0, 1.2, -20]);
+    expect(think(b, world({ squad: { centre: [0, -50], posture: 'retreat' } }), 1).mode).not.toBe('flee');
+    const w = world({ grenades: [grenade([2, 0, -50])] });
+    expect(think(b, w, 2).mode).not.toBe('flee');
+    expect(think(b, w, 2.3).mode).toBe('flee');
+    // (a friend's grenade, or one still in the air, is nothing to it)
+    const c = bot([0, 0, -50]);
+    see(c, 'them', [0, 1.2, -20]);
+    think(c, world({ grenades: [grenade([2, 0, -50], 1), { ...grenade([1, 0, -50]), collided: false }] }), 2);
+    expect(think(c, world(), 2.3).mode).not.toBe('flee');
+  });
+
+  it('goes on past the panic until the bot has been in its flee cover over 2 s, then it hides there', () => {
+    const b = bot([0, 0, -50]);
+    see(b, 'them', [0, 1.2, -20]);
+    think(b, world({ grenades: [grenade([2, 0, -50])] }), 1);
+    expect(think(b, world(), 1.3).mode).toBe('flee');
+    // (the panic over at 3 s; the flee is not)
+    expect(think(b, world(), 3.5).mode).toBe('flee');
+    // (there: where its flee led it, it waits two seconds, then hides)
+    const goal = b.intent.goal;
+    b.s.at = [goal[0], 0, goal[1]];
+    expect(['flee', 'hide']).toContain(think(b, world(), 4).mode);
+    expect(think(b, world(), 6.2).mode).toBe('hide');
+  });
+
+  it('fires on the way only where its flee row’s move settings say so: the Skirmish heavy’s, inside 30 m', () => {
+    const fleeing = (b) => {
+      see(b, 'them', [0, 1.2, -25]);
+      const w = world({ grenades: [grenade([2, 0, -50])] });
+      think(b, w, 1);
+      return think(b, w, 1.3);
+    };
+    const heavy = fleeing(bot([0, 0, -50], { pve: true }, 'd-orig-heavy'));
+    expect(heavy.mode).toBe('flee');
+    expect(heavy.fire).toBe(true);
+    const rifle = fleeing(bot([0, 0, -50]));
+    expect(rifle.mode).toBe('flee');
+    expect(rifle.fire).toBe(false);
+  });
+});
+
+describe('the aim', () => {
+  it('is the target’s eye less a quarter metre, with no lead on a mover', () => {
+    const b = bot([0, 0, 0], { aimScale: 0 });
+    see(b, 'them', [0, 1.26, 30]);
+    b.me.beliefs.them.vel = { x: 5, y: 0, z: 0 };
+    const target = { id: 'them', kind: 'soldier', alive: true, at: [0, 0, 30], stance: 'stand', vel: [5, 0, 0], yaw: 0 };
+    const i = think(b, world({ who: (id) => (id === 'them' ? target : null) }), 1);
+    expect(i.aim[0]).toBeCloseTo(0, 6);
+    expect(i.aim[2]).toBeCloseTo(30, 6);
+    expect(i.aim[1]).toBeGreaterThan(1.26);
+  });
+});
+
+describe('cover', () => {
+  const slot = { at: [0, 0, -10], normal: [0, 1], height: 'stand' };
+  const inCover = (target) => {
+    const b = bot([0, 0, -10]);
+    b.cover = slot;
+    see(b, 'them', target);
+    return { b, w: world({ taken: new Map([[slot, 'me']]) }) };
+  };
+
+  it('an attacking bot keeps a cover inside its weapon’s range of a target it sees, however long', () => {
+    const { b, w } = inCover([0, 1.2, -40]);
+    expect(think(b, w, 1).mode).toBe('cover');
+    expect(think(b, w, 5).mode).toBe('cover');
+    expect(think(b, w, 30).mode).toBe('cover');
+  });
+
+  it('asks for another once the target is out of its weapon’s preferred range, past its time there', () => {
+    const { b, w } = inCover([0, 1.2, -40]);
+    // (a weapon whose preferred range ends at 20 m, the target 30 m off)
+    b.preferred = { Start: 0, Ideal: 0.5, End: 20 };
+    expect(think(b, w, 1).mode).toBe('cover');
+    // (the open field has no other: it fights in the open)
+    expect(think(b, w, 5).mode).toBe('attack');
+  });
+});
