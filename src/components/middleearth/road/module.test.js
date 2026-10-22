@@ -255,3 +255,16 @@ describe('the face’s wiring: keys, events, the save', () => {
     expect(rt2.input.bind.mock.calls[0][0].next).toEqual(['Enter']);
   });
 });
+
+describe('a jump', () => {
+  it('tells the page where the ride now is in the same frame', async () => {
+    const rt = fakeRt();
+    const world = await road.create(rt, { at: null, reduced: false });
+    world.attached();
+    world.step(1, snap());
+    rt.emitted.length = 0;
+    world.goTo('moria');
+    expect(rt.emitted.filter((e) => e.type === 'progress').at(-1)).toMatchObject({ stage: 'moria', s: sOf(STAGES, 'moria', 0) });
+    world.dispose();
+  });
+});

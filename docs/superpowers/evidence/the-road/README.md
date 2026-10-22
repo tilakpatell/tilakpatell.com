@@ -577,3 +577,64 @@ Each stage's cost against the others, at Low on WebGPU (`probe-pace.mjs`). This 
 | Rivendell | 2.4 | Ithilien | 1.2 |
 | Minas Tirith | 2.2 | the Marshes | 1.2 |
 | Caradhras | 2.1 | Gorgoroth | 1.0 |
+
+## Every beat walked into, and the buildings close (2026-10-22)
+
+Toward the owner's "check the buildings and check everything".
+
+**Every beat.** `lab/road/beat-tour.mjs` looked at all 80 beats with a shot of their own: the placed shots, the cranes, the low, the side and the lead. It works as a visitor comes to each one. The ride is set 3 m short of the beat and walked into it, so the beat plays. The frame is kept at the beat's moment: where its deed waits, at the top of a crane's rise, or a few seconds into a held shot. Each frame's light is measured as `light-survey.mjs` measures it.
+
+The first tour put the ride on each beat's mark. That counts the beat as long done, so none of them played: cranes stayed at their foot and no deed waited. In software the world also steps only 50 ms a frame, so the shots were still easing in from the follow. Those frames looked wrong and the Road was not.
+
+Of the 80, seven did read wrong (`beats-reframed-desktop.webp`, before and after):
+
+| beat | what was wrong | now |
+| --- | --- | --- |
+| Ithilien, the Cross-roads | the low rig looks up the road, and the king sits 6 m off it: sky, and the edge of his plinth | low by the road, the hobbits before him, looking up at him |
+| Rivendell, Narsil | the same: the hall of the shards is 9.5 m off the road | the hall, Frodo before it |
+| Rivendell, Bilbo | the side shot lined the file up between the camera and his bench: Aragorn where Bilbo was | from up the road, Bilbo at his desk |
+| the Anduin, the Seat of Seeing | the camera stood among the Seat's pillars, aimed under the vision's four pictures, which were cut off at the top | over Frodo's shoulder, aimed at them |
+| Cirith Ungol, the betrayal | the camera stood inside the stair's cliff: a green slab, 55% of the frame black | down the stair from above, Gollum before the two |
+| Cirith Ungol, the Tower | Frodo sat on a dark lane, nothing lit: 44% black | one of the orcs' torches left burning by him |
+| Ithilien, the king himself | a stack of boxes, wearing the wood scan | below |
+
+Every other beat reads as its moment, among them:
+- Gandalf's cart behind Frodo;
+- the Black Rider over the roots;
+- Butterbur at the Pony's door;
+- the Nine at the Ford;
+- the Doors of Durin lit;
+- Balin's tomb in its shaft of light;
+- the Balrog on the Bridge;
+- Galadriel at the Mirror;
+- the Argonath;
+- the faces in the marsh;
+- Shelob before the Phial;
+- the Eagles down to the rock;
+- the White Tree;
+- the ship going west.
+
+`beats-all-desktop.webp` is every one. The tour's own two misses are retaken there: Hobbiton's opening was still in its black, and the Eagles were taken after the ride had gone on into Minas Tirith.
+
+Some dark beats are dark by design and still read: the Bridge, the dwarrowdelf crane, Gorgoroth's last slope. In an 800 × 500 lab window the deed's card can cover the middle of the frame (the stone trolls behind it). It sits 8 rem above the foot, below the middle on a desktop screen.
+
+**The buildings close.** `lab/road/building-tour.mjs` holds the camera on each stage's landmarks, up close, 31 views in all.
+
+The stages' parts wear the photo scans by `roleOf` their shape and colour. A warm grey reads as wood there, so Ithilien's seated king and the rock round Henneth Annûn wore the wood scan; they are stone and rock now. The king is rebuilt as a seated figure:
+- a throne with a back to his shoulder blades, and arms;
+- thighs, shins and feet;
+- arms down to his hands on his knees;
+- the orcs' round stone for a head, with its one red eye;
+- his own head fallen before him, crowned with flowers;
+- turned to look across the road at those coming up it.
+
+The Tower of Cirith Ungol has a spike at each corner of each tier, against the red. `buildings-reframed-desktop.webp` shows both, before and after.
+
+Looked at and right: Bree's gate and the Pony, the Green Dragon and the Party Field's pavilion, Amon Sûl's ring, the Ford's bridge and its deck, Rivendell's bridge, council, arch and the hall of the shards, the Doors, Mazarbul, Lothlórien's dais and Mirror, the Argonath and the Seat, Henneth Annûn's curtain, Minas Morgul in its vale, the Watchers, the Morannon, the Havens' quay.
+
+**The chapters on a laptop's chip.** These are the last of the warnings the 2026-10-22 survey above left, on WebGPU held to the default limits. The Shire's, Moria's, Minas Tirith's and Lothlórien's chapters now raise none:
+- the Shire's mushroom and spoon glints are sprites, where a point was a pixel wide on WebGPU;
+- Lothlórien's lantern posts carry their uv, which the elfwood's map and normal map read;
+- Moria's and Minas Tirith's chapters no longer ask `toNonIndexed` of geometry that already is.
+
+**And**: a jump (the ribbon, a stage's key) tells the page where the ride is in the same frame. It no longer waits for the next quarter second's progress.

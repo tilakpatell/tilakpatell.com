@@ -1662,7 +1662,7 @@ function prow(bk, K, lamps, banners) {
   const p = geo.attributes.position;
   for (let i = 0; i < p.count; i++) p.setZ(i, (p.getZ(i) * prowHalf(p.getX(i))) / (PROW.w / 2));
   geo.deleteAttribute('normal');
-  const ng = geo.toNonIndexed();
+  const ng = geo.index ? geo.toNonIndexed() : geo; // (an extrusion is already)
   ng.computeVertexNormals();
   const rockShade = (x, y, z, c) => {
     const k = (0.8 + 0.2 * smooth(0, 30, y - 10)) * (0.92 + 0.14 * SHADE(x * 0.04, y * 0.05 + z * 0.1));
@@ -2237,7 +2237,7 @@ function whiteTree(K) {
     }
     const heart = new THREE.IcosahedronGeometry(0.07, 0);
     heart.deleteAttribute('uv');
-    flowers.push(heart.toNonIndexed());
+    flowers.push(heart.index ? heart.toNonIndexed() : heart);
   }
   const blossomGeo = mergeAll(flowers);
   const bloomAt = spots.map(() => ({ s: 0.75 + r() * 0.6, th: r() * 0.5, rot: new THREE.Euler(r() * TAU, r() * TAU, r() * TAU), off: V3((r() - 0.5) * 0.25, (r() - 0.5) * 0.2, (r() - 0.5) * 0.25) }));

@@ -106,8 +106,14 @@ export function buildProps({ K, road, heightAt, tier = 'high' }) {
   const [tx, tz] = TOWER.at;
   const ty = heightAt(tx, tz) - 2;
   const black = C(0x2a2624);
-  [[14, 12], [11, 14], [8, 12], [5.5, 10]].reduce((y, [w, h]) => {
+  [[14, 12], [11, 14], [8, 12], [5.5, 10]].reduce((y, [w, h], i) => {
     t.push(part(new THREE.BoxGeometry(w, h, w), black, { at: [tx, y + h / 2, tz], yaw: 0.2 }));
+    // (a spike at each corner of the tier, leaning out: the tower's jagged outline against the red)
+    for (let c = 0; c < 4; c++) {
+      const a = 0.2 + Math.PI / 4 + (c * Math.PI) / 2;
+      const r = w * 0.66;
+      t.push(part(new THREE.ConeGeometry(0.5 + i * 0.05, 4 - i * 0.4, 4), black, { at: [tx + Math.sin(a) * r, y + h + 1.4, tz + Math.cos(a) * r], yaw: a, pitch: 0.28 }));
+    }
     return y + h;
   }, ty);
   for (const s of [-1, 1]) t.push(part(new THREE.ConeGeometry(1.2, 9, 5), black, { at: [tx + s * 2.2, ty + 52, tz], roll: s * -0.25 }));
