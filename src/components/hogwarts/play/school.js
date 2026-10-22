@@ -40,6 +40,7 @@ export function writeSave(saves, patch) {
 }
 
 const HOUSES = { gryffindor: 'Gryffindor', hufflepuff: 'Hufflepuff', ravenclaw: 'Ravenclaw', slytherin: 'Slytherin' };
+const PARCEL = 'An owl drops a parcel at your feet: a cloak like water, and a note with no name on it. I to put it on.';
 // (one sentence a toast: what’s done, and what it was worth if this lane pays it)
 const DONE_LINE = (q, house) => (q.points && q.paid === 'quest' ? `${q.title}, done: ${words(q.points)} points to ${HOUSES[house]}.` : `${q.title}, done.`);
 const WEEK_LINE = (w) => (w === TERM.christmas ? `${weekLabel(w)}, with snow on the grounds and twelve trees in the Great Hall.` : w === TERM.leaving ? `${weekLabel(w)}, the last week of term: the leaving feast is tonight.` : `${weekLabel(w)}, and the term goes on.`);
@@ -88,6 +89,7 @@ export function createSchool({ saves = null, tell = () => {}, house: given = nul
       leaving: isLeaving(term.week),
       feasted,
       year: term.year,
+      cloak,
     };
     tell('school', view);
   };
@@ -210,12 +212,18 @@ export function createSchool({ saves = null, tell = () => {}, house: given = nul
     // the world’s clock, in world hours: the week moves on every three days
     step(dt, t) {
       const d = Math.floor(t / 24);
-      if (d === seen) return;
-      seen = d;
-      weeks(termOn(term, { type: 'day', day: d }));
-      if (dirty) {
-        keep();
-        refresh();
+      if (d !== seen) {
+        seen = d;
+        weeks(termOn(term, { type: 'day', day: d }));
+        if (dirty) {
+          keep();
+          refresh();
+        }
+      }
+      // (the cloak comes at Christmas if it hasn’t been found before: a parcel, and no name on the note)
+      if (!cloak && term.week >= TERM.christmas) {
+        toast(PARCEL);
+        hear('pickup', { id: 'cloak' });
       }
     },
     sleep(d) {

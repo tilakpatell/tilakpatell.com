@@ -80,9 +80,21 @@ import { BEATS, PARTS } from './rules/arrival';
 import { createNight } from './play/night';
 import { createSchool } from './play/school';
 import { createNoticeBoard } from './world/noticeBoard';
+import { createCurfew } from './play/curfew';
+import { createPresence } from './play/presence';
+import { createDementors, playNotes } from './world/grounds/dementors';
+import { drain, pull } from './rules/dementors';
+import { afterHours } from './rules/curfew';
+import { inland } from './rules/shore';
+import { LOCAL as ROOMS_BUILT } from './rooms/host';
 import { frameYaw, fromRoom } from './rules/paths';
 
 export { KEYS };
+
+// the invisibility cloak, on and off, once you have it (the guide’s keys say so)
+export const CLOAK_KEYS = { cloak: ['KeyI'] };
+const GREY = new THREE.Color(0.42, 0.44, 0.47); // (the cold’s shade: the house look’s shadow drained to it as the dementors close)
+const RUN = 3.6; // m/s on foot past which a run is heard down a corridor
 
 // where the shore’s own frame sits on the Map’s (the grounds’, rules/places.js’s): its
 // waterline on the Black Lake’s south shore, across the water from the castle
@@ -121,7 +133,7 @@ export default {
     const renderer = rt.gfx?.renderer ?? null;
     const exposureWas = renderer?.toneMappingExposure ?? null;
 
-    rt.input?.bind?.({ ...KEYS, ...WAND_KEYS, ...BROOM_KEYS });
+    rt.input?.bind?.({ ...KEYS, ...WAND_KEYS, ...BROOM_KEYS, ...CLOAK_KEYS });
     const touch = { x: 0, y: 0, rise: false, sink: false, catch: false };
     const ground = { floorAt, level: LEVEL, bounds: BOUNDS, solids: shore.solids };
     const walker = createWalker({ camera, world: ground, at: SPAWN.at, yaw: SPAWN.yaw, reduced });
@@ -248,11 +260,93 @@ export default {
       dress();
       return cup;
     };
+    // the night (Lane F): the dementors at the shore past the sixth week, the
+    // curfew in the castle after 21:00 with Filch, his cat, the prefects and
+    // Snape walking their rounds where you can see them, and the cloak
+    const dementors = createDementors({ rt, scene, house, floorAt, shoreAt: inland, reduced });
+    const presence = createPresence({ rt, scene, house });
+    let cloaked = false;
+    const wear = (on) => {
+      if ((on && !school.cloak) || on === cloaked) return;
+      cloaked = on;
+      tell('cloak', { on });
+    };
+    // back to bed (caught, or fainted): your common room once it’s built, until then the boats
+    const toBed = () => {
+      tell('cut', {});
+      wear(false);
+      if (ROOMS_BUILT[school.house]) {
+        rooms.enter(school.house).catch(() => {});
+        return;
+      }
+      if (rooms.room) rooms.leave();
+      walker.place(SPAWN.at, SPAWN.yaw);
+      relight();
+    };
+    const curfew = createCurfew({ tell, onCaught: toBed });
+    const COME = 'The lake has gone flat and still, and a cold is coming off it.';
+    let coldWas = 0;
+    const dementorsStep = (dt) => {
+      const h = hours();
+      const out = !rooms.room && !broom.riding;
+      const events = dementors.step(dt, { week: school.week, day: Math.floor(h / 24), hour: h % 24, player: { x: walker.state.x, z: walker.state.z }, inside: out ? null : (rooms.id ?? 'broom') });
+      for (const e of events) {
+        if (e.type === 'come') tell('toast', { text: COME });
+        else if (e.type === 'faint') {
+          tell('toast', { text: e.toast });
+          toBed();
+        } else if (e.type === 'driven') {
+          tell('toast', { text: e.toast });
+          tell('driven', {});
+          playNotes(rt);
+        }
+      }
+      const cold = dementors.cold;
+      ground.pace = pull(cold);
+      if (Math.abs(cold - coldWas) > 0.04 || (cold === 0 && coldWas !== 0)) {
+        coldWas = cold;
+        tell('cold', { k: Math.round(cold * 100) / 100 });
+      }
+    };
+    // the curfew where you are, and the watchers walking their rounds in the room you’re in
+    const nightWatch = (dt) => {
+      const v = night.view();
+      const s = rooms.room ? rooms.walker?.state : walker.state;
+      const people = night.people();
+      curfew.step(dt, { hour: hours() % 24, player: { x: v.me.x, z: v.me.z, inside: v.me.inside ?? null, cloak: cloaked, lit: Boolean(wand.state().lit), running: (s?.speed ?? 0) > RUN }, figures: people, house: school.house });
+      presence.step(dt, { room: rooms.id, origin: ROOM_AT, floorAt: rooms.room?.floorAt ?? (() => 0), people, night: v.night, filch: curfew.filch });
+    };
+    // (time on to an hour: the Menu’s “Wait for nightfall”; the clock only ever goes forward)
+    const waitFor = (hour) => {
+      const now = hours();
+      if (afterHours(now % 24)) {
+        tell('toast', { text: 'It’s dark already.' });
+        return false;
+      }
+      const ahead = (((hour - now) % 24) + 24) % 24;
+      clock += ahead * 60;
+      relight();
+      return true;
+    };
+    // Things to do’s “Go there” for the Patronus: the lesson until it’s learnt, then the water’s edge after dark
+    const goTo = (id) => {
+      if (id !== 'patronus') return;
+      if (!school.knows('patronus')) {
+        lesson('patronus');
+        return;
+      }
+      waitFor(21.5);
+      const edge = [SPAWN.at[0] + 6, SPAWN.at[1] - 8];
+      walker.place(edge, SPAWN.yaw);
+      tell('toast', { text: 'Down to the water’s edge, then, and wait.' });
+    };
+
     // (the term hears everything from here on; what it says back dresses the board and the Great Hall)
     ears = (type, data) => {
       school.hear(type, data);
       if (type === 'school') board.set(data);
       if (type === 'school' || type === 'room') dress(type === 'room');
+      if (type === 'patronus') dementors.patronus();
     };
 
     // the arrival (Lane D, world/arrival.js): the night of the first-years, on
@@ -313,7 +407,8 @@ export default {
       house.sky({ low: sky.uniforms.horizon.value, high: sky.uniforms.zenith.value, sunDir, halo: haze.copy(sky.uniforms.glow.value).multiplyScalar(0.6) });
       house.light({ sun: key, hemi });
       // (the shade: the sky's own blue, lifted toward the horizon's, so what the low light misses still reads)
-      house.set({ shadow: shade.setRGB(...light.hemi.sky, THREE.SRGBColorSpace).lerp(sky.uniforms.horizon.value, 0.4).multiplyScalar(0.95) });
+      // (and as the dementors close, the cold drains it toward grey)
+      house.set({ shadow: shade.setRGB(...light.hemi.sky, THREE.SRGBColorSpace).lerp(sky.uniforms.horizon.value, 0.4).multiplyScalar(0.95).lerp(GREY, drain(dementors.cold) * 0.85) });
       if (renderer) renderer.toneMappingExposure = light.exposure;
     };
 
@@ -361,7 +456,7 @@ export default {
         camera.updateProjectionMatrix();
       },
       step(dt, input) {
-        const pressed = (name) => KEYS[name].some((c) => input?.pressed?.has?.(c));
+        const pressed = (name) => (KEYS[name] ?? CLOAK_KEYS[name] ?? []).some((c) => input?.pressed?.has?.(c));
         // (the arrival on its rails: the night held, the shore drawn where it's on the lake)
         if (arrival.active) {
           clock += dt;
@@ -379,12 +474,20 @@ export default {
           }
           return;
         }
-        // (inside a room: its walk and its life; Esc is the way out, back where you came in)
+        // (inside a room: its walk and its life; Esc is the way out, back where you came in.
+        // The world’s time goes on in there: the people walk, the term counts, the curfew bites)
         if (rooms.room) {
           if (pressed('menu')) world.leave();
           else rooms.step(dt, input, touch, pressed);
+          if (pressed('cloak')) wear(!cloaked);
+          clock += dt;
+          night.step(dt);
+          school.step(dt, hours());
+          nightWatch(dt);
+          dementorsStep(dt);
           return;
         }
+        if (pressed('cloak')) wear(!cloaked);
         if (pressed('menu')) tell('menu');
         const stick = input?.stick ?? touch;
         const pad = { x: stick.x || touch.x, y: stick.y || touch.y, rise: touch.rise, sink: touch.sink, catch: touch.catch };
@@ -411,6 +514,8 @@ export default {
         wand.step(dt, input);
         night.step(dt);
         school.step(dt, hours());
+        nightWatch(dt);
+        dementorsStep(dt);
         air.update(dt, camera);
         clock += dt;
         // (the light moves slowly: a few times a second is plenty)
@@ -456,6 +561,10 @@ export default {
       wand,
       // the Marauder’s Map’s view of everyone (hud/MaraudersMap.jsx reads it every frame)
       map: () => night.view(),
+      // the night’s: the cloak on and off (the page’s chip), and time on to an hour
+      cloak: (on = !cloaked) => wear(on),
+      wait: (hour = 21.5) => waitFor(hour),
+      goTo,
       // the term's view for the HUD, and the leaving feast held (the Menu's, until the Great Hall holds it)
       school: () => school.view(),
       feast,
@@ -496,6 +605,8 @@ export default {
         castle.dispose();
         boats.dispose();
         board.dispose();
+        dementors.dispose();
+        presence.dispose();
         wand.dispose();
         quidditch.dispose();
         lessons.dispose();
@@ -538,6 +649,18 @@ export default {
         dusk,
         cast: (spell, at) => wand.cast(spell, at),
         wand: () => wand.state(),
+        curfew: () => curfew.state(),
+        dementors: () => dementors.state(),
+        presence: () => presence.info(),
+        // (eye(at, look): the camera held at a point looking at another, in a room, for the checks)
+        eye: (at, look) => {
+          rooms.hold = true;
+          if (rooms.walker) rooms.walker.place([at[0] - ROOM_AT[0], at[2] - ROOM_AT[2]], Math.atan2(-(look[0] - at[0]), -(look[2] - at[2])));
+          camera.position.set(...at);
+          camera.lookAt(...look);
+        },
+        cloak: (on) => wear(on),
+        wait: (hour) => waitFor(hour),
         night: () => night.view(),
         school: () => school.view(),
         term: (w) => school.setWeek(w),

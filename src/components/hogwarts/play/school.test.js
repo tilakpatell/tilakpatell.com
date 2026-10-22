@@ -103,6 +103,17 @@ describe('the term in the world', () => {
     expect(late.view().year).toBe(2);
   });
 
+  it('sends the cloak at Christmas if it hasn’t been found, once', () => {
+    const { s, of } = school({ week: 6 });
+    s.hear('sorted', { house: 'ravenclaw' });
+    s.step(1 / 60, 0);
+    s.step(1 / 60, 0.1);
+    expect(s.cloak).toBe(true);
+    expect(of('toast').filter((e) => /parcel/.test(e.text))).toHaveLength(1);
+    expect(s.view().list.find((q) => q.id === 'night').done).toBe(false);
+    expect(school({ week: 5 }).s.cloak).toBe(false);
+  });
+
   it('keeps the cards found, each once', () => {
     const { s, of } = school();
     s.hear('pickup', { id: 'card', card: 'merlin' });

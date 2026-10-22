@@ -54,6 +54,7 @@ export const HOGWARTS_KEYS = [
     ],
   },
   { label: 'The Map (after the first week)', rows: [['M', 'The Marauder’s Map, open and shut']] },
+  { label: 'After dark (the cloak from Christmas)', rows: [['I', 'The invisibility cloak, on and off: Filch can’t see you under it, his cat can']] },
 ];
 
 export const HOGWARTS_TOUCH = [
@@ -72,4 +73,5 @@ export const HOGWARTS_TOUCH = [
       ['Tap an answer', 'Answer the Sorting Hat'],
     ],
   },
+  { label: 'After dark', rows: [['Menu, Put the cloak on', 'The invisibility cloak, once you have it']] },
 ];
