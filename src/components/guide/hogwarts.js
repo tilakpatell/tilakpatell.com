@@ -25,7 +25,14 @@ export const HOGWARTS_KEYS = [
       ['← → / ↑ ↓, Enter', 'Pick an answer and give it'],
     ],
   },
-  { label: 'In the castle', rows: [['Esc', 'Leave the room you’re in, back the way you came']] },
+  {
+    label: 'In the castle',
+    rows: [
+      ['E', 'Take a stair, knock, speak to a portrait, read the notice board: what the prompt says'],
+      ['Type, then Enter', 'Say a password or a riddle’s answer to the door that asks'],
+      ['Esc', 'Leave the room you’re in, back the way you came'],
+    ],
+  },
   {
     label: 'The wand (from your first lesson)',
     rows: [
