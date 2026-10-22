@@ -296,7 +296,8 @@ export default {
     // out; a room gone into from another keeps the list it had)
     const under = [];
     let arrivalOwn = new Set();
-    const rooms = createRoomHost({ rt, scene, camera, house, tier, reduced, outside: under, lights, tell, load: (id) => (ROOMS[id] ?? LOCAL[id])?.load?.() });
+    // (every room is told the house, the Sorting's password, the hour and the week: the common rooms' doors ask for the password)
+    const rooms = createRoomHost({ rt, scene, camera, house, tier, reduced, outside: under, lights, tell, load: (id) => (ROOMS[id] ?? LOCAL[id])?.load?.(), context: () => ({ house: arrival.save.house, password: arrival.save.password, hour: grounds.hour, week: grounds.stats().week }), out: () => world.out() });
     const hostEnter = rooms.enter;
     rooms.enter = (...args) => {
       if (!rooms.room) under.splice(0, under.length, ...scene.children.filter((o) => o.visible && !o.isLight && !carried.has(o) && !arrivalOwn.has(o)));
@@ -421,19 +422,28 @@ export default {
         held = null;
         for (const [type, data] of was) rt.events?.emit?.(type, data);
       },
-      // the prompt's own button, and the touch stick
-      go,
+      // the prompt's own button (a room's door while you're in one), and the touch stick
+      go: () => (rooms.room ? rooms.act() : go()),
+      // a word typed into the HUD's card: a password, a riddle's answer
+      word: (text) => rooms.word(text),
       stick(x, y) {
         touch.x = x;
         touch.y = y;
       },
+      // into a room (rooms/host.js), by its door's id or the host's options
       enter,
-      leave,
       // the arrival: the Menu's “The arrival”, the Sorting card's answers, Enter's skip
       arrive: (at = null) => arrival.start(at),
       answer: (i) => arrival.answer(i),
       skip: () => arrival.skip(),
       arrival,
+      // out of a room: back into the one it was gone into from, else out to the grounds
+      leave() {
+        if (rooms.back()) return true;
+        return world.out();
+      },
+      // out of the castle to the grounds, whatever room you're in, back where you stood, turned to face out
+      out: () => leave(),
       rooms,
       wand,
       // the Marauder’s Map’s view of everyone (hud/MaraudersMap.jsx reads it every frame)

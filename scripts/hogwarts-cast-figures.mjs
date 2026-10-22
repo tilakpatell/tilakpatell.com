@@ -98,7 +98,8 @@ export const FIGURES = {
     height: 1.7,
     kind: 'staff',
     build: 'a tall thin bony body, thin arms and legs',
-    look: 'A thin, sharp-faced elderly witch with the look of a vulture: a hooked beak of a nose, sunken cheeks, a long thin neck and grey hair scraped into a bun. A high-collared black-and-grey robe to the floor and a grey shawl round her shoulders.',
+    // (a vulture's look in so many words drew a bird-woman with clawed bare feet: the look is in the face and the stoop)
+    look: 'A thin, severe elderly human librarian witch with a long sharp hooked nose, hollow cheeks, narrow suspicious eyes, a long thin neck and grey hair scraped into a tight bun, standing slightly stooped. A high-collared black-and-grey robe to the ankles, a grey shawl round her shoulders, plain black buttoned shoes.',
   },
   rosmerta: {
     height: 1.65,

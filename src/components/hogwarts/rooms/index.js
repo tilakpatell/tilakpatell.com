@@ -12,21 +12,25 @@
 //   roomName(id) → its name, or null
 //   loadRoom(id) → Promise<the room’s module>, rejects for an id not registered
 //
-// A room’s module (its default export):
-//   { build(rt, house, ctx) → Promise<{ group, spawn: { at: [x, y, z] | [x, z], yaw }, floorAt?(x, z), colliders, floors, doors, places, step?(dt, { at, act, hour }), dispose?() }> | the same }
-//   house: the world’s look (houseNodes), for the room’s materials
-//   ctx: { tier, renderer, from (the door’s id it was entered by), origin (ROOM_ORIGIN), hour (the world’s), leave() (out the way you came) }
-//   group: the room, drawn where it is built (rooms are built at ROOM_ORIGIN, far below the grounds, so
-//     a room never stands in the grounds’ shadow cascades or their fog);
-//   spawn: where you stand in it as you come in; colliders and floors: plan.js’s shapes;
-//   doors: [{ id, at: [x, z], y, faces, name, to: 'out' | a room id }] its own ways out and on;
-//   places: [{ id, name, at, r }] what the Map names in it.
+// A room’s module (its default export) is rooms/host.js’s shape, which the
+// world module (module.js) loads through: { id, name, build(rt, ctx) → room
+// | Promise<room> }, ctx { house, tier, renderer, props (the host’s
+// context: the house, the Sorting’s password, the hour, the week), from,
+// leave(), say(text), tell(type, data), place(at, yaw), hold(on) }; a room
+// { id, name, group, spawn: { at: [x, y, z], yaw }, colliders, floors,
+// doors: [{ id, at: [x, z], r, faces, name, to: 'out' | a room id, act? }],
+// places, bounds, floorAt(x, z), step?(dt, ctx), set?(props), info(),
+// dispose() }, every place in its own frame (the host stands it at
+// ROOM_ORIGIN, far below the grounds, so a room never stands in their fog
+// or their shadow cascades). Lane D’s rooms are the host’s LOCAL until
+// they are listed here; the grounds’ Hagrid’s hut registers itself.
 
-export const ROOM_ORIGIN = [0, -2000, 0];
+export { ROOM_ORIGIN } from './origin';
 
 export const ROOMS = {
   greatHall: { name: 'The Great Hall', load: () => import('./greatHall.js') },
-  // staircase: { name: 'The Grand Staircase', load: () => import('./staircase.js') },
+  // (the courtyard door’s: the common rooms and the kitchens are gone into from it, through the host)
+  staircase: { name: 'The Grand Staircase', load: () => import('./staircase.js') },
 };
 
 export function registerRoom(id, { name, load }) {
