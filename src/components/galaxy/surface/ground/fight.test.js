@@ -257,6 +257,10 @@ describe('what the brain is told', () => {
     expect(s.me.beliefs[shooter.id]).toMatchObject({ confidence: 1, visible: false, hostile: true, at: { x: 0, z: 70 } });
     expect(w.minds.alerted.has('F')).toBe(true);
     expect(threatOf(s, w).id).toBe(shooter.id);
+    // (told of, not seen: still its threat as the telling fades, so it turns on where it was told)
+    for (let k = 0; k < 10; k++) senseAll(s, w, DT);
+    expect(s.me.beliefs[shooter.id].confidence).toBeLessThan(1);
+    expect(threatOf(s, w).id).toBe(shooter.id);
     // (one it sees already is left as it is; nobody believes in itself)
     felt(s, s, [0, 1, 0], w.minds);
     expect(s.me.beliefs[s.id]).toBeUndefined();

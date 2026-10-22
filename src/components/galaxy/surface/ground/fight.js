@@ -5,12 +5,14 @@
 // tactics, cover, firing patterns and aim box). Round the brain the ground
 // war keeps what the brain has no part of: who is an enemy (the war's
 // relation, the grudge); shot tokens per target; the squad's nerve, its
-// confidence read into the brain's posture (a broken squad flees) and its
+// confidence (a broken squad gives ground, the brain fleeing only a panic) and its
 // flankers sent round while it presses; the leash (a soldier keeps within
 // reach of its post or its beat, and lets be a target past it); a target
 // seen beyond its engage distance closed on; no shot till its body faces
 // the target within 25° (the brain turns at once, a body here turns at its
-// pace); and, lost, one burst where it last had it. With nobody to fight it
+// pace); a mover in sight led for the galaxy's slower bolt (the brain aims
+// where it is); a threat told of (a felt shot, a grudge) kept while the
+// telling lasts; and, lost, one burst where it last had it. With nobody to fight it
 // walks its beat or holds its post. Pure, tested. The design:
 // docs/superpowers/specs/2026-10-08-ground-factions-design.md, section 6,
 // and 2026-10-21-battlefront-by-default-design.md, decision 6.
@@ -31,6 +33,8 @@
 //   the brain's to 1, where it hides).
 
 import { belief, createSenses, sense } from '../../../../lib/ai/perception';
+import { lead } from '../../../../lib/combat/accuracy';
+import { BOLT_SPEED } from '../../../../lib/combat/bolt';
 import { confidence, createSquads, frontline, flankers as flankersOf, morale, posture } from '../../../../lib/ai/squad';
 import { turnToward, walkTo } from '../hostiles';
 import { weaponOf } from '../weaponRules';
@@ -47,6 +51,7 @@ const ENGAGED = 20; // seconds a fight stretches the leash after the last sight
 const WALK = 0.42; // of its run, on a beat or going home
 const TURN = 3; // radians a second a body turns to where its brain looks (the ground's look's own pace)
 const FLANK = 12; // metres out to the side of its target a flanker makes for, by hand
+const BACK = 8; // metres a soldier of a broken squad gives ground at a time, by hand (the brain's own fall-back's 8)
 // the brain's tactic as the ground's bodies are posed for it (lib/ai/body's modes)
 const MODE = { attack: 'strafe', cover: 'cover', hide: 'cover', flee: 'back', close: 'close', advance: 'advance', objective: 'advance', follow: 'advance', interact: 'hold' };
 
@@ -124,8 +129,9 @@ export function threatOf(s, world) {
       if (side === s.side && !b.you) continue;
       if (!enemyTo(s, b, world)) continue;
       const bel = belief(s.me, b.id);
-      // (detected: the meter full, or seen and lost only a moment ago)
-      if (!bel || bel.confidence < 1) continue;
+      // (detected: the meter full, or seen and lost only a moment ago; or told of, a shot felt or a grudge,
+      // while the telling lasts: it turns on where it was told and finds what it's looking for)
+      if (!bel || (bel.confidence < 1 && !(bel.confidence > 0 && Number.isFinite(bel.heardAt)))) continue;
       const d = Math.hypot(bel.at.x - s.b.x, bel.at.z - s.b.z);
       let score = -d;
       const shooting = b.firingAt && mate(b.firingAt);
@@ -220,6 +226,14 @@ function flankOf(s, threat) {
   return [threat.x + (az / l) * FLANK * side + (ax / l) * FLANK * 0.5, threat.z - (ax / l) * FLANK * side + (az / l) * FLANK * 0.5];
 }
 
+// its squad's nerve gone: a step back, away from what it's backing from
+function backOf(s, threat) {
+  const ax = s.b.x - threat.x;
+  const az = s.b.z - threat.z;
+  const l = Math.hypot(ax, az) || 1;
+  return [s.b.x + (ax / l) * BACK, s.b.z + (az / l) * BACK];
+}
+
 // lost: one burst where it last had it, if it had a line there (the cover between takes it)
 function lostBurst(s, now, t, facing = true) {
   if (!(s.lost && s.lost.line && !s.lost.shot && now - s.lost.at <= LOST && t.weapon && facing)) return null;
@@ -311,6 +325,16 @@ export function fightStep(s, world, dt, rand = Math.random) {
     intent.goal = flankOf(s, threat);
     intent.stance = 'stand';
     mode = 'flank';
+  } else if (posture === 'retreat' && b.mode !== 'flee' && b.mode !== 'hide') {
+    // (its squad's nerve gone: from cover it keeps there, else it gives ground, firing as it goes. The brain
+    // flees only from a panic, a grenade's, as the game's code has it: panic.js; the nerve is the ground's)
+    if (b.mode === 'cover') mode = 'cover';
+    else {
+      intent.goal = backOf(s, threat);
+      intent.stance = 'stand';
+      intent.sprint = false;
+      mode = 'back';
+    }
   }
   // the trigger's gates: its body facing the target, a token for that target
   const facing = Math.abs(wrap(Math.atan2(threat.x - s.b.x, threat.z - s.b.z) - s.b.yaw)) <= FACING;
@@ -345,7 +369,16 @@ export function fightStep(s, world, dt, rand = Math.random) {
   s.wanted = [x, z];
   s.target = target;
   const out = { x, z, yaw, mode, moving: body.moving ? 1 : 0, aim: null, fire: false, suppressive: false, guessed: !threat.visible, target, stuck: s.stuckFor };
-  if (shot) return { ...out, aim: { x: shot[0], y: shot[1], z: shot[2] }, fire: true };
+  if (shot) {
+    // (the galaxy's bolts fly at 90 m/s, not the game's 700, so a mover in sight is led for the bolt's
+    // flight: the brain's aim, its box's error and all, moved on to where the target will be when the bolt
+    // gets there. The brain aims where it is, as the game's code does: trigger.js)
+    const v = threat.visible ? velOf(threat.vel) : null;
+    const led = v ? lead([threat.x, 0, threat.z], [v.x, 0, v.z], [x, 0, z], BOLT_SPEED) : null;
+    const dx = led ? led[0] - threat.x : 0;
+    const dz = led ? led[2] - threat.z : 0;
+    return { ...out, aim: { x: shot[0] + dx, y: shot[1], z: shot[2] + dz }, fire: true };
+  }
   // lost behind something: the one burst where it last had it
   const burst = !threat.visible ? lostBurst(s, now, t, facing) : null;
   if (burst) return { ...out, ...burst };
