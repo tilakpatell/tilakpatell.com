@@ -65,7 +65,8 @@ import { seenAt } from '../../../../lib/level/lod.js';
 // route) answers a path it lacks, a cell's bin left in the bucket, with its
 // index.html, which read as a cell's records lays boxes kilometres wide.
 export function packBytes(r, u) {
-  if (!r.ok) throw new Error(`${r.status} ${u}`);
+  // (its status on the error: a busy bucket is asked again, a 404 is this file's miss, lib/assetBase)
+  if (!r.ok) throw Object.assign(new Error(`${r.status} ${u}`), { status: r.status, missing: r.status === 404 });
   if (/text\/html/i.test(r.headers?.get?.('content-type') ?? '')) throw new Error(`not a pack file (a page) ${u}`);
   return r.arrayBuffer();
 }

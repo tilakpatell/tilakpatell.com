@@ -5,7 +5,8 @@
     <title>Tilak Patel</title>
     <meta name="robots" content="noindex" />
     <script>
-      // GitHub Pages serves this for any path it doesn't know. The site uses
+      // The host serves this for any path it doesn't know (wrangler.jsonc's
+      // 404-page; GitHub Pages did the same). The site uses
       // hash routes, so send /projects → /#/projects (unknown paths reach the app's 404 page).
       var path = location.pathname.replace(/\/+$/, '') || '/';
       location.replace('/#' + path + location.search);

@@ -141,6 +141,10 @@ What players build on a planet outlives the visit in Supabase ([the decision](de
 
 The shared world over a planet is `src/components/expanse/flight/shared.js`, composing two paths that never mix: the room (`online.js`, heard by cell through `src/lib/net/cells.js`; `flightProtocol.js` is its wire) and the durable store. `turretRules.js` runs every turret against every ship and `buildRules.js` grounds a thing built on an older ground. `node scripts/online-check.mjs --fly` checks it on fake relays and a fake store (`scripts/lib/fake-durable.mjs`).
 
+## Hosting
+
+**The site is static, and Cloudflare serves it** ([the decision](decisions/2026-10-21-cloudflare-for-the-site.md), [the page](stack/cloudflare.md)). `.github/workflows/deploy.yml` lints, tests and builds `main`, then uploads `dist/` to the Worker `tilakpatell-com`, tilakpatell.com's custom domain (`wrangler.jsonc`: its files, with code for `/audio/*` alone, `cloudflare/worker.js`, which answers a `Range`). The headers are `public/_headers`'. GitHub Pages served the site until 2026-10-21. The heavy assets are still the Supabase bucket's (above) until they move to R2.
+
 ## Tests
 
 `npm test` runs the games’ rules and every pure module beside them (Vitest, each file under a second); CI runs it on every pull request and again before deploy.

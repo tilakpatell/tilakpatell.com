@@ -116,15 +116,6 @@
     "why": "the game's Nebulon-B has no shape over its engine block (a model of its own with no physics), which the close-up draws",
     "game": "3.77 % off at z max 0.4623 against 0.5000 on hq/nebulon.glb"
   },
-  "hunter/slave1": {
-    "source": "site",
-    "bytes": 16276,
-    "parts": 1,
-    "radius": 0.5489,
-    "from": "/models/universe/slave1.glb",
-    "property": 68,
-    "why": "the hunters draw /models/universe/slave1.glb (models.js HUNTER_GLB), not the galaxy's cut of the kind"
-  },
   "hyena": {
     "source": "game",
     "bytes": 26668,

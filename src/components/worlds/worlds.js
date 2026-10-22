@@ -12,10 +12,10 @@ export const WORLDS = UNIVERSES.filter((u) => u.world).flatMap((u) => [{ to: u.t
 // A world on the world runtime (src/runtime) says the same in its module's
 // `mb` (its test checks they agree).
 export const WORLD_MB = {
-  '/universe': 6, // not a world (nothing gates it), but the map's own download, for the tour's "Open the universe map · N MB" on a phone: the planets' textures, the stations and ships, from /home at a phone's size (5.8 measured)
+  '/universe': 6, // not a world (nothing gates it), but the map's own download, for the tour's "Open the universe map · N MB" on a phone: the planets' textures, the stations and ships, from /home at a phone's size (5.7 MB measured 2026-10-21, lane C2: 6.9 before the Star Wars fleet's gen3d interceptor, 746 KB, and Meshy Slave I, 477 KB, gave way to the game's far copies, 16 KB each)
   '/caribbean': 16, // Dead Man's Tide's ships and sea creatures
   '/invincible': 4, // the three HD figures and the city's three skies
-  '/hogwarts': 2, // a guess until Lane G measures it from a walk: the shore's MegaKit files (rocks, pebbles, grass, ferns and pines, 1.1 MB) and the page; the castle, the rooms and the cast add theirs as they come
+  '/hogwarts': 21, // the install's pack as built at Lane D's first pull request, 21.2 MB: the Middle-earth figures standing in for the castle's people until Lane B's land (8.6), the physics' wasm the broom and the knockables bring (6.4), the MegaKit's shore files and the page; Lane G measures it from a walk
   '/cybertron': 38, // Iacon at war's robots, Metroplex and the city's kit (the world at the top), and below it Roll out's cast, scanned ground, rocks and sky, the statues, and Optimus's transformation; and Rapier (1.7 MB) for Iacon's loose crates, on a computer that loads it (never a phone)
   '/avengers': 13, // the walkable compound's sky, scanned ground and trees, Spider-Man and the people from Sketchfab (each building's game more as you go in); and Rapier (1.7 MB) for the lawn's props, on a computer that loads it (never a phone)
   '/c-137': 18, // about: the Smiths' street, the house, the school and Blips and Chitz, the Smiths and the cruiser; Portal panic's cast; the Citadel inside, its cast, the Council and the crowd's light copies (partly added up from the files); the town round the street, 2.3 more (Quaternius's street lights, signs, flowers, bushes and rocks, the bronze Reverse Giraffe, and the principal, a Meeseeks, a Gromflomite and a policeman walking it). Mortytown is about 11 more, fetched when the lift goes down
