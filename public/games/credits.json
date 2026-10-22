@@ -5128,5 +5128,45 @@
       "Tilak Patel, with Meshy AI"
     ],
     "license": "Meshy paid-plan output, owned by the site owner"
+  },
+  "hogwarts/willow": {
+    "source": "https://www.meshy.ai",
+    "name": "the Whomping Willow: a squat gnarled trunk twisted on itself, knuckled limbs, its crown a fan of long whips, generated for this site with Meshy AI from reference photographs",
+    "authors": [
+      "Tilak Patel, with Meshy AI"
+    ],
+    "license": "Meshy paid-plan output, owned by the site owner"
+  },
+  "hogwarts/hagrid-hut": {
+    "source": "https://www.meshy.ai",
+    "name": "Hagrid’s hut: the round stone hut and its smaller twin under steep slate cones, the plank door, the woodpile and the barrels by the step, generated for this site with Meshy AI from reference photographs",
+    "authors": [
+      "Tilak Patel, with Meshy AI"
+    ],
+    "license": "Meshy paid-plan output, owned by the site owner"
+  },
+  "hogwarts/boathouse": {
+    "source": "https://www.meshy.ai",
+    "name": "the boathouse at the cliff’s foot: a gabled stone house over the water, its pointed arch for the boats, the chimney and the lantern by the door, generated for this site with Meshy AI from reference photographs",
+    "authors": [
+      "Tilak Patel, with Meshy AI"
+    ],
+    "license": "Meshy paid-plan output, owned by the site owner"
+  },
+  "hogwarts/station": {
+    "source": "https://www.meshy.ai",
+    "name": "Hogsmeade station: the brick booking hall under its slate roof and chimneys, the iron canopy over the platform, the red doors, generated for this site with Meshy AI from reference photographs",
+    "authors": [
+      "Tilak Patel, with Meshy AI"
+    ],
+    "license": "Meshy paid-plan output, owned by the site owner"
+  },
+  "hogwarts/stand": {
+    "source": "https://www.meshy.ai",
+    "name": "a Quidditch stand: a timber tower on braced legs, a viewing box at the top under a steep striped canvas roof, bunting round its rail, generated for this site with Meshy AI from a written description",
+    "authors": [
+      "Tilak Patel, with Meshy AI"
+    ],
+    "license": "Meshy paid-plan output, owned by the site owner"
   }
 }

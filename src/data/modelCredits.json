@@ -6758,5 +6758,137 @@
       "galaxy"
     ],
     "permission": "From EA DICE’s Star Wars Battlefront II (2017), used with permission on this non-commercial fan project; Star Wars and everything in it belong to Lucasfilm."
+  },
+  "hogwarts-boat": {
+    "title": "Victorian Row Boat",
+    "author": "Ashley Aslett",
+    "authorUrl": "https://sketchfab.com/AshleyAslett",
+    "license": "CC-BY-4.0",
+    "licenseUrl": "http://creativecommons.org/licenses/by/4.0/",
+    "source": "https://sketchfab.com/3d-models/victorian-row-boat-3e9093b6f0ce474da4d8cfea7e01f420",
+    "where": "hogwarts",
+    "as": "one of the first-years’ boats",
+    "file": "/models/hogwarts/props/boat.glb"
+  },
+  "hogwarts-express-engine": {
+    "title": "Hogwarts Express - Locomotive",
+    "author": "Nathaniel Onandia",
+    "authorUrl": "https://sketchfab.com/nathanielonandia",
+    "license": "CC-BY-4.0",
+    "licenseUrl": "http://creativecommons.org/licenses/by/4.0/",
+    "source": "https://sketchfab.com/3d-models/hogwarts-express-locomotive-373a1594ecd24ee59f4517cb2d5a7b96",
+    "where": "hogwarts",
+    "as": "the Hogwarts Express’s engine and tender",
+    "file": "/models/hogwarts/props/express-engine.glb"
+  },
+  "hogwarts-greenhouse": {
+    "title": "Greenhouse Victorian",
+    "author": "Ryoce",
+    "authorUrl": "https://sketchfab.com/Ryoce",
+    "license": "CC-BY-4.0",
+    "licenseUrl": "http://creativecommons.org/licenses/by/4.0/",
+    "source": "https://sketchfab.com/3d-models/greenhouse-victorian-e00471c89eec45ae8ddb9b06e3f1966e",
+    "where": "hogwarts",
+    "as": "a greenhouse",
+    "file": "/models/hogwarts/props/greenhouse.glb"
+  },
+  "hogwarts-sorting-hat": {
+    "title": "Sorting Hat With Texture",
+    "author": "felipeesquivel",
+    "authorUrl": "https://sketchfab.com/felipeesquivel",
+    "license": "CC-BY-4.0",
+    "licenseUrl": "http://creativecommons.org/licenses/by/4.0/",
+    "source": "https://sketchfab.com/3d-models/sorting-hat-with-texture-7717cff94177400ea68d89f835731f49",
+    "where": "hogwarts",
+    "as": "the Sorting Hat",
+    "file": "/models/hogwarts/hall/sorting-hat.glb"
+  },
+  "hogwarts-teacher-chair": {
+    "title": "Hogwarts Great Hall Teacher's chair",
+    "author": "pantherarossa",
+    "authorUrl": "https://sketchfab.com/pantherarossa",
+    "license": "CC-BY-4.0",
+    "licenseUrl": "http://creativecommons.org/licenses/by/4.0/",
+    "source": "https://sketchfab.com/3d-models/hogwarts-great-hall-teachers-chair-ac4970731bd14d4ebb8e0025e0c83970",
+    "where": "hogwarts",
+    "as": "a high-backed chair at the staff table",
+    "file": "/models/hogwarts/hall/teacher-chair.glb"
+  },
+  "hogwarts-house-table": {
+    "title": "Banquet Table",
+    "author": "Kevin.Piemontois",
+    "authorUrl": "https://sketchfab.com/Kevin.Piemontois",
+    "license": "CC-BY-4.0",
+    "licenseUrl": "http://creativecommons.org/licenses/by/4.0/",
+    "source": "https://sketchfab.com/3d-models/banquet-table-15bb05a31c7645bfa50640683f98d3ad",
+    "where": "hogwarts",
+    "as": "a length of a house table",
+    "file": "/models/hogwarts/hall/house-table.glb"
+  },
+  "hogwarts-bench": {
+    "title": "Medieval Old Wooden Bench",
+    "author": "MaX3Dd",
+    "authorUrl": "https://sketchfab.com/MaX3Dd",
+    "license": "CC-BY-4.0",
+    "licenseUrl": "http://creativecommons.org/licenses/by/4.0/",
+    "source": "https://sketchfab.com/3d-models/medieval-old-wooden-bench-76017263f0ea4d46915c0f48edc04923",
+    "where": "hogwarts",
+    "as": "a plain oak bench",
+    "file": "/models/hogwarts/hall/bench.glb"
+  },
+  "hogwarts-hourglass": {
+    "title": "Hourglass",
+    "author": "noitamina_",
+    "authorUrl": "https://sketchfab.com/noitamina_",
+    "license": "CC-BY-4.0",
+    "licenseUrl": "http://creativecommons.org/licenses/by/4.0/",
+    "source": "https://sketchfab.com/3d-models/hourglass-45347868524748a1bcdeba3b579a2e3c",
+    "where": "hogwarts",
+    "as": "a house-points hourglass",
+    "file": "/models/hogwarts/hall/hourglass.glb"
+  },
+  "hogwarts-candle": {
+    "title": "Candle Low",
+    "author": "Batuhan13",
+    "authorUrl": "https://sketchfab.com/Batuhan13",
+    "license": "CC-BY-4.0",
+    "licenseUrl": "http://creativecommons.org/licenses/by/4.0/",
+    "source": "https://sketchfab.com/3d-models/candle-low-f9ccd7e51c004c9e8354a4c723d20010",
+    "where": "hogwarts",
+    "as": "one of the floating candles",
+    "file": "/models/hogwarts/hall/candle.glb"
+  },
+  "hogwarts-express-coach": {
+    "title": "GWR Coach",
+    "author": "ThomasBeerens",
+    "authorUrl": "https://sketchfab.com/ThomasBeerens",
+    "license": "CC-BY-NC-4.0",
+    "licenseUrl": "http://creativecommons.org/licenses/by-nc/4.0/",
+    "source": "https://sketchfab.com/3d-models/gwr-coach-b29f47bbd3fe474fb105513f0e7d0d50",
+    "where": "hogwarts",
+    "as": "one of the Express’s carriages",
+    "file": "/models/hogwarts/props/express-coach.glb"
+  },
+  "hogwarts-standing-stone": {
+    "title": "Comet Stone",
+    "author": "megalitharchive",
+    "authorUrl": "https://sketchfab.com/megalitharchive",
+    "license": "CC-BY-4.0",
+    "licenseUrl": "http://creativecommons.org/licenses/by/4.0/",
+    "source": "https://sketchfab.com/3d-models/comet-stone-dfe747c771534f43ba202f49ea5ea403",
+    "where": "hogwarts",
+    "as": "a standing stone",
+    "file": "/models/hogwarts/props/standing-stone.glb"
+  },
+  "hogwarts-castle": {
+    "title": "Hogwarts School - No terrain",
+    "author": "Jzax",
+    "authorUrl": "https://sketchfab.com/jzaxjzax",
+    "license": "CC-BY-4.0",
+    "licenseUrl": "http://creativecommons.org/licenses/by/4.0/",
+    "source": "https://sketchfab.com/3d-models/hogwarts-school-no-terrain-8c5af96a404040c8b42ca628a3c7c867",
+    "where": "hogwarts",
+    "as": "Hogwarts on its crag",
+    "file": "/models/hogwarts/castle/castle.glb"
   }
 }

@@ -1,0 +1,40 @@
+{
+  "castle-m1": {
+    "task": "01a15fe8-1c08-732b-a9d1-9745a9277ca3",
+    "account": "MESHY_API_KEY_ACC_3",
+    "@120000": "01a16003-6be9-7505-b7d5-6731fd8ca6b7",
+    "@60000": "01a16003-6cb7-7419-b3c6-170068c8015e",
+    "@20000": "01a16003-6d79-73de-8de8-98a46173e4aa"
+  },
+  "hagrid-hut": {
+    "task": "01a1600f-2be4-72d2-84f7-fd864d84e19f",
+    "account": "MESHY_API_KEY_ACC_3",
+    "@20000": "01a1602a-fb6b-774b-bdfc-f5ccb9e87e79"
+  },
+  "boathouse": {
+    "task": "01a16026-6eb6-757a-9dae-5faff7b71843",
+    "account": "MESHY_API_KEY_ACC_3",
+    "@20000": "01a1602a-fc30-7083-828c-dd31dd4e8714"
+  },
+  "station": {
+    "task": "01a16026-76ad-7392-a86f-9cb851e00e23",
+    "account": "MESHY_API_KEY_ACC_3",
+    "@20000": "01a1602a-fcd8-7180-948b-6b5cba15f31a"
+  },
+  "willow": {
+    "task": "01a16026-7bc1-71a8-87d4-52d342958bb6",
+    "account": "MESHY_API_KEY_ACC_3",
+    "@40000": "01a1602a-fdd4-7454-a736-5778b1cef5b1",
+    "@12000": "01a1602a-ffd1-753a-8532-0b1e78653fd1"
+  },
+  "stand:preview": {
+    "task": "01a16136-1281-768c-85d2-fb4b257037a8",
+    "account": "MESHY_API_KEY_ACC_3"
+  },
+  "stand": {
+    "task": "01a16137-3ba7-712f-9b56-7c9e4d46cd64",
+    "account": "MESHY_API_KEY_ACC_3",
+    "words": true,
+    "@12000": "01a16137-f849-717a-8685-55cda7a0b396"
+  }
+}
