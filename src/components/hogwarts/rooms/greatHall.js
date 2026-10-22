@@ -11,7 +11,9 @@
 //   ctx: { house, tier, renderer, props: { points, christmas, feast, sky, hour, people }, load(url) }
 //   room: { id, name, group, spawn, colliders, floors, doors, places, bounds, floorAt,
 //     plan, poses, cheer(house), step(dt, ctx), set(props), info(), dispose() }
-//   set({ points, christmas, feast, sky, hour }): what changes while you are in it
+//   set({ points, settle, christmas, feast, cup, sky, hour }): what changes while you are in it
+//   (cup: the house the House Cup went to; the banners all in its colours, the
+//   leaving feast’s hall; null to give each table its own again)
 //   (sky: ceiling.js’s skyAt() shape, from the grounds’ clock; hour alone works too)
 
 import * as THREE from 'three';
@@ -269,7 +271,9 @@ function build(rt, ctx = {}) {
   const statics = kit.build(group);
   const candles = createCandles({ count: plan.candles.count, box: plan.candles.box, tier });
   const ceiling = createCeiling({ width: HALL.width, length: HALL.length, spring: HALL.wall + 0.3, rise: HALL.peak - HALL.wall, tier });
-  const banners = createBanners(plan.banners, { renderer, w: plan.banners[0].w, h: plan.banners[0].h });
+  const hang = (cup) => createBanners(cup ? plan.banners.map((s) => ({ ...s, house: cup })) : plan.banners, { renderer, w: plan.banners[0].w, h: plan.banners[0].h });
+  let banners = hang(opts.cup ?? null);
+  let cupFor = opts.cup ?? null;
   const windows = createWindows(
     [...plan.windows.map((w) => ({ at: [w.side * (W + 0.02), w.y, w.z], w: w.w, h: w.h, ry: w.side > 0 ? -Math.PI / 2 : Math.PI / 2 })), { at: [0, plan.great.y, -L - 0.02], w: plan.great.w, h: plan.great.h, ry: 0 }],
     { renderer },
@@ -347,9 +351,18 @@ function build(rt, ctx = {}) {
     set(p = {}) {
       if (p.points && p.points !== points) {
         points = p.points;
-        hourglasses.set(points);
+        // (settle: as they stand when you come in; otherwise the stones run, as they do when a teacher says the words)
+        if (p.settle) hourglasses.jump(points);
+        else hourglasses.set(points);
       }
       if (p.feast != null) ware.feast(p.feast);
+      if (p.cup !== undefined && (p.cup ?? null) !== cupFor) {
+        cupFor = p.cup ?? null;
+        banners.dispose();
+        banners = hang(cupFor);
+        group.add(banners.group);
+        house?.adopt?.(banners.group);
+      }
       if (p.christmas != null) {
         trees.group.visible = Boolean(p.christmas);
         if (trees.group.visible) house?.adopt?.(trees.group);

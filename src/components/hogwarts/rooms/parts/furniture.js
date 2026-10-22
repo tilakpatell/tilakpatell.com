@@ -131,7 +131,9 @@ export function fireplace(kit, { at, ry = 0, w = 2.6, h = 2.4, mat = 'stonewarm'
   f.box(mat, 0, h + 0.45, -0.1, w + 0.6, 1.4, d - 0.25);
   f.box(mat, 0, h + 1.85, -0.18, w + 0.2, 0.25, d - 0.4);
   f.box('flags', 0, 0, 0.35, w + 1.4, 0.06, d + 0.5);
-  f.box(kit.paint('#14100c', { rough: 1 }), 0, 0.06, -0.12, w, h - 0.06, d - 0.2);
+  // (the firebox’s soot a panel at the back, not a block: a block’s face stood in front of the fire and hid it)
+  f.box(kit.paint('#14100c', { rough: 1 }), 0, 0.06, -d / 2 + 0.08, w, h - 0.06, 0.1);
+  for (const x of [-w / 2 + 0.05, w / 2 - 0.05]) f.box(kit.paint('#1c1612', { rough: 1 }), x, 0.06, -0.05, 0.1, h - 0.06, d - 0.3);
   // the dogs and the logs
   for (const x of [-w / 3, w / 3]) f.box('iron', x, 0.06, 0.15, 0.06, 0.32, 0.5);
   for (let i = 0; i < 3; i++) f.cyl('board', -w / 4 + (i * w) / 4, 0.24, 0.12, 0.09, 0.09, w * 0.42, { seg: 7, rz: Math.PI / 2, ry: 0.15 * (i - 1) });

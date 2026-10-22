@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { afterEach, describe, expect, it } from 'vitest';
 import { clearGLTFCache } from './gltfCache';
-import { clipsFor, cutFor, cutsToLoad, loadWalrusBody, loadWalrusPacks, packUrls, richClips, socketsOf, swapBody } from './walrus';
+import { AITRAJECTORY_TURN, clipsFor, cutFor, cutsToLoad, faceAlongZ, loadWalrusBody, loadWalrusPacks, packUrls, richClips, socketsOf, swapBody } from './walrus';
 import { BODY, SOCKETS } from './walrusRig.js';
 
 // a body by name: the game's (BODY and the sockets) or Meshy's
@@ -161,5 +161,20 @@ describe('a 2017 figure, light first and its full cut swapped in', () => {
     expect(meshes.map((m) => m.name)).toEqual(['full']);
     expect(meshes[0].skeleton.bones).toEqual([light.hips, light.head]);
     expect(meshes[0].frustumCulled).toBe(false);
+  });
+});
+
+describe('a 2017 body turned to face along +z', () => {
+  it('puts the game’s own −90° back on AITrajectory, so a clip authored facing +x faces +z', () => {
+    const model = new THREE.Group();
+    const node = new THREE.Object3D();
+    node.name = 'AITrajectory';
+    model.add(node);
+    expect(faceAlongZ(model)).toBe(true);
+    expect(node.quaternion.toArray()).toEqual(AITRAJECTORY_TURN);
+    // (its +x, where the game’s clips face, is the model’s +z)
+    const ahead = new THREE.Vector3(1, 0, 0).applyQuaternion(node.quaternion);
+    expect(ahead.z).toBeCloseTo(1);
+    expect(faceAlongZ(new THREE.Group())).toBe(false);
   });
 });

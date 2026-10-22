@@ -179,8 +179,10 @@ export function heroSpec(hero) {
   const look = skinsOf(h.id).find((l) => l.id === hero.skin && l.kind !== h.id);
   const body = h.trooper && CREW[hero.kind] ? CREW[hero.kind] : null;
   const src = look ? { url: fileOf(CREW[look.kind]) } : body ? { url: fileOf(body) } : h.src;
-  const rig = body ? (body.rig === 'walrus' ? 'walrus' : null) : h.rig;
-  return { id: h.id, name: h.trooper ? h.name : h.name.split(' ')[0], tall: body?.tall ?? h.tall, src, ...(rig ? { rig, pack: h.trooper ? null : (h.pack ?? h.id) } : {}), gun, bolt, saber, abilities: h.abilities, mods: saber ? [] : (hero.mods ?? []).filter((m) => MODS[m]).slice(0, MAX_MODS), perks: readPerks(hero.perks), hero: true };
+  // (a trooper's body on a rig of its own, a battle droid's, is loaded on it: its ownRig goes with it)
+  const rig = body ? (body.rig === 'walrus' || body.rig === 'own' ? body.rig : null) : h.rig;
+  const own = rig === 'own' ? { ownRig: body?.ownRig ?? h.ownRig } : {};
+  return { id: h.id, name: h.trooper ? h.name : h.name.split(' ')[0], tall: body?.tall ?? h.tall, src, ...(rig ? { rig, pack: h.trooper ? null : (h.pack ?? h.id), ...own } : {}), gun, bolt, saber, abilities: h.abilities, mods: saber ? [] : (hero.mods ?? []).filter((m) => MODS[m]).slice(0, MAX_MODS), perks: readPerks(hero.perks), hero: true };
 }
 
 // the two who walk down here: the hero in the lead, and the ship's

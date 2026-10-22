@@ -8,7 +8,9 @@
 // sight of an enemy is passed to the squad as an alert, and alerts its whole
 // side, whose bots then see by the wider alerted cone; what the mode makes
 // heard (its `sounds`: a fuel charge's keypad while one holds it) is a
-// stimulus to the senses of that one's enemies. Every bot has a name
+// stimulus to the senses of that one's enemies. An enemy lost from sight is
+// held where it was last seen (`memory.js`), and the grenades on the ground
+// are the world's for a bot to panic at (`panic.js`). Every bot has a name
 // from the game's lists (`names.js`, by its team's faction and the sim's
 // `namesMode`, Skirmish by default), kept by its id across redeploys. Pure.
 //
@@ -28,6 +30,7 @@ import { act, createBrain, think } from './soldierBrain.js';
 import { alert, createSquads, deliver, squadOf, update } from './squad.js';
 import { factionOf, nameFor } from './names.js';
 import { heroAct, heroIntent } from './heroBrain.js';
+import { holdLastSeen } from './memory.js';
 
 // The suppression a player's shots give, with no tactics row of their own: the Rebel soldier's.
 const PLAYER_TACTICS = 'AIRebelSoldierTactics';
@@ -120,6 +123,8 @@ function worldFor(sim, b, s) {
       return true;
     },
     who: (id) => sim.entities.get(id) ?? null,
+    // (the grenades in play, a bot's to panic at once one is down near it: panic.js)
+    grenades: sim.kit?.grenades ?? [],
     alerted: !!sim.brains.alerted?.[s.team],
   };
 }
@@ -133,6 +138,8 @@ function perceive(sim, b, s) {
   // radius test is then passed)
   const heard = (sim.cache.stims?.[s.team] ?? []).filter((n) => Math.hypot(eye[0] - n.sounds.x, eye[1] - n.sounds.y, eye[2] - n.sounds.z) <= n.radius).map((n) => ({ ...n, radius: Infinity }));
   sense(b.senses, b.me, { targets: sim.cache.targets[s.team], stims: heard }, SENSE, { seesThrough: (a, c) => lineClear(sim.nav, [a.x, a.y, a.z], [c.x, c.y, c.z]) });
+  // (an AutoPlayer reads the world's targets, not its beliefs: only a soldier bot's are held)
+  if (!b.ap) holdLastSeen(b.me);
   for (const [id, belief] of Object.entries(b.me.beliefs)) {
     if (belief.visible && belief.hostile && sim.brains.alerted) sim.brains.alerted[s.team] = true;
     if (!belief.visible || before.has(id) || b.alerted.has(id)) continue;

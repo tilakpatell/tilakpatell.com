@@ -172,11 +172,17 @@ export const BODIES = {
   landoyoung: { url: '/models/galaxy/bf2017/crew/landoyoung.glb', tall: 1.78, rig: 'walrus', pack: 'lando', source: 'game' },
   landoyoung2: { url: '/models/galaxy/bf2017/crew/landoyoung2.glb', tall: 1.78, rig: 'walrus', pack: 'lando', source: 'game' },
   chewiegoggles: { url: '/models/galaxy/bf2017/crew/chewiegoggles.glb', tall: 2.28, rig: 'walrus', pack: 'chewie', source: 'game' },
-  // the Battlefront's B1 (the remaster's model, catalog/battlefront.js),
-  // rigged with Meshy (scripts/meshy-troopers.mjs): the 2017 game's B1 is
-  // coloured by a markings map the bucket hasn't yet, and stays this until
-  // it has (the other soldiers are the 2017 game's, below)
-  battledroid: { url: '/models/galaxy/troops/battledroid.glb', tall: 1.91, source: 'site', could: 'the game’s B1 (characters/dark/d_assault_preq/d_assault_preq_01): its markings map is in the local export, not yet in the bucket' },
+  // the 2017 game's B1 on its own skeleton with its pack (walrusClips.js's
+  // OWN_RIGS.b1), from the desktop's export (lane C4). It waited on a
+  // markings map, but the game's default skin has none to wait on: its
+  // colour map is grey, and the skin's ObjectVariation
+  // (D_Assault_Preq_01_Default) gives the markings shader one colour, the
+  // films' tan, which the game multiplies it by; the import sets that as the
+  // material's factor (--tint, scripts/lib/bf2017-markings.mjs), the map left
+  // as it is. Its sheet beside the remaster's, which this replaces
+  // (troops/battledroid.glb, rigged with Meshy), is in docs/superpowers/
+  // evidence/bf-default-c4/. Its full cut waits on the owner's publish.
+  battledroid: { url: '/models/galaxy/bf2017/crew/battledroid.glb', tall: 1.824, rig: 'own', ownRig: 'b1', lod: true, far: true, source: 'game' },
   // phase 2, everyone the game has (docs/superpowers/evidence/bf2017-phase2/
   // cast.md): the Battlefront II (2017) cast at full fidelity
   // (scripts/bf2017-import.mjs --rig --crew --full --join, --far for the

@@ -8,6 +8,7 @@ import { GLB } from './glbFleet';
 import { GUNS } from './gunplay';
 import { MESHY } from '../rickmorty/portal/meshyCast';
 import { existsSync } from 'node:fs';
+import { bodyOf } from '../../lib/cast/bodies';
 
 const seeded = (seed = 7) => () => {
   seed = (seed * 16807) % 2147483647;
@@ -80,12 +81,23 @@ describe('the sides', () => {
         if (t.gun) expect(GUNS[t.gun], `${s.id} ${k} gun`).toBeTruthy();
         const f = t.figure ?? { meshy: k };
         if (f.meshy) expect(MESHY[f.meshy], `${s.id} ${k} meshy`).toBeTruthy();
-        if (f.url) expect(existsSync(`public${f.url}`), `${s.id} ${k} ${f.url}`).toBe(true);
+        // (a body of the game's draws its light cut, committed; its full one is the bucket's)
+        if (f.rig) expect(existsSync(`public${f.url.replace(/\.glb$/, '.lod1.glb')}`), `${s.id} ${k} ${f.url}`).toBe(true);
+        else if (f.url) expect(existsSync(`public${f.url}`), `${s.id} ${k} ${f.url}`).toBe(true);
         if (f.built) expect(['stormtrooper', 'scout', 'probe', 'jackscrew'], `${s.id} ${k} built`).toContain(f.built);
         // (one that calls a squad in carries nothing)
         if (TROOPS[k].calls) expect(t.gun, k).toBeNull();
       }
     }
+  });
+
+  it('send the Empire’s troops on the game’s bodies, from the one cast table, the probe built', () => {
+    const t = SIDES.starwars.troops;
+    expect(t.stormtrooper.figure).toMatchObject({ url: bodyOf('stormtrooper').url, rig: 'walrus', built: 'stormtrooper', cuts: { full: true, lod: true } });
+    expect(t.scout.figure).toMatchObject({ url: bodyOf('scouttrooper').url, rig: 'walrus', built: 'scout', cuts: { full: true, lod: true } });
+    expect(bodyOf('stormtrooper').source).toBe('game');
+    expect(bodyOf('scouttrooper').source).toBe('game');
+    expect(t.probe.figure).toEqual({ built: 'probe' });
   });
 
   it('pick a faction by role, and only that role', () => {

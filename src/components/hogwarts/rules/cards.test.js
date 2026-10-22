@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CARDS, binder, cardById, find, foundCount, hiddenIn } from './cards';
+import { CARDS, binder, cardById, cardsIn, find, foundCount, hiddenIn, roomOf, spotFor } from './cards';
 import { spotById } from './paths';
 
 describe('the Chocolate Frog cards', () => {
@@ -47,5 +47,23 @@ describe('the Chocolate Frog cards', () => {
     expect(rows[0].id).toBe('dumbledore');
     expect(rows.find((r) => r.id === 'circe').found).toBe(true);
     expect(rows.filter((r) => r.found)).toHaveLength(1);
+  });
+});
+
+describe('the cards in the rooms you can go into', () => {
+  it('are the ones hidden there and not yet found, your own common room’s among them', () => {
+    expect(cardsIn('greatHall').map((c) => c.id)).toEqual(['gryffindor']);
+    expect(cardsIn('greatHall', { found: ['gryffindor'] })).toEqual([]);
+    expect(cardsIn('ravenclaw', { house: 'ravenclaw' }).map((c) => c.id)).toEqual(['agrippa']);
+    expect(cardsIn('ravenclaw', { house: 'slytherin' })).toEqual([]);
+    expect(roomOf(cardById('agrippa'), 'hufflepuff')).toBe('hufflepuff');
+  });
+
+  it('lie by the place their hint names, or a few steps in from the door', () => {
+    const hall = { places: [{ id: 'high-table', at: [0, -20] }], spawn: { at: [0, 0, 20], yaw: 0 } };
+    expect(spotFor(cardById('gryffindor'), hall).at).toEqual([1.2, -17.8]);
+    const at = spotFor(cardById('bott'), { spawn: { at: [0, 0, 5], yaw: 0 } }).at;
+    expect(at[0]).toBeCloseTo(-1.2, 6);
+    expect(at[1]).toBeCloseTo(2, 6);
   });
 });
