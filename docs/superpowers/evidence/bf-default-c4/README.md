@@ -48,10 +48,15 @@ So the import takes `--tint <records>` (`scripts/lib/bf2017-markings.mjs`, teste
 | full cut (waits on the owner) | LOD0 34,600, 8.7 MB | |
 
 ![The B1](battledroid.webp)
+![The B1 moving, beside the site’s moving](battledroid-moves.webp)
 
 **The game’s B1 is better**, and `battledroid`’s row is swapped to it: the remaster’s is darker and grimier than the films’ droid (shot as its file stands; on the site it moves on the clips Meshy’s rig takes, not the game’s); the game’s untinted map is grey, as the middle column shows, and with its skin’s tan it is the films’ B1, with its backpack, standing, walking, running, aiming, flinching and talking on its own clips.
 
 The row is fielded (the Separatists’ squads and crowds) and worn (their four trooper classes), so it was walked on a real GPU (ANGLE on D3D11, the dev server): on Geonosis 27 of the world’s battle droids were drawn and rigged, and deployed as the Separatists’ assault class the player was the game’s B1 with the E-5 in its hand. `heroSpec` and `troopers.js` now carry a trooper’s own rig (`rig: 'own'`, `ownRig`), which the B2 enforcer also lacked.
+
+The second sheet puts both in motion, so the remaster’s is not judged as a statue: the site’s on the clips its Meshy rig takes (`games/meshy/rick-walk.glb`, `clips-shoot.glb`, `troops/clip-die.glb`, each through `--pack`), the game’s plain cut on its pack (idle, walk, aim on the walk, flinch, and `die` and `die.back`, falling shot from the front and from behind, in 320-pixel cells: the game’s falls carry the body off its spot). The site’s walks a man’s walk in a droid’s body, dark brown; the game’s walks, aims and falls as the films’ droids do, in their tan.
+
+Every place that takes the kind’s body was read for the own rig: the worlds’ people and the ground war’s troops load it through `crew.js` (`figureLoaderFor`, `ownRig` passed on), the deploy flow and the trooper classes through `heroSpec` and `troopers.js`, the player and the crowds through `footFigures.js`’s own-rig loader. A bolt finds the game’s fourteen B1 capsules (`physics/bones.json`’s `defaultsoldierbonecollision_b1`) by the rig’s skeleton (`boltPlay.js`), every bone they ride on is in each of its three cuts (`crew.test.js`), and the ground war puts the E-5 in its `RightHand`. Where the humanoid rig alone is served the B1 goes on as the B2 does: the deploy panel’s stage (`heroStage.js`) keeps its flat backdrop, there is no first-person view (`firstPerson.js`) and no saber. Seen from a ship (`expanse/flight/`) a battle droid is not this row: where a landmark places one (the Geonosis foundry’s, `lib/land/flight/landmarkTables.js`) it is the catalogue’s remaster statue (`surface/battledroid.glb`), and in the life seen from the air the built stand-in (`galaxy/surface/figures.js`), as every trooper there is; the placer refuses a rigged model (`placer.js`), so the game’s B1 there would want a still cut of its own.
 
 ## What waits on the owner
 
