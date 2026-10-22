@@ -20,8 +20,8 @@
 // heightmap, the far list) from the site-assets bucket by that tree's
 // src/data/galaxyAssets.json.
 //
-// The keys: as scripts/bf2017-fetch.mjs reads them (SUPABASE_URL, and
-// BF2017_KEY or SUPA_KEY), never printed.
+// The keys: as scripts/bf2017-fetch.mjs reads them (R2_ACCESS_KEY_ID and
+// R2_SECRET_ACCESS_KEY), never printed.
 
 import { execFileSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
@@ -35,6 +35,7 @@ import { decodePng16 } from '../src/lib/level/png16.js';
 import { densityOf, fieldOf, slopeOf } from '../src/lib/three/ground/masks.js';
 import { getObject, keys } from './bf2017-fetch.mjs';
 import { parseArgs } from './lib/args.mjs';
+import { assetBase } from './lib/bucket.mjs';
 import { glbJson, inBucket } from './lib/bf2017-paths.mjs';
 import { lodFile } from './lib/bf2017-level.mjs';
 import { readTextureIndex } from './lib/bf2017-ground.mjs';
@@ -83,7 +84,7 @@ function packFiles(world, ref) {
       manifest ??= JSON.parse(fromRef('src/data/galaxyAssets.json').toString('utf8'));
       const e = manifest[`${site}/${path}`];
       if (!e) return null;
-      const url = `${process.env.SUPABASE_URL.replace(/\/+$/, '')}/storage/v1/object/public/site-assets/${e.hash}/${site}/${path}`;
+      const url = `${assetBase()}/${e.hash}/${site}/${path}`;
       const res = await fetch(url);
       if (!res.ok) throw new Error(`${res.status} ${url}`);
       return Buffer.from(await res.arrayBuffer());

@@ -62,7 +62,9 @@ describe('what the galaxy check holds a world to', () => {
   it('counts a level pack’s maps and cells with its meshes, and knows the bucket by its path', () => {
     for (const f of ['/a/b.glb', '/t/x.2048.ktx2', '/c/0_1.bin?v=1']) expect(MODEL_FILE.test(f)).toBe(true);
     expect(MODEL_FILE.test('/a/level.json')).toBe(false);
+    expect(BUCKET_URL.test('https://assets.tilakpatell.com/abc/models/a.glb')).toBe(true);
     expect(BUCKET_URL.test('https://x.supabase.co/storage/v1/object/public/site-assets/abc/models/a.glb')).toBe(true);
+    expect(BUCKET_URL.test('https://tilakpatell.com/models/a.glb')).toBe(false);
     expect(BUCKET_URL.test('http://127.0.0.1:5188/models/a.glb')).toBe(false);
   });
 });

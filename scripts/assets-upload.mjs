@@ -1,4 +1,4 @@
-// The heavy assets to the Supabase Storage bucket, by content hash: each
+// The heavy assets to the public bucket on R2 (tilak-assets; site-assets on Supabase until 2026-10-21), by content hash: each
 // file under REMOTE of a heavy kind and 64 KB or more goes to
 // `<hash12>/<path>` once, with a year's cache, never overwritten (a changed
 // file is a new path, so a visitor on the old build still gets the old one),
@@ -8,23 +8,24 @@
 // file changed and not uploaded again is served locally, never stale.
 // Old paths go only with --prune, after the deploy that stopped naming them.
 //
-//   SUPABASE_SERVICE_ROLE_KEY=… node scripts/assets-upload.mjs [--dry] [--prune]
+//   node --env-file=.env.local scripts/assets-upload.mjs [--dry] [--prune]
 //
-// The key is the owner's, read from their shell and from nowhere else (no
-// file, no workflow); it is never printed. The script refuses to run in CI.
-// The project's URL is read from .env.local's VITE_SUPABASE_URL (or the
-// shell's). `public/` stays whole: the site still serves every file,
-// and the bucket is where the site asks first when VITE_ASSET_BASE is set.
+// The keys are R2's (R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY: lib/bucket.mjs),
+// the owner's, from their shell or .env.local; never printed. The script
+// refuses to run in CI. `public/` stays whole: the site still serves every
+// file, and the bucket is where the site asks first when VITE_ASSET_BASE is
+// set. (Until 2026-10-21 the bucket was on Supabase Storage.)
 
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { dirname, extname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { NO_KEYS, assetBase, bucketEnv, list, put, remove } from './lib/bucket.mjs';
 
 // (the site's one public bucket: the game-derived files are published there
 // too, by scripts/assets-publish.mjs, so one ASSET_BASE serves both)
-export const BUCKET = 'site-assets';
+export const BUCKET = 'tilak-assets';
 // (textures/galaxy/bf2017/<role>/ and textures/galaxy/sky/: lane W's, the
 // game's ground and trim maps and the levels' skies, mirrored once they land;
 // textures/galaxy/planets/: lane K's planet skins)
@@ -35,7 +36,8 @@ export const REMOTE = ['hq/models', 'hq/tex', 'cc0/galaxy', 'models/gen3d', 'kit
 export const KINDS = { '.glb': 'model/gltf-binary', '.ktx2': 'image/ktx2', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png', '.webp': 'image/webp', '.hdr': 'image/vnd.radiance', '.exr': 'image/x-exr' };
 const MIN_BYTES = 64 * 1024;
 export const MANIFEST = 'src/data/assets-manifest.json';
-const YEAR = '31536000';
+// (a year, never changed: the path is the hash; assets-publish.mjs sends the same)
+const CACHE = 'public, max-age=31536000, immutable';
 
 export const hashOf = (buf) => createHash('sha256').update(buf).digest('hex').slice(0, 12);
 export const keyOf = (f) => `${f.hash}/${f.path}`;
@@ -85,20 +87,13 @@ export function freshManifest(manifest, publicDir) {
   );
 }
 
-// every key in the bucket (its listing is one folder deep a call, 1,000 at most)
-async function storedKeys(bucket, prefix = '') {
-  const out = [];
-  for (let offset = 0; ; offset += 1000) {
-    const { data, error } = await bucket.list(prefix, { limit: 1000, offset });
-    if (error) throw new Error(`couldn't list ${prefix || 'the bucket'}: ${error.message}`);
-    for (const e of data) {
-      const at = prefix ? `${prefix}/${e.name}` : e.name;
-      if (e.id) out.push(at);
-      else out.push(...(await storedKeys(bucket, at)));
-    }
-    if (data.length < 1000) return out;
-  }
-}
+// The bucket as run() asks of it: every key it holds, one upload (an S3 PUT
+// with its type and a year's cache), and a prune of some keys.
+export const r2Bucket = (fetch, bucket = BUCKET) => ({
+  keys: async () => (await list(fetch, bucket, '')).files.map((f) => f.key),
+  upload: (key, body, type) => put(fetch, bucket, key, body, { type, cache: CACHE }),
+  remove: (keys) => Promise.all(keys.map((k) => remove(fetch, bucket, k))),
+});
 
 const mb = (n) => `${(n / 1048576).toFixed(1)} MB`;
 const sum = (fs) => fs.reduce((s, f) => s + f.bytes, 0);
@@ -114,7 +109,7 @@ export async function run({ root, argv, bucket, deployed = null, log = console.l
   // (the game-derived files share the bucket, src/data/galaxyAssets.json's:
   // never pruned from here, whatever the mirror names)
   const published = readManifest(join(root, 'src/data/galaxyAssets.json'));
-  const plan = planUpload(files, await storedKeys(bucket), { ...(deployed ?? {}), ...published });
+  const plan = planUpload(files, await bucket.keys(), { ...(deployed ?? {}), ...published });
   log(`remote: ${files.length} files, ${mb(sum(files))} (${plan.upload.length} to upload, ${mb(sum(plan.upload))}; ${plan.keep.length} there already)`);
   log(`local: ${all.length - files.length} files, ${mb(all.reduce((s, f) => s + statSync(f).size, 0) - sum(files))}`);
   if (dry) {
@@ -123,9 +118,8 @@ export async function run({ root, argv, bucket, deployed = null, log = console.l
   }
   for (const f of plan.upload) {
     const body = readFileSync(join(publicDir, f.path));
-    const { error } = await bucket.upload(keyOf(f), body, { cacheControl: YEAR, upsert: false, contentType: KINDS[extname(f.path).toLowerCase()] });
-    // (there already, from a run cut off after the upload: the same bytes by hash)
-    if (error && !/exists|duplicate/i.test(error.message)) throw new Error(`couldn't upload ${f.path}: ${error.message}`);
+    // (a key the bucket lacks: never one it holds, so nothing is overwritten)
+    await bucket.upload(keyOf(f), body, KINDS[extname(f.path).toLowerCase()]);
     log(`  up ${keyOf(f)}`);
   }
   writeManifest(join(root, MANIFEST), manifestOf(files));
@@ -136,10 +130,7 @@ export async function run({ root, argv, bucket, deployed = null, log = console.l
   const refuse = !prune ? null : plan.upload.length ? 'this run uploaded; prune after its manifest is deployed' : !files.length ? 'no files on disk' : !deployed ? 'no deployed manifest (git show origin/main)' : null;
   if (refuse) log(`not pruning: ${refuse}`);
   else if (prune && plan.prune.length) {
-    for (let i = 0; i < plan.prune.length; i += 100) {
-      const { error } = await bucket.remove(plan.prune.slice(i, i + 100));
-      if (error) throw new Error(`couldn't prune: ${error.message}`);
-    }
+    for (let i = 0; i < plan.prune.length; i += 100) await bucket.remove(plan.prune.slice(i, i + 100));
     log(`pruned ${plan.prune.length}`);
   }
   return 0;
@@ -151,28 +142,16 @@ async function main() {
     return 1;
   }
   const root = resolve(fileURLToPath(new URL('..', import.meta.url)));
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  const { projectFrom } = await import('./supabase-check.mjs');
-  const url = (process.env.VITE_SUPABASE_URL || projectFrom(join(root, '.env.local'))?.url || '').replace(/\/$/, '');
-  if (!key || !url) {
-    console.log('set SUPABASE_SERVICE_ROLE_KEY in your shell (never in a file), and VITE_SUPABASE_URL in .env.local');
+  const env = bucketEnv();
+  if (!env) {
+    console.log(NO_KEYS);
     return 2;
-  }
-  const { createClient } = await import('@supabase/supabase-js');
-  const storage = createClient(url, key, { auth: { persistSession: false } }).storage;
-  if (!process.argv.includes('--dry')) {
-    const { error } = await storage.getBucket(BUCKET);
-    if (error) {
-      const made = await storage.createBucket(BUCKET, { public: true });
-      if (made.error) throw new Error(`couldn't make the bucket: ${made.error.message}`);
-      console.log(`made the public bucket ${BUCKET}`);
-    }
   }
   // what the live site was built with: main's manifest
   const shown = spawnSync('git', ['show', `origin/main:${MANIFEST}`], { cwd: root, encoding: 'utf8' });
   const deployed = shown.status === 0 ? JSON.parse(shown.stdout) : null;
-  const code = await run({ root, argv: process.argv.slice(2), bucket: storage.from(BUCKET), deployed });
-  console.log(`VITE_ASSET_BASE (the repository variable ASSET_BASE): ${url}/storage/v1/object/public/${BUCKET}`);
+  const code = await run({ root, argv: process.argv.slice(2), bucket: r2Bucket(env.fetch), deployed });
+  console.log(`VITE_ASSET_BASE (deploy.yml's ASSET_BASE): ${assetBase()}`);
   return code;
 }
 

@@ -39,6 +39,7 @@
 
 import { readdirSync } from 'node:fs';
 import { readdir, writeFile } from 'node:fs/promises';
+import { BUCKET_URL } from './galaxy-budget.mjs';
 import { parseArgs } from './lib/args.mjs';
 
 // each profile's numbers: the laptop's are fidelity's (every file once, at
@@ -92,7 +93,8 @@ export function lowerCuts(urls, ultra) {
     } catch {
       continue;
     }
-    path = path.replace(/^.*\/storage\/v1\/object\/public\/[^/]+\/[0-9a-f]{12}\//, '/');
+    // (a published file's path, its hash taken off: on R2's domain, or under Supabase's public path as it was)
+    path = u.startsWith('https://assets.tilakpatell.com/') ? path.replace(/^\/[0-9a-f]{12}\//, '/') : path.replace(/^.*\/storage\/v1\/object\/public\/[^/]+\/[0-9a-f]{12}\//, '/');
     if (/\.lod1\.glb$/.test(path)) out.add(path);
     else if (path.endsWith('.glb') && !path.endsWith('.ultra.glb') && ultra.has(path.replace(/\.glb$/, '.ultra.glb'))) out.add(path);
   }
@@ -170,7 +172,7 @@ async function main() {
     cdp.on('Network.loadingFinished', (e) => !cached.has(e.requestId) && bytes.set(e.requestId, e.encodedDataLength));
     cdp.on('Network.dataReceived', (e) => bytes.set(e.requestId, (bytes.get(e.requestId) ?? 0) + (e.encodedDataLength || 0)));
     const fetched = () => [...bytes.values()].reduce((s, n) => s + n, 0);
-    const bucket = () => [...urlOf.values()].filter((u) => /\/storage\/v1\/object\/public\//.test(u)).length;
+    const bucket = () => [...urlOf.values()].filter((u) => BUCKET_URL.test(u)).length;
 
     const t0 = Date.now();
     await page.goto(`${base}/?quality=${quality}&calibrate=off#/galaxy/hoth/surface`, { waitUntil: 'domcontentloaded', timeout: 240000 });

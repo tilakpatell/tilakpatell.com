@@ -14,10 +14,10 @@
 //   dry   say what is missing and where it would come from; write nothing
 //
 // The pack's GLBs are read from public/ when they are there, else from the
-// published site (src/data/galaxyAssets.json, SUPABASE_URL's site-assets);
+// published site (src/data/galaxyAssets.json, site-assets' own domain);
 // the drop's texture index is lab/assets/bf2017/web/textures.jsonl (fetched:
 // `node scripts/bf2017-fetch.mjs --raw textures.jsonl`). The keys
-// (SUPABASE_URL and BF2017_KEY, or SUPA_KEY in a cloud session) come from the
+// (R2_ACCESS_KEY_ID and R2_SECRET_ACCESS_KEY: lib/bucket.mjs) come from the
 // environment.
 
 import { existsSync } from 'node:fs';
@@ -26,6 +26,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { getObject, keys } from './bf2017-fetch.mjs';
 import { parseArgs } from './lib/args.mjs';
+import { assetBase } from './lib/bucket.mjs';
 import { glbJson } from './lib/bf2017-paths.mjs';
 import { bucketPathOf, texGaps, textureDirs } from './lib/bf2017-level-tex.mjs';
 import { ktx2Info, dropMips, mipsToFit } from './lib/ktx2-mips.mjs';
@@ -55,7 +56,7 @@ async function main(args) {
 
   // the pack's GLBs: on disk, else as published
   const manifest = JSON.parse(await readFile(join(ROOT, 'src/data/galaxyAssets.json'), 'utf8'));
-  const base = process.env.SUPABASE_URL ? `${process.env.SUPABASE_URL.replace(/\/+$/, '')}/storage/v1/object/public/site-assets` : null;
+  const base = assetBase();
   const glbs = new Map();
   const paths = [...new Set(json.meshes.flatMap((m) => (m.glb ?? []).filter(Boolean)))];
   for (let i = 0; i < paths.length; i += 16)

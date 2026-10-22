@@ -57,6 +57,7 @@ import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from './lib/args.mjs';
 import { hashOf } from './lib/asset-manifest.mjs';
+import { PUBLIC } from './lib/bucket.mjs';
 import { meshOf, refit, soleProbes } from './lib/guest-clips.mjs';
 import { io, readBody, readPack } from './lib/guest-file.mjs';
 import { legRatio } from './lib/guest-skeleton.mjs';
@@ -66,12 +67,12 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const PACKS = 'models/galaxy/bf2017';
 export const PACKS_OUT = join(ROOT, 'lab', 'assets', 'packs', 'guests');
 
-// the base the dev server asks the bucket by: the shell's, or the bucket check's own file
+// the base the dev server asks the bucket by: the shell's, or the bucket check's own file, else R2's own domain
 function assetBase(root) {
   if (process.env.VITE_ASSET_BASE) return process.env.VITE_ASSET_BASE;
   const file = join(root, '.env.bucketcheck.local');
   const line = existsSync(file) ? readFileSync(file, 'utf8').split(/\r?\n/).find((l) => l.startsWith('VITE_ASSET_BASE=')) : null;
-  return line ? line.slice('VITE_ASSET_BASE='.length).trim() : null;
+  return line ? line.slice('VITE_ASSET_BASE='.length).trim() : PUBLIC;
 }
 
 export async function packFile(name, { root = ROOT, fetch = globalThis.fetch } = {}) {
@@ -84,7 +85,6 @@ export async function packFile(name, { root = ROOT, fetch = globalThis.fetch } =
   const kept = join(root, 'lab', 'assets', 'packs', row.hash, `clips-${name}.glb`);
   if (existsSync(kept) && hashOf(readFileSync(kept)) === row.hash) return kept;
   const base = assetBase(root);
-  if (!base) throw new Error(`clips-${name} is only in the asset bucket: set VITE_ASSET_BASE, or have .env.bucketcheck.local`);
   const res = await fetch(`${base.replace(/\/+$/, '')}/${row.hash}/${path}`);
   if (!res.ok) throw new Error(`clips-${name}: the bucket answered ${res.status}`);
   const buf = Buffer.from(await res.arrayBuffer());

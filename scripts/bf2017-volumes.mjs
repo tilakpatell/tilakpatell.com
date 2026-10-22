@@ -18,8 +18,8 @@
 // twelve) and writes src/data/bf2017/flares.json, each as
 // src/lib/three/light/flare.js's flareElements reads it, for eventFlare.
 //
-// Without the bucket's keys (SUPABASE_URL and BF2017_KEY or SUPA_KEY, from
-// .env.local or the environment) the cones are left out and the script says
+// Without the bucket's keys (R2_ACCESS_KEY_ID and R2_SECRET_ACCESS_KEY, from
+// .env.local or the environment: lib/bucket.mjs) the cones are left out and the script says
 // so: the boxes alone are written. --dry prints the counts and writes
 // nothing. The keys are never printed.
 
@@ -27,6 +27,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { objectUrl } from './lib/bf2017-paths.mjs';
+import { bucketEnv, folder } from './lib/bucket.mjs';
 import { gunzipSync } from 'node:zlib';
 import { flareElements } from '../src/lib/three/light/flare.js';
 import { CONE_RE, coneShape, volumesJson } from './lib/bf2017-volumes.mjs';
@@ -61,10 +62,7 @@ function keys() {
     }
     from = '.env.local';
   }
-  const base = process.env.SUPABASE_URL;
-  const key = process.env.BF2017_KEY || process.env.SUPA_KEY;
-  if (!base || !key) return { from, env: null };
-  return { from, env: { base, headers: { apikey: key, Authorization: `Bearer ${key}` } } };
+  return { from, env: bucketEnv() };
 }
 
 function frame() {
@@ -84,8 +82,7 @@ function frame() {
 const listed = new Map();
 async function list(env, prefix) {
   if (!listed.has(prefix)) {
-    const res = await fetch(`${env.base.replace(/\/+$/, '')}/storage/v1/object/list/${BUCKET}`, { method: 'POST', headers: { ...env.headers, 'content-type': 'application/json' }, body: JSON.stringify({ prefix, limit: 1000, search: '' }) });
-    listed.set(prefix, res.ok ? (await res.json()).map((o) => o.name) : []);
+    listed.set(prefix, await folder(env.fetch, BUCKET, prefix).then((es) => es.map((o) => o.name), () => []));
   }
   return listed.get(prefix);
 }
@@ -98,7 +95,7 @@ async function record(env, name) {
     if (!hit) return null;
     prefix += i === parts.length - 1 ? hit : `${hit}/`;
   }
-  const res = await fetch(objectUrl(env.base, BUCKET, prefix), { headers: env.headers });
+  const res = await env.fetch(objectUrl(env.base, BUCKET, prefix));
   if (!res.ok) return null;
   const buf = Buffer.from(await res.arrayBuffer());
   return JSON.parse((buf[0] === 0x1f ? gunzipSync(buf) : buf).toString('utf8'));
@@ -119,7 +116,7 @@ async function shapesOf(env, effects) {
 }
 
 async function get(env, path) {
-  const res = await fetch(objectUrl(env.base, BUCKET, path), { headers: env.headers });
+  const res = await env.fetch(objectUrl(env.base, BUCKET, path));
   if (!res.ok) stop(`${path}: ${res.status} from the bucket`, 1);
   return res.json();
 }
@@ -127,7 +124,7 @@ async function get(env, path) {
 if (flares) {
   const { from, env } = keys();
   if (!env) stop(`no bucket key (read: ${from}): the flares are in the bucket's data/`);
-  const res = await fetch(objectUrl(env.base, BUCKET, 'data.tsv'), { headers: env.headers });
+  const res = await env.fetch(objectUrl(env.base, BUCKET, 'data.tsv'));
   if (!res.ok) stop(`data.tsv: ${res.status} from the bucket`, 1);
   const names = (await res.text())
     .split('\n')

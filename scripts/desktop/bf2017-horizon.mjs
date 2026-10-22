@@ -55,7 +55,7 @@ export const spec = {
   columns: ['name', 'cells', 'impostors'],
   needs: (d) => [
     { name: 'Chrome (the impostors drawn on the chip)', file: d.chrome, fix: 'install Chrome, or set CHROME to its chrome.exe' },
-    { name: "the bucket's keys", keys: true, fix: "SUPABASE_URL and SUPABASE_SERVICE_KEY in the runner's .env (~\\actions-runner\\.env), then restart the runner" },
+    { name: "the bucket's keys", keys: true, fix: "R2_ACCESS_KEY_ID and R2_SECRET_ACCESS_KEY (R2's S3 keys) in the runner's .env (~\\actions-runner\\.env), then restart the runner" },
   ],
   async plan({ root }) {
     const items = packs(root);

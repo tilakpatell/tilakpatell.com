@@ -4,6 +4,7 @@
 // to ask for, and keeps the bucket's layout on disk so they still resolve.
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
 import { dirname, join, posix } from 'node:path';
+import { encodePath } from './bucket.mjs';
 import { isSequel } from './bf2017-manifest.mjs';
 
 // The JSON chunk of a GLB (chunk 0 starts at byte 20; its length is at 12).
@@ -45,7 +46,8 @@ export const mapPath = (map) => `web/textures/${map.toLowerCase()}.png`;
 
 export const localPath = (root, bucketPath) => join(root, bucketPath);
 
-export const objectUrl = (base, bucket, path) => `${base.replace(/\/+$/, '')}/storage/v1/object/${bucket}/${path.split('/').map(encodeURIComponent).join('/')}`;
+// (an S3 address on R2's endpoint, the bucket first: lib/bucket.mjs signs it)
+export const objectUrl = (base, bucket, path) => `${base.replace(/\/+$/, '')}/${bucket}/${encodePath(path)}`;
 
 // A glob over the manifest's names (a star crosses folders, as --list's
 // always has), as a test.

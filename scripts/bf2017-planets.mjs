@@ -15,8 +15,8 @@
 //   local    no network: the names are the maps already under the root
 //            (lab/assets/bf2017, or --root, e.g. scripts/fixtures/bf2017)
 //
-// The keys: SUPABASE_URL and BF2017_KEY (or SUPA_KEY) from the environment,
-// never printed. (Node's fetch reads the proxy only with NODE_USE_ENV_PROXY=1.)
+// The keys: R2_ACCESS_KEY_ID and R2_SECRET_ACCESS_KEY (lib/bucket.mjs) from
+// the environment, never printed. (Node's fetch reads the proxy only with NODE_USE_ENV_PROXY=1.)
 
 import { existsSync, readdirSync } from 'node:fs';
 import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
@@ -24,6 +24,7 @@ import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from './lib/args.mjs';
 import { localPath, objectUrl } from './lib/bf2017-paths.mjs';
+import { NO_KEYS, bucketEnv } from './lib/bucket.mjs';
 import { PICTURES, SKINS, TIERS, UNPLACED, convertSkin, isPlanetTexture, nameOf, planFor, planetNames, sequelWorld, skinsJson } from './lib/bf2017-planets.mjs';
 import { unpackKtx2 } from './lib/bf2017-textures.mjs';
 import { encodeImage } from './ktx2.mjs';
@@ -35,13 +36,12 @@ const WAITS = [1000, 2000, 4000];
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 function keys() {
-  const base = process.env.SUPABASE_URL;
-  const key = process.env.BF2017_KEY || process.env.SUPA_KEY;
-  if (!base || !key) {
-    console.error('Set SUPABASE_URL and BF2017_KEY (or SUPA_KEY) in the environment, or run with --local.');
+  const env = bucketEnv();
+  if (!env) {
+    console.error(`${NO_KEYS} (or run with --local)`);
     process.exit(2);
   }
-  return { base, headers: { apikey: key, Authorization: `Bearer ${key}` } };
+  return env;
 }
 
 // one object to disk, retried on a fault; false when the bucket hasn't it
@@ -50,7 +50,7 @@ async function getObject(env, root, path) {
   if (existsSync(file)) return true;
   for (let i = 0; ; i++) {
     try {
-      const res = await fetch(objectUrl(env.base, BUCKET, path), { headers: env.headers });
+      const res = await env.fetch(objectUrl(env.base, BUCKET, path));
       if (res.status < 500) {
         if (!res.ok) return false;
         await mkdir(dirname(file), { recursive: true });

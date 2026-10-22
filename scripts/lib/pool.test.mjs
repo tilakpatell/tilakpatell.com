@@ -77,9 +77,18 @@ describe('the scripts’ fetch pool', () => {
     expect(pool.stats().missing).toBe(1);
   });
 
-  it('takes the statuses it is told mean missing as missing (Supabase says 400)', async () => {
+  it('takes the statuses it is told mean missing as missing (Supabase said 400)', async () => {
     const pool = createPool({ fetch: scripted([status(400)]), sleep: async () => {}, missing: [400, 404] });
     expect((await pool.run({ url: 'https://b/x' })).status).toBe('missing');
+  });
+
+  it("asks with a job's own fetch, each try, when it has one (the bucket's signs each)", async () => {
+    const pools = scripted([() => body(5)]);
+    const own = scripted([status(503), () => body(5)]);
+    const pool = createPool({ fetch: pools, sleep: async () => {} });
+    expect(await pool.run({ url: 'https://b/x', fetch: own })).toMatchObject({ status: 'fetched', tries: 2 });
+    expect(own).toHaveBeenCalledTimes(2);
+    expect(pools).not.toHaveBeenCalled();
   });
 
   it('retries a short body against the bytes it was told, then fails, never throwing', async () => {

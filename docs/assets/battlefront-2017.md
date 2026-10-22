@@ -9,7 +9,7 @@ The GLBs are `gltfpack` output (meshopt, quantised, metal-rough) whose textures 
 
 ## Fetching
 
-The keys: `SUPABASE_URL` and `BF2017_KEY`, a key that can read the bucket, in `.env.local` (never committed; `.env.example` names them). In a cloud session they are already in the environment, where the key may go by `SUPA_KEY`; the fetch takes either name and never prints it. Everything lands in `lab/assets/bf2017/` (git-ignored) in the bucket’s own layout.
+The bucket `bf2017-assets` is on Cloudflare R2 (on Supabase Storage until 2026-10-21). The keys: `R2_ACCESS_KEY_ID` and `R2_SECRET_ACCESS_KEY`, R2's S3 pair, in `.env.local` (never committed; `.env.example` names them) or the environment; the fetch never prints them (`scripts/lib/bucket.mjs`). Everything lands in `lab/assets/bf2017/` (git-ignored) in the bucket’s own layout.
 
 ```
 node --env-file=.env.local scripts/bf2017-fetch.mjs manifest

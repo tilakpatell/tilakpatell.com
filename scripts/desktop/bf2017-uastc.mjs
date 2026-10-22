@@ -24,7 +24,7 @@ import { copyFileSync, existsSync, mkdirSync, readFileSync, readdirSync, writeFi
 import { basename, dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { decodeKtx2, masterRgba, psnr } from '../lib/ktx2-psnr.mjs';
-import { jsonLines, keyState, runCli, step, textureIndexFile } from './bf2017-desk.mjs';
+import { jsonLines, runCli, step, textureIndexFile, uploadArgs } from './bf2017-desk.mjs';
 
 export const LEVELS = 'public/models/galaxy/bf2017/levels';
 export const SIZE = 2048;
@@ -85,8 +85,7 @@ export const spec = {
     { name: "the export's texture index", file: join(d.web, 'textures.jsonl'), fix: 'the export writes web/textures.jsonl' },
     { name: 'toktx (KTX-Software)', cmd: process.env.TOKTX ?? 'toktx', fix: 'winget install KhronosGroup.KTX-Software (toktx on PATH), or set TOKTX' },
     { name: 'python', cmd: d.python, fix: 'Python 3 on PATH (or set PYTHON)' },
-    { name: "the export's uploader", file: join(d.tool, 'upload_supabase.py'), fix: 'the export keeps tool/upload_supabase.py' },
-    { name: "the bucket's keys", keys: true, fix: "SUPABASE_URL and SUPABASE_SERVICE_KEY in the runner's .env (~\\actions-runner\\.env), then restart the runner" },
+    { name: "the bucket's keys", keys: true, fix: "R2_ACCESS_KEY_ID and R2_SECRET_ACCESS_KEY (R2's S3 keys) in the runner's .env (~\\actions-runner\\.env), then restart the runner" },
   ],
   async plan({ root, d }) {
     const file = textureIndexFile(d, root);
@@ -147,8 +146,7 @@ export const spec = {
     if (kept.length) {
       const up = join(d.webOpt, '_uastc_upload.txt');
       writeFileSync(up, `${kept.map((r) => r.rel.split('\\').join('/')).join('\n')}\n`);
-      const project = keyState(env).project;
-      step(d.python, [join(d.tool, 'upload_supabase.py'), '--root', d.webOpt, '--list', up, ...(project ? ['--project', project] : []), '--bucket', 'bf2017-assets', '--prefix', 'web/'], { env, log });
+      step(process.execPath, uploadArgs(d, up), { env, log });
       step(process.execPath, ['scripts/assets-publish.mjs', '--only', `models/galaxy/bf2017/levels/*/tex/*.uastc.ktx2`], { cwd: root, env, log });
     }
     const dir = join(root, 'docs/superpowers/evidence/bf2017-picture/w/uastc');

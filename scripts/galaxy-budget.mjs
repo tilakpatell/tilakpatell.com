@@ -19,9 +19,10 @@ export const baselineOf = (list, id, district = null) => (district ? null : (lis
 
 // What a world's models are counted as: every .glb, .ktx2 and .bin it
 // fetches (lane D2: a level pack's maps and cells weigh as its meshes do),
-// and whether the public bucket served any of them.
+// and whether the public bucket served any of them: R2's own domain, or
+// Supabase Storage's public path, where the bucket was until 2026-10-21.
 export const MODEL_FILE = /\.(glb|ktx2|bin)(\?|$)/;
-export const BUCKET_URL = /\/storage\/v1\/object\/public\//;
+export const BUCKET_URL = /^https:\/\/assets\.tilakpatell\.com\/|\/storage\/v1\/object\/public\//;
 
 // The models row when the bucket serves the world, as a visitor gets it
 // (VITE_ASSET_BASE set): the row's megabytes were written for a dev server

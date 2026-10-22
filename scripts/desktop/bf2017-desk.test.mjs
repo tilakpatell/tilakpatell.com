@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { JOBS, args, bf2017Checks, childEnv, desk, evidenceDir, keyState, main, pick, planMarkdown, preflight } from './bf2017-desk.mjs';
+import { JOBS, args, bf2017Checks, childEnv, desk, evidenceDir, keyState, main, pick, planMarkdown, preflight, uploadArgs } from './bf2017-desk.mjs';
 
 const SECRET = 'sb_' + 'secret_do_not_print_0123456789'; // (in halves: the guard in assets-upload.test.mjs greps for the whole)
 
@@ -32,16 +32,22 @@ describe("lane W's desktop jobs", () => {
   });
 
   it('says whether the keys are there, never what they are', () => {
-    const env = { SUPABASE_URL: 'https://abcdefgh.supabase.co', SUPABASE_SERVICE_KEY: SECRET };
-    expect(keyState(env)).toEqual({ url: true, key: true, project: 'abcdefgh' });
-    expect(keyState({})).toEqual({ url: false, key: false, project: null });
+    const env = { R2_ACCESS_KEY_ID: 'abc', R2_SECRET_ACCESS_KEY: SECRET };
+    expect(keyState(env)).toEqual({ key: true });
+    expect(keyState({ R2_ACCESS_KEY_ID: 'abc' })).toEqual({ key: false });
     const checks = preflight([{ name: 'keys', keys: true, fix: 'set them' }], env);
     const md = planMarkdown('x', { dry: true, items: [], checks });
     expect(md).not.toContain(SECRET);
-    expect(md).toContain('key set');
-    // (a child gets the key under both names the scripts read)
-    expect(childEnv(env)).toMatchObject({ SUPA_KEY: SECRET, SUPABASE_SERVICE_KEY: SECRET });
-    expect(childEnv({ SUPA_KEY: 'k' }).SUPABASE_SERVICE_KEY).toBe('k');
+    expect(md).toContain('R2_ACCESS_KEY_ID and R2_SECRET_ACCESS_KEY set');
+    // (a child reads the same two names: it gets them as they are)
+    expect(childEnv(env)).toEqual(env);
+  });
+
+  it('sends a list to bf2017-assets under web/ with the repository’s uploader', () => {
+    const a = uploadArgs(desk({ BF2_EXPORT: '/x/BF2_Extract' }), '/x/list.txt');
+    expect(a[0]).toMatch(/scripts[\\/]bucket-put\.mjs$/);
+    expect(a.slice(1, 3)[0]).toBe('--root');
+    expect(a.slice(3)).toEqual(['--list', '/x/list.txt', '--bucket', 'bf2017-assets', '--prefix', 'web/']);
   });
 
   it('checks files, commands and keys, each with its fix when missing', () => {
@@ -54,7 +60,7 @@ describe("lane W's desktop jobs", () => {
 
   it("gives the doctor every tool and file the jobs need", () => {
     const names = bf2017Checks({ BF2_EXPORT: '/none' }, { exists: () => false, which: () => false }).map((c) => c.name);
-    for (const want of ['ktx2_encode', 'upload_supabase', 'bf2export', 'texconv', 'toktx', 'ffmpeg', "bucket's keys", 'Chrome', 'shaderdepots']) expect(names.join(' | ')).toContain(want);
+    for (const want of ['ktx2_encode', 'upload_state', 'bf2export', 'texconv', 'toktx', 'ffmpeg', "bucket's keys", 'Chrome', 'shaderdepots']) expect(names.join(' | ')).toContain(want);
   });
 
   it('writes the plan as a table, cut at forty rows', () => {

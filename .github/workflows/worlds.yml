@@ -77,7 +77,8 @@ jobs:
           cat vite.log
           exit 1
         env:
-          VITE_ASSET_BASE: ${{ vars.ASSET_BASE }}
+          # (the public bucket on R2, as deploy.yml builds with it)
+          VITE_ASSET_BASE: https://assets.tilakpatell.com
 
       - shell: bash
         run: |

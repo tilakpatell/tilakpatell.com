@@ -7,7 +7,7 @@
 //     e.g. levels/space/sb_kamino_01 --world sb_kamino --subs SB_Kamino_01,Art,Art_LargeGameMode,Level_Design,SpaceBattle
 //
 // Writes public/models/galaxy/bf2017/levels/<world>/area.json. The keys as
-// the fetch takes them (SUPABASE_URL, BF2017_KEY or SUPA_KEY), never printed;
+// the fetch takes them (R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY), never printed;
 // behind a proxy, NODE_USE_ENV_PROXY=1.
 
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
