@@ -12,7 +12,10 @@
 //     left open for a doorway to its lintel (2.9 m), a dark passage behind each
 //   armchair(kit, { at, ry, cloth })   sofa(kit, { at, ry, cloth, len })   lowTable(kit, { at, r })
 //   paintRug(colours, { size }) / paintBoard(notices, { w, h }) → canvas (in a browser)
+//   paintChalk(title, lines, { w, h }) → canvas: a blackboard, chalked (a classroom’s)
 //   flat(canvas, { renderer, w, h, at, ry, rx }) → a plane with the canvas on it (a rug, a board, a tapestry)
+//   lessonDoor({ id, name, at, spot, yaw, teacher, lesson, toast }) → a door: E takes your place for
+//     the lesson (the host’s lesson(id, spot, yaw), Lane E’s to run), or says it isn’t on now
 //   commonRoom(spec) → { id, name, build(rt, ctx) }: spec { id, name, house, make(kit, ctx) → parts,
 //     bounds, colliders, spawn, doors, poses, light: { hemi: [sky, ground, k], points: [[x, y, z, colour, k]] } }
 
@@ -185,6 +188,32 @@ export function paintBoard(notices = NOTICES, { w = 640, h = 420 } = {}) {
   return c;
 }
 
+// a blackboard: slate dark, the last lesson’s rubbings-out in a haze, the title
+// underlined and the lines in a teacher’s chalk hand, numbered
+export function paintChalk(title, lines, { w = 768, h = 512 } = {}) {
+  const { c, g } = ctx2d(w, h);
+  g.fillStyle = '#1c2420';
+  g.fillRect(0, 0, w, h);
+  for (let i = 0; i < 40; i++) {
+    g.fillStyle = `rgba(230,230,220,${0.015 + Math.random() * 0.03})`;
+    g.beginPath();
+    g.ellipse(Math.random() * w, Math.random() * h, 40 + Math.random() * 120, 10 + Math.random() * 30, Math.random(), 0, Math.PI * 2);
+    g.fill();
+  }
+  g.strokeStyle = '#5a3e26';
+  g.lineWidth = 18;
+  g.strokeRect(9, 9, w - 18, h - 18);
+  g.fillStyle = 'rgba(240,238,228,0.92)';
+  g.font = `italic 600 ${Math.round(h * 0.085)}px Georgia, serif`;
+  g.textAlign = 'center';
+  g.fillText(title, w / 2, h * 0.17);
+  g.fillRect(w * 0.3, h * 0.2, w * 0.4, 2);
+  g.textAlign = 'left';
+  g.font = `italic ${Math.round(h * 0.052)}px Georgia, serif`;
+  lines.slice(0, 9).forEach((line, i) => g.fillText(`${i + 1}. ${line}`, w * 0.08, h * 0.31 + i * h * 0.075));
+  return c;
+}
+
 export function flat(canvas, { renderer = null, w, h, at, ry = 0, rx = 0, rough = 0.9 }) {
   const tex = canvas ? canvasTexture(canvas, renderer, { wrap: false }) : null;
   if (tex) tex.colorSpace = THREE.SRGBColorSpace;
@@ -205,6 +234,17 @@ export function flat(canvas, { renderer = null, w, h, at, ry = 0, rx = 0, rough 
 
 const browser = () => typeof document !== 'undefined';
 
+export function lessonDoor({ id, name, at, spot, yaw = 0, teacher, lesson = null, toast = () => {} }) {
+  return {
+    id: `lesson:${id}`,
+    at,
+    r: 1.3,
+    verb: 'Take your place for',
+    name,
+    act: () => (lesson ? lesson(id, spot, yaw) : toast(`${teacher} isn’t teaching just now. The lessons are on your common room’s board.`)),
+  };
+}
+
 // a common room put together: the house’s own parts made into the kit, the
 // shared ones round them, the doors (the Floo, the bed, the board), the ghost
 export function commonRoom(spec) {
@@ -218,7 +258,7 @@ export function commonRoom(spec) {
     const group = new THREE.Group();
     group.name = `room:${spec.id}`;
     const kit = createRoomKit({ house, tier });
-    const parts = spec.make(kit, { tier, renderer, props, group, rt, tell, toast }) ?? {};
+    const parts = spec.make(kit, { tier, renderer, props, group, rt, tell, toast, place: (at, yaw) => ctx.place?.(at, yaw), enter: (id) => ctx.enter?.(id), lesson: ctx.lesson ?? null }) ?? {};
     const statics = kit.build(group);
     const live = [...(parts.live ?? [])];
     const fires = (parts.fires ?? []).map((f) => createFire({ tier, ...f }));
@@ -292,6 +332,8 @@ export function commonRoom(spec) {
       doors,
       places: spec.places ?? [],
       poses: spec.poses ?? {},
+      // (where each lesson held here is set out, in the room’s frame: Lane E’s hook)
+      lessons: parts.lessons ?? {},
       step(dt, c = {}) {
         for (const f of fires) f.step(dt);
         for (const l of live) l.step?.(dt, c);
@@ -300,6 +342,7 @@ export function commonRoom(spec) {
       },
       // (a new week’s notices, from the term’s lane: the board painted again)
       set(p = {}) {
+        for (const l of live) l.set?.(p);
         if (!p.notices?.length || p.notices === notices) return;
         notices = p.notices;
         if (!board || !browser()) return;

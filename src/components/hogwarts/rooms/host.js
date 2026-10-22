@@ -10,12 +10,14 @@
 //   ROOM_ORIGIN: [x, y, z]   (rooms/index.js’s, Lane C’s, when it lands)
 //   LOCAL: { id: { name, load } } the rooms this lane has made, until the registry lists them
 //   solidsOf(colliders) → [{ at, r }]: circles for the walk (a box laid as a row of them)
-//   createRoomHost({ rt, scene, camera, house, tier, reduced, outside, lights, tell, load, context })
+//   createRoomHost({ rt, scene, camera, house, tier, reduced, outside, lights, tell, load, context, lesson })
 //     → { enter(id, { at, yaw, props, walk, from }) → Promise<room>, back() → bool, leave(), room, id,
 //         step(dt, input, touch) → bool, place(at, yaw), walk(at, yaw), word(text), dispose() }
 //     outside: the grounds’ objects hidden while in a room; lights: the grounds’ lights, dimmed
 //     context() → props every room is built with (the house, the Sorting’s password, the hour)
 //     out() → the world’s way out to the grounds (a room’s great doors)
+//     lesson(id, { p, yaw }) → a lesson started where a classroom sets it out (p in the world), Lane E’s;
+//       left out, a classroom’s lesson door says the lesson isn’t on
 //     tell('room', { id, name } | null) as one is entered or left; tell('near', { door } | null) at a door inside
 //     back(): out of a room gone into from another, back into that one at the door you took; false if none
 //
@@ -44,6 +46,8 @@ export const LOCAL = {
   ravenclaw: { name: 'The Ravenclaw common room', load: () => import('./common/ravenclaw.js') },
   hufflepuff: { name: 'The Hufflepuff common room', load: () => import('./common/hufflepuff.js') },
   kitchens: { name: 'The kitchens', load: () => import('./kitchens.js') },
+  library: { name: 'The library', load: () => import('./library.js') },
+  potions: { name: 'The Potions dungeon', load: () => import('./potions.js') },
 };
 
 export function solidsOf(colliders = []) {
@@ -67,7 +71,7 @@ export function solidsOf(colliders = []) {
 
 const NEAR = 2.2; // m from a door’s middle, beyond its own reach, its prompt shows
 
-export function createRoomHost({ rt, scene, camera, house, tier = 'high', reduced = false, outside = [], lights = [], tell = () => {}, load = (id) => LOCAL[id]?.load?.(), context = () => ({}), out: out_ = null }) {
+export function createRoomHost({ rt, scene, camera, house, tier = 'high', reduced = false, outside = [], lights = [], tell = () => {}, load = (id) => LOCAL[id]?.load?.(), context = () => ({}), out: out_ = null, lesson = null }) {
   let room = null;
   let id = null;
   let walker = null;
@@ -147,6 +151,8 @@ export function createRoomHost({ rt, scene, camera, house, tier = 'high', reduce
         // (on through a door of the room’s own making, Esc coming back; or out to the grounds)
         enter: (to) => host.enter(to, { from: roomId }).catch(() => tell('toast', { text: `${to === 'kitchens' ? 'The kitchens' : 'That way'} is locked. Not today.` })),
         out: () => out(),
+        // (a classroom’s spot, in its own frame, given to the lessons in the world’s)
+        lesson: lesson ? (lessonId, p, turn = 0) => lesson(lessonId, { p: [p[0] + ROOM_ORIGIN[0], p[1] + ROOM_ORIGIN[1], p[2] + ROOM_ORIGIN[2]], yaw: turn }) : null,
       };
       const built = await def.build(rt, ctx);
       if (gone || ticket !== entering) {
