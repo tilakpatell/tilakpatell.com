@@ -1,0 +1,219 @@
+{
+  "boat": {
+    "url": "/models/hogwarts/props/boat.glb",
+    "group": "props",
+    "what": "one of the first-years’ boats, a clinker rowing boat with a lantern on a pole",
+    "size": [
+      1.4,
+      1.18,
+      3.6
+    ],
+    "made": "sketchfab",
+    "by": "Ashley Aslett",
+    "license": "CC-BY-4.0",
+    "cuts": {
+      "mid": {
+        "file": "/models/hogwarts/props/boat.glb",
+        "tris": 7046,
+        "bytes": 292104
+      },
+      "lo": {
+        "file": "/models/hogwarts/props/boat.lo.glb",
+        "tris": 3096,
+        "bytes": 137196
+      }
+    }
+  },
+  "castle": {
+    "url": "/models/hogwarts/castle/castle.glb",
+    "group": "castle",
+    "what": "Hogwarts on its crag, as the films show it from across the lake: the Great Hall’s long roof, the round towers under slate cones, the viaduct, the clock tower and the Astronomy Tower highest",
+    "size": [
+      240,
+      180.26,
+      172.34
+    ],
+    "made": "meshy",
+    "by": "made for this site",
+    "license": "Meshy paid-plan output, owned by the site owner",
+    "cuts": {
+      "ultra": {
+        "file": "/models/hogwarts/castle/castle.ultra.glb",
+        "tris": 304112,
+        "bytes": 7548508,
+        "bucket": true
+      },
+      "hq": {
+        "file": "/models/hogwarts/castle/castle.hq.glb",
+        "tris": 124328,
+        "bytes": 4992412,
+        "bucket": true
+      },
+      "mid": {
+        "file": "/models/hogwarts/castle/castle.glb",
+        "tris": 62131,
+        "bytes": 1955132
+      },
+      "lo": {
+        "file": "/models/hogwarts/castle/castle.lo.glb",
+        "tris": 20560,
+        "bytes": 688904
+      }
+    }
+  },
+  "express-engine": {
+    "url": "/models/hogwarts/props/express-engine.glb",
+    "group": "props",
+    "what": "the Hogwarts Express’s engine and tender, a scarlet Hall-class locomotive",
+    "size": [
+      2.66,
+      4.05,
+      19.17
+    ],
+    "made": "sketchfab",
+    "by": "Nathaniel Onandia",
+    "license": "CC-BY-4.0",
+    "cuts": {
+      "mid": {
+        "file": "/models/hogwarts/props/express-engine.glb",
+        "tris": 65446,
+        "bytes": 1525500
+      },
+      "lo": {
+        "file": "/models/hogwarts/props/express-engine.lo.glb",
+        "tris": 20413,
+        "bytes": 953664
+      }
+    }
+  },
+  "greenhouse": {
+    "url": "/models/hogwarts/props/greenhouse.glb",
+    "group": "props",
+    "what": "a greenhouse, glass over an iron frame under a barrel roof",
+    "size": [
+      24,
+      15.33,
+      11.85
+    ],
+    "made": "sketchfab",
+    "by": "Ryoce",
+    "license": "CC-BY-4.0",
+    "cuts": {
+      "mid": {
+        "file": "/models/hogwarts/props/greenhouse.glb",
+        "tris": 17558,
+        "bytes": 334688
+      },
+      "lo": {
+        "file": "/models/hogwarts/props/greenhouse.lo.glb",
+        "tris": 8818,
+        "bytes": 226988
+      }
+    }
+  },
+  "hagrid-hut": {
+    "url": "/models/hogwarts/props/hagrid-hut.glb",
+    "group": "props",
+    "what": "Hagrid’s hut: the round stone hut and its annex under conical roofs, the chimney, the pumpkins by the door",
+    "size": [
+      9,
+      8.93,
+      7.41
+    ],
+    "made": "sketchfab",
+    "by": "TheCurc",
+    "license": "CC-BY-4.0",
+    "cuts": {
+      "mid": {
+        "file": "/models/hogwarts/props/hagrid-hut.glb",
+        "tris": 8188,
+        "bytes": 1359704
+      },
+      "lo": {
+        "file": "/models/hogwarts/props/hagrid-hut.lo.glb",
+        "tris": 4381,
+        "bytes": 985156
+      }
+    }
+  },
+  "sorting-hat": {
+    "url": "/models/hogwarts/hall/sorting-hat.glb",
+    "group": "hall",
+    "what": "the Sorting Hat, patched and frayed, its brim folded into a mouth",
+    "size": [
+      0.65,
+      0.5,
+      0.63
+    ],
+    "made": "sketchfab",
+    "by": "felipeesquivel",
+    "license": "CC-BY-4.0",
+    "cuts": {
+      "mid": {
+        "file": "/models/hogwarts/hall/sorting-hat.glb",
+        "tris": 20000,
+        "bytes": 466924
+      },
+      "lo": {
+        "file": "/models/hogwarts/hall/sorting-hat.lo.glb",
+        "tris": 5999,
+        "bytes": 134512
+      }
+    }
+  },
+  "teacher-chair": {
+    "url": "/models/hogwarts/hall/teacher-chair.glb",
+    "group": "hall",
+    "what": "a high-backed chair at the staff table, carved oak and green leather",
+    "size": [
+      0.84,
+      1.75,
+      0.68
+    ],
+    "made": "sketchfab",
+    "by": "pantherarossa",
+    "license": "CC-BY-4.0",
+    "cuts": {
+      "mid": {
+        "file": "/models/hogwarts/hall/teacher-chair.glb",
+        "tris": 1218,
+        "bytes": 285452
+      },
+      "lo": {
+        "file": "/models/hogwarts/hall/teacher-chair.lo.glb",
+        "tris": 1218,
+        "bytes": 107708
+      }
+    }
+  },
+  "willow": {
+    "url": "/models/hogwarts/props/willow.glb",
+    "group": "props",
+    "what": "the Whomping Willow: a squat gnarled trunk twisted on itself, its limbs a crown of long whips",
+    "size": [
+      18.09,
+      15.96,
+      18.43
+    ],
+    "made": "gen3d",
+    "by": "made for this site",
+    "license": "Generated for this site; TRELLIS.2 is MIT",
+    "cuts": {
+      "hq": {
+        "file": "/models/hogwarts/props/willow.hq.glb",
+        "tris": 83842,
+        "bytes": 383112
+      },
+      "mid": {
+        "file": "/models/hogwarts/props/willow.glb",
+        "tris": 41931,
+        "bytes": 196752
+      },
+      "lo": {
+        "file": "/models/hogwarts/props/willow.lo.glb",
+        "tris": 12539,
+        "bytes": 63004
+      }
+    }
+  }
+}

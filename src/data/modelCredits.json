@@ -6653,5 +6653,71 @@
       "galaxy"
     ],
     "permission": "From EA DICE’s Star Wars Battlefront II (2017), used with permission on this non-commercial fan project; Star Wars and everything in it belong to Lucasfilm."
+  },
+  "hogwarts-boat": {
+    "title": "Victorian Row Boat",
+    "author": "Ashley Aslett",
+    "authorUrl": "https://sketchfab.com/AshleyAslett",
+    "license": "CC-BY-4.0",
+    "licenseUrl": "http://creativecommons.org/licenses/by/4.0/",
+    "source": "https://sketchfab.com/3d-models/victorian-row-boat-3e9093b6f0ce474da4d8cfea7e01f420",
+    "where": "hogwarts",
+    "as": "one of the first-years’ boats",
+    "file": "/models/hogwarts/props/boat.glb"
+  },
+  "hogwarts-express-engine": {
+    "title": "Hogwarts Express - Locomotive",
+    "author": "Nathaniel Onandia",
+    "authorUrl": "https://sketchfab.com/nathanielonandia",
+    "license": "CC-BY-4.0",
+    "licenseUrl": "http://creativecommons.org/licenses/by/4.0/",
+    "source": "https://sketchfab.com/3d-models/hogwarts-express-locomotive-373a1594ecd24ee59f4517cb2d5a7b96",
+    "where": "hogwarts",
+    "as": "the Hogwarts Express’s engine and tender",
+    "file": "/models/hogwarts/props/express-engine.glb"
+  },
+  "hogwarts-greenhouse": {
+    "title": "Greenhouse Victorian",
+    "author": "Ryoce",
+    "authorUrl": "https://sketchfab.com/Ryoce",
+    "license": "CC-BY-4.0",
+    "licenseUrl": "http://creativecommons.org/licenses/by/4.0/",
+    "source": "https://sketchfab.com/3d-models/greenhouse-victorian-e00471c89eec45ae8ddb9b06e3f1966e",
+    "where": "hogwarts",
+    "as": "a greenhouse",
+    "file": "/models/hogwarts/props/greenhouse.glb"
+  },
+  "hogwarts-hagrid-hut": {
+    "title": "Harry Potter - Hagrid's Hut",
+    "author": "TheCurc",
+    "authorUrl": "https://sketchfab.com/TheCurc",
+    "license": "CC-BY-4.0",
+    "licenseUrl": "http://creativecommons.org/licenses/by/4.0/",
+    "source": "https://sketchfab.com/3d-models/harry-potter-hagrids-hut-8ea2d386032b43c0954a650080d8bc59",
+    "where": "hogwarts",
+    "as": "Hagrid’s hut",
+    "file": "/models/hogwarts/props/hagrid-hut.glb"
+  },
+  "hogwarts-sorting-hat": {
+    "title": "Sorting Hat With Texture",
+    "author": "felipeesquivel",
+    "authorUrl": "https://sketchfab.com/felipeesquivel",
+    "license": "CC-BY-4.0",
+    "licenseUrl": "http://creativecommons.org/licenses/by/4.0/",
+    "source": "https://sketchfab.com/3d-models/sorting-hat-with-texture-7717cff94177400ea68d89f835731f49",
+    "where": "hogwarts",
+    "as": "the Sorting Hat",
+    "file": "/models/hogwarts/hall/sorting-hat.glb"
+  },
+  "hogwarts-teacher-chair": {
+    "title": "Hogwarts Great Hall Teacher's chair",
+    "author": "pantherarossa",
+    "authorUrl": "https://sketchfab.com/pantherarossa",
+    "license": "CC-BY-4.0",
+    "licenseUrl": "http://creativecommons.org/licenses/by/4.0/",
+    "source": "https://sketchfab.com/3d-models/hogwarts-great-hall-teachers-chair-ac4970731bd14d4ebb8e0025e0c83970",
+    "where": "hogwarts",
+    "as": "a high-backed chair at the staff table",
+    "file": "/models/hogwarts/hall/teacher-chair.glb"
   }
 }

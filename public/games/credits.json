@@ -5000,5 +5000,21 @@
       "Tilak Patel, with Meshy AI"
     ],
     "license": "Meshy paid-plan output, owned by the site owner"
+  },
+  "hogwarts/castle": {
+    "source": "https://www.meshy.ai",
+    "name": "Hogwarts on its crag, as the films show it from across the lake: the Great Hall’s long roof, the round towers under slate cones, the viaduct, the clock tower and the Astronomy Tower highest, generated for this site with Meshy AI from reference photographs",
+    "authors": [
+      "Tilak Patel, with Meshy AI"
+    ],
+    "license": "Meshy paid-plan output, owned by the site owner"
+  },
+  "hogwarts/willow": {
+    "source": "https://github.com/microsoft/TRELLIS.2",
+    "name": "the Whomping Willow: a squat gnarled trunk twisted on itself, its limbs a crown of long whips, made for this site with TRELLIS.2 on the site owner’s machine from reference photographs (scripts/gen3d)",
+    "authors": [
+      "Tilak Patel, with Microsoft TRELLIS.2"
+    ],
+    "license": "Generated for this site; TRELLIS.2 is MIT"
   }
 }
