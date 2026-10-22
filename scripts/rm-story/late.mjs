@@ -3,7 +3,7 @@
 // the Jerryboree and St. Gloopy Noops, the cable studio and Get Schwifty.
 /* global window */
 import { COURSE, chaseStart, newChase } from '../../src/components/rickmorty/world/games/chase.js';
-import { BASE, OUT, N, check, done, built, goto, use, story, reads, WIPED, SMALL, HEAT, DEALS, JERRY, throughPortal, toast, inArea, cardFor, at, opens, warpUse, caught, before, chasing, playTo, game, homeOf, spotAt, wayInOf, place, PRIME } from './helpers.mjs';
+import { BASE, OUT, N, check, done, built, goto, use, story, reads, WIPED, SMALL, HEAT, DEALS, JERRY, throughPortal, toast, inArea, cardFor, at, opens, warpUse, caught, before, chasing, playTo, game, homeOf, spotAt, wayInOf, place, PRIME, FAIRY } from './helpers.mjs';
 
 export const LATE = {
   // a new visitor plays episode 5: the cruiser's chase (taking off ticks
@@ -386,10 +386,11 @@ export const LATE = {
     await page.waitForFunction(() => JSON.parse(localStorage.getItem('tp-achievements') ?? '[]').includes('schwifty'), null, { timeout: 30000, polling: 250 }).catch(() => {
       throw new Error('the song’s achievement wasn’t earned');
     });
+    // and on into episode 9: its card, the places episode 8 opened, the next ones still shut
+    await cardFor(page, 8);
     await at(page, 8, 0, 'after Get Schwifty');
-    await opens(page, [...PRIME.unlocks, 'citadel', 'squanch', 'evilrick'], true, 'after episode 8');
-    await page.waitForTimeout(1500);
-    check((await page.locator('.rm-episode').count()) === 0, 'a card showed for an episode that isn’t built');
-    await reads(page, 'Go into the Smith house and put interdimensional cable on the TV.');
+    await opens(page, PRIME.unlocks, true, 'after episode 8');
+    await opens(page, FAIRY.unlocks, false, 'after episode 8');
+    await reads(page, FAIRY.steps[0].text);
   },
 };
