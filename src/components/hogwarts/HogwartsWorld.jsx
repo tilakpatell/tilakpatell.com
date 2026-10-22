@@ -7,6 +7,7 @@ import { wayOut } from '../worlds/worlds';
 import hogwartsModule from './module';
 import SortingCard from './hud/SortingCard';
 import WandCard, { Scarf } from './hud/WandCard';
+import WordCard from './hud/WordCard';
 import SpellWheel from './hud/SpellWheel';
 import { houseColours } from './rules/sorting';
 import './hud/match.css';
@@ -75,6 +76,7 @@ export default function HogwartsWorld() {
   const [list, setList] = useState(false);
   const [arrival, setArrival] = useState(null);
   const [caption, setCaption] = useState(null);
+  const [word, setWord] = useState(null);
   const [ask, setAsk] = useState(null);
   const [sorted, setSorted] = useState(null);
   const [house, setHouse] = useState(null);
@@ -138,7 +140,10 @@ export default function HogwartsWorld() {
     } else if (e.type === 'house') {
       setHouse(e.house);
       setWand(e.wand);
-    } else if (e.type === 'room') setRoom(e.id ? e : null);
+    } else if (e.type === 'room') {
+      setRoom(e.id ? e : null);
+      setWord(null);
+    } else if (e.type === 'word') setWord(e.title ? e : null);
     else if (e.type === 'wheel') setWheel(e.open);
     else if (e.type === 'broom') setRiding(e.riding);
     else if (e.type === 'objective') setObjective(e.text);
@@ -347,6 +352,7 @@ export default function HogwartsWorld() {
         {ask != null && <SortingCard q={ask} tall={portrait} onAnswer={(i) => api()?.answer(i)} />}
         {sorted && ask == null && <SortingCard result={sorted} />}
         {wandFull && wand && <WandCard wand={wand} size="full" />}
+        {word && <WordCard ask={word} onSay={(text) => api()?.word(text)} onClose={() => setWord(null)} />}
         {said && <Bubble key={said.key} ref={onBubble} className="hogwarts-bubble" name={said.name} line={said.line} />}
         {choices && (
           <div className="hogwarts-choices" role="group" aria-label={choices.title}>
