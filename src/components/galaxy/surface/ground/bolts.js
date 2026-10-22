@@ -21,7 +21,7 @@
 //   h, side }], seesThrough }) → events, bolts }
 //   events: { type: 'hit', bolt, target, at, dir } | { type: 'wall', bolt,
 //   at } | { type: 'near', bolt, target } | { type: 'atYou', bolt }
-// farExchange(a, b, dt, rand, { aimError, damageOf }) → { hits: [{ from,
+// farExchange(a, b, dt, rand, { aimError, damageOf (weapon, dist, soldier) }) → { hits: [{ from,
 //   to, damage }] }
 
 import { createBolts as boltPool } from '../../../../lib/combat/bolt';
@@ -130,7 +130,7 @@ export function farExchange(a, b, dt, rand, { aimError, damageOf }) {
         const v = up[Math.floor(rand() * up.length) % up.length];
         const dist = Math.hypot(v.b.x - s.b.x, v.b.z - s.b.z);
         const err = aimError(s, { x: v.b.x, z: v.b.z, vel: null }, dist, {});
-        if (rand() < 1 - Math.min(0.9, Math.max(0, err / SPREAD_MAX))) hits.push({ from: s.id, to: v.id, damage: damageOf(s.weapon, dist) });
+        if (rand() < 1 - Math.min(0.9, Math.max(0, err / SPREAD_MAX))) hits.push({ from: s.id, to: v.id, damage: damageOf(s.weapon, dist, s) });
       }
     }
   };

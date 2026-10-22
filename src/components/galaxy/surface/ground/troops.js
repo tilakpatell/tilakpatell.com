@@ -8,37 +8,68 @@
 //
 // TROOPS[kind] → { hp, weapon (weaponRules.js's WEAPONS key, or null), range,
 //   speed, cone (cos of the half-angle it sees across), nerve (how much its
-//   squad's confidence moves it: a droid never breaks), tall, shield? };
+//   squad's confidence moves it: a droid never breaks), tall, shield?,
+//   template (the game's AI template its mind plays: ai.json's `templates`),
+//   tactics (that template's tactics table), source ('game' where the hp and
+//   the gun's damage are the game's, 'hand' where the game has no such
+//   soldier: NOTES.md), game? ({ cls, special, hp, gun }: the records it
+//   was read from) };
+// GAME_GUNS[id] → the game's gun (weapons.json's family, rate and damage);
 // KINDS_OF_SIDE[side] → [kind]; kindFor(side, rand); newSoldier(spec, rand)
-// → Soldier; damageOf(weapon, dist); hurt(s, damage) → 'hurt' | 'down';
+// → Soldier; damageOf(weapon, dist, s?) (a soldier of a kind the game has:
+// its gun's damage at that distance); falloff(damage, dist); onYou(s,
+// damage) → that damage on your health; hurt(s, damage) → 'hurt' | 'down';
 // hpOf(spec) → a quest spec's hp on this scale.
 
 import { weaponOf } from '../weaponRules';
 
-const T = (hp, weapon, o = {}) => ({ hp, weapon, range: 48, speed: 3.2, cone: 0.3, nerve: 1, tall: 1.8, ...o });
+// The game's guns the ground's soldiers carry (weapons.json: the family its
+// AI weapon and firing patterns are read by, the rate of fire, the damage
+// and its falloff), copied here so the galaxy's chunk carries these few
+// numbers and not the record; troops.test.js holds each to the record.
+const RIFLE_DAMAGE = { start: 36, end: 19, startDistance: 20, endDistance: 40 };
+export const GAME_GUNS = {
+  e11: { family: 'rifle', rof: 300, damage: RIFLE_DAMAGE },
+  a280: { family: 'rifle', rof: 300, damage: RIFLE_DAMAGE },
+  e11d: { family: 'special', rof: 300, damage: { start: 40, end: 25, startDistance: 20, endDistance: 40 } },
+};
+// The game's soldiers for the kinds it has: the class (classes.json, the
+// Original Trilogy's assault classes, whose look the troopers of each world
+// are) or the special (reinforcements.json), its health and its gun. The
+// game has no class for the Clone Wars, the droids, the Hutts' men or the
+// walkers: those rows stay the galaxy's own (`source: 'hand'`, NOTES.md).
+const IMPERIAL = { cls: 'd-orig-assault', hp: 150, gun: 'e11' };
+const REBEL = { cls: 'l-orig-assault', hp: 150, gun: 'a280' };
+
+const T = (hp, weapon, o = {}) => ({ hp, weapon, range: 48, speed: 3.2, cone: 0.3, nerve: 1, tall: 1.8, template: 'rifleman', tactics: 'Rifleman_Tactics', source: 'hand', ...o });
+// a row on the game's numbers: its hp the record's, its template the class's
+const G = (game, weapon, o = {}) => T(game.hp, weapon, { source: 'game', game, ...o });
+const HEAVY = { template: 'heavy', tactics: 'Heavy_Tactics' };
+const CLOSE = { template: 'closerange', tactics: 'CloseRange_Tactics' };
 export const TROOPS = {
-  stormtrooper: T(100, 'rifle'),
-  sandtrooper: T(100, 'rifle'),
-  snowtrooper: T(100, 'rifle'),
+  stormtrooper: G(IMPERIAL, 'rifle'),
+  sandtrooper: G(IMPERIAL, 'rifle'),
+  snowtrooper: G(IMPERIAL, 'rifle'),
+  // (the scout's pistol is the galaxy's: the game's scout is its specialist, a long rifle's)
   scouttrooper: T(90, 'blaster', { speed: 3.6 }),
-  deathtrooper: T(130, 'rifle', { range: 56, nerve: 0.5 }),
-  shoretrooper: T(100, 'rifle'),
+  deathtrooper: G({ special: 'DeathTrooper', hp: 320, gun: 'e11d' }, 'rifle', { range: 56, nerve: 0.5 }),
+  shoretrooper: G(IMPERIAL, 'rifle'),
   probe: T(40, null, { range: 60, cone: 0.1, nerve: 0, speed: 2, tall: 2.2 }),
-  rebel: T(100, 'a280', { range: 52 }),
-  hothtrooper: T(100, 'a280', { range: 52 }),
+  rebel: G(REBEL, 'a280', { range: 52 }),
+  hothtrooper: G(REBEL, 'a280', { range: 52 }),
   clone: T(100, 'dc15', { range: 52 }),
   clonephase1: T(100, 'dc15', { range: 52 }),
   battledroid: T(60, 'e5', { range: 40, speed: 2.6, nerve: 0, cone: 0.4 }),
-  superdroid: T(160, 'rifle', { range: 44, speed: 2.4, nerve: 0 }),
-  droideka: T(120, 'e5', { range: 44, speed: 2, nerve: 0, shield: 3, tall: 1.4 }),
-  dwarfspider: T(200, 'dlt19', { range: 50, speed: 2, nerve: 0, tall: 1.6 }),
-  mercenary: T(90, 'westar', { range: 40, speed: 3.4, nerve: 1.3 }),
-  weequay: T(90, 'westar', { range: 40, speed: 3.4, nerve: 1.3 }),
+  superdroid: T(160, 'rifle', { range: 44, speed: 2.4, nerve: 0, ...HEAVY }),
+  droideka: T(120, 'e5', { range: 44, speed: 2, nerve: 0, shield: 3, tall: 1.4, ...HEAVY }),
+  dwarfspider: T(200, 'dlt19', { range: 50, speed: 2, nerve: 0, tall: 1.6, ...HEAVY }),
+  mercenary: T(90, 'westar', { range: 40, speed: 3.4, nerve: 1.3, ...CLOSE }),
+  weequay: T(90, 'westar', { range: 40, speed: 3.4, nerve: 1.3, ...CLOSE }),
   // (the walkers stay actors.js's: the rows are here so every kind has one)
-  atst: T(800, 'dlt19', { range: 80, speed: 2.2, nerve: 0, tall: 8.6 }),
-  atrt: T(300, 'dlt19', { range: 60, speed: 3, nerve: 0, tall: 3.2 }),
-  atap: T(700, 'dlt19', { range: 80, speed: 1.6, nerve: 0, tall: 6 }),
-  atte: T(1200, 'dlt19', { range: 90, speed: 1.4, nerve: 0, tall: 6 }),
+  atst: T(800, 'dlt19', { range: 80, speed: 2.2, nerve: 0, tall: 8.6, ...HEAVY }),
+  atrt: T(300, 'dlt19', { range: 60, speed: 3, nerve: 0, tall: 3.2, ...HEAVY }),
+  atap: T(700, 'dlt19', { range: 80, speed: 1.6, nerve: 0, tall: 6, ...HEAVY }),
+  atte: T(1200, 'dlt19', { range: 90, speed: 1.4, nerve: 0, tall: 6, ...HEAVY }),
 };
 
 // the kinds each side puts on the ground (figures.js draws every one; the
@@ -94,12 +125,34 @@ export const SOLDIERS = new Set(['stormtrooper', 'sandtrooper', 'snowtrooper', '
 // ── soldiers ──
 export const hpOf = (spec) => (spec?.hp ?? 10) * 10;
 
-export function damageOf(weapon, dist) {
+// a game gun's damage at a distance: its start out to the falloff's start,
+// down to its end at the falloff's end, its end past it (the projectile's
+// WSBulletEntityData, as the Battlefront world's weapons.js reads it)
+export function falloff(damage, dist) {
+  const { start, end, startDistance: a, endDistance: b } = damage;
+  if (dist <= a) return start;
+  if (dist >= b) return end;
+  return +(start + ((end - start) * (dist - a)) / (b - a)).toFixed(3);
+}
+
+// a soldier of a kind the game has fires its gun's damage; the rest, and a
+// shot with no soldier named, the galaxy's own (ten a point of the gun's,
+// falling past two thirds of its range)
+export function damageOf(weapon, dist, s = null) {
   if (!weapon) return 0;
+  const gun = GAME_GUNS[TROOPS[s?.kind]?.game?.gun];
+  if (gun) return falloff(gun.damage, dist);
   const w = weaponOf(weapon);
   const d = w.damage * 10;
   return dist > (w.range * 2) / 3 ? +(d * 0.6).toFixed(3) : d;
 }
+
+// Your health is the galaxy's 100 where the game's assault class has 150
+// (classes.json): a shot of the game's damage lands on you scaled by the
+// two, so it takes as many hits to put you down as it would a trooper in
+// the game. The galaxy's own guns are on your scale already.
+export const YOUR_SHARE = 100 / IMPERIAL.hp;
+export const onYou = (s, damage) => (TROOPS[s?.kind]?.game ? +(damage * YOUR_SHARE).toFixed(3) : damage);
 
 export function newSoldier(spec, rand = Math.random) {
   const t = TROOPS[spec.kind] ?? TROOPS.stormtrooper;

@@ -29,6 +29,7 @@ export const AWAY = 60; // metres from you a reinforcement is sent in, at the le
 const FIGHTS = 2; // squads engaged near you before a raid waits
 const NEAR = 200; // metres round you a fight counts
 const ARRIVED = 3; // metres from its post a reinforcement holds it
+const BEYOND = 15; // metres past AWAY a reinforcement starts when every post is lost and the turf's middle is too near you
 const CONTACT = 40; // metres: two enemy patrols this near have met
 const MET = 60; // seconds two squads that met aren't said to meet again
 
@@ -125,7 +126,16 @@ export function createDirector({ turfs, effects, tier = 'high', rand = Math.rand
         if (p.lost && !p.sent && clock >= p.due) {
           // from the nearest of its turf's posts still held (or its middle), never in your lap
           const held = [...posts.values()].filter((o) => o !== p && o.turf === t && !o.lost);
-          const from = held.length ? held.reduce((a, b) => (Math.hypot(b.at[0] - p.at[0], b.at[1] - p.at[1]) < Math.hypot(a.at[0] - p.at[0], a.at[1] - p.at[1]) ? b : a)).at : t.at;
+          let from = held.length ? held.reduce((a, b) => (Math.hypot(b.at[0] - p.at[0], b.at[1] - p.at[1]) < Math.hypot(a.at[0] - p.at[0], a.at[1] - p.at[1]) ? b : a)).at : t.at;
+          // (every post of it lost and you by its middle: from out past you, the way its middle lies, or the
+          // turf would wait on you for ever; a post still held near you is waited on, as ever)
+          if (!held.length && near(from, here, AWAY)) {
+            const dx = t.at[0] - here[0];
+            const dz = t.at[1] - here[1];
+            const l = Math.hypot(dx, dz);
+            const [ux, uz] = l > 1e-6 ? [dx / l, dz / l] : [1, 0];
+            from = [+(here[0] + ux * (AWAY + BEYOND)).toFixed(2), +(here[1] + uz * (AWAY + BEYOND)).toFixed(2)];
+          }
           if (near(from, here, AWAY)) continue;
           p.n += 1;
           const squad = `${p.key}:r${p.n}`;

@@ -69,7 +69,10 @@ export function absorb(t, damage) {
 // where it last had you; its guess gone, it joins the group's search
 // (world.search, lib/ai/search's coordinator: spots that could hide you,
 // shared), and gives up back to its wander. Never further from its home
-// than its leash. Pure.
+// than its leash. Pure. (The quests' hostiles, activity.js, are its one
+// reader now: the ground war's soldiers think with the game's brain,
+// ground/brain.js, and take only walkTo and turnToward from here; the quests
+// go onto the brain in a PR of their own.)
 //
 //   sensesFor(hostile) → lib/ai/perception's senses
 //   hostileStep(t, world, dt, r) → { x, z, yaw, mode, moving, aim: { x, z } | null }

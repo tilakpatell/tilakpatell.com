@@ -27,12 +27,13 @@ import { liveCount, lodPick } from '../../../../lib/three/lodPick';
 import { pushOut } from '../walker';
 import { scatter } from '../../../../lib/combat/accuracy';
 import { NEAR, bodyOf as boltBody, farExchange, nearBy } from './bolts';
+import { createMinds, createNavWindow } from './brain';
 import { createDirector } from './director';
-import { aimError, fightStep, grudge, indexBodies, squadsOf, suppress } from './fight';
+import { aimError, felt, fightStep, grudge, indexBodies, squadsOf, suppress } from './fight';
 import { createFigures } from './groundFigures';
 import { createPopulation } from './population';
 import { standingOf } from './standing';
-import { BURST, burstOf, damageOf, hurt } from './troops';
+import { BURST, burstOf, damageOf, hurt, onYou } from './troops';
 import { turfsOf } from './turf';
 import { weaponOf } from '../weaponRules';
 
@@ -47,10 +48,11 @@ const BOLT = { empire: '#ff3b30', remnant: '#ff3b30', rebel: '#ff7a3a', newrepub
 const SHOTS = { shot: 3, melee: 1 };
 const SCALE = { ultra: 1, high: 1, mid: 0.67, low: 0.67 }; // (the difficulty: every pool at once)
 const RAGDOLLS = new Set(['high', 'ultra']);
+const CHEST = 1.1; // m over the feet a body is sensed and aimed at (boltPlay.js's)
 
 const inert = { posts: [], turfs: [], targets: [], ms: 0, landed() {}, update: () => [], news: () => [], hit() {}, near() {}, passed() {}, bodies: () => [], bolt() {}, parry: () => ({ parried: false, broke: false }), knock() {}, stagger() {}, debug: () => [], posted: () => [], dispose() {} };
 
-export function createGround({ parent, world, site, effects, tier = 'high', kit = null, warm, blaster = null, sparks = null, standable = () => true, seesThrough = null, rand = Math.random }) {
+export function createGround({ parent, world, site, effects, tier = 'high', kit = null, warm, blaster = null, sparks = null, standable = () => true, seesThrough = null, rand = Math.random, difficulty = 'normal' }) {
   if (!effects?.owner || !site?.land?.at || site.noGround) return inert;
   const turfs = turfsOf(site, effects, { standable, height: world.heightAt });
   const figures = createFigures({ parent, world, warm, kit, tier, only: site.cast === 'models', uniforms: site.uniforms ?? null });
@@ -71,7 +73,23 @@ export function createGround({ parent, world, site, effects, tier = 'high', kit 
   const roll = [];
   const settle = new Map(); // squad → the squad it's at, for the fights past BOLTS
   const kept = new Map(); // id → its body object, reused
-  const fw = { t: 0, war: effects.war, bodies, seesThrough, tokens, squads: null, index: null, indexOf: null };
+  const fw = { t: 0, war: effects.war, bodies, seesThrough, tokens, squads: null, soldiers: null, minds: null, index: null, indexOf: null };
+  // Every soldier thinks with the game's brain (brain.js), its module loaded
+  // apart (brainLib.js, with the rulebook's records it reads); till it is
+  // in, and the navgrid round you with it, they keep to their posts and beats
+  let minds = null;
+  let navWin = null;
+  let brainName = difficulty;
+  let disposed = false;
+  import('./brainLib')
+    .then((lib) => {
+      if (disposed) return;
+      const ai = lib.aiRows();
+      navWin = createNavWindow({ lib, heightAt: world.heightAt, standable, solids: world.solids, cover: ai.coverConstants });
+      minds = createMinds({ lib, ai, difficulty: brainName, nav: () => navWin.nav, seesThrough });
+      fw.minds = minds;
+    })
+    .catch((e) => console.warn('the ground war’s brain did not load: its soldiers keep to their posts', e));
   let frame = 0;
   let targetsAt = -1;
   const targets = [];
@@ -92,6 +110,7 @@ export function createGround({ parent, world, site, effects, tier = 'high', kit 
     figures.fell(t, { push, from: lastYou, ragdoll: near && RAGDOLLS.has(tier), speed: damage / 10 + 3 });
     pop?.died(t.id);
     squads?.died(t.id);
+    minds?.drop(t.id);
   };
   const struck = (t, damage, push, at = null) => {
     const r = hurt(t.soldier, damage);
@@ -110,11 +129,11 @@ export function createGround({ parent, world, site, effects, tier = 'high', kit 
     return standable([x, z]) ? [x, z] : [s.b.x, s.b.z];
   };
   // a shot at a soldier or your mate: a bolt into the scene's pool, at the
-  // aim (fight.js leads a mover), scattered by the aim's error
-  const loose = (s, from, aim, spread, dist) => {
+  // aim (the brain's, a mover led), scattered by the gun's own spread
+  const loose = (s, from, aim, spread, damage) => {
     if (!blaster) return;
     const dir = scatter([aim.x - from[0], aim.y - from[1], aim.z - from[2]], spread, rand);
-    blaster.shoot({ from, dir, speed: SPEED, side: s.side, owner: s.id, damage: damageOf(s.weapon, dist), range: weaponOf(s.weapon).range, colour: BOLT[s.side] ?? '#ff3b30', deflect: true, tag: { ground: true, near: new Set(), last: [...from] } });
+    blaster.shoot({ from, dir, speed: SPEED, side: s.side, owner: s.id, damage, range: weaponOf(s.weapon).range, colour: BOLT[s.side] ?? '#ff3b30', deflect: true, tag: { ground: true, near: new Set(), last: [...from] } });
   };
   const capsules = [];
 
@@ -142,7 +161,7 @@ export function createGround({ parent, world, site, effects, tier = 'high', kit 
     // your shot passing close: it keeps its head down, and its squad has a grudge
     near(t) {
       if (t.down || !t.soldier.alive) return;
-      suppress(t.soldier, clock);
+      suppress(t.soldier, clock, minds?.suppressionOf('you') ?? 0);
       if (squads) grudge(t.soldier, squads, clock, lastYou);
     },
     // your shot's line, from where to where it stopped: a near miss on each soldier it went within 2 m of
@@ -166,7 +185,11 @@ export function createGround({ parent, world, site, effects, tier = 'high', kit 
     // soldier lands; a soldier's bolt at a wall sparks
     bolt(e) {
       const t = e.body?.ref;
-      if (e.type === 'hit' && t?.ground === api && !t.down && e.bolt.side !== 'you') struck(t, e.bolt.damage, { x: e.bolt.dir[0], z: e.bolt.dir[2] }, { y: e.at[1] });
+      if (e.type === 'hit' && t?.ground === api && !t.down && e.bolt.side !== 'you') {
+        // (it knows where the shot came from: fight.js's felt)
+        felt(t.soldier, pop?.soldiers.get(e.bolt.owner), e.bolt.from, minds);
+        struck(t, e.bolt.damage, { x: e.bolt.dir[0], z: e.bolt.dir[2] }, { y: e.at[1] });
+      }
       else if (e.type === 'solid' && e.bolt.tag?.ground) sparks?.(e.at, BOLT[e.bolt.side] ?? '#ffffff');
     },
     parry: () => ({ parried: false, broke: false }),
@@ -196,9 +219,25 @@ export function createGround({ parent, world, site, effects, tier = 'high', kit 
       return shots;
     },
     // (for the QA scripts: who's out, where, doing what; the director's posts)
-    debug: () => [...figures.all()].map((t) => ({ id: t.id, kind: t.soldier.kind, side: t.soldier.side, role: t.soldier.role, hp: t.soldier.hp, down: t.down > 0, rag: Boolean(t.rag), fig: Boolean(t.fig), at: [+t.soldier.b.x.toFixed(1), +t.soldier.b.z.toFixed(1)], mode: t.soldier.head?.mind?.mode ?? null, target: t.soldier.target ?? null, mark: t.pose?.mark ?? null })),
+    debug: () => [...figures.all()].map((t) => ({ id: t.id, kind: t.soldier.kind, side: t.soldier.side, role: t.soldier.role, hp: t.soldier.hp, down: t.down > 0, rag: Boolean(t.rag), fig: Boolean(t.fig), at: [+t.soldier.b.x.toFixed(1), +t.soldier.b.z.toFixed(1)], mode: t.soldier.fightMode ?? null, brain: t.soldier.bot?.brain.current ?? null, stuck: +(t.soldier.stuckFor ?? 0).toFixed(1), target: t.soldier.target ?? null, mark: t.pose?.mark ?? null })),
     posted: () => [...director.posts.values()].map((p) => ({ key: p.key, holder: p.holder, lost: p.lost })),
+    // (for the QA scripts: what a soldier believes of you, and whether its line to you is clear)
+    probe(id) {
+      const s = pop?.soldiers.get(id);
+      if (!s || !lastYou) return null;
+      const b = s.me?.beliefs?.you ?? null;
+      const you = bodies.find((o) => o.id === 'you');
+      return { side: s.side, yaw: +s.b.yaw.toFixed(2), belief: b ? { confidence: +b.confidence.toFixed(2), visible: b.visible, hostile: b.hostile } : null, beliefs: Object.keys(s.me?.beliefs ?? {}).length, eye: s.me?.pos ?? null, you: you ? { x: you.x, y: you.y, z: you.z, side: you.side } : null, line: seesThrough ? seesThrough({ x: s.b.x, z: s.b.z }, lastYou) : true, sight: s.senses?.sight ?? null, engaged: Boolean(s.bot?.engaged), mode: s.fightMode ?? null, acc: s.senseAcc, now: s.now, ready: fw.minds?.ready?.() ?? null, fwT: fw.t };
+    },
+    // the one difficulty (the Menu's: lib/battlefront/ai/difficulty.js's names), every brain at once
+    setDifficulty(name) {
+      brainName = name;
+      minds?.setDifficulty(name);
+    },
+    // (for the QA scripts: what the brains have cost, in milliseconds since the start, and the navgrid's last build)
+    brains: () => ({ loaded: Boolean(minds), difficulty: brainName, ...(minds ? { think: +minds.stats.think.toFixed(1), act: +minds.stats.act.toFixed(1), thinks: minds.stats.thinks, acts: minds.stats.acts } : {}), nav: navWin ? { builds: navWin.builds, ms: +navWin.ms.toFixed(1), worst: +navWin.worst.toFixed(1) } : null }),
     dispose() {
+      disposed = true;
       figures.dispose();
     },
   };
@@ -213,17 +252,23 @@ export function createGround({ parent, world, site, effects, tier = 'high', kit 
     const p = population();
     const speed = Math.hypot(you.vx ?? 0, you.vz ?? 0);
     const { make, drop } = p.update({ x: you.x, z: you.z, heading: speed > 0.5 ? [Math.sign(you.vx) || 0, Math.sign(you.vz) || 0] : null });
-    for (const id of drop) figures.remove(id);
+    for (const id of drop) {
+      figures.remove(id);
+      minds?.drop(id);
+    }
+    // (the navgrid round you, built again once you have gone far enough: brain.js)
+    navWin?.update(you.x, you.z);
     for (const s of make) figures.add(s).ground = api;
     const far = time - squadAt >= SQUADS;
     if (far) squads.update(time - squadAt);
     bodies.length = 0;
-    for (const s of p.soldiers.values()) if (s.alive) bodies.push(Object.assign(bodyOf(s.id), { x: s.b.x, z: s.b.z, vel: s.vel ?? null, side: s.side, kind: s.kind, squad: s.squad, firingAt: time - (s.firedAt ?? -9) < 1 ? s.firingAt : null }));
-    bodies.push(Object.assign(bodyOf('you'), { x: you.x, z: you.z, vel: [you.vx ?? 0, you.vz ?? 0], side: effects.side ?? null, kind: 'you', you: true }));
-    if (mate) bodies.push(Object.assign(bodyOf('mate'), { x: mate.x, z: mate.z, vel: [mate.vx ?? 0, mate.vz ?? 0], side: effects.side ?? null, kind: 'mate', you: true }));
+    for (const s of p.soldiers.values()) if (s.alive) bodies.push(Object.assign(bodyOf(s.id), { x: s.b.x, y: (s.y = world.heightAt(s.b.x, s.b.z) + CHEST), z: s.b.z, vel: s.vel ?? null, side: s.side, kind: s.kind, squad: s.squad, firingAt: time - (s.firedAt ?? -9) < 1 ? s.firingAt : null }));
+    bodies.push(Object.assign(bodyOf('you'), { x: you.x, y: (you.y ?? world.heightAt(you.x, you.z)) + CHEST, z: you.z, vel: [you.vx ?? 0, you.vz ?? 0], side: effects.side ?? null, kind: 'you', you: true }));
+    if (mate) bodies.push(Object.assign(bodyOf('mate'), { x: mate.x, y: (mate.y ?? world.heightAt(mate.x, mate.z)) + CHEST, z: mate.z, vel: [mate.vx ?? 0, mate.vz ?? 0], side: effects.side ?? null, kind: 'mate', you: true }));
     if (far) for (const id of kept.keys()) if (id !== 'you' && id !== 'mate' && !p.soldiers.get(id)?.alive) kept.delete(id);
     fw.t = time;
     fw.squads = squads;
+    fw.soldiers = p.soldiers;
     fw.index = indexBodies(bodies);
     fw.indexOf = bodies;
     // who's live, still and hidden by where the camera stands
@@ -248,6 +293,7 @@ export function createGround({ parent, world, site, effects, tier = 'high', kit 
       if (d > BRAINS) continue;
       const was = { x: s.b.x, z: s.b.z };
       const out = (s.staggerUntil ?? 0) > time ? { x: s.b.x, z: s.b.z, yaw: s.b.yaw, mode: 'hold', moving: 0, aim: null, fire: false, target: null } : fightStep(s, fw, dt, rand);
+      s.fightMode = out.mode;
       const [x, z] = moved(s, out.x, out.z);
       s.b.x = x;
       s.b.z = z;
@@ -264,23 +310,37 @@ export function createGround({ parent, world, site, effects, tier = 'high', kit 
         settle.set(s.squad, foe.squad);
         continue;
       }
-      // its gun: bursts while the fight says fire
+      // its gun: a bolt each time its brain fires (its firing pattern, at its
+      // gun's rate: brain.js), scattered by the gun's own spread, the brain's
+      // aim box being its error; lost, a burst where it last had its target,
+      // at the trigger's own cadence and the fight's aim error
+      const w = weaponOf(s.weapon);
       s.cool = (s.cool ?? 0) - dt;
-      if (out.fire && s.cool <= 0 && !(s.burst > 0)) s.burst = burstOf(s.weapon);
-      if (!(s.burst > 0 && s.cool <= 0 && out.aim)) continue;
-      s.burst -= 1;
-      s.cool = s.burst > 0 ? Math.max(BURST.gap, weaponOf(s.weapon).every) : BURST.pause[0] + rand() * (BURST.pause[1] - BURST.pause[0]);
-      const body = bodies.find((b) => b.id === out.target);
-      const dist = Math.hypot(out.aim.x - x, out.aim.z - z);
-      const spread = aimError(s, body ?? { vel: null }, dist, { first: s.burst === burstOf(s.weapon) - 1, now: time }) * AIM;
+      if (out.fire && out.suppressive && s.cool <= 0 && !(s.burst > 0)) {
+        s.burst = burstOf(s.weapon);
+        s.burstAt = { aim: out.aim, target: out.target };
+      }
+      let shot = null;
+      if (out.fire && !out.suppressive && out.aim) shot = { aim: out.aim, target: out.target, spread: w.spread, guessed: Boolean(out.guessed) };
+      else if (s.burst > 0 && s.cool <= 0 && s.burstAt) {
+        s.burst -= 1;
+        s.cool = s.burst > 0 ? Math.max(BURST.gap, w.every) : BURST.pause[0] + rand() * (BURST.pause[1] - BURST.pause[0]);
+        const far = Math.hypot(s.burstAt.aim.x - x, s.burstAt.aim.z - z);
+        shot = { ...s.burstAt, spread: aimError(s, { vel: null }, far, { first: s.burst === burstOf(s.weapon) - 1, now: time }) * AIM, guessed: true };
+      }
+      if (!shot) continue;
+      const dist = Math.hypot(shot.aim.x - x, shot.aim.z - z);
       const from = figures.fire(t, time);
       s.firedAt = time;
-      s.firingAt = out.target;
-      if (out.target === 'you') shots.push({ from, to: [out.aim.x, out.aim.z], spread, damage: damageOf(s.weapon, dist), who: t, guessed: Boolean(out.guessed) });
+      s.firingAt = shot.target;
+      const damage = damageOf(s.weapon, dist, s);
+      // (on you and your mate the game's damage is scaled to your health, and by the difficulty's: troops.js's onYou)
+      const toYou = onYou(s, damage) * (minds?.difficulty.damage ?? 1);
+      if (shot.target === 'you') shots.push({ from, to: [shot.aim.x, shot.aim.z], spread: shot.spread, damage: toYou, who: t, guessed: shot.guessed });
       else {
-        const v = out.target === 'mate' ? null : figures.get(out.target);
-        const y = out.target === 'mate' ? (mate?.y ?? 0) + 1.1 : (v?.holder.position.y ?? from[1] - 1.2) + 1.1;
-        loose(s, from, { x: out.aim.x, y, z: out.aim.z }, spread, dist);
+        const v = shot.target === 'mate' ? null : figures.get(shot.target);
+        const y = shot.target === 'mate' ? (mate?.y ?? 0) + 1.1 : (v?.holder.position.y ?? from[1] - 1.2) + 1.1;
+        loose(s, from, { x: shot.aim.x, y, z: shot.aim.z }, shot.spread, shot.target === 'mate' ? toYou : damage);
       }
     }
     // the soldiers' bolts in flight going close by: heads down (the hits
@@ -291,7 +351,9 @@ export function createGround({ parent, world, site, effects, tier = 'high', kit 
       if (!b.tag?.ground) continue;
       for (const id of nearBy(b.tag.last, b.pos, struckBy, b.tag.near, b.owner)) {
         const v = figures.get(id);
-        if (v && !v.down) suppress(v.soldier, time);
+        if (!v || v.down) continue;
+        suppress(v.soldier, time, minds?.suppressionOf(b.owner) ?? 0);
+        felt(v.soldier, pop?.soldiers.get(b.owner), b.from, minds);
       }
       b.tag.last = b.pos.slice();
     }

@@ -1,13 +1,18 @@
 import { describe, expect, test } from 'vitest';
 import { createTokens } from '../../../../lib/ai/squad';
 import { WEAPONS } from '../weaponRules';
-import { FACING, GRUDGE, aimError, fightStep, grudge, indexBodies, squadsOf, suppress, threatOf, senseAll } from './fight';
+import { FACING, GRUDGE, aimError, felt, fightStep, grudge, indexBodies, squadsOf, suppress, threatOf, senseAll } from './fight';
+import { flatMinds } from './fixtures/minds';
 import { TROOPS, newSoldier } from './troops';
 
 let n = 0;
 const mk = (kind, side, x, z, yaw = 0, o = {}) => newSoldier({ id: o.id ?? `s${n++}`, kind, side, role: o.role ?? 'post', at: [x, z], yaw, home: o.home ?? [x, z], beat: o.beat, squad: o.squad ?? `q${n}` }, () => 0);
 const bodyOf = (s) => ({ id: s.id, x: s.b.x, z: s.b.z, vel: [0, 0], side: s.side, kind: s.kind, squad: s.squad, firingAt: s.firingAt ?? null });
-const worldOf = (soldiers, extra = [], o = {}) => ({ t: 0, war: 'gcw', bodies: [...soldiers.map(bodyOf), ...extra], seesThrough: o.seesThrough ?? (() => true), tokens: o.tokens ?? createTokens({ pools: { shot: 3, melee: 1 }, timeout: 0.9 }), squads: o.squads ?? null });
+// (each soldier thinks with the game's brain, on flat open ground: fixtures/minds.js)
+const worldOf = (soldiers, extra = [], o = {}) => {
+  const seesThrough = o.seesThrough ?? (() => true);
+  return { t: 0, war: 'gcw', bodies: [...soldiers.map(bodyOf), ...extra], seesThrough, tokens: o.tokens ?? createTokens({ pools: { shot: 3, melee: 1 }, timeout: 0.9 }), squads: o.squads ?? null, minds: flatMinds({ seesThrough }).minds };
+};
 const DT = 1 / 30;
 // step every soldier for `secs`, the world's bodies kept up to date; outs by id
 function run(soldiers, w, secs, { extra = () => [], moveYou = null } = {}) {
@@ -195,6 +200,8 @@ describe('the fight', () => {
     const range = TROOPS.stormtrooper.range;
     const foe = { id: 'r', x: 0, z: range + 8, vel: [0, 0], side: 'rebel', kind: 'rebel' };
     const w = worldOf([s]);
+    // (its squad already alerted: unalerted, the game’s soldier sees 40 m, and 250 once its squad has seen an enemy: sensing.js)
+    w.minds.alert(s);
     const outs = run([s], w, 8, { extra: () => [foe] }).get(s.id);
     expect(outs.some((o) => o.mode === 'advance')).toBe(true);
     expect(Math.hypot(foe.x - s.b.x, foe.z - s.b.z)).toBeLessThanOrEqual(range);
@@ -203,8 +210,72 @@ describe('the fight', () => {
     const t = mk('stormtrooper', 'empire', 0, 0, 0);
     const lure = { id: 'r2', x: 0, z: range + 8, vel: [0, 0], side: 'rebel', kind: 'rebel' };
     const w2 = worldOf([t]);
+    w2.minds.alert(t);
     run([t], w2, 30, { extra: (now) => [{ ...lure, z: range + 8 + now * 3 }] });
     expect(Math.hypot(t.b.x, t.b.z)).toBeLessThanOrEqual(t.leash + range + 0.5);
+  });
+  test('a body the walker holds back is a stuck brain, which finds its own way round; one let go is not', () => {
+    const range = TROOPS.stormtrooper.range;
+    const foe = { id: 'r', x: 0, z: range + 8, vel: [0, 0], side: 'rebel', kind: 'rebel' };
+    const most = (hold) => {
+      const s = mk('stormtrooper', 'empire', 0, 0, 0);
+      const w = worldOf([s]);
+      // (alerted, so it sees its foe past 40 m: as above)
+      w.minds.alert(s);
+      let top = 0;
+      for (let t = 0; t < 3; t += DT) {
+        w.t += DT;
+        w.bodies = [bodyOf(s), foe];
+        const o = fightStep(s, w, DT, () => 0.5);
+        // (a wall the navgrid lacks, across its way in: the scene's walker keeps it where it was)
+        if (!hold || o.z < 2) {
+          s.b.x = o.x;
+          s.b.z = o.z;
+        }
+        s.b.yaw = o.yaw;
+        top = Math.max(top, s.bot?.brain.stuck ?? 0);
+      }
+      return { top, s };
+    };
+    const held = most(true);
+    // (held past a second, the brain plans again: its own `stuck`)
+    expect(held.top).toBeGreaterThan(1);
+    expect(held.s.stuckFor).toBeGreaterThan(1);
+    const free = most(false);
+    expect(free.top).toBeLessThan(0.5);
+    expect(free.s.b.z).toBeGreaterThan(5);
+  });
+});
+
+describe('what the brain is told', () => {
+  test('a felt shot: it believes in the shooter where the shot came from, and its squad is alerted', () => {
+    const s = mk('stormtrooper', 'empire', 0, 0, 0, { squad: 'F' });
+    const shooter = mk('rebel', 'rebel', 0, 70, Math.PI);
+    const w = worldOf([s], [bodyOf(shooter)]);
+    w.minds.mindOf(s);
+    felt(s, shooter, [0, 1.4, 70], w.minds);
+    expect(s.me.beliefs[shooter.id]).toMatchObject({ confidence: 1, visible: false, hostile: true, at: { x: 0, z: 70 } });
+    expect(w.minds.alerted.has('F')).toBe(true);
+    expect(threatOf(s, w).id).toBe(shooter.id);
+    // (told of, not seen: still its threat as the telling fades, so it turns on where it was told)
+    for (let k = 0; k < 10; k++) senseAll(s, w, DT);
+    expect(s.me.beliefs[shooter.id].confidence).toBeLessThan(1);
+    expect(threatOf(s, w).id).toBe(shooter.id);
+    // (one it sees already is left as it is; nobody believes in itself)
+    felt(s, s, [0, 1, 0], w.minds);
+    expect(s.me.beliefs[s.id]).toBeUndefined();
+  });
+  test('a squad on the brain weighs the enemies its soldiers believe in: a garrison it has not met does not break it', () => {
+    const raid = [0, 1, 2].map((i) => mk('rebel', 'rebel', i * 2, 0, 0, { squad: 'R' }));
+    const garrison = [0, 1, 2, 3, 4, 5, 6].map((i) => mk('stormtrooper', 'empire', i * 2, 40));
+    const w = worldOf([...raid, ...garrison]);
+    for (const s of raid) w.minds.mindOf(s);
+    const sq = squadsOf([...raid, ...garrison], { reach: 18, war: 'gcw' });
+    sq.update(0.5);
+    expect(sq.postureOf(raid[0].id)).not.toBe('retreat');
+    for (const g of garrison) raid[0].me.beliefs[g.id] = { id: g.id, at: { x: g.b.x, y: 0, z: g.b.z }, vel: { x: 0, y: 0, z: 0 }, confidence: 1, visible: true, hostile: true };
+    sq.update(0.5);
+    expect(sq.postureOf(raid[0].id)).toBe('retreat');
   });
 });
 
