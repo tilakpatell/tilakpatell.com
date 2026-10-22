@@ -8,7 +8,8 @@
 // its own.
 //
 //   NOTICES: the board’s pins until the term’s lane writes them: [{ title, text }]
-//   roundWalls(kit, { r, h, mat, gaps, segs }) → the wall as runs of ashlar, gaps (angles) left for doors and windows
+//   roundWalls(kit, { r, h, mat, gaps, segs }) → the wall as runs of ashlar; gaps: [[from, to, lintel?]] (angles)
+//     left open for a doorway to its lintel (2.9 m), a dark passage behind each
 //   armchair(kit, { at, ry, cloth })   sofa(kit, { at, ry, cloth, len })   lowTable(kit, { at, r })
 //   paintRug(colours, { size }) / paintBoard(notices, { w, h }) → canvas (in a browser)
 //   flat(canvas, { renderer, w, h, at, ry, rx }) → a plane with the canvas on it (a rug, a board, a tapestry)
@@ -36,11 +37,31 @@ export const FLOO = 'The fire says its next stop is Diagon Alley. It isn’t goi
 
 export function roundWalls(kit, { r, h, mat = 'stone', gaps = [], segs = 28, thick = 0.6 }) {
   const run = (Math.PI * 2) / segs;
+  const len = 2 * (r + thick / 2) * Math.tan(run / 2) + 0.05;
   for (let i = 0; i < segs; i++) {
     const a = (i + 0.5) * run;
-    if (gaps.some(([g0, g1]) => angleIn(a, g0, g1))) continue;
-    const len = 2 * (r + thick / 2) * Math.tan(run / 2) + 0.05;
-    kit.box(mat, Math.sin(a) * (r + thick / 2), 0, Math.cos(a) * (r + thick / 2), len, h, thick, { ry: a });
+    const gap = gaps.find(([g0, g1]) => angleIn(a, g0, g1));
+    const at = [Math.sin(a) * (r + thick / 2), Math.cos(a) * (r + thick / 2)];
+    // (over a doorway the wall goes on from its lintel up: an opening, not a slot to the sky)
+    if (gap) kit.box(mat, at[0], gap[2] ?? 2.9, at[1], len, h - (gap[2] ?? 2.9), thick, { ry: a });
+    else kit.box(mat, at[0], 0, at[1], len, h, thick, { ry: a });
+  }
+  // behind each doorway, a short dark passage turning away, so it leads somewhere
+  for (const [g0, g1, top = 2.9] of gaps) {
+    const m = (g0 + g1) / 2;
+    const w = (g1 - g0) * r + 0.2;
+    const deep = 1.8;
+    const out = (d) => [Math.sin(m) * (r + d), Math.cos(m) * (r + d)];
+    const back = out(deep + thick);
+    kit.box('stonedark', back[0], 0, back[1], w + 0.8, top + 0.2, 0.3, { ry: m });
+    for (const side of [-1, 1]) {
+      const mid = out(thick + deep / 2);
+      const off = [Math.cos(m) * side * (w / 2), -Math.sin(m) * side * (w / 2)];
+      kit.box('stonedark', mid[0] + off[0], 0, mid[1] + off[1], 0.5, top + 0.2, deep + thick, { ry: m });
+    }
+    const roof = out(thick + deep / 2);
+    kit.box('stonedark', roof[0], top, roof[1], w + 0.6, 0.3, deep + thick, { ry: m });
+    kit.box('flags', roof[0], -0.05, roof[1], w + 0.6, 0.05, deep + thick, { ry: m });
   }
 }
 const angleIn = (a, g0, g1) => {

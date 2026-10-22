@@ -35,7 +35,7 @@ export default commonRoom({
   spawn: { at: [0, 0, L - 1.6], yaw: 0 },
   floo: [0, -L + 2.4],
   places: [{ id: 'kitchens', name: 'The kitchens', at: [0, 0], r: 10 }],
-  light: { hemi: [0xffd8a8, 0x3a2414, 1.0], points: [[0, 1.6, -L + 2.4, 0xff8a3a, 16], [-6, 4, 0, 0xffc080, 7], [6, 4, 0, 0xffc080, 7], [0, 4, 8, 0xffc080, 6]] },
+  light: { hemi: [0xffd8a8, 0x4a3018, 1.35], points: [[0, 1.6, -L + 2.4, 0xff8a3a, 16], [-6, 4, 0, 0xffc080, 7], [6, 4, 0, 0xffc080, 7], [0, 4, 8, 0xffc080, 6]] },
   poses: {
     tables: { at: [0, 1.4, L - 2], look: [0, 1.0, -L + 2] },
     hearth: { at: [2, 1.2, -6], look: [0, 1.5, -L] },
@@ -47,9 +47,15 @@ export default commonRoom({
     kit.box('stonewarm', 0, 0, -L - 0.5, W * 2, H + 2, 1);
     kit.box('stonewarm', 0, 0, L + 0.5, W * 2, H + 2, 1);
     kit.box('flags', 0, -0.3, 0, W * 2, 0.3, L * 2);
-    for (let i = 0; i < 12; i++) {
-      const a = (i / 11) * Math.PI;
-      kit.box('stonewarm', Math.cos(a) * W, H + Math.sin(a) * 2.2, 0, 1.4, 0.8, L * 2, { rz: a - Math.PI / 2 });
+    // (the barrel in runs along its curve, each laid on the chord between two
+    // points of it and a little long, so the curve is whole; ribs across it)
+    const arc = (a) => [Math.cos(a) * W, H + Math.sin(a) * 2.6];
+    const N = 18;
+    for (let i = 0; i < N; i++) {
+      const [x0, y0] = arc(Math.PI - (i / N) * Math.PI);
+      const [x1, y1] = arc(Math.PI - ((i + 1) / N) * Math.PI);
+      kit.box('stonewarm', (x0 + x1) / 2, (y0 + y1) / 2, 0, Math.hypot(x1 - x0, y1 - y0) + 0.12, 0.5, L * 2, { rz: Math.atan2(y1 - y0, x1 - x0) });
+      for (const z of [-10, -3.4, 3.4, 10]) kit.box('stonedark', (x0 + x1) / 2, (y0 + y1) / 2 - 0.3, z, Math.hypot(x1 - x0, y1 - y0) + 0.14, 0.32, 0.5, { rz: Math.atan2(y1 - y0, x1 - x0) });
     }
     // the four tables, under the four in the hall
     for (const t of TABLES) {
