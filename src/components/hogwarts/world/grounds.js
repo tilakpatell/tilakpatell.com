@@ -13,10 +13,12 @@
 // the browser back its turn, so the page never freezes.
 //
 //   createGrounds(rt, { scene, camera, tier, house, hour, week, day, rate, onBuild, skip }) → Promise<{
-//     step(dt, { at: [x, y, z], act, awake }) → { prompt, enter, toast }   (a door’s prompt, a room to go into, a line to show)
+//     step(dt, { at: [x, y, z], act, awake }) → { prompt, enter, toast, events, throw, turn }   (a door’s or a
+//       landmark’s prompt, a room to go into, a line to show; what the term counts, a Willow’s throw, the forest’s turn about)
 //     beforeDraw(renderer)   called by the module’s draw before its chain renders (the lake’s mirror)
 //     groundAt(x, z, y) → the height a figure stands at there (the ground, or a deck or a stair near y)
-//     colliders() → what can’t be walked through (plan.js’s footprints, the shut gates)
+//     colliders() → what can’t be walked through (plan.js’s footprints, the landmarks’, the shut gates)
+//     landmarks, pitch (for play/snitch.js), willow ({ knot, KNOT_R, book })
 //     places, hour, light, weather, clock,
 //     setHour(h), setWeek(w), setRate(k),
 //     passes: the post chain for rt.gfx.post (hooks.js’s chainFor),
@@ -47,7 +49,8 @@ import { createAmbience } from './ambience';
 import { chainFor, gradeNode, tierOf } from './hooks';
 import { createCastle } from './castle/castle';
 import { createDoors } from './castle/doors';
-import { floorAt } from './castle/plan';
+import { DOORS, floorAt } from './castle/plan';
+import { createLandmarks } from './landmarks';
 
 const LIGHT_EVERY = 0.1; // s between the light’s updates (a world minute is a real second: no one sees a tenth of it)
 const BLADES = { mid: { side: 160, size: 38 }, high: { side: 220, size: 44 }, ultra: { side: 240, size: 46 } };
@@ -151,7 +154,10 @@ export async function createGrounds(rt, { scene, camera, tier = 'high', house = 
   scene.add(castle.group, castle.far);
   castle.far.layers.enable(REFLECTED);
   castle.group.traverse((o) => o.isMesh && o.layers.enable(REFLECTED));
-  const doors = createDoors({ materials: castle.materials, ground: heightAt });
+  // the landmarks (grounds/): the Willow, the hut, the greenhouses’ insides, the pitch, the forest’s edge, the bridge’s sway, the station
+  const landmarks = createLandmarks({ house, materials: castle.materials, ground: heightAt, tier, castle, renderer });
+  scene.add(landmarks.group);
+  const doors = createDoors({ materials: castle.materials, ground: heightAt, doors: [...DOORS, ...landmarks.doors] });
   scene.add(doors.group);
   mark('castle', since);
   await breathe();
@@ -233,13 +239,19 @@ export async function createGrounds(rt, { scene, camera, tier = 'high', house = 
   let w = weatherAt({ week: termWeek, day, hour });
   let l = lightAt(hour, { week: termWeek, day, weather: w });
   let sinceLight = Infinity;
+  let forestFog = 0; // (the forest’s fog closing round you, 0…1: landmarks.js’s)
   let cold = 0; // (the dementors’ cold, 0…1: the module’s, from Lane F’s rules/dementors.js)
   const relight = () => {
     const h = hourOf(clock);
     const d = Math.floor(clock.t / 24);
     w = weatherAt({ week: termWeek, day: d, hour: h });
     l = lightAt(h, { week: termWeek, day: d, weather: w });
-    daylight.set(l, { cold });
+    // (in the forest the haze thickens and darkens toward the pines’ green-black as it closes)
+    if (forestFog > 0.01) {
+      const k = forestFog;
+      const dim = 0.35 + 0.65 * (1 - k);
+      daylight.set({ ...l, fog: { colour: l.fog.colour.map((v, i) => v * dim + [0.02, 0.03, 0.025][i] * (1 - dim)), density: l.fog.density * (1 + 14 * k * k) } }, { cold });
+    } else daylight.set(l, { cold });
     lake.set(l, { wind: w.wind, rain: w.rain });
     weather.set(w, l);
     sky.wind(0.6 + w.wind);
@@ -256,6 +268,7 @@ export async function createGrounds(rt, { scene, camera, tier = 'high', house = 
 
   const clockTower = placeById('clock-tower').at;
   let adoptIn = 1;
+  let lastAt = null;
   return {
     passes,
     get hour() {
@@ -271,6 +284,10 @@ export async function createGrounds(rt, { scene, camera, tier = 'high', house = 
       return clock;
     },
     places: PLACES,
+    // (the landmarks’: the pitch for Quidditch, the Willow’s knot for a stone to still it)
+    landmarks,
+    pitch: landmarks.pitch,
+    willow: landmarks.willow,
     // (the sky, for the arrival’s moon over the Astronomy Tower)
     sky,
     land,
@@ -306,7 +323,7 @@ export async function createGrounds(rt, { scene, camera, tier = 'high', house = 
       // (a deck or a stair’s step near your height is what you stand on, over the ground or cut into it)
       return floorAt(castle.floors, x, z, y) ?? g;
     },
-    colliders: () => [...castle.colliders, ...doors.colliders()],
+    colliders: () => [...castle.colliders, ...landmarks.colliders, ...doors.colliders()],
     // (before the frame’s chain draws: the lake’s mirror, on high)
     beforeDraw(renderer) {
       lake.reflect(renderer ?? rt?.gfx?.renderer, scene, camera);
@@ -347,7 +364,17 @@ export async function createGrounds(rt, { scene, camera, tier = 'high', house = 
         adoptIn = 1;
         house.adopt(scene);
       }
-      return doors.step(dt, { at, act });
+      // the landmarks, then the doors: a door’s prompt before a landmark’s, one E for whichever is nearer
+      const marks = landmarks.step(dt, { at, act, camera, speed: at ? Math.hypot(at[0] - (lastAt?.[0] ?? at[0]), at[2] - (lastAt?.[2] ?? at[2])) / Math.max(dt, 1e-3) : 0, wind: w.wind });
+      lastAt = at;
+      if (Math.abs(marks.fog - forestFog) > 0.01) {
+        forestFog = marks.fog;
+        sinceLight = Infinity;
+      }
+      if (marks.whoosh) ambience.whoosh?.(marks.whoosh);
+      if (marks.creak) ambience.creak?.(marks.creak);
+      const door = doors.step(dt, { at, act: act && !marks.prompt });
+      return { prompt: door.prompt ?? marks.prompt, enter: door.enter ?? marks.enter, toast: door.toast ?? marks.toast, events: marks.events, throw: marks.throw, turn: marks.turn };
     },
     stats() {
       return { timings, cells: cells.built, wanted: cells.wanted, scatter: scatter.stats, castle: { ...castle.stats, near: castle.near }, canopy: canopy.triangles, weather: weather.stats(), ambience: ambience.stats(), hour: hourOf(clock), week: termWeek };
@@ -366,6 +393,7 @@ export async function createGrounds(rt, { scene, camera, tier = 'high', house = 
       nearMat.dispose();
       maps.dispose();
       castle.dispose();
+      landmarks.dispose();
       doors.dispose();
       lake.dispose();
       sky.dispose();
