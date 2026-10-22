@@ -14,7 +14,7 @@ import { pressGroups } from '../../../lib/press';
 import { getawayAt, stepGetaway } from './getaway';
 import { CALLS, DEBBIE_AFTER, PANELS } from './lines';
 import { RADIO, RADIO_CALLS, feedMission, missionOf, newRadio, nextRadioCall, nextStory, placeOf as missionPlace, startMission as beginMission, stepOf } from './missions';
-import { intoSpace, outOfSpace, stepSpace } from './orbit';
+import { intoSpace, outOfSpace, stepSpace, turnUp, upOver } from './orbit';
 import { CARDS, stepQuests } from './quests';
 import { SPAWN, groundAt, isSafeStart, near as boxesNear } from './map';
 import { VOICE } from './voicelines';
@@ -734,7 +734,9 @@ function World({ gl, setGl, thinkMark }) {
     if (pressed('x')) s.punch = true;
     if (pressed('y')) act();
     if (pressed('start')) cycleTime();
-    const look = [Math.sin(s.yaw) * Math.cos(s.pitch), Math.sin(s.pitch), Math.cos(s.yaw) * Math.cos(s.pitch)];
+    const sky = [Math.sin(s.yaw) * Math.cos(s.pitch), Math.sin(s.pitch), Math.cos(s.yaw) * Math.cos(s.pitch)];
+    // (out there, his look is in the frame of the ground he is over: ./orbit.js's upOver, the camera's too)
+    const look = s.h.zone === 'space' ? turnUp(sky, upOver(s.h.p)) : sky;
     // the jump through its press (./flight.js): a moment early or late still goes
     if (s.jump) s.press.press();
     let input = { fwd, side, up: upKey ? 1 : 0, down: downKey ? 1 : 0, boost, run: boost && !s.brawl.blocking, jump: s.jump, look, press: s.press, free: s.free };

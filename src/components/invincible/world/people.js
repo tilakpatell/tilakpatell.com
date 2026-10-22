@@ -16,6 +16,7 @@ import { hot } from '../../avengers/hq/stage';
 import { POSES, figure, loadFigure } from '../../../lib/three/rig';
 import { CAST, asset } from '../cast';
 import { GUARDIANS, guardianOf } from './guardians';
+import { villainLooks } from './villainLooks';
 
 // ── one finish for the whole cast ──
 
@@ -330,6 +331,12 @@ for (const g of GUARDIANS) {
   DRESS[g.id] = () => guardianDress(g);
   STYLES[g.id] = g.id === 'robot' ? STYLES.robot : STYLES.guardian;
 }
+// season two's foes (./villainLooks.js): Battle Beast and Angstrom Levy, from the show's pictures
+{
+  const V = villainLooks({ body, face, ball, mat, glow: (c, k) => new THREE.MeshBasicMaterial({ color: hot(c, k), toneMapped: false }) });
+  Object.assign(STYLES, V.styles);
+  Object.assign(DRESS, V.dress);
+}
 
 const TOPS = [0xc94b3a, 0x3a6fb5, 0x2f8a5f, 0xe2b13c, 0x7a4fa0, 0xe8e6e0, 0x2c2f36, 0xd67b3a, 0x4fa3b8];
 const BOTTOMS = [0x2c3a55, 0x3b3b3e, 0x6b5a45, 0x1d1f24, 0x8a7c66, 0x41556b];
@@ -351,8 +358,8 @@ export function buildPerson(kind, seed = 0) {
       dark: mat(0x1a1416),
     };
   const g = guardianOf(kind);
-  const joints = kind === 'cecil' || kind === 'allen' || kind === 'astronaut' || kind === 'host' || g?.broad ? BROAD : SLIM;
-  const scale = { eve: 0.88, debbie: 0.88, cecil: 0.95, allen: 1.12 }[kind] ?? (g ? (g.broad ? 1.02 : 0.94) : 0.86 + (seed % 5) * 0.03);
+  const joints = kind === 'cecil' || kind === 'allen' || kind === 'astronaut' || kind === 'host' || kind === 'beast' || kind === 'angstrom' || g?.broad ? BROAD : SLIM;
+  const scale = { eve: 0.88, debbie: 0.88, cecil: 0.95, allen: 1.12, beast: 1.46, angstrom: 0.98 }[kind] ?? (g ? (g.broad ? 1.02 : 0.94) : 0.86 + (seed % 5) * 0.03);
   const h = buildHumanoid({ style: STYLES[kind] ?? STYLES.person, materials, scale, joints });
   return { h, kind, height: h.height, materials, cast: castMaterial(h.root, { rim: castRim }) };
 }

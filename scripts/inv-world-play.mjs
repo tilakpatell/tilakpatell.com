@@ -53,7 +53,8 @@ async function player() {
     window.dispatchEvent(new KeyboardEvent('keyup', { code, key, bubbles: true }));
   };
   const aim = (at, from = chest()) => {
-    const d = sub(at, from);
+    // (out there his look is turned to the ground he is over, ./orbit.js's upOver: the way, turned back)
+    const d = inSpace() ? O.turnUp(sub(at, from), O.upOver(sim.h.p), true) : sub(at, from);
     sim.yaw = Math.atan2(d[0], d[2]);
     sim.pitch = Math.atan2(d[1], Math.hypot(d[0], d[2]));
     sim.dragAt = 1e12; // (the camera's own swing behind him stays off: he's steered)
@@ -77,6 +78,10 @@ async function player() {
       said = wall;
       const h = sim.h;
       console.log(`[play]   ${h.zone ?? 'city'} ${h.mode} at [${h.p.map((v) => Math.round(v))}] ${Math.round(len(h.v))} m/s, keys ${[...sim.keys].join('+') || 'none'}; dad ${api.debug.dad().state} at [${api.debug.dad().p.map(Math.round)}]`);
+      // (the fight, when there is one: each foe standing, and the block and the counter)
+      const up = (sim.foes?.foes ?? []).filter((e) => e.state !== 'down' && e.state !== 'ko');
+      if (up.length) console.log(`[play]   foes ${up.map((e) => `${e.kind} ${e.state} ${e.hits ?? ''} at [${e.p.map(Math.round)}] ${len(sub(e.p, h.p)).toFixed(1)} m`).join('; ')}; blocking ${sim.brawl?.blocking}, counter ${(sim.foes.counter ?? 0).toFixed(2)}`);
+      if (sim.mars) console.log(`[play]   mars host ${sim.mars.host.state} ${sim.mars.host.hits} at [${sim.mars.host.p.map(Math.round)}], swarm ${sim.mars.swarm.alive}, aboard ${sim.mars.aboard}`);
     }
     if (job) {
       try {
@@ -136,10 +141,12 @@ async function player() {
         return false;
       }
     } else stuck = null;
-    const [cruise, brake, margin] = inSpace() ? [500, 600, 4000] : [40, 40, 80];
+    // (low over the Moon or Mars he flies at the air's speeds, ./orbit.js's `low`: steered as in the city)
+    const far = inSpace() && O.overBody(h.p) > O.SPACE.low;
+    const [cruise, brake, margin] = far ? [500, 600, 4000] : [40, 40, 80];
     const stop = Math.max(0, v * v - cruise * cruise) / (2 * brake);
     if (!o.slow && dist > stop + margin + r) hold('fwd', 'boost');
-    else if (o.pass || dist > (inSpace() ? 0 : Math.min(v, cruise) ** 2 / 110) + r * 0.6) hold('fwd');
+    else if (o.pass || dist > (far ? 0 : Math.min(v, cruise) ** 2 / 110) + r * 0.6) hold('fwd');
     else hold();
     return false;
   }

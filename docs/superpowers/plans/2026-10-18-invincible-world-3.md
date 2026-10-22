@@ -183,10 +183,10 @@
 **Files:**
 - Modify: `foes.js` (Battle Beast: 14 hits, blocks unless staggered, the leap), `season2.js`, `villainScene.js`, `lines.js`
 
-- [ ] Tests first: a punch on an unstaggered Beast is blocked; a counter staggers him; the leap craters the pad and floors Mark within 15 m; beaten, he leaves.
-- [ ] The foe, the stand-in, the lesson in the panels (block, then counter).
-- [ ] `--play beast`; shot `beast`; `gen3d` and `voices` issues.
-- [ ] Checks; commit; pull request; merge.
+- [x] Tests first: a punch on an unstaggered Beast is blocked; a counter staggers him; the leap craters the pad and floors Mark within 15 m; beaten, he leaves.
+- [x] The foe, the stand-in, the lesson in the panels (block, then counter).
+- [x] `--play beast`; shot `beast`; `gen3d` and `voices` issues.
+- [x] Checks; commit; pull request; merge.
 
 ### Task 11: Thraxa and Talescria
 

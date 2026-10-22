@@ -19,7 +19,7 @@ import { CAST } from '../cast';
 import { FIGHT, KINDS, PORTAL, portalOpen } from './foes';
 import { ANGSTROM_GREEN } from './dimensions';
 import { carGeometry } from './life';
-import { castMaterial } from './people';
+import { castMaterial, personFor } from './people';
 
 const FLAX = 0xd04dff;
 const QUAKE = 0xc9a46a; // (the dust of the school's quad)
@@ -92,11 +92,16 @@ export function createVillains(scene, vfx, { calm = false, templates = {}, rim =
     omniman: () => castFoe('omniman'),
     // season two (./season2.js): the mirror Mark is Mark's own figure; Angstrom a kit figure in his green
     mirror: () => castFoe('mirror'),
-    beast: () => kitOwn({ armour: new THREE.MeshStandardMaterial({ color: 0x7a5a3a, roughness: 0.6, metalness: 0.3 }), skin: new THREE.MeshStandardMaterial({ color: 0xe8e6e0, roughness: 0.85 }), glow: new THREE.MeshBasicMaterial({ color: hot(0xffd27a, 1.6), toneMapped: false }) }, KINDS.beast.h / 1.8),
-    angstrom: () => kitOwn({ armour: new THREE.MeshStandardMaterial({ color: 0x2f6b3a, roughness: 0.55 }), skin: new THREE.MeshStandardMaterial({ color: 0x9fb8a4, roughness: 0.7 }), glow: new THREE.MeshBasicMaterial({ color: hot(ANGSTROM_GREEN, 2.4), toneMapped: false }) }, KINDS.angstrom.h / 1.8),
+    // (no model of their own yet: the kit's people in their costumes, ./villainLooks.js, placed by their hips)
+    beast: () => dressedFoe('beast'),
+    angstrom: () => dressedFoe('angstrom'),
   };
-  // (a kind with no model of its own yet: the kit's figure, placed as the Flaxans are)
-  const kitOwn = (m, scale) => Object.assign(kitFoe(m, scale), { kit: true });
+  function dressedFoe(kind) {
+    const p = personFor(kind, 0);
+    group.add(p.root);
+    casts.push(p.cast);
+    return { h: p.kit.h, holder: p.root, spin: 0, kit: true, hipY: p.hipY };
+  }
   function kitFoe(m, scale) {
     const h = buildHumanoid({ style: 'chitauri', materials: m, scale });
     const holder = new THREE.Group();
@@ -259,7 +264,7 @@ export function createVillains(scene, vfx, { calm = false, templates = {}, rim =
           if (l) for (const k of Object.keys(l)) l[k] = Math.max(0, l[k] - dt);
           act(v, { ...e, kind, quakeT: l?.quake ?? 0, blastT: l?.blast ?? 0 }, dt, t);
         } else if (kind === 'flaxan' || kind === 'flaxanElite' || v.kit) {
-          v.holder.position.set(e.p[0], e.p[1] + (v.kit ? KINDS[kind].h * 0.53 : 0), e.p[2]);
+          v.holder.position.set(e.p[0], e.p[1] + (v.hipY ?? (v.kit ? KINDS[kind].h * 0.53 : 0)), e.p[2]);
           if (e.state === 'ko' || e.state === 'thrown') {
             v.spin += dt * 9;
             v.holder.rotation.set(v.spin, v.spin * 0.6, 0);
