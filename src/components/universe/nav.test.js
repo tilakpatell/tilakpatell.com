@@ -382,7 +382,7 @@ describe('across the sectors', () => {
     for (const id of ['gazorpazorp', 'citadel', 'curvesun']) {
       const d = distanceTo(home(), id);
       expect(Number.isFinite(d), id).toBe(true);
-      expect(d, id).toBeLessThan(30000); // (nothing like the 60000 straight across)
+      expect(d, id).toBeLessThan(-SECTORS.rickmorty.origin[2] * 0.6); // (nothing like the 66,000 straight across)
       for (const drive of ['hyper', 'super']) {
         const t = tripTime(home(), id, drive);
         expect(t, `${id} by ${drive}`).not.toBeNull();

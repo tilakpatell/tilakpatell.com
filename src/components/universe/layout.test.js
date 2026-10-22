@@ -97,15 +97,16 @@ describe('the asteroid belt', () => {
   });
 });
 
-// (scale.js's SPREAD: the places six times as far apart as they were on 2026-10-07)
+// (scale.js's SPREAD: the places eight times as far apart as they were on 2026-10-07;
+// the edge and the rim written from the Expanse's middle sector, lib/space/address.js)
 describe('the spread', () => {
   const fandoms = ORDER.filter((id) => byId(id).kind !== 'core');
   const far = (id) => Math.hypot(POSITIONS[id][0], POSITIONS[id][2]);
-  it('puts the nearest fandom 12,000 out and the main edge at 54,000', () => {
-    expect(Math.min(...fandoms.map(far))).toBeCloseTo(12000, 0);
-    expect(SECTORS.main.edge).toBe(54000);
-    expect(RIM.inner).toBe(48000);
-    expect(RIM.outer).toBe(51600);
+  it('puts the nearest fandom 16,000 out and the main edge at 59,000', () => {
+    expect(Math.min(...fandoms.map(far))).toBeCloseTo(16000, 0);
+    expect(SECTORS.main.edge).toBe(59000);
+    expect(RIM.inner).toBe(54400);
+    expect(RIM.outer).toBe(58000);
   });
 
   it('keeps every fandom at least 3,900 from every other place, planets and wonders', () => {
@@ -120,17 +121,17 @@ describe('the spread', () => {
     }
   });
 
-  it('moves the Rick and Morty sector out past the main edge, and the split with it', () => {
+  it('keeps the Rick and Morty sector out past the main edge, and the split with it', () => {
     expect(SECTORS.rickmorty.origin).toEqual([0, 0, -66000]);
     expect(sectorOf(0, 0, -66000)).toBe('rickmorty');
-    expect(sectorOf(0, 0, -54000)).toBe('main');
-    // (6,000 of open space between the two edges, as before the spread to six)
-    expect(-SECTORS.rickmorty.origin[2] - SECTORS.rickmorty.edge - SECTORS.main.edge).toBe(6000);
+    expect(sectorOf(0, 0, -59000)).toBe('main');
+    // (open space between the two edges: 6,000 at the spread to six, 1,000 since the main edge was written from the Expanse's sector)
+    expect(-SECTORS.rickmorty.origin[2] - SECTORS.rickmorty.edge - SECTORS.main.edge).toBe(1000);
   });
 
   it('puts the Expanse past both edges: E:sx,sz by the 120,000 grid, the authored sectors as they were', () => {
-    expect(sectorOf(54000, 0, 0)).toBe('main');
-    expect(sectorOf(54002, 0, 0)).toBe('E:0,0');
+    expect(sectorOf(59000, 0, 0)).toBe('main');
+    expect(sectorOf(59002, 0, 0)).toBe('E:0,0');
     expect(sectorOf(60001, 0, 0)).toBe('E:1,0');
     expect(sectorOf(-180001, 0, 300000)).toBe('E:-2,3');
     expect(sectorOf(0, 0, -66000 - 6000)).toBe('rickmorty');

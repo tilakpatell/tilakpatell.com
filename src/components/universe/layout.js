@@ -19,7 +19,7 @@
 
 import { MOONS, UNIVERSES, byId } from './universes';
 import { HOME_SPREAD, SPREAD } from './scale';
-import { parseSectorKey, sectorAt, sectorCentre, sectorKey } from '../../lib/space/address';
+import { SECTOR, parseSectorKey, sectorAt, sectorCentre, sectorKey } from '../../lib/space/address';
 
 const GOLDEN = Math.PI * (3 - Math.sqrt(5)); // ≈ 137.5°
 // (the first two by scale.js's SPREAD; the height stays as it was at the
@@ -42,15 +42,18 @@ export const RING = 140; // the stations' ring
 export const ORDER = UNIVERSES.map((u) => u.id);
 
 // The sectors: where each one's middle is, and how far out from it the ship
-// is turned back. Anything further than SECTOR_SPLIT down -z is the Rick and
-// Morty sector's (the main map's edge is 54,000 out, the sector's 6,000 round
-// its origin, 66,000 down: the line runs halfway between the two edges). The
-// sector keeps its own layout (it's a pocket universe reached by portal);
-// only its origin moved out with the main map's spread, keeping the 6,000
-// between the two edges.
+// is turned back. Both are written from the Expanse's sectors (lib/space/
+// address.js's SECTOR, 120,000): the main map's edge stays inside the middle
+// one, 59,000 out (9,000 to each of scale.js's SPREAD till the spread grew
+// past what fits, to eight), and the Rick and Morty sector sits just past it,
+// its 6,000 round its origin 66,000 down. Anything further than SECTOR_SPLIT
+// down -z is the Rick and Morty sector's (the line runs halfway between the
+// two edges). The sector keeps its own layout (it's a pocket universe
+// reached by portal).
+const POCKET = 6000;
 export const SECTORS = {
-  main: { id: 'main', origin: [0, 0, 0], edge: 9000 * SPREAD, name: 'Deep space' },
-  rickmorty: { id: 'rickmorty', origin: [0, 0, -66000], edge: 6000, name: 'The Central Finite Curve' },
+  main: { id: 'main', origin: [0, 0, 0], edge: SECTOR / 2 - 1000, name: 'Deep space' },
+  rickmorty: { id: 'rickmorty', origin: [0, 0, -(SECTOR / 2 + POCKET)], edge: POCKET, name: 'The Central Finite Curve' },
 };
 const SECTOR_SPLIT = (-SECTORS.main.edge + SECTORS.rickmorty.origin[2] + SECTORS.rickmorty.edge) / 2;
 // Past both edges is the Expanse (expanse/gen): a grid of generated sectors,
@@ -100,8 +103,9 @@ export const BELT = { inner: 130 * HOME_SPREAD, outer: 185 * HOME_SPREAD, height
 export const HOME_RADIUS = 230 * HOME_SPREAD;
 // the rim: a wide, thin ring of ice rocks right round the outside of the
 // map, out past every world and wonder and short of the edge (belt.js draws
-// it as a second belt; nothing's solid out there)
-export const RIM = { inner: 8000 * SPREAD, outer: 8600 * SPREAD, height: 60 };
+// it as a second belt; nothing's solid out there): 3,600 wide, as it was at
+// the spread to six, and 1,000 in from the edge
+export const RIM = { inner: SECTORS.main.edge - 4600, outer: SECTORS.main.edge - 1000, height: 60 };
 
 // how far a universe's moons, rings and orbiting things reach from its centre
 export const REACH = Object.fromEntries([...UNIVERSES, ...MOONS].map((u) => [u.id, u.size * (u.reach ?? (u.kind === 'core' ? 2.0 : 1.9))]));

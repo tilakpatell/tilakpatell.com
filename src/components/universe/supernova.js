@@ -29,8 +29,8 @@ export const SUPERNOVA_SITES = [
   [580, -45, 5860],
   [2850, 550, 3955],
   [-5120, 255, -750],
-  [7600, 300, 2400],
-  [-2600, -800, -7000],
+  [6680, 300, 2110], // (these two came in at the spread to eight, to where the rim starts, as they were at six: 7,600, 2,400 and −2,600, −7,000 put them past the edge)
+  [-2440, -800, -6560],
 ].map(([x, y, z]) => [x * SPREAD, y, z * SPREAD]);
 
 // the stages, in seconds from the start

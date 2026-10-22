@@ -126,8 +126,8 @@ describe('the home system against the ships (scale.js)', () => {
 });
 
 describe('the gaps between the places (scale.js’s SPREAD)', () => {
-  it('spreads the map six times, and universes.js writes the same number out', () => {
-    expect(SPREAD).toBe(6);
+  it('spreads the map eight times, and universes.js writes the same number out', () => {
+    expect(SPREAD).toBe(8);
     expect(SPREAD_WRITTEN).toBe(SPREAD);
   });
 });

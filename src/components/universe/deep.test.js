@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { DEEP, DEEP_SOLIDS, PLACES, STARS, WONDERS, beyondOf, binaryAt, moveBinaries, nearestPlace, nearestStar, openness, parseWonder, planetAt, reachOf, wonderById } from './deep';
 import { GOALS } from './ship';
-import { HOME_RADIUS, ORDER, POSITIONS, REACH, SECTORS, SECTOR_OF, inSector, sectorOf } from './layout';
+import { HOME_RADIUS, ORDER, POSITIONS, REACH, RIM, SECTORS, SECTOR_OF, inSector, sectorOf } from './layout';
 import { MOONS, byId } from './universes';
+import { SPREAD } from './scale';
 
 describe('deep space', () => {
   it('puts every wonder well out past the home system and inside the edge, within the ceiling', () => {
@@ -233,11 +234,11 @@ describe('deep space', () => {
 
 describe('deep space, spread (scale.js’s SPREAD)', () => {
   const main = WONDERS.filter((w) => !w.sector);
-  it('puts every main-sector wonder between 12,000 and 45,000 out', () => {
+  it('puts every main-sector wonder past the nearest fandom and inside the rim', () => {
     for (const w of main) {
       const r = Math.hypot(w.at[0], w.at[2]);
-      expect(r, w.id).toBeGreaterThan(12000);
-      expect(r, w.id).toBeLessThan(45000);
+      expect(r, w.id).toBeGreaterThan(2000 * SPREAD);
+      expect(r + reachOf(w), w.id).toBeLessThan(RIM.inner);
     }
   });
 
