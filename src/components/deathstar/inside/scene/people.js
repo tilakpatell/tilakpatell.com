@@ -67,7 +67,7 @@ import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js
 import { loadGltf } from '../../../../lib/three/gltf';
 import { CAST } from '../rules/cast';
 import { colliderFor } from './fall';
-import { PEOPLE, loadPerson, motionOf } from './figures';
+import { PEOPLE, loadGame, loadPerson, motionOf } from './figures';
 import { buildGun, disposeGuns } from './guns';
 import { FAR, LIVE, liveCount, lodPick } from '../../../../lib/three/lodPick';
 
@@ -510,13 +510,16 @@ export function createPeople(scene, kit, { tier = 'high', renderer = null, adopt
   // a loaded figure (the built ones are made at once, in follow)
   async function figureFor(kind) {
     const c = CAST[kind];
+    // (the game’s body first where the cast names its row, figures.js’s loadGame, a droid on its own rig drawn as the surfaces’ are; one in a helmet built here wears the game’s armour, undyed; the site’s model below if it won’t come)
+    const game = c?.game && !disposed ? await loadGame(c.game, { kind, tall: c.tall, tint: c.tint ?? null, dye: c.helmet ? null : (c.dye ?? null) }) : null;
+    if (game) return game.droid ? buildProp(kind, c.tall, game.droid) : game;
     // a model with no rig of the shared kind is one of the surfaces’ droids
     const g = c?.model && !PEOPLE[kind] ? await loadGltf(c.model, { renderer }) : null;
     if (g?.scene && !g.scene.getObjectByName('Hips')) {
       const copy = await loadGltf(c.model, { renderer, fresh: true });
       return buildProp(kind, c.tall, copy);
     }
-    const fig = await loadPerson(PEOPLE[kind] || !c ? kind : c.model, { tall: c?.tall, tint: c?.tint ?? null, dye: c?.dye ?? null, renderer });
+    const fig = await loadPerson(PEOPLE[kind] || !c ? kind : c.model, { tall: c?.tall, tint: c?.tint ?? null, dye: c?.dye ?? null, renderer, game: null });
     fig.object.name = `person-${kind}`;
     if (c?.helmet === 'dstrooper' && !disposed) helmetOn(fig, (helmetShape ??= helmetGeometry()), mats);
     return fig;
