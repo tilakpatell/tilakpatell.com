@@ -25,7 +25,8 @@ export { default as Cluster } from './Cluster.jsx'; // (named in full: ./cluster
 export { default as Vitals } from './Vitals';
 export { default as Arms } from './Arms';
 export { default as Powers } from './Powers';
-export { createFlightCluster, PIPS, vitalsPct } from './cluster.js';
+export { default as Abilities } from './Abilities';
+export { createAbilitiesWriter, createFlightCluster, PIPS, vitalsPct } from './cluster.js';
 export { default as Screen } from './Screen.jsx';
 export { default as ScreenCanvas } from './ScreenCanvas.jsx';
 export { screenKey } from './screenKey';

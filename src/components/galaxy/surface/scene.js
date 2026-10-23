@@ -75,6 +75,8 @@ import { audioContext } from '../../../lib/audio';
 import { SURFACE_MODELS } from './catalog';
 import { HALF, heightGrid, makeHeight } from './terrain';
 import { createRoam, roamGround, roamOn } from './roam';
+import { createJobs } from './jobPlay';
+import { jobsOn } from './jobs';
 import { laidOn, regionsAround, waysideAt } from './wayside';
 import { createMarks, groundBuild, groundGeometry, groundMaterial, groundMesh } from './ground';
 import { lavaFilm } from './lavaFilm';
@@ -112,7 +114,7 @@ import { createSaber, rootAt } from './saber';
 import { FORCE, forceAt, hitStop, pushVelocity } from './combatRules';
 import { createSaberSim, saberOf } from '../../../lib/combat/saber2017';
 import { incomingAt, met, swingingOf } from './duellists';
-import { heatShot, heatStep, spreadAt, vent, ventSpot, withMods } from './weaponRules';
+import { SHOT_FLOOR, heatShot, heatStep, spreadAt, vent, ventSpot, withMods } from './weaponRules';
 import { createHandArms } from './handArms';
 import { blastOf, throwOf as palmThrow } from '../../../lib/arms/behaviours';
 import { heroById, heroSpec, partyFor, refitOf, writeHero } from '../heroes';
@@ -181,7 +183,7 @@ const CAM = { dist: 4.8, up: 1.55, pitch: [-0.45, 1.15], far: 14, near: 2.2 };
 const REACH = 3.2; // metres: close enough to use something
 const ROLL_PIVOT = 0.55; // metres up from the feet: where a dodge's roll turns about (a tucked body's middle)
 const KEYS = { w: 'up', arrowup: 'up', s: 'down', arrowdown: 'down', a: 'left', arrowleft: 'left', d: 'right', arrowright: 'right', shift: 'run', z: 'crouch', ' ': 'jump', e: 'act', enter: 'act', f: 'fire', r: 'throw', c: 'block', x: 'dodge', g: 'power', v: 'second', b: 'emote', p: 'view' };
-const FIRE_EVERY = 0.24; // seconds between shots
+const FIRE_EVERY = SHOT_FLOOR; // seconds between shots (lib/arms/handRules.js's: the universe map's planets shoot on the same)
 // the mission kinds fought as a battle, on assaultScene.js's interface
 // (missions/assault.js, and Heroes vs Villains and Blast: hvv.js, blast.js)
 const BATTLES = new Set(['assault', 'hvv', 'blast']);
@@ -683,7 +685,9 @@ export async function create(canvas, ctx) {
   const _hips = new V();
   // (a quest mission's quest is the mission's own, not one of the world's)
   // (a quest keeps the enemies it was written with: the garrison dresses the world's people, not its fights)
-  const questOf = (id) => site.quests.find((q) => q.id === id) ?? (mission?.quest?.id === id ? mission.quest : null);
+  // (and free roam's work: jobPlay.js's board, made once you're down)
+  let jobs = null;
+  const questOf = (id) => site.quests.find((q) => q.id === id) ?? (mission?.quest?.id === id ? mission.quest : null) ?? jobs?.of(id) ?? null;
   // who gives each quest, with a mark over them till it's done
   const givers = [];
   const markMat = new THREE.SpriteMaterial({ map: (() => {
@@ -882,6 +886,9 @@ export async function create(canvas, ctx) {
   // (a mission on foot starts you at its start, facing its way)
   const onFoot = Boolean(mission && !mission.ride);
   const spawnAt = onFoot ? [...mission.start] : [landAt[0] + out.x * (shipBox.w + 2.5), landAt[1] + out.z * (shipBox.w + 2.5)];
+  // free roam's work (jobs.js): anywhere dry, in reach, clear of what's built and not too steep
+  const jobOk = (p) => standable(site, p) && Math.hypot(p[0] - landAt[0], p[1] - landAt[1]) < world.reach - 40 && world.normalAt(p[0], p[1])[1] > 0.85 && !world.solids.near(p[0], p[1], 6).some((o) => pushOut(o, p[0], p[1], 6));
+  jobs = createJobs({ site, on: jobsOn(site, mission), effects: ctx.effects, home: spawnAt, ok: jobOk, emit });
   const you = walker(spawnAt[0], spawnAt[1], groundAt(world, ...spawnAt), onFoot ? mission.yaw : site.land.yaw + 0.5);
   const mateAt = [spawnAt[0] + out.x * 1.6, spawnAt[1] + out.z * 1.6];
   const mate = walker(mateAt[0], mateAt[1], groundAt(world, ...mateAt), you.yaw);
@@ -1778,7 +1785,8 @@ export async function create(canvas, ctx) {
         effects(q.end);
         state.done.add(q.id);
         say(q.done);
-        emit({ type: 'questDone', id: q.id, achievement: q.achievement ?? null });
+        emit({ type: 'questDone', id: q.id, achievement: q.achievement ?? null, ...(q.job ? { job: q.job, pay: q.pay, name: q.name, reward: q.reward } : {}) });
+        jobs.done(q, [me().st.x, me().st.z]);
         cheer(); // (the two of you, glad of it)
         if (q === mission?.quest) endMission('won');
       }
@@ -3455,6 +3463,7 @@ export async function create(canvas, ctx) {
       follow(dt);
       firstPerson();
       if (state.phase === 'walk' || state.phase === 'ride') {
+        if (!state.zone) jobs.ready([me().st.x, me().st.z]); // (outdoors: a room's floor is somewhere else)
         const tg = target();
         state.tg = tg;
         const text = tg?.text ?? null;
@@ -4070,6 +4079,8 @@ export async function create(canvas, ctx) {
         if (!q || state.done.has(id)) return;
         state.tracked = id;
         if (!q.giver && !q.place && !state.quest) beginQuest(q);
+        // (a speeder run taken on the speeder: already on it)
+        if (state.quest?.id === id && state.riding) questEvent({ type: 'mount', kind: state.riding.kind });
       },
       // a side for the battle, and onto the field at one of its posts
       side: chooseSide,
@@ -4183,6 +4194,8 @@ export async function create(canvas, ctx) {
         else if (step?.type === 'reach') questEvent({ type: 'at', x: step.at[0], z: step.at[1], riding: state.riding?.kind ?? null });
         else if (step?.type === 'enter') questEvent({ type: 'enter', zone: step.zone });
         else if (step?.type === 'shoot') activity.kill(step.tag);
+        else if (step?.type === 'collect') for (let i = state.quest.count; i < step.n; i++) questEvent({ type: 'pickup', item: step.item });
+        else if (step?.type === 'ride') questEvent({ type: 'mount', kind: step.kind });
         ctx.invalidate();
         return state.quest;
       }

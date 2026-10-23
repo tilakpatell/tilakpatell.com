@@ -48,12 +48,14 @@ export const FOOT = {
   heal: 9, // health a second, once out of trouble a while
 };
 
-// the skill tree's ground branch on foot (hangar/skills's fx): a tenth more
+// the skill tree's ground branch on foot (hangar/skills's fx), as the
+// galaxy's worlds take it (galaxy/perks.js's groundSkills): a tenth more
 // health is a tenth less from each hit (the bar stays FOOT.health's), the
-// medic on the heal a second, and the hard hitter on your own shots at the
-// troops (there are no other pilots' on foot to hit)
+// medic on the heal a second, the hard hitter on your own shots at the
+// troops (there are no other pilots' on foot to hit), and coolant and
+// steady hands on the gun (footArms.js's footWeapon)
 const factor = (v) => (Number.isFinite(v) && v > 0 ? v : 1);
-export const footSkills = (fx) => ({ hurt: 1 / factor(fx?.health), heal: FOOT.heal * factor(fx?.heal), damage: factor(fx?.damage) });
+export const footSkills = (fx) => ({ hurt: 1 / factor(fx?.health), heal: FOOT.heal * factor(fx?.heal), damage: factor(fx?.damage), heat: factor(fx?.heat), cool: factor(fx?.cool), spread: factor(fx?.spread) });
 
 // who comes after a crew on the ground: the Federation's troops (which
 // side's come is sides.js's `squads`)
@@ -355,6 +357,7 @@ export function march(troops, targets, dt, R, rand, obstacles = []) {
   const calls = [];
   const out = troops.map((t) => {
     if (!t.alive) return { ...t, dead: t.dead + dt };
+    if (t.shove?.left > 0) return shoved(t, dt, R);
     const spec = TROOPS[t.kind];
     let best = null;
     let bd = Infinity;
@@ -410,6 +413,24 @@ export function march(troops, targets, dt, R, rand, obstacles = []) {
     return { ...next, cool: Math.max(cool, -0.5), swing: t.swing, aim };
   });
   return { troops: out, shots, hits, calls };
+}
+
+// shoved (an ability's: a push, a repulse, a blast; universe/footAbilities.js's
+// shoveOf): carried along the ground the way it went, slowing to nothing over
+// the shove's time, off its feet by its own lift (vh), and neither aiming nor
+// firing till it's down again
+function shoved(t, dt, R) {
+  const s = t.shove;
+  const d = s.speed * (s.left / s.total) * dt;
+  const moved = offset(t, dot(s.dir, t.f) * d, dot(s.dir, rightOf(t)) * d, R);
+  let vh = (t.vh ?? 0) - FOOT.gravity * dt;
+  let h = (t.h ?? 0) + vh * dt;
+  if (h <= 0) {
+    h = 0;
+    vh = 0;
+  }
+  const left = s.left - dt;
+  return { ...t, n: moved.n, f: moved.f, h, vh, speed: 0, side: 0, aim: 0, cool: Math.max(t.cool, 0.4), shove: left > 0 ? { ...s, left } : null };
 }
 
 // ── Bolts ──

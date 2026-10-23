@@ -98,6 +98,24 @@ describe('footFigures, the crews’ figures without the ground', () => {
     for (const spec of [...figures.PARTY.falcon, ...figures.PARTY.xwing]) expect(spec.src.url ?? '', spec.id).not.toMatch(/\/models\/(cockpit|galaxy\/crew|galaxy\/troops)\//);
   });
 
+  it('stands a rigged figure on its soles, not the toes’ joint a few centimetres up inside the foot', () => {
+    const rig = (below) => {
+      const r = meshyRig();
+      r.model.add(new THREE.Mesh(new THREE.BoxGeometry(0.5, 1.8 + below, 0.3).translate(0, (1.8 + below) / 2 - below, 0), new THREE.MeshStandardMaterial()));
+      return r;
+    };
+    // (the soles 3 cm under the toes' joint: on the ground now, where they were 3 cm under it)
+    const shod = figures.rigged(rig(0.03).model, {}, 1.8, [], { library: false });
+    shod.model.updateMatrixWorld(true);
+    expect(new THREE.Box3().setFromObject(shod.model).min.y).toBeCloseTo(0, 4);
+    // (something hanging well below the feet: stood on the toes' joint, as before)
+    const hung = figures.rigged(rig(0.5).model, {}, 1.8, [], { library: false });
+    hung.model.updateMatrixWorld(true);
+    expect(new THREE.Box3().setFromObject(hung.model).min.y).toBeLessThan(-0.3 * METRE);
+    shod.dispose?.();
+    hung.dispose?.();
+  });
+
   it('builds a person from shapes the height asked, standing on the ground', () => {
     const fig = figures.built({ id: 'han', tall: 1.85, src: { built: 'han' } });
     fig.update(1 / 60, 0);

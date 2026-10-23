@@ -402,6 +402,7 @@
 }
 .surface-quest-open kbd { margin-right: 0.3rem; color: var(--accent); font: 600 0.72rem ui-monospace, monospace; }
 .surface-quest-open:hover { border-color: var(--accent); }
+.surface-quest-row { display: flex; flex-wrap: wrap; gap: 0.4rem; }
 .surface-list {
   position: absolute;
   z-index: 3;
@@ -436,21 +437,9 @@
 .surface-list b { font-size: 0.9rem; }
 .surface-list span { font-size: 0.78rem; line-height: 1.4; color: rgba(242, 239, 232, 0.75); }
 .surface-list li[data-done] b::after { content: ' ✓'; color: var(--accent); }
+.surface-list-sub { margin: 0.9rem 0 0.5rem; }
+.surface-list-pay { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.08em; color: #ffd36a; font-variant-numeric: tabular-nums; }
 
-/* health, when you've been hit */
-.surface-health {
-  position: absolute;
-  z-index: 2;
-  left: 50%;
-  bottom: calc(64px + env(safe-area-inset-bottom, 0px));
-  width: min(240px, 50vw);
-  height: 6px;
-  transform: translateX(-50%);
-  border-radius: 3px;
-  background: rgba(0, 0, 0, 0.5);
-  overflow: hidden;
-}
-.surface-health span { display: block; height: 100%; background: linear-gradient(90deg, #ff4a3d, #ffd36a); transition: width 0.2s; }
 
 /* the crosshair, while you're shooting */
 /* the look's prompt (the kit's Prompt, runtime/look.js): under the action prompt, a click on it locks too */
@@ -903,55 +892,35 @@
 .surface-buttons-saber { grid-template-columns: repeat(3, 60px); }
 .surface-buttons-saber .surface-btn { width: 60px; height: 60px; }
 
-/* the fight (the scene's 'combat' event): the guard or the heat, the abilities, the lock */
-.surface-combat {
-  position: absolute;
-  z-index: 2;
-  left: 50%;
-  bottom: calc(80px + env(safe-area-inset-bottom, 0px));
-  width: min(300px, 60vw);
-  transform: translateX(-50%);
-  display: grid;
-  gap: 6px;
-  pointer-events: none;
-  font-size: var(--hud-min);
-}
-.surface-lock { margin: 0 0 2px; display: grid; gap: 3px; justify-items: center; }
+/* the fight (the scene's 'combat' event): the kit's cluster on foot (runtime/
+   hud: your health, the gun and its heat), as the universe map's planets have
+   it, in the galaxy's skin, with the guard and the abilities in its row and
+   the lock over it. Above the action prompt and the look's, which keep the
+   bottom (--hud-pad-b, the kit's token for what's under the row: the
+   prompt's 96px and its line) */
+.surface-cluster { --hud-pad-b: calc(136px + env(safe-area-inset-bottom, 0px)); --hud-cluster-line: color-mix(in srgb, var(--accent) 40%, transparent); --hud-vitals-fill: linear-gradient(90deg, #ff4a3d, #ffd36a); --hud-vitals-glow: rgb(255 120 80 / 0.5); }
+.surface-lock { margin: 0 0 2px; display: grid; gap: 3px; justify-items: center; font-size: var(--hud-min); }
 .surface-lock-name { font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #fff; text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8); }
 .surface-lock-bar { position: relative; display: block; width: 60%; height: 5px; border-radius: 3px; background: rgba(0, 0, 0, 0.55); overflow: hidden; }
 .surface-lock-bar span { display: block; height: 100%; background: #ff4a3d; transition: width 0.15s; }
 .surface-lock-bar i { position: absolute; left: 0; top: 0; height: 2px; background: #7fd0ff; }
-.surface-meter { position: relative; height: 8px; border-radius: 4px; background: rgba(0, 0, 0, 0.55); overflow: visible; }
+.surface-meter { position: relative; display: block; height: 8px; border-radius: 4px; background: rgba(0, 0, 0, 0.55); overflow: visible; }
 .surface-meter > span { display: block; height: 100%; border-radius: 4px; transition: width 0.12s; }
-.surface-meter b { position: absolute; left: 50%; top: 10px; transform: translateX(-50%); white-space: nowrap; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(255, 255, 255, 0.85); text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8); }
 .surface-guard > span { background: linear-gradient(90deg, #7fd0ff, #cfe6ff); }
-.surface-guard.is-broken > span { background: #ff4a3d; }
-.surface-guard.is-broken b { color: #ff8a7a; animation: surface-blink 0.4s steps(2) infinite; }
-.surface-heat > span { background: linear-gradient(90deg, #ffd36a, #ff6a3d, #ff3b30); }
-.surface-heat.is-locked > span { background: #ff3b30; animation: surface-blink 0.5s steps(2) infinite; }
-.surface-heat.is-hot > span { background: linear-gradient(90deg, #fff, #cfe6ff); }
-.surface-vent { position: absolute; top: -4px; width: 2px; height: 16px; margin-left: -1px; background: #fff; box-shadow: 0 0 6px #fff; }
-.surface-vent-sweet { position: absolute; top: 0; left: 35%; width: 20%; height: 100%; border-radius: 4px; background: rgba(127, 208, 255, 0.55); }
-@keyframes surface-blink { to { opacity: 0.35; } }
-.surface-powers { margin: 14px 0 0; padding: 0; list-style: none; display: flex; justify-content: center; gap: 8px; }
-.surface-power {
-  position: relative;
-  display: grid;
-  justify-items: center;
-  gap: 1px;
-  min-width: 56px;
-  padding: 4px 6px;
-  border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.28);
-  background: rgba(6, 8, 14, 0.55);
-  color: #fff;
-  overflow: hidden;
+.surface-meter-block { min-width: 150px; }
+/* (the guard and the abilities: in the cluster's row on a desktop; on a touch
+   screen, where the kit's row lets its blocks go to their own places, the
+   two together bottom centre, over the thumbs' buttons, and the lock up top) */
+.surface-fight { display: contents; }
+@media (pointer: coarse), (max-width: 767px) {
+  .surface-fight { position: absolute; left: 50%; bottom: calc(80px + env(safe-area-inset-bottom, 0px)); display: grid; gap: 6px; justify-items: center; transform: translateX(-50%); }
+  .surface-cluster .surface-lock { position: absolute; left: 50%; top: calc(var(--nav-h, 64px) + 56px); width: min(300px, 70vw); transform: translateX(-50%); }
 }
-.surface-power kbd { font: inherit; font-weight: 700; font-size: 0.72rem; color: var(--accent); }
-.surface-power span { font-size: var(--hud-min); letter-spacing: 0.06em; text-transform: uppercase; opacity: 0.85; }
-.surface-power small { position: absolute; right: 4px; top: 2px; font-size: var(--hud-min); opacity: 0.8; }
-.surface-power.is-cooling { color: rgba(255, 255, 255, 0.55); }
-.surface-power.is-cooling::after { content: ''; position: absolute; inset: 0; background: rgba(0, 0, 0, 0.55); transform-origin: bottom; transform: scaleY(var(--k, 0)); transition: transform 0.1s linear; }
+.surface-meter-block.is-broken .hud-label { color: #ff8a7a; animation: surface-blink 0.4s steps(2) infinite; }
+.surface-meter-block.is-broken .surface-guard > span { background: #ff4a3d; }
+@keyframes surface-blink { to { opacity: 0.35; } }
+/* the abilities' tiles are the kit's (Abilities.jsx), in the galaxy's ink */
+.surface-cluster .hud-ability .hud-cap { color: var(--accent); }
 /* the hit marker: the game's own four ticks (HitMarker.jsx, lib/bf2017/ui/shapes.js), a flash that fades; a kill its longer bars in the warning colour */
 .surface-hitmark { position: absolute; z-index: 2; left: 50%; top: 50%; width: 32px; height: 32px; margin: -16px 0 0 -16px; pointer-events: none; color: #fff; filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.6)); animation: surface-hitmark 0.26s ease-out forwards; }
 .surface-hitmark svg { display: block; width: 100%; height: 100%; }
@@ -976,7 +945,6 @@
 @keyframes surface-parry { 0% { opacity: 0; transform: translate(-50%, 10px) scale(0.8); } 15% { opacity: 1; transform: translate(-50%, 0) scale(1.05); } 100% { opacity: 0; transform: translate(-50%, -14px) scale(1); } }
 .surface-hurt { position: absolute; z-index: 1; inset: 0; pointer-events: none; background: radial-gradient(ellipse at center, transparent 55%, rgba(255, 40, 30, 0.45) 100%); animation: surface-hurt 0.45s ease-out forwards; }
 @keyframes surface-hurt { from { opacity: 1; } to { opacity: 0; } }
-.surface-health:has(+ .surface-combat) { bottom: calc(154px + env(safe-area-inset-bottom, 0px)); }
 .surface-buttons-saber { grid-template-columns: repeat(3, 58px); }
 .surface-buttons-saber .surface-btn, .surface-buttons-gun .surface-btn { width: 58px; height: 58px; font-size: 0.7rem; }
 .surface-buttons-gun { grid-template-columns: repeat(3, 58px); }
@@ -1072,14 +1040,14 @@
   height: 0.9em;
   vertical-align: -0.1em;
 }
-.surface-power .surface-game-icon {
+.surface-cluster .hud-ability .surface-game-icon {
   width: 1.4em;
   height: 1.4em;
   margin: 0;
 }
 /* the ability buttons in the game's own HUD faces (src/lib/bf2017/fonts.css):
    Univers Condensed for their words, RaxusPrime for the cooldown's seconds */
-.surface-power span { font-family: var(--font-bf-hud, inherit); letter-spacing: 0.08em; }
-.surface-power small { font-family: var(--font-bf-numerals, inherit); font-variant-numeric: tabular-nums; }
+.surface-cluster .hud-ability-name { font-family: var(--font-bf-hud, inherit); letter-spacing: 0.08em; }
+.surface-cluster .hud-ability-left { font-family: var(--font-bf-numerals, inherit); font-variant-numeric: tabular-nums; }
 /* the hero on the game's hero-select stage, in the Outfit tab (HeroStage.jsx) */
 .surface-hero-stage { display: block; width: 100%; aspect-ratio: 4 / 3; max-height: 42vh; margin: 0 0 0.6rem; border-radius: 8px; background: #05070c; touch-action: pan-y; cursor: grab; }

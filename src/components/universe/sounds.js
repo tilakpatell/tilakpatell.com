@@ -608,6 +608,37 @@ export function boomSound(big = false) {
   tones([[big ? 55 : 75, 0, big ? 0.7 : 0.35]], { type: 'sine', gain: big ? 0.3 : 0.2 });
 }
 
+// ── the crew's abilities on foot (footAbilityPlay.js) ──
+// Each kind's own as it's used: the Force's rush of air, a charge's toss, a
+// rising chime for an overcharge, a quick breath of wind for a sprint, a soft
+// chime for a heal; the hop is the portal's own (portalSound). A charge
+// going off is boomSound's.
+export function abilitySound(kind) {
+  if (kind === 'hop') return portalSound();
+  if (kind === 'push' || kind === 'repulse') {
+    whoosh(0.55, 1400, 160, 0.22);
+    tones([[70, 0, 0.28]], { type: 'sine', gain: 0.14 });
+  } else if (kind === 'detonator' || kind === 'fulminate') tones([[420, 0, 0.06], [300, 0.05, 0.08]], { type: 'triangle', gain: 0.05 });
+  else if (kind === 'overcharge')
+    tones(
+      [
+        [440, 0, 0.1],
+        [660, 0.08, 0.1],
+        [880, 0.16, 0.24],
+      ],
+      { type: 'sawtooth', gain: 0.035 },
+    );
+  else if (kind === 'sprint') whoosh(0.35, 600, 2200, 0.12);
+  else if (kind === 'medpack')
+    tones(
+      [
+        [784, 0, 0.14],
+        [1046, 0.12, 0.3],
+      ],
+      { type: 'sine', gain: 0.05 },
+    );
+}
+
 // ── the ships' powers (shipPowers.js) ──
 // Each power's own sound as it goes on, and the moments in it (a torpedo
 // away, a shot from Chewie's turret, the crystal going off); the big one

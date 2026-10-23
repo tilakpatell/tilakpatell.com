@@ -23,6 +23,9 @@ import { portalAt } from './timing';
 // vortex drawn in its palette. Where WebGL won't start, a plain green portal
 // on a 2D canvas does the same moves. `sound` plays the portal gun (only
 // from something the visitor clicked or pressed: browsers block audio before).
+// `from` (ms) starts it partway: the universe map's ship flown into a portal
+// it drew in 3D goes in where the goo fills the view, the gun's shot softer
+// (it was fired already).
 
 const FRAG = `
 precision highp float;
@@ -138,7 +141,7 @@ function fallback(ctx, t, clock, { W, H }, u) {
   }
 }
 
-export default function PortalJump({ onPeak, onDone, sound = false }) {
+export default function PortalJump({ onPeak, onDone, sound = false, from = 0 }) {
   const seed = useMemo(() => Math.random() * 10, []);
   const uniforms = useMemo(() => (t, clock, view) => ({ ...portalAt(t, view), seed }), [seed]);
 
@@ -153,8 +156,8 @@ export default function PortalJump({ onPeak, onDone, sound = false }) {
         if (!alive) c?.stop();
         else if (c) shots.push(c);
       });
-    fire(1);
-    const again = setTimeout(() => fire(0.45), T.tunnel);
+    fire(from > 0 ? 0.7 : 1);
+    const again = setTimeout(() => fire(0.45), Math.max(0, T.tunnel - from));
     return () => {
       alive = false;
       clearTimeout(again);
@@ -163,7 +166,7 @@ export default function PortalJump({ onPeak, onDone, sound = false }) {
         if (audioContext()?.state !== 'running') shots.forEach((c) => c.stop());
       });
     };
-  }, [sound]);
+  }, [sound, from]);
 
-  return <JumpCanvas frag={FRAG} uniforms={uniforms} fallback={fallback} onPeak={onPeak} onDone={onDone} />;
+  return <JumpCanvas frag={FRAG} uniforms={uniforms} fallback={fallback} onPeak={onPeak} onDone={onDone} from={from} />;
 }

@@ -9,6 +9,11 @@
 // facing it.
 //
 // GUN → its numbers (map units, seconds)
+// CROSS → a Rick portal flown into (the gun's, or a sector's), as the page
+//   plays it: his portal jump over the map (jumps/PortalJump.jsx) from `from`
+//   ms along its timeline, where the goo fills the view (the scene drew the
+//   portal opening and the flight in), and the ship out the far side under
+//   its flash; `most` seconds on, out whatever the page says
 // gunSpot(ship) → { at: [x, y, z], normal }: where it opens and which way it faces
 // gunOpen(age, shut?) → 0…1, how open it is `age` seconds after the shot
 //   (shut: the age it was told to close at, the ship through)
@@ -39,6 +44,9 @@ export const GUN = {
   catch: 1.3, // how far out of its rim a ship still goes in (a forgiving aim), in radii
   shown: 5, // how far out from the world it shows you a portal into the Curve puts you, in its radii
 };
+
+// (from: the jump's portal as tall as the screen and closing in, 0.29 s short of its flash: jumps/timing.js's portalAt)
+export const CROSS = { from: 880, most: 2.5 };
 
 const clamp01 = (v) => Math.max(0, Math.min(1, v));
 

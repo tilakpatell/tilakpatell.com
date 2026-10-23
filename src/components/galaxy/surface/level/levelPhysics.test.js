@@ -128,6 +128,30 @@ describe('createLevelPhysics', () => {
     expect(bodies()).toBe(0);
   });
 
+  it('keeps ground under you where the stream brought no cell, and gives it up to the cell when it comes', async () => {
+    // (a pack places pieces in some cells only: the rest, and any not yet
+    // loaded, had no ground at all, and the body fell through what's drawn)
+    const lp = createLevelPhysics({ physics, pack, loadBin, cellSize: 8, terrainCell: 4 });
+    lp.setTerrain(() => 3);
+    expect(down(20, 20)).toBeNull();
+    lp.update(4, [20, 20]);
+    expect(down(20, 20)).toBeCloseTo(3, 4);
+    expect(down(12, 28)).toBeCloseTo(3, 4); // (and round it, a cell either side)
+    expect(lp.stats().bare).toBe(9);
+    // the cell itself comes: its own ground, the bare one gone (one floor, not two)
+    const before = bodies();
+    await lp.addCell('2,2', []);
+    expect(lp.stats().bare).toBe(8);
+    expect(bodies()).toBe(before);
+    expect(down(20, 20)).toBeCloseTo(3, 4);
+    // far off: the bare cells behind you go
+    lp.update(4, [200, 200]);
+    expect(lp.stats().bare).toBe(9);
+    expect(down(12, 28)).toBeNull();
+    lp.dispose();
+    expect(bodies()).toBe(0);
+  });
+
   it('adds nothing for a cell that arrives after dispose', async () => {
     const lp = createLevelPhysics({ physics, pack, loadBin });
     const late = lp.addCell('0,0', [at(0, 0, 0)]);

@@ -1,30 +1,42 @@
 // What the universe map's flight cluster shows (the HUD kit's: runtime/hud/
 // cluster.js writes it), worked out each frame from the scene's state. In a
 // ship: up while you fly (not over the nav map, the shipyard, a crash or a
-// dive into a world), the shields, and the arms once the guns are first
-// used (the first minute has enough on it). On foot: your health, while
-// there's trouble about or you're hurt, and no arms (the foot's gun is its
-// own). Pure, and it fills the record it's handed, so a frame makes nothing.
+// dive into a world), the shields and the line picked, from the start, as
+// the galaxy's has them. On foot: your health and the
+// gun in your hand, its heat with it (footArms.js's, the galaxy's worlds'
+// rules), and your crew member's two abilities (footAbilities.js), while
+// there's trouble about, you're hurt, the gun's warm or an ability's cooling
+// or on. Pure, and it fills the record it's handed, so a frame makes nothing.
 //
-// clusterView({ flying, onFoot, view, crash, dive, frozen, armed, shield (0–100),
-//   footInfo: { health (0–1), troops } | null, armory }, out?) → out: { on, vitals: { value, max, low }, arms }
+// clusterView({ flying, onFoot, view, crash, dive, frozen, shield (0–100),
+//   footInfo: { health (0–1), troops, hand: { name, value, locked, vent } | null, abilities: [tile] | null } | null, armory }, out?) → out: { on, vitals: { value, max, low }, arms, abilities }
 
 import { armsView } from './weapons';
 
 const LOW = 35; // (shields or health under this, in a hundred: the bar goes red)
 
-const fresh = () => ({ on: false, vitals: { value: 100, max: 100, low: false }, arms: null, armsOut: undefined });
+const fresh = () => ({ on: false, vitals: { value: 100, max: 100, low: false }, arms: null, abilities: null, armsOut: undefined, handOut: { name: '', line: 'hand', heat: 0, locked: false, vent: null } });
+const busy = (list) => Boolean(list?.some((a) => a.on || (!a.held && a.left > 0.05)));
 
 export function clusterView(s, out = fresh()) {
   const foot = s.onFoot ? s.footInfo : null;
   if (foot) {
-    out.on = Boolean(foot.troops?.length || foot.health < 0.995) && !s.frozen;
+    const hand = foot.hand ?? null;
+    out.on = Boolean(foot.troops?.length || foot.health < 0.995 || (hand && (hand.value > 0.02 || hand.locked)) || busy(foot.abilities)) && !s.frozen;
+    out.abilities = foot.abilities ?? null;
     out.vitals.value = foot.health * 100;
-    out.arms = null;
+    if (hand) {
+      out.handOut.name = hand.name;
+      out.handOut.heat = hand.value;
+      out.handOut.locked = hand.locked;
+      out.handOut.vent = hand.vent;
+    }
+    out.arms = hand ? out.handOut : null;
   } else {
     out.on = Boolean(s.flying && !s.onFoot && s.view !== 'map' && !s.crash && !s.dive && !s.frozen);
     out.vitals.value = s.shield;
-    out.arms = s.armed && s.armory ? (out.armsOut = armsView(s.armory, out.armsOut)) : null;
+    out.abilities = null;
+    out.arms = s.armory ? (out.armsOut = armsView(s.armory, out.armsOut)) : null;
   }
   out.vitals.max = 100;
   out.vitals.low = out.vitals.value < LOW;

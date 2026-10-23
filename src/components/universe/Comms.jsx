@@ -6,7 +6,7 @@ import { useMouth } from '../../lib/mouth';
 import { preloadVoiced, voiceOf, voicedSrc } from '../../lib/voiced';
 import { retold } from './callers';
 import { shipSound } from './uniqueSounds';
-import { alarmSound, arrivalSound, boomSound, boostSound, bumpSound, crashSound, drySound, enemyFireSound, fallSound, fireSound, flareSound, flybySound, gadgetSound, gunSound, hitSound, impactSound, interdictSound, jumpSound, launchSound, popSound, portalSound, powerSound, respawnSound, riftSound, shieldSound, speak, switchSound } from './sounds';
+import { abilitySound, alarmSound, arrivalSound, boomSound, boostSound, bumpSound, crashSound, drySound, enemyFireSound, fallSound, fireSound, flareSound, flybySound, gadgetSound, gunSound, hitSound, impactSound, interdictSound, jumpSound, launchSound, popSound, portalSound, powerSound, respawnSound, riftSound, shieldSound, speak, switchSound } from './sounds';
 import Face from './Faces';
 import { WEAPONS } from './weaponTable';
 import { thud } from '../../lib/sfx';
@@ -282,6 +282,11 @@ export default function Comms({ crew, reduced, control }) {
             if (soundOnce('hit', 120, now)) hitSound();
             if (often('hit', now)) say(linesFor(crew, 'foot', 'hurt'));
           } else if (e.id === 'swap') say(linesFor(crew, 'foot', 'swap', e.who), { urgent: true });
+          else if (e.id === 'locked') {
+            if (soundOnce('locked', 300, now)) switchSound(); // (too hot to fire: a click, till it's vented or cools)
+          } else if (e.id === 'ability') abilitySound(e.kind); // (G or V: the crew member's own, footAbilityPlay.js)
+          else if (e.id === 'boom') boomSound(e.near > 0.6); // (a thrown charge going off)
+          else if (e.id === 'vent') switchSound();
           else if (e.id === 'far' || e.id === 'nowhere') {
             if (often('edge', now)) say(linesFor(crew, 'foot', e.id));
           } else if (e.id !== 'off') say(linesFor(crew, 'foot', e.id, e.who), { urgent: e.id === 'squad' || e.id === 'down' || e.id === 'alt' });

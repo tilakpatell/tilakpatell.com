@@ -3,7 +3,7 @@ import book from '../../../data/bf2017/physics/soldier.json';
 import { createPhysics } from '../../../lib/physics/world';
 import { GRAVITY } from '../../../lib/physics/soldier';
 import { createPlayerBody, walkIntent } from './playerBody';
-import { walker } from './walker';
+import { WALK, walker } from './walker';
 
 const row = book.rows[book.default];
 const STEP = 1 / 60;
@@ -148,6 +148,42 @@ describe('createPlayerBody', () => {
     }
     expect(lowest).toBeGreaterThan(-4); // (it trips at 10 m/s: about 3.2 m down)
     expect(st.y).toBeGreaterThan(-4);
+    body.dispose();
+    p.dispose();
+  });
+
+  it('wades no deeper than the knees where the water is deep, as the walker does, and takes the floor with it', async () => {
+    // (a lake bed 3 m down under water at 0: the walker holds you at WALK.wade under the top; the body did not)
+    const p = await createPhysics({ gravity: -GRAVITY });
+    p.add({ type: 'fixed', position: [0, -3.5, 0], group: 'floor', colliders: [{ shape: 'cuboid', args: [50, 0.5, 50] }] });
+    const lake = { ...flat, heightAt: () => -3, water: 0 };
+    const st = walker(0, 0, -0.5, 0);
+    const body = createPlayerBody({ physics: p, state: st, row, world: lake });
+    run(body, still, 1);
+    expect(st.y).toBeCloseTo(-WALK.wade, 1);
+    expect(st.wading).toBeGreaterThan(0.9);
+    run(body, forward(), 0.5);
+    expect(st.y).toBeCloseTo(-WALK.wade, 1);
+    const before = p.world.bodies.len();
+    body.dispose();
+    expect(p.world.bodies.len()).toBe(before - 2); // (the body and its wading floor)
+    p.dispose();
+  });
+
+  it('walks a push of a step or two over the ground (a roll, the crowd), up onto what’s there, not into it', async () => {
+    const p = await level();
+    const st = walker(0, 1, 0, 0);
+    const body = createPlayerBody({ physics: p, state: st, row, world: flat });
+    run(body, still, 0.3);
+    // (pushed on, five centimetres a frame, onto the 0.4 m step at z 2)
+    for (let i = 0; i < 60; i++) {
+      st.z += 0.05;
+      body.step(still, STEP);
+    }
+    run(body, still, 0.3);
+    expect(st.z).toBeGreaterThan(3.5);
+    expect(st.y).toBeCloseTo(0.4, 1);
+    expect(Math.hypot(st.vx, st.vz)).toBeLessThan(0.5); // (the push gone with it: no slide on)
     body.dispose();
     p.dispose();
   });

@@ -13,11 +13,11 @@ import * as arms from './arms';
 const FACE = [
   [models, ['FIGURES', 'GALAXY_KINDS', 'GROUPS', 'PROPS', 'SURFACE_MODELS', 'buildFigure', 'buildGalaxyShip', 'clusterSpecs', 'createKit', 'createPlacer', 'farCut', 'isGame', 'loadModel', 'lodUrlFor', 'modelUrlFor', 'usesModel', 'wantsLod']],
   [ground, ['SITES', 'makeHeight', 'siteOf']],
-  [fight, ['sensesFor', 'startBurst', 'stepBurst', 'strafeStep']],
+  [fight, ['ABILITIES', 'JET', 'abilitiesOf', 'forceOf', 'hitOf', 'jetStep', 'newJet', 'sensesFor', 'startBurst', 'stepBurst', 'strafeStep']],
   [weather, ['createWeather', 'strikeAt']],
   [level, ['createLevelLoader', 'createLevelPhysics', 'createLevelScene', 'createLevelStream', 'imageLayerOf', 'instancesOf', 'packBytes', 'packUrl', 'tierTexture', 'wantsEngine', 'wanted']],
   [stage, ['HeroStage', 'stageFor']],
-  [fx, ['LASER', 'createBolts', 'createFlashes']],
+  [fx, ['LASER', 'createBolts', 'createFlashes', 'createHandArms']],
   [arms, ['HAND_WEAPONS', 'HERO_KEY', 'HILTS', 'PICKABLE', 'SABER_COLORS', 'heroById', 'pickableWith', 'readCrewStyle', 'skinsOf']],
 ];
 

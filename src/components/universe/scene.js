@@ -114,7 +114,7 @@ import { MODEL_PLANETS, buildPlanet, loadModel, loadModels, loadTextures } from 
 import { createLazy, standIn, wanted as nearEnough } from './nearby';
 import { loadSteps } from './loadSteps';
 import { buildSun } from './sun';
-import { MAP_LENS, aberrationFor, createPost, spaceEnvironment } from './post';
+import { MAP_LENS, aberrationFor, createPost, createSpaceEnvironment } from './post';
 import { fromVideo } from '../../lib/videoLook';
 import { grainFor } from '../../lib/three/noise';
 import { createFlare, flareWeight, occluded } from '../../lib/three/flare';
@@ -148,7 +148,7 @@ import { createLandmarks } from './landmarks';
 import { aimFrom, aimTargets, jumpPhase, nameShows } from './aim';
 import { aligned, steerToward } from '../galaxy/space';
 import { createSectorPortals } from './sectorPortals';
-import { GUN, gunHit, gunTransit } from './gunPortal';
+import { CROSS, GUN, gunHit, gunTransit } from './gunPortal';
 import { createGunPortal } from './gunPortalFx';
 import { createCurve } from './curve';
 import { createSectorFleet } from './sectorFleetView';
@@ -199,7 +199,7 @@ import { GUARD, STALE_MS } from './online/protocol';
 import { isMate } from './online/mates';
 import { createLook } from '../../runtime/look';
 import { reticleState } from '../../runtime/hud/reticle';
-import { createFlightCluster } from '../../runtime/hud/cluster.js';
+import { createAbilitiesWriter, createFlightCluster } from '../../runtime/hud/cluster.js';
 import { clusterView } from './clusterView';
 import { createRounds } from './rounds';
 import { createGalaxyPowers } from './powers';
@@ -647,7 +647,8 @@ export async function create(canvas, ctx) {
   const T = await loadTextures({ small, onStep: steps.maps });
 
   // what metal reflects, and the passes after the scene (post.js)
-  let env = spaceEnvironment(renderer, T['sky-glow']);
+  const envMaker = createSpaceEnvironment(renderer, T['sky-glow']);
+  let env = envMaker.make();
   scene.environment = env.texture;
   // (drawn at the most the runtime's quality gives, module.js's 2 at most:
   // the budget's least and the visitor's render resolution over a canvas of
@@ -1171,7 +1172,6 @@ export async function create(canvas, ctx) {
 
   const size = { w: 1, h: 1 };
   const state = {
-    armed: false, // the guns used at least once (the readout waits for it)
     through: null, // a gate flown into (galaxy/gateway.js): the page's taking you through
     yaw: 0,
     vel: 0, // radians per ms, after a flick
@@ -2339,7 +2339,8 @@ export async function create(canvas, ctx) {
   // the skill tree's four ship weapons (uniqueArms.js): fired as the guns are, played out beside the powers
   const unique = createUniqueArms({ parent: map, reduced, hunters, war: null, bolts: powerBolts, flashes: powerFlashes, state, emit, strike: (...a) => powerStrike(...a), scored: (...a) => powerScored(...a) });
   // the big one charged by what the guns hit (a power's own hits, `by` it, charge nothing)
-  const charge = (hh) => powers.gain(chargeFor(hh, { war: false, ace: FACTIONS_ALL[hh.faction]?.ace === hh.kind }), `hunters:${hh.id}`);
+  // (a hit at the front is the war's battle's, as the galaxy's are: an objective charges it more, a capital ship's hull and shield nothing)
+  const charge = (hh) => powers.gain(chargeFor(hh.war ?? hh, { war: Boolean(hh.war), ace: FACTIONS_ALL[hh.faction]?.ace === hh.kind }), `hunters:${hh.id}`);
   // G or X: on, if a power may be played now (in flight only), and whether it went
   const power = (slot) => {
     if (!canPower({ flying: flying(), onFoot: onFoot(), crash: state.crash, dive: state.dive, jump: state.jump, frozen: props.frozen, view: state.view, phoneNear: state.phoneNear && !state.landable && !state.at })) return false;
@@ -2385,7 +2386,6 @@ export async function create(canvas, ctx) {
   // setting allows); held, the guns keep firing at the ship's own pace,
   // each weapon at its own multiple of it
   const fire = () => {
-    state.armed = true; // (the weapon readout shows from the first shot: clusterView.js)
     const s = state.ship;
     const now = performance.now();
     const g = state.stats;
@@ -2427,7 +2427,6 @@ export async function create(canvas, ctx) {
   };
   // change weapons: R (Shift+R back), 1 2 3, or the phone's button
   const pickWeapon = (i) => {
-    state.armed = true;
     const arm = arms();
     if (i === 'next' || i === 'back') arm.cycle(i === 'back' ? -1 : 1);
     else if (!arm.select(i)) return;
@@ -2634,6 +2633,7 @@ export async function create(canvas, ctx) {
     if (ph.down) burn(ph.at, ph.size);
     if (ph.hunter) {
       net?.hunterHit(ph.id, ph.hunter, punch);
+      powers.gain(ph.down ? 'kill' : 'hit', `pilots:${ph.id}:${ph.hunter}`); // (the big one charges off another pilot's hunters too, as the galaxy's does)
       if (ph.down) {
         emit({ type: 'kill', kind: ph.kind, hunter: true, ...(ram ? { ram } : null) });
         if (state.helped.once(`${ph.id}:${ph.hunter}`)) pay('hunterHelped'); // (one shot off someone else's tail)
@@ -2678,7 +2678,7 @@ export async function create(canvas, ctx) {
   };
   const frontShip = (r) => {
     const ship = !r.sub && !r.capital && !r.shield;
-    return { id: r.id, kind: r.kind, at: new THREE.Vector3(r.at.x, r.at.y, r.at.z), size: ship ? r.size : 0.15, down: ship && r.down };
+    return { id: r.id, kind: r.kind, at: new THREE.Vector3(r.at.x, r.at.y, r.at.z), size: ship ? r.size : 0.15, down: ship && r.down, war: r };
   };
 
   // a hunter shot down: what it does to your standing (one of the law's,
@@ -3595,7 +3595,8 @@ export async function create(canvas, ctx) {
   // a ship and the line picked, your health on foot (clusterView.js says
   // when each shows); the records are filled each frame, nothing made
   const clusterWriter = createFlightCluster();
-  const clusterNow = { flying: false, onFoot: false, view: '', crash: false, dive: false, frozen: false, armed: false, shield: 100, footInfo: null, armory: null };
+  const abilitiesWriter = createAbilitiesWriter(); // (on foot, on a touch screen: the abilities' buttons in the thumbs)
+  const clusterNow = { flying: false, onFoot: false, view: '', crash: false, dive: false, frozen: false, shield: 100, footInfo: null, armory: null };
   const clusterOut = clusterView(clusterNow);
   // the law's strip (UniverseMap's): its stars, what it's doing (wanted, a
   // witness's report on its way, searching, or just the bounty), the bounty
@@ -3632,11 +3633,11 @@ export async function create(canvas, ctx) {
     c.crash = state.crash;
     c.dive = state.dive;
     c.frozen = props.frozen;
-    c.armed = state.armed;
     c.shield = state.shield;
     c.footInfo = c.onFoot && foot.phase === 'walk' ? foot.info() : null;
-    c.armory = c.armed ? arms() : null;
+    c.armory = state.kind ? arms() : null;
     clusterWriter.place(el, clusterView(c, clusterOut));
+    if (c.footInfo && props.abilities?.current) abilitiesWriter.place(props.abilities.current, c.footInfo.abilities);
   };
 
   // friends in a long fight (wingmen.js): once a hunt has dragged on, or
@@ -4269,13 +4270,31 @@ export async function create(canvas, ctx) {
     if (then && !travel(then.id, then.drive === 'hyper' ? 'super' : then.drive) && pilotId(then.id)) pilotGone(then.id, then.name); // (a pilot gone while it went through)
   };
 
+  // into a Rick portal (the gun's, or a sector's): the page plays his portal
+  // jump over the map from where the goo fills the view (gunPortal.js's
+  // CROSS), and the ship's out the other side under its flash, when the page
+  // says (crossNow) or CROSS.most seconds on if it never does. Till then it
+  // flies on into the goo, and nothing else takes it through anything
+  let crossing = null; // { go, until }
+  const cross = (go) => {
+    if (crossing) return;
+    crossing = { go, until: wall() + CROSS.most };
+    emit({ type: 'crossing', from: CROSS.from });
+  };
+  const crossNow = () => {
+    const c = crossing;
+    crossing = null;
+    // (shot down, landed or gone off to the map since: nothing to take through)
+    if (c && state.ship && flying() && !onFoot() && !state.crash) c.go();
+  };
+
   // Rick's portal gun (P, or the HUD's Portal button): in any ship, flying
   // (Rick's cruiser, or whoever's got hold of one: crews.js has how), a
   // portal splats open ahead on the way it's going (gunPortal.js), on Rick's
   // dimension from anywhere at home, on home from there. False if it can't
   // be fired now (on foot, mid-jump, too soon)
   const portalGun = () => {
-    if (!state.kind || !flying() || onFoot() || state.crash || state.jump || state.held || state.view === 'map') return false;
+    if (!state.kind || !flying() || onFoot() || state.crash || state.jump || state.held || crossing || state.view === 'map') return false;
     if (state.clock - gunAt < GUN.cool || !gunPortal.fire(state.ship)) return false;
     gunAt = state.clock;
     heard();
@@ -4296,6 +4315,7 @@ export async function create(canvas, ctx) {
   };
 
   const fly = (dt, t) => {
+    if (crossing && wall() >= crossing.until) crossNow();
     if (state.crash) return crashing(dt);
     // out of the cockpit through Rick's portal: the cruiser comes out in
     // his dimension, as soon as it's flying (it may still be being made)
@@ -4416,13 +4436,13 @@ export async function create(canvas, ctx) {
       else if (!state.crash) startCrash(e);
     }
     if (state.crash) return true;
-    // into another ship (shipHits.js): a glance, or a ram
-    if (!state.jump && !state.held && !state.dive && state.view !== 'map') shipsHit(before, state.ship, dt);
+    // into another ship (shipHits.js): a glance, or a ram; a ghost (a power's) goes through, as in the galaxy
+    if (!state.jump && !state.held && !state.dive && state.view !== 'map' && !powers.mods.ghost) shipsHit(before, state.ship, dt);
     if (state.crash) return true;
-    if (!state.jump && !state.held) {
+    if (!state.jump && !state.held && !crossing) {
       const into = portalHit(before, state.ship);
-      if (into) portalThrough(into);
-      else if (gunPortal.spot && gunHit(before, state.ship, gunPortal.spot, gunPortal.age)) gunThrough();
+      if (into) cross(() => portalThrough(into));
+      else if (gunPortal.spot && gunHit(before, state.ship, gunPortal.spot, gunPortal.age)) cross(gunThrough);
     }
     // into a planet's air (entry.js): at a speed it can land at, straight on
     // into its world (flyInto); any faster it's no way in (it goes on into
@@ -5001,7 +5021,7 @@ export async function create(canvas, ctx) {
     // neighbourhood to another's): its glow where the star is, in its colour
     if (l.key.id !== envStar && !lightNow.first) {
       envStar = l.key.id;
-      const next = spaceEnvironment(renderer, T['sky-glow'], { light: lightTo.set(...l.key.dir).negate().applyAxisAngle(Y_AXIS, state.yaw), colour: l.key.colour });
+      const next = envMaker.make({ light: lightTo.set(...l.key.dir).negate().applyAxisAngle(Y_AXIS, state.yaw), colour: l.key.colour });
       scene.environment = next.texture;
       env.dispose();
       env = next;
@@ -5294,7 +5314,7 @@ export async function create(canvas, ctx) {
     // anyone down on the same planet walk about with yours
     if (net) {
       const s = flying() ? state.ship : null;
-      net.pose(s, { hidden: Boolean(state.crash || state.dive || props.frozen || onFoot()), boost: state.streak > 0.3, safe: state.clock < state.safeUntil, shield: state.shield });
+      net.pose(s, { hidden: Boolean(state.crash || state.dive || props.frozen || onFoot() || powers.hidden), boost: state.streak > 0.3, safe: state.clock < state.safeUntil, shield: state.shield }); // (powers.hidden: between a portal hop's two ends, as the galaxy's)
       net.pack?.(() => (s && !state.crash && !state.dive && !props.frozen && !onFoot() ? (hunters?.wire() ?? []) : []));
       net.foot?.(onFoot() && !props.frozen ? foot.crew() : null);
       if (onFoot()) foot.guests(guestsOnFoot(now));
@@ -5397,11 +5417,14 @@ export async function create(canvas, ctx) {
     }
     if (key === 'g' && onFoot()) {
       // on foot: a door, or back in the ship (in it, there's no key to land:
-      // you fly down into a planet's air)
+      // you fly down into a planet's air); anywhere else, your crew member's
+      // ability, as on the galaxy's worlds (footAbilities.js), held for one
+      // that's held (Artoo's rockets)
       e.preventDefault();
       heard();
+      if (e.repeat) return;
       // (a door you're at first: a big ship's reach can take in one near it)
-      if (!intoDoor() && !foot.board()) emit({ type: 'foot', id: 'far' });
+      if (!intoDoor() && !foot.board()) foot.ability('power', true);
       return;
     }
     if (onFoot()) {
@@ -5513,9 +5536,16 @@ export async function create(canvas, ctx) {
       return;
     }
     if (key === 'f') {
+      // the trigger, held: the gun goes on firing at its own pace (footArms.js), as the galaxy's does
       e.preventDefault();
-      const gun = foot.fire();
+      const gun = !e.repeat && foot.trigger(true);
       if (gun) emit({ type: 'fire', gun });
+      return;
+    }
+    if (key === 'r') {
+      // the gun's heat vented (all of it in the sweet spot of a lock)
+      e.preventDefault();
+      if (!e.repeat && foot.vent()) emit({ type: 'foot', id: 'vent' });
       return;
     }
     if (key === 't') {
@@ -5530,8 +5560,15 @@ export async function create(canvas, ctx) {
       return;
     }
     if (key === 'v') {
+      // the second ability (as the galaxy's V)
       e.preventDefault();
-      foot.first();
+      if (!e.repeat) foot.ability('second', true);
+      return;
+    }
+    if (key === 'p') {
+      // out of their eyes, and back (P, as on the galaxy's worlds)
+      e.preventDefault();
+      if (!e.repeat) foot.first();
       return;
     }
     if (key === 'enter' && !onControl && intoWorld()) {
@@ -5563,6 +5600,9 @@ export async function create(canvas, ctx) {
     held.delete(key);
     // (Z let go on foot: the emote pointed at, or a tap's last)
     if (key === 'z' && onFoot() && foot.emote('up')) ctx.invalidate();
+    // (F let go on foot: the trigger, and a gauntlet's charge goes off; G, a held ability let go)
+    if (key === 'f' && onFoot()) foot.trigger(false);
+    if (key === 'g' && onFoot()) foot.ability('power', false);
     const now = onFoot() ? FOOT_KEYS : KEYS;
     for (const map of [KEYS, FOOT_KEYS]) {
       const k = map[key];
@@ -5603,6 +5643,13 @@ export async function create(canvas, ctx) {
     drag: { yaw: 0.006, pitch: 0.004 },
     onTurn: (dx, dy) => {
       foot.turn(dx, dy);
+      ctx.invalidate();
+    },
+    // (the pointer locked: the left button is the trigger, held as F is)
+    onButton: (which, down) => {
+      if (which !== 0 || !looker.locked || !onFoot()) return;
+      const gun = foot.trigger(down);
+      if (gun) emit({ type: 'fire', gun });
       ctx.invalidate();
     },
     onLock: () => sendLook(),
@@ -5683,8 +5730,10 @@ export async function create(canvas, ctx) {
     endDrag();
     if (d.moved < DRAG && onFoot()) {
       // on foot, a click fires (at a trooper, if it's on one); not the one
-      // that asked for the lock
+      // that asked for the lock, nor one with the pointer locked (its left
+      // button is the trigger, held: the look's onButton)
       if (d.asks) return sendLook();
+      if (looker.locked) return;
       const [x, y] = local(e);
       const tid = pickTrooper(x, y);
       if (tid) foot.lockOn(tid);
@@ -6137,7 +6186,7 @@ export async function create(canvas, ctx) {
     fire(down = true) {
       heard();
       if (onFoot()) {
-        const gun = down && foot.fire();
+        const gun = foot.trigger(down);
         if (gun) emit({ type: 'fire', gun });
         return;
       }
@@ -6145,9 +6194,19 @@ export async function create(canvas, ctx) {
       if (down) fire();
       ctx.invalidate();
     },
+    // on foot, the HUD's ability buttons (a touch screen's G and V): pressed, and let go
+    ability(slot, down = true) {
+      heard();
+      if (onFoot()) foot.ability(slot, down);
+      ctx.invalidate();
+    },
     // the HUD's Portal button (P): Rick's portal gun, in any ship
     portalGun() {
       return portalGun();
+    },
+    // the page's portal jump at its flash: out the far side of the portal flown into
+    crossNow() {
+      crossNow();
     },
     // the phone's Ship button (G on foot): a door, or back in the ship
     out() {
@@ -6333,6 +6392,7 @@ export async function create(canvas, ctx) {
       disposeTree(scene);
       post.dispose();
       env.dispose();
+      envMaker.dispose();
       // (the renderer and its canvas are the runtime's: put as they were once
       // the map has gone, unless the next world has them by then. A handover
       // makes the next world before it lets the map go, and places it in the

@@ -481,12 +481,13 @@ describe('other dimensions', () => {
 
 describe('the skill tree on foot (hangar/skills’ fx)', () => {
   it('takes a tenth less from each hit with tough, heals half again as fast with the medic, and hits the troops harder', () => {
-    const k = footSkills({ health: 1.1, heal: 1.5, damage: 1.15, boost: 0.1 });
+    const k = footSkills({ health: 1.1, heal: 1.5, damage: 1.15, boost: 0.1, heat: 0.85, cool: 1.15, spread: 0.85 });
     expect(k.hurt).toBeCloseTo(1 / 1.1);
     expect(k.heal).toBeCloseTo(FOOT.heal * 1.5);
     expect(k.damage).toBeCloseTo(1.15);
+    expect(k).toMatchObject({ heat: 0.85, cool: 1.15, spread: 0.85 });
   });
   it('is the foot as it was with no skills, or nonsense', () => {
-    for (const fx of [undefined, null, {}, { health: -1, heal: 'x', damage: 0 }]) expect(footSkills(fx)).toEqual({ hurt: 1, heal: FOOT.heal, damage: 1 });
+    for (const fx of [undefined, null, {}, { health: -1, heal: 'x', damage: 0 }]) expect(footSkills(fx)).toEqual({ hurt: 1, heal: FOOT.heal, damage: 1, heat: 1, cool: 1, spread: 1 });
   });
 });

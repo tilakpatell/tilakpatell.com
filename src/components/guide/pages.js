@@ -104,8 +104,8 @@ export const PAGES = {
   '/universe': {
     about: ABOUT['/universe'],
     keys: [
-      { label: 'Flying', rows: [...fly(), ['hold S', 'Drop out of a lane'], ['hold W', 'Carry on through a junction'], ['M', 'The nav map: pick a place and a drive'], ['J', 'Jump to the place picked'], ['E / Enter', 'Land or dock where you are'], ['H', 'The Hangar: crew, arms, powers and the shipyard'], ['C', 'The Hangar, on your crew'], ['O', 'Flight settings'], ['Esc', 'Back out to the whole universe']] },
-      { label: 'On foot', rows: [['W A S D', 'Walk'], ['Q E', 'Step sideways'], ['Shift', 'Run'], ['Space', 'Jump'], ['Click, then the mouse', 'Look round (Esc lets go)'], ['F / Click', 'Fire'], ['X', 'Play the other one of your crew'], ['B', 'Rick’s next gadget: the portal gun, the freeze ray, the shrink ray'], ['V', 'Out of their eyes'], ['G', 'Through a door, or back into the ship'], ['Enter', 'Into the planet’s page']] },
+      { label: 'Flying', rows: [...fly(), ['hold S', 'Drop out of a lane'], ['hold W', 'Carry on through a junction'], ['M', 'The nav map: pick a place and a drive'], ['J', 'Jump to the place picked'], ['P', 'Rick’s portal gun: a portal ahead to his dimension (or home); fly into it'], ['E / Enter', 'Land or dock where you are'], ['H', 'The Hangar: crew, arms, powers and the shipyard'], ['C', 'The Hangar, on your crew'], ['O', 'Flight settings'], ['Esc', 'Back out to the whole universe']] },
+      { label: 'On foot', rows: [['W A S D', 'Walk'], ['Q E', 'Step sideways'], ['Shift', 'Run'], ['Space', 'Jump'], ['Click, then the mouse', 'Look round (Esc lets go)'], ['F / Click', 'Fire (held, the gun keeps firing at its own pace: bursts and pellets as it has them, the gun picked in the Hangar’s Arms)'], ['R', 'Vent the gun’s heat (overheated, hit the sweet spot)'], ['G', 'Through a door, or back into the ship; anywhere else, your crew member’s ability: Rick’s portal hop, Morty’s and Jesse’s sprint, Walt’s fulminate, Han’s detonite charge, Chewie’s leap, Luke’s Force push, Artoo’s booster rockets (held)'], ['V', 'Their second: an overcharge (no heat and a harder shot), a medpack, Luke’s repulse or Artoo’s patch-up'], ['X', 'Play the other one of your crew'], ['B', 'Rick’s next gadget: the portal gun, the freeze ray, the shrink ray'], ['P', 'Out of their eyes, and back'], ['Enter', 'Into the planet’s page']] },
     ],
     touch: [
       {
@@ -164,6 +164,7 @@ export const PAGES = {
           ['G', 'Your hero’s first power: a Force push (a Jedi), a choke (Vader, Maul), lightning held (the Emperor), or a thermal detonator (anyone else)'],
           ['V', 'The second: a Force pull, a repulse, a rage or a rush (the hero’s own, as the panel says); or the overcharge: no heat and a harder shot for a while'],
           ['Q', 'Things to do'],
+          ['J', 'Jobs, in free roam: bounties, salvage, courier runs, speeder runs and patrols, paid every time (a new board once one’s done)'],
           ['Tab', 'Swap to your crewmate'],
           ['L', 'Lock on: the camera stays on the one you’re squared up to (L again lets go)'],
           ['B', 'Hold for the emote wheel (a hero from the 2017 game does its own four)'],

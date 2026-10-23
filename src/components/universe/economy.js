@@ -65,6 +65,7 @@ export const EARN = {
   warPoints: { credits: 8, xp: 2 },
   warWin: { credits: 250, xp: 60 },
   questDone: { credits: 200, xp: 50 },
+  jobDone: { credits: 120, xp: 30 }, // free roam's work (galaxy/surface/jobs.js): each time, times the job's pay
   found: { credits: 30, xp: 6 },
   standingUp: { credits: 100, xp: 25 }, // a good standing level reached
   allyMade: { credits: 25, xp: 10 },
