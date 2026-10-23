@@ -7,11 +7,12 @@
 //                                                      the 8192 colour maps
 //                                                      (-8k.ktx2) worn near at ultra
 //
-// Every one is made from nothing but code (Marvel's Earth-616 traces Natural
-// Earth's coasts, from the world-atlas package, and wears the real Earth's
-// night lights, from the map's own earth-night-hq.webp).
+// Every one is made from nothing but code (Marvel's Earth-616, C-137's Earth
+// and Cronenberg World's coasts trace Natural Earth's, from the world-atlas
+// package; the two Earths wear the real Earth's night lights, from the map's
+// own earth-night-hq.webp).
 
-const ALL = ['middleearth', 'breakingbad', 'caribbean', 'rickmorty', 'office', 'potter', 'music', 'marvel'];
+const ALL = ['middleearth', 'breakingbad', 'caribbean', 'rickmorty', 'cronenberg', 'office', 'potter', 'music', 'marvel'];
 const args = process.argv.slice(2);
 // (--ultra: sphere.mjs reads it before any baker is loaded)
 if (args.includes('--ultra')) process.env.PLANETS_8K = '1';
