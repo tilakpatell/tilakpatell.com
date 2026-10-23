@@ -102,3 +102,17 @@ describe('the game-derived files the bucket alone holds', () => {
     expect(made(root, '').load(join(root, 'src/data/assets-manifest.json'))).toBe('{}');
   });
 });
+
+describe('the page’s early word to the bucket', () => {
+  it('with a base, opens the connection to its origin from the page’s head, before any loader asks (after the charset, which is first)', () => {
+    const { root } = project();
+    const tags = made(root, 'https://assets.tilakpatell.com/').transformIndexHtml('<html></html>');
+    expect(tags).toEqual([{ tag: 'link', attrs: { rel: 'preconnect', href: 'https://assets.tilakpatell.com', crossorigin: '' }, injectTo: 'head' }]);
+  });
+
+  it('without a base, or with one that isn’t a web address, says nothing', () => {
+    const { root } = project();
+    expect(made(root, '').transformIndexHtml('<html></html>')).toEqual([]);
+    expect(made(root, '/local-bucket').transformIndexHtml('<html></html>')).toEqual([]);
+  });
+});

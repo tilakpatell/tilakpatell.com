@@ -17,13 +17,21 @@
 // that has no copy of them, 2026-10-21). Only a failure with no answer at
 // all (blocked, the network gone, a timeout) is the bucket down.
 //
+// And the site's own copy under its hash (scripts/site-hashes.mjs: the
+// worlds' pictures the bucket doesn't hold, copied at build to
+// `/h/<hash12>/<path>` and cached a year there): a path the site's hashes
+// name is asked under that path first, its own path only if that fails, and
+// a miss there says nothing of the bucket.
+//
 // assetUrl(path, { base, manifest }) → the URL to fetch
+// hereUrl(path, { site }) → the site's hashed path, or null
 // withFallback(load, { base, manifest, wait, waits }) → (path) => load(remote), else load(path) once
 //   (the remote given `wait` ms until the bucket has answered once this visit;
 //   `waits`, the ms between asks of a busy one)
 // markDown(), isDown(), forgetDown() (a new visit; tests): lib/assetDown's, re-exported
 
 import MANIFEST from '../data/assets-manifest.json';
+import SITE from '../data/site-hashes.json';
 import { remotePath } from './assetPath';
 
 import { WAIT_MS, answered, isDown, markAnswered, markDown } from './assetDown';
@@ -36,6 +44,15 @@ export function assetUrl(path, { base = import.meta.env?.VITE_ASSET_BASE, manife
   return isDown() ? path : remotePath(path, base, manifest);
 }
 
+// (where the build put the site's hashed copies: scripts/site-hashes.mjs's UNDER)
+const HERE = '/h';
+export function hereUrl(path, { site = SITE } = {}) {
+  if (typeof path !== 'string' || /^[a-z][a-z0-9+.-]*:|[?#]/i.test(path)) return null;
+  const key = path.replace(/^\/+/, '');
+  const hash = site?.[key];
+  return hash ? `${HERE}/${hash}/${key}` : null;
+}
+
 // (the ms between asks of a busy bucket, and how many there are)
 export const BUSY_WAITS = [500, 1500, 4000];
 // the HTTP status a failure carries (ours, `status`; three's loaders', the response's), or null: no answer at all
@@ -46,7 +63,11 @@ const pause = (ms) => new Promise((r) => setTimeout(r, ms));
 export function withFallback(load, opts) {
   return (path) => {
     const url = assetUrl(path, opts);
-    if (url === path) return load(path);
+    if (url === path) {
+      // (the site's hashed copy, then its own path: the same bytes either way)
+      const here = hereUrl(path, opts);
+      return here ? Promise.resolve().then(() => load(here)).catch((e) => (e?.name === 'AbortError' ? Promise.reject(e) : load(path))) : load(path);
+    }
     const wait = opts?.wait ?? WAIT_MS;
     const waits = opts?.waits ?? BUSY_WAITS;
     const asked = Promise.resolve().then(() => load(url));

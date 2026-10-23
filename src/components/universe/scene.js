@@ -104,7 +104,7 @@ import { calibrate, calibrationKey, recall, remember } from '../../lib/three/cal
 import { prepFrame } from './prepFrame';
 import { foreground } from '../../lib/foreground';
 import { settle as settleWithin } from '../../lib/settle';
-import { device, pixelRatio } from '../../lib/device';
+import { device, pixelRatio, quality as qualityNow } from '../../lib/device';
 import { stepAt } from './qualityStep';
 import { borrow } from './borrow';
 import { CHASE, DIVE_MS, FOV, chaseDist, cover, cameraFrom, focusPose, overviewPose, poseAt, startFlight, worldPos } from './flight';
@@ -115,6 +115,7 @@ import { createLazy, standIn, wanted as nearEnough } from './nearby';
 import { loadSteps } from './loadSteps';
 import { buildSun } from './sun';
 import { MAP_LENS, aberrationFor, createPost, spaceEnvironment } from './post';
+import { fromVideo } from '../../lib/videoLook';
 import { grainFor } from '../../lib/three/noise';
 import { createFlare, flareWeight, occluded } from '../../lib/three/flare';
 import { exposureFor, sunShareOf } from '../../lib/three/exposure';
@@ -490,10 +491,9 @@ export async function create(canvas, ctx) {
   let props = ctx;
   let disposed = false;
 
-  // the runtime’s renderer, at most 1.5 device pixels to a CSS one (module.js:
-  // the whole sky, bloom and all, at a retina 2 is more than most graphics
-  // chips draw smoothly while flying, and the names and the HUD are crisp
-  // DOM anyway), its size and sharpness the runtime’s; what the map sets on
+  // the runtime’s renderer, its canvas at the screen’s own pixels, 2 at most
+  // (module.js; how sharp the scene is drawn inside that is the post’s,
+  // below), its size and sharpness the runtime’s; what the map sets on
   // it is set only while it draws, or goes back when it goes (./borrow.js)
   const { renderer } = ctx.rt.gfx;
   const borrowed = borrow(renderer);
@@ -649,11 +649,26 @@ export async function create(canvas, ctx) {
   // what metal reflects, and the passes after the scene (post.js)
   let env = spaceEnvironment(renderer, T['sky-glow']);
   scene.environment = env.texture;
-  // (multisampled as at the ratio the map will draw at, module.js's 2 at
-  // most, lib/device's answer: made at a handover, the renderer is still at
-  // the last world's ratio. A Retina laptop's 2 draws unsampled, its pixels
-  // too small for a jagged edge, as cheap as 1.5 with four samples was)
-  const post = createPost(renderer, scene, camera, { small, ratio: pixelRatio(2) });
+  // (drawn at the most the runtime's quality gives, module.js's 2 at most:
+  // the budget's least and the visitor's render resolution over a canvas of
+  // the screen's own pixels, module.js's `canvas: 'screen'`, the pace's
+  // steps coming off it; sharper than the canvas, folded down to it, and
+  // softer, brought up to it by FSR 1, multisampled by how sharp it's drawn,
+  // post.js's finish. Asked each frame, so the render resolution moved in
+  // the settings is the next frame's. lib/device's answer where there's no
+  // runtime: made at a handover, the renderer is still at the last world's
+  // ratio)
+  const mostRatio = () => ctx.rt?.quality?.ratioUnder?.(2, { unscaled: true }) ?? pixelRatio(2);
+  const post = createPost(renderer, scene, camera, { small, ratio: mostRatio(), upscale: true, top: mostRatio });
+  // the visitor's video settings, what they turned of them (lib/videoLook.js):
+  // the grain, the aberration, the bloom and the multisampling, at the start
+  // and live from the settings (onVideo, below)
+  let video = fromVideo(ctx.rt?.video, qualityNow().level);
+  const applyVideo = () => {
+    post.glowing(video.bloom);
+    post.maxSamples(video.samples);
+  };
+  applyVideo();
   // the map's lens (post.js; the galaxy keeps its picture): a floor under
   // the sky, a little more contrast, and the corners soft but on a low tier
   post.setToe(...MAP_LENS.toe);
@@ -4888,9 +4903,9 @@ export async function create(canvas, ctx) {
   const halfTan = () => Math.tan((camera.fov * Math.PI) / 360);
   let exposure = 1;
   const finish = (dt) => {
-    post.grain(grainFor({ rush: state.streak, reduced }));
+    post.grain(grainFor({ rush: state.streak, reduced }) * video.grain);
     ownLook.aberration = aberrationFor({ rush: state.streak, hit: state.hurt, tier });
-    post.aberration(mixPost(ownLook, powerLook, mixedLook).aberration);
+    post.aberration(mixPost(ownLook, powerLook, mixedLook).aberration * video.aberration);
     let share = 0;
     const s = state.ship;
     shipSolid.r = s ? LENGTH * 0.45 : 0;
@@ -5756,7 +5771,7 @@ export async function create(canvas, ctx) {
   // put on at the first frame instead, it changed every lit shader after
   // they were compiled, and they were all compiled again in that frame
   house.follow({ adopt: true });
-  const ready = Promise.all([warm(scene, camera, scene, steps.shaders), post.composer ? precompilePasses(renderer, post.composer, camera) : null]).then(() => {
+  const ready = Promise.all([warm(scene, camera, scene, steps.shaders), post.composer ? precompilePasses(renderer, post.composer, camera) : null, post.precompileFinish(camera)]).then(() => {
     // made: out of the scene (so nothing walks them each frame), and the
     // ships on to the fleet, ready to fly (the first of each kind isn't
     // built in the middle of a frame)
@@ -5989,8 +6004,11 @@ export async function create(canvas, ctx) {
       size.w = window.innerWidth;
       size.h = window.innerHeight;
     }
-    // (keyed afresh for the 2× cap, module.js's: a level found at 1.5 says nothing of 2)
-    const key = calibrationKey(renderer, 'universe-2x', size.w, size.h);
+    // (keyed afresh for the finish, post.js's: a level found with the canvas
+    // at the budget's least and the passes stretched up says nothing of one
+    // at the screen's pixels and brought up by FSR 1, as one found at 1.5
+    // said nothing of the 2× cap)
+    const key = calibrationKey(renderer, 'universe-fsr', size.w, size.h);
     const kept = recall(key);
     const setLevel = (l) => {
       ctx.rt.quality?.setLevel?.(l);
@@ -6092,6 +6110,14 @@ export async function create(canvas, ctx) {
         state.low = true;
         post.off();
       }
+      ctx.invalidate();
+    },
+    // a video control turned in the settings (lib/video.js): the grain, the
+    // aberration, the bloom and the multisampling taken live; the rest (the
+    // maps' sizes, the filtering) the panel offers a reload for, as ever
+    onVideo(values) {
+      video = fromVideo(values, qualityNow().level);
+      applyVideo();
       ctx.invalidate();
     },
     // a name under the pointer lights its planet too

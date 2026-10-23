@@ -67,6 +67,15 @@ describe('the service worker and the asset bucket', () => {
     expect(fetch.mock.calls.filter(([r]) => r !== '/packs/index.json')).toEqual([]);
   });
 
+  it('answers a picture asked under its hash from the pack that keeps its own path, and leaves alone what no pack keeps', async () => {
+    const { ask, fetch } = await worker(BASE);
+    expect(await ask('https://site.test/h/0123456789ab/kit/house.glb')).toBe('house from the pack');
+    expect(await ask('https://site.test/h/0123456789ab/kit/shed.glb')).toBe('left alone');
+    expect(await ask('https://site.test/h/0123456789ab/elsewhere/house.glb')).toBe('left alone');
+    expect(await ask('https://site.test/h/not-a-hash/kit/house.glb')).toBe('left alone');
+    expect(fetch.mock.calls.filter(([r]) => r !== '/packs/index.json')).toEqual([]);
+  });
+
   it('without a base, touches no other origin, the bucket included', async () => {
     const { ask } = await worker('');
     expect(await ask(FAR)).toBe('left alone');
