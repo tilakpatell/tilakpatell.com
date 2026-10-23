@@ -893,8 +893,9 @@
    hud: your health, the gun and its heat), as the universe map's planets have
    it, in the galaxy's skin, with the guard and the abilities in its row and
    the lock over it. Above the action prompt and the look's, which keep the
-   bottom (--hud-pad-b: the kit's token for what's under the row) */
-.surface-cluster { --hud-pad-b: calc(76px + env(safe-area-inset-bottom, 0px)); --hud-cluster-line: color-mix(in srgb, var(--accent) 40%, transparent); --hud-vitals-fill: linear-gradient(90deg, #ff4a3d, #ffd36a); --hud-vitals-glow: rgb(255 120 80 / 0.5); }
+   bottom (--hud-pad-b, the kit's token for what's under the row: the
+   prompt's 96px and its line) */
+.surface-cluster { --hud-pad-b: calc(136px + env(safe-area-inset-bottom, 0px)); --hud-cluster-line: color-mix(in srgb, var(--accent) 40%, transparent); --hud-vitals-fill: linear-gradient(90deg, #ff4a3d, #ffd36a); --hud-vitals-glow: rgb(255 120 80 / 0.5); }
 .surface-lock { margin: 0 0 2px; display: grid; gap: 3px; justify-items: center; font-size: var(--hud-min); }
 .surface-lock-name { font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #fff; text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8); }
 .surface-lock-bar { position: relative; display: block; width: 60%; height: 5px; border-radius: 3px; background: rgba(0, 0, 0, 0.55); overflow: hidden; }
