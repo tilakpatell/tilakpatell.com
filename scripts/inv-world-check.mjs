@@ -109,6 +109,12 @@ const SHOTS = {
   reentry: { space: 'reentry' },
   allen: { space: 'allen', back: 14 },
   mars: { space: 'mars', back: 90 },
+  // the Sequids (./offworld/mars.js): the base at the site, the swarm on the host, from 40 m over the pad
+  sequids: { space: 'site', back: 40 },
+  // (on the site's ground: by the base, the ship and an astronaut beyond, the swarm on its way)
+  marssite: { space: 'site', local: [-38, 6, 46], at: [30, 4, 10] },
+  // Battle Beast (foes.js): on the GDA's pad, Mark before him on the ground (['spawn'] calls him)
+  beast: { drive: [['go', [1611, 0, -357], 2.85, 'ground'], ['spawn', 'beast', 1, [1618, 0, -366]], ['wait', 900]], pitch: 0.12 },
   thragg: { space: 'thragg', back: 18 },
   dusk: { p: [-300, 160, 700], mode: 'air', yaw: Math.PI * 0.9, pitch: -0.1, time: 'dusk' },
   night: { p: [-300, 160, 700], mode: 'air', yaw: Math.PI * 0.9, pitch: -0.1, time: 'night' },
@@ -137,7 +143,7 @@ const SHOTS = {
 const args = process.argv.slice(2);
 const metrics = args.includes('--metrics');
 const at = args.indexOf('--play');
-const SEASON = ['ep1', 'ep2', 'ep3', 'ep4', 'ep5', 'ep6', 'ep7', 'ep8', 'levy'];
+const SEASON = ['ep1', 'ep2', 'ep3', 'ep4', 'ep5', 'ep6', 'ep7', 'ep8', 'levy', 'sequids', 'beast'];
 const plays = at < 0 ? [] : !args[at + 1] || args[at + 1].startsWith('--') || args[at + 1] === 'all' ? SEASON : args[at + 1].split(',');
 const want = args.filter((a, i) => !a.startsWith('--') && !(at >= 0 && i === at + 1));
 
@@ -306,9 +312,19 @@ for (const [name, s] of Object.entries(SHOTS)) {
         sim.h = { ...sim.h, p: [0, RE + 30000, 9000], v: [0, 0, 0], spd: 0, mode: 'air' };
         sim.yaw = Math.PI;
         sim.pitch = -0.7;
+      } else if (s.space === 'site' && s.local) {
+        // on Mars's site, in its own frame (./offworld/mars.js): at `local`, looking at `at`, the camera's frame the ground's
+        const MR = await import('/src/components/invincible/world/offworld/mars.js');
+        const O = await import('/src/components/invincible/world/orbit.js');
+        const p = MR.toWorld([s.local[0], MR.groundAt(s.local[0], s.local[2]) + s.local[1], s.local[2]]);
+        const t = MR.toWorld([s.at[0], MR.groundAt(s.at[0], s.at[2]) + s.at[1], s.at[2]]);
+        const d = O.turnUp(t.map((v, i) => v - p[i]), O.upOver(p), true);
+        sim.h = { ...sim.h, p, v: [0, 0, 0], spd: 0, mode: 'air', perch: null };
+        sim.yaw = Math.atan2(d[0], d[2]);
+        sim.pitch = Math.atan2(d[1], Math.hypot(d[0], d[2]));
       } else {
         const b = bodies.find((q) => q.id === s.space);
-        target = b ? b.c : s.space === 'allen' ? allen : thragg;
+        target = b ? b.c : s.space === 'allen' ? allen : s.space === 'site' ? api.debug.marsSite : thragg;
         // stand off from it on the side toward the Earth, looking at it
         const l = Math.hypot(...target);
         const n = target.map((v) => -v / l);

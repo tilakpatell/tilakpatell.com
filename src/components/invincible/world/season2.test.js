@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ANGSTROM_AT, DROWNED_GATES, LEVY_PORTALS, MIRROR_AT, SEASON2 } from './season2';
+import { ANGSTROM_AT, BEAST_AT, DROWNED_GATES, LEVY_PORTALS, MIRROR_AT, SEASON2 } from './season2';
 import { DIM_IDS, PORTAL_R, PORTAL_SPEED } from './dimensions';
 import { MISSIONS, STORY, feedMission, missionOf, nextStory, startMission, stepOf } from './missions';
 import { CITY, buildWorld, near } from './map';
@@ -19,9 +19,9 @@ function feed(p, events) {
 
 describe('season two', () => {
   it('is listed after season one, and the board’s next after episode 8 is Angstrom', () => {
-    expect(SEASON2.map((m) => m.id)).toEqual(['levy']);
-    expect(MISSIONS.at(-1).id).toBe('levy');
-    expect(STORY.at(-1)).toBe('levy');
+    expect(SEASON2.map((m) => m.id)).toEqual(['levy', 'sequids', 'beast']);
+    expect(MISSIONS.at(-1).id).toBe('beast');
+    expect(STORY.slice(-3)).toEqual(['levy', 'sequids', 'beast']);
     expect(nextStory(['ep1', 'ep2', 'ep3', 'ep4', 'ep5', 'ep6', 'ep7', 'ep8'])).toBe('levy');
     expect(missionOf('levy').start.after).toContain('ep8');
   });
@@ -86,5 +86,22 @@ describe('season two', () => {
       expect(q[2]).toBeGreaterThan(CITY.z0);
       expect(q[2]).toBeLessThan(CITY.z1);
     }
+  });
+});
+
+describe('Battle Beast', () => {
+  it('is Cecil’s lesson in panels, then the fight on the GDA’s pad', () => {
+    const m = missionOf('beast');
+    expect(m.steps.map((s) => s.type)).toEqual(['use', 'defeat']);
+    expect(m.steps[0].id).toBe('panels');
+    expect(m.steps[1]).toMatchObject({ kind: 'beast', n: 1, spawn: [['beast', 1, BEAST_AT]] });
+    expect(m.achievement).toBe('beast');
+    let p = startMission('beast');
+    let r = feed(p, [{ type: 'use', id: 'panels' }]);
+    p = r.p;
+    expect(r.out.find((o) => o.type === 'step')).toMatchObject({ i: 1, spawn: [['beast', 1, BEAST_AT]] });
+    r = feed(p, [{ type: 'ko', kind: 'beast', id: 3 }]);
+    expect(r.p.done).toBe(true);
+    expect(r.out.find((o) => o.type === 'done')).toMatchObject({ achievement: 'beast' });
   });
 });

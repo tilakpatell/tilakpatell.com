@@ -53,12 +53,22 @@ export const ANGSTROM_LINES = {
   down: 'There are other doors. There are always other doors.',
 };
 
+// Battle Beast (./season2.js): a word as he comes, one as a blow is turned aside, one as
+// a blow lands, and the one he leaves on. The site's own words.
+export const BEAST_LINES = {
+  come: 'I was told there was a fighter on this world. Show me.',
+  parry: 'Is that all your arm can do?',
+  hit: 'Better. Again.',
+  leave: 'Unworthy.',
+};
+
 // And what's said in passing, over the HUD (./InvWorld.jsx's say): who says
 // it (one of the people above) and the line as it's shown.
 export const CALLS = {
   portal: { who: 'cecil', text: 'Cecil: “Portal over the river. Flaxans again. Go.”' },
   spar: { who: 'omni', text: '“Think, Mark!” Down the page, over the city.' },
   mimic: { who: 'omni', text: 'Dad, in your ear: “Look what they need to mimic a fraction of our power.”' },
+  beast: { who: 'cecil', text: 'Cecil: “Machine Head hired something. It is not from here.”' },
 };
 
 // What Dad says when his rings are done, quoted after the lap's time (which
@@ -72,6 +82,12 @@ export const PANELS = {
     ['omni', 'You were meant to be the next part of that.'],
     ['mark', 'Dad. What are you saying?'],
     ['omni', 'That you’ll understand. One day. Let me show you.'],
+  ],
+  // the lesson before Battle Beast (./season2.js): block, then counter
+  beast: [
+    ['cecil', 'It turns aside everything you throw. Don’t throw first.'],
+    ['cecil', 'Hold Shift on the ground, facing it, and take its swing.'],
+    ['cecil', 'It staggers. That’s your window. Hit it then.'],
   ],
   sky: [
     ['omni', 'What will you have, Mark? In five hundred years?'],

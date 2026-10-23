@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { FLY, newHero, stepHero } from './flight';
 import { WORLD, buildWorld } from './map';
-import { BODIES, SPACE, altitudeOf, intoSpace, outOfSpace, stepSpace } from './orbit';
+import { BODIES, SPACE, altitudeOf, intoSpace, outOfSpace, overBody, stepSpace, turnUp, upOver } from './orbit';
 
 const W = buildWorld();
 const still = { fwd: 0, side: 0, up: 0, down: 0, boost: false, run: false, jump: false, look: [0, 1, 0] };
@@ -71,5 +71,62 @@ describe('in space', () => {
     expect(back.p[1]).toBeLessThan(WORLD.ceiling);
     expect(Math.abs(back.p[0])).toBeLessThanOrEqual(WORLD.half);
     expect(back.v[1]).toBeLessThan(0);
+  });
+});
+
+describe('low over the Moon or Mars', () => {
+  const mars = BODIES.find((b) => b.id === 'mars');
+  const up = mars.c.map((c) => -c / Math.hypot(...mars.c)); // (the side that faces the Earth)
+  const at = (alt) => ({ ...intoSpace({ ...newHero({ x: 0, y: WORLD.ceiling, z: 0 }), mode: 'air' }), p: mars.c.map((c, i) => c + up[i] * (mars.r + alt)), v: [0, 0, 0] });
+  const along = turnUp([0, 0, 1], up); // (a way across the ground)
+  it('says how high he is over the nearest of them', () => {
+    expect(overBody(at(50).p)).toBeCloseTo(50, 3);
+    expect(overBody([0, 0, 0])).toBeGreaterThan(SPACE.low);
+  });
+  it('flies at the air’s speeds there, flat out too, and holds still when let go', () => {
+    const cruise = go(at(60), { ...still, fwd: 1, look: along }, 3).h;
+    expect(Math.hypot(...cruise.v)).toBeLessThanOrEqual(SPACE.lowCruise + 1e-6);
+    expect(Math.hypot(...cruise.v)).toBeGreaterThan(SPACE.lowCruise * 0.9);
+    const fast = go(at(60), { ...still, fwd: 1, boost: true, look: along }, 3).h;
+    expect(Math.hypot(...fast.v)).toBeLessThanOrEqual(SPACE.lowTop + 1e-6);
+    const stopped = go(cruise, still, 3).h;
+    expect(Math.hypot(...stopped.v)).toBeLessThan(1);
+  });
+  it('comes down out of space at speed and slows to them', () => {
+    const coming = { ...at(SPACE.low + 2000), v: up.map((c) => -c * SPACE.cruise) };
+    const down = { ...still, fwd: 1, look: up.map((c) => -c) };
+    const slowed = go(coming, down, 5).h;
+    expect(overBody(slowed.p)).toBeLessThan(SPACE.low);
+    expect(Math.hypot(...slowed.v)).toBeLessThanOrEqual(SPACE.lowCruise + 1e-6);
+    expect(go(slowed, down, 15).h.mode).toBe('perch');
+    const above = go(at(SPACE.low + 3000), { ...still, fwd: 1, look: along }, 3).h;
+    expect(Math.hypot(...above.v)).toBeGreaterThan(SPACE.lowTop);
+  });
+  it('rises off the ground he is over, up as it is there', () => {
+    const { h } = go(at(60), { ...still, up: 1, look: along }, 2);
+    expect(overBody(h.p)).toBeGreaterThan(60 + SPACE.lowCruise);
+  });
+});
+
+describe('which way is up out there', () => {
+  const mars = BODIES.find((b) => b.id === 'mars');
+  const n = mars.c.map((c) => -c / Math.hypot(...mars.c));
+  const over = (alt) => mars.c.map((c, i) => c + n[i] * (mars.r + alt));
+  const near = (a, b) => a.forEach((v, i) => expect(v).toBeCloseTo(b[i], 6));
+  it('is away from the ground low over a body, the sky’s up far from them, and turns between', () => {
+    near(upOver(over(50)), n);
+    near(upOver(over(SPACE.low + SPACE.blend + 10)), [0, 1, 0]);
+    const mid = upOver(over(SPACE.low + SPACE.blend / 2));
+    expect(Math.hypot(...mid)).toBeCloseTo(1, 6);
+    expect(mid[1]).toBeGreaterThan(n[1]);
+  });
+  it('turns a look into that frame and back', () => {
+    near(turnUp([0, 1, 0], n), n);
+    near(turnUp([0.3, 0.2, -0.9], [0, 1, 0]), [0.3, 0.2, -0.9]);
+    const v = [0.6, 0, 0.8];
+    near(turnUp(turnUp(v, n), n, true), v);
+    // (a look along the ground stays along it)
+    expect(turnUp(v, n).reduce((s, c, i) => s + c * n[i], 0)).toBeCloseTo(0, 6);
+    near(turnUp([1, 0, 0], [0, -1, 0]).map(Math.abs), [1, 0, 0]);
   });
 });

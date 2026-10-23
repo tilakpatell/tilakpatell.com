@@ -31,10 +31,13 @@ import { buildHall } from './hall';
 import { createCavalryScene } from './cavalryScene';
 import { hallTalkers } from './inside';
 import { DIMENSIONS, dimensionOf } from './dimensions';
+import { RANGE as MARS_RANGE, SITE as MARS_SITE, SWARM_N, nearMars, toLocal as marsLocal } from './offworld/mars';
+import { buildMarsScene } from './offworld/marsScene';
+import { preciseSkin } from './farSkin';
 import { buildClouds, buildHaze, skyBands } from './sky';
 import { carAt, createTraffic, stepTraffic, takeCar } from './traffic';
 import { CITY, WORLD, buildWorld, groundAt, near } from './map';
-import { BODIES, altitudeOf } from './orbit';
+import { BODIES, altitudeOf, upOver } from './orbit';
 import { castMaterial, loadCast, personFor, setCastRim } from './people';
 import { buildSpace } from './space';
 import { groundWorld } from '../../../lib/three/groundwork';
@@ -183,6 +186,10 @@ export async function createInvWorld(rt, { onSlow, calm = false } = {}) {
   space.group.add(allenHolder);
   thragg.holder.removeFromParent();
   space.group.add(thragg.holder);
+  // Mars's site (./offworld/marsScene.js): built when he is within 30 km of the planet, let go when he is further
+  let marsSite = null;
+  let farSkins = [];
+  const swarmN = engine.tier === 'low' ? SWARM_N.low : engine.tier === 'high' ? SWARM_N.high : SWARM_N.mid;
   const spaceTalk = [
     { id: 'allen', name: 'Allen', p: ALLEN, r: 70, lines: LINES.allen },
     { id: 'thragg', name: 'Thragg', p: THRAGG, r: 90, lines: LINES.thragg },
@@ -340,15 +347,24 @@ export async function createInvWorld(rt, { onSlow, calm = false } = {}) {
   const qTmp = new THREE.Quaternion();
   const qYaw = new THREE.Quaternion();
   const vTmp = new THREE.Vector3();
+  const upTmp = new THREE.Vector3();
   // `ahead`: the figure lies along its flight itself (a flying clip, its head
   // ahead), so its front, not its crown, is turned along the flight
-  function carry(f, p, yaw, v, dt, { lean = 1, roll = 0, lift = 0, ahead = false } = {}) {
-    f.holder.position.set(p[0], p[1] + f.hipHeight + lift, p[2]);
-    f.holder.rotation.set(0, yaw, 0);
+  // (`up`: low over the Moon or Mars, his feet toward it, ./orbit.js's upOver; else the sky's)
+  function carry(f, p, yaw, v, dt, { lean = 1, roll = 0, lift = 0, ahead = false, up = null } = {}) {
+    if (up) {
+      upTmp.set(up[0], up[1], up[2]);
+      f.holder.position.set(p[0], p[1], p[2]).addScaledVector(upTmp, f.hipHeight + lift);
+      f.holder.quaternion.setFromUnitVectors(Y, upTmp).multiply(qYaw.setFromAxisAngle(Y, yaw));
+    } else {
+      f.holder.position.set(p[0], p[1] + f.hipHeight + lift, p[2]);
+      f.holder.rotation.set(0, yaw, 0);
+    }
     const speed = Math.hypot(v[0], v[1], v[2]);
     const k = clamp((speed - 8) / 30, 0, 1) * lean;
     const axis = ahead ? Z : Y;
-    qYaw.setFromAxisAngle(Y, -yaw);
+    if (up) qYaw.copy(f.holder.quaternion).invert();
+    else qYaw.setFromAxisAngle(Y, -yaw);
     const dir = speed > 0.1 ? vTmp.set(v[0], v[1], v[2]).divideScalar(speed).applyQuaternion(qYaw) : vTmp.copy(axis); // (in his own frame)
     dir.lerpVectors(axis, dir, k).normalize();
     qTmp.setFromUnitVectors(axis, dir);
@@ -436,7 +452,7 @@ export async function createInvWorld(rt, { onSlow, calm = false } = {}) {
     const want = h.mode === 'ground' ? CAM.back : CAM.back + k * CAM.pull;
     cam.dist = dt === 0 ? want : damp(cam.dist, want, 2.4, dt);
     // standing on the Moon or Mars, "up" is away from it: the camera's frame turns with it
-    const upV = h.mode === 'perch' ? new THREE.Vector3(...h.perch.n) : Y;
+    const upV = zone === 'space' ? new THREE.Vector3(...upOver(h.p)) : Y;
     const qUp = new THREE.Quaternion().setFromUnitVectors(Y, upV);
     const f3 = new THREE.Vector3(Math.sin(yaw) * Math.cos(pitch), Math.sin(pitch), Math.cos(yaw) * Math.cos(pitch)).applyQuaternion(qUp);
     const fwd = [f3.x, f3.y, f3.z];
@@ -714,7 +730,7 @@ export async function createInvWorld(rt, { onSlow, calm = false } = {}) {
     } else {
       // flat out, the fly clip lies along his flight itself
       const fast = clamp((Math.hypot(...h.v) - 8) / 30, 0, 1) > 0.45 && player.clips.includes('fly');
-      const k = carry(player, h.p, h.face, h.v, dt, { lean: 1, ahead: fast });
+      const k = carry(player, h.p, h.face, h.v, dt, { lean: 1, ahead: fast, up: zone === 'space' ? upOver(h.p) : null });
       // a punch thrown hanging in the air (flat out, the fly pose's fist is already ahead)
       if (sim.brawl?.held) player.pose(POSES.punch([0, 0.35, 1]), dt, 20);
       else if (sim.punchT > 0 && !fast) player.pose(POSES.punch([0, 0.1, 1]), dt, 30);
@@ -778,6 +794,22 @@ export async function createInvWorld(rt, { onSlow, calm = false } = {}) {
       hazeSky.update(camera);
     } else if (zone === 'hall') hall.update(t, h, frameDt);
     else {
+      // Mars's ground, when he is near it (and gone again when he is not)
+      if (!marsSite && nearMars(h.p)) {
+        marsSite = buildMarsScene(space.group, { n: swarmN, calm });
+        marsSite.attachFx(fx.vfx);
+        // (and the figures there skinned in small numbers, ./farSkin.js: 400 km out his suit speckled)
+        farSkins = [player.holder, thragg.holder].map(preciseSkin);
+      } else if (marsSite && !nearMars(h.p, MARS_RANGE.drop)) {
+        marsSite.dispose();
+        marsSite = null;
+        for (const f of farSkins) f.undo();
+        farSkins = [];
+      }
+      if (marsSite) {
+        marsSite.update(sim.mars, frameDt, t, marsLocal(h.p));
+        for (const e of sim.events) if (e.mars) marsSite.fx(e);
+      }
       // Allen, waiting by the Moon; Thragg over Mars
       allen.pose({ mode: 'hover', t }, dt);
       carry(thragg, [THRAGG[0], THRAGG[1] + Math.sin(t * 0.6), THRAGG[2]], Math.atan2(-THRAGG[0], -THRAGG[2]), [0, 0, 0], dt, { lean: 0 });
@@ -855,6 +887,9 @@ export async function createInvWorld(rt, { onSlow, calm = false } = {}) {
       bodies: BODIES,
       allen: ALLEN,
       thragg: THRAGG,
+      marsSite: MARS_SITE,
+      // the renderer's counts (a place loaded and let go leaves them as they were)
+      memory: () => ({ ...engine.renderer.info.memory, marsSite: Boolean(marsSite) }),
       // Dad's rules, and (given a place, and the way he's facing) Dad put there
       dad: (p, dir) => {
         if (p) dad = { ...dad, p: [...p], dir: dir ?? dad.dir };
@@ -878,6 +913,7 @@ export async function createInvWorld(rt, { onSlow, calm = false } = {}) {
       course.dispose();
       ghosts.dispose();
       city.streets.dispose();
+      marsSite?.dispose();
       for (const c of casts) c.dispose();
       for (const f of Object.values(heroFigs)) if (f !== mark) f.dispose();
       wallMesh.geometry.dispose();

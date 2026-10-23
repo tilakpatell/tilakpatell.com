@@ -17,6 +17,7 @@ import { POSES, figure, loadFigure } from '../../../lib/three/rig';
 import { CAST, asset } from '../cast';
 import { GUARDIANS, guardianOf } from './guardians';
 import { guardianLooks } from './guardianLooks';
+import { villainLooks } from './villainLooks';
 
 // ── one finish for the whole cast ──
 
@@ -292,9 +293,32 @@ const DRESS = {
 // from the show's pictures (./guardianLooks.js), until a model of their own
 // lands (a gen3d issue each) ──
 const LOOKS = guardianLooks({ body, face, ball, mat, glow: (c, k) => new THREE.MeshBasicMaterial({ color: hot(c, k), toneMapped: false }) });
+// Mars (./offworld/marsScene.js): an astronaut in a white suit with a gold visor, and the
+// host, a Martian in grey-green with the Sequids' purple on him (kit figures, each with a gen3d issue)
+DRESS.astronaut = () => ({ suit: mat(0xf2f2ee, { roughness: 0.5 }), trim: mat(0x9aa3ad, { roughness: 0.4 }), skin: mat(0xf0c4a8), hair: mat(0x2a1d17), dark: mat(0x1a1416), glow: new THREE.MeshBasicMaterial({ color: hot(0xe6b84a, 1.4), toneMapped: false }) });
+DRESS.host = () => ({ suit: mat(0x5f7a66, { roughness: 0.7 }), trim: mat(0x6a3a9a, { roughness: 0.5 }), skin: mat(0x8fa892), hair: mat(0x3a2a4a), dark: mat(0x1a1416), glow: new THREE.MeshBasicMaterial({ color: hot(0xb04dff, 2), toneMapped: false }) });
+STYLES.astronaut = (add) => {
+  body(add, { top: 'suit', bottom: 'suit', shoe: 'trim', hand: 'trim', slim: false, sleeve: 'suit' });
+  add('chest', 'trim', rbox(0.3, 0.2, 0.12, 0.03), { p: [0, 0.12, -0.14] }); // the pack
+  add('head', 'suit', ball(0.12, 20, 16), { p: [0, 0.1, 0] }); // the helmet
+  add('head', 'glow', ball(0.1, 16, 12), { p: [0, 0.1, 0.03], s: [0.85, 0.8, 0.6] }); // its visor
+};
+STYLES.host = (add) => {
+  body(add, { top: 'suit', bottom: 'suit', shoe: 'trim', hand: 'skin', slim: false, sleeve: 'suit' });
+  for (const sd of [-1, 1]) add('chest', 'glow', ball(0.04, 10, 8), { p: [sd * 0.12, 0.22, 0.08] }); // the Sequids on him
+  add('head', 'skin', ball(0.1, 20, 16), { p: [0, 0.1, 0], s: [1, 1.2, 1] });
+  for (const sd of [-1, 1]) add('head', 'dark', ball(0.016, 8, 6), { p: [sd * 0.035, 0.12, 0.085] });
+  add('head', 'glow', ball(0.05, 10, 8), { p: [0, 0.22, -0.02], s: [1.6, 0.6, 1.2] }); // one riding his crown
+};
 for (const g of GUARDIANS) {
   DRESS[g.id] = LOOKS.dress[g.id];
   STYLES[g.id] = LOOKS.styles[g.id];
+}
+// season two's foes (./villainLooks.js): Battle Beast and Angstrom Levy, from the show's pictures
+{
+  const V = villainLooks({ body, face, ball, mat, glow: (c, k) => new THREE.MeshBasicMaterial({ color: hot(c, k), toneMapped: false }) });
+  Object.assign(STYLES, V.styles);
+  Object.assign(DRESS, V.dress);
 }
 
 const TOPS = [0xc94b3a, 0x3a6fb5, 0x2f8a5f, 0xe2b13c, 0x7a4fa0, 0xe8e6e0, 0x2c2f36, 0xd67b3a, 0x4fa3b8];
@@ -317,8 +341,8 @@ export function buildPerson(kind, seed = 0) {
       dark: mat(0x1a1416),
     };
   const g = guardianOf(kind);
-  const joints = kind === 'cecil' || kind === 'allen' || g?.broad ? BROAD : SLIM;
-  const scale = { eve: 0.88, debbie: 0.88, cecil: 0.95, allen: 1.12, monster: 0.84, rae: 0.88 }[kind] ?? (g ? (g.broad ? 1.02 : 0.94) : 0.86 + (seed % 5) * 0.03);
+  const joints = kind === 'cecil' || kind === 'allen' || kind === 'astronaut' || kind === 'host' || kind === 'beast' || kind === 'angstrom' || g?.broad ? BROAD : SLIM;
+  const scale = { eve: 0.88, debbie: 0.88, cecil: 0.95, allen: 1.12, monster: 0.84, rae: 0.88, beast: 1.46, angstrom: 0.98 }[kind] ?? (g ? (g.broad ? 1.02 : 0.94) : 0.86 + (seed % 5) * 0.03);
   const h = buildHumanoid({ style: STYLES[kind] ?? STYLES.person, materials, scale, joints });
   return { h, kind, height: h.height, materials, cast: castMaterial(h.root, { rim: castRim }) };
 }

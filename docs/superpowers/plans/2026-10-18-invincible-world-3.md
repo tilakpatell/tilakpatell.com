@@ -173,20 +173,20 @@
 - Create: `src/components/invincible/world/offworld/mars.js`, `mars.test.js`, `marsScene.js`, `swarm.js` (pure flocking on `lib/ai/steer.js`), `swarm.test.js`
 - Modify: `orbit.js` (the landing on Mars by the Moon’s pattern), `spaceScene.js` (load and dispose within 30 km), `season2.js`, `foes.js` (the host)
 
-- [ ] Tests first: the swarm flocks to the nearest host and scatters 3 s on a punch; four astronauts, each carried to the ship; the host at 12 hits; the gate run at 600 m/s; loading at 30 km and disposing beyond it.
-- [ ] The modules, the base and the swarm (one instanced draw, 800 to 2,400 by tier), the astronauts on the kit.
-- [ ] `--play sequids`; shot `mars`; `gen3d` issues for a Sequid and the base.
-- [ ] Checks; commit; pull request; merge.
+- [x] Tests first: the swarm flocks to the nearest host and scatters 3 s on a punch; four astronauts, each carried to the ship; the host at 12 hits; the gate run at 600 m/s; loading at 30 km and disposing beyond it.
+- [x] The modules, the base and the swarm (one instanced draw, 800 to 2,400 by tier), the astronauts on the kit.
+- [x] `--play sequids`; shot `mars`; `gen3d` issues for a Sequid and the base.
+- [x] Checks; commit; pull request; merge.
 
 ### Task 10: Battle Beast
 
 **Files:**
 - Modify: `foes.js` (Battle Beast: 14 hits, blocks unless staggered, the leap), `season2.js`, `villainScene.js`, `lines.js`
 
-- [ ] Tests first: a punch on an unstaggered Beast is blocked; a counter staggers him; the leap craters the pad and floors Mark within 15 m; beaten, he leaves.
-- [ ] The foe, the stand-in, the lesson in the panels (block, then counter).
-- [ ] `--play beast`; shot `beast`; `gen3d` and `voices` issues.
-- [ ] Checks; commit; pull request; merge.
+- [x] Tests first: a punch on an unstaggered Beast is blocked; a counter staggers him; the leap craters the pad and floors Mark within 15 m; beaten, he leaves.
+- [x] The foe, the stand-in, the lesson in the panels (block, then counter).
+- [x] `--play beast`; shot `beast`; `gen3d` and `voices` issues.
+- [x] Checks; commit; pull request; merge.
 
 ### Task 11: Thraxa and Talescria
 
