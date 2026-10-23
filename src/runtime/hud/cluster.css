@@ -67,6 +67,19 @@
 :where(.hud-arms-pip[hidden]):not(hud-none) { display: none; }
 /* (no rack on this line: no empty row under it) */
 :where(.hud-arms-rack:not(:has(.hud-arms-pip:not([hidden])))):not(hud-none) { display: none; }
+/* a gun in the hand (on foot): its heat in place of the lines and the rack,
+   red once it's locked, and then the vent's marker running over the sweet
+   spot (lib/arms/handRules.js's VENT.sweet, 35 to 55 per cent) */
+:where(.hud-arms-heat, .hud-keys-hand):not(hud-none) { display: none; }
+:where(.hud-arms[data-line='hand'] .hud-keys-lines, .hud-arms[data-line='hand'] .hud-arms-lines, .hud-arms[data-line='hand'] .hud-arms-rack):not(hud-none) { display: none; }
+:where(.hud-arms[data-line='hand'] .hud-keys-hand):not(hud-none) { display: inline; }
+:where(.hud-arms[data-line='hand'] .hud-arms-heat):not(hud-none) { position: relative; display: block; width: 120px; height: 6px; overflow: hidden; border-radius: 3px; background: rgb(255 255 255 / 0.14); }
+:where(.hud-arms-heat > span):not(hud-none) { position: absolute; inset: 0; transform-origin: left; scale: var(--heat, 0) 1; background: linear-gradient(90deg, #ffd36b, #ff8a3d); }
+:where(.hud-arms[data-locked] .hud-arms-heat > span):not(hud-none) { background: #ff4a3d; }
+:where(.hud-arms-sweet, .hud-arms-vent):not(hud-none) { position: absolute; top: 0; bottom: 0; display: none; }
+:where(.hud-arms-sweet):not(hud-none) { left: 35%; width: 20%; background: rgb(255 255 255 / 0.3); }
+:where(.hud-arms-vent):not(hud-none) { left: calc(var(--vent, 0) * 100%); width: 2px; background: #fff; }
+:where(.hud-arms[data-locked] .hud-arms-sweet, .hud-arms[data-locked] .hud-arms-vent):not(hud-none) { display: block; }
 
 /* a laptop's width: the blocks a little narrower */
 @media (max-width: 1320px) {

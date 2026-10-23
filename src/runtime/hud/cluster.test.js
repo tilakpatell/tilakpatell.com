@@ -25,7 +25,7 @@ const el = () => {
   };
   return e;
 };
-const ONE = ['.hud-vitals', '.hud-vitals-n', '.hud-arms', '.hud-arms-name'];
+const ONE = ['.hud-vitals', '.hud-vitals-n', '.hud-arms', '.hud-arms-name', '.hud-arms-heat'];
 const dom = () => {
   const parts = Object.fromEntries(ONE.map((s) => [s, el()]));
   const many = { '.hud-arms-line': [el(), el(), el()], '.hud-arms-pip': Array.from({ length: PIPS }, el) };
@@ -64,6 +64,23 @@ describe('the flight cluster’s writer', () => {
     expect(pips.map((p) => p.hasAttribute('data-full'))).toEqual([true, true, false, false, false, false, false, false]);
     expect(pips[2].style.getPropertyValue('--fill')).toBe('0.50');
     expect(pips.map((p) => p.hidden)).toEqual([false, false, false, false, true, true, true, true]);
+  });
+
+  it('writes a gun in the hand: its name and its heat, and the vent’s marker while it’s locked', () => {
+    const root = dom();
+    const c = createFlightCluster();
+    c.place(root, { on: true, vitals: null, arms: { name: 'DL-44', line: 'hand', heat: 0.42, locked: false, vent: null } });
+    const arms = q(root, '.hud-arms');
+    expect(arms.dataset.line).toBe('hand');
+    expect(q(root, '.hud-arms-name').textContent).toBe('DL-44');
+    expect(q(root, '.hud-arms-heat').style.getPropertyValue('--heat')).toBe('0.42');
+    expect(arms.hasAttribute('data-locked')).toBe(false);
+    c.place(root, { on: true, vitals: null, arms: { name: 'DL-44', line: 'hand', heat: 1, locked: true, vent: 0.4 } });
+    expect(arms.hasAttribute('data-locked')).toBe(true);
+    expect(q(root, '.hud-arms-heat').style.getPropertyValue('--vent')).toBe('0.40');
+    c.place(root, { on: true, vitals: null, arms: torpedoes });
+    expect(arms.hasAttribute('data-locked')).toBe(false);
+    expect(arms.dataset.line).toBe('ordnance');
   });
 
   it('hides the arms with none', () => {

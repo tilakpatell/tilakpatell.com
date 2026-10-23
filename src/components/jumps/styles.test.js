@@ -35,5 +35,7 @@ describe('the jump styles', () => {
     expect(jumpFrom(Number.NaN)).toBe(0);
     expect(jumpFrom('880')).toBe(0);
     expect(jumpFrom(T.end)).toBe(T.jump); // (a page waiting on the dark still gets it)
+    expect(jumpEvent('portal', { quiet: true }).detail.quiet).toBe(true);
+    expect(jumpEvent('portal').detail).not.toHaveProperty('quiet');
   });
 });

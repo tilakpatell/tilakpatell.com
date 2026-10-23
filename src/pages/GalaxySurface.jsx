@@ -57,7 +57,8 @@ import { createCarry, createPayLedger } from '../components/universe/earnRules';
 import { wornFiles } from '../components/rickmorty/wardrobe/looks';
 import { useLooks } from '../components/rickmorty/wardrobe/useLooks';
 import { toggleGuide } from '../lib/palette';
-import { Menu, MenuItem, Prompt, Reticle, reticleState } from '../runtime/hud';
+import { RiHeartPulseLine } from 'react-icons/ri';
+import { Arms, Cluster, Menu, MenuItem, Prompt, Reticle, Vitals, createFlightCluster, reticleState } from '../runtime/hud';
 import { wayOut } from '../components/worlds/worlds';
 import GuideCue from '../components/guide/GuideCue';
 import { EMOTES, wheelAngle } from '../lib/emote';
@@ -244,6 +245,9 @@ export default function GalaxySurface() {
   const [fade, setFade] = useState(0); // a moment's black, going in or out
   const [aiming, setAiming] = useState(false);
   const [combat, setCombat] = useState(null); // the fight's numbers (scene.js's 'combat' event): guard or heat, abilities, the lock
+  // the cluster on foot, the kit's (runtime/hud's Cluster, Vitals and Arms), as the universe map's planets have it: your health, the gun in your hand and its heat
+  const cluster = useRef(null);
+  const clusterWriter = useMemo(() => createFlightCluster(), []);
   const [hitMark, setHitMark] = useState(null); // { n, kill }
   const [looking, setLooking] = useState(null); // the look's mode and lock (scene.js's 'look' event, runtime/look.js)
   const [hurtFlash, setHurtFlash] = useState(0);
@@ -572,6 +576,15 @@ export default function GalaxySurface() {
   // the models on this world, for their credits (a person's crew figure as
   // well as its catalogue model: a duellist of the same kind uses the latter), what the cruiser's crew carry out, and the game's Luke, Han and Chewie, who walk out of the X-wing and the Falcon (universe/footFigures.js's PARTY) (kept, so the credits aren't drawn again with every change of the page)
   const kinds = useMemo(() => (site ? [...[...site.things_all, ...site.scatter, ...site.rides].map((t) => surfaceUrl(t.kind)), ...site.life.flatMap((t) => [surfaceUrl(t.kind), ...(CREW[t.kind] ? filesOf(CREW[t.kind]) : [])]), ...(ship === 'cruiser' ? wornFiles(looks) : []), ...(ship === 'xwing' ? filesOf(CREW.luke) : ship === 'falcon' ? [...filesOf(CREW.han), ...filesOf(CREW.chewie)] : []), ...(heroById(hero.id)?.src.url ? [heroById(hero.id).src.url] : [])] : []), [site, ship, looks, hero.id]);
+  // (the fight's on: a gun up or warm, a lock, a Jedi's stamina spent; the cluster's up for that, or while you're hurt)
+  const fighting = Boolean(combat && phase === 'walk' && (aiming || combat.lock || combat.broken || combat.locked || (combat.heat ?? 0) > 0.02 || (combat.guard ?? 1) < 0.99));
+  useEffect(() => {
+    clusterWriter.place(cluster.current, {
+      on: fighting || (phase === 'walk' && health < 100),
+      vitals: { value: health, max: 100, low: health < 35 },
+      arms: fighting && !combat.saber ? { name: combat.locked ? 'Overheated' : combat.hot ? `${combat.weapon}: overcharged` : combat.weapon, line: 'hand', heat: combat.hot ? 0 : (combat.heat ?? 0), locked: Boolean(combat.locked), vent: combat.vent ?? null } : null,
+    });
+  });
   if (!site) return <Navigate to={id ? `/galaxy/${id}` : '/galaxy'} replace />;
   const place = site.places.find((p) => p.id === here);
   const accent = { '--accent': sys.accent, '--accent-text': sys.accent, '--btn-bg': sys.accent, '--btn-ink': '#03040a' };
@@ -670,15 +683,13 @@ export default function GalaxySurface() {
           </ul>
         </div>
       )}
-      {health < 100 && (
-        <div className="surface-health" role="meter" aria-label="Health" aria-valuenow={Math.round(health)} aria-valuemin={0} aria-valuemax={100}>
-          <span style={{ width: `${health}%` }} />
-        </div>
-      )}
-      {/* the fight: the stamina a Jedi's block and strikes spend (the game's: lib/combat/saber2017.js) or a gun's heat, the abilities and their cooldowns, the dodge's charges, who you're squared up to */}
-      {combat && phase === 'walk' && (aiming || combat.lock || combat.broken || combat.locked || (combat.heat ?? 0) > 0.02 || (combat.guard ?? 1) < 0.99) && (
-        <div className="surface-combat" aria-live="off">
-          {combat.lock && (
+      {/* the fight: the kit's cluster, as on the universe map's planets (your health; the gun in your hand and its heat, R to vent it), with the galaxy's own in its row: the stamina a Jedi's block and strikes spend (the game's: lib/combat/saber2017.js), the abilities and their cooldowns, the dodge's charges; who you're squared up to over it */}
+      <Cluster
+        rootRef={cluster}
+        className="surface-cluster"
+        label="On foot"
+        over={
+          fighting && combat.lock ? (
             <p className="surface-lock">
               <span className="surface-lock-name">{combat.lock.name}</span>
               <span className="surface-lock-bar" role="meter" aria-label="Target health" aria-valuenow={combat.lock.hp} aria-valuemin={0} aria-valuemax={combat.lock.max}>
@@ -686,41 +697,45 @@ export default function GalaxySurface() {
                 {combat.lock.shield > 0 && <i style={{ width: `${Math.min(100, combat.lock.shield * 34)}%` }} />}
               </span>
             </p>
-          )}
-          {combat.saber ? (
-            <div className={combat.broken ? 'surface-meter surface-guard is-broken' : 'surface-meter surface-guard'} role="meter" aria-label="Stamina" aria-valuenow={Math.round((combat.stamina ?? combat.guard ?? 1) * 100)} aria-valuemin={0} aria-valuemax={100}>
-              <span style={{ width: `${(combat.stamina ?? combat.guard ?? 1) * 100}%` }} />
-              <b>{combat.broken ? 'Out of stamina' : combat.stance}</b>
+          ) : null
+        }
+      >
+        <Vitals label="Health" icon={<RiHeartPulseLine aria-hidden="true" />} />
+        <Arms keys />
+        <div className="surface-fight">
+          {fighting && combat.saber && (
+            <div className={combat.broken ? 'hud-glass surface-meter-block is-broken' : 'hud-glass surface-meter-block'} role="meter" aria-label="Stamina" aria-valuenow={Math.round((combat.stamina ?? combat.guard ?? 1) * 100)} aria-valuemin={0} aria-valuemax={100}>
+              <div className="hud-line">
+                <span className="hud-label">{combat.broken ? 'Out of stamina' : combat.stance}</span>
+              </div>
+              <span className="surface-meter surface-guard">
+                <span style={{ width: `${(combat.stamina ?? combat.guard ?? 1) * 100}%` }} />
+              </span>
             </div>
-          ) : (
-            <div className={combat.locked ? 'surface-meter surface-heat is-locked' : combat.hot ? 'surface-meter surface-heat is-hot' : 'surface-meter surface-heat'} role="meter" aria-label="Heat" aria-valuenow={Math.round((combat.heat ?? 0) * 100)} aria-valuemin={0} aria-valuemax={100}>
-              <span style={{ width: `${(combat.heat ?? 0) * 100}%` }} />
-              {combat.vent != null && <i className="surface-vent" style={{ left: `${combat.vent * 100}%` }} />}
-              {combat.vent != null && <em className="surface-vent-sweet" />}
-              <b>{combat.locked ? 'Overheated: R to vent' : combat.hot ? `${combat.weapon}: overcharged` : combat.weapon}</b>
-            </div>
           )}
-          <ul className="surface-powers">
-            {[
-              ['G', combat.powers?.power ?? (combat.saber ? 'Push' : 'Detonator'), 'power', powerIds.power],
-              ['V', combat.powers?.second ?? (combat.saber ? 'Pull' : 'Overcharge'), 'second', powerIds.second],
-              ['X', combat.dashes != null ? `Dodge ×${combat.dashes}` : 'Dodge', 'dodge'],
-              ['B', 'Emote', 'emote'],
-            ].map(([key, name, slot, ability]) => {
-              const left = combat.cool?.[slot] ?? 0;
-              const full = combat.cools?.[slot] ?? 1;
-              return (
-                <li key={slot} className={left > 0 ? 'surface-power is-cooling' : 'surface-power'} style={{ '--k': left > 0 ? left / full : 0 }}>
-                  <kbd>{key}</kbd>
-                  {ability && ABILITIES[ability]?.name === name && <GameIcon name={`ability:${ability}`} className="surface-game-icon" />}
-                  <span>{name}</span>
-                  {left > 0.05 && !(slot === 'power' && combat.powers?.hold) && <small>{left.toFixed(left < 10 ? 1 : 0)}</small>}
-                </li>
-              );
-            })}
-          </ul>
+          {fighting && (
+            <ul className="hud-glass surface-powers">
+              {[
+                ['G', combat.powers?.power ?? (combat.saber ? 'Push' : 'Detonator'), 'power', powerIds.power],
+                ['V', combat.powers?.second ?? (combat.saber ? 'Pull' : 'Overcharge'), 'second', powerIds.second],
+                ['X', combat.dashes != null ? `Dodge ×${combat.dashes}` : 'Dodge', 'dodge'],
+                ['B', 'Emote', 'emote'],
+              ].map(([key, name, slot, ability]) => {
+                const left = combat.cool?.[slot] ?? 0;
+                const full = combat.cools?.[slot] ?? 1;
+                return (
+                  <li key={slot} className={left > 0 ? 'surface-power is-cooling' : 'surface-power'} style={{ '--k': left > 0 ? left / full : 0 }}>
+                    <kbd>{key}</kbd>
+                    {ability && ABILITIES[ability]?.name === name && <GameIcon name={`ability:${ability}`} className="surface-game-icon" />}
+                    <span>{name}</span>
+                    {left > 0.05 && !(slot === 'power' && combat.powers?.hold) && <small>{left.toFixed(left < 10 ? 1 : 0)}</small>}
+                  </li>
+                );
+              })}
+            </ul>
+          )}
         </div>
-      )}
+      </Cluster>
       {hitMark && <HitMarker key={`hit-${hitMark.n}`} kill={hitMark.kill} />}
       {parryNote > 0 && (
         <p key={`parry-${parryNote}`} className="surface-parry" role="status">

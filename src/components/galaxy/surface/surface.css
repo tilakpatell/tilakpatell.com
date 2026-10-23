@@ -437,20 +437,6 @@
 .surface-list span { font-size: 0.78rem; line-height: 1.4; color: rgba(242, 239, 232, 0.75); }
 .surface-list li[data-done] b::after { content: ' ✓'; color: var(--accent); }
 
-/* health, when you've been hit */
-.surface-health {
-  position: absolute;
-  z-index: 2;
-  left: 50%;
-  bottom: calc(64px + env(safe-area-inset-bottom, 0px));
-  width: min(240px, 50vw);
-  height: 6px;
-  transform: translateX(-50%);
-  border-radius: 3px;
-  background: rgba(0, 0, 0, 0.5);
-  overflow: hidden;
-}
-.surface-health span { display: block; height: 100%; background: linear-gradient(90deg, #ff4a3d, #ffd36a); transition: width 0.2s; }
 
 /* the crosshair, while you're shooting */
 /* the look's prompt (the kit's Prompt, runtime/look.js): under the action prompt, a click on it locks too */
@@ -903,37 +889,33 @@
 .surface-buttons-saber { grid-template-columns: repeat(3, 60px); }
 .surface-buttons-saber .surface-btn { width: 60px; height: 60px; }
 
-/* the fight (the scene's 'combat' event): the guard or the heat, the abilities, the lock */
-.surface-combat {
-  position: absolute;
-  z-index: 2;
-  left: 50%;
-  bottom: calc(80px + env(safe-area-inset-bottom, 0px));
-  width: min(300px, 60vw);
-  transform: translateX(-50%);
-  display: grid;
-  gap: 6px;
-  pointer-events: none;
-  font-size: var(--hud-min);
-}
-.surface-lock { margin: 0 0 2px; display: grid; gap: 3px; justify-items: center; }
+/* the fight (the scene's 'combat' event): the kit's cluster on foot (runtime/
+   hud: your health, the gun and its heat), as the universe map's planets have
+   it, in the galaxy's skin, with the guard and the abilities in its row and
+   the lock over it. Above the action prompt and the look's, which keep the
+   bottom (--hud-pad-b: the kit's token for what's under the row) */
+.surface-cluster { --hud-pad-b: calc(76px + env(safe-area-inset-bottom, 0px)); --hud-cluster-line: color-mix(in srgb, var(--accent) 40%, transparent); --hud-vitals-fill: linear-gradient(90deg, #ff4a3d, #ffd36a); --hud-vitals-glow: rgb(255 120 80 / 0.5); }
+.surface-lock { margin: 0 0 2px; display: grid; gap: 3px; justify-items: center; font-size: var(--hud-min); }
 .surface-lock-name { font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #fff; text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8); }
 .surface-lock-bar { position: relative; display: block; width: 60%; height: 5px; border-radius: 3px; background: rgba(0, 0, 0, 0.55); overflow: hidden; }
 .surface-lock-bar span { display: block; height: 100%; background: #ff4a3d; transition: width 0.15s; }
 .surface-lock-bar i { position: absolute; left: 0; top: 0; height: 2px; background: #7fd0ff; }
-.surface-meter { position: relative; height: 8px; border-radius: 4px; background: rgba(0, 0, 0, 0.55); overflow: visible; }
+.surface-meter { position: relative; display: block; height: 8px; border-radius: 4px; background: rgba(0, 0, 0, 0.55); overflow: visible; }
 .surface-meter > span { display: block; height: 100%; border-radius: 4px; transition: width 0.12s; }
-.surface-meter b { position: absolute; left: 50%; top: 10px; transform: translateX(-50%); white-space: nowrap; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(255, 255, 255, 0.85); text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8); }
 .surface-guard > span { background: linear-gradient(90deg, #7fd0ff, #cfe6ff); }
-.surface-guard.is-broken > span { background: #ff4a3d; }
-.surface-guard.is-broken b { color: #ff8a7a; animation: surface-blink 0.4s steps(2) infinite; }
-.surface-heat > span { background: linear-gradient(90deg, #ffd36a, #ff6a3d, #ff3b30); }
-.surface-heat.is-locked > span { background: #ff3b30; animation: surface-blink 0.5s steps(2) infinite; }
-.surface-heat.is-hot > span { background: linear-gradient(90deg, #fff, #cfe6ff); }
-.surface-vent { position: absolute; top: -4px; width: 2px; height: 16px; margin-left: -1px; background: #fff; box-shadow: 0 0 6px #fff; }
-.surface-vent-sweet { position: absolute; top: 0; left: 35%; width: 20%; height: 100%; border-radius: 4px; background: rgba(127, 208, 255, 0.55); }
+.surface-meter-block { min-width: 150px; }
+/* (the guard and the abilities: in the cluster's row on a desktop; on a touch
+   screen, where the kit's row lets its blocks go to their own places, the
+   two together bottom centre, over the thumbs' buttons, and the lock up top) */
+.surface-fight { display: contents; }
+@media (pointer: coarse), (max-width: 767px) {
+  .surface-fight { position: absolute; left: 50%; bottom: calc(80px + env(safe-area-inset-bottom, 0px)); display: grid; gap: 6px; justify-items: center; transform: translateX(-50%); }
+  .surface-cluster .surface-lock { position: absolute; left: 50%; top: calc(var(--nav-h, 64px) + 56px); width: min(300px, 70vw); transform: translateX(-50%); }
+}
+.surface-meter-block.is-broken .hud-label { color: #ff8a7a; animation: surface-blink 0.4s steps(2) infinite; }
+.surface-meter-block.is-broken .surface-guard > span { background: #ff4a3d; }
 @keyframes surface-blink { to { opacity: 0.35; } }
-.surface-powers { margin: 14px 0 0; padding: 0; list-style: none; display: flex; justify-content: center; gap: 8px; }
+.surface-powers { margin: 0; list-style: none; display: flex; justify-content: center; gap: 8px; min-width: 0; font-size: var(--hud-min); }
 .surface-power {
   position: relative;
   display: grid;
@@ -976,7 +958,6 @@
 @keyframes surface-parry { 0% { opacity: 0; transform: translate(-50%, 10px) scale(0.8); } 15% { opacity: 1; transform: translate(-50%, 0) scale(1.05); } 100% { opacity: 0; transform: translate(-50%, -14px) scale(1); } }
 .surface-hurt { position: absolute; z-index: 1; inset: 0; pointer-events: none; background: radial-gradient(ellipse at center, transparent 55%, rgba(255, 40, 30, 0.45) 100%); animation: surface-hurt 0.45s ease-out forwards; }
 @keyframes surface-hurt { from { opacity: 1; } to { opacity: 0; } }
-.surface-health:has(+ .surface-combat) { bottom: calc(154px + env(safe-area-inset-bottom, 0px)); }
 .surface-buttons-saber { grid-template-columns: repeat(3, 58px); }
 .surface-buttons-saber .surface-btn, .surface-buttons-gun .surface-btn { width: 58px; height: 58px; font-size: 0.7rem; }
 .surface-buttons-gun { grid-template-columns: repeat(3, 58px); }

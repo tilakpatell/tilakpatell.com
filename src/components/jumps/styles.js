@@ -14,7 +14,8 @@ export const JUMP_STYLES = ['hyper', 'portal', 'bluesky'];
 export const jumpStyle = (v) => (JUMP_STYLES.includes(v) ? v : 'hyper');
 
 // the event App.jsx listens for: window.dispatchEvent(jumpEvent(style, {
-// onPeak, from })). `onPeak` is called once, when the jump has the screen dark (its
+// onPeak, from, quiet })). `quiet`: without its own sound (the page plays the
+// moment's). `onPeak` is called once, when the jump has the screen dark (its
 // flash), or when it ends or another takes its place without getting there,
 // for a page to change under it; App marks the event `taken` when it will.
 // `from`: ms along the timeline it starts at, for a jump whose opening has
@@ -22,5 +23,5 @@ export const jumpStyle = (v) => (JUMP_STYLES.includes(v) ? v : 'hyper');
 // portal drawn in 3D: the goo filling the view is where its jump begins);
 // up to the flash at most, so a page waiting on the dark still gets it.
 export const jumpFrom = (ms) => (Number.isFinite(ms) && ms > 0 ? Math.min(ms, T.jump) : 0);
-export const jumpEvent = (style = 'hyper', { onPeak, from } = {}) =>
-  new CustomEvent('tp:hyperspace', { detail: { style: jumpStyle(style), ...(onPeak ? { onPeak } : {}), ...(jumpFrom(from) ? { from: jumpFrom(from) } : {}) } });
+export const jumpEvent = (style = 'hyper', { onPeak, from, quiet = false } = {}) =>
+  new CustomEvent('tp:hyperspace', { detail: { style: jumpStyle(style), ...(onPeak ? { onPeak } : {}), ...(jumpFrom(from) ? { from: jumpFrom(from) } : {}), ...(quiet ? { quiet: true } : {}) } });

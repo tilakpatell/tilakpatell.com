@@ -407,8 +407,10 @@ export default function Universe({ ask = false }) {
     else if (e.type === 'crossing') {
       // into a Rick portal (the gun's, or a sector's): his portal jump over
       // the map from the goo filling the view, and the ship out the far side
-      // under its flash (the scene goes anyway if this never says)
-      window.dispatchEvent(jumpEvent('portal', { from: e.from, onPeak: () => map.current.crossNow?.() }));
+      // under its flash (the scene goes anyway if this never says); quiet,
+      // for the gun was heard as it fired and the portal's swirl is heard as
+      // the ship comes out (Comms, on 'sector')
+      window.dispatchEvent(jumpEvent('portal', { from: e.from, quiet: true, onPeak: () => map.current.crossNow?.() }));
     } else if (e.type === 'jump') {
       window.dispatchEvent(jumpEvent(crew?.jump));
       if (!jumped.current) {

@@ -282,6 +282,9 @@ export default function Comms({ crew, reduced, control }) {
             if (soundOnce('hit', 120, now)) hitSound();
             if (often('hit', now)) say(linesFor(crew, 'foot', 'hurt'));
           } else if (e.id === 'swap') say(linesFor(crew, 'foot', 'swap', e.who), { urgent: true });
+          else if (e.id === 'locked') {
+            if (soundOnce('locked', 300, now)) switchSound(); // (too hot to fire: a click, till it's vented or cools)
+          }
           else if (e.id === 'far' || e.id === 'nowhere') {
             if (often('edge', now)) say(linesFor(crew, 'foot', e.id));
           } else if (e.id !== 'off') say(linesFor(crew, 'foot', e.id, e.who), { urgent: e.id === 'squad' || e.id === 'down' || e.id === 'alt' });

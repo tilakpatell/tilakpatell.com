@@ -64,7 +64,7 @@
 //
 // createFoot({ map, emit, reduced, small, planetOf, renderer, prepare }) → { phase, prefetch(id, kind),
 //   prefetchAt(id, { light, near, entry }), begin(...),
-//   update(dt, t, input), view(dt) → camera, fire(), cycle(), swap(),
+//   update(dt, t, input), view(dt) → camera, fire(), trigger(down), vent(), cycle(), swap(),
 //   board(), look(dx, dy) (px), turn(dx, dy) (radians), first(), aimPoint(), info(), crew(),
 //   guests(list), end(), dispose() }
 
@@ -115,6 +115,10 @@ import { device } from '../../lib/device';
 import { AIR, ENTRY, entryPath, entrySpot, fxAt } from './entry';
 import { createReentry } from './reentry';
 import { PARTY, built, figuresWith, getLoader, loadSharedFigure, rigScene, seedFor, templateIn, warmGameFigure } from './footFigures';
+import { cool as coolGun, footWeapon, handGun, heatView, newTrigger, press, ventNow } from './footArms';
+import { spreadAt } from '../../lib/arms/handRules';
+import { CREW_KEY, readCrew, registerCrew, styleOf as crewStyleOf } from '../../lib/crew/crewStyle';
+import { localSaves } from '../../runtime/local';
 
 // (the figures are footFigures.js's, dressed by the classic wardrobe; who
 // steps out of each ship, and the shared models, are its too)
@@ -1184,7 +1188,8 @@ export function createFoot({ map, emit, reduced = false, small = false, planetOf
     nextSquad: 0,
     squads: 0,
     cleared: true,
-    cool: 0,
+    trigger: newTrigger(), // (the gun in your hand's: footArms.js)
+    firing: false, // F held
     mateCool: 1,
     mateSt: {}, // the mate's health and hurt (footLife.js's mateHit: it can be hit, and goes down a while)
     mateKnock: null, // which way the last shot that hit the mate was going
@@ -1303,12 +1308,24 @@ export function createFoot({ map, emit, reduced = false, small = false, planetOf
     return castReady;
   };
   let loading = null;
+  // (the crew's style as the Hangar left it, tp-crew: read at each landing, as a fit is)
+  const crewStyle = () => {
+    try {
+      const saves = localSaves();
+      registerCrew(saves);
+      return readCrew(saves.get(CREW_KEY, null));
+    } catch {
+      return {};
+    }
+  };
   const load = (kind) => {
     const specs = PARTY[kind] ?? PARTY.rv;
     const castReady = warmParty(kind);
     loading = (async () => {
       await castReady;
       const figs = await Promise.all(specs.map((s) => loadParty(s, cast, null, { templates: partyModels }).catch(() => null)));
+      const crew = crewStyle();
+      const arms = skills()?.arms ?? [];
       return figs.map((fig, i) => {
         const spec = specs[i];
         const f = fig ?? built({ ...spec, src: { built: spec.id === 'artoo' ? 'artoo' : 'han' } });
@@ -1316,7 +1333,9 @@ export function createFoot({ map, emit, reduced = false, small = false, planetOf
         group.add(f.model);
         group.visible = false;
         root.add(group);
-        const gp = spec.gun ? createGunplay(f, f.gun ?? spec.gun, { unit: METRE, who: f.built ? 'built' : spec.id }) : null;
+        // (in hand: the Hangar's pick, if they may carry it, else the wardrobe's gun or their own: footArms.js)
+        const gun = spec.gun ? handGun({ gun: f.gun ?? spec.gun }, crewStyleOf(crew, spec.id), arms) : null;
+        const gp = gun ? createGunplay(f, gun, { unit: METRE, who: f.built ? 'built' : spec.id }) : null;
         return { spec, fig: f, group, gp };
       });
     })();
@@ -1505,14 +1524,14 @@ export function createFoot({ map, emit, reduced = false, small = false, planetOf
     const dir = arr(S.cam.look.clone().sub(S.cam.pos).normalize());
     const from = vec.add(at(S.me, S.R), S.me.n, (me?.spec.tall ?? 1.8) * METRE * 0.62);
     const targets = footBodies({ troops: S.troops, R: S.R });
-    const r = footAim({ cam, dir, from, targets, solids: footSolids(obstacles(), S.R), cone: c, lock: S.lock, range: BOLT.range, min: 1.5 * METRE });
+    const r = footAim({ cam, dir, from, targets, solids: footSolids(obstacles(), S.R), cone: c, lock: S.lock, range: reachOf(me), min: 1.5 * METRE });
     r.slow = friction(r.ray.dir, r.ray.from, targets, c);
     return r;
   };
 
   // a shot by p at `target` (a trooper, or null for straight ahead): the
   // gun kicks and the bolt leaves its muzzle for the mark
-  const shoot = (p, target, owner, damage, jitter = 0, mark = null) => {
+  const shoot = (p, target, owner, damage, jitter = 0, mark = null, range = reachOf(p)) => {
     let r = p.gp?.fire();
     // out of your own eyes: from the gun you can see
     if (owner === 'me' && vm?.gun.visible && vm.muzzle) {
@@ -1522,7 +1541,7 @@ export function createFoot({ map, emit, reduced = false, small = false, planetOf
     const from = r ? toMap(r.muzzle).sub(S.c) : handAt(p, new V()).sub(S.c).addScaledVector(shotDir(p, target), 0.35 * METRE);
     const dir = (mark ? mark.clone() : shotAt(p, target)).sub(from).normalize();
     if (jitter) dir.add(new V((rand() - 0.5) * jitter, (rand() - 0.5) * jitter, (rand() - 0.5) * jitter)).normalize();
-    const b = boltStep.fire({ from: arr(from), dir: arr(dir), speed: BOLT.speed, range: BOLT.range, owner, side: 'you', damage });
+    const b = boltStep.fire({ from: arr(from), dir: arr(dir), speed: BOLT.speed, range, owner, side: 'you', damage });
     const mesh = takeMesh();
     const color = GUNS[gunOf(p)]?.bolt ?? p.spec.bolt ?? '#ffffff';
     paintBolt(mesh, color);
@@ -1540,8 +1559,47 @@ export function createFoot({ map, emit, reduced = false, small = false, planetOf
       if (gun.casing && r.eject) fx.casing(toMap(r.eject).sub(S.c), new V(-1, 0, 0).transformDirection(r.gun.matrixWorld).transformDirection(invMap).addScaledVector(dir, -0.3).normalize(), up);
     } else puff(arr(from), color, 0.5);
   };
-  // what a shot of p's does: a gadget's more than a blaster's (gunplay.js's GUNS)
-  const damageOf = (p) => GUNS[gunOf(p)]?.damage ?? (gunOf(p) === 'bowcaster' ? 2 : 1);
+  // the gun in p's hand, as numbers (lib/arms's, the galaxy's: footArms.js),
+  // the skill tree's coolant and steady hands on yours; what a shot does,
+  // and how far it goes (the table's metres, in the map's)
+  let armed = { kind: null, sk: null, w: null };
+  const weaponNow = (p) => {
+    const kind = gunOf(p);
+    const sk = p === meP() ? own() : null;
+    if (armed.kind !== kind || armed.sk !== sk) armed = { kind, sk, w: footWeapon(kind, sk ?? {}) };
+    return armed.w;
+  };
+  const damageOf = (p) => weaponNow(p).damage;
+  const reachOf = (p) => (gunOf(p) ? weaponNow(p).range * METRE : BOLT.range);
+  // the trigger this frame (footArms.js's press): a shot where the reticle
+  // is, bent toward a trooper within the input's cone (footAim.js), each of
+  // a scattergun's pellets scattered by the gun (less with steady hands),
+  // the gun's kick and the M60's climb; a locked gun clicks. The gun shot, or false
+  const pull = (down, c = cone()) => {
+    if (S.phase !== 'walk') return false;
+    const me = meP();
+    const kind = gunOf(me);
+    if (!kind) return false;
+    const w = weaponNow(me);
+    const r = press(S.trigger, w, S.clock, { down });
+    if (!r) return false;
+    if (r.locked) {
+      emit({ type: 'foot', id: 'locked', gun: kind });
+      return false;
+    }
+    const aimed = aimNow(c);
+    const target = aimed?.target ? (S.troops.find((o) => o.id === aimed.target.id && o.alive) ?? null) : null;
+    if (aimed) S.aimed = aimed;
+    const jitter = spreadAt(w, false) * 2;
+    for (let i = 0; i < r.shots; i++) shoot(me, target, 'me', r.damage * own().damage, jitter, aimed ? new V(...aimed.at) : null);
+    S.acted = true;
+    S.aim = 1;
+    if (!reduced) {
+      S.cam.kick.v += (GUNS[kind]?.kick.up ?? 1.5) * (w.kick ?? 1);
+      if (r.climb) S.cam.pitch = Math.max(CAM.pitch[0], S.cam.pitch - r.climb);
+    }
+    return kind;
+  };
 
   // ── begin: down onto the planet `id` from where the ship is ──
   // where to come down beside a friend's ship already down (`near`, its { n,
@@ -2553,7 +2611,12 @@ export function createFoot({ map, emit, reduced = false, small = false, planetOf
     }
     // health comes back once out of trouble a while
     if (S.clock - S.hitAt > 4 && S.health < FOOT.health) S.health = Math.min(FOOT.health, S.health + own().heal * dt);
-    S.cool -= dt;
+    // the gun cooling, and held, going on firing (the first of a press was fire()'s)
+    if (gunOf(me) && S.phase === 'walk') {
+      coolGun(S.trigger, weaponNow(me), dt, S.clock);
+      const gun = pull(S.firing);
+      if (gun) emit({ type: 'fire', gun });
+    }
     // the gun stays up a while after the last shot, longer with a lock still there
     S.aim = Math.max(0, S.aim - dt / (S.lock ? 6 : 2.5));
     S.mateAim = Math.max(0, S.mateAim - dt / 2.5);
@@ -3081,19 +3144,21 @@ export function createFoot({ map, emit, reduced = false, small = false, planetOf
     // within the input's cone and no further (footAim.js); `cone` for this
     // one shot (a touch tap's, which snaps). The gun it was (gunplay.js's
     // kind), or false
+    // (a press of F or a click: the trigger down for this frame, as a held one's first)
     fire({ cone: c = cone() } = {}) {
-      if (S.phase !== 'walk' || S.cool > 0) return false;
-      const me = meP();
-      if (!me?.spec.gun) return false;
-      S.cool = me.spec.gun === 'bowcaster' ? 0.55 : 0.28;
-      const aimed = aimNow(c);
-      const target = aimed?.target ? S.troops.find((o) => o.id === aimed.target.id && o.alive) ?? null : null;
-      if (aimed) S.aimed = aimed;
-      shoot(me, target, 'me', damageOf(me) * own().damage, 0, aimed ? new V(...aimed.at) : null);
-      S.acted = true;
-      S.aim = 1;
-      if (!reduced) S.cam.kick.v += GUNS[gunOf(me)]?.kick.up ?? 1.5;
-      return gunOf(me);
+      return pull(true, c);
+    },
+    // F held, or let go: held, it goes on firing at the gun's own pace (the
+    // step: shots, a burst's rest, the gauntlet's charge let go); the gun
+    // shot now, or false
+    trigger(down, { cone: c = cone() } = {}) {
+      S.firing = Boolean(down);
+      return down ? pull(true, c) : false;
+    },
+    // R: vent the gun's heat (all of it in the sweet spot of a lock); whether it did
+    vent() {
+      if (S.phase !== 'walk' || !gunOf(meP())) return false;
+      return ventNow(S.trigger, S.clock);
     },
     // B: Rick's next gadget (GADGETS), or the one named, if it's Rick you're playing; its kind, or false
     gadget(kind = null) {
@@ -3192,6 +3257,8 @@ export function createFoot({ map, emit, reduced = false, small = false, planetOf
         near: spot && { label: spot.label, say: spot.say },
         // the emote wheel: open (its slices, the one pointed at), what you're doing, the last, and for a moment after
         emote: { open: emotes.open, hover: emotes.hover, on: S.emote?.id ?? null, last: emotes.last, fresh: S.emoteAt != null && S.clock - S.emoteAt < 2.2 },
+        // the gun in hand for the cluster's arms (footArms.js): its name, its heat, the vent's marker while it's locked
+        hand: gunOf(me) ? { name: weaponNow(me).name, ...heatView(S.trigger, S.clock) } : null,
         // Rick's gadget in hand, and its name on the HUD for a moment after B
         gadget: me && GADGETS.includes(me.spec.gun) ? { kind: gunOf(me), name: GADGET_NAMES[gunOf(me)], fresh: S.gadgetAt != null && S.clock - S.gadgetAt < 1.8 } : null,
       };

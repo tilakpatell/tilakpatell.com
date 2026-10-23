@@ -112,7 +112,7 @@ import { createSaber, rootAt } from './saber';
 import { FORCE, forceAt, hitStop, pushVelocity } from './combatRules';
 import { createSaberSim, saberOf } from '../../../lib/combat/saber2017';
 import { incomingAt, met, swingingOf } from './duellists';
-import { heatShot, heatStep, spreadAt, vent, ventSpot, withMods } from './weaponRules';
+import { SHOT_FLOOR, heatShot, heatStep, spreadAt, vent, ventSpot, withMods } from './weaponRules';
 import { createHandArms } from './handArms';
 import { blastOf, throwOf as palmThrow } from '../../../lib/arms/behaviours';
 import { heroById, heroSpec, partyFor, refitOf, writeHero } from '../heroes';
@@ -181,7 +181,7 @@ const CAM = { dist: 4.8, up: 1.55, pitch: [-0.45, 1.15], far: 14, near: 2.2 };
 const REACH = 3.2; // metres: close enough to use something
 const ROLL_PIVOT = 0.55; // metres up from the feet: where a dodge's roll turns about (a tucked body's middle)
 const KEYS = { w: 'up', arrowup: 'up', s: 'down', arrowdown: 'down', a: 'left', arrowleft: 'left', d: 'right', arrowright: 'right', shift: 'run', z: 'crouch', ' ': 'jump', e: 'act', enter: 'act', f: 'fire', r: 'throw', c: 'block', x: 'dodge', g: 'power', v: 'second', b: 'emote', p: 'view' };
-const FIRE_EVERY = 0.24; // seconds between shots
+const FIRE_EVERY = SHOT_FLOOR; // seconds between shots (lib/arms/handRules.js's: the universe map's planets shoot on the same)
 // the mission kinds fought as a battle, on assaultScene.js's interface
 // (missions/assault.js, and Heroes vs Villains and Blast: hvv.js, blast.js)
 const BATTLES = new Set(['assault', 'hvv', 'blast']);

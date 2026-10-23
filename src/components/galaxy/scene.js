@@ -1502,9 +1502,11 @@ export async function create(canvas, ctx) {
     state.auto = null;
     powers.cancel();
     unique.clear();
-    // the jump's time by its route along the lanes (routes.js), slower off them
+    // the jump's time by its route along the lanes (routes.js), slower off
+    // them; a quarter quicker with the skill tree's hot drive (stats.jump,
+    // the universe map's jump recharge: here there's no recharge to cut)
     const route = routeBetween(state.sys.id, to.id);
-    const dur = route ? jumpTime(route) : jumpSeconds(state.sys, to);
+    const dur = (route ? jumpTime(route) : jumpSeconds(state.sys, to)) * (state.stats?.jump ?? 1);
     state.jump = { to, from: state.sys, phase: state.ship ? 'align' : 'spool', age: 0, dir, dur, route, built: false, dressed: false, why };
     if (state.view === 'map') state.view = state.seat;
     // its ships' models loading and its built ones made, in the seconds before the tunnel

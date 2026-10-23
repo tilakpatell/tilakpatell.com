@@ -136,6 +136,7 @@ function Lightspeed() {
   const [on, setOn] = useState(0);
   const [style, setStyle] = useState('hyper');
   const [from, setFrom] = useState(0); // (ms along its timeline a jump starts at: jumps/styles.js's jumpFrom)
+  const [quiet, setQuiet] = useState(false); // (without its own sound: the page plays the moment's)
   const seq = useRef([]);
   const waiting = useRef(null); // the page's onPeak, till it's called
   const peak = useCallback(() => {
@@ -154,6 +155,7 @@ function Lightspeed() {
       const reduced = prefersReducedMotion();
       setStyle(reduced ? 'hyper' : jumpStyle(e?.detail?.style));
       setFrom(reduced ? 0 : jumpFrom(e?.detail?.from));
+      setQuiet(Boolean(e?.detail?.quiet));
       setOn(Date.now());
     };
     const onKey = (e) => {
@@ -179,7 +181,7 @@ function Lightspeed() {
     <Suspense fallback={null}>
       <Jump
         key={on}
-        sound
+        sound={!quiet}
         from={from}
         onPeak={peak}
         onDone={() => {
