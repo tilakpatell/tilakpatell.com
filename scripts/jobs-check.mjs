@@ -2,7 +2,8 @@
 // A browser check of free roam's jobs on the galaxy's worlds (surface/jobs.js,
 // jobPlay.js) and of your feet on the ground there. With the dev server up
 // (npx vite --port 5173):
-//   OUT=/tmp/shots node scripts/jobs-check.mjs [world ...]   (JOB=race: the job to take, else a bounty)
+//   OUT=/tmp/shots node scripts/jobs-check.mjs [world ...]   (JOB=race: the job to take, else a bounty;
+//   BASE=http://127.0.0.1:5173 for a server on that address)
 // For each world it lands in free roam, waits till you're walking, and
 // checks you stand on the ground at the ship; opens the board with J (it
 // opens at the jobs, under the world's quests) and reads its three; takes a
@@ -15,6 +16,7 @@ import { chromium } from 'playwright-core';
 const out = process.env.OUT ?? '.';
 const worlds = process.argv.slice(2).length ? process.argv.slice(2) : ['lothal'];
 const want = process.env.JOB ?? 'bounty';
+const base = process.env.BASE ?? 'http://localhost:5173';
 const ON = 0.15; // m: as near the ground as standing on it is
 const browser = await chromium.launch({ executablePath: process.env.CHROME ?? '/opt/pw-browsers/chromium', args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] });
 const problems = [];
@@ -37,7 +39,7 @@ for (const world of worlds) {
   const page = await ctx.newPage();
   const errors = [];
   page.on('pageerror', (e) => errors.push(String(e)));
-  await page.goto(`http://localhost:5173/?quality=low&calibrate=off&software=on#/galaxy/${world}/surface?mode=free`, { waitUntil: 'domcontentloaded' });
+  await page.goto(`${base}/?quality=low&calibrate=off&software=on#/galaxy/${world}/surface?mode=free`, { waitUntil: 'domcontentloaded' });
   await page.getByRole('button', { name: /Play anyway/ }).click({ timeout: 60000 }).catch(() => {});
   const walking = await page
     .waitForFunction(() => document.querySelector('.surface-page')?.dataset.phase === 'walk', null, { timeout: 1500000, polling: 1000 })
