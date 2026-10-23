@@ -80,8 +80,17 @@ for (const world of worlds) {
     await page.waitForTimeout(3000);
     const taken = await page.evaluate(() => window.__surfaceDo('debug').quest?.id ?? null);
     check(Boolean(taken?.startsWith('job:')), `${world}: ${pick.name} taken (${taken})`);
-    for (let i = 0; i < 6 && (await page.evaluate(() => Boolean(window.__surfaceDo('debug').quest))); i++) {
-      await page.evaluate(() => window.__surfaceDo('missionDo', 'skip'));
+    // (each step skipped once: a shoot step's targets go down at once, but each
+    // counts a kill only 0.3 s of the game's own time later, which in software
+    // on a full world is many seconds of ours)
+    let skipped = null;
+    for (const until = Date.now() + 180000; Date.now() < until; ) {
+      const q = await page.evaluate(() => window.__surfaceDo('debug').quest);
+      if (!q) break;
+      if (skipped !== q.step) {
+        await page.evaluate(() => window.__surfaceDo('missionDo', 'skip'));
+        skipped = q.step;
+      }
       await page.waitForTimeout(2500);
     }
     const toast = await page.evaluate(() => document.querySelector('.surface-toast, [class*="toast"]')?.textContent ?? '');
