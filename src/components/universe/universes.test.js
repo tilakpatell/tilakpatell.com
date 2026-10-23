@@ -81,8 +81,8 @@ describe('the air round the fandoms’ planets', () => {
         expect(u.air.top, u.id).toBeLessThan(1.1);
       }
     }
-    // (paper has no air, nor a Game Boy's screen)
-    expect(UNIVERSES.find((u) => u.id === 'office').air).toBeNull();
+    // (a Game Boy's screen has no air; Scranton's country has its own)
+    expect(UNIVERSES.find((u) => u.id === 'office').air.colour).toMatch(/^#[0-9a-f]{6}$/i);
     expect(UNIVERSES.find((u) => u.id === 'gaming').air).toBeNull();
   });
 });

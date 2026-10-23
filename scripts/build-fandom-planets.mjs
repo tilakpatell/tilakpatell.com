@@ -7,10 +7,11 @@
 //                                                      the 8192 colour maps
 //                                                      (-8k.ktx2) worn near at ultra
 //
-// All but 'giants' (Music's and Marvel's, recoloured from Solar System
-// Scope's maps, fetched once) are made from nothing but code.
+// Every one is made from nothing but code (Marvel's Earth-616 traces Natural
+// Earth's coasts, from the world-atlas package, and wears the real Earth's
+// night lights, from the map's own earth-night-hq.webp).
 
-const ALL = ['middleearth', 'breakingbad', 'caribbean', 'rickmorty', 'office', 'giants', 'potter'];
+const ALL = ['middleearth', 'breakingbad', 'caribbean', 'rickmorty', 'office', 'potter', 'music', 'marvel'];
 const args = process.argv.slice(2);
 // (--ultra: sphere.mjs reads it before any baker is loaded)
 if (args.includes('--ultra')) process.env.PLANETS_8K = '1';

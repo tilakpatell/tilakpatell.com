@@ -12,7 +12,8 @@ describe('the planet maps by detail level', () => {
     expect(mapFile('earth', 'low')).toBe('earth-sm.webp');
   });
   it('gives a strong card the standard file for a map that has no -hq', () => {
-    expect(mapFile('transformers', 'ultra')).toBe('transformers.webp');
+    // (what ultra wears from the start: Cybertron's -xl is only ever worn near)
+    expect(mapFile('transformers', 'ultra', { xl: false })).toBe('transformers.webp');
     expect(mapFile('invincible-night', 'ultra')).toBe('invincible-night.webp');
     // (the sky's glow has nothing finer to give: it only lights the map)
     expect(mapFile('sky-glow', 'ultra')).toBe('sky-glow.webp');
@@ -89,7 +90,8 @@ describe('the air round a planet', () => {
     stub();
     const { buildPlanet } = await import('./planets');
     const { byId } = await import('./universes');
-    expect(buildPlanet(byId('office'), {}, { tier: 'high' }).air.material.fragmentShader).not.toContain('inscatter');
+    // (the Game Boy's screen: no air but its pixel clouds and rim)
+    expect(buildPlanet(byId('gaming'), {}, { tier: 'high' }).air.material.fragmentShader).not.toContain('inscatter');
     vi.unstubAllGlobals();
   });
 });
@@ -191,15 +193,24 @@ describe('the styles in the light', () => {
     vi.unstubAllGlobals();
   });
 
-  it('the Office is paper', async () => {
+  it('the Office is Scranton’s country: a world, lit as one, its cities on its night side', async () => {
     stub();
+    const THREE = await import('three');
     const { buildPlanet } = await import('./planets');
     const { byId } = await import('./universes');
-    const mat = buildPlanet(byId('office'), {}).body.material;
-    expect(mat.isMeshPhysicalMaterial).toBe(true);
-    expect(mat.sheen).toBe(0.6);
-    expect(mat.sheenRoughness).toBe(0.8);
-    expect(mat.roughness).toBe(1);
+    const T = { office: new THREE.Texture(), 'office-rough': new THREE.Texture(), 'office-night': new THREE.Texture() };
+    const p = buildPlanet(byId('office'), T, { tier: 'high' });
+    const mat = p.body.material;
+    expect(mat.isMeshStandardMaterial).toBe(true);
+    expect(mat.isMeshPhysicalMaterial).toBeFalsy();
+    expect(mat.map).toBe(T.office);
+    expect(mat.roughnessMap).toBe(T['office-rough']);
+    expect(mat.userData.air.uNight.value).toBe(T['office-night']);
+    // (its air the real kind now; its clouds are in its map, so no shell, no draw more than the paper ball had)
+    expect(p.air.material.fragmentShader).toContain('inscatter');
+    let shells = 0;
+    p.group.traverse((o) => (shells += o.isMesh && o !== p.body && o.geometry?.type === 'SphereGeometry' && o.material?.transparent && (o.material.alphaMap || o.material.map) ? 1 : 0));
+    expect(shells).toBe(0);
     vi.unstubAllGlobals();
   });
 
@@ -301,11 +312,18 @@ describe('a world seen from across the map', () => {
 describe('the -xl maps, 4096 on ultra', () => {
   it('a strong card asks for the -xl KTX2 of a baked planet’s colour map', () => {
     expect(mapFile('middleearth', 'ultra')).toBe('middleearth-xl.ktx2');
-    for (const id of ['breakingbad', 'caribbean', 'rickmorty', 'office', 'music', 'marvel']) expect(mapFile(id, 'ultra')).toBe(`${id}-xl.ktx2`);
+    for (const id of ['breakingbad', 'caribbean', 'rickmorty', 'office', 'music', 'marvel', 'potter', 'invincible', 'transformers']) expect(mapFile(id, 'ultra')).toBe(`${id}-xl.ktx2`);
+  });
+  it('Cybertron and Invincible wear theirs near, over what they wore before', async () => {
+    const { nearSet } = await import('./planets');
+    // (Cybertron has no -hq: the standard 2048 is what ultra starts on, and the -xl's fallback is none)
+    expect(nearSet('transformers', 'ultra').find((m) => m.name === 'transformers')).toEqual({ name: 'transformers', file: 'transformers-xl.ktx2', colour: true });
+    expect(mapFile('invincible', 'ultra', { xl: false })).toBe('invincible-hq.webp');
+    expect(nearSet('invincible', 'ultra').find((m) => m.name === 'invincible')).toEqual({ name: 'invincible', file: 'invincible-xl.ktx2', colour: true });
   });
   it('the rest are as they were', () => {
     expect(mapFile('middleearth-normal', 'ultra')).toBe('middleearth-normal-hq.webp');
-    expect(mapFile('transformers', 'ultra')).toBe('transformers.webp');
+    expect(mapFile('transformers', 'high')).toBe('transformers.webp');
     expect(mapFile('earth', 'ultra')).toBe('earth-hq.webp');
     expect(mapFile('middleearth', 'high')).toBe('middleearth.webp');
   });
@@ -427,13 +445,18 @@ describe('the sphere, finer near', () => {
     expect(p.body.geometry).toBe(far);
     vi.unstubAllGlobals();
   });
-  it('leaves a world whose builder made its own shape alone, and a station', async () => {
+  it('leaves a station alone, and gives the Office the finer sphere now its ball is a world', async () => {
     stub();
     const { buildPlanet } = await import('./planets');
     const { byId } = await import('./universes');
-    // (the Office's crumpled ball is its own geometry, facets and all)
-    expect(buildPlanet(byId('office'), {}).nearGeometry).toBeUndefined();
     expect(buildPlanet(byId('home'), {}).nearGeometry).toBeUndefined();
+    // (it was a crumpled ball, its own geometry; it's the sphere the worlds wear now)
+    const office = buildPlanet(byId('office'), {});
+    const far = office.body.geometry;
+    office.nearGeometry(true, 'high');
+    expect(office.body.geometry).not.toBe(far);
+    office.nearGeometry(false);
+    expect(office.body.geometry).toBe(far);
     vi.unstubAllGlobals();
   });
 });

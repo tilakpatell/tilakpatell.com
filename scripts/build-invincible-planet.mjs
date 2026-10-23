@@ -5,7 +5,7 @@
 // craters with bright ejecta, and long rifts, some still molten. Sampled in
 // 3D on the sphere, so there's no seam and no pinching at the poles.
 //
-//   invincible.webp / -sm   the colour
+//   invincible.webp / -hq / -sm   the colour (and -xl.ktx2, at 4096, worn near on ultra)
 //   invincible-normal.webp / -hq  the relief, as a tangent-space normal map
 //   invincible-glow.webp    what glows of itself: the molten rifts and vents
 //   invincible-night.webp / -sm   the cities' lights, for the night side
@@ -13,15 +13,18 @@
 //   invincible-rough.webp   how rough: the old sea beds glossy, the rest matte
 //                           (ONLY=rough makes just this)
 //
-// node scripts/build-invincible-planet.mjs   (about half a minute)
+// node scripts/build-invincible-planet.mjs   (about two minutes; INV_W=2048
+// for the old size, half a minute)
 
+import fs from 'node:fs';
 import sharp from 'sharp';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 
 const OUT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'public', 'textures', 'universe');
-const W = 2048; // worked out at this size, saved at half (and a quarter)
-const H = 1024;
+const W = +(process.env.INV_W ?? 4096); // worked out at this size, saved at it (-xl) and down
+const H = W / 2;
+const FINE = W >= 4096 ? 5 : 4; // (the finest grain's octaves: one more at 4096, so the close look has it)
 
 // ── noise ──
 function rng(seed) {
@@ -180,7 +183,7 @@ for (let y = 0; y < H; y++) {
     const base = fbm(N1, wx * 1.7, wy * 1.7, wz * 1.7, 6);
     const high = smooth(0.48, 0.62, base); // plateaus over the old sea beds
     const ridge = ridged(N2, wx * 3.1, wy * 3.1, wz * 3.1, 5);
-    const fine = fbm(N3, px * 16, py * 16, pz * 16, 4);
+    const fine = fbm(N3, px * 16, py * 16, pz * 16, FINE);
     let h = base * 0.55 + high * 0.22 + ridge * high * 0.22 + (fine - 0.5) * 0.07;
     // the rifts: long canyons where a slow noise crosses zero, in some places
     const rn = N4(wx * 1.15 + 40, wy * 1.15, wz * 1.15);
@@ -258,7 +261,7 @@ const grey = (src) => {
 // the relief as a normal map: the slope across (u) and up (v) the map
 const normal = Buffer.alloc(W * H * 3);
 {
-  const k = 9; // how steep
+  const k = 9 * (W / 2048); // how steep (per texel: the same slopes at any size)
   for (let y = 0; y < H; y++)
     for (let x = 0; x < W; x++) {
       const at = (xx, yy) => height[Math.min(H - 1, Math.max(0, yy)) * W + ((xx + W) % W)];
@@ -298,6 +301,15 @@ if (!only || only.includes('normal')) {
 }
 if (only) process.exit(0);
 const col = rgb(color);
+{
+  // the -xl: KTX2 (flipped for three's UVs, sRGB), a quarter of the graphics memory a 4096 WebP takes
+  const png = await sharp(col, { raw: { width: W, height: H, channels: 3 } }).resize(4096, 2048, { kernel: 'lanczos3' }).png().toBuffer();
+  const { encodeImage } = await import('./ktx2.mjs');
+  const { ktx2 } = await encodeImage(png, { role: 'color', flipY: true, rdo: 3 });
+  fs.writeFileSync(path.join(OUT, 'invincible-xl.ktx2'), ktx2);
+  console.log('  wrote invincible-xl.ktx2', `${Math.round(ktx2.byteLength / 1024)} KB`);
+}
+await save(col, 'invincible-hq.webp', 2048, 88);
 await save(col, 'invincible.webp', 1024);
 await save(col, 'invincible-sm.webp', 512);
 await save(rgb(glow), 'invincible-glow.webp', 1024);

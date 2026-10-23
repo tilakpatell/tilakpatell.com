@@ -18,9 +18,14 @@
 //                             colour. Lossless: lossy webp would smear one
 //                             channel into the next.
 //
+//   transformers-xl.ktx2      the colour at 4096, for the universe map's
+//                             planet worn near on ultra (UASTC: a quarter of
+//                             a 4096 WebP's graphics memory)
+//
 // node scripts/build-cybertron-planet.mjs   (a minute or two; CY_W=2048 for
-// a quick look)
+// a quick look; CY_XL=only writes the -xl alone, the rest left as they are)
 
+import fs from 'node:fs';
 import sharp from 'sharp';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
@@ -966,6 +971,15 @@ const save = async (buf, name, w, opts) => {
   console.log('  wrote', name);
 };
 console.log('saving…');
+// the -xl: the colour at the size it's worked out at, as KTX2 (flipped for three's UVs, sRGB)
+{
+  const png = await sharp(colour, { raw: { width: W, height: H, channels: 3 } }).resize(4096, 2048, { kernel: 'lanczos3' }).png().toBuffer();
+  const { encodeImage } = await import('./ktx2.mjs');
+  const { ktx2 } = await encodeImage(png, { role: 'color', flipY: true, rdo: 3 });
+  fs.writeFileSync(path.join(OUT, 'transformers-xl.ktx2'), ktx2);
+  console.log('  wrote transformers-xl.ktx2', `${Math.round(ktx2.byteLength / 1024)} KB`);
+}
+if (process.env.CY_XL === 'only') process.exit(0);
 await save(colour, 'transformers.webp', 2048, { quality: 82 });
 await save(colour, 'transformers-sm.webp', 1024, { quality: 80 });
 await save(normal, 'transformers-normal.webp', 2048, { quality: 88 });

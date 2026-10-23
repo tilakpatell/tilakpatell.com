@@ -115,7 +115,7 @@ export function airGlow(mat, color, { night = null, sun = LIGHT } = {}) {
 const CLOUDS = { middleearth: ['middleearth-clouds', false], breakingbad: ['breakingbad-clouds', true], rickmorty: ['rickmorty-clouds', false], caribbean: ['caribbean-clouds', true], invincible: ['invincible-clouds', true], potter: ['potter-clouds', true], travel: ['earth-clouds', true] };
 const ROUGH = { travel: 'earth-rough' };
 // (drawn in flat colour, cel or dithered: a mottle would undo it)
-const FLAT = new Set(['rickmorty', 'gaming']);
+const FLAT = new Set(['rickmorty', 'gaming', 'marvel']);
 export function styleFor(u, T = {}, { tier = 'high' } = {}) {
   const [name, alpha] = CLOUDS[u.id] ?? [null, false];
   return { clouds: (name && tier !== 'low' && T[name]) || null, alpha, rough: T[ROUGH[u.id] ?? `${u.id}-rough`] ?? null, detail: u.kind !== 'core' && !u.portal && !FLAT.has(u.id) && tier !== 'low' };
