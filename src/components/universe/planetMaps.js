@@ -8,6 +8,7 @@
 //   mapsOf(id), nearSet(id, level) → a planet's maps, and the finer ones it wears near
 //   mapSwapper(group, T, names) → swap(T2 | null)
 
+import * as THREE from 'three';
 import { MAP_SLOTS, loadTexture } from '../../lib/three/textures';
 import { detailLevel } from '../../lib/detail';
 import K8_BAKED from '../../../public/textures/universe/k8.json';
@@ -37,11 +38,21 @@ const MAPS = Object.fromEntries([
   ...map(['transformers'], { sm: true, hq: false, xl: true, colour: true }),
   ...map(['middleearth-night', 'breakingbad-night', 'invincible-night', 'sky-glow'], { sm: true, hq: false, colour: true }),
   ...map(['breakingbad-clouds', 'invincible-clouds'], { sm: true, hq: false, colour: false }),
-  ...map(['middleearth-glow', 'caribbean-night', 'rickmorty-glow', 'invincible-glow', 'potter-night', 'potter-glow', 'marvel-night', 'office-night', 'plates', 'hull'], { sm: false, hq: false, colour: true }),
+  ...map(['middleearth-glow', 'caribbean-night', 'rickmorty-night', 'invincible-glow', 'potter-night', 'potter-glow', 'marvel-night', 'office-night', 'plates', 'hull'], { sm: false, hq: false, colour: true }),
   ...map(['plates-normal', 'plates-rough', 'hull-normal', 'hull-rough', 'transformers-glow-sm', 'middleearth-rough', 'office-rough', 'breakingbad-rough', 'caribbean-rough', 'earth-rough', 'rickmorty-rough', 'invincible-rough', 'potter-rough', 'marvel-rough'], { sm: false, hq: false, colour: false }),
 ]);
 
 export const MAP_NAMES = Object.keys(MAPS);
+
+// A cloud map is read round where its clouds have turned to (the ground's
+// shadows, planetShading.js's groundHooks: u less the turn), so it wraps;
+// set as it's loaded, before it's first sent up, as the chip keeps the
+// wrapping it was sent with (clamped, its last column smeared into stripes
+// along the latitudes past the turn). wrapRound(name, texture) → texture
+export function wrapRound(name, t) {
+  if (t && name.endsWith('-clouds')) t.wrapS = THREE.RepeatWrapping;
+  return t;
+}
 
 // The file for a map at a detail level (lib/detail): on a strong card the
 // `-xl` (4096, KTX2: a quarter of the memory raw would take) where there is
@@ -102,7 +113,7 @@ export async function loadTextures({ small = false, level = small ? 'mid' : deta
     try {
       // (decoded off the main thread, as sharp as the device's tier allows,
       // and shared with any other scene that wants the same map)
-      T[name] = await loadTexture(BASE + file, { color: colour });
+      T[name] = wrapRound(name, await loadTexture(BASE + file, { color: colour }));
     } catch {
       // missing: the standard file where a sharper set was asked for, else whoever wanted it does without
       if (fallback) await get(name, fallback, colour);

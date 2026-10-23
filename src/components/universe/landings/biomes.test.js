@@ -49,8 +49,10 @@ describe('a landing’s biome, from the colour of the map under it', () => {
     // (the Black Lake's shore by where it is, whatever the moor or the pines read there)
     expect(pick('potter', '#5d4258', [55.44, -20])).toBe('loch');
     expect(pick('potter', '#1c3022', [57.5, -17.1])).toBe('loch');
-    expect(pick('rickmorty', '#7a4ab0')).toBe('hills');
-    expect(pick('rickmorty', '#2a9a9a')).toBe('street');
+    expect(pick('rickmorty', '#e2c072')).toBe('hills'); // (the map's deserts)
+    expect(pick('rickmorty', '#a2764b')).toBe('hills'); // (and its ranges)
+    expect(pick('rickmorty', '#5fb13e')).toBe('street');
+    expect(pick('rickmorty', '#2a72cc')).toBe('street');
     expect(pick('travel', '#eef2f6')).toBe('ice');
     expect(pick('travel', '#1a3a7a')).toBe('sea');
     expect(pick('travel', '#5a7a3a')).toBe('land');

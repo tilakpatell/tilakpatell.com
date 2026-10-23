@@ -165,7 +165,22 @@ describe('the styles in the light', () => {
     vi.unstubAllGlobals();
   });
 
-  it('C-137’s air is two flat bands of lime', async () => {
+  it('bands only its own sun’s light: the fill, worn by the key hook, is a soft wash', async () => {
+    stub();
+    const THREE = await import('three');
+    const { buildPlanet } = await import('./planets');
+    const { byId } = await import('./universes');
+    const key = { value: new THREE.Vector3(0, 1, 0) };
+    const mat = buildPlanet(byId('rickmorty'), {}, { sun: new THREE.Vector3(1, 0, 0), key }).body.material;
+    const { fragmentShader } = await shaderOf(mat);
+    // (the key hook says it's there before the cel light reads its sun)
+    expect(fragmentShader.indexOf('#define KEY_SUN')).toBeGreaterThan(-1);
+    expect(fragmentShader.indexOf('#define KEY_SUN')).toBeLessThan(fragmentShader.indexOf('RE_Direct_Cel('));
+    expect(fragmentShader).toMatch(/lit = mix\(0\.6 \* smoothstep\(-0\.2, 0\.8, ndl\), lit, celKey\)/);
+    vi.unstubAllGlobals();
+  });
+
+  it('C-137’s air is two flat bands, in its sky’s blue', async () => {
     stub();
     const { buildPlanet } = await import('./planets');
     const { byId } = await import('./universes');

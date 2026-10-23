@@ -44,6 +44,18 @@ describe('the resident budget', () => {
 });
 
 describe('the near maps, loaded and swapped', () => {
+  it('wraps a near cloud map round before it goes up, as the far one does', async () => {
+    const { load, calls } = loader();
+    const near = createNearMaps({ level: 'high', load });
+    const a = planet('a', 3, [{ name: 'a-clouds', file: 'a-clouds-hq.webp', colour: true }, { name: 'a', file: 'a-hq.webp', colour: true }]);
+    near.update([0, 0, 0], [a]);
+    calls.forEach((c) => c.resolve());
+    await flush();
+    const T2 = a.swapMaps.mock.calls[0][0];
+    expect(T2['a-clouds'].wrapS).toBe(1000); // (THREE.RepeatWrapping)
+    expect(T2.a.wrapS).toBeUndefined();
+  });
+
   it('installs a planet’s near set when it arrives and the planet is still near', async () => {
     const { load, calls } = loader();
     const near = createNearMaps({ level: 'high', load });
