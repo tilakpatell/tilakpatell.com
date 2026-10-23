@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import * as THREE from 'three';
-import { REGION, laidOn, regionsAround, waysideAt } from './wayside';
+import { REGION, laidOn, regionsAround, waysideAt, wreckOf } from './wayside';
 import { SPAN as TOWN } from './town';
 import { PROPS } from './props';
 import { SURFACE_MODELS } from './catalog';
+import { seeded } from '../../../lib/seeded';
 
 const green = { reach: 590, ground: { seed: 92 }, flora: { biome: 'temperate' } };
 const bare = { reach: 590, ground: { seed: 71 }, flora: { biome: 'dry' } };
@@ -39,6 +40,15 @@ describe('waysideAt', () => {
         expect(w.things.length).toBeGreaterThanOrEqual(3);
         for (const t of w.things) expect(Math.hypot(t.at[0] - w.at[0], t.at[1] - w.at[1])).toBeLessThan(w.kind === 'town' ? TOWN : 15);
       }
+  });
+
+  it('makes a wreck alone: a downed ship and its smoke, turned with it, the same from the same seed', () => {
+    const a = wreckOf([100, -50], 0.7, seeded(3));
+    expect(a.things.map((t) => t.kind)).toEqual(['downed', 'wrecksmoke']);
+    expect(a.things[0]).toMatchObject({ at: [100, -50], yaw: 0.7, lie: a.metres * 0.45 });
+    expect(a.things[1].solid).toBe(false);
+    expect(Math.hypot(a.things[1].at[0] - 100, a.things[1].at[1] + 50)).toBeCloseTo(Math.SQRT2);
+    expect(wreckOf([100, -50], 0.7, seeded(3))).toEqual(a);
   });
 
   it('turns up camps, ruins, downed fighters and towns on a green world, outposts, wrecks and towns on a bare one', () => {

@@ -19,7 +19,10 @@ job; only the board is new.
 
 - **Bounty**: three to five of the world’s foes at a place, all brought down.
 - **Salvage**: four crates at a place, sometimes with two foes on them, and
-  back to the ship.
+  back to the ship. Out on open ground the crates lie round a downed ship
+  (`wayside.js`’s `wreckOf`, the far places’ own: an X-wing, a Y-wing or a
+  TIE with its smoke), laid as the job is taken and left there, as the
+  wayside’s are.
 - **Courier**: a parcel from by the ship to a place, in a time the run
   allows with some to spare.
 - **Speeder run**: on one of the world’s own speeders (the landspeeder, the
