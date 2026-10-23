@@ -8,6 +8,12 @@
 // drawn from; when the cell goes, so do they (removed, not switched off as
 // the walk world's shapes are: a body costs memory). The far ring and the
 // horizon have none; a mesh the tier culls (pack.cull[tier]) stops no one.
+// Round you, a cell the stream hasn't brought (the pack has none there,
+// the game placing nothing in it, or it hasn't come yet) has its ground
+// alone, a bare cell from the same heights, given up when the cell itself
+// comes: without it the body fell through the ground as drawn there and
+// was caught two metres under it, over and over (playerBody.js's catch),
+// the player sinking and popping up, off a third of Tatooine.
 //
 // A mesh's shapes bin is fetched once (loadBin, lane L's fetch) and kept.
 // A cell over its budget drops its detail and its lightest hulls first
@@ -29,9 +35,9 @@
 //         32-byte records, read with pack.cells[key].draws; or
 //         [{ mesh, position, quaternion, scale }]),
 //       drop(key) / removeCell, setTerrain(heightAt | { near, far }, { holes }), timed(stepMs),
-//         update(ms = 4, at = [x, z] (the nearest cell's first))
-//         → bodies added, stats() → { cells, bodies, colliders,
-//         uniqueShapes, triangles, heightfields, queued, dropped, stepMs },
+//         update(ms = 4, at = [x, z] (the nearest cell's first; the bare
+//         ground round it)) → bodies added, stats() → { cells, bodies, colliders,
+//         uniqueShapes, triangles, heightfields, queued, dropped, stepMs, bare },
 //       dispose() }
 //   BUDGETS: per cell, by tier (low and phones: no engine at all)
 //   instancesOf(draws, bin) → [{ mesh, position, quaternion, scale }] (lane
@@ -144,8 +150,40 @@ export function createLevelPhysics({ physics, pack, loadBin, tier = 'high', budg
       }
   }
 
+  // the bare ground round you (a cell either side of yours) where the stream
+  // brought no cell; dropped when the cell comes, or when you're two away
+  const bare = new Map(); // key → { heightfields }
+  const BARE_RING = 1;
+  let bareHere = null; // (the cell it was last laid round: nothing to do till you leave it, or a cell goes)
+  function dropBare(key) {
+    const b = bare.get(key);
+    if (!b) return;
+    bare.delete(key);
+    for (const h of b.heightfields) physics.remove(h);
+  }
+  function bareAround(at) {
+    if (!heightAt || !at) return;
+    const cx = Math.floor(at[0] / cellSize);
+    const cz = Math.floor(at[1] / cellSize);
+    if (bareHere && bareHere[0] === cx && bareHere[1] === cz) return;
+    bareHere = [cx, cz];
+    for (const key of [...bare.keys()]) {
+      const [x, z] = key.split(',').map(Number);
+      if (Math.abs(x - cx) > BARE_RING + 1 || Math.abs(z - cz) > BARE_RING + 1) dropBare(key);
+    }
+    for (let i = -BARE_RING; i <= BARE_RING; i++)
+      for (let j = -BARE_RING; j <= BARE_RING; j++) {
+        const key = `${cx + i},${cz + j}`;
+        if (cells.has(key) || bare.has(key)) continue;
+        const b = { heightfields: [] };
+        bare.set(key, b);
+        terrainFor(b, key);
+      }
+  }
+
   async function addCell(key, cellIn) {
     if (disposed || cells.has(key)) return;
+    dropBare(key); // (its own ground now, from the same heights)
     const cell = { bodies: [], queue: [], heightfields: [], dropped: [], colliders: 0, triangles: 0, gone: false };
     cells.set(key, cell);
     terrainFor(cell, key);
@@ -168,6 +206,7 @@ export function createLevelPhysics({ physics, pack, loadBin, tier = 'high', budg
     cell.gone = true;
     cells.delete(key);
     for (const b of [...cell.bodies, ...cell.heightfields]) physics.remove(b);
+    bareHere = null; // (its ground bare again, if it's near you)
   }
 
   // bodies into the world until `ms` has gone (at least one a call); `at`
@@ -183,6 +222,7 @@ export function createLevelPhysics({ physics, pack, loadBin, tier = 'high', budg
   };
   function update(ms = 4, at = null) {
     if (disposed) return 0;
+    bareAround(at);
     const start = now();
     let added = 0;
     for (const cell of nearFirst(at)) {
@@ -215,7 +255,8 @@ export function createLevelPhysics({ physics, pack, loadBin, tier = 'high', budg
       if (disposed) return;
       heightAt = typeof source === 'function' ? source : source ? imageHeight(source) : null;
       holes = cut;
-      for (const [key, cell] of cells) {
+      bareHere = null;
+      for (const [key, cell] of [...cells, ...bare]) {
         for (const b of cell.heightfields) physics.remove(b);
         cell.heightfields = [];
         terrainFor(cell, key);
@@ -242,11 +283,12 @@ export function createLevelPhysics({ physics, pack, loadBin, tier = 'high', budg
         queued += c.queue.length;
         for (const d of c.dropped) dropped.push({ cell: key, ...d });
       }
-      return { cells: cells.size, bodies, colliders, uniqueShapes: unique.size, triangles, heightfields, queued, dropped, stepMs };
+      return { cells: cells.size, bodies, colliders, uniqueShapes: unique.size, triangles, heightfields, queued, dropped, stepMs, bare: bare.size };
     },
     dispose() {
       if (disposed) return;
       for (const key of [...cells.keys()]) removeCell(key);
+      for (const key of [...bare.keys()]) dropBare(key);
       disposed = true;
       shapes.clear();
     },

@@ -105,6 +105,7 @@ export const seedFor = (name) => {
 // the Meshy skeleton these all stand on). `key`: the figure's template (its file, for
 // the library's copies), `seed`: its clocks; `up` (in the space its hips
 // turn in) and `hipsY`, for the library's clips made for it.
+const SOLE = 0.05; // (a sole's depth under the toes' joint, at most, as a share of the height: the 2017 game's is under 2%)
 export function rigged(model, clips, tall, owned, { seed = seedFor('rigged'), key = null, up = null, hipsY = null, library = true } = {}) {
   const bones = {};
   model.traverse((o) => {
@@ -120,7 +121,14 @@ export function rigged(model, clips, tall, owned, { seed = seedFor('rigged'), ke
   const height = top != null ? top - toes : box.getSize(new V()).y;
   const k = (tall * METRE) / Math.max(height, 1e-6);
   model.scale.multiplyScalar(k);
-  model.position.y -= (top != null ? toes : box.min.y) * k;
+  // the soles on the ground: the mesh's lowest point, where it reaches under
+  // the toes' joint (the joint sits a few centimetres up inside the foot:
+  // stood on it, every figure's soles were under the ground, the 2017 game's
+  // about 3 cm), else the joint; not something that hangs well below the
+  // feet (further under the joint than a sole goes: SOLE of its height)
+  const under = toes - box.min.y;
+  const sole = top == null ? box.min.y : Number.isFinite(under) && under > 0 && under < height * SOLE ? box.min.y : toes;
+  model.position.y -= sole * k;
   // (the game's additive clips are laid over the pose, never played as one: lib/three/additiveLayer.js)
   const own = Object.fromEntries(Object.entries(clips).filter(([, clip]) => clip && !clip.userData?.additive));
   const adds = Object.fromEntries(Object.entries(clips).filter(([, clip]) => clip?.userData?.additive));

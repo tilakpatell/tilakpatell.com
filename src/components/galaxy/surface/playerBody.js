@@ -26,6 +26,9 @@
 //   (a fall out of the engine's world, past the edge of the cells it has
 //   streamed, is caught: falling fast and 2 m under the walker's ground,
 //   you're set back on it; a tunnel under a ridge, walked, never trips it)
+//   (on a world with water, a floor under it at the walker's wading depth,
+//   WALK.wade under its top, as walk() holds you: no deeper than the knees
+//   wherever the ground goes further down; it goes with the body)
 
 import { CHARACTER, createCharacter } from '../../../lib/physics/character';
 import { filterOf } from '../../../lib/physics/groups';
@@ -139,10 +142,21 @@ export function createPlayerBody({ physics, state, row, world, drive = true, onE
     c.teleport([AT.x, y, AT.z], c.yaw);
   }
 
+  // (the wading floor: one slab under the water across the world, at the
+  // depth the walker holds everyone; under the ground wherever it's dry)
+  let wadeFloor = null;
+  const WADE_SLAB = 0.1;
+  function floorUnderWater() {
+    if (world?.water == null || !Number.isFinite(world.water)) return;
+    const half = (world.reach ?? 600) + 200;
+    wadeFloor = phys.add({ type: 'fixed', position: [0, world.water - WALK.wade - WADE_SLAB, 0], group: 'floor', colliders: [{ shape: 'cuboid', args: [half, WADE_SLAB, half] }] });
+  }
+
   function attach(p) {
     if (gone) return;
     phys = p;
     build([state.x, state.y + centre(), state.z], state.yaw);
+    floorUnderWater();
     off = phys.onSubstep((dt) => {
       if (pending) {
         c.jump(pending);
@@ -309,6 +323,8 @@ export function createPlayerBody({ physics, state, row, world, drive = true, onE
       off?.();
       c?.remove();
       c = null;
+      if (wadeFloor) phys?.remove(wadeFloor);
+      wadeFloor = null;
     },
   };
 }
