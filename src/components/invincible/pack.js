@@ -16,7 +16,7 @@ export const PACK = {
     'src/components/avengers/hq/kit/shapes.js',
     'src/components/avengers/hq/kit/humanoid.js',
   ], // where its source is (files or folders, repo-relative): pack-check scans these
-  urls: ['/textures/earth/day.webp', '/textures/earth/day-sm.webp', '/textures/earth/night.webp', '/textures/earth/night-sm.webp', '/textures/earth/clouds.webp', '/textures/earth/clouds-sm.webp', '/textures/earth/water.webp', '/textures/earth/water-sm.webp', '/models/invincible/card.webp'], // single files
-  globs: ['/models/invincible/*.glb', '/hq/sky/noon/*', '/hq/sky/dusk/*', '/hq/sky/night/*'], // folders: `*` within a folder, `**` any depth
+  urls: ['/textures/earth/day.webp', '/textures/earth/day-sm.webp', '/textures/earth/night.webp', '/textures/earth/night-sm.webp', '/textures/earth/clouds.webp', '/textures/earth/clouds-sm.webp', '/textures/earth/water.webp', '/textures/earth/water-sm.webp', '/models/invincible/card.webp', '/kit/city/index.json', '/kit/city/building-2.glb', '/kit/city/building-3.glb', '/kit/city/prop.glb'], // single files (the city kit's: the tenements and the props ./world/streetKit.js draws)
+  globs: ['/models/invincible/*.glb', '/hq/sky/noon/*', '/hq/sky/dusk/*', '/hq/sky/night/*', '/kit/street/*'], // folders: `*` within a folder, `**` any depth
   computed: ['/textures/earth'], // folders the source only builds paths in: the files it takes (world/space.js) are listed above
 };

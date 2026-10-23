@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Invincible people sheet</title>
+    <!--
+      The Invincible world's kit people (components/invincible/world/people.js)
+      in a row on a grey floor under a daylight key, each as buildPerson makes
+      them and posed standing: the eight Guardians of the Globe, the Mars
+      stand-ins where the build has them, and a few townspeople. Through the
+      dev server (npx vite), for scripts/inv-people-sheet.mjs:
+        /scripts/preview/inv-people.html                the Guardians and three townspeople
+        …?only=kate,rae                                 some of them
+        …&view=front | side | back                      from where
+      body[data-ready] once drawn.
+    -->
+    <style>
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        background: #d9d6cf;
+        overflow: hidden;
+        font: 13px/1.3 system-ui, sans-serif;
+      }
+      #labels div {
+        position: absolute;
+        transform: translate(-50%, 0);
+        padding: 2px 6px;
+        background: rgba(0, 0, 0, 0.72);
+        color: #f2f0ea;
+        border-radius: 4px;
+        white-space: nowrap;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="labels"></div>
+    <script type="module">
+      import * as THREE from 'three';
+      import { buildPerson, posePerson } from '/src/components/invincible/world/people.js';
+      import { GUARDIANS } from '/src/components/invincible/world/guardians.js';
+
+      const q = new URLSearchParams(location.search);
+      const people = q.get('only')?.split(',') ?? [...GUARDIANS.map((g) => g.id), 'person:1', 'person:2', 'person:3'];
+      const view = q.get('view') ?? 'front';
+      const renderer = new THREE.WebGLRenderer({ antialias: true });
+      renderer.setPixelRatio(1);
+      renderer.setSize(innerWidth, innerHeight);
+      renderer.outputColorSpace = THREE.SRGBColorSpace;
+      renderer.toneMapping = THREE.NeutralToneMapping;
+      document.body.prepend(renderer.domElement);
+      const scene = new THREE.Scene();
+      scene.background = new THREE.Color(0xd9d6cf);
+      scene.add(new THREE.HemisphereLight(0xeaf2ff, 0x8a8070, 1.6));
+      const sun = new THREE.DirectionalLight(0xfff4e2, 2.4);
+      sun.position.set(3, 6, 5);
+      scene.add(sun);
+      const floor = new THREE.Mesh(new THREE.PlaneGeometry(60, 20), new THREE.MeshStandardMaterial({ color: 0xbdb9b0, roughness: 0.9 }));
+      floor.rotation.x = -Math.PI / 2;
+      scene.add(floor);
+
+      const gap = 1.1;
+      const x0 = (-(people.length - 1) * gap) / 2;
+      const labels = document.getElementById('labels');
+      const tops = [];
+      people.forEach((id, i) => {
+        const [kind, seed = 0] = id.split(':');
+        const p = buildPerson(kind, Number(seed));
+        posePerson(p, { mode: 'idle', t: 0, phase: 0 });
+        p.h.root.position.set(x0 + i * gap, 0, 0);
+        p.h.root.rotation.y = view === 'side' ? Math.PI / 2 : view === 'back' ? Math.PI : 0;
+        scene.add(p.h.root);
+        tops.push([id, new THREE.Vector3(x0 + i * gap, -0.12, 0)]);
+      });
+      const camera = new THREE.PerspectiveCamera(22, innerWidth / innerHeight, 0.1, 100);
+      const span = people.length * gap;
+      const dist = Math.max(6, span / (2 * Math.tan(THREE.MathUtils.degToRad(11)) * camera.aspect)) * 1.04;
+      camera.position.set(0, 1.0, dist);
+      camera.lookAt(0, 0.9, 0);
+      renderer.render(scene, camera);
+      for (const [id, at] of tops) {
+        const s = at.clone().project(camera);
+        const el = document.createElement('div');
+        el.textContent = id;
+        el.style.left = `${((s.x + 1) / 2) * innerWidth}px`;
+        el.style.top = `${((1 - s.y) / 2) * innerHeight}px`;
+        labels.append(el);
+      }
+      document.body.dataset.ready = '1';
+    </script>
+  </body>
+</html>

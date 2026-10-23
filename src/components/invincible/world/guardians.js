@@ -23,15 +23,16 @@
 // - Bulletproof (flies, the fastest) catches someone falling (the city's
 //   own rescues, not a mission's: those are Mark's to count) before Mark can.
 
+// (`tint` and `trim`: each costume's two main colours, as ./guardianLooks.js dresses them)
 export const GUARDIANS = [
-  { id: 'immortal', name: 'Immortal', tint: 0x3b4a7a, trim: 0xd9c56a, mode: 'fly', sig: 'lead', speed: 90, every: 1.2, hits: 1, broad: true },
-  { id: 'rex', name: 'Rex Splode', tint: 0xd9452b, trim: 0xf2b632, mode: 'ground', sig: 'blast', speed: 14, every: 6, hits: 1 },
-  { id: 'kate', name: 'Dupli-Kate', tint: 0x2e8b57, trim: 0xf2f2ee, mode: 'ground', sig: 'copies', speed: 12, every: 4, hits: 1 },
-  { id: 'rae', name: 'Shrinking Rae', tint: 0x7a4fa0, trim: 0xf2d6ff, mode: 'fly', sig: 'blink', speed: 80, every: 3, hits: 1 },
-  { id: 'monster', name: 'Monster Girl', tint: 0x5aa05a, trim: 0x2f4f2f, mode: 'ground', sig: 'monster', speed: 12, every: 1.5, hits: 3 },
-  { id: 'robot', name: 'Robot', tint: 0x8a8f99, trim: 0x4fa3b8, mode: 'fly', sig: 'mark', speed: 70, every: 2.5, hits: 1 },
-  { id: 'samson', name: 'Black Samson', tint: 0x15171b, trim: 0xe6b84a, mode: 'ground', sig: 'shield', speed: 12, every: 1.5, hits: 1, broad: true },
-  { id: 'bulletproof', name: 'Bulletproof', tint: 0xf2b632, trim: 0x1d2b4a, mode: 'fly', sig: 'catch', speed: 140, every: 1.5, hits: 1 },
+  { id: 'immortal', name: 'Immortal', tint: 0x283454, trim: 0xe9c84a, mode: 'fly', sig: 'lead', speed: 90, every: 1.2, hits: 1, broad: true },
+  { id: 'rex', name: 'Rex Splode', tint: 0xeed46c, trim: 0xc7321f, mode: 'ground', sig: 'blast', speed: 14, every: 6, hits: 1 },
+  { id: 'kate', name: 'Dupli-Kate', tint: 0xd7cfe8, trim: 0x4b2f61, mode: 'ground', sig: 'copies', speed: 12, every: 4, hits: 1 },
+  { id: 'rae', name: 'Shrinking Rae', tint: 0x34362a, trim: 0xc9cb4c, mode: 'fly', sig: 'blink', speed: 80, every: 3, hits: 1 },
+  { id: 'monster', name: 'Monster Girl', tint: 0x2f6f9e, trim: 0x45494e, mode: 'ground', sig: 'monster', speed: 12, every: 1.5, hits: 3 },
+  { id: 'robot', name: 'Robot', tint: 0xe07a3e, trim: 0xb2552a, mode: 'fly', sig: 'mark', speed: 70, every: 2.5, hits: 1 },
+  { id: 'samson', name: 'Black Samson', tint: 0xb9bcc0, trim: 0x666784, mode: 'ground', sig: 'shield', speed: 12, every: 1.5, hits: 1, broad: true },
+  { id: 'bulletproof', name: 'Bulletproof', tint: 0xf2c73c, trim: 0xe5842a, mode: 'fly', sig: 'catch', speed: 140, every: 1.5, hits: 1 },
 ];
 export const guardianOf = (id) => GUARDIANS.find((g) => g.id === id) ?? null;
 

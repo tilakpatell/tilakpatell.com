@@ -1,0 +1,308 @@
+{
+  "pack": "street",
+  "licence": "CC0-1.0",
+  "source": "Quaternius, Street Pack (https://quaternius.com)",
+  "models": {
+    "Sign_NoParking": {
+      "family": "sign",
+      "file": "sign.glb",
+      "parts": [
+        "main",
+        "main",
+        "main",
+        "main"
+      ],
+      "tris": 244,
+      "tris1": 146,
+      "radius": 0.071,
+      "height": 0.539,
+      "trunk": 0.008,
+      "kind": "prop"
+    },
+    "Sign_Stop": {
+      "family": "sign",
+      "file": "sign.glb",
+      "parts": [
+        "main",
+        "main",
+        "main"
+      ],
+      "tris": 300,
+      "tris1": 76,
+      "radius": 0.07,
+      "height": 0.538,
+      "trunk": 0.008,
+      "kind": "prop"
+    },
+    "Sign_Triangle": {
+      "family": "sign",
+      "file": "sign.glb",
+      "parts": [
+        "main",
+        "main",
+        "main"
+      ],
+      "tris": 60,
+      "tris1": 25,
+      "radius": 0.079,
+      "height": 0.534,
+      "trunk": 0.008,
+      "kind": "prop"
+    },
+    "Streetlight_Double": {
+      "family": "streetlight",
+      "file": "streetlight.glb",
+      "parts": [
+        "main",
+        "main",
+        "main"
+      ],
+      "tris": 2486,
+      "tris1": 628,
+      "radius": 0.171,
+      "height": 1.1,
+      "trunk": 0.067,
+      "kind": "prop"
+    },
+    "Streetlight_Single": {
+      "family": "streetlight",
+      "file": "streetlight.glb",
+      "parts": [
+        "main",
+        "main",
+        "main"
+      ],
+      "tris": 1028,
+      "tris1": 313,
+      "radius": 0.093,
+      "height": 1.09,
+      "trunk": 0.066,
+      "kind": "prop"
+    },
+    "Streetlight_Triple": {
+      "family": "streetlight",
+      "file": "streetlight.glb",
+      "parts": [
+        "main",
+        "main",
+        "main"
+      ],
+      "tris": 2792,
+      "tris1": 707,
+      "radius": 0.171,
+      "height": 1.09,
+      "trunk": 0.067,
+      "kind": "prop"
+    },
+    "TrafficLight": {
+      "family": "trafficlight",
+      "file": "trafficlight.glb",
+      "parts": [
+        "main",
+        "main",
+        "main",
+        "main",
+        "main"
+      ],
+      "tris": 352,
+      "tris1": 177,
+      "radius": 0.076,
+      "height": 0.871,
+      "trunk": 0.03,
+      "kind": "prop"
+    },
+    "TrafficLight_2": {
+      "family": "trafficlight",
+      "file": "trafficlight.glb",
+      "parts": [
+        "main",
+        "main",
+        "main",
+        "main",
+        "main"
+      ],
+      "tris": 398,
+      "tris1": 185,
+      "radius": 0.341,
+      "height": 1.134,
+      "trunk": 0.03,
+      "kind": "prop"
+    }
+  },
+  "materials": {
+    "Black_2": {
+      "alpha": "opaque",
+      "leaf": false,
+      "wind": null,
+      "maps": {}
+    },
+    "DarkGrey": {
+      "alpha": "opaque",
+      "leaf": false,
+      "wind": null,
+      "maps": {}
+    },
+    "DarkGrey.001": {
+      "alpha": "opaque",
+      "leaf": false,
+      "wind": null,
+      "maps": {}
+    },
+    "Glass": {
+      "alpha": "opaque",
+      "leaf": false,
+      "wind": null,
+      "maps": {}
+    },
+    "Glass.001": {
+      "alpha": "opaque",
+      "leaf": false,
+      "wind": null,
+      "maps": {}
+    },
+    "Glass.002": {
+      "alpha": "opaque",
+      "leaf": false,
+      "wind": null,
+      "maps": {}
+    },
+    "Green": {
+      "alpha": "opaque",
+      "leaf": false,
+      "wind": null,
+      "maps": {}
+    },
+    "Green.001": {
+      "alpha": "opaque",
+      "leaf": false,
+      "wind": null,
+      "maps": {}
+    },
+    "Green.002": {
+      "alpha": "opaque",
+      "leaf": false,
+      "wind": null,
+      "maps": {}
+    },
+    "Green.003": {
+      "alpha": "opaque",
+      "leaf": false,
+      "wind": null,
+      "maps": {}
+    },
+    "Green.004": {
+      "alpha": "opaque",
+      "leaf": false,
+      "wind": null,
+      "maps": {}
+    },
+    "Grey.001": {
+      "alpha": "opaque",
+      "leaf": false,
+      "wind": null,
+      "maps": {}
+    },
+    "Grey_2": {
+      "alpha": "opaque",
+      "leaf": false,
+      "wind": null,
+      "maps": {}
+    },
+    "Light": {
+      "alpha": "opaque",
+      "leaf": false,
+      "wind": null,
+      "maps": {}
+    },
+    "Light.001": {
+      "alpha": "opaque",
+      "leaf": false,
+      "wind": null,
+      "maps": {}
+    },
+    "Light.002": {
+      "alpha": "opaque",
+      "leaf": false,
+      "wind": null,
+      "maps": {}
+    },
+    "Pole": {
+      "alpha": "opaque",
+      "leaf": false,
+      "wind": null,
+      "maps": {}
+    },
+    "Pole.001": {
+      "alpha": "opaque",
+      "leaf": false,
+      "wind": null,
+      "maps": {}
+    },
+    "Pole.002": {
+      "alpha": "opaque",
+      "leaf": false,
+      "wind": null,
+      "maps": {}
+    },
+    "Red": {
+      "alpha": "opaque",
+      "leaf": false,
+      "wind": null,
+      "maps": {}
+    },
+    "Red.001": {
+      "alpha": "opaque",
+      "leaf": false,
+      "wind": null,
+      "maps": {}
+    },
+    "Red.002": {
+      "alpha": "opaque",
+      "leaf": false,
+      "wind": null,
+      "maps": {}
+    },
+    "Red.003": {
+      "alpha": "opaque",
+      "leaf": false,
+      "wind": null,
+      "maps": {}
+    },
+    "White": {
+      "alpha": "opaque",
+      "leaf": false,
+      "wind": null,
+      "maps": {}
+    },
+    "White.001": {
+      "alpha": "opaque",
+      "leaf": false,
+      "wind": null,
+      "maps": {}
+    },
+    "White.002": {
+      "alpha": "opaque",
+      "leaf": false,
+      "wind": null,
+      "maps": {}
+    },
+    "Yellow": {
+      "alpha": "opaque",
+      "leaf": false,
+      "wind": null,
+      "maps": {}
+    },
+    "Yellow.001": {
+      "alpha": "opaque",
+      "leaf": false,
+      "wind": null,
+      "maps": {}
+    },
+    "Yellow.002": {
+      "alpha": "opaque",
+      "leaf": false,
+      "wind": null,
+      "maps": {}
+    }
+  }
+}

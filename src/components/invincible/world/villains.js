@@ -1,9 +1,12 @@
 // The villains (./foes.js), drawn:
 // - the portal over the river, a whirl of purple that opens when the
 //   Flaxans come and closes when they're beaten;
-// - the Flaxans themselves, small and armoured, built on the HQ kit as
-//   Think, Mark! builds them (aiming their arms at Mark, tumbling when
-//   knocked out), and the elites, bigger, with gold on them;
+// - the Flaxans themselves, small, in white armour over teal with pale
+//   green skin and the horns along their heads, the cast's figure
+//   (../cast.js, on its own idle, hit and down clips) posed hanging in the
+//   air with an arm aimed at Mark, tumbling when knocked out; the elites
+//   bigger, the gold on them (the HQ kit's figure as Think, Mark! builds
+//   them stands in when the model hasn't loaded);
 // - the Maulers and Doc Seismic, the cast's figures (../cast.js) on their
 //   own motion-captured clips;
 // - the bolts with a trail, the cars a Mauler throws (tumbling, a trail of
@@ -15,11 +18,12 @@ import * as THREE from 'three';
 import { hot } from '../../avengers/hq/stage';
 import { buildHumanoid, poseHumanoid } from '../../avengers/hq/kit/humanoid';
 import { POSES, figure } from '../../../lib/three/rig';
+import { faceForward } from '../../../lib/three/clipLibrary';
 import { CAST } from '../cast';
 import { FIGHT, KINDS, PORTAL, portalOpen } from './foes';
 import { ANGSTROM_GREEN } from './dimensions';
 import { carGeometry } from './life';
-import { castMaterial } from './people';
+import { castMaterial, personFor } from './people';
 
 const FLAX = 0xd04dff;
 const QUAKE = 0xc9a46a; // (the dust of the school's quad)
@@ -53,7 +57,7 @@ function portalMaterial() {
   });
 }
 
-// templates: { mauler, seismic } as ../../../lib/three/rig's loadFigure gives
+// templates: { mauler, seismic, flaxan } as ../../../lib/three/rig's loadFigure gives
 // them (null if one didn't load: the kit's figure stands in)
 export function createVillains(scene, vfx, { calm = false, templates = {}, rim = 0.35 } = {}) {
   const group = new THREE.Group();
@@ -69,31 +73,39 @@ export function createVillains(scene, vfx, { calm = false, templates = {}, rim =
   group.add(portal);
   let open = 0;
 
-  // the Flaxans: small, armoured, purple, something glowing on their arms
-  // (an elite bigger, its armour trimmed in gold)
+  // the Flaxans as the kit stands them in: white armour, pale green skin,
+  // something glowing on their arms (an elite bigger, its armour gold)
   const mats = {
     flaxan: {
-      armour: new THREE.MeshStandardMaterial({ color: 0x4b3a78, metalness: 0.65, roughness: 0.38 }),
-      skin: new THREE.MeshStandardMaterial({ color: 0x8b8fa8, roughness: 0.65 }),
+      armour: new THREE.MeshStandardMaterial({ color: 0xd9dde2, metalness: 0.3, roughness: 0.4 }),
+      skin: new THREE.MeshStandardMaterial({ color: 0x9fc4a0, roughness: 0.65 }),
       glow: new THREE.MeshBasicMaterial({ color: hot(FLAX, 2.6), toneMapped: false }),
     },
     flaxanElite: {
       armour: new THREE.MeshStandardMaterial({ color: 0x5a3f1e, metalness: 0.8, roughness: 0.3 }),
-      skin: new THREE.MeshStandardMaterial({ color: 0x8b8fa8, roughness: 0.65 }),
+      skin: new THREE.MeshStandardMaterial({ color: 0x9fc4a0, roughness: 0.65 }),
       glow: new THREE.MeshBasicMaterial({ color: hot(0xffb84d, 2.6), toneMapped: false }),
     },
   };
   const casts = [];
   const make = {
-    flaxan: () => kitFoe(mats.flaxan, 0.74),
-    flaxanElite: () => kitFoe(mats.flaxanElite, 0.92),
+    flaxan: () => flaxanFoe(false),
+    flaxanElite: () => flaxanFoe(true),
     mauler: () => castFoe('mauler'),
     seismic: () => castFoe('seismic'),
     omniman: () => castFoe('omniman'),
     // season two (./season2.js): the mirror Mark is Mark's own figure; Angstrom a kit figure in his green
     mirror: () => castFoe('mirror'),
-    angstrom: () => kitFoe({ armour: new THREE.MeshStandardMaterial({ color: 0x2f6b3a, roughness: 0.55 }), skin: new THREE.MeshStandardMaterial({ color: 0x9fb8a4, roughness: 0.7 }), glow: new THREE.MeshBasicMaterial({ color: hot(ANGSTROM_GREEN, 2.4), toneMapped: false }) }, KINDS.angstrom.h / 1.8),
+    // (no model of their own yet: the kit's people in their costumes, ./villainLooks.js, placed by their hips)
+    beast: () => dressedFoe('beast'),
+    angstrom: () => dressedFoe('angstrom'),
   };
+  function dressedFoe(kind) {
+    const p = personFor(kind, 0);
+    group.add(p.root);
+    casts.push(p.cast);
+    return { h: p.kit.h, holder: p.root, spin: 0, kit: true, hipY: p.hipY };
+  }
   function kitFoe(m, scale) {
     const h = buildHumanoid({ style: 'chitauri', materials: m, scale });
     const holder = new THREE.Group();
@@ -101,6 +113,34 @@ export function createVillains(scene, vfx, { calm = false, templates = {}, rim =
     holder.add(h.root);
     group.add(holder);
     return { h, holder, spin: 0 };
+  }
+  // a Flaxan: the model at the kit's sizes (1.35 m, an elite 1.68), the
+  // elite's white gone a third of the way to gold
+  const GOLD = new THREE.Color(0xd9a640);
+  // Meshy's idle stands turned off to one side, a fighter's stance; the rig
+  // turns it to face ahead by the walk (../../../lib/three/rig.js), which the
+  // Flaxan hasn't, so here it is turned to the hips' own heading at rest, once
+  let faced = false;
+  function faceIdle(t) {
+    faced = true;
+    const idle = t.clips?.find((c) => c.name === 'idle');
+    const hips = t.scene.getObjectByName('Hips');
+    if (!idle || !hips?.parent) return;
+    t.scene.updateMatrixWorld(true);
+    const up = UP.clone().applyQuaternion(hips.parent.getWorldQuaternion(new THREE.Quaternion()).invert()).normalize();
+    const q = hips.quaternion;
+    faceForward(idle, up, 2 * Math.atan2(q.x * up.x + q.y * up.y + q.z * up.z, q.w));
+  }
+  function flaxanFoe(elite) {
+    const t = templates.flaxan;
+    if (!t) return kitFoe(elite ? mats.flaxanElite : mats.flaxan, elite ? 0.92 : 0.74);
+    if (!faced) faceIdle(t);
+    const f = figure(t, { ...CAST.flaxan, h: CAST.flaxan.h * (elite ? 0.92 / 0.74 : 1) });
+    if (elite) for (const m of f.materials) m.color?.lerp(GOLD, 0.35);
+    f.snap(POSES.hover(0));
+    group.add(f.holder);
+    casts.push(castMaterial(f.model, { rim }));
+    return { f, holder: f.holder, spin: 0, flax: true };
   }
   function castFoe(kind) {
     const t = templates[kind];
@@ -118,7 +158,7 @@ export function createVillains(scene, vfx, { calm = false, templates = {}, rim =
   }
   // one drawn for each of a kind standing (or falling): made as they're
   // needed, handed out in the foes' order each frame
-  const pools = { flaxan: [], flaxanElite: [], mauler: [], seismic: [], omniman: [], mirror: [], angstrom: [] };
+  const pools = { flaxan: [], flaxanElite: [], mauler: [], seismic: [], omniman: [], mirror: [], angstrom: [], beast: [] };
 
   // their bolts
   const MAX = 64;
@@ -200,13 +240,19 @@ export function createVillains(scene, vfx, { calm = false, templates = {}, rim =
         const col = flax ? FLAX : 0xffd27a;
         vfx.sparks(V(e.at), { count: e.type === 'ko' ? 34 : 18, speed: 16, color: 0xffe6ff, to: col, dir: V(e.dir), spread: 0.7, life: 0.6 });
         if (e.type === 'ko') {
-          vfx.debris(V(e.at), { count: 8, speed: 12, size: 0.14, dir: V(e.dir), spread: 0.6, color: flax ? 0x4b3a78 : 0x5d7488 });
+          vfx.debris(V(e.at), { count: 8, speed: 12, size: 0.14, dir: V(e.dir), spread: 0.6, color: flax ? 0xd9dde2 : 0x5d7488 });
           vfx.flash(V(e.at), { color: flax ? 0xe7a6ff : 0xffe2b0, intensity: 25, distance: 18, life: 0.15 });
         }
         vfx.ring(V(e.at), { color: 0xffffff, from: 0.3, to: e.type === 'ko' ? 4 : 2.5, life: 0.25, normal: V(e.dir) });
       } else if (e.type === 'down') vfx.smoke(V(e.at), { size: 1.6, count: 3, life: 1.6, color: e.kind === 'mauler' ? 0x8a8070 : 0x6a4a8a, to: 0x9a8aa8, rise: 1 });
       else if (e.type === 'hurt') vfx.sparks(V(e.at), { count: 22, speed: 9, color: 0xffffff, to: e.by === 'car' || e.by === 'mauler' ? 0xffb070 : FLAX, life: 0.4 });
       else if (e.type === 'won') vfx.ring(V(PORTAL.p), { color: FLAX, from: PORTAL.r, to: PORTAL.r * 3, life: 0.9, normal: V(PORTAL.n) });
+      else if (e.type === 'leap') {
+        // Battle Beast come down: a crater's worth of dust and a ring along the ground
+        vfx.debris(V(e.at).add(new THREE.Vector3(0, 0.5, 0)), { count: 30, speed: 16, size: 0.3, dir: UP, spread: 0.9 });
+        vfx.ring(V(e.at).add(new THREE.Vector3(0, 0.3, 0)), { color: 0xffd27a, from: 1, to: e.r * 2, life: 0.6, normal: UP });
+        vfx.flash(V(e.at), { color: 0xffe2b0, intensity: 30, distance: 24, life: 0.2 });
+      } else if (e.type === 'parried') vfx.sparks(V(e.at), { count: 14, speed: 10, color: 0xffffff, to: 0xffd27a, life: 0.3 });
       else if (e.type === 'portalOut' || e.type === 'portalIn') {
         // Angstrom's own portal, his green, where he went and where he came back
         vfx.ring(V(e.at), { color: ANGSTROM_GREEN, from: 0.4, to: 4, life: 0.4, normal: UP });
@@ -232,25 +278,48 @@ export function createVillains(scene, vfx, { calm = false, templates = {}, rim =
       portal.material.uniforms.uTime.value = t;
       chest.set(hero.p[0], hero.p[1] + 1, hero.p[2]);
 
-      const used = { flaxan: 0, flaxanElite: 0, mauler: 0, seismic: 0, omniman: 0, mirror: 0, angstrom: 0 };
+      const used = { flaxan: 0, flaxanElite: 0, mauler: 0, seismic: 0, omniman: 0, mirror: 0, angstrom: 0, beast: 0 };
       for (const e of f.foes) {
         const kind = e.kind ?? 'flaxan';
         // the Flaxans go once they're down; the Maulers and Doc Seismic lie there till it's over
-        const show = e.state !== 'waiting' && e.state !== 'away' && (e.state !== 'down' || (f.on && !kind.startsWith('flaxan')));
+        const show = e.state !== 'waiting' && e.state !== 'away' && (e.state !== 'down' || (f.on && !kind.startsWith('flaxan') && kind !== 'beast'));
         if (!show) continue;
         const pool = pools[kind];
         const i = used[kind]++;
         if (!pool[i]) pool[i] = make[kind]();
         const v = pool[i];
         v.holder.visible = true;
-        if (v.f) {
+        if (v.flax) {
+          // the model, hips at its place: facing him, hanging there, its gun
+          // arm up at him when he's in range; tumbling when knocked out
+          v.holder.position.set(e.p[0], e.p[1], e.p[2]);
+          const f = v.f;
+          if (e.state === 'ko' || e.state === 'thrown') {
+            v.spin += dt * 9;
+            v.holder.rotation.set(v.spin, v.spin * 0.6, 0);
+            if (!f.act('down', { once: true, fade: 0.1 })) f.pose(POSES.hover(t), dt, 9);
+          } else {
+            v.spin = 0;
+            pos.copy(chest).sub(v.holder.position);
+            const flat = Math.hypot(pos.x, pos.z);
+            v.holder.rotation.set(0, Math.atan2(pos.x, pos.z), 0);
+            f.body.rotation.x = Math.min(1, Math.hypot(...e.v) / 20) * 0.5; // (leaning into where it flies)
+            if (e.state === 'stagger' || e.state === 'held') f.act('hit', { once: true, fade: 0.1 });
+            else {
+              f.act('idle', { at: i * 0.29 });
+              const at = [-0.1, Math.max(-1.5, Math.min(1.5, pos.y / Math.max(1, flat))), 1];
+              f.pose(pos.length() < FIGHT.range ? { ...POSES.hover(t + i), armR: at, foreR: at } : POSES.hover(t + i), dt, 9);
+            }
+          }
+          f.tick(dt);
+        } else if (v.f) {
           v.holder.position.set(e.p[0], e.p[1] + v.f.hipHeight, e.p[2]);
           v.holder.rotation.set(0, e.yaw ?? 0, 0);
           const l = lately.get(e.id);
           if (l) for (const k of Object.keys(l)) l[k] = Math.max(0, l[k] - dt);
           act(v, { ...e, kind, quakeT: l?.quake ?? 0, blastT: l?.blast ?? 0 }, dt, t);
         } else if (kind === 'flaxan' || kind === 'flaxanElite' || v.kit) {
-          v.holder.position.set(e.p[0], e.p[1] + (v.kit ? KINDS[kind].h * 0.53 : 0), e.p[2]);
+          v.holder.position.set(e.p[0], e.p[1] + (v.hipY ?? (v.kit ? KINDS[kind].h * 0.53 : 0)), e.p[2]);
           if (e.state === 'ko' || e.state === 'thrown') {
             v.spin += dt * 9;
             v.holder.rotation.set(v.spin, v.spin * 0.6, 0);
@@ -259,7 +328,7 @@ export function createVillains(scene, vfx, { calm = false, templates = {}, rim =
             // facing him, arm up at him when he's in range
             pos.copy(chest).sub(v.holder.position);
             v.holder.rotation.set(0, Math.atan2(pos.x, pos.z), 0);
-            poseHumanoid(v.h, { t: t + i, mode: v.kit && kind === 'mauler' ? 'idle' : 'hover', aim: pos.length() < FIGHT.range ? 1 : 0.3, lean: Math.min(1, Math.hypot(...e.v) / 20) * 0.6, flinch: e.state === 'held' ? 1 : 0 });
+            poseHumanoid(v.h, { t: t + i, mode: v.kit && (kind === 'mauler' || kind === 'beast') ? 'idle' : 'hover', aim: kind === 'beast' ? (e.state === 'swing' ? 1 : 0.2) : pos.length() < FIGHT.range ? 1 : 0.3, lean: Math.min(1, Math.hypot(...e.v) / 20) * 0.6, flinch: e.state === 'held' || e.state === 'stagger' ? 1 : 0 });
           }
         }
       }

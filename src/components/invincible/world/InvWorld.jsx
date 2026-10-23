@@ -14,7 +14,7 @@ import { pressGroups } from '../../../lib/press';
 import { getawayAt, stepGetaway } from './getaway';
 import { CALLS, DEBBIE_AFTER, PANELS } from './lines';
 import { RADIO, RADIO_CALLS, feedMission, missionOf, newRadio, nextRadioCall, nextStory, placeOf as missionPlace, startMission as beginMission, stepOf } from './missions';
-import { intoSpace, outOfSpace, stepSpace } from './orbit';
+import { intoSpace, outOfSpace, stepSpace, turnUp, upOver } from './orbit';
 import { CARDS, stepQuests } from './quests';
 import { SPAWN, groundAt, isSafeStart, near as boxesNear } from './map';
 import { VOICE } from './voicelines';
@@ -32,6 +32,7 @@ import { newBrawl, stepBrawl } from './brawl';
 import { newCavalry } from './guardians';
 import { dimensionOf, enter as enterDimension, savesHere, worldFor } from './dimensions';
 import { ANGSTROM_LINES } from './lines';
+import { SWARM_N, nearMars, nearestLost, newMars, stepMars, toWorld as marsWorld } from './offworld/mars';
 import { atHallDoor, goIn, goOut, hallAct, hallNear, hallTalk, inHall, stepCavalryWorld, stepInside } from './inside';
 import { DEFAULT as MARK_ID, ORDER, canPlay, hero as heroOf, keptHero, lockLine } from './heroes';
 import { newPower, stepPower } from './powers';
@@ -110,7 +111,7 @@ function World({ gl, setGl, thinkMark }) {
   if (!sim.current) {
     // (he's put on the lawn for now: where he really starts waits on the
     // world, which the scene makes, and nothing moves before it's there)
-    sim.current = { intro: false, kept: local.get(AT, null), quests: keptQuests(), foes: newFoes(), cars: null, mission: null, story: keptStory(), getaway: null, wave: null, swing: null, marker: null, gates: null, photo: null, hangarHp: 100, radio: newRadio(), call: null, punch: false, punchT: 0, invadeAt: 240, h: newHero(SPAWN), keys: new Set(), stick: { x: 0, y: 0 }, touchUp: false, touchDown: false, touchBoost: false, yaw: SPAWN.face, pitch: -0.05, dragAt: -1e9, t: 0, jump: false, press: jumpPress(), free: false, events: [], companion: [], eveHit: null, frame: 0, padBefore: null, moved: false, world: null, ruins: keptRuins(), dadGone: keptStory().done.includes('ep8'), panels: null, sky: null, launchWatch: false, hero: heroOf(MARK_ID), power: newPower(), heroBack: null, touchPower: false, brawl: newBrawl(), pound: false, dive: false, touchPunch: false, mouseDown: false, cavalry: newCavalry(), cavalryCalled: false, cavalryBlows: [], inside: null, dim: 'home', dimWorld: null };
+    sim.current = { intro: false, kept: local.get(AT, null), quests: keptQuests(), foes: newFoes(), cars: null, mission: null, story: keptStory(), getaway: null, wave: null, swing: null, marker: null, gates: null, photo: null, hangarHp: 100, radio: newRadio(), call: null, punch: false, punchT: 0, invadeAt: 240, h: newHero(SPAWN), keys: new Set(), stick: { x: 0, y: 0 }, touchUp: false, touchDown: false, touchBoost: false, yaw: SPAWN.face, pitch: -0.05, dragAt: -1e9, t: 0, jump: false, press: jumpPress(), free: false, events: [], companion: [], eveHit: null, frame: 0, padBefore: null, moved: false, world: null, ruins: keptRuins(), dadGone: keptStory().done.includes('ep8'), panels: null, sky: null, launchWatch: false, hero: heroOf(MARK_ID), power: newPower(), heroBack: null, touchPower: false, brawl: newBrawl(), pound: false, dive: false, touchPunch: false, mouseDown: false, cavalry: newCavalry(), cavalryCalled: false, cavalryBlows: [], inside: null, dim: 'home', dimWorld: null, mars: null };
   }
 
   // the hero: the sim's numbers, the scene's figure, and kept for next time
@@ -394,8 +395,14 @@ function World({ gl, setGl, thinkMark }) {
   // episode 8's beats (./missions.js), as its steps begin: the porch's panels, the
   // hit down the street, Dad as the foe, the tower's top on the plaza, the sky
   const ep8Beat = useCallback(
-    (i) => {
+    (id, i) => {
       const s = sim.current;
+      // (Battle Beast's lesson, before the fight: the same panels, Cecil's)
+      if (id === 'beast') {
+        if (i === 0) openPanels(PANELS.beast, () => missionApi.current.feed?.({ type: 'use', id: 'panels' }));
+        return;
+      }
+      if (id !== 'ep8') return;
       if (i === 0) openPanels(PANELS.porch, () => missionApi.current.feed?.({ type: 'use', id: 'panels' }));
       else if (i === 1) {
         // hit: a projectile down the street, east, into the river
@@ -727,7 +734,9 @@ function World({ gl, setGl, thinkMark }) {
     if (pressed('x')) s.punch = true;
     if (pressed('y')) act();
     if (pressed('start')) cycleTime();
-    const look = [Math.sin(s.yaw) * Math.cos(s.pitch), Math.sin(s.pitch), Math.cos(s.yaw) * Math.cos(s.pitch)];
+    const sky = [Math.sin(s.yaw) * Math.cos(s.pitch), Math.sin(s.pitch), Math.cos(s.yaw) * Math.cos(s.pitch)];
+    // (out there, his look is in the frame of the ground he is over: ./orbit.js's upOver, the camera's too)
+    const look = s.h.zone === 'space' ? turnUp(sky, upOver(s.h.p)) : sky;
     // the jump through its press (./flight.js): a moment early or late still goes
     if (s.jump) s.press.press();
     let input = { fwd, side, up: upKey ? 1 : 0, down: downKey ? 1 : 0, boost, run: boost && !s.brawl.blocking, jump: s.jump, look, press: s.press, free: s.free };
@@ -800,6 +809,42 @@ function World({ gl, setGl, thinkMark }) {
       for (const e of r.ev) {
         s.events.push(e);
         onFoeEvent(e, { s, say, feed, unlock, shakeOff });
+      }
+    }
+    // Mars (./offworld/mars.js): its astronauts, host and swarm, stepped while he is near the planet
+    if (inSpace && nearMars(h.p)) {
+      s.mars ??= newMars(a.engine?.tier === 'low' ? SWARM_N.low : a.engine?.tier === 'high' ? SWARM_N.high : SWARM_N.mid);
+      let rm = { mars: s.mars, ev: [], hurt: 0 };
+      for (let left = dt, first = true; left > 1e-6; left -= 0.05, first = false) {
+        const q = stepMars(rm.mars, { p: h.p, mode: h.mode, look }, { punch: first && s.punch }, Math.min(0.05, left));
+        rm = { mars: q.mars, ev: [...rm.ev, ...q.ev], hurt: rm.hurt + q.hurt };
+      }
+      s.mars = rm.mars;
+      for (const e of rm.ev) {
+        s.events.push({ ...e, mars: true });
+        if (e.type === 'pick') {
+          sfx('ding');
+          say('Got one. The ship’s by the base.', 2400);
+        } else if (e.type === 'aboard') {
+          sfx('coin');
+          feed({ type: 'caught', source: 'mars' });
+          say(`${e.n} of 4 aboard.`, 2000);
+        } else if (e.type === 'hostHit') sfx('thunk');
+        else if (e.type === 'hostDown') {
+          sfx('blast');
+          feed({ type: 'ko', kind: 'host', id: 1000 });
+          say('The host is down. The swarm goes with it.', 3200);
+        } else if (e.type === 'hostSwing') sfx('hit');
+        else if (e.type === 'scatter') sfx('pop');
+      }
+      if (rm.hurt > 0) {
+        s.foes = { ...s.foes, hp: s.foes.hp - rm.hurt };
+        if (s.foes.hp <= 0) {
+          s.foes = { ...s.foes, hp: 100 };
+          s.h = { ...s.h, stun: Math.max(s.h.stun ?? 0, 1.2) };
+          sfx('boom');
+          say('That one hurt. Get back up.');
+        }
       }
     }
     s.punch = false;
@@ -909,7 +954,7 @@ function World({ gl, setGl, thinkMark }) {
     // the mission under way: where he is, and where what its step cares about is; then the clock
     if (s.mission && !inside) {
       const dadP = a.debug.dad().p;
-      feed({ type: 'at', p: h.p, mode: h.mode, speed, face: h.face, npcs: { omni: dadP, allen: a.debug.allen }, car: getawayAt(s.getaway) });
+      feed({ type: 'at', p: h.p, mode: h.mode, speed, face: h.face, npcs: { omni: dadP, allen: a.debug.allen, astro: s.mars ? nearestLost(s.mars, h.p) : null, host: s.mars ? marsWorld(s.mars.host.p) : null }, car: getawayAt(s.getaway) });
       for (let left = dt; left > 1e-6 && s.mission; left -= 0.05) feed({ type: 'tick', dt: Math.min(0.05, left) });
     }
     a.frame(s, dt);
