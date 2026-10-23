@@ -18,18 +18,30 @@
 //   ?debug panel’s bloom.
 // - lite() drops the bloom’s passes, as the GLSL post disables its pass.
 //
+// - the finish (`upscale`, `top`): universe/post.js's, the galaxy's. The
+//   scene drawn at the most it may be (`top`) times the pace's step, on a
+//   canvas of the screen's own pixels: sharper than the canvas, the grade
+//   folds it down as it reads it; softer, the grade is worked out at the
+//   scene's size (an RTT) and brought up by FSR 1 (three's FSR1Node, the
+//   EASU and RCAS the GLSL finish is ported from) and dithered again. Its
+//   multisampling follows the sharpness drawn at (lib/three/finish's
+//   samplesAt), set on the passes' targets, which the node renderer makes
+//   again for a new count; maxSamples and glowing as the GLSL post's.
+//
 // The black hole’s lens, the finish’s toe and LUT are the universe map’s and
 // the surface’s; the galaxy never asks for them, so they stay with those
 // twins. On the node renderer there’s no composer (`composer` is null):
 // programs are made by compileAsync and one small post.render.
 //
-//   createPost(renderer, scene, camera, { small, bloom }) → the post
+//   createPost(renderer, scene, camera, { small, bloom, ratio, upscale, top }) → the post
 
 import * as THREE from 'three';
 import { RenderPipeline } from 'three/webgpu';
-import { Fn, If, clamp, dot, float, length, luminance, max, mix, pass, pow, screenCoordinate, screenUV, select, smoothstep, step, texture, uniform, uv, vec2, vec3, vec4 } from 'three/tsl';
+import { Fn, If, clamp, dot, float, length, luminance, max, mix, pass, pow, rtt, screenCoordinate, screenUV, select, smoothstep, step, texture, uniform, uv, vec2, vec3, vec4 } from 'three/tsl';
 import { bloom as bloomNode } from 'three/addons/tsl/display/BloomNode.js';
+import { fsr1 } from 'three/addons/tsl/display/FSR1Node.js';
 import { blueNoiseTexture } from '../../../lib/three/noise';
+import { RCAS_STOPS, drawnRatio, rcasStops, samplesAt, upscaling } from '../../../lib/three/finish';
 import { LOOK } from '../../universe/look';
 import { UNREAL, bloomSize } from '../surface/nodes/post';
 
@@ -57,8 +69,10 @@ const shoulder = Fn(([c]) => {
 
 const srgb = (c) => mix(c.mul(12.92), pow(c, vec3(1 / 2.4)).mul(1.055).sub(0.055), step(0.0031308, c));
 
-export function createPost(renderer, scene, camera, { small = false, bloom: look = null } = {}) {
-  const samples = renderer.getPixelRatio() >= 1.75 ? 0 : small ? 2 : 4;
+export function createPost(renderer, scene, camera, { small = false, bloom: look = null, ratio: asked = renderer.getPixelRatio(), upscale = false, top = null } = {}) {
+  // (with the finish, by the sharpness it's drawn at, as that moves)
+  let samplesCap = Infinity;
+  const samples = upscale ? samplesAt(asked, { small }) : renderer.getPixelRatio() >= 1.75 ? 0 : small ? 2 : 4;
   const scenePass = pass(scene, camera, { samples, type: THREE.HalfFloatType });
   const sceneTex = scenePass.getTextureNode();
   // whatever’s drawn over the scene (the cockpit), with a fresh depth and
@@ -171,14 +185,30 @@ export function createPost(renderer, scene, camera, { small = false, bloom: look
     return vec4(clamp(c, 0, 1), 1);
   });
 
+  const graded = grade();
+  // the finish's way up (made the first time it brings one up): the grade
+  // at the scene's size, FSR 1 to the canvas, RCAS as hard as it's brought
+  // up (lib/three/finish's rcasStops), the dither again
+  const sharpen = uniform(RCAS_STOPS);
+  let up = null;
+  const wayUp = () => {
+    if (!up) {
+      const atScene = rtt(graded);
+      const fsr = fsr1(atScene, sharpen);
+      up = { atScene, fsr, out: vec4(clamp(fsr.rgb.add(noise(vec2(5, 11)).sub(0.5).div(255)), 0, 1), 1) };
+    }
+    return up;
+  };
   const post = new RenderPipeline(renderer);
   post.outputColorTransform = false; // (FINAL encodes it itself)
-  post.outputNode = grade();
+  post.outputNode = graded;
   let frame = 0;
   let level = 0;
   let aberrationWant = 0;
   let sharp = 1;
-  const at = { w: 0, h: 0, ratio: 0 };
+  const at = { w: 0, h: 0, ratio: 0, full: 0 };
+  const most = () => (upscale && top ? top() : renderer.getPixelRatio());
+  const drawnAt = (full) => (upscale ? drawnRatio(most(), sharp) : Math.min(full, Math.max(SOFTEST, full * sharp)));
   const size = new THREE.Vector2();
   return {
     get on() {
@@ -195,7 +225,7 @@ export function createPost(renderer, scene, camera, { small = false, bloom: look
     bloomNode: glowing,
     get ratio() {
       const full = renderer.getPixelRatio();
-      return on ? Math.min(full, Math.max(SOFTEST, full * sharp)) : full;
+      return on ? drawnAt(full) : full;
     },
     get sharpness() {
       return sharp;
@@ -216,10 +246,20 @@ export function createPost(renderer, scene, camera, { small = false, bloom: look
         return;
       }
       const full = renderer.getPixelRatio();
-      const ratio = Math.min(full, Math.max(SOFTEST, full * sharp));
-      if (w !== at.w || h !== at.h || ratio !== at.ratio) {
-        Object.assign(at, { w, h, ratio });
+      const ratio = drawnAt(full);
+      if (w !== at.w || h !== at.h || ratio !== at.ratio || full !== at.full) {
+        Object.assign(at, { w, h, ratio, full });
+        // (the finish's multisampling by the sharpness drawn at: the node
+        // renderer makes a target again for a new count)
+        if (upscale) {
+          const n = samplesAt(ratio, { small, cap: samplesCap });
+          for (const p of [scenePass, overPass]) {
+            p.options.samples = n;
+            p.renderTarget.samples = n;
+          }
+        }
         // the scene drawn at the pace’s sharpness, a share of the canvas’s
+        // (or more than the canvas, with the finish: folded down by the grade)
         scenePass.setResolutionScale(ratio / full);
         overPass.setResolutionScale(ratio / full);
         // the glow worked out at the page’s own pixels, its long side capped
@@ -229,6 +269,19 @@ export function createPost(renderer, scene, camera, { small = false, bloom: look
         u.uStep.value.set(0.25 / bw, 0.25 / bh);
         u.uAspect.value = w / h;
         u.uTexel.value.set(1 / Math.max(1, w * ratio), 1 / Math.max(1, h * ratio));
+        // brought up to the canvas (FSR 1) when it's sharper than the scene
+        if (upscale) {
+          const bring = upscaling(ratio, full);
+          if (bring) {
+            wayUp().atScene.setResolutionScale(ratio / full);
+            sharpen.value = rcasStops(ratio / full);
+          }
+          const want = bring ? up.out : graded;
+          if (post.outputNode !== want) {
+            post.outputNode = want;
+            post.needsUpdate = true;
+          }
+        }
       }
       frame = (frame + 1) % 997;
       u.uFrame.value.set((frame * 37) % noiseSize, (frame * 23) % noiseSize);
@@ -313,12 +366,35 @@ export function createPost(renderer, scene, camera, { small = false, bloom: look
       glow = false;
       u.uGlow.value = 0;
     },
+    // the bloom off and back on (the visitor's video settings); lite() is this, off
+    glowing(want) {
+      glow = Boolean(want);
+      u.uGlow.value = glow ? 1 : 0;
+      glowing.strength.value = BLOOM.strength * UNREAL;
+    },
+    // the most samples a pixel the finish multisamples with, at the next frame
+    maxSamples(n) {
+      const cap = Number.isFinite(n) ? Math.max(0, n) : Infinity;
+      if (cap === samplesCap) return;
+      samplesCap = cap;
+      at.ratio = 0;
+    },
+    // (the node renderer makes the finish's programs by drawing it)
+    precompileFinish: () => Promise.resolve(),
+    // (for a check: whether the last frame was brought up, and its samples)
+    get finish() {
+      return { up: Boolean(up && post.outputNode === up.out), samples: scenePass.renderTarget.samples, cap: samplesCap };
+    },
+    // (the pipeline itself, for a test that draws no frame)
+    pipeline: post,
     uniforms: u,
     dispose() {
       post.dispose();
       glowing.dispose();
       scenePass.dispose();
       overPass.dispose();
+      up?.fsr.dispose();
+      up?.atScene.dispose();
       tNoise.dispose();
     },
   };

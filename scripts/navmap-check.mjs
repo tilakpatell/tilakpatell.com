@@ -6,7 +6,8 @@
 // (the ship has to be out under the site's jump, which clears the world's
 // card from the panel), tries a second jump while the hyperdrive charges,
 // flies out to a wonder at super speed with the selection cleared under it,
-// then the phone layout. Screenshots go to $OUT. Headless Chrome draws in
+// then the phone layout: the list first, the chart a tap away, its names
+// clear of each other. Screenshots go to $OUT. Headless Chrome draws in
 // software, slowly: clicks go through the DOM, and the waits are long.
 import { chromium } from 'playwright-core';
 
@@ -34,6 +35,7 @@ async function open(viewport, ship) {
   page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
   await page.goto(URL, { waitUntil: 'domcontentloaded' });
   await page.waitForFunction(() => typeof window.__universe === 'function' && window.__universe().ship, null, { timeout: 120000 });
+  await page.waitForSelector('.universe-navmap-btn', { timeout: 400000 }); // (once the shaders are in: minutes in software GL)
   await page.waitForTimeout(2000);
   return page;
 }
@@ -49,6 +51,21 @@ const click = (page, sel, nth = 0) =>
 const shot = (page, name) => page.screenshot({ path: `${out}/${name}.png`, timeout: 120000 });
 const state = (page) => page.evaluate(() => ({ ...window.__universe(), hash: window.location.hash }));
 const navOpen = (page) => page.waitForSelector('.navmap', { timeout: 60000 });
+// the names showing on the chart: two that meet, or one past its circle's
+// edge (chartLabels.js lays them out), in words; null for none
+const namesClash = () => {
+  const c = document.querySelector('.navmap-chart').getBoundingClientRect();
+  const R = c.width / 2;
+  // (a name with no room of its own shows only on a hover or a pick, over the rest on purpose)
+  const names = [...document.querySelectorAll('.navmap-places .navmap-name:not([data-off])')].filter((n) => n.offsetParent).map((n) => [n.textContent, n.getBoundingClientRect()]);
+  for (const [t, b] of names) if ([b.left, b.right].some((x) => [b.top, b.bottom].some((y) => Math.hypot(x - c.left - R, y - c.top - R) > R + 1))) return `${t} past the edge`;
+  for (let i = 0; i < names.length; i++)
+    for (let j = i + 1; j < names.length; j++) {
+      const [a, b] = [names[i][1], names[j][1]];
+      if (a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom) return `${names[i][0]} on ${names[j][0]}`;
+    }
+  return null;
+};
 const pickByName = (page, name) => page.evaluate((n) => [...document.querySelectorAll('.navmap-list button')].find((b) => b.textContent.includes(n))?.click(), name);
 
 if (only !== 'phone') {
@@ -66,6 +83,8 @@ if (only !== 'phone') {
   const overlap = (a, b) => a && b && a.x0 < b.x1 && b.x0 < a.x1 && a.y0 < b.y1 && b.y0 < a.y1;
   check(!overlap(boxes.maw, boxes.carib), 'The Maw’s name clear of The Caribbean’s');
   check(!overlap(boxes.glacia, boxes.gate), 'Glacia’s name clear of the galaxy gate’s');
+  const clash = await page.evaluate(namesClash);
+  check(!clash, `no two names on the chart meet, and none runs off it${clash ? ` (${clash})` : ''}`);
   // the list isn't squashed under the key hints
   const squashed = await page.evaluate(() => {
     const keys = document.querySelector('.navmap-keys')?.getBoundingClientRect();
@@ -181,16 +200,36 @@ if (only !== 'desktop') {
   await navOpen(page);
   await page.waitForTimeout(800);
   await shot(page, '9-phone-navmap');
-  const fits = await page.evaluate(() => {
+  // the list first: every place a row a finger can take, the frame on the screen
+  const list = await page.evaluate(() => {
     const f = document.querySelector('.navmap-frame').getBoundingClientRect();
-    const c = document.querySelector('.navmap-chart').getBoundingClientRect();
-    const s = document.querySelector('.navmap-side').getBoundingClientRect();
-    return { frame: f.right <= window.innerWidth + 1 && f.bottom <= window.innerHeight + 1, chart: c.width > 200, side: s.height > 150 && s.top >= c.bottom - 1 };
+    const rows = [...document.querySelectorAll('.navmap-list button')].map((b) => b.getBoundingClientRect().height);
+    return { mode: document.querySelector('.navmap').dataset.mode, frame: f.right <= window.innerWidth + 1 && f.bottom <= window.innerHeight + 1, chart: Boolean(document.querySelector('.navmap-chart').offsetParent), rows: rows.length, low: Math.min(...rows) };
   });
-  check(fits.frame && fits.chart && fits.side, `on a phone the chart sits over the list, all on the screen (${JSON.stringify(fits)})`);
+  check(list.mode === 'list' && list.frame && !list.chart && list.low >= 44, `on a phone it opens on the list, every row 44 px or more (${JSON.stringify(list)})`);
+  // a place picked from it: its go button on the screen, however far down the card goes
   await pickByName(page, 'Earth');
   await page.waitForTimeout(1500);
+  const inView = () =>
+    page.evaluate(() => {
+      const b = document.querySelector('.navmap-go').getBoundingClientRect();
+      return b.top >= 0 && b.bottom <= window.innerHeight;
+    });
+  check(await inView(), 'the go button’s on the screen');
   await shot(page, '10-phone-picked');
+  // the chart, a tap away: over the panel, its names clear of each other and of its edge
+  await page.evaluate(() => [...document.querySelectorAll('.navmap-modes button')].find((b) => b.textContent.includes('Chart'))?.click());
+  await page.waitForTimeout(1200);
+  const chart = await page.evaluate(() => {
+    const c = document.querySelector('.navmap-chart').getBoundingClientRect();
+    const s = document.querySelector('.navmap-side').getBoundingClientRect();
+    return { chart: c.width > 300, side: s.top >= c.bottom - 1 && s.bottom <= window.innerHeight + 1 };
+  });
+  check(chart.chart && chart.side, `the chart sits over the panel, all on the screen (${JSON.stringify(chart)})`);
+  const phoneClash = await page.evaluate(namesClash);
+  check(!phoneClash, `on a phone too, no two names meet${phoneClash ? ` (${phoneClash})` : ''}`);
+  check(await inView(), 'with the chart up, the go button’s still on the screen');
+  await shot(page, '11-phone-chart');
   await page.context().close();
 }
 

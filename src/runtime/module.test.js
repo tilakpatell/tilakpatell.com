@@ -106,6 +106,14 @@ describe('fromScene', () => {
     expect(fromScene('x', () => scene())).not.toHaveProperty('sharpness');
   });
 
+  it('says when its scene wants its canvas at the screen’s own pixels', () => {
+    const mod = fromScene('universe', () => scene(), { ratio: 2, sharpness: 'own', canvas: 'screen' });
+    expect(validateModule(mod)).toMatchObject({ ratio: 2, sharpness: 'own', canvas: 'screen' });
+    expect(fromScene('x', () => scene())).not.toHaveProperty('canvas');
+    expect(fromScene('galaxy', () => scene(), { calibrateAs: 'galaxy-fsr' })).toMatchObject({ calibrateAs: 'galaxy-fsr' });
+    expect(fromScene('x', () => scene())).not.toHaveProperty('calibrateAs');
+  });
+
   it('a scene without the optional methods still makes a whole world', async () => {
     const s = { render: () => false, resize() {}, dispose() {} };
     const w = await fromScene('x', () => s).create(rt(), {});
@@ -115,6 +123,14 @@ describe('fromScene', () => {
     expect(() => w.lowerQuality(1)).not.toThrow();
     expect(w.handoff()).toBe(null);
     expect(w.tune).toBeUndefined();
+    expect(w.onVideo).toBeUndefined(); // (the runtime offers a reload instead)
+  });
+
+  it('passes a scene’s onVideo through, so the settings reach it live', async () => {
+    const s = { render: () => false, resize() {}, dispose() {}, onVideo: vi.fn() };
+    const w = await fromScene('x', () => s).create(rt(), {});
+    w.onVideo({ filmGrain: 'off' });
+    expect(s.onVideo).toHaveBeenCalledWith({ filmGrain: 'off' });
   });
 
   it('passes a scene’s tune() through, for the ?debug panel', async () => {

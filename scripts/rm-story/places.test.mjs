@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { destinationById } from '../../src/components/rickmorty/world/dimensions/destinations';
-import { home, stand, wayIn } from './places.mjs';
+import { home, ledgeOf, stand, wayIn } from './places.mjs';
 
 const N = Math.PI / 2;
 const near = (got, want) => want.forEach((v, i) => expect(got[i]).toBeCloseTo(v, 6));
@@ -17,6 +17,8 @@ const USED = {
   gloopynoops: ['shrimply', 'jerrysthings'],
   cablestudio: ['cablebooth', 'set-ants', 'set-legs', 'set-sneezy', 'set-field', 'set-doors', 'set-bits', 'set-shmlo'],
   schwifty: ['mic'],
+  fantasy: ['goblins', 'giants'],
+  froopyland: ['tommy'],
 };
 
 describe('where the browser check stands Morty', () => {
@@ -33,6 +35,17 @@ describe('where the browser check stands Morty', () => {
     expect(wayIn(destinationById('vat'))).toBeCloseTo(4207.4, 6);
     near(home(destinationById('jerryboree')), [-400, 1705.6, -N]);
     near(home(destinationById('cablestudio')), [-400, 3815.6, -N]);
+  });
+
+  it('reads a ledge from the data: where it is, and how high', () => {
+    const [x, z, top] = ledgeOf(destinationById('fantasy'), 'landing-1');
+    expect(x).toBeCloseTo(-414.3, 2);
+    expect(z).toBeCloseTo(1288.88, 2);
+    expect(top).toBe(2.3);
+    expect(ledgeOf(destinationById('fantasy'), 'beanstalk')[2]).toBe(20.9);
+    // (a solid that isn't a ledge, or no solid at all: said so)
+    expect(() => ledgeOf(destinationById('fantasy'), 'tavern')).toThrow(/fantasy has no ledge tavern/);
+    expect(() => ledgeOf(destinationById('fantasy'), 'nope')).toThrow(/fantasy has no ledge nope/);
   });
 
   it('finds every spot the check uses in the data', () => {

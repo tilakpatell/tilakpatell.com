@@ -156,7 +156,7 @@ export default function WorldGate({ pathname, children }) {
     prompt = <InstallCard name={name} why={WHY[check.why] ?? WHY.phone} state={state} pack={p.pack} progress={p.progress} error={p.error} onInstall={p.install} onOpen={() => load()} onLight={light} onAlways={() => load(true)} />;
   } else if (held) {
     prompt = (
-      <aside className="world-gate" role="dialog" aria-modal="false" aria-labelledby="world-gate-title">
+      <aside className="world-gate dialog" role="dialog" aria-modal="false" aria-labelledby="world-gate-title">
         <button type="button" className="world-gate-x" aria-label="Keep it light" onClick={light}>
           <RiCloseLine aria-hidden="true" />
         </button>

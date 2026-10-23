@@ -5,7 +5,7 @@
 // outskirtsOf(d, world, { tier, fogFar, tris }) → {
 //   reach                     the ground, metres from the middle (past the fog)
 //   edge: [{ kind, x0, z0, x1, z1, h, see, color }]   runs along the box's four sides (color: the record's, or null)
-//   lots: [{ side, row, style, x, z, turn, w, d, h, y, model?, steps?, stand?, landmark?, piece?, spin? }]
+//   lots: [{ side, row, style, x, z, turn, w, d, h, y, model?, steps?, stand?, landmark?, plain?, piece?, spin? }]
 //                             the ring of buildings, facing in (a model: a set piece),
 //                             the stands and the landmarks the record names, and the
 //                             place's own pieces (models where its code buildings were;
@@ -191,7 +191,7 @@ function landmarksOf(d, list) {
   return (list ?? []).map((m) => {
     const x = d.centre.x + m.at[0];
     const z = d.centre.z + m.at[1];
-    return { side: null, row: null, style: m.style, x, z, turn: quarter(Math.atan2(d.centre.x - x, d.centre.z - z)), w: m.w, d: m.d, h: m.h, y: m.y ?? 0, landmark: true, look: m.look ?? null };
+    return { side: null, row: null, style: m.style, x, z, turn: quarter(Math.atan2(d.centre.x - x, d.centre.z - z)), w: m.w, d: m.d, h: m.h, y: m.y ?? 0, landmark: true, plain: Boolean(m.plain), look: m.look ?? null };
   });
 }
 // the place's own pieces: its models where the record says, in the box or out, on every level (its code buildings' places)

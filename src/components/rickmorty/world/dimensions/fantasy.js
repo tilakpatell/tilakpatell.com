@@ -1,12 +1,18 @@
 // Fantasy World ("Something Ricked This Way Comes"' sort of place, and
 // Mortynight Run's): a medieval village square of cobbles under a summer
 // sky, the Thirsty Step tavern (Meshy) at its head, timber cottages round it,
-// the beanstalk climbing out of sight to the giants, Dale the giant standing
-// beyond the square, three Stair Goblins hopping about, the well with the
-// Meeseeks at it, and King Jellybean by the privy until the village is helped.
+// Dale the giant standing beyond the square, the well with the Meeseeks at
+// it, and King Jellybean by the privy until the climb's done. Up the
+// tavern's west side, the three Stair Goblins stand in a flight, biting by
+// turns (the stage poses them: ../games/climb.js); past them the beanstalk's
+// shoots wind up round its stalk to the crown, where a giant waits on the
+// cloud by the giants' castle (./worlds.js). Each shoot is drawn as the
+// walker has it (./beanstalk.js): a column from the ground to its top, a
+// leaf flush on it, nothing to walk under.
 
-import { BALL } from '../interiors/shell';
+import { BALL, CYL } from '../interiors/shell';
 import { gablePrism } from '../kit';
+import { BEANSTALK } from './beanstalk';
 import { specks, stage } from './stage';
 
 const LIGHT = { sun: [0xfff2d0, 1.9], hemi: [0xcfe6ff, 0x6a7a4a, 1.25], fog: [0xcfe2f2, 60, 320] };
@@ -54,18 +60,28 @@ export async function buildFantasy(kit) {
   w.cyl(0x6a4a2a, 0, 1.5, 0, 0.05, 1.8, 0, Math.PI / 2).cyl(0x7a5a3a, 0.3, 1.0, 0, 0.18, 0.3);
 
   // the privy King Jellybean stands by
-  const pv = R.frame(...P(-15.6, -6), Math.PI / 2);
+  const pv = R.frame(...P(-15.6, -3.5), Math.PI / 2);
   pv.box(0x7a5a3a, 0, 0, 0, 1.6, 2.3, 1.6).part(gablePrism(1.9, 1.9, 0.6), 0x5a3a22, 0, 2.3, 0).box(0x4a3424, 0, 1.8, 0.81, 0.18, 0.18, 0.04);
 
-  // the beanstalk, up into the clouds: a twisting green trunk with leaves
-  const [bx, bz] = P(-22, -19);
-  const stalk = R.frame(bx, bz, 0);
-  for (let i = 0; i < 26; i++) {
-    const y = i * 2.2;
-    const a = i * 0.6;
-    stalk.cyl(0x4f9a3a, Math.cos(a) * 0.5, y, Math.sin(a) * 0.5, 1.2 - i * 0.02, 2.4);
-    if (i % 2) stalk.ball(0x6abf4a, Math.cos(a + 1.5) * 1.8, y + 1.2, Math.sin(a + 1.5) * 1.8, 0.9, 0.35);
-  }
+  // the beanstalk's landings, its shoots and its crown: green columns from the
+  // ground to their tops (the walker's ledges are), each with a leaf flush on top
+  const LEAF = 0.14;
+  const ledge = (id) => BEANSTALK.solids.find((o) => o.id === id);
+  BEANSTALK.path
+    .filter((id) => !/^g\d-/.test(id))
+    .forEach((id, i) => {
+      const o = ledge(id);
+      const f = R.frame(...P(o.dx, o.dz), o.turn ?? 0);
+      const green = i % 2 ? 0x5aa846 : 0x4f9a3a;
+      if (o.r != null) f.cyl(green, 0, 0, 0, o.r, o.top - LEAF).cyl(0x7acc58, 0, o.top - LEAF, 0, o.r, LEAF);
+      else f.box(green, 0, 0, 0, o.w, o.top - LEAF, o.d).box(0x7acc58, 0, o.top - LEAF, 0, o.w, LEAF, o.d);
+    });
+  // the stalk's tip, curling north up into the cloud from the crown
+  const crown = ledge('beanstalk');
+  const tip = R.frame(...P(crown.dx, crown.dz), 0, { y: crown.top });
+  [0.5, 0.42, 0.33, 0.24].forEach((r, i) => tip.cyl(0x4f9a3a, 0, i * 1.0, -i * i * 0.18, r, 1.1, -i * 0.22, 0, CYL));
+  // the stumps the upper two goblins stand on, from the ground to just under their feet
+  for (const g of BEANSTALK.stairs.filter((st) => st.stump > 0)) R.frame(...P(g.dx, g.dz), 0).box(0x6a4a2a, 0, 0, 0, g.h, g.stump, g.h * 1.054);
 
   // a fence round the square's south side, and lanterns on posts
   for (let dx = -16; dx <= 16; dx += 2) if (Math.abs(dx) > 3) R.frame(...P(dx, 11), 0, { list: 'fixed' }).box(0x6a4a2a, 0, 0, 0, 0.12, 1, 0.12).box(0x7a5a3a, 1, 0.75, 0, 2, 0.1, 0.06);
@@ -77,20 +93,16 @@ export async function buildFantasy(kit) {
   ])
     R.frame(...P(dx, dz), 0).box(0x3a2a1a, 0, 0, 0, 0.14, 2.6, 0.14).glow(BALL, 0xffc070, 1.6, 0, 2.7, 0, 0, 0.35);
 
-  // the tavern, the giant beyond the square, and three Stair Goblins (tinted)
+  // the tavern, the giant beyond the square, and the Stair Goblins: a flight
+  // of three, facing the square so their steps rise toward the beanstalk,
+  // each on its stump (the stage poses them as their stair's mood has it)
   S.figure('thirstystep', { x: P(-6, -19)[0], z: P(-6, -19)[1], face: -Math.PI / 2, h: 8.5 });
   S.figure('giant', { x: P(16, -20)[0], z: P(16, -20)[1], face: -Math.PI / 2, h: 11 });
-  // (they hop where they stand)
-  const hop = [];
-  for (const [dx, dz, phase] of [
-    [7, 7, 0.2],
-    [11, 9, 2.1],
-    [9.5, 5, 4.0],
-  ])
-    S.figure('stairgoblin', { x: P(dx, dz)[0], z: P(dx, dz)[1], face: -Math.PI / 2 + phase, h: 0.9, onPlace: (c) => hop.push([c.group, phase]) });
-  R.tick((t) => {
-    for (const [g, phase] of hop) g.position.y = Math.abs(Math.sin(t * 3 + phase)) * 0.35;
-  });
+  const stairs = {};
+  for (const g of BEANSTALK.stairs) S.figure('stairgoblin', { x: P(g.dx, g.dz)[0], z: P(g.dx, g.dz)[1], y: g.base, face: -Math.PI / 2, h: g.h, onPlace: (c) => (stairs[g.id] = c.group) });
+  S.climb({ stairs });
+  // and up on the cloud, by the castle's door, a giant looking down the beanstalk
+  S.figure('giant', { x: P(-23, -25.6)[0], z: P(-23, -25.6)[1], y: 21.8, face: -Math.PI / 2, h: 11 });
   S.people();
 
   return S.done(LIGHT);

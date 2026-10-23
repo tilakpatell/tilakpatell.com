@@ -56,6 +56,23 @@ describe('createQuality', () => {
     expect(softer.ratioUnder(1.5, { unscaled: true })).toBe(1.5);
   });
 
+  // (a module that supersamples inside its own passes, module.js's `canvas:
+  // 'screen'`: its canvas is the screen's own pixels, and the least and the
+  // visitor's render resolution are the passes' to draw, never the canvas's)
+  it("gives the screen's own pixels, without the least or the visitor's sharpness, when asked for the screen", () => {
+    const ultra = createQuality({ tier: 'high', pace: fakePace([2]), dpr: 1, minRatio: 1.5 });
+    ultra.frame(0);
+    expect(ultra.ratioUnder(2, { unscaled: true })).toBe(1.5);
+    expect(ultra.ratioUnder(2, { unscaled: true, screen: true })).toBe(1);
+    const retina = createQuality({ tier: 'high', pace: fakePace([null]), dpr: 3 });
+    expect(retina.ratioUnder(2, { screen: true })).toBe(2); // (under the module's cap and the budget's most)
+    const picked = createQuality({ tier: 'high', pace: fakePace([null]), dpr: 1.25, sharp: 2 });
+    expect(picked.ratioUnder(2, { unscaled: true })).toBe(2);
+    expect(picked.ratioUnder(2, { unscaled: true, screen: true })).toBe(1.25);
+    const low = createQuality({ tier: 'low', pace: fakePace([null]), dpr: 2 });
+    expect(low.ratioUnder(2, { screen: true })).toBe(1); // (the low row's most still holds)
+  });
+
   it('follows the pace down and tells listeners once per change', () => {
     const q = createQuality({ tier: 'high', pace: fakePace([null, 1, null, 1, 0]) });
     const seen = [];

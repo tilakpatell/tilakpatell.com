@@ -867,6 +867,21 @@ describe('createRuntime', () => {
     expect(plain.lowerQuality).toHaveBeenCalledWith(2);
   });
 
+  it("a module that supersamples in its own passes is given a canvas of the screen's own pixels", async () => {
+    const quality = fakeQuality();
+    // (the least, 1.5, is the passes' to draw; the screen is 1×)
+    quality.ratioUnder = vi.fn((cap, { screen = false } = {}) => Math.min(cap ?? Infinity, screen ? 1 : 1.5));
+    const { rt, loop } = make({ quality });
+    const world = fakeWorld({ wants: () => true });
+    await rt.mount({ id: 'universe', ratio: 2, sharpness: 'own', canvas: 'screen', create: () => world }, {}, fakeHost());
+    expect(quality.ratioUnder).toHaveBeenLastCalledWith(2, { unscaled: true, screen: true });
+    expect(rt.gfx.setRatio).toHaveBeenLastCalledWith(1);
+    loop.tick(16);
+    // a module without it keeps the canvas it had, the least and all
+    await rt.mount({ id: 'galaxy', ratio: 1.5, sharpness: 'own', create: () => fakeWorld() }, {}, fakeHost());
+    expect(rt.gfx.setRatio).toHaveBeenLastCalledWith(1.5);
+  });
+
   it("a module's ratio caps the sharpness it's drawn at", async () => {
     const quality = fakeQuality();
     quality.ratioUnder = vi.fn((cap) => Math.min(cap ?? Infinity, 2));
@@ -1119,6 +1134,25 @@ describe('calibration switched off (the QA scripts: ?calibrate=off)', () => {
     await rt.mount({ id: 'a', create: () => fakeWorld() }, {}, fakeHost());
     await settled();
     expect(steps).toHaveLength(1);
+  });
+
+  it('keeps a level under the name a module calibrates as, where it gives one', async () => {
+    const kept = new Map();
+    vi.stubGlobal('localStorage', { getItem: (k) => kept.get(k) ?? null, setItem: (k, v) => kept.set(k, v) });
+    try {
+      const { rt, quality } = make();
+      quality.setLevel = vi.fn();
+      await rt.mount({ id: 'galaxy', calibrateAs: 'galaxy-fsr', create: () => fakeWorld() }, {}, fakeHost());
+      await settled();
+      await rt.mount({ id: 'plain', create: () => fakeWorld() }, {}, fakeHost());
+      await settled();
+      const keys = Object.keys(JSON.parse(kept.get('tp-calibration')));
+      expect(keys.some((k) => k.includes('|galaxy-fsr|'))).toBe(true);
+      expect(keys.some((k) => k.includes('|galaxy|'))).toBe(false);
+      expect(keys.some((k) => k.includes('|plain|'))).toBe(true);
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 
   it('skips the walk and leaves the world at its sharpest step', async () => {
