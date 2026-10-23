@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { mirror, plan } from './assets-mirror.mjs';
+import { compare, mirror, plan, readList } from './assets-mirror.mjs';
 import { ENDPOINT } from './lib/bucket.mjs';
 
 const FROM = 'https://p.supabase.co/storage/v1/object/public/site-assets';
@@ -67,9 +67,45 @@ describe('mirror', () => {
     expect(r.sent).toBe(0);
     expect(r.failed).toEqual([
       { key: 'a/gone.glb', error: 'missing at the source (HTTP 404)' },
-      { key: 'b/short.glb', error: '1 bytes at the source, the manifest says 5' },
+      { key: 'b/short.glb', error: '1 bytes at the source, the list says 5' },
       { key: 'c/refused.glb', error: 'HTTP 403' },
     ]);
     expect(Object.keys(pool.r2)).toEqual([]);
+  });
+});
+
+describe('a list in place of the manifests', () => {
+  it('reads key, bytes and an address of its own, each key once, by key', () => {
+    const text = 'web/b.glb\t2\thttps://p.supabase.co/storage/v1/object/sign/bf2017-assets/web/b.glb?token=t\r\nweb/a.json\t0\n\nweb/b.glb\t2\thttps://x/again\n';
+    expect(readList(text)).toEqual([
+      { key: 'web/a.json', bytes: 0 },
+      { key: 'web/b.glb', bytes: 2, url: 'https://x/again' },
+    ]);
+  });
+
+  it('says which names R2 lacks and which it holds at another size', () => {
+    const items = [{ key: 'a', bytes: 1 }, { key: 'b', bytes: 2 }, { key: 'c', bytes: 3 }];
+    const held = new Map([['a', 1], ['b', 9], ['z', 4]]);
+    expect(compare(items, held)).toEqual({ missing: [{ key: 'c', bytes: 3 }], other: [{ key: 'b', bytes: 2 }] });
+  });
+
+  it('fetches a file at its own address, puts it with no cache when told, and never asks for an empty one', async () => {
+    const asked = [];
+    const pool = {
+      run: async (job) => {
+        asked.push([job.method ?? 'GET', job.url, job.headers]);
+        if (job.method === 'HEAD') return { status: 'missing', http: 404 };
+        if (job.method === 'PUT') return { status: 'fetched', headers: new Headers() };
+        return { status: 'fetched', body: Buffer.alloc(2), headers: new Headers({ 'content-type': 'model/gltf-binary' }) };
+      },
+    };
+    const items = [{ key: 'web/a.json', bytes: 0 }, { key: 'web/b.glb', bytes: 2, url: 'https://signed.example/b?token=t' }];
+    const r = await mirror({ items, pool, fetch: signs, bucket: 'bf2017-assets', cache: null, log: () => {} });
+    expect(r).toMatchObject({ sent: 2, failed: [] });
+    expect(asked.filter(([m]) => m === 'GET').map(([, u]) => u)).toEqual(['https://signed.example/b?token=t']);
+    const puts = asked.filter(([m]) => m === 'PUT');
+    expect(puts.map(([, u]) => u)).toEqual([`${ENDPOINT}/bf2017-assets/web/a.json`, `${ENDPOINT}/bf2017-assets/web/b.glb`]);
+    expect(puts.every(([, , h]) => !('cache-control' in h))).toBe(true);
+    expect(puts[1][2]['content-type']).toBe('model/gltf-binary');
   });
 });
