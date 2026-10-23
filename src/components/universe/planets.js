@@ -1,9 +1,9 @@
 // The places on the universe map: the fandoms as planets, and (built by
 // stations.js) the site's own pages as stations round the sun. The planets
-// wear real planetary maps recoloured for their worlds
-// (scripts/build-universe-textures.py makes them, from Solar System Scope's
-// maps and ambientCG's materials), or are painted here (the Game Boy world in
-// pixels, the Caribbean's islands); each has air round it in its colour and
+// wear maps baked for their worlds (scripts/build-fandom-planets.mjs, from
+// code; Earth's from Solar System Scope's maps and ambientCG's materials,
+// scripts/build-universe-textures.py), or are painted here (the Game Boy
+// world in pixels); each has air round it in its colour and
 // the things that make it that place, in orbit or on it: the sitar's strings,
 // the One Ring, Cybertron's energon seams, the Infinity Stones, the crystals
 // and element tiles, the mug, the portal, the travel routes. Star Wars isn't
@@ -27,7 +27,7 @@ import { cloneScene, loadGLTF } from '../../lib/three/gltfCache';
 import { gltfLoader } from '../../lib/three/gltf';
 import { SWIRL_GLSL } from '../../lib/three/swirl';
 import { globeData } from '../travel/globe3d/data';
-import { facing, fit, glowMat, orbit, paint, rng, rounded, tiled } from './kit';
+import { facing, fit, glowMat, orbit, paint, rng, rounded } from './kit';
 import { STATIONS } from './stations';
 import { RM_WORLDS } from './rmWorlds';
 import { buildGateway } from '../galaxy/gateway';
@@ -385,7 +385,11 @@ const BUILDERS = {
     });
     p.body.material = mat;
     if (T.transformers && T['transformers-glow-sm']) {
-      const skin = cybertronSkin(mat, { glow: T['transformers-glow-sm'], sun: p.sun });
+      // (from orbit the long shots show a world of steel, its cities' lights
+      // blue-white, the war's fires here and there: not a world on fire, as
+      // the page's own close shots of the fronts are)
+      const skin = cybertronSkin(mat, { glow: T['transformers-glow-sm'], sun: p.sun, city: 0xcfe6ff });
+      skin.uLevels.value.set(1.8, 0.85, 2, 1);
       // (its seams glow a little in the colour of the light it's in: the scene's key)
       p.keyColour = skin.uKeyColour.value;
       // the energon breathes, and turns from the Autobots' blue to the
@@ -420,7 +424,20 @@ const BUILDERS = {
 
   marvel(p, { u, T }) {
     const r = u.size;
-    p.body.material = new THREE.MeshStandardMaterial({ map: T.marvel ?? null, color: T.marvel ? '#ffffff' : u.palette.base, roughness: 1 });
+    // Earth-616 as the comics draw it (scripts/planets/marvel.mjs): the real
+    // coasts inked, flat fills laid in Ben-Day dots, the Savage Land and
+    // Wakanda where they are, its inked puffs of cloud painted on, lit in flat
+    // bands as a page is (celShade), the night side's cities and Avengers Tower lit
+    p.body.material = new THREE.MeshStandardMaterial({
+      map: T.marvel ?? null,
+      color: T.marvel ? '#ffffff' : u.palette.base,
+      // (the sea glossy, so it catches the sun)
+      roughnessMap: T['marvel-rough'] ?? null,
+      roughness: T['marvel-rough'] ? 1 : 0.9,
+      metalness: 0,
+    });
+    celShade(p.body.material);
+    p.night = T['marvel-night'] ?? null;
     // the six Stones in a ring round it, cut as they're set in the
     // gauntlet and lit from within: Space, Mind, Reality, Power, Time, Soul
     const STONES = ['#3d7bff', '#ffd23d', '#ff2e2e', '#a34dff', '#3dff8a', '#ff8a3d'];
@@ -552,57 +569,22 @@ const BUILDERS = {
 
   office(p, { u, T }) {
     const r = u.size;
-    // a sheet of Dunder Mifflin's letterhead crumpled into a ball, the paper
-    // that gets thrown at the bin (scripts/planets/office.mjs): flat facets
-    // with sharp creases, the memo's print running on across the folds; lit
-    // as paper: a sheen in its own colour, so its fibre shows under a
-    // grazing light (the creases toward the terminator)
-    p.body.material = new THREE.MeshPhysicalMaterial({
+    // Scranton's country, north-east Pennsylvania (scripts/planets/office.mjs):
+    // the ridge and valley's folds, the rivers through their gaps, the
+    // Poconos, the coast from Delmarva to Long Island, the woods in their
+    // autumn colours, fair-weather cumulus over them (in the map); the cities
+    // light the night side, Dunder Mifflin's branches among them
+    p.body.material = new THREE.MeshStandardMaterial({
       map: T.office ?? null,
-      color: T.office ? '#ffffff' : u.palette.base, // (the map's own paper, #f1ead8: warm, not snow)
-      normalMap: T['office-normal'] ?? tiled(T['paper-normal'], 4, 2),
-      normalScale: new THREE.Vector2(1, 1),
+      color: T.office ? '#ffffff' : u.palette.base,
+      normalMap: T['office-normal'] ?? null,
+      normalScale: new THREE.Vector2(1.2, 1.2),
+      // (the sea and the lakes glossy, the woods matte)
       roughnessMap: T['office-rough'] ?? null,
-      roughness: 1,
-      sheen: 0.6,
-      sheenColor: '#f3ecd8',
-      sheenRoughness: 0.8,
+      roughness: T['office-rough'] ? 1 : 0.9,
+      metalness: 0,
     });
-    // and its outline a crumpled ball's: the sphere cut by a few big flat
-    // planes a little inside it, so it has broad facets and corners (never
-    // out past the sphere, which the halo and a crash's shockwave are sized to)
-    const [ws, hs] = T.small ? [64, 44] : [112, 72];
-    const geo = new THREE.SphereGeometry(r, ws, hs);
-    const rand = rng('crumple');
-    const cuts = Array.from({ length: 12 }, () => {
-      const z = rand() * 2 - 1;
-      const a = rand() * Math.PI * 2;
-      const s = Math.sqrt(1 - z * z);
-      return [Math.cos(a) * s, z, Math.sin(a) * s, 0.915 + rand() * 0.045];
-    });
-    const pos = geo.attributes.position;
-    const d = new THREE.Vector3();
-    for (let i = 0; i < pos.count; i++) {
-      d.fromBufferAttribute(pos, i).normalize();
-      let k = 1;
-      for (const [x, y, z, h] of cuts) {
-        const c = d.x * x + d.y * y + d.z * z;
-        if (c > h) k = Math.min(k, h / c);
-      }
-      pos.setXYZ(i, d.x * r * k, d.y * r * k, d.z * r * k);
-    }
-    geo.computeVertexNormals();
-    // (the seam's two copies of each vertex share one normal, so no line shows down it)
-    const nrm = geo.attributes.normal;
-    for (let row = 0; row <= hs; row++) {
-      const a = row * (ws + 1);
-      const b = a + ws;
-      d.set(nrm.getX(a) + nrm.getX(b), nrm.getY(a) + nrm.getY(b), nrm.getZ(a) + nrm.getZ(b)).normalize();
-      nrm.setXYZ(a, d.x, d.y, d.z);
-      nrm.setXYZ(b, d.x, d.y, d.z);
-    }
-    p.body.geometry.dispose();
-    p.body.geometry = geo;
+    p.night = T['office-night'] ?? null;
     // Michael's mug (props.js)
     const mug = bossMug();
     mug.scale.setScalar(r * 0.27);
@@ -908,19 +890,20 @@ const BUILDERS = {
         normalScale: new THREE.Vector2(1.35, 1.35),
         emissive: '#ffffff',
         emissiveMap: T['invincible-glow'] ?? null,
-        emissiveIntensity: T['invincible-glow'] ? 2.4 : 0,
+        emissiveIntensity: T['invincible-glow'] ? 1.6 : 0,
         // (the old sea beds glossy: scripts/build-invincible-planet.mjs)
         roughnessMap: T['invincible-rough'] ?? null,
         roughness: T['invincible-rough'] ? 1 : 0.92,
       });
       p.body.material = mat;
       p.night = T['invincible-night'] ?? null;
-      // the rifts breathe, slowly
-      if (T['invincible-glow']) p.tick.push((t) => (mat.emissiveIntensity = 2 + 1.2 * (0.5 + 0.5 * Math.sin(t * 1.1)) ** 2));
+      // the rifts breathe, slowly (embers along their floors, not a world
+      // alight: the planet is one thing, not a pile of effects)
+      if (T['invincible-glow']) p.tick.push((t) => (mat.emissiveIntensity = 1.4 + 0.7 * (0.5 + 0.5 * Math.sin(t * 1.1)) ** 2));
       if (T['invincible-clouds']) {
         const dust = new THREE.Mesh(
           new THREE.SphereGeometry(r * 1.016, T.small ? 44 : 64, T.small ? 28 : 40),
-          new THREE.MeshStandardMaterial({ color: '#f3d4b4', alphaMap: T['invincible-clouds'], transparent: true, depthWrite: false, roughness: 1 }),
+          new THREE.MeshStandardMaterial({ color: '#f3d4b4', alphaMap: T['invincible-clouds'], transparent: true, opacity: 0.7, depthWrite: false, roughness: 1 }),
         );
         p.group.add(dust);
         p.tick.push((t) => (dust.rotation.y = t * 0.065));
@@ -987,7 +970,7 @@ const BUILDERS = {
       const pos = rock.attributes.position;
       for (let i = 0; i < pos.count; i++) pos.setXYZ(i, pos.getX(i) * (0.75 + 0.5 * Math.abs(Math.sin(i * 1.7))), pos.getY(i) * (0.6 + 0.3 * Math.abs(Math.cos(i * 2.3))), pos.getZ(i) * (0.8 + 0.4 * Math.abs(Math.sin(i * 0.9))));
       rock.computeVertexNormals();
-      const N = T.small ? 70 : 150;
+      const N = T.small ? 60 : 110;
       const rocks = new THREE.InstancedMesh(rock, new THREE.MeshStandardMaterial({ color: '#8a5a44', roughness: 0.95, flatShading: true }), N);
       const belt = new THREE.Group();
       belt.rotation.set(0.42, 0, -0.16);
@@ -1036,7 +1019,7 @@ const BUILDERS = {
       const dp = disc.attributes.position;
       const uv = disc.attributes.uv;
       for (let i = 0; i < dp.count; i++) uv.setXY(i, (Math.hypot(dp.getX(i), dp.getY(i)) - IN) / (OUT - IN), 0.5);
-      const dust = new THREE.Mesh(disc, new THREE.MeshBasicMaterial({ map: bands, transparent: true, opacity: 0.32, depthWrite: false, side: THREE.DoubleSide }));
+      const dust = new THREE.Mesh(disc, new THREE.MeshBasicMaterial({ map: bands, transparent: true, opacity: 0.2, depthWrite: false, side: THREE.DoubleSide }));
       dust.rotation.x = -Math.PI / 2;
       belt.add(dust);
     }

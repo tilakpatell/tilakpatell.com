@@ -15,6 +15,10 @@ export const NAV = {
   view: 'Nav map view', // the chart's group, for a screen reader
   back: 'Universe view', // the button that closes it
   out: 'Out to the universe', // from a star system or the Curve back to the whole chart
+  mode: 'Show the places as', // a phone's two ways to see them
+  list: 'List',
+  chart: 'Chart',
+  tap: 'Tap a place for its card. The list has every one by name.', // under a phone's chart
 };
 
 // The flight round every stop, nearest first (not "the tour": that is the

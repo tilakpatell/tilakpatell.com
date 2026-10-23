@@ -16,6 +16,11 @@
 // that file (the page asks it after the bucket failed once) is answered from
 // the same copy, under the pack's version like any other.
 //
+// A picture the site serves under its hash (scripts/site-hashes.mjs:
+// `/h/<hash12>/<path>`, which the page asks first) is the same bytes as
+// its own path: an installed pack's copy of that path answers it, and on a
+// miss the hashed path is fetched as it was asked.
+//
 // The world being played (lane N4, the stream that feels like one): a
 // `tp-play` message names it (src/lib/sw.js's playing), and the bucket's
 // files of its level pack (`<hash>/models/galaxy/bf2017/levels/<world>/…`,
@@ -32,6 +37,8 @@ const INDEX_TTL = 5 * 60 * 1000;
 const POSSIBLE = /^\/(assets|models|textures|audio|hdri|hq|cc0|mc|n64|games|eagler|albuquerque|kit)\//;
 
 const BASE = (new URL(self.location.href).searchParams.get('base') || '').replace(/\/+$/, '');
+// (the site's hashed copies: /h/<hash12>/ then the path a pack keeps it under)
+const HASHED = /^\/h\/[0-9a-f]{12}(\/.+)$/;
 
 const PLAY = 'tp-play-';
 const PLAY_META = 'tp-play-meta';
@@ -91,7 +98,9 @@ function readIndex() {
   return indexing;
 }
 
-async function answer(request, path) {
+// (`asked`: what a pack keeps it under, where the request was another path
+// of it: a hashed copy's own path)
+async function answer(request, path, asked = request) {
   if (!files) await readCaches();
   const got = files.get(path);
   if (!got) return fetch(request);
@@ -100,7 +109,7 @@ async function answer(request, path) {
     const { slug, v } = versionOf(got.name);
     if (current && current[slug] !== v) return fetch(request);
   }
-  const hit = await (await caches.open(got.name)).match(got.key ?? request);
+  const hit = await (await caches.open(got.name)).match(got.key ?? asked);
   return hit ?? fetch(request);
 }
 
@@ -177,6 +186,13 @@ self.addEventListener('fetch', (event) => {
   if (req.method !== 'GET' || req.mode === 'navigate' || req.headers.has('range') || req.cache === 'no-store' || req.cache === 'no-cache' || req.cache === 'reload') return;
   const url = new URL(req.url);
   if (url.search) return;
+  // (a hashed copy: looked for under its own path)
+  const plain = url.origin === self.location.origin ? (HASHED.exec(url.pathname)?.[1] ?? null) : null;
+  if (plain) {
+    if (!POSSIBLE.test(plain)) return;
+    if (files && !files.has(plain)) return;
+    return event.respondWith(answer(req, plain, new URL(plain, url).href));
+  }
   const key = url.origin === self.location.origin ? (POSSIBLE.test(url.pathname) ? url.pathname : null) : BASE && req.url.startsWith(`${BASE}/`) ? req.url : null;
   if (!key) return;
   // (a level file of the world being played: its own cache)

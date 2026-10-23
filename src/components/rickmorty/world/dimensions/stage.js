@@ -10,7 +10,7 @@
 //
 // stage(kit, id, opts) → { R, d, A, cx, cz, P(dx, dz) (a spot in the world
 // from the place's middle), figure(kind, at), people(), done(light, update),
-// hunt(on), calm(), power({ glow }), freeze({ splash }), sequence({ lamps }) } (and the NPC behaviour below: anyone
+// hunt(on), calm(), power({ glow }), freeze({ splash }), sequence({ lamps }), climb({ stairs }) } (and the NPC behaviour below: anyone
 // placed with `ai`; and a place run on power, below; whichever game a place
 // runs, its `meter` action is the HUD's readout of it: ../games/meter.js)
 
@@ -28,6 +28,7 @@ import { curse, dealNews, dealReadout, newDeal, stepDeal } from '../games/deal';
 import { freezeEyes, freezeNews, freezeReadout, jumpSplashes, moving, newFreeze, stepFreeze } from '../games/freeze';
 import { findNews, findReadout, newFind, pickOurs, stepFind } from '../games/find';
 import { litSets, newSequence, runningOrder, sequenceNews, sequenceReadout, stepSequence } from '../games/sequence';
+import { climbNews, climbReadout, moods, newClimb, poseTime, stairPose, stepClimb } from '../games/climb';
 import { newCheer, stepCheer } from '../games/cheer';
 import { TRIS, WORLDS } from './worlds';
 import { BLOCKS } from './blocks';
@@ -254,13 +255,62 @@ export function stage(kit, id, { ground, groundTile = 4, floor, floorTile = 2, w
     airing = told(sequenceNews(airing, { done, fading: false }), airing, sq, state);
   };
 
+  // ── a place run on a climb (../games/climb.js, place.js's `climb`): its
+  // ledges stood on however high (../rules.js), stepped in the place's own
+  // update on Morty's own position, as the freeze is; said as power's run is,
+  // the win with its achievement, a fall from high said as a note. Dealt
+  // afresh whenever the place calms, so its stairs keep still for their lag
+  // again. The builder's stairs (`climb({ stairs })`: a stair's id to its
+  // figure) are posed by their mood, and sway at rest once the task's done. ──
+  const cb = d.climb;
+  const ledges = cb ? d.solids.filter((s) => s.ledge).map((s) => ({ ...s, kind: s.r != null ? 'circle' : 'box' })) : [];
+  const foot = cb ? (d.hotspots.find((h) => h.id === cb.foot) ?? null) : null;
+  const climbed = () => newClimb({ ledges, stairs: cb.stairs, top: cb.top, foot: foot && { x: foot.x, z: foot.z } });
+  let ascent = cb ? climbed() : null;
+  let stairs = null;
+  let shown = 0; // (the time they're posed at: the game's, running on through a bite, ../games/climb.js's poseTime)
+  let topped = false; // (its task done: the ledges are just ledges)
+  // a stair goblin as its stair's mood has it: still at rest; a shiver, a fast
+  // shake a little wider; the bite, two snaps down and round; or, the task
+  // done, a slow sway (its group's own turn and size kept as its rest)
+  const pose = (g, p, t) => {
+    if (!g) return;
+    const rest = (g.userData.rest ??= { ry: g.rotation.y, s: g.scale.x });
+    let ry = rest.ry;
+    let wide = 1;
+    let tall = 1;
+    if (!p) ry += 0.05 * Math.sin(1.5 * t);
+    else if (p.mood === 'shiver') {
+      const w = Math.sin(18 * Math.PI * p.k);
+      ry += 0.12 * w;
+      wide = 1 + 0.04 * Math.abs(w);
+    } else if (p.mood === 'bite') {
+      tall = 1 - 0.18 * Math.abs(Math.sin(2 * Math.PI * p.k));
+      ry += 0.25 * Math.sin(4 * Math.PI * p.k);
+    }
+    g.rotation.y = ry;
+    g.scale.set(rest.s * wide, rest.s * tall, rest.s * wide);
+  };
+  const climbing = (t, dt, state) => {
+    const done = (state.done ?? []).includes(cb.task);
+    topped = done;
+    grant(cb, done, state);
+    if (!done && !state.fading) {
+      ascent = stepClimb(ascent, { morty: state.morty }, dt);
+      if (cb.fell && ascent.events.some((e) => e.type === 'fell')) state.emit?.('note', { area: id, text: cb.fell });
+      ascent = told(climbNews(ascent, { done, fading: false }), ascent, cb, state);
+    }
+    shown = poseTime(shown, ascent, dt);
+    if (stairs) cb.stairs.forEach((st, i) => pose(stairs[st.id], done ? null : stairPose({ ...ascent, t: shown }, i), t));
+  };
+
   // ── a place whose song is played over the page (place.js's `rhythm`):
   // its achievement handed over once its task's done; and any place's crowd
   // cheering its game won (../games/cheer.js): its gatherings hop on a beat
   // a while from the frame the game's task is done (the show's, once it
   // closes), started afresh whenever the place calms ──
   const rh = d.rhythm;
-  const gameTask = (d.power ?? d.deal ?? d.freeze ?? d.find ?? d.sequence ?? rh)?.task ?? null;
+  const gameTask = (d.power ?? d.deal ?? d.freeze ?? d.find ?? d.sequence ?? d.climb ?? rh)?.task ?? null;
   let cheer = newCheer();
 
   // (calmed: its people home, and its game started afresh)
@@ -286,6 +336,7 @@ export function stage(kit, id, { ground, groundTile = 4, floor, floorTile = 2, w
       airing = aired();
       switched = [];
     }
+    if (cb) ascent = climbed();
     cheer = newCheer();
   };
 
@@ -356,6 +407,7 @@ export function stage(kit, id, { ground, groundTile = 4, floor, floorTile = 2, w
         if (still && state && cast) freezing(dt, state);
         if (search && state && cast) finding(dt, state);
         if (airing && state && cast) sequencing(dt, state);
+        if (ascent && state && cast) climbing(t, dt, state);
         if (rh && state) grant(rh, (state.done ?? []).includes(rh.task), state);
         if (round && gameTask && state) {
           cheer = stepCheer(cheer, { done: (state.done ?? []).includes(gameTask), t });
@@ -380,7 +432,7 @@ export function stage(kit, id, { ground, groundTile = 4, floor, floorTile = 2, w
     // builder adds its own actions to these. `npcs`: where everyone is, for
     // the QA scripts; `fire`, `bodies` and `hit`: Morty's shot in a duel,
     // where it aims, what it can hit, and what it did when it landed.)
-    // (a place run on power, a deal, a freeze, a find or a sequence: its spots, where its game is for the
+    // (a place run on power, a deal, a freeze, a find, a sequence or a climb: its spots, where its game is for the
     // checks, its meter for the HUD, and, in development, a way for the
     // checks to set it)
     area.actions = { calm, npcs: N.list, fire: N.fire, bodies: N.bodies, hit: N.hit };
@@ -433,9 +485,15 @@ export function stage(kit, id, { ground, groundTile = 4, floor, floorTile = 2, w
         meter: () => sequenceReadout(airing, labels),
         ...(import.meta.env.DEV && { setSequence: (patch) => (airing = { ...airing, ...patch }) }),
       });
+    if (ascent)
+      Object.assign(area.actions, {
+        climb: () => ({ phase: ascent.phase, t: ascent.t, on: ascent.on, stand: ascent.stand, near: ascent.near, moods: moods(ascent) }),
+        meter: () => climbReadout(topped ? null : ascent),
+        ...(import.meta.env.DEV && { setClimb: (patch) => (ascent = { ...ascent, ...patch }) }),
+      });
     return area;
   };
   // (`taken()`: what a deal's had off the shelves this run, for the builder to take away)
-  return { R, d, A, cx, cz, P, figure, people, done, hunt: N.hunt, npcs: N.npcs, calm, power: (o) => (glow = o.glow ?? null), freeze: (o) => (splash = o.splash ?? null), sequence: (o) => (lamps = o.lamps ?? null), taken: () => deal?.taken ?? [] };
+  return { R, d, A, cx, cz, P, figure, people, done, hunt: N.hunt, npcs: N.npcs, calm, power: (o) => (glow = o.glow ?? null), freeze: (o) => (splash = o.splash ?? null), sequence: (o) => (lamps = o.lamps ?? null), climb: (o) => (stairs = o.stairs ?? null), taken: () => deal?.taken ?? [] };
 
 }

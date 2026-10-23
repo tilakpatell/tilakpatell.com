@@ -77,3 +77,51 @@ describe('the galaxy’s post as nodes', () => {
     expect(post.bloomNode.strength.value).toBeCloseTo(LOOK.bloom.strength * 3);
   });
 });
+
+describe('the galaxy’s finish as nodes (universe/post.js’s, the same numbers: lib/three/finish)', () => {
+  const finished = (top, full = 1) => {
+    const renderer = { ...fakeRenderer(), getPixelRatio: () => full };
+    const post = createPost(renderer, new THREE.Scene(), new THREE.PerspectiveCamera(), { bloom: LOOK.bloom, upscale: true, ratio: top(), top });
+    post.pipeline.render = () => {}; // (no frame drawn: only what's set for it)
+    return post;
+  };
+
+  it('is off by default: the scene at the canvas’s own sharpness or softer, never brought up', () => {
+    const { post } = make();
+    expect(post.finish.up).toBe(false);
+    expect(post.ratio).toBe(1);
+  });
+
+  it('draws sharper than the canvas at the top, folded down by the grade, with the samples for that sharpness', () => {
+    const post = finished(() => 1.5);
+    post.render(800, 600);
+    expect(post.ratio).toBe(1.5);
+    expect(post.scenePass.getResolutionScale()).toBe(1.5);
+    expect(post.finish).toEqual({ up: false, samples: 2, cap: Infinity });
+  });
+
+  it('brings a softer scene up through FSR 1, multisampled four times, and takes the grade back at the top', () => {
+    const post = finished(() => 1.5);
+    post.sharpness = 0.6;
+    post.render(800, 600);
+    expect(post.ratio).toBeCloseTo(0.9);
+    expect(post.finish).toEqual({ up: true, samples: 4, cap: Infinity });
+    expect(post.overPass.renderTarget.samples).toBe(4);
+    post.sharpness = 1;
+    post.render(800, 600);
+    expect(post.finish.up).toBe(false);
+  });
+
+  it('takes the visitor’s cap on samples and its bloom off and on', () => {
+    const post = finished(() => 1);
+    post.render(400, 300);
+    expect(post.finish.samples).toBe(4);
+    post.maxSamples(0);
+    post.render(400, 300);
+    expect(post.finish.samples).toBe(0);
+    post.glowing(false);
+    expect(post.uniforms.uGlow.value).toBe(0);
+    post.glowing(true);
+    expect(post.uniforms.uGlow.value).toBe(1);
+  });
+});

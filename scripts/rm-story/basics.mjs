@@ -4,7 +4,7 @@
 // when they're played.
 /* global window, document */
 import { READY } from '../../src/components/rickmorty/adventure/episodes.js';
-import { BASE, OUT, N, check, done, c137, built, goto, use, place, story, reads, WIPED, ARCADE, throughPortal, gun, toast, inArea, game, arriveOf } from './helpers.mjs';
+import { BASE, OUT, N, check, done, c137, built, goto, use, place, story, reads, WIPED, ARCADE, throughPortal, gun, toast, inArea, game, arriveOf, standOn, PLACES } from './helpers.mjs';
 
 export const BASICS = {
   // a new visitor plays episode 1 from the street to Customs and back
@@ -128,8 +128,24 @@ export const BASICS = {
       await page.evaluate(() => window.__C137__.api.act('cablestudio', 'sequence-start'));
       await page.waitForTimeout(1000);
       check((await game(page, 'cablestudio', 'sequence')).phase === 'idle' && !(await page.locator('.rm-cluster[aria-label="Going live"][data-on]').count()), 'a returner’s cable studio started its game again');
+      // the village helped before the climb was built: no meter at the stairs, the stairs never bite, and its achievement comes on the visit
+      await goto(page, 'fantasy', ...arriveOf('fantasy'));
+      await page.waitForFunction(() => JSON.parse(localStorage.getItem('tp-achievements') ?? '[]').includes('fantasy'), null, { timeout: 30000, polling: 250 }).catch(() => {
+        throw new Error('a returner who’d helped the village never got its achievement');
+      });
+      const foot = PLACES.spot('fantasy', 'goblins');
+      await page.evaluate(([x, z]) => window.__C137__.warp('fantasy', x, z, Math.PI / 2), [foot.x, foot.z + 1]);
+      await page.waitForTimeout(1000);
+      check(!(await page.locator('.rm-cluster[aria-label="Up the beanstalk"][data-on]').count()), 'a returner saw the climb’s meter');
+      // (the first stair mid-bite and Morty on its top tread: a done climb is never stepped, so its clock stays where
+      // it was set and he stays on the tread; a bite would have put him back at the way in and dealt the climb afresh)
+      await page.evaluate(() => window.__C137__.api.act('fantasy', 'setClimb', { t: 3.45 }));
+      await standOn(page, 'fantasy', 'g1-top');
+      await page.waitForTimeout(1500);
+      const kept = await page.evaluate(() => ({ climb: window.__C137__.api.act('fantasy', 'climb'), y: window.__C137__.sim.m.y, area: window.__C137__.sim.area, fading: window.__C137__.sim.fading }));
+      check(kept.climb.phase === 'idle' && kept.climb.t === 3.45 && Math.abs(kept.y - PLACES.ledge('fantasy', 'g1-top')[2]) < 1e-3 && kept.area === 'fantasy' && !kept.fading, `a returner’s stairs bit him (${JSON.stringify(kept)})`);
     },
-    { seed: { 'tp-c137-done': ['cable', 'vat', 'jerryboree', 'cablestudio'] } },
+    { seed: { 'tp-c137-done': ['cable', 'vat', 'jerryboree', 'cablestudio', 'fantasy'] } },
   ),
   // the Citadel tells the story where it is and what's done there (episode 10
   // isn't built yet, so on Free roam nothing moves), and its steps still save

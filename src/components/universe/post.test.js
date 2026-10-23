@@ -1,7 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
 import * as THREE from 'three';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
-import { MAP_LENS, aberrationFor, bloomSize, createPost, edgeWeight, toe } from './post';
+import { guard } from '../../lib/three/frameGuard';
+import { MAP_LENS, RCAS_STOPS, aberrationFor, bloomSize, createPost, edgeWeight, rcasStops, toe } from './post';
 
 // just enough of a renderer for the composer to be built (nothing is drawn)
 const renderer = () => ({
@@ -163,6 +164,92 @@ describe('the finished render', () => {
     post.render(800, 600);
     post.render(1200, 700);
     expect(bloomOf(post)).toBe(bloom);
+  });
+});
+
+describe('the finish (the map’s: FSR 1 up to a canvas of the screen’s pixels; its numbers are lib/three/finish’s)', () => {
+  it('is off by default: the galaxy’s last pass is the plain grade, as it was', () => {
+    const post = createPost(renderer(), new THREE.Scene(), new THREE.PerspectiveCamera());
+    expect(gradeOf(post).easu).toBeUndefined();
+    expect(post.finish.up).toBe(false);
+  });
+
+  it('draws sharper than the canvas at the top, folded down by the grade, and brings a softer one up through EASU and RCAS', () => {
+    const r = { ...renderer(), getPixelRatio: () => 1 };
+    const post = createPost(r, new THREE.Scene(), new THREE.PerspectiveCamera(), { upscale: true, ratio: 1.5, top: () => 1.5 });
+    post.composer.render = () => {};
+    const grade = gradeOf(post);
+    expect(grade.easu.fragmentShader).toContain('lanczos');
+    expect(grade.rcas.uniforms.uSharp.value).toBeCloseTo(2 ** -RCAS_STOPS);
+    post.render(800, 600);
+    expect(post.ratio).toBe(1.5);
+    expect(post.finish).toEqual({ up: false, samples: 2, cap: Infinity });
+    post.sharpness = 0.6;
+    post.render(800, 600);
+    expect(post.ratio).toBeCloseTo(0.9);
+    expect(post.finish).toEqual({ up: true, samples: 4, cap: Infinity });
+    expect([grade.up.graded.width, grade.up.graded.height]).toEqual([720, 540]);
+    expect([grade.up.wide.width, grade.up.wide.height]).toEqual([64, 64]); // (the renderer's drawing buffer)
+    expect(grade.rcas.uniforms.uSharp.value).toBeCloseTo(2 ** -rcasStops(0.9)); // (brought up a little: sharpened gently)
+    post.sharpness = 1;
+    post.render(800, 600);
+    expect(post.finish.up).toBe(false);
+    expect(r.setPixelRatio).not.toHaveBeenCalled();
+  });
+
+  it('takes the visitor’s cap on samples at the next frame', () => {
+    const post = createPost({ ...renderer(), getPixelRatio: () => 1 }, new THREE.Scene(), new THREE.PerspectiveCamera(), { upscale: true, top: () => 1 });
+    post.composer.render = () => {};
+    post.render(400, 300);
+    expect(post.finish.samples).toBe(4);
+    post.maxSamples(0);
+    post.render(400, 300);
+    expect(post.finish.samples).toBe(0);
+    post.maxSamples(Infinity);
+    post.render(400, 300);
+    expect(post.finish.samples).toBe(4);
+  });
+
+  it('follows the most it may draw at as the visitor moves it', () => {
+    let most = 1;
+    const post = createPost({ ...renderer(), getPixelRatio: () => 1 }, new THREE.Scene(), new THREE.PerspectiveCamera(), { upscale: true, top: () => most });
+    post.composer.render = () => {};
+    post.render(400, 300);
+    expect(post.ratio).toBe(1);
+    most = 2;
+    post.render(400, 300);
+    expect(post.ratio).toBe(2);
+    expect(post.finish.samples).toBe(0);
+  });
+
+  it('names its buffers the frame’s to the renderer’s frame guard, whatever their size, and lets go on dispose', () => {
+    const r = renderer();
+    const g = guard(r);
+    const frames = vi.spyOn(g, 'frames');
+    const post = createPost(r, new THREE.Scene(), new THREE.PerspectiveCamera(), { upscale: true, top: () => 1.5 });
+    const [isFrame] = frames.mock.calls[0];
+    expect(isFrame(post.composer.renderTarget1)).toBe(true);
+    expect(isFrame(post.composer.renderTarget2)).toBe(true);
+    expect(isFrame(new THREE.WebGLRenderTarget(4, 4))).toBe(false);
+    const undo = frames.mock.results[0].value;
+    expect(typeof undo).toBe('function');
+    // (the galaxy's, without the finish, names none, as it never has)
+    frames.mockClear();
+    createPost(r, new THREE.Scene(), new THREE.PerspectiveCamera());
+    expect(frames).not.toHaveBeenCalled();
+  });
+
+  it('turns its bloom off and back for the video settings', () => {
+    const post = createPost(renderer(), new THREE.Scene(), new THREE.PerspectiveCamera(), { upscale: true });
+    const bloom = bloomOf(post);
+    post.glowing(false);
+    expect(bloom.enabled).toBe(false);
+    post.flare(2);
+    expect(bloom.strength).toBeCloseTo(0.8);
+    post.glowing(true);
+    expect(bloom.enabled).toBe(true);
+    post.flare(2);
+    expect(bloom.strength).toBeCloseTo(1.6);
   });
 });
 

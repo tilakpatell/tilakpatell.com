@@ -66,5 +66,19 @@ export default function assetManifest() {
       if (slashed(id.split('?')[0]) !== slashed(file)) return null;
       return base ? JSON.stringify(bundledManifest(root, publicDir)) : '{}';
     },
+    // (the bucket is another origin, its own domain on Cloudflare: the page
+    // opens the connection as its head is read, so the first heavy file a
+    // world asks for doesn't wait on a DNS look-up and a TLS handshake after
+    // the bundle has come. `crossorigin`: three's loaders ask it with CORS,
+    // and a connection opened without is not the one they'd use)
+    transformIndexHtml() {
+      let origin = null;
+      try {
+        origin = /^https?:/.test(base) ? new URL(base).origin : null;
+      } catch {
+        origin = null;
+      }
+      return origin ? [{ tag: 'link', attrs: { rel: 'preconnect', href: origin, crossorigin: '' }, injectTo: 'head' }] : [];
+    },
   };
 }

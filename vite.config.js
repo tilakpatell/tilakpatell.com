@@ -6,6 +6,7 @@ import iconsApart from './scripts/icons-apart.mjs'
 import prerender from './scripts/prerender.mjs'
 import packs from './scripts/packs.mjs'
 import assetManifest from './scripts/assets-manifest.mjs'
+import siteHashes from './scripts/site-hashes.mjs'
 import bf2Dev from './scripts/bf2-dev.mjs'
 import librarySlice from './scripts/library-slice.mjs'
 import dataSlice from './scripts/data-slice.mjs'
@@ -35,7 +36,7 @@ export default defineConfig({
   // scripts/data-slice.mjs, lane FL1)
   // (and Rapier's wasm import sent to the shim that streams the binary:
   // scripts/rapier-wasm.mjs, lane X3)
-  plugins: [librarySlice(), dataSlice(), rapierWasm(), iconsApart(), react(), prerender(), packs(), assetManifest(), bf2Dev()],
+  plugins: [librarySlice(), dataSlice(), rapierWasm(), iconsApart(), react(), prerender(), packs(), assetManifest(), siteHashes(), bf2Dev()],
   // (the icons' modules import react-icons' own GenIcon: bundled up front in dev)
   // (scanned from the site's own page only: the tool pages under scripts/ and
   // .claude/ import aliases and packages the site doesn't, and a failed scan

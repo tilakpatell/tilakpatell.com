@@ -43,6 +43,7 @@ const N = Math.PI / 2; // facing north (rules.js: a heading turns +x round to (c
 // shoulder as the game has it. `fly`: in the street, the cruiser boarded and
 // stood in the air at [x, y, z, yaw] (its nose (sin yaw, cos yaw)), the
 // camera behind it as the game has it (the chase's rings show in flight).
+// `y`: Morty stood that high, on a ledge there (Fantasy World's climb).
 // (Indoors the game's camera sits 3.6 m back and is pulled in at a wall, so
 // in the small rooms Morty stands where there's room behind him, and the
 // camera looks down over his head.)
@@ -73,6 +74,12 @@ export const VIEWS = {
   gazorpazorp: { area: 'gazorpazorp', at: [-400, 1116, N], cam: [0, 0.2] },
   birdworld: { area: 'birdworld', at: [-400, 1216, N], cam: [0, 0.2] },
   fantasy: { area: 'fantasy', at: [-400, 1316, N], cam: [0, 0.2] },
+  // Fantasy World's climb: the Stair Goblins' flight from the square, from beside it, a ring of the
+  // beanstalk's shoots from on one, and the crown, level with the giants' cloud
+  beanstalk: { area: 'fantasy', at: [-414.3, 1295.5, N], cam: [0, 0.3] },
+  stairs: { area: 'fantasy', at: [-409, 1288, Math.PI], cam: [0, 0.2] },
+  coil: { area: 'fantasy', at: [-427.51, 1282.91, N], y: 14.5, cam: [0.6, 0.15] },
+  giants: { area: 'fantasy', at: [-421.9, 1281.6, N], y: 20.9, cam: [0.3, 0.05] },
   microverse: { area: 'microverse', at: [-400, 1403.4, N], cam: [0, 0.3] },
   anatomy: { area: 'anatomy', at: [-400, 1508.4, N], cam: [0, 0.25] },
   needful: { area: 'needful', at: [-400, 1601.4, N], cam: [0, 0.3] },
@@ -149,7 +156,7 @@ await page.evaluate(() => document.querySelector('.rm-world')?.scrollIntoView({ 
 if (!process.env.HUD) await page.addStyleTag({ content: '.rm-world-stage > :not(.rm-world-canvas), .guide-btn, .guide-nudge { visibility: hidden !important; }' });
 
 for (const name of names.length ? names : Object.keys(VIEWS)) {
-  const { area, at, cam, game, fly } = VIEWS[name];
+  const { area, at, cam, game, fly, y } = VIEWS[name];
   await page.waitForFunction(() => window.__C137__.ready(), null, { timeout: 300000, polling: 250 });
   if (!(await page.evaluate(([a, x, z, f]) => window.__C137__.goto(a, x, z, f), [area, ...at]))) throw new Error(`${name}: Morty wouldn't go`);
   const asked = Date.now();
@@ -160,6 +167,12 @@ for (const name of names.length ? names : Object.keys(VIEWS)) {
     if (!(await page.evaluate((seed) => window.__C137__.rickall(seed), game))) throw new Error(`${name}: Total Rickall wouldn't start`);
     await page.waitForFunction(() => window.__C137__.ready(), null, { timeout: 300000, polling: 250 });
   }
+  // (stood there whole, where he was sent: sent to a ledge on the ground he'd be inside its column, and pushed off it)
+  if (y)
+    await page.evaluate(([x, z, y]) => {
+      const s = window.__C137__.sim;
+      s.m = { ...s.m, x, z, y, vy: 0, vx: 0, vz: 0, speed: 0, air: false };
+    }, [at[0], at[1], y]);
   if (fly)
     await page.evaluate(([x, y, z, yaw]) => {
       const c = window.__C137__;

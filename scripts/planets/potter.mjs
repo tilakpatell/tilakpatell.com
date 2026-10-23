@@ -15,6 +15,12 @@
 // carries it and Hogsmeade's lanterns, so they show before the night side's
 // lights fade in. The lochs and the sea are glossy, the moor matte.
 //
+// Across the ocean from it lies the Continent, the wizarding world's other
+// schools in it: Beauxbatons' palace lit in the mountains along its south,
+// Durmstrang's castle on a lake in the pine forests of its cold north, its
+// lowlands farmed between, a few towns' lights. So from any side the world
+// shows land, as a world of witches and wizards' homelands should.
+//
 // Makes potter at 4096 (-xl, KTX2), 2048 (-hq), 1024 and 512 (-sm);
 // -clouds at 2048, 1024 and 512; -normal at 2048 and 1024; -rough, -night
 // and -glow at 1024. It prints where the Black Lake is ([lat, lon]: the
@@ -49,6 +55,26 @@ export function latLonOf(e, n) {
   if (phi < 0) phi += Math.PI * 2;
   return [+(Math.asin(y) / deg).toFixed(3), +((phi / (Math.PI * 2)) * 360 - 180).toFixed(3)];
 }
+
+// the Continent, across the ocean: its own frame (east, north and up at its middle)
+const LAT1 = 42;
+const PHI1 = ((175 + 180) / 360) * Math.PI * 2;
+const C1 = on(LAT1, PHI1);
+const E1 = [Math.sin(PHI1), 0, Math.cos(PHI1)];
+const N1 = [Math.cos(PHI1) * Math.sin(LAT1 * deg), Math.cos(LAT1 * deg), -Math.sin(PHI1) * Math.sin(LAT1 * deg)];
+const local1 = (x, y, z) => [x * E1[0] + y * E1[1] + z * E1[2], x * N1[0] + y * N1[1] + z * N1[2], x * C1[0] + y * C1[1] + z * C1[2]];
+// its lands, its mountains along the south (a line of [e, n]), and its schools
+const LOBES1 = [
+  [[0, 0], [0.42, 0.3]],
+  [[-0.3, 0.2], [0.2, 0.18]],
+  [[0.26, 0.24], [0.24, 0.2]],
+  [[0.1, -0.26], [0.18, 0.12]],
+  [[-0.2, -0.18], [0.12, 0.1]],
+  [[0.4, -0.06], [0.14, 0.16]],
+];
+const RANGE1 = [[-0.32, -0.14], [-0.12, -0.2], [0.08, -0.16], [0.26, -0.1], [0.4, -0.12]];
+const BEAUXBATONS = [-0.04, -0.17];
+const DURMSTRANG = [0.12, 0.34];
 
 // the glens' line: south-west to north-east, 38 degrees up from east
 const GLEN = 38 * deg;
@@ -156,11 +182,13 @@ export async function bake() {
   const glow = new Float32Array(W * H * 3);
   const clouds = new Float32Array(W * H * 3);
 
-  // (a cold sea: slate and grey-green, never the tropics' blue)
-  const sea = ramp([[0, '#4f7676'], [0.12, '#3a6066'], [0.3, '#284852'], [0.55, '#1c3844'], [0.8, '#142c38'], [1, '#0e222e']]);
+  // (a cold sea: the North Atlantic's grey-teal and slate, never the
+  // tropics' blue, and light enough that the world doesn't read black from
+  // orbit, three-quarters of it being sea)
+  const sea = ramp([[0, '#5f8c88'], [0.12, '#4a7674'], [0.3, '#365e66'], [0.55, '#284c5a'], [0.8, '#1f4050'], [1, '#183646']]);
   const C = Object.fromEntries(
     Object.entries({
-      loch: '#122a35', lowland: '#46613a', lowlandHi: '#577045', field: '#7c8a4e', stubble: '#8f8a5a', wood: '#2b4626', pine: '#1b2f20', pineHi: '#243c28',
+      loch: '#1a3644', lowland: '#46613a', lowlandHi: '#577045', field: '#7c8a4e', stubble: '#8f8a5a', wood: '#2b4626', pine: '#1b2f20', pineHi: '#243c28',
       heather: '#5d4258', heatherHi: '#72526a', bracken: '#73603c', moorGrass: '#5b6a40', glenGrass: '#5a7442', rock: '#5f5b55', rockHi: '#7a766d', snow: '#eef2f4',
       city: '#6a6661', cityHi: '#88837b', ice: '#dfe7ec', iceShade: '#b4c6d2', shore: '#8a8470', crag: '#47453f', tundra: '#6c6a58', coldSea: '#2c4650',
     }).map(([k, v]) => [k, hex(v)]),
@@ -171,6 +199,8 @@ export async function bake() {
     const alat = Math.abs(latD);
     const [e0, n0, d] = local(x, y, z);
     const near = d > 0.42; // (within about 65 degrees of the continent's middle)
+    const [u1, v1, d1] = local1(x, y, z);
+    const far = d1 > 0.42; // (and the Continent's)
     const grain = fbm(n2, x * 90, y * 90, z * 90, { octaves: 3 }) * 0.5 + 0.5;
     const rag = fbm(n3, x * 30, y * 30, z * 30, { octaves: 4 });
     // (the continent's outline and its lands are read through a warp, so nothing's drawn with a compass)
@@ -186,6 +216,17 @@ export async function bake() {
     }
     const arc = arcNear(x, y, z);
     field = Math.max(field, 0.55 - arc * 11 + fbm(n4, x * 38, y * 38, z * 38, { octaves: 4 }) * 0.85 + fbm(n6, x * 8, y * 8, z * 8, { octaves: 2 }) * 0.5 - 0.55);
+    // the Continent: its lobes through a warp of their own, and its cold north
+    // pocked with lakes, as a land the ice scoured is
+    let lakes1 = 0;
+    if (far) {
+      const ew = u1 + fbm(nw, x * 6 + 11, y * 6, z * 6, { octaves: 4 }) * 0.07;
+      const nn = v1 + fbm(nw, x * 6, y * 6 + 13, z * 6, { octaves: 4 }) * 0.07;
+      let f1 = -1;
+      for (const [[ce, cn], [re, rn]] of LOBES1) f1 = Math.max(f1, 1 - ((ew - ce) / re) ** 2 - ((nn - cn) / rn) ** 2);
+      field = Math.max(field, f1 + fbm(n1, x * 11 + 5, y * 11, z * 11, { octaves: 5 }) * 0.32 + rag * 0.1);
+      lakes1 = smooth(0.14, 0.3, nn) * smooth(0.62, 0.7, fbm(n6, x * 70, y * 70, z * 70, { octaves: 2 }) * 0.5 + 0.5);
+    }
     for (const [p, c] of ISLE_PTS) {
       const dot = x * p[0] + y * p[1] + z * p[2];
       if (dot > c - 0.04) field = Math.max(field, (dot - c) * 45 + fbm(n6, x * 12, y * 12, z * 12, { octaves: 5 }) * 0.9 + rag * 0.2);
@@ -218,6 +259,15 @@ export async function bake() {
       water = Math.max(water, smooth(LAKE.wide, LAKE.wide * 0.5, dl + (grain - 0.5) * 0.0012));
       crag = gauss(Math.hypot(e0 - CRAG[0], n0 - CRAG[1]), 0.004);
       elev = Math.max(elev * (1 - water), crag * 0.55);
+    }
+    // the Continent's mountains along its south, peaks over a ridge line, and its lakes
+    let range1 = 0;
+    let peaks1 = 0;
+    if (far) {
+      range1 = smooth(0.06, 0.0, lineDist([u1, v1], RANGE1) + rag * 0.03) * landK;
+      peaks1 = ridged(n5, x * 60 + 3, y * 60, z * 60, { octaves: 5 });
+      elev = Math.max(elev, range1 * (0.3 + 0.55 * peaks1));
+      water = Math.max(water, lakes1 * (1 - range1));
     }
     const coast = smooth(0.0, 0.12, field);
     const lochK = water * landK;
@@ -252,6 +302,13 @@ export async function bake() {
     const snowK = smooth(0.66, 0.72, elev + (grain - 0.5) * 0.1 + (peaks - 0.5) * 0.08);
     ground = mix3(ground, C.snow, snowK);
     ground = mix3(ground, C.crag, crag * 0.75);
+    // the Continent: pine and birch in its north, tundra past sixty, rock and snow on its mountains
+    if (far) {
+      const north1 = smooth(0.08, 0.24, v1 + rag * 0.05);
+      ground = mix3(ground, mix3(C.pine, C.pineHi, grain), north1 * smooth(0.1, 0.35, fbm(n4, x * 26, y * 26, z * 26, { octaves: 4 }) + 0.25) * 0.85);
+      ground = mix3(ground, mix3(C.rock, C.rockHi, peaks1), smooth(0.3, 0.45, range1 * (0.4 + peaks1)));
+      ground = mix3(ground, C.snow, smooth(0.62, 0.72, elev + (grain - 0.5) * 0.1) * smooth(0.2, 0.5, range1));
+    }
     // the city: a grey smear on the south coast
     const cityK = near ? smooth(0.04, 0.012, Math.hypot(e0 - CITY[0], n0 - CITY[1]) * (1 + rag * 0.7)) : 0;
     ground = mix3(ground, mix3(C.city, C.cityHi, grain), cityK * 0.85);
@@ -300,6 +357,20 @@ export async function bake() {
       glow[o] = clamp(g);
       glow[o + 1] = clamp(g * 0.72);
       glow[o + 2] = clamp(g * 0.34);
+    }
+    // the Continent's: Beauxbatons' palace (a cooler light, its glass and
+    // its pale blue silk) in the mountains, Durmstrang's castle by its lake,
+    // and the towns of its lowlands
+    if (far) {
+      const palace = gauss(Math.hypot(u1 - BEAUXBATONS[0], v1 - BEAUXBATONS[1]), 0.0045);
+      const keep = gauss(Math.hypot(u1 - DURMSTRANG[0], v1 - DURMSTRANG[1]), 0.004);
+      const towns = landK * (1 - range1) * (1 - smooth(52, 60, alat)) * smooth(0.9, 0.96, fbm(n3, x * 240 + 7, y * 240, z * 240, { octaves: 1 }) * 0.5 + 0.5) * 0.45;
+      night[o] = clamp(night[o] + (palace * 1.3 + keep * 1.5 + towns) * 1.15);
+      night[o + 1] = clamp(night[o + 1] + palace * 1.25 + (keep * 1.5 + towns) * 0.8);
+      night[o + 2] = clamp(night[o + 2] + palace * 1.3 + (keep * 1.5 + towns) * 0.42);
+      glow[o] = clamp(glow[o] + palace * 0.9 + keep * 1.1);
+      glow[o + 1] = clamp(glow[o + 1] + palace * 0.95 + keep * 0.78);
+      glow[o + 2] = clamp(glow[o + 2] + palace * 1.1 + keep * 0.36);
     }
 
     // ── the sky: long rain fronts in from the west, a belt of them in the north, one over the Highlands ──
