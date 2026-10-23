@@ -36,6 +36,11 @@ import { accelFor, controllerOptions, eyeFor, jumpSpeed, poseFor, speedFor } fro
 import { WALK, shoreStep, walk } from './walker';
 
 const MOVED = 1e-4; // m: the state written by someone else since the body last wrote it
+// m: moved this little over the ground by someone else (a dodge's roll, the
+// crowd's shove), and not up or down, the body walks it rather than being put there:
+// put there at the height it had, it stood in a slope going up (and over one
+// going down) till the capsule was pushed out
+const SLIDE = 2.5;
 const SOLIDS = filterOf('floor', 'object', 'character'); // (what the character itself stops at)
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 
@@ -227,18 +232,29 @@ export function createPlayerBody({ physics, state, row, world, drive = true, onE
     t += dt;
     if (!c) return walk(state, input, dt, world);
     // what someone else did to the state since the last step
-    // (moved: the body goes there, falling as it was if it was)
+    // (moved: the body goes there, falling as it was if it was; a step or
+    // two over the ground, it walks there this step, along the ground (up a
+    // kerb, as a walk does) and stopped by what's in the way)
+    let sx = 0;
+    let sz = 0;
     if (Math.abs(state.x - wrote.x) > MOVED || Math.abs(state.y - wrote.y) > MOVED || Math.abs(state.z - wrote.z) > MOVED) {
-      c.teleport([state.x, state.y + centre(), state.z], state.yaw);
-      if (!state.grounded && state.vy) c.jump(state.vy);
-      remember();
+      const dx = state.x - wrote.x;
+      const dz = state.z - wrote.z;
+      if (Math.abs(state.y - wrote.y) <= MOVED && Math.hypot(dx, dz) <= SLIDE && dt > 0) {
+        sx = dx / dt;
+        sz = dz / dt;
+      } else {
+        c.teleport([state.x, state.y + centre(), state.z], state.yaw);
+        if (!state.grounded && state.vy) c.jump(state.vy);
+        remember();
+      }
     }
     if (Math.abs(state.vy - wrote.vy) > MOVED) c.jump(state.vy);
     if (Math.abs(state.yaw - wrote.yaw) > MOVED) c.face(state.yaw);
     stepPose(input.crouch ? 'crouch' : 'stand');
     const it = walkIntent(state, input, row, poseState.pose, dt);
-    let vx = it.vel.x;
-    let vz = it.vel.z;
+    let vx = it.vel.x + sx;
+    let vz = it.vel.z + sz;
     let bumped = false;
     // the shore and the edge of the world, from the body's own place
     c.position(pos);
@@ -268,7 +284,8 @@ export function createPlayerBody({ physics, state, row, world, drive = true, onE
     if (it.jump) pending = it.jump;
     landed = 0;
     if (drive) phys.step(dt);
-    sync(dt, vx, vz);
+    // (the walk's own speed kept, not the push: the next step eases from where you were going)
+    sync(dt, vx - sx, vz - sz);
     if (world?.heightAt && !state.grounded && state.vy < -10) {
       const floor = world.heightAt(state.x, state.z);
       if (Number.isFinite(floor) && state.y < floor - 2) teleport([state.x, floor, state.z], state.yaw);
