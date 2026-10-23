@@ -174,4 +174,18 @@ export async function playTo(page, e, wins = []) {
 }
 // a place's game, as its stage has it (Needful Things' deal, the vat's freeze, the Jerryboree's find)
 export const game = (page, area, what) => page.evaluate(([a, w]) => window.__C137__.api.act(a, w), [area, what]);
+// Morty stood on one of a place's ledges (`dx`, `dz` off its middle), on his feet
+export const standOn = (page, area, id, { dx = 0, dz = 0 } = {}) => {
+  const [x, z, y] = PLACES.ledge(area, id);
+  return page.evaluate(([x, z, y]) => {
+    const s = window.__C137__.sim;
+    s.m = { ...s.m, x, z, y, vy: 0, vx: 0, vz: 0, speed: 0, air: false };
+  }, [x + dx, z + dz, y]);
+};
+// `s` seconds of the game's own time gone by (a headless frame is slow: a key
+// held for wall-clock milliseconds would be a frame or two)
+export async function later(page, s) {
+  const t0 = await page.evaluate(() => window.__C137__.sim.t);
+  await page.waitForFunction((t) => window.__C137__.sim.t >= t, t0 + s, { timeout: 120000, polling: 16 });
+}
 export const rickallOn = (page) => page.waitForFunction(() => window.__C137__.sim.rickall?.phase === 'on', null, { timeout: 300000, polling: 250 });

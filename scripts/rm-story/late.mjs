@@ -1,9 +1,9 @@
 // The browser check's scenarios for episodes 5 to 8 (../rm-story-check.mjs):
 // the cruiser's chase and the Gromflomite base, Needful Things and the vat,
 // the Jerryboree and St. Gloopy Noops, the cable studio and Get Schwifty.
-/* global window */
+/* global window, document */
 import { COURSE, chaseStart, newChase } from '../../src/components/rickmorty/world/games/chase.js';
-import { BASE, OUT, N, check, done, built, goto, use, story, reads, WIPED, SMALL, HEAT, DEALS, JERRY, throughPortal, toast, inArea, cardFor, at, opens, warpUse, caught, before, chasing, playTo, game, homeOf, spotAt, wayInOf, place, PRIME, FAIRY } from './helpers.mjs';
+import { BASE, OUT, N, check, done, built, goto, use, story, reads, WIPED, SMALL, HEAT, DEALS, JERRY, throughPortal, toast, inArea, cardFor, at, opens, warpUse, caught, before, chasing, playTo, game, homeOf, spotAt, wayInOf, place, PRIME, FAIRY, standOn, later, PLACES } from './helpers.mjs';
 
 export const LATE = {
   // a new visitor plays episode 5: the cruiser's chase (taking off ticks
@@ -392,5 +392,80 @@ export const LATE = {
     await opens(page, PRIME.unlocks, true, 'after episode 8');
     await opens(page, FAIRY.unlocks, false, 'after episode 8');
     await reads(page, FAIRY.steps[0].text);
+  },
+  // a new visitor plays episode 9: Fantasy World's climb (no meter at the
+  // way in, the stair's mood near its foot; up on a landing; bitten on a
+  // tread mid-bite and back at the way in; then the last hop to the crown
+  // with the keys, the win and its achievement) and Froopyland's Tommy
+  async 'episode-9'(page) {
+    await playTo(page, 8, ['cabinet', 'chase']);
+    await at(page, 8, 0, 'at episode 9');
+    await reads(page, FAIRY.steps[0].text);
+    check((await page.evaluate(() => window.__C137__.dial('fantasy'))) === 'fantasy', 'the dial wouldn’t take Fantasy World');
+    await throughPortal(page);
+    await inArea(page, 'fantasy');
+    const climb = () => game(page, 'fantasy', 'climb');
+    const meter = () => page.locator('.rm-cluster[aria-label="Up the beanstalk"][data-on]').count();
+    check((await climb()).phase === 'idle', 'the climb started before Morty was on a stair');
+    check((await meter()) === 0, 'the climb’s meter showed at the way in');
+    // by the stairs' foot: the meter, with the stair's mood
+    const foot = PLACES.spot('fantasy', 'goblins');
+    await page.evaluate(([x, z]) => window.__C137__.warp('fantasy', x, z, Math.PI / 2), [foot.x, foot.z + 1]);
+    await page.waitForFunction(() => document.querySelector('.rm-cluster[aria-label="Up the beanstalk"][data-on]'), null, { timeout: 30000, polling: 100 }).catch(() => {
+      throw new Error('no climb meter at the stairs’ foot');
+    });
+    // up on the first landing: it holds him, and the climb's on
+    await standOn(page, 'fantasy', 'landing-1', { dz: 0.7 });
+    await later(page, 1);
+    const up = await page.evaluate(() => ({ y: window.__C137__.sim.m.y, phase: window.__C137__.api.act('fantasy', 'climb').phase }));
+    check(Math.abs(up.y - PLACES.ledge('fantasy', 'landing-1')[2]) < 1e-3 && up.phase === 'run', `the landing didn’t hold him (${JSON.stringify(up)})`);
+    // the second stair mid-bite with Morty on its top tread: bitten, back at the way in, nothing done
+    const [bx, bz, by] = PLACES.ledge('fantasy', 'g2-top');
+    await page.evaluate(([x, z, y]) => {
+      window.__C137__.api.act('fantasy', 'setClimb', { t: 4.65 });
+      const s = window.__C137__.sim;
+      s.m = { ...s.m, x, z, y, vy: 0, vx: 0, vz: 0, speed: 0, air: false };
+    }, [bx, bz + 0.25, by]);
+    await caught(page, wayInOf('fantasy'));
+    check((await climb()).phase === 'idle' && !(await done(page)).includes('fantasy'), 'a bite didn’t start the climb afresh');
+    // the last hop, with the keys: from the top shoot onto the crown
+    const [cx, cz] = PLACES.ledge('fantasy', 'beanstalk');
+    await standOn(page, 'fantasy', 'shoot-16');
+    await page.evaluate(([cx, cz]) => {
+      const s = window.__C137__.sim;
+      s.yaw = Math.atan2(-(cx - s.m.x), -(cz - s.m.z));
+      s.dragAt = s.t;
+    }, [cx, cz]);
+    await later(page, 0.2);
+    await page.keyboard.down('ArrowUp');
+    await later(page, 0.25);
+    await page.keyboard.down('Space');
+    await later(page, 0.1);
+    await page.keyboard.up('Space');
+    await later(page, 0.5);
+    await page.keyboard.up('ArrowUp');
+    await page.waitForFunction(() => JSON.parse(localStorage.getItem('tp-c137-done') ?? '[]').includes('fantasy'), null, { timeout: 30000 }).catch(() => {
+      throw new Error('the crown didn’t win the climb');
+    });
+    await page.waitForFunction(() => JSON.parse(localStorage.getItem('tp-achievements') ?? '[]').includes('fantasy'), null, { timeout: 30000, polling: 250 }).catch(() => {
+      throw new Error('the climb’s achievement wasn’t earned');
+    });
+    check((await page.evaluate(() => window.__C137__.sim.near?.id)) === 'giants', 'the giants weren’t by him on the crown');
+    await at(page, 8, 1, 'after Fantasy World');
+    await reads(page, FAIRY.steps[1].text);
+    // Froopyland: Tommy, past the Froopylanders, and his achievement
+    check((await page.evaluate(() => window.__C137__.dial('froopyland'))) === 'froopyland', 'the dial wouldn’t take Froopyland');
+    await throughPortal(page);
+    await inArea(page, 'froopyland');
+    await warpUse(page, 'froopyland', 'tommy', ...spotAt('froopyland', 'tommy', N));
+    // (the episode's last step: its closing line is the toast)
+    await toast(page, FAIRY.outro[0][1]);
+    await page.waitForFunction(() => JSON.parse(localStorage.getItem('tp-achievements') ?? '[]').includes('froopyland'), null, { timeout: 30000, polling: 250 }).catch(() => {
+      throw new Error('Tommy’s achievement wasn’t earned');
+    });
+    await at(page, 9, 0, 'after Froopyland');
+    await opens(page, [...FAIRY.unlocks, 'squanch', 'evilrick'], true, 'after episode 9');
+    await page.waitForTimeout(1500);
+    check((await page.locator('.rm-episode').count()) === 0, 'a card showed for an episode that isn’t built');
   },
 };

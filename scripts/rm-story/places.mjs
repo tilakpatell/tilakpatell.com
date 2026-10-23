@@ -8,7 +8,8 @@
 //   stand(spot, face, off) → [x, z, face]   `off` metres back from a spot, facing it
 //   wayIn(d) → z                             where a catch puts him back
 //   home(d) → [x, z, face]                   in front of the portal home, facing it
-//   loadPlaces(root) → { dest(id), spot(area, id) }   the data, read through Vite
+//   ledgeOf(d, id) → [x, z, top]             a ledge Morty stands on (a climb's: ../games/climb.js)
+//   loadPlaces(root) → { dest(id), spot(area, id), ledge(area, id) }   the data, read through Vite
 
 export const N = Math.PI / 2;
 
@@ -16,6 +17,11 @@ export const N = Math.PI / 2;
 export const stand = (spot, face, off = 0.8) => [spot.x - off * Math.cos(face), spot.z + off * Math.sin(face), face];
 export const wayIn = (d) => d.arrive.z;
 export const home = (d) => [d.back.x, d.back.z - 0.8, -N];
+export function ledgeOf(d, id) {
+  const l = d.solids.find((o) => o.id === id && o.ledge);
+  if (!l) throw new Error(`${d.id} has no ledge ${id}`);
+  return [l.x, l.z, l.top];
+}
 
 // the places, as the page has them: their files import without extensions,
 // as Vite resolves them, so Vite reads them (as scripts/battlefront-balance.mjs does).
@@ -41,5 +47,5 @@ export async function loadPlaces(root) {
     if (!h) throw new Error(`${area} has no spot ${id} in the data`);
     return h;
   };
-  return { dest, spot };
+  return { dest, spot, ledge: (area, id) => ledgeOf(dest(area), id) };
 }
