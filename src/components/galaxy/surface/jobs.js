@@ -10,7 +10,9 @@
 //
 // - Bounty: a gang at a place, all of them brought down.
 // - Salvage: what's lying at a place picked up (sometimes with scavengers
-//   on it) and brought back to the ship.
+//   on it) and brought back to the ship; out on open ground, round a downed
+//   ship (wayside.js's wreck, the job's `props`: the scene lays them as it's
+//   taken).
 // - Courier: a parcel from by the ship run to a place before the time's up.
 // - Speeder run: on one of the world's speeders, through a loop of gates in
 //   time.
@@ -26,6 +28,7 @@
 import { sideOfKind, relation } from './ground/standing';
 import { dressOf, kindFor } from './ground/troops';
 import { RIDES } from './rides';
+import { wreckOf } from './wayside';
 
 export const KINDS = ['bounty', 'salvage', 'courier', 'race', 'patrol'];
 export const NEAR = 70; // metres from you that work starts
@@ -143,7 +146,10 @@ const bounty = ({ id, spot, foe, rand }) => {
 const salvage = ({ id, spot, foe, home, ok, rand }) => {
   const where = spot.name ?? 'a wreck';
   const n = 4;
-  const spots = Array.from({ length: n }, () => near(spot.at, 5 + rand() * 11, ok, rand));
+  // (out on open ground, a downed ship there, the crates round it clear of its length)
+  const wreck = spot.name ? null : wreckOf(spot.at, rand() * Math.PI * 2, rand);
+  const clear = wreck ? wreck.metres / 2 + 2 : 5;
+  const spots = Array.from({ length: n }, () => near(spot.at, clear + rand() * 9, ok, rand));
   const guarded = rand() < 0.5;
   const step = { type: 'collect', item: 'salvage', n, spots, at: spot.at, color: '#ffb34a', text: `Pick up the salvage at ${where}` };
   if (guarded) step.spawn = { ...foe.spawn, n: 2, at: near(spot.at, 14, ok, rand), spread: 6, roam: 6, tag: `${id}:guard` };
@@ -155,6 +161,7 @@ const salvage = ({ id, spot, foe, home, ok, rand }) => {
     pay: guarded ? 2 : 1,
     intro: [[null, `There’s salvage at ${where}. Four crates of it.`]],
     steps: [step, { type: 'reach', at: home, r: 14, text: 'Bring it back to the ship' }],
+    ...(wreck ? { props: wreck.things } : {}),
     done: [[null, 'Salvage stowed. That’ll fetch a fair price.']],
     reward: 'Salvage sold.',
   };
