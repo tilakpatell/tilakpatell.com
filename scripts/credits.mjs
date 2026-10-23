@@ -103,7 +103,7 @@ const kitsBy = new Map();
 for (const k of await kits()) if (k.licence === 'CC0-1.0') kitsBy.set(k.by, [...(kitsBy.get(k.by) ?? []), k]);
 const kitLines = [...kitsBy].map(
   ([by, list]) =>
-    `**Kits:** ${link(by, list[0].url)}'s ${and(list.map((k) => `*${k.title}* (${k.models} models)`))}, under [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/): trees, plants, rocks, space props, farm animals and a city's streets and tenements for the worlds, in [\`public/kit\`](public/kit) (brought in by [\`scripts/kit/import.mjs\`](scripts/kit/README.md)).`,
+    `**Kits:** ${link(by, list[0].url)}'s ${and(list.map((k) => `*${k.title}* (${k.models} models)`))}, under [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/): trees, plants, rocks, space props, farm animals, a city's streets and tenements and its street lamps, traffic lights and signs for the worlds, in [\`public/kit\`](public/kit) (brought in by [\`scripts/kit/import.mjs\`](scripts/kit/README.md)).`,
 );
 
 // ── photos ──

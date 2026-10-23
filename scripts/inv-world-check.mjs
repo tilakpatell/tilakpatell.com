@@ -1,4 +1,4 @@
-/* global window, document */
+/* global window, document, requestAnimationFrame */
 // A browser check of the Invincible world (components/invincible/world).
 // With the dev server up (npx vite --port 5173):
 //   OUT=/tmp/shots node scripts/inv-world-check.mjs [--metrics] [shot …]
@@ -71,6 +71,13 @@ const SHOTS = {
   levy: { drive: [['dim', 'burnt'], ['go', [40, 60, 200], Math.PI, 'air'], ['wait', 1500]], time: 'night', pitch: -0.2 },
   cavalry: { drive: [['go', [22, 9, 46], Math.PI, 'air'], ['spawn', 'mauler', 4, [22, 0, 24]], ['wait', 4500]], pitch: -0.22 },
   curb: { p: [44, 3, 120], mode: 'air', yaw: Math.PI, pitch: -0.12 },
+  // the outer city's brick blocks as the Downtown City MegaKit's tenements (./streetKit.js): from the street, from over them, at night
+  brick: { p: [768, 3, 772], mode: 'air', yaw: -2.64, pitch: -0.04 },
+  brickhigh: { p: [810, 95, 830], mode: 'air', yaw: -2.4, pitch: -0.55 },
+  bricknight: { p: [768, 3, 772], mode: 'air', yaw: -2.64, pitch: -0.04, time: 'night' },
+  // (a tenements block hit: its box again, cracked, till it's mended)
+  brickruin: { drive: [['go', [768, 3, 772], -2.64, 'air'], ['ruin', [735, 735], 1, 0.7], ['wait', 900]], pitch: -0.04 },
+  levystreet: { drive: [['dim', 'burnt'], ['go', [768, 3, 772], -2.64, 'air'], ['wait', 1500]], time: 'night', pitch: -0.04 },
   streetnight: { p: [40, 18, 200], mode: 'air', yaw: Math.PI, pitch: -0.22, time: 'night' },
   downtown: { p: [-300, 140, 600], mode: 'air', yaw: Math.PI * 0.9, pitch: -0.12 },
   high: { p: [-900, 1400, 1500], mode: 'air', yaw: Math.PI * 0.85, pitch: -0.45 },
@@ -398,6 +405,37 @@ for (const [name, s] of Object.entries(SHOTS)) {
   console.log(name, 'calls', info.calls, 'tris', info.triangles, 'tier', info.tier);
   // (DUMP=1: what the fight and the brawl hold, for reading a shot that shows something odd)
   if (process.env.DUMP) console.log(name, await page.evaluate(() => JSON.stringify({ rings: window.__INVWORLD__.sim.foes.rings, foes: window.__INVWORLD__.sim.foes.foes.map((e) => [e.id, e.kind, e.state, e.p.map(Math.round)]), brawl: window.__INVWORLD__.sim.brawl, gates: window.__INVWORLD__.sim.gates, marker: window.__INVWORLD__.sim.marker, quests: { lesson: window.__INVWORLD__.sim.quests.lesson.on, rescue: Boolean(window.__INVWORLD__.sim.quests.rescue) }, ruins: [...window.__INVWORLD__.sim.ruins.damage].map(([k, d]) => [k, Math.round(d * 100) / 100, window.__INVWORLD__.sim.world.buildings.find((q) => `b:${q.id}` === k)?.x, window.__INVWORLD__.sim.world.buildings.find((q) => `b:${q.id}` === k)?.z]), towers: (() => { const m = window.__INVWORLD__.api.engine?.scene?.getObjectByName('towers'); if (!m) return 'no towers mesh'; const h = m.geometry.attributes.aHurt; if (!h) return 'no aHurt'; const out = []; for (let i = 0; i < h.count; i++) if (h.array[i] > 0) out.push([i, h.array[i], Math.round(m.instanceMatrix.array[i * 16 + 5] * 10) / 10, m.geometry.attributes.aStyle.array[i * 4 + 3]]); return out; })() })));
+  // (COST=1: what one frame draws, its triangles by the scene's top-level group and the mesh,
+  // through the camera only (the shadow passes left out): what to measure before a budget's lever is pulled)
+  if (process.env.COST) {
+    const rows = await page.evaluate(async () => {
+      const { engine } = window.__INVWORLD__.api;
+      const r = engine.renderer;
+      const tally = new Map();
+      const count = (object, geometry, camera, group) => {
+        if (camera !== engine.camera || !geometry) return;
+        const all = geometry.index ? geometry.index.count : (geometry.attributes.position?.count ?? 0);
+        const n = group && Number.isFinite(group.count) ? Math.min(all, group.count) : all;
+        let top = object;
+        while (top.parent && top.parent !== engine.scene) top = top.parent;
+        const key = `${top.name || top.type} / ${object.name || `${object.type} ${geometry.type}${object.isInstancedMesh ? ` ×${object.count}` : ''}`}`;
+        tally.set(key, (tally.get(key) ?? 0) + (n / 3) * (object.isInstancedMesh ? object.count : 1));
+      };
+      const which = typeof r.renderObject === 'function' ? 'renderObject' : 'renderBufferDirect';
+      const was = r[which];
+      r[which] = function (...a) {
+        if (which === 'renderObject') count(a[0], a[3] ?? a[0].geometry, a[2], a[5]);
+        else count(a[4], a[2], a[0], a[5]);
+        return was.apply(this, a);
+      };
+      await new Promise((res) => requestAnimationFrame(() => requestAnimationFrame(res)));
+      r[which] = was;
+      return [...tally].sort((a, b) => b[1] - a[1]);
+    });
+    const total = rows.reduce((s, [, n]) => s + n, 0);
+    console.log(name, 'cost', Math.round(total), 'triangles through the camera');
+    for (const [k, n] of rows.slice(0, 30)) console.log(`  ${String(Math.round(n)).padStart(8)}  ${k}`);
+  }
   if (s.mission) {
     // (where the shot found him and the step's marker, for reading the shot)
     const w = await page.evaluate(() => {

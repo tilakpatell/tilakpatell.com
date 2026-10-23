@@ -65,7 +65,7 @@ export async function createInvWorld(rt, { onSlow, calm = false } = {}) {
   const world = buildWorld();
 
   const ground = buildGround(world, { small });
-  const city = buildCity(world, { small });
+  const city = buildCity(world, { small, tier: engine.tier });
   const landmarks = await buildLandmarks(world, city.uniforms);
   scene.add(ground.group, city.group, landmarks.group);
   // the hall's inside (./hall.js), drawn in its own zone at the plaza's place
@@ -792,7 +792,7 @@ export async function createInvWorld(rt, { onSlow, calm = false } = {}) {
     marker.update(sim.marker, t, camera, engine.size.h);
     course.update(sim.gates, sim.photo, t);
     ground.update(t);
-    city.update(t, look?.night ?? 0);
+    city.update(t, look?.night ?? 0, zone === 'city' ? camera : null);
     // coming down through the air from space, fast: the air in front of him burns
     const altNow = zone === 'space' ? altitudeOf(h) : h.p[1];
     const down = zone === 'space' ? -(h.v[0] * h.p[0] + h.v[1] * h.p[1] + h.v[2] * h.p[2]) / Math.hypot(...h.p) : -h.v[1];
@@ -877,6 +877,7 @@ export async function createInvWorld(rt, { onSlow, calm = false } = {}) {
       marker.dispose();
       course.dispose();
       ghosts.dispose();
+      city.streets.dispose();
       for (const c of casts) c.dispose();
       for (const f of Object.values(heroFigs)) if (f !== mark) f.dispose();
       wallMesh.geometry.dispose();

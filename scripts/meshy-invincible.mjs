@@ -57,6 +57,8 @@ export const CLIPS = {
   person: [['idle', 0], ['walk', 30], ['talk', 313], ['wave', 28], ['phone', 312], ['run', 14], ['cheer', 298], ['look', 333]],
   brute: [['idle', 0], ['walk', 30], ['charge', 512], ['swing', 198], ['throw', 239], ['hit', 178], ['down', 187], ['stomp', 255]],
   caster: [['idle', 0], ['quake', 127], ['blast', 125], ['hit', 178], ['down', 187], ['talk', 311]],
+  // (a foot soldier the game hovers and aims itself: only what it can't pose, 9 credits)
+  trooper: [['idle', 0], ['hit', 178], ['down', 187]],
 };
 // Clips made from words (text to motion, 10 credits each), for the figures
 // that fly; one is made once an account and put on each of them.
@@ -95,16 +97,19 @@ export const ASSETS = {
   civA: { out: 'civ-a.glb', as: 'a townsman', tris: 12000, clips: 'person', height: 1.75, tex: 2048, prompt: 'An ordinary man in his thirties with short brown hair and light brown skin, wearing a mustard-yellow zip jacket over a white t-shirt, dark blue jeans and white trainers.' },
   civB: { out: 'civ-b.glb', as: 'a townswoman', tris: 12000, clips: 'person', height: 1.66, tex: 2048, prompt: 'An ordinary young woman in her twenties with a black ponytail and warm brown skin, wearing a teal hoodie, grey cargo trousers and red trainers, a small backpack.' },
   civC: { out: 'civ-c.glb', as: 'an older townsman', tris: 12000, clips: 'person', height: 1.72, tex: 2048, prompt: 'An ordinary older man in his sixties with grey hair, a grey beard and pale skin, wearing a brown cardigan over a light blue shirt, beige chinos and brown shoes.' },
+  // the Flaxans, as the show has them: from words (the wiki's pictures are crowds, none in an A-pose),
+  // on Meshy's lighter model (15 credits), the last of account 3's (2026-10-22); the elite is it tinted
+  flaxan: { out: 'flaxan.glb', as: 'a Flaxan soldier', model: 'meshy-6-lite', textureRes: '2k', tris: 10000, clips: 'trooper', height: 1.7, tex: 2048, prompt: 'A slim alien soldier with pale green skin and a long smooth hairless head, two short pale green horn spikes rising from each side of the crown, small dark eyes, a thin mouth. White rounded plated armour over the chest, the shoulders, the forearms and the shins, round disc plates on the chest, a teal-blue bodysuit under it, white boots and gloves, no weapon.' },
   // props, unrigged
   bank: { out: 'bank.glb', as: 'the bank', tex: 1024, rig: false, prompt: 'The front of a small city bank: a two-storey pale stone facade, four columns, wide steps up to big glass doors, a sign panel above the doors with no lettering. Seen from the front at a slight angle.' },
   heli: { out: 'heli.glb', as: 'the news helicopter', tex: 1024, rig: false, prompt: 'A small white and red news helicopter with a camera pod under its nose, skids, a two-blade main rotor and a tail rotor. Seen from the side at a slight angle.' },
   truck: { out: 'truck.glb', as: 'the getaway truck', tex: 1024, rig: false, prompt: 'A boxy dark green armoured cash-transport truck with a windowless cargo box, rear double doors and black wheels. Seen from the front at a three-quarter angle.' },
 };
 
-// Two Meshy accounts: MESHY_API_KEY and MESHY_API_KEY_ACC_2. A task can only
+// Three Meshy accounts: MESHY_API_KEY, MESHY_API_KEY_ACC_2 and _ACC_3. A task can only
 // be read with the account that made it, so each name's entry keeps its
 // `acct` (none means 1); new tasks go to MESHY_ACCOUNT (default 1).
-const KEYS = { 1: process.env.MESHY_API_KEY, 2: process.env.MESHY_API_KEY_ACC_2 };
+const KEYS = { 1: process.env.MESHY_API_KEY, 2: process.env.MESHY_API_KEY_ACC_2, 3: process.env.MESHY_API_KEY_ACC_3 };
 const NEW = Number(process.env.MESHY_ACCOUNT ?? 1);
 let key = KEYS[NEW];
 const use = (entry) => {
@@ -306,14 +311,14 @@ const steps = {
         const from = ref ? { image_url: `data:image/png;base64,${(await readFile(ref)).toString('base64')}` } : { input_task_id: s[n].image };
         const { result } = await api('POST', '/v1/image-to-3d', {
           ...from,
-          ai_model: 'meshy-7.1',
+          ai_model: ASSETS[n].model ?? 'meshy-7.1',
           should_texture: true,
           enable_pbr: false,
           should_remesh: true,
           topology: 'triangle',
-          target_polycount: ASSETS[n].rig === false ? 15000 : 30000,
-          // (painted at 4K and atlased again at the size it ships at: more paint to each texel)
-          texture_resolution: ASSETS[n].rig === false ? '2k' : '4k',
+          target_polycount: ASSETS[n].tris ?? (ASSETS[n].rig === false ? 15000 : 30000),
+          // (painted at 4K and atlased again at the size it ships at: more paint to each texel; a lighter model paints 2K)
+          texture_resolution: ASSETS[n].textureRes ?? (ASSETS[n].rig === false ? '2k' : '4k'),
           ...(ASSETS[n].texture && { texture_prompt: ASSETS[n].texture }),
           ...(ASSETS[n].rig !== false && { pose_mode: 'a-pose' }),
           target_formats: ['glb'],

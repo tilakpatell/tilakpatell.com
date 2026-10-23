@@ -14,7 +14,7 @@ export const WORLDS = UNIVERSES.filter((u) => u.world).flatMap((u) => [{ to: u.t
 export const WORLD_MB = {
   '/universe': 6, // not a world (nothing gates it), but the map's own download, for the tour's "Open the universe map · N MB" on a phone: the planets' textures, the stations and ships, from /home at a phone's size (5.7 MB measured 2026-10-21, lane C2: 6.9 before the Star Wars fleet's gen3d interceptor, 746 KB, and Meshy Slave I, 477 KB, gave way to the game's far copies, 16 KB each)
   '/caribbean': 16, // Dead Man's Tide's ships and sea creatures
-  '/invincible': 4, // the three HD figures and the city's three skies
+  '/invincible': 7, // the three HD figures and the city's three skies, and the street furniture and tenements (the Downtown City MegaKit's two tenements, its props and the Street Pack: 3.2 MB, 2026-10-22)
   '/hogwarts': 23, // the install's pack as built: Lane D's 21.2 MB (the Middle-earth figures standing in for the castle's people until Lane B's land, 8.6; the physics' wasm the broom and the knockables bring, 6.4; the page) and the grounds' (the castle's three scans and the ground's four, 2.9, the weather's sheets; the MegaKit's grounds files were already in it); Lane G measures it from a walk
   '/cybertron': 38, // Iacon at war's robots, Metroplex and the city's kit (the world at the top), and below it Roll out's cast, scanned ground, rocks and sky, the statues, and Optimus's transformation; and Rapier (1.7 MB) for Iacon's loose crates, on a computer that loads it (never a phone)
   '/avengers': 13, // the walkable compound's sky, scanned ground and trees, Spider-Man and the people from Sketchfab (each building's game more as you go in); and Rapier (1.7 MB) for the lawn's props, on a computer that loads it (never a phone)
