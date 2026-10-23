@@ -171,14 +171,17 @@ const FANDOMS = [
   },
   {
     id: 'marvel',
-    air: { colour: '#ffd27a', density: 1.4, top: 1.05 },
+    // Earth-616, as the comics draw it (scripts/planets/marvel.mjs): an
+    // Earth's blue air, and its rim the same (the chart keeps the red)
+    air: { colour: '#86bcff', density: 2.0, top: 1.05 },
+    rim: '#86bcff',
     label: 'Marvel',
     world: 'Avengers HQ',
     to: '/avengers',
     swatch: '#ff5a5a',
     accent: '#ff5a5a',
     size: 0.64,
-    palette: { base: '#c9a03a', dark: '#7a1f1f', light: '#f2d27a', glow: '#ffd76a' },
+    palette: { base: '#2d82d2', dark: '#15161c', light: '#62b457', glow: '#ffd76a' }, // (Earth-616's page blue, its ink and its green)
   },
   {
     id: 'breakingbad',
@@ -193,15 +196,16 @@ const FANDOMS = [
   },
   {
     id: 'office',
-    air: null, // (paper has no air: it keeps its soft rim)
+    // Scranton's country (scripts/planets/office.mjs): an autumn evening's air
+    air: { colour: '#9cc2f0', density: 2.0, top: 1.05, sunset: '#f0a868' },
     label: 'The Office',
     world: 'Scranton',
     to: '/scranton',
-    swatch: '#e9e4d6',
+    swatch: '#e9e4d6', // (the chart keeps the paper's white)
     accent: '#e9e4d6',
-    rim: '#7f8aa0', // the paper's own white would glare
+    rim: '#9cc2f0',
     size: 0.58,
-    palette: { base: '#f1eee4', dark: '#9aa7b8', light: '#ffffff', glow: '#d23b3b' },
+    palette: { base: '#4c6f33', dark: '#173a5e', light: '#c9a23a', glow: '#d23b3b' }, // (its woods, its sea, its fall gold)
   },
   {
     id: 'rickmorty',
@@ -279,6 +283,7 @@ const FANDOMS = [
     to: '/hogwarts',
     swatch: '#c8102e', // Gryffindor's scarlet on the chart
     accent: '#f6c343', // and its gold for the page (the scarlet reads 3.5:1 on the dark: the gold 12.5)
+    rim: '#9fb6dc', // the Highland air's own, not the chart's scarlet (a planet's rim and halo are its swatch without one)
     size: 0.64,
     palette: { base: '#3f5a3a', dark: '#1a2a30', light: '#9fb09a', glow: '#f6c343' },
   },
