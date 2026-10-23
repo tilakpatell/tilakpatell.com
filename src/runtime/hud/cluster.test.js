@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { PIPS, createFlightCluster, vitalsPct } from './cluster';
+import { PIPS, createAbilitiesWriter, createFlightCluster, vitalsPct } from './cluster';
 
 // (the tests run in Node: a stand-in for each element, with the calls cluster.js makes, and a count of the writes)
 const el = () => {
@@ -81,6 +81,47 @@ describe('the flight cluster’s writer', () => {
     c.place(root, { on: true, vitals: null, arms: torpedoes });
     expect(arms.hasAttribute('data-locked')).toBe(false);
     expect(arms.dataset.line).toBe('ordnance');
+  });
+
+  it('writes the abilities’ tiles: a name, the shade and seconds of a cooldown, what’s on, a held one’s tank', () => {
+    const tile = () => {
+      const t = el();
+      t.parts = { '.hud-ability-name': el(), '.hud-ability-left': el() };
+      t.querySelector = (s) => t.parts[s] ?? null;
+      return t;
+    };
+    const tiles = [tile(), tile()];
+    const ul = { ...el(), querySelectorAll: (s) => (s === '.hud-ability' ? tiles : []) };
+    const w = createAbilitiesWriter();
+    w.place(ul, [
+      { name: 'Portal hop', left: 3, full: 6, on: false },
+      { name: 'Booster rockets', left: 0.25, full: 1, on: true, held: true },
+    ]);
+    expect(tiles[0].parts['.hud-ability-name'].textContent).toBe('Portal hop');
+    expect(tiles[0].style.getPropertyValue('--k')).toBe('0.50');
+    expect(tiles[0].hasAttribute('data-cooling')).toBe(true);
+    expect(tiles[0].parts['.hud-ability-left'].textContent).toBe('3.0');
+    expect(tiles[1].hasAttribute('data-on')).toBe(true);
+    expect(tiles[1].hasAttribute('data-cooling')).toBe(false); // (held: its tank, no seconds)
+    expect(tiles[1].style.getPropertyValue('--k')).toBe('0.25');
+    expect(tiles[1].parts['.hud-ability-left'].textContent).toBe('');
+    w.place(ul, [{ left: 0, full: 6, on: false }, { left: 0, full: 1, on: false, held: true }]);
+    expect(tiles[0].hasAttribute('data-cooling')).toBe(false);
+    expect(tiles[0].parts['.hud-ability-name'].textContent).toBe('Portal hop'); // (no name: as it was)
+  });
+
+  it('finds the abilities’ tiles in the cluster once they’re there', () => {
+    const root = dom();
+    const tiles = [];
+    const c = createFlightCluster();
+    c.place(root, { on: true, vitals: null, arms: null, abilities: [{ left: 0, full: 1 }] });
+    const t = el();
+    t.querySelector = () => null;
+    tiles.push(t);
+    root.parts['.hud-abilities'] = { ...el(), querySelectorAll: () => tiles };
+    c.place(root, { on: true, vitals: null, arms: null, abilities: [{ left: 1, full: 2, on: true }] });
+    expect(t.hasAttribute('data-on')).toBe(true);
+    expect(t.style.getPropertyValue('--k')).toBe('0.50');
   });
 
   it('hides the arms with none', () => {

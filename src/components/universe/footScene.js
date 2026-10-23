@@ -64,7 +64,7 @@
 //
 // createFoot({ map, emit, reduced, small, planetOf, renderer, prepare }) → { phase, prefetch(id, kind),
 //   prefetchAt(id, { light, near, entry }), begin(...),
-//   update(dt, t, input), view(dt) → camera, fire(), trigger(down), vent(), cycle(), swap(),
+//   update(dt, t, input), view(dt) → camera, fire(), trigger(down), vent(), ability(slot, down), cycle(), swap(),
 //   board(), look(dx, dy) (px), turn(dx, dy) (radians), first(), aimPoint(), info(), crew(),
 //   guests(list), end(), dispose() }
 
@@ -116,6 +116,7 @@ import { AIR, ENTRY, entryPath, entrySpot, fxAt } from './entry';
 import { createReentry } from './reentry';
 import { PARTY, built, figuresWith, getLoader, loadSharedFigure, rigScene, seedFor, templateIn, warmGameFigure } from './footFigures';
 import { cool as coolGun, footWeapon, handGun, heatView, newTrigger, press, ventNow } from './footArms';
+import { createFootAbilities } from './footAbilityPlay';
 import { spreadAt } from '../../lib/arms/handRules';
 import { CREW_KEY, readCrew, registerCrew, styleOf as crewStyleOf } from '../../lib/crew/crewStyle';
 import { localSaves } from '../../runtime/local';
@@ -1128,6 +1129,8 @@ export function createFoot({ map, emit, reduced = false, small = false, planetOf
     s.userData = { age: 0, size: size * METRE };
     s.visible = true;
   };
+  // the crew's abilities on G and V (footAbilityPlay.js: each one's own pair, the galaxy's)
+  const abilities = createFootAbilities({ root, fx, puff, metre: METRE });
 
   const shadowMat = blobMat();
   const blobs = new Map(); // whose → mesh
@@ -1190,6 +1193,7 @@ export function createFoot({ map, emit, reduced = false, small = false, planetOf
     cleared: true,
     trigger: newTrigger(), // (the gun in your hand's: footArms.js)
     firing: false, // F held
+    abilityHeld: false, // G held (a held ability: Artoo's rockets)
     mateCool: 1,
     mateSt: {}, // the mate's health and hurt (footLife.js's mateHit: it can be hit, and goes down a while)
     mateKnock: null, // which way the last shot that hit the mate was going
@@ -1581,7 +1585,7 @@ export function createFoot({ map, emit, reduced = false, small = false, planetOf
     const kind = gunOf(me);
     if (!kind) return false;
     const w = weaponNow(me);
-    const r = press(S.trigger, w, S.clock, { down });
+    const r = press(S.trigger, w, S.clock, { down, hot: abilities.overcharged(me.spec.id, S.clock) });
     if (!r) return false;
     if (r.locked) {
       emit({ type: 'foot', id: 'locked', gun: kind });
@@ -2500,7 +2504,9 @@ export function createFoot({ map, emit, reduced = false, small = false, planetOf
     // foot.js's createJump: once a key-down, and a hair early still lands)
     jumpKey.hold(input.jump);
     const fell = (S.me.h ?? 0) > 0 ? -(S.me.vh ?? 0) : 0;
-    S.me = walk(S.me, { move: input.move, strafe: input.strafe, turn: input.turn, run: input.run, jump: jumpKey.press }, dt, S.R, obstacles());
+    // (a sprint's: half again as fast, footAbilities.js's sprintOf)
+    const sprint = abilities.sprint(me?.spec.id, S.clock);
+    S.me = walk(S.me, { move: input.move, strafe: input.strafe, turn: input.turn, run: input.run, jump: jumpKey.press, ...(sprint > 1 && input.move > 0 ? { speed: (input.run ? FOOT.run : FOOT.walk) * sprint } : null) }, dt, S.R, obstacles());
     if (fell > 0 && !(S.me.h > 0) && !reduced) squash.land(fell / METRE);
     // (down from a jump of any height: the leaves under you thrown out)
     if (S.me.h > 0) S.airH = Math.max(S.airH, S.me.h);
@@ -2611,6 +2617,8 @@ export function createFoot({ map, emit, reduced = false, small = false, planetOf
     }
     // health comes back once out of trouble a while
     if (S.clock - S.hitAt > 4 && S.health < FOOT.health) S.health = Math.min(FOOT.health, S.health + own().heal * dt);
+    // the abilities: the jetpack held, the charges in the air
+    if (S.phase === 'walk') abilities.step(dt, abilityCtx(S.abilityHeld));
     // the gun cooling, and held, going on firing (the first of a press was fire()'s)
     if (gunOf(me) && S.phase === 'walk') {
       coolGun(S.trigger, weaponNow(me), dt, S.clock);
@@ -2716,22 +2724,7 @@ export function createFoot({ map, emit, reduced = false, small = false, planetOf
       }
       if (typeof hitId === 'number') {
         const t = S.troops.find((x) => x.id === hitId);
-        if (t?.alive) {
-          t.hp -= e.bolt.damage;
-          t.hitAt = S.clock;
-          if (e.bolt.owner === 'me') S.landed = S.clock; // (the reticle's flash)
-          t.knock = [...e.bolt.dir]; // which way the shot pushed them
-          // (how hard, for the fall it's in: drawTroops)
-          const got = troopFigs.get(t.id);
-          if (got) got.blow = e.bolt.damage;
-          if (t.hp <= 0) {
-            t.alive = false;
-            t.dead = 0;
-            t.fallSide = rand() < 0.5 ? -1 : 1;
-            t.how = GADGETS.includes(o.gun) ? o.gun : null; // (Rick's guns' kills: through a portal, frozen, shrunk: drawTroops)
-            emit({ type: 'foot', id: 'kill', kind: t.kind, by: e.bolt.owner, how: t.how });
-          } else got?.body.react('hit', { where: troopHitWhere(t, p, S.R), moving: true }); // (on their upper half: they keep coming)
-        }
+        if (t?.alive) strikeTroop(t, e.bolt.damage, e.bolt.dir, { by: e.bolt.owner, how: GADGETS.includes(o.gun) ? o.gun : null, where: troopHitWhere(t, p, S.R) });
       } else if (hitId === 'me') hurt(e.bolt.damage, [...e.bolt.dir]);
       else if (hitId === 'mate') hurtMate(e.bolt.damage, [...e.bolt.dir]);
     }
@@ -2748,6 +2741,47 @@ export function createFoot({ map, emit, reduced = false, small = false, planetOf
     }
     S.bolts = keep;
   };
+
+  // a trooper hit (a bolt's, an ability's): health off, which way it was
+  // pushed (for its fall: drawTroops), and down, or a flinch; `how`, Rick's
+  // guns' kills (through a portal, frozen, shrunk: drawTroops)
+  const strikeTroop = (t, damage, dir, { by = 'me', how = null, where = 'chest' } = {}) => {
+    t.hp -= damage;
+    t.hitAt = S.clock;
+    if (by === 'me') S.landed = S.clock; // (the reticle's flash)
+    t.knock = [...dir];
+    const got = troopFigs.get(t.id);
+    if (got) got.blow = damage; // (how hard, for the fall it's in)
+    if (t.hp <= 0) {
+      t.alive = false;
+      t.dead = 0;
+      t.fallSide = rand() < 0.5 ? -1 : 1;
+      t.how = how;
+      emit({ type: 'foot', id: 'kill', kind: t.kind, by, how: t.how });
+    } else got?.body.react('hit', { where, moving: true }); // (on their upper half: they keep coming)
+  };
+  // what the abilities play on: you, your mate, the troops, and what a hit, a shove, a heal and a hop do here
+  const abilityCtx = (held = false) => ({
+    who: meP()?.spec.id ?? null,
+    me: S.me,
+    mate: S.mateSt.downAt == null ? S.mate : null,
+    R: S.R,
+    now: S.clock,
+    troops: S.troops,
+    held,
+    strike: (t, damage, dir) => strikeTroop(t, damage * own().damage, dir),
+    shove: (t, shove, liftBy) => {
+      t.shove = shove;
+      t.vh = Math.max(t.vh ?? 0, liftBy);
+      t.h = Math.max(t.h ?? 0, 1e-4);
+    },
+    hurt: (n, dir) => hurt(n, dir),
+    hurtMate: (n, dir) => hurtMate(n, dir),
+    heal: (n) => (S.health = Math.min(FOOT.health, S.health + n)),
+    place: (to, whole = false) => (S.me = whole ? to : { ...S.me, n: to.n, f: to.f, h: 0, vh: 0 }),
+    clear: (to) => obstacles().every((o) => (o.band ? !inTrench(to.n, o.band, S.R, FOOT.radius) : apart(to, o, S.R) > o.r + FOOT.radius)),
+    emit,
+  });
 
   const drawPeople = (dt) => {
     const show = S.phase === 'out' || S.phase === 'walk' || S.phase === 'board' || S.phase === 'down';
@@ -3155,6 +3189,18 @@ export function createFoot({ map, emit, reduced = false, small = false, planetOf
       S.firing = Boolean(down);
       return down ? pull(true, c) : false;
     },
+    // G (away from a door and the ship) or V: your crew member's ability
+    // (footAbilities.js: their own pair), pressed; G held for one that's
+    // held (Artoo's booster rockets), let go with `down` false. The kind
+    // played, or false
+    ability(slot, down = true) {
+      if (S.phase !== 'walk' || !S.me) return false;
+      if (slot === 'power') S.abilityHeld = Boolean(down);
+      if (!down) return false;
+      const kind = abilities.press(slot, abilityCtx(S.abilityHeld));
+      if (kind === 'overcharge') S.trigger.heat = { value: 0, locked: false, lockedAt: null, shotAt: null }; // (the heat gone with it, as the galaxy's)
+      return kind;
+    },
     // R: vent the gun's heat (all of it in the sweet spot of a lock); whether it did
     vent() {
       if (S.phase !== 'walk' || !gunOf(meP())) return false;
@@ -3259,6 +3305,8 @@ export function createFoot({ map, emit, reduced = false, small = false, planetOf
         emote: { open: emotes.open, hover: emotes.hover, on: S.emote?.id ?? null, last: emotes.last, fresh: S.emoteAt != null && S.clock - S.emoteAt < 2.2 },
         // the gun in hand for the cluster's arms (footArms.js): its name, its heat, the vent's marker while it's locked
         hand: gunOf(me) ? { name: weaponNow(me).name, ...heatView(S.trigger, S.clock) } : null,
+        // your crew member's two abilities, for the cluster's tiles (footAbilities.js's tilesOf)
+        abilities: me ? abilities.tiles(me.spec.id, S.clock) : null,
         // Rick's gadget in hand, and its name on the HUD for a moment after B
         gadget: me && GADGETS.includes(me.spec.gun) ? { kind: gunOf(me), name: GADGET_NAMES[gunOf(me)], fresh: S.gadgetAt != null && S.clock - S.gadgetAt < 1.8 } : null,
       };
@@ -3353,6 +3401,8 @@ export function createFoot({ map, emit, reduced = false, small = false, planetOf
     },
     // all gone: the ground, the people, the planet turning again
     end() {
+      abilities.clear();
+      S.abilityHeld = false;
       const planet = planetOf[S.id];
       planet?.hold?.(false);
       if (planet?.air) {
@@ -3416,6 +3466,7 @@ export function createFoot({ map, emit, reduced = false, small = false, planetOf
       troopModels.clear();
       for (const p of partyModels.values()) p.then((tpl) => tpl && freeScene(tpl.scene));
       partyModels.clear();
+      abilities.dispose();
       boltGeo.dispose();
       sleeveGeo.dispose();
       fx.dispose();

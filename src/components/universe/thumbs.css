@@ -107,6 +107,35 @@
     text-shadow: none;
   }
   :root .universe-map .universe-thumbs .hud-power small:empty { display: none; }
+  /* on foot, your crew member's two abilities (the kit's Abilities) where
+     the ship's powers were: a round button each, its seconds a badge on its
+     shoulder, held for a held one (Artoo's rockets) */
+  :root .universe-map .universe-thumbs > .hud-abilities { display: contents; }
+  :root .universe-map .universe-thumbs .hud-ability {
+    width: var(--touch-secondary);
+    height: var(--touch-secondary);
+    min-width: 0;
+    padding: 0;
+    place-content: center;
+    border-radius: 50%;
+    background: rgb(3 4 10 / 0.62);
+  }
+  :root .universe-map .universe-thumbs .hud-ability[data-slot='power'] { grid-area: p1; }
+  :root .universe-map .universe-thumbs .hud-ability[data-slot='second'] { grid-area: p2; }
+  :root .universe-map .universe-thumbs .hud-ability-btn { display: grid; place-items: center; width: 100%; height: 100%; padding: 0; border: 0; background: none; touch-action: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+  :root .universe-map .universe-thumbs .hud-ability-name { max-width: calc(var(--touch-secondary) - 8px); overflow: hidden; font-size: 0.7rem; text-overflow: ellipsis; }
+  :root .universe-map .universe-thumbs .hud-ability .hud-cap { display: none; }
+  :root .universe-map .universe-thumbs .hud-ability-left {
+    top: -5px;
+    right: -5px;
+    min-width: 1.7em;
+    padding: 0 0.3em;
+    border-radius: 999px;
+    background: rgb(3 4 10 / 0.85);
+    line-height: 1.5;
+    text-align: center;
+  }
+  :root .universe-map .universe-thumbs .hud-ability-left:empty { display: none; }
 
   /* over the grid, in line with its right edge: the jump, the way in, and
      the line about what's here (one row up when a button's under it; and

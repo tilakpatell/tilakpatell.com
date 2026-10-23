@@ -199,7 +199,7 @@ import { GUARD, STALE_MS } from './online/protocol';
 import { isMate } from './online/mates';
 import { createLook } from '../../runtime/look';
 import { reticleState } from '../../runtime/hud/reticle';
-import { createFlightCluster } from '../../runtime/hud/cluster.js';
+import { createAbilitiesWriter, createFlightCluster } from '../../runtime/hud/cluster.js';
 import { clusterView } from './clusterView';
 import { createRounds } from './rounds';
 import { createGalaxyPowers } from './powers';
@@ -3595,6 +3595,7 @@ export async function create(canvas, ctx) {
   // a ship and the line picked, your health on foot (clusterView.js says
   // when each shows); the records are filled each frame, nothing made
   const clusterWriter = createFlightCluster();
+  const abilitiesWriter = createAbilitiesWriter(); // (on foot, on a touch screen: the abilities' buttons in the thumbs)
   const clusterNow = { flying: false, onFoot: false, view: '', crash: false, dive: false, frozen: false, shield: 100, footInfo: null, armory: null };
   const clusterOut = clusterView(clusterNow);
   // the law's strip (UniverseMap's): its stars, what it's doing (wanted, a
@@ -3636,6 +3637,7 @@ export async function create(canvas, ctx) {
     c.footInfo = c.onFoot && foot.phase === 'walk' ? foot.info() : null;
     c.armory = state.kind ? arms() : null;
     clusterWriter.place(el, clusterView(c, clusterOut));
+    if (c.footInfo && props.abilities?.current) abilitiesWriter.place(props.abilities.current, c.footInfo.abilities);
   };
 
   // friends in a long fight (wingmen.js): once a hunt has dragged on, or
@@ -5415,11 +5417,14 @@ export async function create(canvas, ctx) {
     }
     if (key === 'g' && onFoot()) {
       // on foot: a door, or back in the ship (in it, there's no key to land:
-      // you fly down into a planet's air)
+      // you fly down into a planet's air); anywhere else, your crew member's
+      // ability, as on the galaxy's worlds (footAbilities.js), held for one
+      // that's held (Artoo's rockets)
       e.preventDefault();
       heard();
+      if (e.repeat) return;
       // (a door you're at first: a big ship's reach can take in one near it)
-      if (!intoDoor() && !foot.board()) emit({ type: 'foot', id: 'far' });
+      if (!intoDoor() && !foot.board()) foot.ability('power', true);
       return;
     }
     if (onFoot()) {
@@ -5555,8 +5560,15 @@ export async function create(canvas, ctx) {
       return;
     }
     if (key === 'v') {
+      // the second ability (as the galaxy's V)
       e.preventDefault();
-      foot.first();
+      if (!e.repeat) foot.ability('second', true);
+      return;
+    }
+    if (key === 'p') {
+      // out of their eyes, and back (P, as on the galaxy's worlds)
+      e.preventDefault();
+      if (!e.repeat) foot.first();
       return;
     }
     if (key === 'enter' && !onControl && intoWorld()) {
@@ -5588,8 +5600,9 @@ export async function create(canvas, ctx) {
     held.delete(key);
     // (Z let go on foot: the emote pointed at, or a tap's last)
     if (key === 'z' && onFoot() && foot.emote('up')) ctx.invalidate();
-    // (F let go on foot: the trigger, and a gauntlet's charge goes off)
+    // (F let go on foot: the trigger, and a gauntlet's charge goes off; G, a held ability let go)
     if (key === 'f' && onFoot()) foot.trigger(false);
+    if (key === 'g' && onFoot()) foot.ability('power', false);
     const now = onFoot() ? FOOT_KEYS : KEYS;
     for (const map of [KEYS, FOOT_KEYS]) {
       const k = map[key];
@@ -6179,6 +6192,12 @@ export async function create(canvas, ctx) {
       }
       state.fireBtn = down;
       if (down) fire();
+      ctx.invalidate();
+    },
+    // on foot, the HUD's ability buttons (a touch screen's G and V): pressed, and let go
+    ability(slot, down = true) {
+      heard();
+      if (onFoot()) foot.ability(slot, down);
       ctx.invalidate();
     },
     // the HUD's Portal button (P): Rick's portal gun, in any ship

@@ -27,6 +27,15 @@ describe('the universe map’s flight cluster', () => {
     expect(clusterView(flight({ shield: 34 })).vitals.low).toBe(true);
     expect(clusterView(flight({ shield: 35 })).vitals.low).toBe(false);
   });
+  it('is up on foot while an ability cools or is on, with the tiles handed on', () => {
+    const tiles = [{ key: 'G', left: 4, full: 6, on: false }, { key: 'V', left: 0, full: 20, on: false }];
+    const cooling = clusterView(flight({ flying: false, onFoot: true, footInfo: { health: 1, troops: [], hand: null, abilities: tiles } }));
+    expect(cooling.on).toBe(true);
+    expect(cooling.abilities).toBe(tiles);
+    const idle = [{ key: 'G', left: 0, full: 6, on: false }, { key: 'V', left: 0, full: 20, on: false }];
+    expect(clusterView(flight({ flying: false, onFoot: true, footInfo: { health: 1, troops: [], hand: null, abilities: idle } })).on).toBe(false);
+    expect(clusterView(flight()).abilities).toBe(null);
+  });
   it('is the gun in your hand on foot, with its heat, while it’s warm', () => {
     const dl44 = { name: 'DL-44', value: 0.4, locked: false, vent: null };
     const v = clusterView(walk(1, 0, dl44));

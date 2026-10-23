@@ -81,6 +81,23 @@
 :where(.hud-arms-vent):not(hud-none) { left: calc(var(--vent, 0) * 100%); width: 2px; background: #fff; }
 :where(.hud-arms[data-locked] .hud-arms-sweet, .hud-arms[data-locked] .hud-arms-vent):not(hud-none) { display: block; }
 
+/* the abilities on foot (Abilities.jsx): a tile each, the key over its icon
+   and its name, the seconds in its corner while it cools down under a shade
+   that runs down (--k, written by the world: ./cluster.js), the world's
+   power colour round it while it's on. Dimmed by colour while it cools. */
+:where(.hud-abilities):not(hud-none) { display: flex; gap: 6px; min-width: 0; margin: 0; padding: 6px; list-style: none; }
+:where(.hud-ability):not(hud-none) { position: relative; display: grid; justify-items: center; gap: 1px; min-width: 56px; padding: 4px 6px; overflow: hidden; border: 1px solid rgb(255 255 255 / 0.28); border-radius: 8px; background: rgb(6 8 14 / 0.55); color: var(--hud-cluster-ink, #e8f4ff); }
+:where(.hud-ability-btn):not(hud-none) { display: contents; font: inherit; color: inherit; }
+:where(.hud-ability-name):not(hud-none) { font-size: 0.7rem; letter-spacing: 0.06em; text-transform: uppercase; white-space: nowrap; }
+:where(.hud-ability-left):not(hud-none) { position: absolute; right: 4px; top: 2px; font-size: 0.7rem; font-variant-numeric: tabular-nums; }
+:where(.hud-ability-name:empty):not(hud-none) { display: none; }
+:where(.hud-ability)::after { content: ''; position: absolute; inset: 0; background: rgb(0 0 0 / 0.55); transform-origin: bottom; transform: scaleY(var(--k, 0)); transition: transform 0.1s linear; pointer-events: none; }
+:where(.hud-ability[data-cooling]):not(hud-none) { color: var(--hud-cluster-label, rgb(217 243 255 / 0.85)); }
+:where(.hud-ability[data-on]):not(hud-none) { border-color: var(--hud-power, var(--hud-accent, #7fd6ff)); box-shadow: 0 0 8px var(--hud-power, var(--hud-accent, #7fd6ff)); }
+@media (prefers-reduced-motion: reduce) {
+  :where(.hud-ability)::after { transition: none; }
+}
+
 /* a laptop's width: the blocks a little narrower */
 @media (max-width: 1320px) {
   :where(.hud-glass):not(hud-none) { min-width: 150px; }

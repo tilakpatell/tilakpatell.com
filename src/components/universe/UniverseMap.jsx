@@ -14,7 +14,7 @@ import { askBrief } from '../tour/brief';
 import LoadingVeil from '../worlds/LoadingVeil';
 import { RiShieldLine } from 'react-icons/ri';
 import PowerBar from './PowerBar';
-import { Arms, Cluster, Prompt, Reticle, TouchButton, Vitals } from '../../runtime/hud';
+import { Abilities, Arms, Cluster, Prompt, Reticle, TouchButton, Vitals } from '../../runtime/hud';
 import { PROMPT as LOOK_PROMPT } from '../../runtime/look';
 
 // The map: the 3D scene (scene.js and planets.js, a world module on the
@@ -39,12 +39,19 @@ import { PROMPT as LOOK_PROMPT } from '../../runtime/look';
 // is the one picked there, how the ship goes anywhere it's sent, and
 // `charting` says the nav map's open (the director holds off meanwhile).
 
+// the crew member's two abilities on foot (footAbilities.js), the scene writing their names
+const FOOT_ABILITIES = [
+  { slot: 'power', key: 'G' },
+  { slot: 'second', key: 'V' },
+];
+
 export default function UniverseMap({ selected, onSelect, onOpen, handle, frozen, ship, loadout, build = null, tune = null, canFit = false, hangar = false, onHangar, net = null, onEvent, onLand, onCrash, drive = 'super', charting = false, onMap, startAt = null, universe = null, skillFx = null, powerPicks = null }) {
   const labels = useRef({});
   const tags = useRef(null);
   const stick = useRef(null);
   const alt = useRef(null);
   const cluster = useRef(null); // the flight cluster: shields and arms in a ship, health on foot (the HUD kit's: clusterView.js)
+  const abilitiesEl = useRef(null); // the crew member's abilities on foot, as a touch screen's buttons (in the cluster on a desktop)
   const powers = useRef(null); // the crew's two powers' tiles in it (PowerBar.jsx; the scene writes them: powers.js)
   const thumbs = useRef(null); // the touch buttons, one grid under the right thumb (the powers in it on a touch screen)
   const touch = useMediaQuery('(pointer: coarse)');
@@ -107,6 +114,7 @@ export default function UniverseMap({ selected, onSelect, onOpen, handle, frozen
       stick,
       alt,
       cluster,
+      abilities: abilitiesEl,
       powers,
       wanted: wantedEl,
       wallet: economy,
@@ -332,6 +340,8 @@ export default function UniverseMap({ selected, onSelect, onOpen, handle, frozen
               <Cluster rootRef={cluster} className="universe-cluster" label={onFoot ? 'On foot' : 'Flight'}>
                 <Vitals label={onFoot ? 'Health' : 'Shields'} icon={<RiShieldLine aria-hidden="true" />} />
                 <Arms keys />
+                {/* on foot: your crew member's two abilities, G and V (the scene writes their names and cooldowns); a touch screen's are buttons in the thumbs, below */}
+                {onFoot && !touch && <Abilities slots={FOOT_ABILITIES} />}
                 {/* (a touch screen's are round buttons in the thumbs' grid, below) */}
                 {!onFoot && !touch && <PowerBar ship={ship} reduced={reduced} barRef={powers} onPress={(slot) => view.current?.power?.(slot)} placement="cluster" picks={powerPicks} carry={skillFx?.carry} />}
               </Cluster>
@@ -407,6 +417,7 @@ export default function UniverseMap({ selected, onSelect, onOpen, handle, frozen
                   desktop, where only the portal gun shows. */}
               <div ref={thumbs} className="universe-thumbs">
                 {!onFoot && touch && <PowerBar ship={ship} reduced={reduced} barRef={powers} onPress={(slot) => view.current?.power?.(slot)} picks={powerPicks} carry={skillFx?.carry} />}
+                {onFoot && touch && <Abilities slots={FOOT_ABILITIES} rootRef={abilitiesEl} onPress={(slot, down) => view.current?.ability?.(slot, down)} />}
                 {/* Rick's portal gun, in any ship: a portal ahead, to his dimension or home (gunPortal.js) */}
                 {!onFoot && (
                   <button type="button" className="universe-portalgun" onPointerDown={(e) => (e.preventDefault(), view.current?.portalGun?.())} onContextMenu={(e) => e.preventDefault()} title="Rick’s portal gun: a portal ahead, to his dimension (or home)">
@@ -461,10 +472,10 @@ export default function UniverseMap({ selected, onSelect, onOpen, handle, frozen
                 <p className="universe-hint">
                   <span className="universe-hint-keys">
                     {/* the four that matter on foot; the guide has the rest */}
-                    <kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd> walk, <kbd>F</kbd> fire, <kbd>G</kbd> back in, <kbd>Enter</kbd> into the world
+                    <kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd> walk, <kbd>F</kbd> fire, <kbd>G</kbd> <kbd>V</kbd> your abilities (<kbd>G</kbd> at the ship, back in), <kbd>Enter</kbd> into the world
                     <GuideCue />
                   </span>
-                  <span className="universe-hint-touch">Drag to walk, Fire to shoot, Board to get back in, Enter to go into the world<GuideCue touch /></span>
+                  <span className="universe-hint-touch">Drag to walk, Fire to shoot, the two round buttons your abilities, Board to get back in, Enter to go into the world<GuideCue touch /></span>
                 </p>
               )}
               {!flown && !onFoot && (

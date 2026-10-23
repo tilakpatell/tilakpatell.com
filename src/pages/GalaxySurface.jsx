@@ -58,7 +58,7 @@ import { wornFiles } from '../components/rickmorty/wardrobe/looks';
 import { useLooks } from '../components/rickmorty/wardrobe/useLooks';
 import { toggleGuide } from '../lib/palette';
 import { RiHeartPulseLine } from 'react-icons/ri';
-import { Arms, Cluster, Menu, MenuItem, Prompt, Reticle, Vitals, createFlightCluster, reticleState } from '../runtime/hud';
+import { Abilities, Arms, Cluster, Menu, MenuItem, Prompt, Reticle, Vitals, createFlightCluster, reticleState } from '../runtime/hud';
 import { wayOut } from '../components/worlds/worlds';
 import GuideCue from '../components/guide/GuideCue';
 import { EMOTES, wheelAngle } from '../lib/emote';
@@ -576,6 +576,13 @@ export default function GalaxySurface() {
   // the models on this world, for their credits (a person's crew figure as
   // well as its catalogue model: a duellist of the same kind uses the latter), what the cruiser's crew carry out, and the game's Luke, Han and Chewie, who walk out of the X-wing and the Falcon (universe/footFigures.js's PARTY) (kept, so the credits aren't drawn again with every change of the page)
   const kinds = useMemo(() => (site ? [...[...site.things_all, ...site.scatter, ...site.rides].map((t) => surfaceUrl(t.kind)), ...site.life.flatMap((t) => [surfaceUrl(t.kind), ...(CREW[t.kind] ? filesOf(CREW[t.kind]) : [])]), ...(ship === 'cruiser' ? wornFiles(looks) : []), ...(ship === 'xwing' ? filesOf(CREW.luke) : ship === 'falcon' ? [...filesOf(CREW.han), ...filesOf(CREW.chewie)] : []), ...(heroById(hero.id)?.src.url ? [heroById(hero.id).src.url] : [])] : []), [site, ship, looks, hero.id]);
+  // the abilities' tiles (the kit's Abilities, as the universe map's planets have them): G and V, the hero's own, the dodge and the emote
+  const abilitySlots = [
+    ['power', 'G', combat?.powers?.power ?? (combat?.saber ? 'Push' : 'Detonator'), powerIds.power],
+    ['second', 'V', combat?.powers?.second ?? (combat?.saber ? 'Pull' : 'Overcharge'), powerIds.second],
+    ['dodge', 'X', combat?.dashes != null ? `Dodge ×${combat.dashes}` : 'Dodge', null],
+    ['emote', 'B', 'Emote', null],
+  ].map(([slot, key, name, ability]) => ({ slot, key, name, icon: ability && ABILITIES[ability]?.name === name ? <GameIcon name={`ability:${ability}`} className="surface-game-icon" /> : null }));
   // (the fight's on: a gun up or warm, a lock, a Jedi's stamina spent; the cluster's up for that, or while you're hurt)
   const fighting = Boolean(combat && phase === 'walk' && (aiming || combat.lock || combat.broken || combat.locked || (combat.heat ?? 0) > 0.02 || (combat.guard ?? 1) < 0.99));
   useEffect(() => {
@@ -583,6 +590,8 @@ export default function GalaxySurface() {
       on: fighting || (phase === 'walk' && health < 100),
       vitals: { value: health, max: 100, low: health < 35 },
       arms: fighting && !combat.saber ? { name: combat.locked ? 'Overheated' : combat.hot ? `${combat.weapon}: overcharged` : combat.weapon, line: 'hand', heat: combat.hot ? 0 : (combat.heat ?? 0), locked: Boolean(combat.locked), vent: combat.vent ?? null } : null,
+      // (the abilities' cooldowns, in the tiles' order: G, V, the dodge, the emote)
+      abilities: fighting ? abilitySlots.map((a) => ({ left: combat.cool?.[a.slot] ?? 0, full: combat.cools?.[a.slot] ?? 1, on: false, held: a.slot === 'power' && Boolean(combat.powers?.hold) })) : null,
     });
   });
   if (!site) return <Navigate to={id ? `/galaxy/${id}` : '/galaxy'} replace />;
@@ -713,27 +722,7 @@ export default function GalaxySurface() {
               </span>
             </div>
           )}
-          {fighting && (
-            <ul className="hud-glass surface-powers">
-              {[
-                ['G', combat.powers?.power ?? (combat.saber ? 'Push' : 'Detonator'), 'power', powerIds.power],
-                ['V', combat.powers?.second ?? (combat.saber ? 'Pull' : 'Overcharge'), 'second', powerIds.second],
-                ['X', combat.dashes != null ? `Dodge ×${combat.dashes}` : 'Dodge', 'dodge'],
-                ['B', 'Emote', 'emote'],
-              ].map(([key, name, slot, ability]) => {
-                const left = combat.cool?.[slot] ?? 0;
-                const full = combat.cools?.[slot] ?? 1;
-                return (
-                  <li key={slot} className={left > 0 ? 'surface-power is-cooling' : 'surface-power'} style={{ '--k': left > 0 ? left / full : 0 }}>
-                    <kbd>{key}</kbd>
-                    {ability && ABILITIES[ability]?.name === name && <GameIcon name={`ability:${ability}`} className="surface-game-icon" />}
-                    <span>{name}</span>
-                    {left > 0.05 && !(slot === 'power' && combat.powers?.hold) && <small>{left.toFixed(left < 10 ? 1 : 0)}</small>}
-                  </li>
-                );
-              })}
-            </ul>
-          )}
+          {fighting && <Abilities slots={abilitySlots} />}
         </div>
       </Cluster>
       {hitMark && <HitMarker key={`hit-${hitMark.n}`} kill={hitMark.kill} />}
