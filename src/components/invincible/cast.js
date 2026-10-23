@@ -16,6 +16,7 @@ export const CAST = {
   allen: { file: '/models/invincible/allen.glb', h: 2.3, rig: true },
   mauler: { file: '/models/invincible/mauler.glb', h: 2.6, rig: true },
   seismic: { file: '/models/invincible/seismic.glb', h: 1.8, rig: true },
+  flaxan: { file: '/models/invincible/flaxan.glb', h: 1.35, rig: true }, // (an elite is drawn bigger: ./world/villains.js)
   civA: { file: '/models/invincible/civ-a.glb', h: 1.75, rig: true },
   civB: { file: '/models/invincible/civ-b.glb', h: 1.66, rig: true },
   civC: { file: '/models/invincible/civ-c.glb', h: 1.72, rig: true },

@@ -76,7 +76,7 @@ export async function createInvWorld(rt, { onSlow, calm = false } = {}) {
   scene.add(hall.group);
   // who's about, the clouds, and the airliner going round
   // (the HD figures for those the cast has; the kit's people for the rest)
-  const people = await loadCast(['eve', 'debbie', 'cecil', 'allen', 'civA', 'civB', 'civC', 'mauler', 'seismic']);
+  const people = await loadCast(['eve', 'debbie', 'cecil', 'allen', 'civA', 'civB', 'civC', 'mauler', 'seismic', 'flaxan']);
   const npcs = createNpcs(scene, world, people);
   const clouds = buildClouds({ small });
   scene.add(clouds.mesh);
@@ -199,7 +199,7 @@ export async function createInvWorld(rt, { onSlow, calm = false } = {}) {
   const challenges = createChallenges(scene, world, fx.vfx);
   // what a broken tower leaves (./ruins.js; ./demolish.js says how broken)
   const ruins = createRuins(scene, { level: small ? 'low' : 'high' });
-  const villains = createVillains(scene, fx.vfx, { calm, templates: { mauler: people.mauler, seismic: people.seismic, omniman: omniT }, rim: LOOK.noon.rim });
+  const villains = createVillains(scene, fx.vfx, { calm, templates: { mauler: people.mauler, seismic: people.seismic, flaxan: people.flaxan, omniman: omniT }, rim: LOOK.noon.rim });
   // the two Guardians at a fight (./cavalryScene.js)
   const cavalry = createCavalryScene(scene, fx.vfx);
   // the missions' things (./missions.js, run by InvWorld.jsx): the bank on

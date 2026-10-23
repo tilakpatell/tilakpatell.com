@@ -1,9 +1,12 @@
 // The villains (./foes.js), drawn:
 // - the portal over the river, a whirl of purple that opens when the
 //   Flaxans come and closes when they're beaten;
-// - the Flaxans themselves, small and armoured, built on the HQ kit as
-//   Think, Mark! builds them (aiming their arms at Mark, tumbling when
-//   knocked out), and the elites, bigger, with gold on them;
+// - the Flaxans themselves, small, in white armour over teal with pale
+//   green skin and the horns along their heads, the cast's figure
+//   (../cast.js, on its own idle, hit and down clips) posed hanging in the
+//   air with an arm aimed at Mark, tumbling when knocked out; the elites
+//   bigger, the gold on them (the HQ kit's figure as Think, Mark! builds
+//   them stands in when the model hasn't loaded);
 // - the Maulers and Doc Seismic, the cast's figures (../cast.js) on their
 //   own motion-captured clips;
 // - the bolts with a trail, the cars a Mauler throws (tumbling, a trail of
@@ -53,7 +56,7 @@ function portalMaterial() {
   });
 }
 
-// templates: { mauler, seismic } as ../../../lib/three/rig's loadFigure gives
+// templates: { mauler, seismic, flaxan } as ../../../lib/three/rig's loadFigure gives
 // them (null if one didn't load: the kit's figure stands in)
 export function createVillains(scene, vfx, { calm = false, templates = {}, rim = 0.35 } = {}) {
   const group = new THREE.Group();
@@ -69,24 +72,24 @@ export function createVillains(scene, vfx, { calm = false, templates = {}, rim =
   group.add(portal);
   let open = 0;
 
-  // the Flaxans: small, armoured, purple, something glowing on their arms
-  // (an elite bigger, its armour trimmed in gold)
+  // the Flaxans as the kit stands them in: white armour, pale green skin,
+  // something glowing on their arms (an elite bigger, its armour gold)
   const mats = {
     flaxan: {
-      armour: new THREE.MeshStandardMaterial({ color: 0x4b3a78, metalness: 0.65, roughness: 0.38 }),
-      skin: new THREE.MeshStandardMaterial({ color: 0x8b8fa8, roughness: 0.65 }),
+      armour: new THREE.MeshStandardMaterial({ color: 0xd9dde2, metalness: 0.3, roughness: 0.4 }),
+      skin: new THREE.MeshStandardMaterial({ color: 0x9fc4a0, roughness: 0.65 }),
       glow: new THREE.MeshBasicMaterial({ color: hot(FLAX, 2.6), toneMapped: false }),
     },
     flaxanElite: {
       armour: new THREE.MeshStandardMaterial({ color: 0x5a3f1e, metalness: 0.8, roughness: 0.3 }),
-      skin: new THREE.MeshStandardMaterial({ color: 0x8b8fa8, roughness: 0.65 }),
+      skin: new THREE.MeshStandardMaterial({ color: 0x9fc4a0, roughness: 0.65 }),
       glow: new THREE.MeshBasicMaterial({ color: hot(0xffb84d, 2.6), toneMapped: false }),
     },
   };
   const casts = [];
   const make = {
-    flaxan: () => kitFoe(mats.flaxan, 0.74),
-    flaxanElite: () => kitFoe(mats.flaxanElite, 0.92),
+    flaxan: () => flaxanFoe(false),
+    flaxanElite: () => flaxanFoe(true),
     mauler: () => castFoe('mauler'),
     seismic: () => castFoe('seismic'),
     omniman: () => castFoe('omniman'),
@@ -109,6 +112,19 @@ export function createVillains(scene, vfx, { calm = false, templates = {}, rim =
     holder.add(h.root);
     group.add(holder);
     return { h, holder, spin: 0 };
+  }
+  // a Flaxan: the model at the kit's sizes (1.35 m, an elite 1.68), the
+  // elite's white gone a third of the way to gold
+  const GOLD = new THREE.Color(0xd9a640);
+  function flaxanFoe(elite) {
+    const t = templates.flaxan;
+    if (!t) return kitFoe(elite ? mats.flaxanElite : mats.flaxan, elite ? 0.92 : 0.74);
+    const f = figure(t, { ...CAST.flaxan, h: CAST.flaxan.h * (elite ? 0.92 / 0.74 : 1) });
+    if (elite) for (const m of f.materials) m.color?.lerp(GOLD, 0.35);
+    f.snap(POSES.hover(0));
+    group.add(f.holder);
+    casts.push(castMaterial(f.model, { rim }));
+    return { f, holder: f.holder, spin: 0, flax: true };
   }
   function castFoe(kind) {
     const t = templates[kind];
@@ -208,7 +224,7 @@ export function createVillains(scene, vfx, { calm = false, templates = {}, rim =
         const col = flax ? FLAX : 0xffd27a;
         vfx.sparks(V(e.at), { count: e.type === 'ko' ? 34 : 18, speed: 16, color: 0xffe6ff, to: col, dir: V(e.dir), spread: 0.7, life: 0.6 });
         if (e.type === 'ko') {
-          vfx.debris(V(e.at), { count: 8, speed: 12, size: 0.14, dir: V(e.dir), spread: 0.6, color: flax ? 0x4b3a78 : 0x5d7488 });
+          vfx.debris(V(e.at), { count: 8, speed: 12, size: 0.14, dir: V(e.dir), spread: 0.6, color: flax ? 0xd9dde2 : 0x5d7488 });
           vfx.flash(V(e.at), { color: flax ? 0xe7a6ff : 0xffe2b0, intensity: 25, distance: 18, life: 0.15 });
         }
         vfx.ring(V(e.at), { color: 0xffffff, from: 0.3, to: e.type === 'ko' ? 4 : 2.5, life: 0.25, normal: V(e.dir) });
@@ -257,7 +273,30 @@ export function createVillains(scene, vfx, { calm = false, templates = {}, rim =
         if (!pool[i]) pool[i] = make[kind]();
         const v = pool[i];
         v.holder.visible = true;
-        if (v.f) {
+        if (v.flax) {
+          // the model, hips at its place: facing him, hanging there, its gun
+          // arm up at him when he's in range; tumbling when knocked out
+          v.holder.position.set(e.p[0], e.p[1], e.p[2]);
+          const f = v.f;
+          if (e.state === 'ko' || e.state === 'thrown') {
+            v.spin += dt * 9;
+            v.holder.rotation.set(v.spin, v.spin * 0.6, 0);
+            if (!f.act('down', { once: true, fade: 0.1 })) f.pose(POSES.hover(t), dt, 9);
+          } else {
+            v.spin = 0;
+            pos.copy(chest).sub(v.holder.position);
+            const flat = Math.hypot(pos.x, pos.z);
+            v.holder.rotation.set(0, Math.atan2(pos.x, pos.z), 0);
+            f.body.rotation.x = Math.min(1, Math.hypot(...e.v) / 20) * 0.5; // (leaning into where it flies)
+            if (e.state === 'stagger' || e.state === 'held') f.act('hit', { once: true, fade: 0.1 });
+            else {
+              f.act('idle', { at: i * 0.29 });
+              const at = [-0.1, Math.max(-1.5, Math.min(1.5, pos.y / Math.max(1, flat))), 1];
+              f.pose(pos.length() < FIGHT.range ? { ...POSES.hover(t + i), armR: at, foreR: at } : POSES.hover(t + i), dt, 9);
+            }
+          }
+          f.tick(dt);
+        } else if (v.f) {
           v.holder.position.set(e.p[0], e.p[1] + v.f.hipHeight, e.p[2]);
           v.holder.rotation.set(0, e.yaw ?? 0, 0);
           const l = lately.get(e.id);

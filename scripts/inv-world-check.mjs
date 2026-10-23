@@ -102,6 +102,8 @@ const SHOTS = {
   wallback: { p: [65, 60, 27.4], mode: 'air', yaw: 0, pitch: -0.05 },
   rescue: { rescue: true, back: 28 },
   fight: { fight: true },
+  // the Flaxans close, through the portal at him: three and an elite (the cast's model, ../src/components/invincible/world/villains.js)
+  flaxans: { drive: [['go', [1096, 150, -411], Math.PI / 2, 'air'], ['spawn', 'flaxan', 3], ['spawn', 'flaxanElite', 1], ['put', 0, [1106, 151, -413.5]], ['put', 1, [1109, 153.5, -407.5]], ['put', 2, [1113, 149, -410]], ['put', 3, [1108, 149.5, -415.5]], ['wait', 900]], pitch: 0.08 },
   climb: { p: [0, 7600, 600], mode: 'air', yaw: Math.PI, pitch: 0.12 },
   orbit: { space: 'earth' },
   orbitnight: { space: 'earth', time: 'night' },
@@ -251,6 +253,11 @@ await page.evaluate(() => {
           sim.brawl.held = { what: 'foe', id: e.id };
           sim.keys.add('punch'); // (the punch held: let go and he throws it)
         }
+      }
+      else if (k === 'put') {
+        // (the i-th foe out and fighting at a place: for framing a few of them, not a check)
+        const e = sim.foes.foes[a];
+        if (e) Object.assign(e, { state: 'fight', p: [...b], v: [0, 0, 0] });
       }
       else if (k === 'ticks') for (let t = 0; t < a; t += 0.05) api.feed({ type: 'tick', dt: 0.05 });
     }
