@@ -32,6 +32,7 @@ export const NEAR = 70; // metres from you that work starts
 export const FAR = 380; // and how far it goes
 const SPEEDERS = new Set(['speederbike', 'landspeeder']);
 const RUN = 5.5; // m/s a courier's time allows, on foot (the run's 7.4, less the way round)
+const OPEN_FIRST = new Set(['bounty', 'salvage']); // (out on open ground first; the rest go to the world's places)
 
 // the world's foes the way a job names them
 export const FOE_NAMES = {
@@ -252,19 +253,25 @@ export function jobBoard(site, { from, home = site.land?.at ?? from, ok = () => 
     KINDS.filter((k) => k !== 'race' || speeders.length),
     rand,
   );
-  let nextSpot = 0;
-  const spots = [...named, ...open];
+  // (a gang camps and a wreck lies out on open ground; a parcel goes to a
+  // place, and a patrol walks to one: each the first free of its own sort,
+  // else of the other, a spot used once)
+  const used = new Set();
+  const take = (first, then) => {
+    const spot = [...first, ...then].find((x) => !used.has(x));
+    if (spot) used.add(spot);
+    return spot ?? null;
+  };
   const out = [];
   for (const kind of kinds) {
     if (out.length >= n) break;
-    const spot = spots[nextSpot % Math.max(1, spots.length)];
+    const spot = kind === 'race' ? null : OPEN_FIRST.has(kind) ? take(open, named) : take(named, open);
     if (kind !== 'race' && !spot) continue;
     const id = `job:${site.id ?? 'site'}:${start + out.length}`;
     const foe = foes[Math.floor(rand() * foes.length)];
     const ride = speeders[Math.floor(rand() * speeders.length)];
     const job = MAKE[kind]({ id, spot, foe, home, ok, rand, ride });
     if (!job) continue;
-    if (kind !== 'race') nextSpot++;
     out.push(job);
   }
   return out;

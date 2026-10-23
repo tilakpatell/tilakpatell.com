@@ -243,6 +243,13 @@ export default function GalaxySurface() {
   const [quest, setQuest] = useState(null); // { id, name, text, left, shoot }
   const [list, setList] = useState(false); // the things-to-do list, open
   const [jobs, setJobs] = useState([]); // free roam's board (scene.js's 'jobs' event: jobs.js's), paid each time
+  // (J opens the list at the board, under the world's quests: list is 'jobs' then)
+  const listBox = useRef(null);
+  const jobsHead = useRef(null);
+  useEffect(() => {
+    if (list === 'jobs' && listBox.current && jobsHead.current) listBox.current.scrollTop = jobsHead.current.offsetTop - 12;
+  }, [list]);
+  const openJobs = () => setList((l) => (l ? false : 'jobs'));
   const [health, setHealth] = useState(100);
   const [zone, setZone] = useState(null); // { id, name } inside somewhere
   const [fade, setFade] = useState(0); // a moment's black, going in or out
@@ -575,7 +582,8 @@ export default function GalaxySurface() {
         return;
       }
       if (e.key === 'h' || e.key === 'H') toggleGuide();
-      if (e.key === 'q' || e.key === 'Q' || e.key === 'j' || e.key === 'J') setList((l) => !l);
+      if (e.key === 'q' || e.key === 'Q') setList((l) => !l);
+      if (e.key === 'j' || e.key === 'J') setList((l) => (l ? false : 'jobs'));
       if (e.key === 'Escape') setList(false);
     };
     window.addEventListener('keydown', onKey);
@@ -676,12 +684,12 @@ export default function GalaxySurface() {
           ) : (
             <div className="surface-quest-row">
               {site.quests.length > 0 && (
-                <button type="button" className="surface-quest-open" onClick={() => setList((l) => !l)} aria-expanded={list}>
+                <button type="button" className="surface-quest-open" onClick={() => setList((l) => !l)} aria-expanded={Boolean(list)}>
                   <kbd>Q</kbd> Things to do · {done.length}/{site.quests.length}
                 </button>
               )}
               {jobs.length > 0 && (
-                <button type="button" className="surface-quest-open" onClick={() => setList((l) => !l)} aria-expanded={list}>
+                <button type="button" className="surface-quest-open" onClick={openJobs} aria-expanded={Boolean(list)}>
                   <kbd>J</kbd> Jobs · {jobs.length}
                 </button>
               )}
@@ -690,7 +698,7 @@ export default function GalaxySurface() {
         </div>
       )}
       {list && (
-        <div className="surface-list" role="dialog" aria-label="Things to do">
+        <div ref={listBox} className="surface-list" role="dialog" aria-label="Things to do">
           {/* (a way to shut it under the pointer and the thumb, beside Q and Esc) */}
           <div className="surface-list-head">
             <p className="surface-list-title">Things to do on {sys.name}</p>
@@ -713,7 +721,9 @@ export default function GalaxySurface() {
           {/* free roam's work (jobs.js): taken one at a time, paid every time, a new board once one's done */}
           {jobs.length > 0 && (
             <>
-              <p className="surface-list-title surface-list-sub">Jobs · paid every time</p>
+              <p ref={jobsHead} className="surface-list-title surface-list-sub">
+                Jobs · paid every time
+              </p>
               <ul>
                 {jobs.map((j) => (
                   <li key={j.id} data-job={j.job}>

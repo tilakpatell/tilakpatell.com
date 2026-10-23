@@ -53,6 +53,17 @@ describe('free roam’s jobs', () => {
       }
   });
 
+  it('camps a gang and leaves a wreck out on open ground, and sends a parcel or a patrol to a place', () => {
+    const { site, board } = boardOf('tatooine', { n: 5 });
+    const named = new Set(site.places.map((p) => p.at.map(Math.round).join()));
+    const where = (j) => j.steps.find((st) => st.at)?.at.join();
+    expect(named.has(where(board.find((j) => j.job === 'bounty')))).toBe(false);
+    expect(named.has(where(board.find((j) => j.job === 'salvage')))).toBe(false);
+    expect(board.find((j) => j.job === 'bounty').about).toContain('their camp');
+    expect(named.has(board.find((j) => j.job === 'courier').steps[1].at.join())).toBe(true);
+    expect(named.has(where(board.find((j) => j.job === 'patrol')))).toBe(true);
+  });
+
   it('sends the world’s own gunmen, never its bosses, never your own side', () => {
     const tatooine = siteOf('tatooine');
     const kinds = foesOf(tatooine).map((f) => f.kind);
