@@ -402,6 +402,7 @@
 }
 .surface-quest-open kbd { margin-right: 0.3rem; color: var(--accent); font: 600 0.72rem ui-monospace, monospace; }
 .surface-quest-open:hover { border-color: var(--accent); }
+.surface-quest-row { display: flex; flex-wrap: wrap; gap: 0.4rem; }
 .surface-list {
   position: absolute;
   z-index: 3;
@@ -436,6 +437,8 @@
 .surface-list b { font-size: 0.9rem; }
 .surface-list span { font-size: 0.78rem; line-height: 1.4; color: rgba(242, 239, 232, 0.75); }
 .surface-list li[data-done] b::after { content: ' ✓'; color: var(--accent); }
+.surface-list-sub { margin: 0.9rem 0 0.5rem; }
+.surface-list-pay { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.08em; color: #ffd36a; font-variant-numeric: tabular-nums; }
 
 
 /* the crosshair, while you're shooting */

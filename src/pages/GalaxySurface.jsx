@@ -53,6 +53,7 @@ import { addPoints, addWin, warNow, warVersion } from '../components/galaxy/warS
 import ModelCredits from '../components/ModelCredits';
 import EarnNote from '../components/universe/EarnNote';
 import { useEarn } from '../components/universe/useEarn';
+import { EARN } from '../components/universe/economy';
 import { createCarry, createPayLedger } from '../components/universe/earnRules';
 import { wornFiles } from '../components/rickmorty/wardrobe/looks';
 import { useLooks } from '../components/rickmorty/wardrobe/useLooks';
@@ -217,7 +218,8 @@ export default function GalaxySurface() {
   const modes = useModeMenu({ system: id, phase, named: Boolean(params.get('mode') || params.get('mission')) });
   const playMode = (card, option = null) => {
     modes.setOpen(false);
-    if (card.id !== 'free') navigate(option?.to ?? card.to);
+    // (free roam from a mission is a way out of it: the world as it is)
+    if (card.id !== 'free' || mission) navigate(option?.to ?? card.to);
   };
   const [prompt, setPrompt] = useState(null);
   const [here, setHere] = useState(null);
@@ -240,6 +242,7 @@ export default function GalaxySurface() {
   const [warCarry] = useState(createCarry);
   const [quest, setQuest] = useState(null); // { id, name, text, left, shoot }
   const [list, setList] = useState(false); // the things-to-do list, open
+  const [jobs, setJobs] = useState([]); // free roam's board (scene.js's 'jobs' event: jobs.js's), paid each time
   const [health, setHealth] = useState(100);
   const [zone, setZone] = useState(null); // { id, name } inside somewhere
   const [fade, setFade] = useState(0); // a moment's black, going in or out
@@ -416,7 +419,13 @@ export default function GalaxySurface() {
         };
         if (wasEmpty) next();
       } else if (e.type === 'quest') setQuest(e.id ? e : null);
-      else if ((e.type === 'questDone' || e.type === 'questFail') && e.id === mission?.quest?.id) {
+      else if (e.type === 'jobs') setJobs(e.list);
+      else if (e.type === 'questDone' && e.job) {
+        // (free roam's work: paid every time, and in no list of what's done)
+        pay('jobDone', e.pay ?? 1, 'galaxy');
+        setToast((t) => ({ title: e.name ?? 'Job done', text: `${e.reward ?? 'Paid.'} ${(e.pay ?? 1) * EARN.jobDone.credits} credits.`, n: (t?.n ?? 0) + 1, done: true }));
+        later('toast', 5000, () => setToast(null));
+      } else if ((e.type === 'questDone' || e.type === 'questFail') && e.id === mission?.quest?.id) {
         // (a quest mission's own quest: its card says how it went)
       } else if (e.type === 'questDone') {
         const q = site?.quests.find((x) => x.id === e.id);
@@ -566,7 +575,7 @@ export default function GalaxySurface() {
         return;
       }
       if (e.key === 'h' || e.key === 'H') toggleGuide();
-      if (e.key === 'q' || e.key === 'Q') setList((l) => !l);
+      if (e.key === 'q' || e.key === 'Q' || e.key === 'j' || e.key === 'J') setList((l) => !l);
       if (e.key === 'Escape') setList(false);
     };
     window.addEventListener('keydown', onKey);
@@ -649,7 +658,7 @@ export default function GalaxySurface() {
       {mission?.kind === 'hvv' && <HvvHud view={chase} feed={chaseFeed} mission={mission} best={best} fresh={fresh} hero={hero?.id} onSide={(k) => view.current?.input?.('side', k)} onDeploy={() => view.current?.input?.('deploy')} onAgain={() => view.current?.input?.('restart')} onBack={goUp} />}
       {mission?.kind === 'blast' && <BlastHud view={chase} feed={chaseFeed} mission={mission} best={best} fresh={fresh} onSide={(k) => view.current?.input?.('side', k)} onDeploy={(pid) => view.current?.input?.('deploy', pid)} onAgain={() => view.current?.input?.('restart')} onBack={goUp} />}
 
-      {phase !== 'landing' && site.quests.length > 0 && !((mission?.kind === 'chase' || BATTLES.has(mission?.kind)) && chase && !chase.result) && (
+      {phase !== 'landing' && (site.quests.length > 0 || jobs.length > 0) && !((mission?.kind === 'chase' || BATTLES.has(mission?.kind)) && chase && !chase.result) && (
         <div className={quest ? 'surface-quest surface-quest-on' : 'surface-quest'}>
           {quest ? (
             <>
@@ -665,9 +674,18 @@ export default function GalaxySurface() {
               )}
             </>
           ) : (
-            <button type="button" className="surface-quest-open" onClick={() => setList((l) => !l)} aria-expanded={list}>
-              <kbd>Q</kbd> Things to do · {done.length}/{site.quests.length}
-            </button>
+            <div className="surface-quest-row">
+              {site.quests.length > 0 && (
+                <button type="button" className="surface-quest-open" onClick={() => setList((l) => !l)} aria-expanded={list}>
+                  <kbd>Q</kbd> Things to do · {done.length}/{site.quests.length}
+                </button>
+              )}
+              {jobs.length > 0 && (
+                <button type="button" className="surface-quest-open" onClick={() => setList((l) => !l)} aria-expanded={list}>
+                  <kbd>J</kbd> Jobs · {jobs.length}
+                </button>
+              )}
+            </div>
           )}
         </div>
       )}
@@ -680,16 +698,35 @@ export default function GalaxySurface() {
               Close
             </button>
           </div>
-          <ul>
-            {site.quests.map((q) => (
-              <li key={q.id} data-done={done.includes(q.id) ? '' : undefined}>
-                <button type="button" onClick={() => track(q.id)} disabled={done.includes(q.id)}>
-                  <b>{q.name}</b>
-                  <span>{done.includes(q.id) ? 'Done' : q.about}</span>
-                </button>
-              </li>
-            ))}
-          </ul>
+          {site.quests.length > 0 && (
+            <ul>
+              {site.quests.map((q) => (
+                <li key={q.id} data-done={done.includes(q.id) ? '' : undefined}>
+                  <button type="button" onClick={() => track(q.id)} disabled={done.includes(q.id)}>
+                    <b>{q.name}</b>
+                    <span>{done.includes(q.id) ? 'Done' : q.about}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+          {/* free roam's work (jobs.js): taken one at a time, paid every time, a new board once one's done */}
+          {jobs.length > 0 && (
+            <>
+              <p className="surface-list-title surface-list-sub">Jobs · paid every time</p>
+              <ul>
+                {jobs.map((j) => (
+                  <li key={j.id} data-job={j.job}>
+                    <button type="button" onClick={() => track(j.id)} disabled={Boolean(quest)} title={quest ? 'Finish or drop the one you’re on first' : undefined}>
+                      <b>{j.name}</b>
+                      <span>{j.about}</span>
+                      <small className="surface-list-pay">{j.pay * EARN.jobDone.credits} credits</small>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
         </div>
       )}
       {/* the fight: the kit's cluster, as on the universe map's planets (your health; the gun in your hand and its heat, R to vent it), with the galaxy's own in its row: the stamina a Jedi's block and strikes spend (the game's: lib/combat/saber2017.js), the abilities and their cooldowns, the dodge's charges; who you're squared up to over it */}

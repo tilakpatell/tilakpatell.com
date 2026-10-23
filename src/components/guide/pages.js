@@ -164,6 +164,7 @@ export const PAGES = {
           ['G', 'Your hero’s first power: a Force push (a Jedi), a choke (Vader, Maul), lightning held (the Emperor), or a thermal detonator (anyone else)'],
           ['V', 'The second: a Force pull, a repulse, a rage or a rush (the hero’s own, as the panel says); or the overcharge: no heat and a harder shot for a while'],
           ['Q', 'Things to do'],
+          ['J', 'Jobs, in free roam: bounties, salvage, courier runs, speeder runs and patrols, paid every time (a new board once one’s done)'],
           ['Tab', 'Swap to your crewmate'],
           ['L', 'Lock on: the camera stays on the one you’re squared up to (L again lets go)'],
           ['B', 'Hold for the emote wheel (a hero from the 2017 game does its own four)'],
