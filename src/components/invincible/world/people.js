@@ -16,6 +16,7 @@ import { hot } from '../../avengers/hq/stage';
 import { POSES, figure, loadFigure } from '../../../lib/three/rig';
 import { CAST, asset } from '../cast';
 import { GUARDIANS, guardianOf } from './guardians';
+import { guardianLooks } from './guardianLooks';
 import { villainLooks } from './villainLooks';
 
 // ── one finish for the whole cast ──
@@ -288,28 +289,10 @@ const DRESS = {
   cecil: () => ({ suit: mat(0x23262d, { roughness: 0.55 }), shirt: mat(0xf3f3f0), tie: mat(0x1a1d24), shoe: mat(0x111214, { roughness: 0.3 }), skin: mat(0xd9a888), grey: mat(0x8f8b86), dark: mat(0x0d0d0f) }),
   allen: () => ({ suit: mat(0xdfe3e6, { roughness: 0.4 }), trim: mat(0x2b6b52, { roughness: 0.4 }), skin: mat(0x3e7fd4, { roughness: 0.5 }), white: mat(0xf4f4f0, { roughness: 0.2 }), dark: mat(0x0b0b10) }),
 };
-// ── the Guardians of the Globe (./guardians.js): each a body in the team's
-// tint with its trim on the gloves, boots and belt and a glowing badge on the
-// chest, until a model of their own lands (a gen3d issue each); Robot a
-// drone: a visor for a face, an aerial, no hair ──
-const guardianDress = (g) => ({ suit: mat(g.tint, { roughness: 0.5 }), trim: mat(g.trim, { roughness: 0.45 }), skin: mat(g.skin ?? 0xe0ac8a), hair: mat(g.hair ?? 0x2a1d17), dark: mat(0x1a1416), glow: new THREE.MeshBasicMaterial({ color: hot(g.trim, 1.8), toneMapped: false }) });
-STYLES.guardian = (add) => {
-  body(add, { top: 'suit', bottom: 'suit', shoe: 'trim', hand: 'trim', sleeve: 'suit' });
-  add('hips', 'trim', rbox(0.3, 0.05, 0.2, 0.012), { p: [0, 0.04, 0] }); // the belt
-  for (const el of ['elbowL', 'elbowR']) add(el, 'trim', limb(0.045, 0.12, 0.036), { p: [0, -0.24, 0] }); // the gloves
-  for (const kn of ['kneeL', 'kneeR']) add(kn, 'trim', limb(0.06, 0.22, 0.044), { p: [0, -0.44, 0] }); // the boots
-  add('chest', 'glow', ball(0.03, 12, 10), { p: [0, 0.17, 0.112], s: [1, 1, 0.5] }); // the badge
-  face(add);
-  add('head', 'hair', ball(0.094, 20, 14), { p: [0, 0.135, -0.014], s: [1.02, 0.8, 1.06] });
-};
-STYLES.robot = (add) => {
-  body(add, { top: 'suit', bottom: 'suit', shoe: 'trim', hand: 'trim', slim: false, sleeve: 'suit' });
-  add('chest', 'trim', rbox(0.3, 0.06, 0.24, 0.02), { p: [0, 0.27, 0] });
-  add('head', 'suit', ball(0.095, 22, 18), { p: [0, 0.1, 0.01], s: [0.92, 1.05, 1] });
-  add('head', 'glow', rbox(0.11, 0.03, 0.02, 0.008), { p: [0, 0.11, 0.085] }); // the visor
-  add('head', 'trim', limb(0.008, 0.12, 0.006, 6), { p: [0.05, 0.3, 0] }); // the aerial
-  add('head', 'glow', ball(0.014, 8, 6), { p: [0.05, 0.31, 0] });
-};
+// ── the Guardians of the Globe (./guardians.js): each in their own costume
+// from the show's pictures (./guardianLooks.js), until a model of their own
+// lands (a gen3d issue each) ──
+const LOOKS = guardianLooks({ body, face, ball, mat, glow: (c, k) => new THREE.MeshBasicMaterial({ color: hot(c, k), toneMapped: false }) });
 // Mars (./offworld/marsScene.js): an astronaut in a white suit with a gold visor, and the
 // host, a Martian in grey-green with the Sequids' purple on him (kit figures, each with a gen3d issue)
 DRESS.astronaut = () => ({ suit: mat(0xf2f2ee, { roughness: 0.5 }), trim: mat(0x9aa3ad, { roughness: 0.4 }), skin: mat(0xf0c4a8), hair: mat(0x2a1d17), dark: mat(0x1a1416), glow: new THREE.MeshBasicMaterial({ color: hot(0xe6b84a, 1.4), toneMapped: false }) });
@@ -328,8 +311,8 @@ STYLES.host = (add) => {
   add('head', 'glow', ball(0.05, 10, 8), { p: [0, 0.22, -0.02], s: [1.6, 0.6, 1.2] }); // one riding his crown
 };
 for (const g of GUARDIANS) {
-  DRESS[g.id] = () => guardianDress(g);
-  STYLES[g.id] = g.id === 'robot' ? STYLES.robot : STYLES.guardian;
+  DRESS[g.id] = LOOKS.dress[g.id];
+  STYLES[g.id] = LOOKS.styles[g.id];
 }
 // season two's foes (./villainLooks.js): Battle Beast and Angstrom Levy, from the show's pictures
 {
@@ -359,7 +342,7 @@ export function buildPerson(kind, seed = 0) {
     };
   const g = guardianOf(kind);
   const joints = kind === 'cecil' || kind === 'allen' || kind === 'astronaut' || kind === 'host' || kind === 'beast' || kind === 'angstrom' || g?.broad ? BROAD : SLIM;
-  const scale = { eve: 0.88, debbie: 0.88, cecil: 0.95, allen: 1.12, beast: 1.46, angstrom: 0.98 }[kind] ?? (g ? (g.broad ? 1.02 : 0.94) : 0.86 + (seed % 5) * 0.03);
+  const scale = { eve: 0.88, debbie: 0.88, cecil: 0.95, allen: 1.12, monster: 0.84, rae: 0.88, beast: 1.46, angstrom: 0.98 }[kind] ?? (g ? (g.broad ? 1.02 : 0.94) : 0.86 + (seed % 5) * 0.03);
   const h = buildHumanoid({ style: STYLES[kind] ?? STYLES.person, materials, scale, joints });
   return { h, kind, height: h.height, materials, cast: castMaterial(h.root, { rim: castRim }) };
 }

@@ -289,5 +289,14 @@
         "expires": 1791598273507
       }
     }
+  },
+  "flaxan": {
+    "acct": 3,
+    "image": "01a164f2-a67d-7481-8b45-2ebadaf5b7bd",
+    "model": "01a164f3-28ca-7567-93bb-b89aa9f816e1",
+    "rig": "01a164f4-afdc-7264-acb7-bb1915f975d8",
+    "anims": {
+      "lib": "01a164f4-ef16-7389-ad03-6af259442dd0"
+    }
   }
 }

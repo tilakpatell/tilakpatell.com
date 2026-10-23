@@ -12,6 +12,8 @@ import { SKIN, WINDOWS, towerField, towerMaterial } from './facade';
 import { BRIDGES, COAST, BEACH, RIVER, groundAt, rng } from './map';
 import { LAND } from './ground';
 import { STAGES, heightOf } from './demolish';
+import { isTenement } from './streetPlan';
+import { createStreetKit } from './streetKit';
 
 const M4 = new THREE.Matrix4();
 const Q = new THREE.Quaternion();
@@ -19,14 +21,33 @@ const S = new THREE.Vector3();
 const P = new THREE.Vector3();
 const UP = new THREE.Vector3(0, 1, 0);
 
-// instanced copies of one geometry, placed by `place(row, matrix, i)`
-function instances(group, geo, mat, rows, place, { shadow = true, color } = {}) {
-  const mesh = new THREE.InstancedMesh(geo, mat, Math.max(1, rows.length));
+// instanced copies of one geometry, placed by `place(row, matrix, i)`; a
+// `tiled` set is a mesh a square of the map `TILE` across: three culls a
+// mesh by its bounds, and one mesh over the whole suburb is in view
+// wherever you look (its 8,000 yard trees, roofs, chimneys and fences were
+// half the triangles drawn downtown, looking east). The sets spread thin
+// over the whole map stay one mesh each: tiled, they were twice the draws.
+const TILE = 1000;
+function instances(group, geo, mat, rows, place, { shadow = true, color, tiled = false } = {}) {
+  const tiles = new Map();
   rows.forEach((row, i) => {
-    mesh.setMatrixAt(i, place(row, M4, i));
-    if (color) mesh.setColorAt(i, color(row, i));
+    const m = place(row, M4, i).clone();
+    const key = tiled ? Math.floor(m.elements[12] / TILE) * 1000 + Math.floor(m.elements[14] / TILE) : 0;
+    if (!tiles.has(key)) tiles.set(key, []);
+    tiles.get(key).push([m, color?.(row, i)]);
   });
-  mesh.count = rows.length;
+  if (!tiles.size) tiles.set(0, []);
+  let mesh = null;
+  for (const list of tiles.values()) mesh = instanced(group, geo, mat, list, shadow);
+  return mesh;
+}
+function instanced(group, geo, mat, list, shadow) {
+  const mesh = new THREE.InstancedMesh(geo, mat, Math.max(1, list.length));
+  list.forEach(([m, c], i) => {
+    mesh.setMatrixAt(i, m);
+    if (c) mesh.setColorAt(i, c);
+  });
+  mesh.count = list.length;
   mesh.castShadow = shadow;
   mesh.receiveShadow = true;
   mesh.instanceMatrix.needsUpdate = true;
@@ -140,7 +161,7 @@ function houseMaterial(uniforms) {
   return m;
 }
 
-export function buildCity(world, { small = false } = {}) {
+export function buildCity(world, { small = false, tier = 'mid' } = {}) {
   const group = new THREE.Group();
   group.name = 'city';
   const uniforms = { uNight: { value: 0 }, uBurn: { value: 0 }, uTint: { value: new THREE.Vector3(1, 1, 1) } };
@@ -175,7 +196,12 @@ export function buildCity(world, { small = false } = {}) {
     const d = t.top?.d ?? t.d;
     if (t.roof === 'tank') tanks.push([t.x + (r() - 0.5) * w * 0.4, top, t.z + (r() - 0.5) * d * 0.4]);
     else if (t.roof === 'spire') spires.push([t.x, top, t.z, 0.5 + r() * 0.5, 16 + t.h * 0.12 + r() * 14]);
-    if (t.roof !== 'spire' && (t.zone === 'core' || r() < 0.35)) for (let i = 0, m = 1 + Math.floor(r() * 2); i < m; i++) units.push([t.x + (r() - 0.5) * w * 0.6, top, t.z + (r() - 0.5) * d * 0.6, 2 + r() * 3, 1.4 + r(), 2 + r() * 2]);
+    // (a tenement's roof has the kit's own units, ./streetKit.js: its rolls are made all the same, so every other roof keeps its plant)
+    if (t.roof !== 'spire' && (t.zone === 'core' || r() < 0.35))
+      for (let i = 0, m = 1 + Math.floor(r() * 2); i < m; i++) {
+        const unit = [t.x + (r() - 0.5) * w * 0.6, top, t.z + (r() - 0.5) * d * 0.6, 2 + r() * 3, 1.4 + r(), 2 + r() * 2];
+        if (!isTenement(t)) units.push(unit);
+      }
     if (t.h > 24) parapets.push([t.x, top, t.z, w, d]);
   }
   const wood = new THREE.MeshStandardMaterial({ color: 0x6b4a33, roughness: 0.85 });
@@ -235,21 +261,22 @@ export function buildCity(world, { small = false } = {}) {
   const roofColors = [0x3b3b3e, 0x4a3a30, 0x2f3a44, 0x5a4636, 0x45474a, 0x6a3b2e];
   const roofMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.9, flatShading: true });
   instances(group, hipRoof(), roofMat, houses, (h, m) => m.compose(P.set(h.x, h.h, h.z), Q.setFromAxisAngle(UP, h.yaw), S.set(h.w + 0.9, 2.2, h.d + 0.9)), {
+    tiled: true,
     color: (h) => new THREE.Color(roofColors[Math.floor(h.roof * roofColors.length)]),
   });
   // a chimney on half of them; driveways from the street to the garage
   const chimneys = houses.filter((h) => h.roof > 0.5);
-  instances(group, new THREE.BoxGeometry(0.9, 2.6, 0.9).translate(0, 1.3, 0), new THREE.MeshStandardMaterial({ color: 0x7a4a3a, roughness: 0.9 }), chimneys, (h, m) => m.makeTranslation(h.x - h.w * 0.3, h.h + 0.4, h.z));
+  instances(group, new THREE.BoxGeometry(0.9, 2.6, 0.9).translate(0, 1.3, 0), new THREE.MeshStandardMaterial({ color: 0x7a4a3a, roughness: 0.9 }), chimneys, (h, m) => m.makeTranslation(h.x - h.w * 0.3, h.h + 0.4, h.z), { tiled: true });
   const drives = houses.map((h) => {
     const s = h.yaw === 0 ? 1 : -1; // the front faces +z when yaw is 0
     const x = h.x + s * (h.w >= 12 ? h.w * 0.5 - 2.7 : h.w * 0.5 + 1.8);
     return [x, h.z + s * (h.d / 2 + 4.6), 3.2, 9.2];
   });
-  instances(group, new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2), new THREE.MeshStandardMaterial({ color: 0x8c8a85, roughness: 0.92, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }), drives, ([x, z, w, d], m) => m.makeScale(w, 1, d).setPosition(x, 0.02, z), { shadow: false });
+  instances(group, new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2), new THREE.MeshStandardMaterial({ color: 0x8c8a85, roughness: 0.92, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }), drives, ([x, z, w, d], m) => m.makeScale(w, 1, d).setPosition(x, 0.02, z), { shadow: false, tiled: true });
   // back-yard fences
   // (one fence down the middle of each block, behind the south row)
   const fences = houses.filter((h) => h.yaw === 0).map((h) => [h.x, h.z - (h.d / 2 + 9), 25.4]);
-  instances(group, new THREE.BoxGeometry(1, 1.6, 0.12).translate(0, 0.8, 0), new THREE.MeshStandardMaterial({ color: 0x8d7a62, roughness: 0.95 }), fences, ([x, z, w], m) => m.makeScale(w, 1, 1).setPosition(x, 0, z), { shadow: false });
+  instances(group, new THREE.BoxGeometry(1, 1.6, 0.12).translate(0, 0.8, 0), new THREE.MeshStandardMaterial({ color: 0x8d7a62, roughness: 0.95 }), fences, ([x, z, w], m) => m.makeScale(w, 1, 1).setPosition(x, 0, z), { shadow: false, tiled: true });
 
   // ── the trees: the parks' fuller, the suburbs' simpler (there are thousands) ──
   const parks = world.trees.filter((t) => t[3] === 0);
@@ -259,13 +286,14 @@ export function buildCity(world, { small = false } = {}) {
   const leaf = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.92, flatShading: true });
   const greens = [new THREE.Color(0x3d6a2a), new THREE.Color(0x4f7a2f), new THREE.Color(0x35602c), new THREE.Color(0x5b7d34), new THREE.Color(0x46702b)];
   const trunk = new THREE.CylinderGeometry(0.22, 0.32, 1, 4, 1, true).translate(0, 0.5, 0);
-  for (const [rows, detail] of [
-    [parks, small ? 0 : 1],
-    [yards, 0],
+  for (const [rows, detail, tiled] of [
+    [parks, small ? 0 : 1, false],
+    [yards, 0, true],
   ]) {
-    instances(group, trunk, bark, rows, ([x, z, s], m) => m.makeScale(1, s * 0.9, 1).setPosition(x, 0, z), { shadow: !small });
+    instances(group, trunk, bark, rows, ([x, z, s], m) => m.makeScale(1, s * 0.9, 1).setPosition(x, 0, z), { shadow: !small, tiled });
     instances(group, new THREE.IcosahedronGeometry(1, detail), leaf, rows, ([x, z, s], m, i) => m.compose(P.set(x, s * 1.75, z), Q.setFromAxisAngle(UP, i), S.set(s, s * (0.95 + (i % 5) * 0.06), s)), {
       shadow: !small,
+      tiled,
       color: (_, i) => greens[i % greens.length],
     });
   }
@@ -325,6 +353,32 @@ export function buildCity(world, { small = false } = {}) {
     group.add(b);
   }
 
+  // ── the street furniture and the tenements (./streetKit.js), from the Downtown City MegaKit and the Street Pack ──
+  const streets = createStreetKit(world, { tier });
+  group.add(streets.group);
+  const here = new THREE.Vector3();
+  const eye = { position: here };
+  let lastT = 0;
+  // once their far draw is in, each tenements block's box tucked under them: in from its
+  // walls and down from its roof, so it fills the ring's middle seen from above and is
+  // nowhere else (`back`: the boxes as they were, for the burnt city)
+  let tucked = false;
+  function tuck(ids, back = false) {
+    for (const id of ids) {
+      const i = index.get(`b:${id}`)?.[0];
+      const b = list[i];
+      if (b == null || towers.geometry.attributes.aHurt.getX(i) > 0) continue;
+      towers.setMatrixAt(i, M4.compose(P.set(b.x, 0, b.z), QI, back ? S.set(b.w, b.h, b.d) : S.set(b.w - 3, b.h - 1.5, b.d - 3)));
+      towers.instanceMatrix.addUpdateRange(i * 16, 16);
+    }
+    towers.instanceMatrix.needsUpdate = true;
+  }
+  streets.ready.then(() => {
+    if (!streets.stats.far) return;
+    tucked = true;
+    tuck([...streets.ids], !streets.group.visible);
+  });
+
   let blink = 0;
   // a thing's damage, drawn (./demolish.js): the facade's cracks and soot from
   // `aHurt`, the top lowered by heightOf through the bite (a top piece goes
@@ -350,6 +404,15 @@ export function buildCity(world, { small = false } = {}) {
       hurt.needsUpdate = true;
       style.needsUpdate = true;
       towers.instanceMatrix.needsUpdate = true;
+      // (a block of tenements hurt is its box again, cracks and all; mended, the tenements are back over it)
+      const id = Number(key.slice(2));
+      if (streets.ids.has(id)) {
+        if (d > 0) streets.hide(id);
+        else {
+          streets.show(id);
+          if (tucked) tuck([id]);
+        }
+      }
       return true;
     }
     if (key.startsWith('h:')) {
@@ -382,12 +445,24 @@ export function buildCity(world, { small = false } = {}) {
     // a dimension's look (./dimensions.js): every tower hurt `ruins`, the city in a tint
     setDimension({ ruins = 0, tint = null } = {}) {
       uniforms.uBurn.value = ruins;
+      // (the burnt city is the towers' boxes burnt: the tenements give way to them)
+      streets.group.visible = ruins === 0;
+      if (tucked) tuck([...streets.ids], ruins > 0);
       uniforms.uTint.value.set(...(tint ?? [1, 1, 1]));
     },
     setNight(k) {
       uniforms.uNight.value = k;
+      streets.setNight(k);
     },
-    update(t, night) {
+    streets,
+    // (`camera`: the furniture and the tenements stream round it, in the city's frame: the mirror city's is turned)
+    update(t, night, camera) {
+      if (camera && streets.group.visible) {
+        here.copy(camera.position);
+        group.worldToLocal(here);
+        streets.update(eye, Math.min(0.1, Math.max(0, t - lastT)));
+      }
+      lastT = t;
       // the beacons blink at night
       const on = night > 0.3 ? (Math.sin(t * 3) > 0 ? 1 : 0.15) : 0.7;
       if (on !== blink) {

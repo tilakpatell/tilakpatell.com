@@ -1,6 +1,6 @@
 # Credits
 
-[tilakpatell.com](https://tilakpatell.com) is built on a lot of other people's work: 261 3D models from 137 artists on Sketchfab, 179 free scans, skies and kit pieces, 61 photos, open fonts and public data. Thank you, all of you.
+[tilakpatell.com](https://tilakpatell.com) is built on a lot of other people's work: 261 3D models from 137 artists on Sketchfab, 180 free scans, skies and kit pieces, 61 photos, open fonts and public data. Thank you, all of you.
 
 > **Made something here and I've missed you, got your name wrong, or you'd like it taken down?** Message me at [tilakny@gmail.com](mailto:tilakny@gmail.com) or [LinkedIn](https://www.linkedin.com/in/tilakpatell) and I'll fix it straight away, or open a pull request.
 
@@ -350,7 +350,7 @@ Not the site’s, and not free to reuse: shown here by their owners’ leave.
 
 Public domain, so no credit is needed, but they deserve it. From [Poly Haven](https://polyhaven.com) (Amal Kumar, Charlotte Baglioni, Dario Barresi, Dimitrios Savva, Greg Zaal, GurJas Studios, James Ray Cock, Jarod Guest, Jenelle van Heerden, John Hutcheson, Jorge Camacho, Josh Dean, Kless Gyzen, MP, Rico Cilliers, Rob Tuytel, Sergej Majboroda, UM JOORIN, Ulan Cabanilla, Yann Kervran, eye-candy.xyz), [ambientCG](https://ambientcg.com), [Kenney](https://kenney.nl), whose kits make up *Portal panic* and more (38 pieces), and [Quaternius](https://quaternius.com), whose trees, rocks, flowers and street furniture stand about the planets you land on (43 pieces). The lists by game are in [`public/games/credits.json`](public/games/credits.json), [`public/hq/CREDITS.md`](public/hq/CREDITS.md) and [`public/cc0/README.md`](public/cc0/README.md).
 
-**Kits:** [Quaternius](https://quaternius.com)'s *Downtown City MegaKit* (47 models), *Farm Animals* (7 models), *Stylized Nature Pack* (20 models), *Stylized Nature MegaKit* (116 models) and *Ultimate Space Kit* (92 models), under [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/): trees, plants, rocks, space props, farm animals and a city's streets and tenements for the worlds, in [`public/kit`](public/kit) (brought in by [`scripts/kit/import.mjs`](scripts/kit/README.md)).
+**Kits:** [Quaternius](https://quaternius.com)'s *Downtown City MegaKit* (47 models), *Farm Animals* (7 models), *Stylized Nature Pack* (20 models), *Stylized Nature MegaKit* (116 models), *Ultimate Space Kit* (92 models) and *Street Pack* (8 models), under [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/): trees, plants, rocks, space props, farm animals, a city's streets and tenements and its street lamps, traffic lights and signs for the worlds, in [`public/kit`](public/kit) (brought in by [`scripts/kit/import.mjs`](scripts/kit/README.md)).
 
 <details>
 <summary>All 98 scans and skies</summary>

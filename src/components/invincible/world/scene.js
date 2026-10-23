@@ -68,7 +68,7 @@ export async function createInvWorld(rt, { onSlow, calm = false } = {}) {
   const world = buildWorld();
 
   const ground = buildGround(world, { small });
-  const city = buildCity(world, { small });
+  const city = buildCity(world, { small, tier: engine.tier });
   const landmarks = await buildLandmarks(world, city.uniforms);
   scene.add(ground.group, city.group, landmarks.group);
   // the hall's inside (./hall.js), drawn in its own zone at the plaza's place
@@ -76,7 +76,7 @@ export async function createInvWorld(rt, { onSlow, calm = false } = {}) {
   scene.add(hall.group);
   // who's about, the clouds, and the airliner going round
   // (the HD figures for those the cast has; the kit's people for the rest)
-  const people = await loadCast(['eve', 'debbie', 'cecil', 'allen', 'civA', 'civB', 'civC', 'mauler', 'seismic']);
+  const people = await loadCast(['eve', 'debbie', 'cecil', 'allen', 'civA', 'civB', 'civC', 'mauler', 'seismic', 'flaxan']);
   const npcs = createNpcs(scene, world, people);
   const clouds = buildClouds({ small });
   scene.add(clouds.mesh);
@@ -199,7 +199,7 @@ export async function createInvWorld(rt, { onSlow, calm = false } = {}) {
   const challenges = createChallenges(scene, world, fx.vfx);
   // what a broken tower leaves (./ruins.js; ./demolish.js says how broken)
   const ruins = createRuins(scene, { level: small ? 'low' : 'high' });
-  const villains = createVillains(scene, fx.vfx, { calm, templates: { mauler: people.mauler, seismic: people.seismic, omniman: omniT }, rim: LOOK.noon.rim });
+  const villains = createVillains(scene, fx.vfx, { calm, templates: { mauler: people.mauler, seismic: people.seismic, flaxan: people.flaxan, omniman: omniT }, rim: LOOK.noon.rim });
   // the two Guardians at a fight (./cavalryScene.js)
   const cavalry = createCavalryScene(scene, fx.vfx);
   // the missions' things (./missions.js, run by InvWorld.jsx): the bank on
@@ -824,7 +824,7 @@ export async function createInvWorld(rt, { onSlow, calm = false } = {}) {
     marker.update(sim.marker, t, camera, engine.size.h);
     course.update(sim.gates, sim.photo, t);
     ground.update(t);
-    city.update(t, look?.night ?? 0);
+    city.update(t, look?.night ?? 0, zone === 'city' ? camera : null);
     // coming down through the air from space, fast: the air in front of him burns
     const altNow = zone === 'space' ? altitudeOf(h) : h.p[1];
     const down = zone === 'space' ? -(h.v[0] * h.p[0] + h.v[1] * h.p[1] + h.v[2] * h.p[2]) / Math.hypot(...h.p) : -h.v[1];
@@ -912,6 +912,7 @@ export async function createInvWorld(rt, { onSlow, calm = false } = {}) {
       marker.dispose();
       course.dispose();
       ghosts.dispose();
+      city.streets.dispose();
       marsSite?.dispose();
       for (const c of casts) c.dispose();
       for (const f of Object.values(heroFigs)) if (f !== mark) f.dispose();
