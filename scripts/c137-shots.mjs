@@ -79,7 +79,7 @@ export const VIEWS = {
   beanstalk: { area: 'fantasy', at: [-414.3, 1295.5, N], cam: [0, 0.3] },
   stairs: { area: 'fantasy', at: [-409, 1288, Math.PI], cam: [0, 0.2] },
   coil: { area: 'fantasy', at: [-427.51, 1282.91, N], y: 14.5, cam: [0.6, 0.15] },
-  giants: { area: 'fantasy', at: [-423, 1279.9, N], y: 20.9, cam: [0, 0.05] },
+  giants: { area: 'fantasy', at: [-421.9, 1281.6, N], y: 20.9, cam: [0.3, 0.05] },
   microverse: { area: 'microverse', at: [-400, 1403.4, N], cam: [0, 0.3] },
   anatomy: { area: 'anatomy', at: [-400, 1508.4, N], cam: [0, 0.25] },
   needful: { area: 'needful', at: [-400, 1601.4, N], cam: [0, 0.3] },
@@ -167,11 +167,12 @@ for (const name of names.length ? names : Object.keys(VIEWS)) {
     if (!(await page.evaluate((seed) => window.__C137__.rickall(seed), game))) throw new Error(`${name}: Total Rickall wouldn't start`);
     await page.waitForFunction(() => window.__C137__.ready(), null, { timeout: 300000, polling: 250 });
   }
+  // (stood there whole, where he was sent: sent to a ledge on the ground he'd be inside its column, and pushed off it)
   if (y)
-    await page.evaluate((y) => {
+    await page.evaluate(([x, z, y]) => {
       const s = window.__C137__.sim;
-      s.m = { ...s.m, y, vy: 0, air: false };
-    }, y);
+      s.m = { ...s.m, x, z, y, vy: 0, vx: 0, vz: 0, speed: 0, air: false };
+    }, [at[0], at[1], y]);
   if (fly)
     await page.evaluate(([x, y, z, yaw]) => {
       const c = window.__C137__;
