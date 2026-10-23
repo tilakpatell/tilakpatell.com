@@ -53,6 +53,15 @@ describe('which guide a page gets', () => {
     expect(g.about).toBe(ABOUT['/c-137']);
   });
 
+  it('tips Fantasy World’s climb on C-137’s page, with the jump to climb it', () => {
+    const tip = C137.tips.find(([where]) => where === 'Fantasy World');
+    expect(tip?.[1]).toMatch(/Stair Goblins/);
+    expect(tip?.[1]).toMatch(/beanstalk/);
+    expect(tip?.[1]).toMatch(/shivers/);
+    expect(C137.tips.at(-1)[0]).toBe('Fantasy World');
+    expect(C137.keys.flatMap((g) => g.rows).some(([k, what]) => /Space/.test(k) && /jump/i.test(what))).toBe(true);
+  });
+
   it('has none for a page it doesn’t know', () => {
     expect(guideFor('/avengers/gate/deeper')).toBe(null);
     expect(guideFor('/nowhere')).toBe(null);

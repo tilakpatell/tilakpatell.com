@@ -9,9 +9,9 @@ const stepsOf = (e) => e.steps.flatMap((s) => (s.type === 'all' ? [s, ...s.steps
 const allSteps = () => EPISODES.flatMap(stepsOf);
 
 describe('the adventure’s episodes', () => {
-  it('has thirteen episodes, the first eight ready', () => {
+  it('has thirteen episodes, the first nine ready', () => {
     expect(EPISODES).toHaveLength(13);
-    expect(READY).toBe(8);
+    expect(READY).toBe(9);
     expect(new Set(EPISODES.map((e) => e.id)).size).toBe(13);
   });
 
@@ -136,5 +136,14 @@ describe('the adventure’s episodes', () => {
     expect(prime.steps[0]).toMatchObject({ type: 'task', id: 'cablestudio', place: 'cablestudio' });
     expect(prime.steps[1]).toMatchObject({ type: 'task', id: 'schwifty', place: 'schwifty' });
     expect(prime.unlocks).toEqual(['fantasy', 'froopyland', 'dim35c']);
+  });
+
+  it('goes on with Fairy tales: Fantasy World, then Froopyland', () => {
+    const fairy = EPISODES[8];
+    expect(fairy.title).toBe('Fairy tales');
+    expect(fairy.steps.map((s) => s.id)).toEqual(['fantasy', 'froopyland']);
+    expect(fairy.steps[0]).toMatchObject({ type: 'task', id: 'fantasy', place: 'fantasy' });
+    expect(fairy.steps[1]).toMatchObject({ type: 'task', id: 'froopyland', place: 'froopyland' });
+    expect(fairy.unlocks).toEqual(['citadel', 'frundles']);
   });
 });

@@ -631,7 +631,7 @@ export async function createRmWorld(rt, { looks = null, track: stages = null } =
     if (fx.pin.visible) {
       fx.pin.position.x = spot.x;
       fx.pin.position.z = spot.z;
-      fx.pin.userData.y = 2.3;
+      fx.pin.userData.y = 2.3 + (spot.y ?? 0);
     }
 
     // the camera: behind Morty at the component's yaw, chasing the cruiser,

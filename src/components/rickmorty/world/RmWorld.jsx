@@ -262,7 +262,7 @@ function goalOf(next, s, planet = null, act = null, done = []) {
     }
     // (a game under way: where it's got to, not where it began)
     const d = destinationById(to);
-    const play = d && act && gameGoal(d, { used: s.used, done, power: d.power && act(to, 'power'), find: d.find && act(to, 'find'), deal: d.deal && act(to, 'deal'), sequence: d.sequence && act(to, 'sequence') });
+    const play = d && act && gameGoal(d, { used: s.used, done, power: d.power && act(to, 'power'), find: d.find && act(to, 'find'), deal: d.deal && act(to, 'deal'), sequence: d.sequence && act(to, 'sequence'), climb: d.climb && act(to, 'climb') });
     const p = (play && PROMPT[`spot:${play}`]) || PROMPT[key];
     return p.link ?? p.spot;
   }

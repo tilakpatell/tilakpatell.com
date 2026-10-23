@@ -99,7 +99,7 @@ export const ACHIEVEMENTS = {
   squanch: { name: 'The wedding squanchers', desc: 'Raised a glass at Birdperson’s wedding and got out when the Federation came' },
   gazorp: { name: 'An exception for a Morty', desc: 'Knocked at the gate of the women’s city on Gazorpazorp' },
   birdworld: { name: 'The time of greeting', desc: 'Knocked at Birdperson’s door on Bird World' },
-  fantasy: { name: 'Mind the stairs', desc: 'Got the village’s help in Fantasy World, with a Meeseeks at the well' },
+  fantasy: { name: 'Mind the stairs', desc: 'Got past the Stair Goblins and up the beanstalk to the giants in Fantasy World' },
   microverse: { name: 'Batteries all the way down', desc: 'Met Zeep Xanflorp inside the battery of Rick’s car' },
   anatomy: { name: 'Pirates of the Pancreas', desc: 'Made it round Anatomy Park to the last ride' },
   needful: { name: 'Nothing is free', desc: 'Asked Mr. Needful what anything costs' },

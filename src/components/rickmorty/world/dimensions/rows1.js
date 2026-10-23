@@ -1,6 +1,7 @@
 // The portal gun's dial, rows 0 to 12: Customs to the Vindicators' ship (./destinations.js joins the three files; ./place.js says what each field is).
 
 import { E, N, S, W, place } from './place';
+import { BEANSTALK } from './beanstalk';
 
 export const ROWS = [
   place(0, {
@@ -203,28 +204,33 @@ export const ROWS = [
       { id: 'kingjellybean', dx: -13, dz: -6, label: 'King Jellybean', verb: 'Talk', until: 'fantasy' },
       { id: 'tavern', dx: -6, dz: -13, label: 'The Thirsty Step', verb: 'Look' },
       { id: 'giant', dx: 14, dz: -14, label: 'A giant', verb: 'Look' },
-      { id: 'goblins', dx: 9, dz: 8, label: 'Stair Goblins', verb: 'Look' },
+      { id: 'goblins', ...BEANSTALK.spots.goblins, label: 'Stair Goblins', verb: 'Look' },
+      // (up on the crown, level with the giants' cloud: its pin floats there)
+      { id: 'giants', ...BEANSTALK.spots.giants, label: 'The giants', verb: 'Talk' },
     ],
     solids: [
       { id: 'tavern', dx: -6, dz: -19, w: 11, d: 9 },
       { id: 'well', dx: 5, dz: -1.4, r: 1.1 },
-      { id: 'privy', dx: -15.6, dz: -6, w: 1.7, d: 1.7 },
-      { id: 'beanstalk', dx: -22, dz: -19, r: 1.6 },
+      { id: 'privy', dx: -15.6, dz: -3.5, w: 1.7, d: 1.7 },
       { id: 'giant', dx: 16, dz: -20, r: 2.6 },
       { id: 'cottage-a', dx: -25, dz: -6, w: 7, d: 6 },
       { id: 'cottage-b', dx: -25, dz: 8, w: 7, d: 6 },
       { id: 'cottage-c', dx: 24, dz: 4, w: 7, d: 6 },
+      // the climb (./beanstalk.js): the Stair Goblins' treads, the landings, the shoots, the crown and the stalk's tip
+      ...BEANSTALK.solids,
     ],
-    tasks: [{ id: 'fantasy', name: 'Get the village’s help', hint: 'Dial Fantasy World on the portal gun in Rick’s garage, and ask the Meeseeks at the well.' }],
+    tasks: [{ id: 'fantasy', name: 'Climb the beanstalk to the giants', hint: 'Dial Fantasy World on the portal gun in Rick’s garage and go up the Stair Goblins by the tavern while they keep still, then climb the beanstalk to the giants.' }],
+    // past the stairs that bite and up the beanstalk to the giants: the climb (../games/climb.js)
+    climb: { task: 'fantasy', top: 'beanstalk', foot: 'goblins', spot: 'giants', stairs: BEANSTALK.stairs.map(({ id, steps }) => ({ id, steps })), who: null, lost: 'The stair bit you: one that shivers is about to bite.', fell: 'A long way down: back up the stairs, then.', unlock: 'fantasy' },
+    goal: 'goblins',
     say: {
-      fmeeseeks: { who: 'A Meeseeks', text: 'I’m Mr. Meeseeks! Look at me! The village needs a hand, and I’m the hand. Ooh, there. Done!' },
+      fmeeseeks: { who: 'A Meeseeks', text: 'Existence is pain to a Meeseeks, Morty. Give me something to do.' },
+      giants: { who: 'A giant', text: 'A little man, all the way up our beanstalk. Wipe your feet. And mind the edge: it’s cloud.' },
       kingjellybean: { who: 'King Jellybean', text: 'A visitor. Welcome to my kingdom, boy. Mind the stairs. Some of them bite.' },
       tavern: { who: null, text: 'The Thirsty Step. A note on the door: no stairs inside, by order of the stairs.' },
       giant: { who: null, text: 'Dale. He fell on his sword. It’s complicated.' },
       goblins: { who: null, text: 'Stair Goblins. They want you to go up them. Don’t go up them.' },
     },
-    done: { fmeeseeks: 'fantasy' },
-    unlock: { fmeeseeks: 'fantasy' },
     kinds: ['meeseeks', 'kingjellybean', 'thirstystep', 'giant', 'stairgoblin'],
   }),
   place(5, {

@@ -148,9 +148,13 @@ describe('the adventure’s store', () => {
     expect(a.dialOpen('schwifty')).toBe(true);
     expect(a.dialOpen('fantasy')).toBe(false); // (episode 8 is built too)
     a.jump(8);
-    expect(a.dialOpen('fantasy')).toBe(true); // (past the last ready episode)
+    expect(a.dialOpen('fantasy')).toBe(true);
+    expect(a.dialOpen('froopyland')).toBe(true);
+    expect(a.dialOpen('citadel')).toBe(false); // (episode 9 is built too)
+    a.jump(9);
+    expect(a.dialOpen('citadel')).toBe(true); // (past the last ready episode)
     a.jump(99);
-    expect(a.get().episode).toBe(8);
+    expect(a.get().episode).toBe(9);
     a.reset();
     expect(a.get()).toEqual(fresh());
   });
@@ -168,7 +172,7 @@ describe('the adventure’s store', () => {
     // part-way through one, past the built ones, or on free roam: none
     at({ episode: 1, step: 1 });
     expect(createAdventure({ saves, read: none }).intro()).toBe(null);
-    at({ episode: 8, step: 0 });
+    at({ episode: 9, step: 0 });
     expect(createAdventure({ saves, read: none }).intro()).toBe(null);
     at({ episode: 1, step: 0, freeRoam: true });
     expect(createAdventure({ saves, read: none }).intro()).toBe(null);
@@ -298,10 +302,32 @@ describe('the adventure’s store', () => {
     const sung = createAdventure({ saves, read: knowing(['schwifty']) });
     expect(sung.get()).toMatchObject({ episode: 7, step: 0 });
     expect(sung.intro()).toBe(7);
-    // both: episode 8 finishes as the visit loads, with no card (episode 9 isn't built)
+    // both: episode 8 finishes as the visit loads
     at({ episode: 7, step: 0 });
     const both = createAdventure({ saves, read: knowing(['cablestudio', 'schwifty']) });
     expect(both.get()).toMatchObject({ episode: 8, step: 0 });
+    expect(both.intro()).toBe(8); // (episode 9's card: it's built now)
+  });
+
+  it('opens episode 9 for a visitor who finished episode 8 before it was built', () => {
+    const at = (data) => store.setItem(STORY_KEY, JSON.stringify({ v: 1, data: { ...fresh(), ...data } }));
+    const knowing = (tasks) => ({ tasks: () => tasks, citadel: () => [] });
+    at({ episode: 8, step: 0 });
+    expect(createAdventure({ saves, read: none }).intro()).toBe(8);
+    // Fantasy World done already: caught up to Froopyland, still episode 9's card
+    at({ episode: 8, step: 0 });
+    const climbed = createAdventure({ saves, read: knowing(['fantasy']) });
+    expect(climbed.get()).toMatchObject({ episode: 8, step: 1 });
+    expect(climbed.intro()).toBe(8);
+    // Froopyland done already, Fantasy World not: it waits at Fantasy World, with episode 9's card
+    at({ episode: 8, step: 0 });
+    const found = createAdventure({ saves, read: knowing(['froopyland']) });
+    expect(found.get()).toMatchObject({ episode: 8, step: 0 });
+    expect(found.intro()).toBe(8);
+    // both: episode 9 finishes as the visit loads, with no card (episode 10 isn't built)
+    at({ episode: 8, step: 0 });
+    const both = createAdventure({ saves, read: knowing(['fantasy', 'froopyland']) });
+    expect(both.get()).toMatchObject({ episode: 9, step: 0 });
     expect(both.intro()).toBe(null);
   });
 });
