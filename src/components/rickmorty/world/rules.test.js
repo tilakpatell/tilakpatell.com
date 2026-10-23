@@ -58,6 +58,7 @@ import {
   CLIMB,
   CEILING,
   STOOP,
+  standable,
   FLY,
   OUTSKIRTS,
   dropAt,
@@ -2520,5 +2521,36 @@ describe('the cruiser on its loadout and the skill tree (the pages hand it stats
       b = stepCruiser(b, { throttle: 1 }, 1 / 60, fast);
     }
     expect(b.speed).toBeGreaterThan(a.speed);
+  });
+});
+
+describe('a place’s ledges', () => {
+  const PLACES = new Set(DESTINATIONS.map((d) => d.id));
+  const C137 = Object.keys(AREAS).filter((id) => !PLACES.has(id));
+
+  it('keeps C-137’s reach: nothing there is a ledge, and what’s too tall to jump onto stays in the way', () => {
+    expect(C137).toEqual(expect.arrayContaining(['street', 'house', 'upstairs', 'garage', 'school', 'arcade', 'basement', 'mindblowers', 'oval', 'diner', 'wong', 'annex']));
+    for (const area of C137) {
+      for (const c of collidersIn(area)) expect(c.ledge, `${area} ${c.id}`).toBeUndefined();
+      const solid = new Set(solidIn(area).map((c) => c.id));
+      for (const c of collidersIn(area).filter((o) => o.top != null && o.top > CLIMB)) expect(solid.has(c.id), `${area} ${c.id} (${c.top} m)`).toBe(true);
+    }
+  });
+
+  it('stands Morty on a ledge however high, under the ceiling, and on anything else only within his reach', () => {
+    expect(standable('street', { top: 1.5, ledge: true })).toBe(true);
+    expect(standable('street', { top: 20.9, ledge: true })).toBe(true);
+    expect(standable('street', { top: 1.5 })).toBe(false);
+    expect(standable('street', { top: 0.45 })).toBe(true);
+    expect(standable('street', { ledge: true })).toBe(false);
+    // (in the house a 1.2 m ledge leaves him 2.8 m to the top of his hair, under a 2.6 m ceiling)
+    expect(standable('house', { top: 1.2, ledge: true })).toBe(false);
+  });
+
+  it('leaves a place with no ledges as it was', () => {
+    const froopy = collidersIn('froopyland');
+    expect(froopy.length).toBeGreaterThan(0);
+    expect(froopy.some((c) => c.ledge || c.top != null)).toBe(false);
+    expect(solidIn('froopyland').map((c) => c.id)).toEqual(froopy.map((c) => c.id));
   });
 });

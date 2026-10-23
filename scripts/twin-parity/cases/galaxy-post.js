@@ -3,7 +3,9 @@
 // bloom: the soft knee, the falloff): a lit scene with hot bits, in a boost’s
 // rush and a hit’s red edges, with the cockpit over it (a cab near the
 // camera: a glowing strip, an additive light, a pane of glass the scene
-// shows through) and without.
+// shows through) and without; and the finish both share since 2026-10-22,
+// a scene drawn sharper than the canvas and folded down, and one drawn
+// softer and brought up by FSR 1.
 import * as THREE from 'three';
 import * as PO from '../../../src/components/universe/post.js';
 import * as PN from '../../../src/components/galaxy/nodes/post.js';
@@ -41,14 +43,19 @@ const cab = () => {
   return { s, cam };
 };
 
-const make = (P, over) => ({ scene, camera, renderer }) => {
+// (the finish, universe/post.js's `upscale`: `top` the most the scene may be
+// drawn at, `sharp` the pace's share of it; over the canvas folded down, under
+// it brought up by FSR 1)
+const make = (P, over, finish = null) => ({ scene, camera, renderer }) => {
   renderer.toneMapping = THREE.NoToneMapping;
   scene.background = new THREE.Color(0.02, 0.03, 0.06);
   scene.add(new THREE.Mesh(new THREE.TorusKnotGeometry(1, 0.35, 96, 12), new THREE.MeshStandardMaterial({ color: 0x8899aa, roughness: 0.4, metalness: 0.3, emissive: new THREE.Color(1.6, 0.5, 0.1), emissiveIntensity: 0.6 })));
   scene.add(hot([6, 4, 2], [1.8, 1.2, 0.5], 0.4));
   scene.add(hot([1, 2.5, 6], [-1.6, -0.6, 1], 0.2));
   scene.add(hot([1.5, 1.45, 1.4], [0.4, 1.9, -0.6], 0.15)); // (just over the line: the knee’s)
-  const p = P.createPost(renderer, scene, camera, { bloom: LOOK.bloom });
+  const top = finish ? () => renderer.getPixelRatio() * finish.top : null;
+  const p = P.createPost(renderer, scene, camera, { bloom: LOOK.bloom, ...(finish ? { upscale: true, top, ratio: top() } : {}) });
+  if (finish) p.sharpness = finish.sharp;
   p.rush(0.7, 0.5, 0.45);
   p.hit(0.6);
   p.flare(1.3);
@@ -62,4 +69,6 @@ const make = (P, over) => ({ scene, camera, renderer }) => {
 export default {
   'galaxy-post:cab': { node: make(PN, true), classic: make(PO, true) },
   'galaxy-post:open': { node: make(PN, false), classic: make(PO, false) },
+  'galaxy-post:fold': { node: make(PN, false, { top: 1.5, sharp: 1 }), classic: make(PO, false, { top: 1.5, sharp: 1 }) },
+  'galaxy-post:fsr': { node: make(PN, false, { top: 1, sharp: 0.6 }), classic: make(PO, false, { top: 1, sharp: 0.6 }) },
 };

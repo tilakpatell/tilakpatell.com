@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { RiArrowLeftLine, RiArrowRightLine, RiCloseLine, RiEyeLine, RiFlashlightFill, RiLinkM, RiRocket2Fill, RiRouteLine, RiSearchLine, RiSpeedUpFill } from 'react-icons/ri';
+import { RiArrowLeftLine, RiArrowRightLine, RiCloseLine, RiEyeLine, RiFlashlightFill, RiLinkM, RiListUnordered, RiRadarLine, RiRocket2Fill, RiRouteLine, RiSearchLine, RiSpeedUpFill } from 'react-icons/ri';
 import { CHART_VIEWS, DESTINATIONS, DRIVES, KINDS, chartAt, chartHeading, chartRadius, destinationById, distanceTo, driveById, findDestinations, formatDistance, formatTime, goalOf, onChart, portalBetween, speedWord, tripTime, viewFor } from './nav';
 import { BELT, HOME_RADIUS, SECTORS, SUN, mapSectorOf } from './layout';
+import { placeLabels } from './chartLabels';
 import { EDGE } from './ship';
 import { FLY_PAST, JAMMED, NAV, PICK_A_SHIP, jumpState } from './words';
 import './navmap.css';
@@ -27,13 +28,25 @@ import './navmap.css';
 //
 // Drawn into <body> over everything, as a dialog: a canvas of stars under
 // an SVG of the rings, the wonders and the course, with a button per place
-// over that (Tab through, Enter to pick, Enter again to go). `where()` is
-// the scene's (scene.js), read a few times a second while it's open.
+// over that (Tab through, Enter to pick, Enter again to go). Each name sits
+// on whichever side of its dot is clear (chartLabels.js); one with no room
+// shows on a hover or a pick. `where()` is the scene's (scene.js), read a
+// few times a second while it's open.
+// On a phone it opens on the list, the places by kind, with the chart a tap
+// away: a chart a phone wide has no room for every name or every finger.
 
 const V = 1000; // the SVG's units across
 const ICONS = { hyper: RiFlashlightFill, super: RiSpeedUpFill, cruise: RiRocket2Fill };
-// names that'd sit on a neighbour's (on the universe chart): under their dot instead
-const UNDER = new Set(['maw', 'glacia']);
+// a phone's width (the stylesheet's own): the list first, the chart a tap away
+const NARROW = '(max-width: 820px)';
+const narrowNow = () => typeof window !== 'undefined' && Boolean(window.matchMedia?.(NARROW).matches);
+// a name's box on the chart: its type's size (navmap.css's .navmap-place, in
+// rem), height and side padding (.navmap-name), in pixels
+const NAME_REM = 0.7;
+const NAME_H = 18;
+const NAME_PAD = 10;
+// the order names get their sides in (the one picked shows over them anyway)
+const RANK = { world: 0, station: 1, wonder: 2 };
 const WHY = { interdicted: JAMMED.short, charging: 'Charging' };
 // the far fights (farFights.js) the scene says are on, on this chart: [{ id, x, z, label, xy }]
 const fightsOn = (now, sector, P) =>
@@ -86,7 +99,14 @@ export default function NavMap({ where, drive, onDrive, selected = null, live = 
   const [pick, setPick] = useState(() => (selected && destinationById(selected) && selected !== now?.at ? selected : null));
   const [times, setTimes] = useState({});
   const [copied, setCopied] = useState(null); // the place whose link was just copied
+  const [mode, setMode] = useState(() => (narrowNow() ? 'list' : 'chart')); // (a phone shows one: the list or the chart)
+  const [hover, setHover] = useState(null); // the place whose row in the list is under the pointer, lit on the chart
+  const [px, setPx] = useState(0); // the chart's width on the page, for laying out its names
+  const [, setFonts] = useState(0); // (bumped once the page's fonts are in: the names' widths change)
   const canvas = useRef(null);
+  const chartBox = useRef(null);
+  const side = useRef(null);
+  const ruler = useRef(null);
   const close = useRef(null);
   const search = useRef(null);
   const chart = CHART_VIEWS[view];
@@ -111,6 +131,25 @@ export default function NavMap({ where, drive, onDrive, selected = null, live = 
     ro?.observe(c);
     return () => ro?.disconnect();
   }, []);
+  // the chart's size (again on a resize, and when a phone's chart is shown)
+  useLayoutEffect(() => {
+    const el = chartBox.current;
+    if (!el) return undefined;
+    const size = () => setPx(el.clientWidth);
+    size();
+    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(size) : null;
+    ro?.observe(el);
+    let on = true;
+    document.fonts?.ready.then(() => on && setFonts((n) => n + 1));
+    return () => {
+      on = false;
+      ro?.disconnect();
+    };
+  }, []);
+  // a place picked: its card is at the top of the side panel, wherever the list was scrolled to
+  useEffect(() => {
+    side.current?.scrollTo?.({ top: 0 });
+  }, [pick]);
   // the focus in, and back where it was on the way out; Escape closes
   useEffect(() => {
     const was = document.activeElement;
@@ -196,6 +235,52 @@ export default function NavMap({ where, drive, onDrive, selected = null, live = 
   const courseAt = course ? toward(course) : null;
   const homeR = chartRadius(HOME_RADIUS, chart) * V;
 
+  // The names on the chart: each place's (the worlds' sides first, then the
+  // stations', the wonders', the front's and the far fights'; a place
+  // filtered out keeps its dot but not its name), clear of the chart's own
+  // buttons: "Home system" under the home ring, the sun, the way out along
+  // the bottom (navmap.css's .navmap-out, at 9% up)
+  const placesOn = DESTINATIONS.filter((d) => d.kind !== 'system' && d.sector === sector && !(view === 'all' && d.kind === 'station'))
+    .map((d) => ({ d, xy: P(d.at) }))
+    .filter(({ xy }) => onChart([xy[0] / V, xy[1] / V]));
+  const fights = fightsOn(now, sector, P);
+  const front = view === 'all' && now?.front ? { ...now.front, xy: P(now.front.at), name: `The front · ${now.front.name}` } : null;
+  const k = px / V; // (the SVG's units in the page's pixels)
+  const measure = (() => {
+    const el = chartBox.current;
+    const g = px && el ? (ruler.current ??= document.createElement('canvas').getContext('2d')) : null;
+    if (!g) return (t) => t.length * 6.3 + NAME_PAD;
+    g.font = `${NAME_REM * (parseFloat(getComputedStyle(document.documentElement).fontSize) || 16)}px ${getComputedStyle(el).fontFamily}`;
+    return (t) => Math.ceil(g.measureText(t).width) + NAME_PAD;
+  })();
+  const sunR = sector === 'main' && view === 'all' ? Math.max(9, chartRadius(SUN.r, chart) * V * 1.8) * k * 0.5 : 0;
+  const blocks = [
+    ...(view === 'all' ? [{ x0: px / 2 - 52, y0: (V / 2 + homeR) * k + 2, x1: px / 2 + 52, y1: (V / 2 + homeR) * k + 24 }] : []),
+    ...(sunR ? [{ x0: px / 2 - sunR, y0: px / 2 - sunR, x1: px / 2 + sunR, y1: px / 2 + sunR }] : []),
+    ...(view !== 'all' ? [{ x0: px / 2 - 95, y0: px * 0.91 - 32, x1: px / 2 + 95, y1: px * 0.91 }] : []),
+  ];
+  const spot = (id, [x, y], text, r) => ({ id, x: x * k, y: y * k, text, r: r === undefined ? undefined : r * k });
+  const labels = px
+    ? placeLabels(
+        [
+          ...placesOn
+            .filter(({ d }) => shown.has(d.id))
+            .sort((a, b) => RANK[a.d.kind] - RANK[b.d.kind])
+            .map(({ d, xy }) => spot(d.id, xy, d.name)),
+          ...(front ? [spot('front', front.xy, front.name, 14)] : []),
+          ...fights.map((f) => spot(`fight:${f.id}`, f.xy, f.label, 9)),
+          ...placesOn.filter(({ d }) => !shown.has(d.id)).map(({ d, xy }) => ({ ...spot(d.id, xy, d.name), label: false })),
+        ],
+        { size: px, measure, height: NAME_H, obstacles: blocks },
+      )
+    : null;
+  // a name's place beside its dot (the stylesheet's right-hand side till the chart's measured)
+  const nameAt = (id) => {
+    const l = labels?.get(id);
+    return l ? { '--lx': `${l.dx}px`, '--ly': `${l.dy}px` } : undefined;
+  };
+  const offAt = (id) => labels?.get(id)?.off || undefined;
+
   const verb = (d) => {
     if (!d) return '';
     if (!flying) return d.kind === 'wonder' ? PICK_A_SHIP.replace(/\.$/, '') : d.via ? `Show me the gate` : `Show me ${d.name}`;
@@ -217,8 +302,23 @@ export default function NavMap({ where, drive, onDrive, selected = null, live = 
     }, fail);
   };
 
+  // the charts to pick from: in the header, and on a phone over its chart
+  const viewChips = (
+    <div className="navmap-views" role="group" aria-label={NAV.view}>
+      {Object.values(CHART_VIEWS).map((c) => (
+        <button key={c.id} type="button" aria-pressed={view === c.id} onClick={() => setView(c.id)}>
+          {c.name}
+        </button>
+      ))}
+    </div>
+  );
+  // the list, a group a kind (headed when there's more than one)
+  const groups = KINDS.filter((g) => g.id !== 'all')
+    .map((g) => ({ ...g, places: list.filter((d) => d.kind === g.id) }))
+    .filter((g) => g.places.length);
+
   return createPortal(
-    <div className="navmap dark-scope" role="dialog" aria-modal="true" aria-labelledby="navmap-title" style={{ '--pick': picked?.color ?? '#9fd8ff' }}>
+    <div className="navmap dark-scope" role="dialog" aria-modal="true" aria-labelledby="navmap-title" data-mode={mode} style={{ '--pick': picked?.color ?? '#9fd8ff' }}>
       <div className="navmap-frame dialog">
         <header className="navmap-head">
           <div>
@@ -228,13 +328,7 @@ export default function NavMap({ where, drive, onDrive, selected = null, live = 
             </h2>
           </div>
           <div className="navmap-head-tools">
-            <div className="navmap-views" role="group" aria-label={NAV.view}>
-              {Object.values(CHART_VIEWS).map((c) => (
-                <button key={c.id} type="button" aria-pressed={view === c.id} onClick={() => setView(c.id)}>
-                  {c.name}
-                </button>
-              ))}
-            </div>
+            {viewChips}
             {live && flying && onWhole && (
               <button type="button" className="navmap-tool" onClick={onWhole} title="Pull back over the map in 3D">
                 <RiEyeLine className="h-4 w-4" aria-hidden="true" /> <span>{NAV.back}</span>
@@ -252,6 +346,15 @@ export default function NavMap({ where, drive, onDrive, selected = null, live = 
         </header>
 
         <div className="navmap-filters">
+          <div className="navmap-modes" role="group" aria-label={NAV.mode}>
+            <button type="button" aria-pressed={mode === 'list'} onClick={() => setMode('list')}>
+              <RiListUnordered className="h-4 w-4" aria-hidden="true" /> {NAV.list}
+            </button>
+            <button type="button" aria-pressed={mode === 'chart'} onClick={() => setMode('chart')}>
+              <RiRadarLine className="h-4 w-4" aria-hidden="true" /> {NAV.chart}
+            </button>
+          </div>
+          {viewChips}
           <div className="navmap-kinds" role="group" aria-label="Show">
             {KINDS.map((k) => (
               <button key={k.id} type="button" aria-pressed={kind === k.id} onClick={() => setKind(k.id)}>
@@ -281,7 +384,7 @@ export default function NavMap({ where, drive, onDrive, selected = null, live = 
         </div>
 
         <div className="navmap-body">
-          <div className="navmap-chart">
+          <div ref={chartBox} className="navmap-chart">
             <canvas ref={canvas} className="navmap-canvas" aria-hidden="true" />
             <svg className="navmap-svg" viewBox={`0 0 ${V} ${V}`} aria-hidden="true">
               <defs>
@@ -354,7 +457,7 @@ export default function NavMap({ where, drive, onDrive, selected = null, live = 
                 return onChart([x / V, y / V]) ? <rect key={p.id} x={x - 4} y={y - 4} width="8" height="8" className="navmap-pilot" transform={`rotate(45 ${x} ${y})`} /> : null;
               })}
               {/* someone's fight out in deep space (farFights.js), seen from afar: a burst, named in the list over the chart */}
-              {fightsOn(now, sector, P).map((f) => (
+              {fights.map((f) => (
                 <g key={f.id} transform={`translate(${f.xy[0]} ${f.xy[1]})`} className="navmap-fight">
                   <circle r="9" className="navmap-fight-ring" />
                   <path d="M-4 -4 L4 4 M4 -4 L-4 4" />
@@ -372,47 +475,47 @@ export default function NavMap({ where, drive, onDrive, selected = null, live = 
             <ul className="navmap-places" aria-label="Places">
               {view === 'all' && (
                 <li style={pct([V / 2, V / 2 + homeR])} data-kind="home">
-                  <button type="button" className="navmap-place navmap-homebtn" onClick={() => setView('home')}>
-                    <span className="navmap-name">Home system</span>
+                  <button type="button" className="navmap-homebtn" onClick={() => setView('home')}>
+                    Home system
                   </button>
                 </li>
               )}
-              {DESTINATIONS.map((d) => {
-                if (view === 'all' && d.kind === 'station') return null;
-                if (d.kind === 'system') return null; // (the galaxy's systems all sit at the gate: the list has them)
-                if (d.sector !== sector) return null; // (the other sector's: on its own chart)
-                const xy = P(d.at);
-                if (!onChart([xy[0] / V, xy[1] / V])) return null;
-                return (
-                  <li key={d.id} style={{ ...pct(xy), '--c': d.color }} data-dim={!shown.has(d.id) || undefined} data-kind={d.kind} data-side={view === 'all' && UNDER.has(d.id) ? 'under' : xy[0] > V * 0.8 ? 'left' : undefined}>
-                    <button
-                      type="button"
-                      className="navmap-place"
-                      aria-pressed={pick === d.id}
-                      aria-current={at(d.id) ? 'location' : undefined}
-                      aria-label={`${d.name}, ${d.type}${at(d.id) ? ', you’re here' : ''}`}
-                      onClick={() => choose(d.id)}
-                      onDoubleClick={() => go(d.id)}
-                    >
-                      <span className="navmap-dot" aria-hidden="true" />
-                      <span className="navmap-name">{d.name}</span>
-                    </button>
-                  </li>
-                );
-              })}
-              {/* the war's front: to the left of its dot (the wonders round it have their names to the right) */}
-              {view === 'all' && now?.front && (
-                <li style={{ ...pct(P(now.front.at)), '--c': '#ffb347' }} data-kind="front" data-side="left">
+              {/* (the galaxy's systems all sit at the gate, and the other sector's places are on its own chart: the list has them) */}
+              {placesOn.map(({ d, xy }) => (
+                <li key={d.id} style={{ ...pct(xy), '--c': d.color }} data-dim={!shown.has(d.id) || undefined} data-kind={d.kind} data-hover={hover === d.id || undefined} data-pick={pick === d.id || undefined}>
+                  <button
+                    type="button"
+                    className="navmap-place"
+                    aria-pressed={pick === d.id}
+                    aria-current={at(d.id) ? 'location' : undefined}
+                    aria-label={`${d.name}, ${d.type}${at(d.id) ? ', you’re here' : ''}`}
+                    onClick={() => choose(d.id)}
+                    onDoubleClick={() => go(d.id)}
+                  >
+                    <span className="navmap-dot" aria-hidden="true" />
+                    <span className="navmap-name" style={nameAt(d.id)} data-off={offAt(d.id)}>
+                      {d.name}
+                    </span>
+                  </button>
+                </li>
+              ))}
+              {/* the war's front */}
+              {front && (
+                <li style={{ ...pct(front.xy), '--c': '#ffb347' }} data-kind="front">
                   <button type="button" className="navmap-place navmap-frontbtn" disabled={!canFly} onClick={() => onTravel('front', drive)} title={canFly ? `${driveById(fallsBack ? 'super' : drive).verb} to the front` : 'Pick a ship to fly to the front'}>
-                    <span className="navmap-name">The front · {now.front.name}</span>
+                    <span className="navmap-name" style={nameAt('front')} data-off={offAt('front')}>
+                      {front.name}
+                    </span>
                   </button>
                 </li>
               )}
-              {/* the far fights' names: under their bursts (a fight at a ramp sits by its place, whose name is to the right) */}
-              {fightsOn(now, sector, P).map((f) => (
+              {/* the far fights' names, beside their bursts */}
+              {fights.map((f) => (
                 <li key={f.id} style={{ ...pct(f.xy), '--c': '#ff8a5c' }} data-kind="fight">
                   <span className="navmap-place navmap-fightname">
-                    <span className="navmap-name">{f.label}</span>
+                    <span className="navmap-name" style={nameAt(`fight:${f.id}`)} data-off={offAt(`fight:${f.id}`)}>
+                      {f.label}
+                    </span>
                   </span>
                 </li>
               ))}
@@ -430,9 +533,9 @@ export default function NavMap({ where, drive, onDrive, selected = null, live = 
             )}
           </div>
 
-          <aside className="navmap-side" aria-live="polite">
+          <aside ref={side} className="navmap-side" aria-live="polite">
             {/* the ship */}
-            <div className="navmap-status">
+            <div className="navmap-status" data-flying={flying || undefined}>
               {flying ? (
                 <>
                   <p className="navmap-kicker">Your ship</p>
@@ -508,28 +611,44 @@ export default function NavMap({ where, drive, onDrive, selected = null, live = 
               </div>
             ) : (
               <div className="navmap-list-box">
-                <p className="navmap-kicker">{list.length === DESTINATIONS.length ? 'Every place' : `${list.length} ${list.length === 1 ? 'place' : 'places'}`}</p>
+                <p className="navmap-tap">{NAV.tap}</p>
+                {list.length !== DESTINATIONS.length && <p className="navmap-kicker">{`${list.length} ${list.length === 1 ? 'place' : 'places'}`}</p>}
                 {list.length ? (
-                  <ul className="navmap-list">
-                    {list.map((d) => (
-                      <li key={d.id}>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setPick(d.id);
-                            if (d.kind === 'station' && view !== 'home') setView('home');
-                            else if (d.kind !== 'station') setView(viewFor(d.sector));
-                          }}
-                          style={{ '--c': d.color }}
-                          aria-current={at(d.id) ? 'location' : undefined}
-                        >
-                          <span className="navmap-dot" aria-hidden="true" />
-                          <span className="navmap-list-name">{d.name}</span>
-                          <span className="navmap-list-meta">{at(d.id) ? 'Here' : flying ? formatDistance(distanceTo(now.ship, d.id)) : d.type}</span>
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
+                  groups.map((g) => (
+                    <section key={g.id} className="navmap-group" aria-label={groups.length > 1 ? g.name : undefined}>
+                      {groups.length > 1 && (
+                        <h3 className="navmap-group-name">
+                          {g.name} <span>{g.places.length}</span>
+                        </h3>
+                      )}
+                      <ul className="navmap-list">
+                        {g.places.map((d) => (
+                          <li key={d.id}>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setPick(d.id);
+                                setHover(null);
+                                if (d.kind === 'station' && view !== 'home') setView('home');
+                                else if (d.kind !== 'station') setView(viewFor(d.sector));
+                              }}
+                              onPointerEnter={() => setHover(d.id)}
+                              onPointerLeave={() => setHover(null)}
+                              style={{ '--c': d.color }}
+                              aria-current={at(d.id) ? 'location' : undefined}
+                            >
+                              <span className="navmap-dot" aria-hidden="true" />
+                              <span className="navmap-list-name">
+                                {d.name}
+                                {flying && <span className="navmap-list-type">{d.type}</span>}
+                              </span>
+                              <span className="navmap-list-meta">{at(d.id) ? 'Here' : flying ? formatDistance(distanceTo(now.ship, d.id)) : d.type}</span>
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    </section>
+                  ))
                 ) : (
                   <p className="navmap-meta">Nothing by that name. Try a world (Marvel), a page (Projects) or a kind of thing (nebula).</p>
                 )}

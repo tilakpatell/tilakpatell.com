@@ -301,8 +301,10 @@ export function createRuntime({ makeBackend, loop: makeLoop = createLoop, input,
 
   // the sharpness to draw a module at: the quality's, under the module's own
   // cap (and without the pace's scale for one that softens through its own
-  // passes, module.js's `sharpness: 'own'`: its canvas keeps its size)
-  const ratioFor = (mod) => (quality.ratioUnder ? quality.ratioUnder(mod?.ratio, { unscaled: mod?.sharpness === 'own' }) : quality.ratio);
+  // passes, module.js's `sharpness: 'own'`: its canvas keeps its size; and
+  // at the screen's own pixels for one that supersamples inside them,
+  // `canvas: 'screen'`)
+  const ratioFor = (mod) => (quality.ratioUnder ? quality.ratioUnder(mod?.ratio, { unscaled: mod?.sharpness === 'own', screen: mod?.canvas === 'screen' }) : quality.ratio);
 
   // (a module that says `antialias` has the canvas multisampled or not as
   // it says, on the classic kind: Middle-earth's stages drew on canvases of
@@ -446,7 +448,10 @@ export function createRuntime({ makeBackend, loop: makeLoop = createLoop, input,
     // (`calibrate: false`, the QA scripts' ?calibrate=off: no walk, the world
     // drawn at its sharpest step, so a measured run is the same on any chip)
     if (!gfx?.renderer || !calibrating || mod.calibrate === false || !quality.setLevel) return;
-    const key = calibrationKey(gfx.renderer, mod.id, gfx.size.w, gfx.size.h);
+    // (kept under the module's id, or the name it calibrates as: a new one
+    // when its picture is drawn another way, so a level kept from the old
+    // way, which only ever steps down, isn't held over the new)
+    const key = calibrationKey(gfx.renderer, mod.calibrateAs ?? mod.id, gfx.size.w, gfx.size.h);
     const kept = recall(key);
     const setLevel = (l) => {
       quality.setLevel(l);

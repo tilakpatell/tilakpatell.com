@@ -69,13 +69,36 @@
 // five reads, nothing in the middle third where the ship is, so the eye
 // stays on it. The soft edge goes at pace step 3 with the aberration.
 
+//
+// And a finish of its own for a scene that draws its sharpness itself (the
+// universe map's: createPost's `upscale`, off by default, so the galaxy's
+// picture is as it was). The scene says how sharp it could be drawn at
+// most (`top`: the budget's least and the visitor's render resolution, over
+// a canvas of the screen's own pixels, module.js's `canvas: 'screen'`), and
+// the pace's steps come off that. Sharper than the canvas, the last pass
+// folds it down as it reads it. Softer, the grade is worked out at the
+// scene's size into an 8-bit picture and brought up to the canvas by FSR 1
+// (AMD's FidelityFX Super Resolution, GPUOpen, MIT): EASU, a Lanczos kernel
+// stretched along the edge it finds, so edges come up as edges rather than
+// stairs, and RCAS, a sharpen limited by each pixel's own contrast, which
+// gives back what the stretch soft-focused without ringing; then the
+// dither again, as the canvas is 8 bits too. Its multisampling follows the
+// sharpness it's drawn at (samplesAt): none where the pixels are too small
+// for a stair to show, two, then four as they grow, since a softer picture
+// brought up shows its stairs bigger. maxSamples caps it (the visitor's
+// video settings), and glowing(on) takes the bloom off and back.
+
 import * as THREE from 'three';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
+import { FullScreenQuad } from 'three/examples/jsm/postprocessing/Pass.js';
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 import { LOOK } from './look';
 import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
 import { blueNoiseTexture } from '../../lib/three/noise';
+import { guardOf } from '../../lib/three/frameGuard';
+import { RCAS_STOPS, drawnRatio, rcasStops, samplesAt, upscaling } from '../../lib/three/finish';
+import { precompile } from '../../lib/three/renderer';
 
 export const LIGHT = new THREE.Vector3(-0.6, 0.62, 0.48).normalize(); // the key light, upper left
 export const FILL = new THREE.Vector3(0.7, -0.4, -0.3).normalize();
@@ -126,6 +149,175 @@ export const toe = (l, lo, hi) => (hi > 0 ? l * smooth(lo, hi, l) : l);
 export const edgeWeight = ([u, v], aspect) => smooth(0.55, 1, Math.hypot((u - 0.5) * aspect, v - 0.5) / (0.5 * Math.hypot(aspect, 1)));
 
 export const aberrationFor = ({ rush = 0, hit = 0, tier = 'high' } = {}) => (tier === 'low' ? 0 : 0.0006 + 0.0054 * rush + 0.0034 * hit);
+
+// The finish's numbers (`upscale`): lib/three/finish.js, shared with the
+// galaxy's node twin, which can't reach this file's GLSL
+export { RCAS_STOPS, drawnRatio, rcasStops, samplesAt, upscaling } from '../../lib/three/finish';
+
+// EASU (FSR 1's edge-adaptive spatial upsampling), from three r186's
+// FSR1Node (examples/jsm/tsl/display), itself after GPUOpen's ffx_fsr1.h:
+// twelve texels round the pixel, the way the edge runs through them read
+// from their luma, and an approximate Lanczos 2 stretched along it and
+// narrowed across it, clamped to the nearest four so it never rings.
+// Read with texelFetch at the picture's own texels (8 bits, sRGB, the
+// perceptual space it's made for).
+const EASU = `
+uniform sampler2D tDiffuse;
+uniform vec2 uIn;
+varying vec2 vUv;
+vec3 tap(ivec2 p) { return texelFetch(tDiffuse, clamp(p, ivec2(0), ivec2(uIn) - 1), 0).rgb; }
+float lumaOf(vec3 s) { return s.r * 0.5 + s.g + s.b * 0.5; }
+// (one of the four bilinear quadrants: a above, b left, c the middle, d right, e below)
+void edge(inout vec2 dir, inout float len, float w, float a, float b, float c, float d, float e) {
+  float dirX = d - b;
+  float lenX = max(abs(d - c), abs(c - b));
+  float sX = clamp(abs(dirX) / max(lenX, 1.0 / 65536.0), 0.0, 1.0);
+  dir.x += dirX * w;
+  len += sX * sX * w;
+  float dirY = e - a;
+  float lenY = max(abs(e - c), abs(c - a));
+  float sY = clamp(abs(dirY) / max(lenY, 1.0 / 65536.0), 0.0, 1.0);
+  dir.y += dirY * w;
+  len += sY * sY * w;
+}
+void lanczos(inout vec3 sum, inout float total, vec2 off, vec2 dir, vec2 len2, float lob, float clp, vec3 c) {
+  vec2 v = vec2(off.x * dir.x + off.y * dir.y, -off.x * dir.y + off.y * dir.x) * len2;
+  float d2 = min(dot(v, v), clp);
+  float wB = 0.4 * d2 - 1.0;
+  float wA = lob * d2 - 1.0;
+  float w = (25.0 / 16.0 * wB * wB - (25.0 / 16.0 - 1.0)) * (wA * wA);
+  sum += c * w;
+  total += w;
+}
+void main() {
+  vec2 pp = vUv * uIn - 0.5;
+  vec2 fp = floor(pp);
+  vec2 f = pp - fp;
+  ivec2 i = ivec2(fp);
+  //     b c
+  //   e f g h
+  //   i j k l
+  //     n o
+  vec3 sB = tap(i + ivec2(0, -1)), sC = tap(i + ivec2(1, -1));
+  vec3 sE = tap(i + ivec2(-1, 0)), sF = tap(i), sG = tap(i + ivec2(1, 0)), sH = tap(i + ivec2(2, 0));
+  vec3 sI = tap(i + ivec2(-1, 1)), sJ = tap(i + ivec2(0, 1)), sK = tap(i + ivec2(1, 1)), sL = tap(i + ivec2(2, 1));
+  vec3 sN = tap(i + ivec2(0, 2)), sO = tap(i + ivec2(1, 2));
+  float bL = lumaOf(sB), cL = lumaOf(sC), eL = lumaOf(sE), fL = lumaOf(sF), gL = lumaOf(sG), hL = lumaOf(sH);
+  float iL = lumaOf(sI), jL = lumaOf(sJ), kL = lumaOf(sK), lL = lumaOf(sL), nL = lumaOf(sN), oL = lumaOf(sO);
+  vec2 dir = vec2(0.0);
+  float len = 0.0;
+  edge(dir, len, (1.0 - f.x) * (1.0 - f.y), bL, eL, fL, gL, jL);
+  edge(dir, len, f.x * (1.0 - f.y), cL, fL, gL, hL, kL);
+  edge(dir, len, (1.0 - f.x) * f.y, fL, iL, jL, kL, nL);
+  edge(dir, len, f.x * f.y, gL, jL, kL, lL, oL);
+  // (no edge to speak of: along x)
+  float dirSq = dot(dir, dir);
+  bool flat_ = dirSq < 1.0 / 32768.0;
+  dir.x = flat_ ? 1.0 : dir.x;
+  dir *= flat_ ? 1.0 : inversesqrt(max(dirSq, 1.0 / 32768.0));
+  len = len * 0.5;
+  len *= len;
+  // (stretched along the edge, by up to the diagonal's √2; narrowed across it)
+  float stretch = dot(dir, dir) / max(abs(dir.x), abs(dir.y));
+  vec2 len2 = vec2(1.0 + (stretch - 1.0) * len, 1.0 - 0.5 * len);
+  // (the negative lobe: strong where it's flat, less on an edge)
+  float lob = 0.5 + (1.0 / 4.0 - 0.04 - 0.5) * len;
+  float clp = 1.0 / lob;
+  vec3 sum = vec3(0.0);
+  float total = 0.0;
+  lanczos(sum, total, vec2(0.0, -1.0) - f, dir, len2, lob, clp, sB);
+  lanczos(sum, total, vec2(1.0, -1.0) - f, dir, len2, lob, clp, sC);
+  lanczos(sum, total, vec2(-1.0, 0.0) - f, dir, len2, lob, clp, sE);
+  lanczos(sum, total, vec2(0.0, 0.0) - f, dir, len2, lob, clp, sF);
+  lanczos(sum, total, vec2(1.0, 0.0) - f, dir, len2, lob, clp, sG);
+  lanczos(sum, total, vec2(2.0, 0.0) - f, dir, len2, lob, clp, sH);
+  lanczos(sum, total, vec2(-1.0, 1.0) - f, dir, len2, lob, clp, sI);
+  lanczos(sum, total, vec2(0.0, 1.0) - f, dir, len2, lob, clp, sJ);
+  lanczos(sum, total, vec2(1.0, 1.0) - f, dir, len2, lob, clp, sK);
+  lanczos(sum, total, vec2(2.0, 1.0) - f, dir, len2, lob, clp, sL);
+  lanczos(sum, total, vec2(0.0, 2.0) - f, dir, len2, lob, clp, sN);
+  lanczos(sum, total, vec2(1.0, 2.0) - f, dir, len2, lob, clp, sO);
+  vec3 lo = min(min(sF, sG), min(sJ, sK));
+  vec3 hi = max(max(sF, sG), max(sJ, sK));
+  gl_FragColor = vec4(clamp(sum / max(total, 1e-5), lo, hi), 1.0);
+}`;
+
+// RCAS (FSR 1's robust contrast-adaptive sharpening) over EASU's picture,
+// at the canvas's own pixels: the four round a pixel weighed against it by
+// as much as the pixel's own contrast can take without clipping, so a hard
+// edge isn't haloed and a flat sky isn't made noisy. The dither after it,
+// as the grade's: the canvas is 8 bits. (Its divisions are kept off zero:
+// space is mostly black, and 0/0 there would be a NaN.)
+const RCAS = `
+uniform sampler2D tDiffuse;
+uniform vec2 uIn;
+uniform float uSharp;
+uniform sampler2D tNoise;
+uniform float uNoiseSize;
+varying vec2 vUv;
+vec3 at(ivec2 p) { return texelFetch(tDiffuse, clamp(p, ivec2(0), ivec2(uIn) - 1), 0).rgb; }
+void main() {
+  ivec2 p = ivec2(gl_FragCoord.xy);
+  vec3 e = at(p);
+  vec3 b = at(p + ivec2(0, -1));
+  vec3 d = at(p + ivec2(-1, 0));
+  vec3 f = at(p + ivec2(1, 0));
+  vec3 h = at(p + ivec2(0, 1));
+  vec3 mn4 = min(min(b, d), min(f, h));
+  vec3 mx4 = max(max(b, d), max(f, h));
+  vec3 hitMin = min(mn4, e) / max(4.0 * mx4, vec3(1e-5));
+  vec3 hitMax = (1.0 - max(mx4, e)) / min(4.0 * mn4 - 4.0, vec3(-1e-5));
+  vec3 lobeRGB = max(-hitMin, hitMax);
+  float lobe = max(-(0.25 - 1.0 / 16.0), min(max(lobeRGB.r, max(lobeRGB.g, lobeRGB.b)), 0.0)) * uSharp;
+  vec3 c = (lobe * (b + d + f + h) + e) / (4.0 * lobe + 1.0);
+  c += (texture2D(tNoise, (gl_FragCoord.xy + vec2(5.0, 11.0)) / uNoiseSize).r - 0.5) / 255.0;
+  gl_FragColor = vec4(clamp(c, 0.0, 1.0), 1.0);
+}`;
+
+const QUAD_VERT = 'varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }';
+
+// The last pass, which with an upscale to do (`up`, set each frame) works
+// the grade out into an 8-bit picture at the scene's size and brings that
+// up to the canvas through EASU and RCAS; without one it's the grade, as
+// ever. Its two materials are its own (easu, rcas), so the shaders made
+// before the first frame (lib/three/renderer's precompilePasses) are these too.
+class FinishPass extends ShaderPass {
+  constructor(shader) {
+    super(shader);
+    this.up = null; // { graded, wide }: the grade's picture and EASU's, while bringing up
+    this.easu = new THREE.ShaderMaterial({ uniforms: { tDiffuse: { value: null }, uIn: { value: new THREE.Vector2(1, 1) } }, vertexShader: QUAD_VERT, fragmentShader: EASU, depthTest: false, depthWrite: false });
+    this.rcas = new THREE.ShaderMaterial({
+      uniforms: { tDiffuse: { value: null }, uIn: { value: new THREE.Vector2(1, 1) }, uSharp: { value: 2 ** -RCAS_STOPS }, tNoise: { value: null }, uNoiseSize: { value: 64 } },
+      vertexShader: QUAD_VERT,
+      fragmentShader: RCAS,
+      depthTest: false,
+      depthWrite: false,
+    });
+    this.quad = new FullScreenQuad(this.easu);
+  }
+
+  render(renderer, writeBuffer, readBuffer, dt, mask) {
+    const up = this.up;
+    if (!up) return super.render(renderer, writeBuffer, readBuffer, dt, mask);
+    const toScreen = this.renderToScreen;
+    this.renderToScreen = false;
+    super.render(renderer, up.graded, readBuffer, dt, mask);
+    this.renderToScreen = toScreen;
+    this.easu.uniforms.tDiffuse.value = up.graded.texture;
+    this.easu.uniforms.uIn.value.set(up.graded.width, up.graded.height);
+    this.quad.material = this.easu;
+    renderer.setRenderTarget(up.wide);
+    this.quad.render(renderer);
+    this.rcas.uniforms.tDiffuse.value = up.wide.texture;
+    this.rcas.uniforms.uIn.value.set(up.wide.width, up.wide.height);
+    this.quad.material = this.rcas;
+    renderer.setRenderTarget(toScreen ? null : writeBuffer);
+    this.quad.render(renderer);
+  }
+}
+
+// an 8-bit picture the finish brings up (texelFetch reads it, so no filtering)
+const picture = () => new THREE.WebGLRenderTarget(1, 1, { type: THREE.UnsignedByteType, depthBuffer: false, minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, generateMipmaps: false });
 
 // NaN and infinity both have every exponent bit set; tested on the bits,
 // since a compiler allowed fast maths may drop isnan(). The boolean mix()
@@ -310,13 +502,18 @@ const FINAL = {
 // scales it by) and cap (the bloom's first level's long side, at most).
 // ratio: the most the scene will draw at, where it isn't the renderer's
 // now (a world made on the runtime's renderer while the one before it
-// still draws there, at that world's ratio)
-export function createPost(renderer, scene, camera, { small = false, bloom: look = null, ratio = renderer.getPixelRatio() } = {}) {
+// still draws there, at that world's ratio). upscale: the finish above
+// (FSR 1 up to the canvas, the multisampling by the sharpness drawn at),
+// with top() the most the scene may be drawn at, the canvas's own ratio
+// where it gives none.
+export function createPost(renderer, scene, camera, { small = false, bloom: look = null, ratio = renderer.getPixelRatio(), upscale = false, top = null } = {}) {
   // multisampled below a pixel ratio of about 2; at 2 the pixels are too
   // small for jagged edges to show, and on a half-float target four samples
   // a pixel cost more than the rest of the frame put together. (With its
-  // depth, for the black hole's lens to tell what's in front of it.)
-  const samples = ratio >= 1.75 ? 0 : small ? 2 : 4;
+  // depth, for the black hole's lens to tell what's in front of it.) With
+  // the finish, by the sharpness it's drawn at, as that moves (samplesAt).
+  let samplesCap = Infinity;
+  const samples = upscale ? samplesAt(ratio, { small }) : ratio >= 1.75 ? 0 : small ? 2 : 4;
   const target = new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType, samples, depthTexture: new THREE.DepthTexture(1, 1) });
   const composer = new EffectComposer(renderer, target);
   const main = new RenderPass(scene, camera);
@@ -346,12 +543,39 @@ export function createPost(renderer, scene, camera, { small = false, bloom: look
     bright.needsUpdate = true;
   }
   composer.addPass(bloom);
-  const grade = new ShaderPass(FINAL);
+  const grade = upscale ? new FinishPass(FINAL) : new ShaderPass(FINAL);
   composer.addPass(grade);
   // (a smaller tile on a small screen: made once, in a few ms rather than tens)
   const noiseSize = small ? 32 : 64;
   grade.uniforms.tNoise.value = blueNoiseTexture(noiseSize, 1);
   grade.uniforms.uNoiseSize.value = noiseSize;
+  if (upscale) {
+    grade.rcas.uniforms.tNoise.value = grade.uniforms.tNoise.value;
+    grade.rcas.uniforms.uNoiseSize.value = noiseSize;
+  }
+  // (the finish's buffers are the frame's, whatever their size against the
+  // canvas's, to the renderer's frame guard: what isn't ready yet is left out
+  // of the frame and readied behind it, as it is for a composer the canvas's
+  // size, rather than made in the middle of a frame drawn sharper or softer)
+  const unframe = upscale ? (guardOf(renderer)?.frames((t) => t === composer.renderTarget1 || t === composer.renderTarget2) ?? null) : null;
+  // the finish's two pictures, made the first time it brings one up
+  let up = null;
+  const dropUp = () => {
+    up?.graded.dispose();
+    up?.wide.dispose();
+    up = null;
+    grade.up = null;
+  };
+  const most = () => (upscale && top ? top() : renderer.getPixelRatio());
+  const drawnAt = (full) => (upscale ? drawnRatio(most(), sharp) : Math.min(full, Math.max(SOFTEST, full * sharp)));
+  // (the composer's two buffers sampled anew: a buffer made again, as a resize makes it)
+  const resample = (n) => {
+    if (composer.renderTarget1.samples === n) return;
+    for (const t of [composer.renderTarget1, composer.renderTarget2]) {
+      t.samples = n;
+      t.dispose();
+    }
+  };
   let frame = 0;
   let level = 0; // lib/three/pace's step
   let aberrationWant = 0;
@@ -361,7 +585,7 @@ export function createPost(renderer, scene, camera, { small = false, bloom: look
   let on = true;
   let glow = true; // bloom, until lite() takes it off
   let sharp = 1; // a share of the renderer's pixel ratio the passes are drawn at
-  const at = { w: 0, h: 0, ratio: 0 };
+  const at = { w: 0, h: 0, ratio: 0, full: 0 };
   return {
     get on() {
       return on;
@@ -376,7 +600,7 @@ export function createPost(renderer, scene, camera, { small = false, bloom: look
     // by the pace (for what's sized in the page's own pixels, like a dither)
     get ratio() {
       const full = renderer.getPixelRatio();
-      return on ? Math.min(full, Math.max(SOFTEST, full * sharp)) : full;
+      return on ? drawnAt(full) : full;
     },
     // how sharp to draw, 0…1 of the renderer's pixel ratio (lib/three/pace)
     get sharpness() {
@@ -400,9 +624,12 @@ export function createPost(renderer, scene, camera, { small = false, bloom: look
         return;
       }
       const full = renderer.getPixelRatio();
-      const ratio = Math.min(full, Math.max(SOFTEST, full * sharp));
-      if (w !== at.w || h !== at.h || ratio !== at.ratio) {
-        Object.assign(at, { w, h, ratio });
+      const ratio = drawnAt(full);
+      if (w !== at.w || h !== at.h || ratio !== at.ratio || full !== at.full) {
+        Object.assign(at, { w, h, ratio, full });
+        // (the finish's multisampling by the sharpness drawn at, before the
+        // buffers are sized: made again either way)
+        if (upscale) resample(samplesAt(ratio, { small, cap: samplesCap }));
         composer.setPixelRatio(ratio);
         composer.setSize(w, h);
         // the glow is a blur: worked out at the page's own pixels, not the
@@ -413,6 +640,18 @@ export function createPost(renderer, scene, camera, { small = false, bloom: look
         if (knee) bright.uniforms.uStep.value.set(0.25 / bw, 0.25 / bh);
         grade.uniforms.uAspect.value = w / h;
         grade.uniforms.uTexel.value.set(1 / Math.max(1, w * ratio), 1 / Math.max(1, h * ratio));
+        // brought up to the canvas (FSR 1) when it's sharper than the scene:
+        // the grade's picture at the scene's size, EASU's at the canvas's
+        if (upscale && upscaling(ratio, full)) {
+          up ??= { graded: picture(), wide: picture() };
+          const read = composer.readBuffer;
+          up.graded.setSize(Math.max(1, Math.round(read.width)), Math.max(1, Math.round(read.height)));
+          const px = renderer.getDrawingBufferSize(new THREE.Vector2());
+          up.wide.setSize(Math.max(1, px.x), Math.max(1, px.y));
+          // (sharpened as hard as it was brought up: lib/three/finish's rcasStops)
+          grade.rcas.uniforms.uSharp.value = 2 ** -rcasStops(ratio / full);
+          grade.up = up;
+        } else if (upscale) grade.up = null;
       }
       // the scene draws into the composer's read buffer, and the last pass reads it there
       grade.uniforms.tDepth.value = composer.readBuffer.depthTexture;
@@ -552,6 +791,7 @@ export function createPost(renderer, scene, camera, { small = false, bloom: look
       if (!on) return;
       on = false;
       composer.dispose();
+      dropUp();
     },
     // a lighter post, short of none: the bloom goes (its blur is most of the
     // post's cost) and the grade stays, so the picture keeps its tone map and
@@ -560,11 +800,48 @@ export function createPost(renderer, scene, camera, { small = false, bloom: look
       glow = false;
       bloom.enabled = false;
     },
+    // the bloom off and back on (the visitor's video settings); lite() is
+    // this, off
+    glowing(want) {
+      glow = Boolean(want);
+      bloom.enabled = glow;
+      bloom.strength = BLOOM.strength;
+    },
+    // the most samples a pixel the finish multisamples with (the visitor's
+    // video settings; Infinity: as samplesAt has it), taken at the next frame
+    maxSamples(n) {
+      const cap = Number.isFinite(n) ? Math.max(0, n) : Infinity;
+      if (cap === samplesCap) return;
+      samplesCap = cap;
+      at.ratio = 0;
+    },
+    // the finish's shaders made before the first frame, as the composer's
+    // are (lib/three/renderer's precompilePasses makes them for the canvas):
+    // the grade into its 8-bit picture and EASU into its own, which the
+    // renderer makes apart from the ones that draw to the canvas
+    precompileFinish(cam = camera) {
+      if (!upscale) return Promise.resolve();
+      // (a position and a uv, no normal, as three's full-screen quad: whether
+      // a mesh has normals is part of its shader)
+      const quad = new THREE.PlaneGeometry(2, 2);
+      quad.deleteAttribute('normal');
+      const stage = new THREE.Scene();
+      stage.add(new THREE.Mesh(quad, grade.material), new THREE.Mesh(quad, grade.easu));
+      return Promise.resolve(precompile(renderer, stage, cam, stage, composer.readBuffer)).finally(() => quad.dispose());
+    },
+    // (for a check: whether the last frame was brought up, and its samples)
+    get finish() {
+      return { up: Boolean(grade.up), samples: composer.renderTarget1.samples, cap: samplesCap };
+    },
     dispose() {
       composer.dispose();
       bloom.dispose();
       grade.material.dispose();
+      grade.easu?.dispose();
+      grade.rcas?.dispose();
       grade.uniforms.tNoise.value?.dispose();
+      dropUp();
+      unframe?.();
     },
   };
 }

@@ -3,15 +3,16 @@
 // piece of a collect not yet found, the Microverse's cells or its console
 // by whether Morty's carrying one, the next Jerry not yet talked to, a thing
 // in the shop found clean to take or else the next not yet looked over, the
-// control booth till the countdown's started and then the next set on. Pure
+// control booth till the countdown's started and then the next set on, the
+// stairs' foot till Morty's up on a ledge and then the giants at the top. Pure
 // and import-free, read by RmWorld's goalOf with what the place's stage says
 // of its game.
 //
-//   gameGoal(d, { used, done, power, find, deal, sequence }) → a spot's id, or null
+//   gameGoal(d, { used, done, power, find, deal, sequence, climb }) → a spot's id, or null
 //     d: the place (./destinations.js); used: the spots used on this visit;
-//     done: the tasks done; power, find, deal, sequence: the stage's snapshots, if any
+//     done: the tasks done; power, find, deal, sequence, climb: the stage's snapshots, if any
 
-export function gameGoal(d, { used = new Set(), done = [], power = null, find = null, deal = null, sequence = null } = {}) {
+export function gameGoal(d, { used = new Set(), done = [], power = null, find = null, deal = null, sequence = null, climb = null } = {}) {
   if (!d) return null;
   const c = d.collect;
   if (c && !done.includes(c.task)) {
@@ -37,5 +38,8 @@ export function gameGoal(d, { used = new Set(), done = [], power = null, find = 
     if (sequence.phase === 'idle' && sq.start) return sq.start;
     return sequence.order[sequence.on] ?? null;
   }
+  const cl = d.climb;
+  // (the stairs' foot till he's up on a ledge, then the giants)
+  if (cl && climb && !done.includes(cl.task) && climb.phase !== 'lost') return climb.stand > 0 ? cl.spot : cl.foot;
   return null;
 }
