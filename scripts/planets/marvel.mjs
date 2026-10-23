@@ -12,11 +12,11 @@
 // Genosha, an island off Madagascar; and at night Avengers Tower over New
 // York the brightest light on the planet, Kamar-Taj's gold over Kathmandu
 // and Latveria's green. Overhead, the comics' clouds: flat white puffs, inked,
-// their undersides dotted, two hurricanes wound tight.
+// their undersides dotted, two hurricanes wound tight, painted on the page.
 //
 // Makes marvel at 4096 (-xl, KTX2), 2048 (-hq), 1024 and 512 (-sm);
-// marvel-clouds (RGBA) at 2048, 1024 and 512; marvel-night and marvel-rough
-// at 1024. PREVIEW=<folder> bakes at 2048 and writes PNGs there instead.
+// marvel-night and marvel-rough at 1024 (the clouds are painted on the
+// colour, as the page's are). PREVIEW=<folder> bakes at 2048 and writes PNGs there instead.
 
 import fs from 'node:fs';
 import path from 'node:path';
@@ -268,6 +268,15 @@ export async function bake() {
     clouds[q + 3] = clamp(Math.max(cloudK, inkCloud * 0.95));
   });
 
+  // the clouds painted onto the page itself (no shell of their own: one draw for the planet, as before)
+  for (let k = 0; k < W * H; k++) {
+    const a = clouds[k * 4 + 3];
+    if (a <= 0) continue;
+    for (let c = 0; c < 3; c++) albedo[k * 3 + c] = mix(albedo[k * 3 + c], clouds[k * 4 + c], a);
+    rough[k * 3] = rough[k * 3 + 1] = rough[k * 3 + 2] = mix(rough[k * 3], 0.95, a);
+    for (let c = 0; c < 3; c++) night[k * 3 + c] *= 1 - a * 0.75;
+  }
+
   if (PREVIEW) {
     fs.mkdirSync(PREVIEW, { recursive: true });
     const png = async (data, ch, name) => {
@@ -281,7 +290,6 @@ export async function bake() {
     return;
   }
   await save(albedo, W, H, 3, 'marvel', [[4096, '-xl'], [2048, '-hq'], [1024, ''], [512, '-sm']], { quality: 90 });
-  await save(clouds, W, H, 4, 'marvel-clouds', [[2048, '-hq'], [1024, ''], [512, '-sm']], { quality: 86, alphaQuality: 90 });
   await save(night, W, H, 3, 'marvel-night', [[1024, '']], { quality: 88 });
   await save(rough, W, H, 3, 'marvel-rough', [[1024, '']], { quality: 84 });
 }

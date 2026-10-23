@@ -198,7 +198,7 @@ describe('the styles in the light', () => {
     const THREE = await import('three');
     const { buildPlanet } = await import('./planets');
     const { byId } = await import('./universes');
-    const T = { office: new THREE.Texture(), 'office-rough': new THREE.Texture(), 'office-night': new THREE.Texture(), 'office-clouds': new THREE.Texture() };
+    const T = { office: new THREE.Texture(), 'office-rough': new THREE.Texture(), 'office-night': new THREE.Texture() };
     const p = buildPlanet(byId('office'), T, { tier: 'high' });
     const mat = p.body.material;
     expect(mat.isMeshStandardMaterial).toBe(true);
@@ -206,11 +206,11 @@ describe('the styles in the light', () => {
     expect(mat.map).toBe(T.office);
     expect(mat.roughnessMap).toBe(T['office-rough']);
     expect(mat.userData.air.uNight.value).toBe(T['office-night']);
-    // (its air the real kind now, and its clouds a shell over it)
+    // (its air the real kind now; its clouds are in its map, so no shell, no draw more than the paper ball had)
     expect(p.air.material.fragmentShader).toContain('inscatter');
-    let clouds = null;
-    p.group.traverse((o) => (clouds ??= o.material?.alphaMap === T['office-clouds'] ? o : null));
-    expect(clouds?.geometry.parameters.radius).toBeGreaterThan(p.radius);
+    let shells = 0;
+    p.group.traverse((o) => (shells += o.isMesh && o !== p.body && o.geometry?.type === 'SphereGeometry' && o.material?.transparent && (o.material.alphaMap || o.material.map) ? 1 : 0));
+    expect(shells).toBe(0);
     vi.unstubAllGlobals();
   });
 

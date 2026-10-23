@@ -112,7 +112,7 @@ export function airGlow(mat, color, { night = null, sun = LIGHT } = {}) {
 // cloud layer's texture, and whether that's an alpha map (read from its
 // green) or a picture (read from its alpha); its roughness map; and whether
 // the ground comes up in detail as you come in (not on low, not a station).
-const CLOUDS = { middleearth: ['middleearth-clouds', false], breakingbad: ['breakingbad-clouds', true], rickmorty: ['rickmorty-clouds', false], caribbean: ['caribbean-clouds', true], invincible: ['invincible-clouds', true], potter: ['potter-clouds', true], office: ['office-clouds', true], travel: ['earth-clouds', true] };
+const CLOUDS = { middleearth: ['middleearth-clouds', false], breakingbad: ['breakingbad-clouds', true], rickmorty: ['rickmorty-clouds', false], caribbean: ['caribbean-clouds', true], invincible: ['invincible-clouds', true], potter: ['potter-clouds', true], travel: ['earth-clouds', true] };
 const ROUGH = { travel: 'earth-rough' };
 // (drawn in flat colour, cel or dithered: a mottle would undo it)
 const FLAT = new Set(['rickmorty', 'gaming', 'marvel']);

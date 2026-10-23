@@ -30,13 +30,13 @@ const BASE = '/textures/universe/';
 const map = (names, opts) => names.map((n) => [n, opts]);
 const MAPS = Object.fromEntries([
   ...map(['music', 'middleearth', 'marvel', 'breakingbad', 'caribbean', 'office', 'rickmorty', 'potter', 'invincible'], { sm: true, hq: true, xl: true, colour: true }),
-  ...map(['middleearth-clouds', 'rickmorty-clouds', 'marvel-clouds', 'earth', 'earth-night', 'sun'], { sm: true, hq: true, colour: true }),
+  ...map(['middleearth-clouds', 'rickmorty-clouds', 'earth', 'earth-night', 'sun'], { sm: true, hq: true, colour: true }),
   ...map(['middleearth-normal', 'office-normal', 'breakingbad-normal', 'caribbean-clouds', 'earth-clouds', 'potter-clouds'], { sm: true, hq: true, colour: false }),
   ...map(['caribbean-normal', 'invincible-normal', 'potter-normal'], { sm: false, hq: true, colour: false }),
   ...map(['transformers-normal'], { sm: true, hq: false, colour: false }),
   ...map(['transformers'], { sm: true, hq: false, xl: true, colour: true }),
   ...map(['middleearth-night', 'breakingbad-night', 'invincible-night', 'sky-glow'], { sm: true, hq: false, colour: true }),
-  ...map(['breakingbad-clouds', 'invincible-clouds', 'office-clouds'], { sm: true, hq: false, colour: false }),
+  ...map(['breakingbad-clouds', 'invincible-clouds'], { sm: true, hq: false, colour: false }),
   ...map(['middleearth-glow', 'caribbean-night', 'rickmorty-glow', 'invincible-glow', 'potter-night', 'potter-glow', 'marvel-night', 'office-night', 'plates', 'hull'], { sm: false, hq: false, colour: true }),
   ...map(['plates-normal', 'plates-rough', 'hull-normal', 'hull-rough', 'transformers-glow-sm', 'middleearth-rough', 'office-rough', 'breakingbad-rough', 'caribbean-rough', 'earth-rough', 'rickmorty-rough', 'invincible-rough', 'potter-rough', 'marvel-rough'], { sm: false, hq: false, colour: false }),
 ]);

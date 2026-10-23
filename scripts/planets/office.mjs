@@ -21,8 +21,8 @@
 // cumulus in streets and a cold front coming through.
 //
 // Makes office at 4096 (-xl, KTX2), 2048 (-hq), 1024 and 512 (-sm);
-// office-normal at 2048, 1024 and 512; office-clouds (alpha) at 1024 and
-// 512; office-night and office-rough at 1024. PREVIEW=<folder> bakes at 2048
+// office-normal at 2048, 1024 and 512; office-night and office-rough at
+// 1024 (the clouds are painted into the colour). PREVIEW=<folder> bakes at 2048
 // and writes PNGs there instead.
 
 import fs from 'node:fs';
@@ -334,12 +334,25 @@ export async function bake() {
     const cover = smooth(-0.05, 0.3, fbm(nc, x * 1.8 + 5, y * 1.8, z * 1.8, { octaves: 3 }));
     const cu = fbm(nc, x * 18 + wx * 3, y * 18, z * 18 - wx * 3, { octaves: 4 });
     const streets = 0.5 + 0.5 * Math.sin(lat * 140 + wx * 6);
-    const puffs = smooth(0.14, 0.34, cu + (streets - 0.5) * 0.16) * cover;
+    // (thin at a distance: a field of small puffs is a haze from orbit, not a scatter of white)
+    const puffs = smooth(0.2, 0.42, cu + (streets - 0.5) * 0.16) * cover * 0.62;
     const alat = Math.abs(lat / deg);
     const frontLine = 1 - Math.abs(n6(x * 0.8 + wx * 0.4, y * 1.0, z * 0.8));
     const front = smooth(0.94, 0.985, frontLine) * smooth(18, 30, alat) * smooth(64, 52, alat) * (0.6 + 0.4 * smooth(-0.2, 0.3, cu));
     clouds[o] = clouds[o + 1] = clouds[o + 2] = clamp(Math.max(puffs * 0.85, front * 0.9));
   });
+
+  // the clouds over it all, in the colour (no shell of their own: one draw for the
+  // planet, as the paper ball was), the relief flat under them and the lights dimmed
+  const CLOUD = [0.95, 0.96, 0.97];
+  for (let k = 0; k < W * H; k++) {
+    const a = clouds[k * 3];
+    if (a <= 0) continue;
+    for (let c = 0; c < 3; c++) albedo[k * 3 + c] = mix(albedo[k * 3 + c], CLOUD[c], a);
+    height[k] *= 1 - a;
+    rough[k * 3] = rough[k * 3 + 1] = rough[k * 3 + 2] = mix(rough[k * 3], 0.95, a);
+    for (let c = 0; c < 3; c++) night[k * 3 + c] *= 1 - a * 0.7;
+  }
 
   if (PREVIEW) {
     fs.mkdirSync(PREVIEW, { recursive: true });
@@ -355,7 +368,6 @@ export async function bake() {
   }
   await save(albedo, W, H, 3, 'office', [[4096, '-xl'], [2048, '-hq'], [1024, ''], [512, '-sm']], { quality: 88 });
   await save(normalMap(height, W, H, 1.3), W, H, 3, 'office-normal', [[2048, '-hq'], [1024, ''], [512, '-sm']], { quality: 90 });
-  await save(clouds, W, H, 3, 'office-clouds', [[1024, ''], [512, '-sm']], { quality: 80 });
   await save(night, W, H, 3, 'office-night', [[1024, '']], { quality: 88 });
   await save(rough, W, H, 3, 'office-rough', [[1024, '']], { quality: 84 });
 }

@@ -426,8 +426,8 @@ const BUILDERS = {
     const r = u.size;
     // Earth-616 as the comics draw it (scripts/planets/marvel.mjs): the real
     // coasts inked, flat fills laid in Ben-Day dots, the Savage Land and
-    // Wakanda where they are, lit in flat bands as a page is (celShade), the
-    // night side's cities and Avengers Tower lit, inked puffs of cloud over it
+    // Wakanda where they are, its inked puffs of cloud painted on, lit in flat
+    // bands as a page is (celShade), the night side's cities and Avengers Tower lit
     p.body.material = new THREE.MeshStandardMaterial({
       map: T.marvel ?? null,
       color: T.marvel ? '#ffffff' : u.palette.base,
@@ -438,14 +438,6 @@ const BUILDERS = {
     });
     celShade(p.body.material);
     p.night = T['marvel-night'] ?? null;
-    if (T['marvel-clouds']) {
-      const sky = new THREE.Mesh(
-        new THREE.SphereGeometry(r * 1.012, T.small ? 44 : 64, T.small ? 28 : 40),
-        celShade(new THREE.MeshStandardMaterial({ map: T['marvel-clouds'], transparent: true, depthWrite: false, roughness: 1, metalness: 0 }), { ink: 0 }),
-      );
-      p.group.add(sky);
-      p.tick.push((t) => (sky.rotation.y = t * 0.045));
-    }
     // the six Stones in a ring round it, cut as they're set in the
     // gauntlet and lit from within: Space, Mind, Reality, Power, Time, Soul
     const STONES = ['#3d7bff', '#ffd23d', '#ff2e2e', '#a34dff', '#3dff8a', '#ff8a3d'];
@@ -580,8 +572,8 @@ const BUILDERS = {
     // Scranton's country, north-east Pennsylvania (scripts/planets/office.mjs):
     // the ridge and valley's folds, the rivers through their gaps, the
     // Poconos, the coast from Delmarva to Long Island, the woods in their
-    // autumn colours; the cities light the night side, Dunder Mifflin's
-    // branches among them, and fair-weather cumulus goes over
+    // autumn colours, fair-weather cumulus over them (in the map); the cities
+    // light the night side, Dunder Mifflin's branches among them
     p.body.material = new THREE.MeshStandardMaterial({
       map: T.office ?? null,
       color: T.office ? '#ffffff' : u.palette.base,
@@ -593,14 +585,6 @@ const BUILDERS = {
       metalness: 0,
     });
     p.night = T['office-night'] ?? null;
-    if (T['office-clouds']) {
-      const sky = new THREE.Mesh(
-        new THREE.SphereGeometry(r * 1.008, T.small ? 44 : 64, T.small ? 28 : 40),
-        new THREE.MeshStandardMaterial({ color: '#ffffff', alphaMap: T['office-clouds'], transparent: true, depthWrite: false, roughness: 1 }),
-      );
-      p.group.add(sky);
-      p.tick.push((t) => (sky.rotation.y = t * 0.055));
-    }
     // Michael's mug (props.js)
     const mug = bossMug();
     mug.scale.setScalar(r * 0.27);
