@@ -28,7 +28,7 @@ import { curse, dealNews, dealReadout, newDeal, stepDeal } from '../games/deal';
 import { freezeEyes, freezeNews, freezeReadout, jumpSplashes, moving, newFreeze, stepFreeze } from '../games/freeze';
 import { findNews, findReadout, newFind, pickOurs, stepFind } from '../games/find';
 import { litSets, newSequence, runningOrder, sequenceNews, sequenceReadout, stepSequence } from '../games/sequence';
-import { climbNews, climbReadout, moods, newClimb, stairPose, stepClimb } from '../games/climb';
+import { climbNews, climbReadout, moods, newClimb, poseTime, stairPose, stepClimb } from '../games/climb';
 import { newCheer, stepCheer } from '../games/cheer';
 import { TRIS, WORLDS } from './worlds';
 import { BLOCKS } from './blocks';
@@ -268,6 +268,7 @@ export function stage(kit, id, { ground, groundTile = 4, floor, floorTile = 2, w
   const climbed = () => newClimb({ ledges, stairs: cb.stairs, top: cb.top, foot: foot && { x: foot.x, z: foot.z } });
   let ascent = cb ? climbed() : null;
   let stairs = null;
+  let shown = 0; // (the time they're posed at: the game's, running on through a bite, ../games/climb.js's poseTime)
   let topped = false; // (its task done: the ledges are just ledges)
   // a stair goblin as its stair's mood has it: still at rest; a shiver, a fast
   // shake a little wider; the bite, two snaps down and round; or, the task
@@ -299,7 +300,8 @@ export function stage(kit, id, { ground, groundTile = 4, floor, floorTile = 2, w
       if (cb.fell && ascent.events.some((e) => e.type === 'fell')) state.emit?.('note', { area: id, text: cb.fell });
       ascent = told(climbNews(ascent, { done, fading: false }), ascent, cb, state);
     }
-    if (stairs) cb.stairs.forEach((st, i) => pose(stairs[st.id], done ? null : stairPose(ascent, i), t));
+    shown = poseTime(shown, ascent, dt);
+    if (stairs) cb.stairs.forEach((st, i) => pose(stairs[st.id], done ? null : stairPose({ ...ascent, t: shown }, i), t));
   };
 
   // ── a place whose song is played over the page (place.js's `rhythm`):

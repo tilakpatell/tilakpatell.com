@@ -219,7 +219,7 @@ export const ROWS = [
       // the climb (./beanstalk.js): the Stair Goblins' treads, the landings, the shoots, the crown and the stalk's tip
       ...BEANSTALK.solids,
     ],
-    tasks: [{ id: 'fantasy', name: 'Climb the beanstalk to the giants', hint: 'Dial Fantasy World on the portal gun in Rick’s garage, go up the Stair Goblins by the tavern while they keep still, and climb the beanstalk to the giants.' }],
+    tasks: [{ id: 'fantasy', name: 'Climb the beanstalk to the giants', hint: 'Dial Fantasy World on the portal gun in Rick’s garage and go up the Stair Goblins by the tavern while they keep still, then climb the beanstalk to the giants.' }],
     // past the stairs that bite and up the beanstalk to the giants: the climb (../games/climb.js)
     climb: { task: 'fantasy', top: 'beanstalk', foot: 'goblins', spot: 'giants', stairs: BEANSTALK.stairs.map(({ id, steps }) => ({ id, steps })), who: null, lost: 'The stair bit you: one that shivers is about to bite.', fell: 'A long way down: back up the stairs, then.', unlock: 'fantasy' },
     goal: 'goblins',

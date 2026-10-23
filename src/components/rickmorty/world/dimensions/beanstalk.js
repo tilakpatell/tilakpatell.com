@@ -20,7 +20,7 @@
 //   beanstalk() → { solids, stairs, path, spots, top }
 //     solids: the ledges ({ id, dx, dz, w, d, turn?, top, ledge } or { id, dx, dz, r, top, ledge })
 //       and the stalk's tip (no top: in the way at any height)
-//     stairs: [{ id, steps: [low, mid, top], dx, dz, h, base, back }]; path: the ledges bottom up
+//     stairs: [{ id, steps: [low, mid, top], dx, dz, h, base, back, stump }]; path: the ledges bottom up
 //     spots: the stairs' foot (goblins) and the giants, on the crown; top: the crown's height
 //   BEANSTALK    the layout, made once
 
@@ -98,7 +98,8 @@ export function beanstalk() {
       path.push(id);
       return id;
     });
-    stairs.push({ id: G.id, steps, dx: FLIGHT, dz: r3(G.back + G.D / 2), h: G.h, base, back: G.back });
+    // (its stump, under an upper goblin, stops 2 cm short of the landing's top beside it: no two faces in one plane)
+    stairs.push({ id: G.id, steps, dx: FLIGHT, dz: r3(G.back + G.D / 2), h: G.h, base, back: G.back, stump: base > 0 ? r3(base - 0.02) : 0 });
     y = base + G.h + RISE;
     const pad = pads[g];
     if (pad) {

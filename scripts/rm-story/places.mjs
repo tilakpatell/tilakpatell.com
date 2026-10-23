@@ -8,7 +8,7 @@
 //   stand(spot, face, off) → [x, z, face]   `off` metres back from a spot, facing it
 //   wayIn(d) → z                             where a catch puts him back
 //   home(d) → [x, z, face]                   in front of the portal home, facing it
-//   ledgeOf(d, id) → [x, z, top]             a ledge Morty stands on (a climb's: ../games/climb.js)
+//   ledgeOf(d, id) → [x, z, top]             a ledge Morty stands on (a climb's: src/components/rickmorty/world/games/climb.js)
 //   loadPlaces(root) → { dest(id), spot(area, id), ledge(area, id) }   the data, read through Vite
 
 export const N = Math.PI / 2;

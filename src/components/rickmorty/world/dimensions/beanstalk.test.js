@@ -136,6 +136,16 @@ describe('the beanstalk’s ledges: the Stair Goblins, the landings, the shoots 
     for (const s of stairs) expect(reaches(s.steps), s.id).toBe(false);
   });
 
+  it('stands each upper goblin on a stump that stops just under the landing’s top, so the two never flicker in one plane', () => {
+    for (const s of stairs) {
+      if (s.base === 0) expect(s.stump, s.id).toBe(0);
+      else {
+        expect(s.stump, s.id).toBeLessThanOrEqual(s.base - 0.01);
+        expect(s.stump, s.id).toBeGreaterThanOrEqual(s.base - 0.05);
+      }
+    }
+  });
+
   it('cuts each goblin’s treads to the model’s own three steps', () => {
     expect(stairs.map((s) => [s.id, s.h, s.base])).toEqual([
       ['g1', 1.5, 0],
@@ -164,10 +174,10 @@ describe('the beanstalk’s ledges: the Stair Goblins, the landings, the shoots 
     for (const l of ledges) for (const v of VILLAGE) expect(gap(l, v), `${l.id} by ${v.id}`).toBeGreaterThanOrEqual(0.9);
   });
 
-  it('puts the crown level with the giants’ cloud, inside its disc, with the castle beyond', () => {
+  it('puts the crown level with the giants’ cloud, its rim 0.6 m into the crown, with the castle beyond', () => {
     const crown = byId('beanstalk');
     expect(crown.top).toBe(+(CLOUD.y + 0.45 * CLOUD.h).toFixed(2));
-    // (the cloud's south rim reaches 0.6 m into the crown: he steps off the stalk onto its edge)
+    // (seen from the crown he stands at the cloud's edge; the cloud is scenery: off the crown he falls to the ground)
     const r = Math.min(CLOUD.w, CLOUD.d) / 2;
     const off = Math.hypot(crown.dx - CLOUD.at[0], crown.dz - CLOUD.at[1]);
     expect(crown.r - (off - r)).toBeCloseTo(0.6, 2);

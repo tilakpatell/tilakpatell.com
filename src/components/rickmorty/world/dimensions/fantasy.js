@@ -80,8 +80,8 @@ export async function buildFantasy(kit) {
   const crown = ledge('beanstalk');
   const tip = R.frame(...P(crown.dx, crown.dz), 0, { y: crown.top });
   [0.5, 0.42, 0.33, 0.24].forEach((r, i) => tip.cyl(0x4f9a3a, 0, i * 1.0, -i * i * 0.18, r, 1.1, -i * 0.22, 0, CYL));
-  // the stumps the upper goblins stand on, from the ground to their feet
-  for (const g of BEANSTALK.stairs.filter((st) => st.base > 0)) R.frame(...P(g.dx, g.dz), 0).box(0x6a4a2a, 0, 0, 0, g.h, g.base, g.h * 1.054);
+  // the stumps the upper two goblins stand on, from the ground to just under their feet
+  for (const g of BEANSTALK.stairs.filter((st) => st.stump > 0)) R.frame(...P(g.dx, g.dz), 0).box(0x6a4a2a, 0, 0, 0, g.h, g.stump, g.h * 1.054);
 
   // a fence round the square's south side, and lanterns on posts
   for (let dx = -16; dx <= 16; dx += 2) if (Math.abs(dx) > 3) R.frame(...P(dx, 11), 0, { list: 'fixed' }).box(0x6a4a2a, 0, 0, 0, 0.12, 1, 0.12).box(0x7a5a3a, 1, 0.75, 0, 2, 0.1, 0.06);

@@ -4,7 +4,8 @@
 // takes through C-137's dev hooks (window.__C137__, window.__RMSTORY__):
 // Morty sent somewhere and stood till it's built, E at a hotspot, the
 // objective read, a toast waited for, an episode's card checked, the story
-// played to an episode's start, a catch seen through; and where a place
+// played to an episode's start, a catch seen through, Morty stood on a
+// ledge, time waited out on the game's own clock; and where a place
 // through the portal has its way in, its portal home and its spots, read
 // from its data (./places.mjs). Kept apart from the scenarios so no file
 // passes 800 lines.

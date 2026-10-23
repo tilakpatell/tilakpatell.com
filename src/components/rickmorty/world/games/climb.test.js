@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { TUNING, WORDS, climbNews, climbReadout, moods, newClimb, nextStair, stairPose, standingOn, stepClimb } from './climb';
+import { TUNING, WORDS, climbNews, climbReadout, moods, newClimb, nextStair, poseTime, stairPose, standingOn, stepClimb } from './climb';
 import { METER_OFF } from './meter';
 
 // a stair of one tread (g1) and one of two (g2), a landing between, a shoot past them and the top: in world metres
@@ -109,14 +109,14 @@ describe('the climb kind: up the stairs while they keep still, and on to the top
     expect(stepClimb(later, on('g2-top'), 1 / 60).events.at(-1)).toEqual({ type: 'lost', why: 'bitten', stair: 'g2' });
   });
 
-  it('says a fall from four metres or more once, back on the ground, and isn’t lost by it', () => {
+  it('says a fall to the ground from four metres or more once, and isn’t lost by it', () => {
     const high = [{ id: 'up', kind: 'circle', x: 0, z: 0, r: 1, top: 4, ledge: true }];
     let g = stepClimb(newClimb({ ledges: [...high, ...LEDGES], stairs: STAIRS, top: 'crown' }), { morty: { x: 0, z: 0, y: 4, air: false } }, 1 / 60);
     expect(g).toMatchObject({ phase: 'run', high: 4 });
     g = stepClimb(g, air(3, 3, 2), 1 / 60);
     expect(g).toMatchObject({ phase: 'run', stand: 4, events: [] });
     g = stepClimb(g, ground(3, 3), 1 / 60);
-    expect(g).toMatchObject({ phase: 'run', stand: 0, high: 0 });
+    expect(g).toMatchObject({ phase: 'run', stand: 0 });
     expect(g.events).toEqual([{ type: 'fell', from: 4 }]);
     expect(stepClimb(g, ground(3, 3), 1 / 60).events).toEqual([]);
     // (from 3.9 m: nothing said)
@@ -126,6 +126,41 @@ describe('the climb kind: up the stairs while they keep still, and on to the top
     expect(h).toMatchObject({ phase: 'run', events: [] });
   });
 
+  it('says nothing for walking back down: only a drop to the ground from a ledge that high', () => {
+    const high = [{ id: 'up', kind: 'circle', x: 5, z: 5, r: 1, top: 4.5, ledge: true }];
+    const game = newClimb({ ledges: [...high, ...LEDGES], stairs: STAIRS, top: 'crown' });
+    // up at 4.5 m, then down onto the landing (1.2 m), then off it to the ground: no fall to speak of
+    let g = stepClimb(game, { morty: { x: 5, z: 5, y: 4.5, air: false } }, 1 / 60);
+    g = stepClimb(g, air(2, -1, 2), 1 / 60);
+    g = stepClimb(g, on('landing'), 1 / 60);
+    expect(g.events).toEqual([]);
+    g = stepClimb(g, air(0, 1, 0.6), 1 / 60);
+    g = stepClimb(g, ground(0, 1.5), 1 / 60);
+    expect(g.events).toEqual([]);
+    // (a slip from high onto a lower ledge, not the ground: nothing said either, he's still on the way up)
+    let s = stepClimb(game, { morty: { x: 5, z: 5, y: 4.5, air: false } }, 1 / 60);
+    s = stepClimb(s, on('g2-top'), 1 / 60);
+    expect(s.events).toEqual([]);
+  });
+
+  it('keeps the stairs moving through a bite: the poses’ clock runs on after a loss while the game’s stands', () => {
+    const lost = stepClimb(wait(climb(), 3.45), on('g1-low'), 1 / 60);
+    expect(lost.phase).toBe('lost');
+    // (the game's own clock stops at the bite...)
+    expect(stepClimb(lost, on('g1-low'), 0.05).t).toBe(lost.t);
+    // (...while the poses' runs on, a frame at most at a time, and in step with the game's otherwise)
+    let shown = poseTime(0, lost, 0);
+    expect(shown).toBe(lost.t);
+    shown = poseTime(shown, lost, 0.05);
+    shown = poseTime(shown, lost, 0.05);
+    expect(shown).toBeCloseTo(lost.t + 0.1, 9);
+    expect(poseTime(shown, lost, 5)).toBeCloseTo(shown + TUNING.frame, 9);
+    expect(stairPose({ t: shown }, 0)).toMatchObject({ mood: 'bite' });
+    expect(stairPose({ t: shown }, 0).k).toBeGreaterThan(stairPose(lost, 0).k);
+    const run = wait(climb(), 2);
+    expect(poseTime(99, run, 0.05)).toBe(run.t);
+  });
+
   it('keeps a game won or lost as it is', () => {
     const won = stepClimb(stepClimb(climb(), on('crown'), 1 / 60), ground(), 1 / 60);
     expect(won).toMatchObject({ phase: 'won', events: [] });
@@ -133,7 +168,9 @@ describe('the climb kind: up the stairs while they keep still, and on to the top
     expect(lost).toMatchObject({ phase: 'lost', events: [] });
   });
 
-  it('moves nothing at no time, and counts a long frame as a tenth of a second', () => {
+  it('moves nothing at no time, and counts a long frame as a twentieth of a second, as Morty’s own step does', () => {
+    // (RmWorld steps him a twentieth of a second at most a frame: the stairs never outrun him)
+    expect(TUNING.frame).toBe(0.05);
     const g = wait(climb(), 2);
     expect(stepClimb(g, on('g1-low'), 0)).toMatchObject({ t: g.t });
     expect(stepClimb(g, ground(), 5).t).toBeCloseTo(g.t + TUNING.frame, 9);

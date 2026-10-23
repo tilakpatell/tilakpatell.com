@@ -14,8 +14,9 @@
 //   far { n, e, s, w }: { styles, h } | null    the skyline
 //   vista, hero [dx, dz]                       the open view north from the
 //                                             way in, and what it's on
-//   landmarks [{ at: [dx, dz], style, w, d, h, y, look }]   a building of the
-//                                             record's own, where it says (`y`: up in the sky)
+//   landmarks [{ at: [dx, dz], style, w, d, h, y, plain, look }]   a building of the
+//                                             record's own, where it says (`y`: up in the sky;
+//                                             `plain`: no windows on it, a cloud)
 //   scatter [{ model, h, n: { high, mid, low }, r: [near, far] }]   kit models out round it
 //   forecourt { path: { w, color }, props: [{ model, h, n }] }
 //   stands [{ at, w, d, h, rows, face, kinds, n, beat, look, always }]   seats facing
@@ -278,7 +279,7 @@ export const WORLDS = {
     hero: [-6, -19],
     vista: 0.26,
     landmarks: [
-      { ...CLOUD, style: 'dome', look: { walls: [0xffffff], roofs: [0xf2f6ff], lit: [0xffffff], trim: 0xe8eef8 } },
+      { ...CLOUD, style: 'dome', plain: true, look: { walls: [0xffffff], roofs: [0xf2f6ff], lit: [0xffffff], trim: 0xe8eef8 } },
       { ...CASTLE, style: 'tower', look: { walls: [0xb8b4a8, 0xa8a49a], roofs: [0x6a5a7a], lit: [0xffe08a], trim: 0x5a5650 } },
     ],
     scatter: [

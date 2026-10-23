@@ -6,8 +6,8 @@
 // treads, and each stair bites on its own beat: still a while, a shiver (the
 // warning), then the bite, a lag apart up the flight. A tread stood on while
 // its stair bites is lost, as caught is (back at the way in); standing on the
-// top is the win. A fall only costs the height, and from high enough it's
-// said. Pure and import-free, stepped by the place's stage
+// top is the win. A fall only costs the height, and one to the ground from
+// high enough is said. Pure and import-free, stepped by the place's stage
 // (../dimensions/stage.js) inside its own update on Morty's own position, as
 // the freeze is; tested in Node.
 //
@@ -17,8 +17,10 @@
 //     foot: { x, z }, where the stairs start (the meter comes on near it)
 //   stepClimb(game, { morty }, dt) → game   morty: { x, z, y, air }
 //     events: start | won | lost { why: 'bitten', stair } | fell { from }
-//   standingOn(ledges, morty) → the ledge he's on, or null
+//   standingOn(ledges, morty) → the id of the ledge he's on, or null
 //   stairPose(game, i) → { mood: 'still' | 'shiver' | 'bite', k }   k: the share of the way through it
+//   poseTime(shown, game, dt) → the time the stairs are posed at: the game's, but running on after a
+//     loss (the game's stands at the bite), so the stair that bit him is seen to bite
 //   moods(game) → { [stair id]: mood }
 //   nextStair(game) → the stair under him, else the next one up, as an index; −1 past them
 //   climbNews(game, { done, fading }) → 'done' | 'caught' | null   what the place says
@@ -34,9 +36,9 @@ export const TUNING = Object.freeze({
   lag: 1.2, // seconds between one stair's beat and the next one up's
   edge: 0.1, // how far past a ledge's edge he still stands on it (the walker's, ../rules.js: a quarter of his radius)
   level: 0.02, // how near its top his feet must be
-  fall: 4, // metres: a fall from this high is said
+  fall: 4, // metres: a fall to the ground from a ledge this high is said
   near: 6, // metres from the stairs' foot that the meter comes on
-  frame: 0.1, // the longest a frame counts for (a hidden tab, a slow one)
+  frame: 0.05, // the longest a frame counts for (a hidden tab, a slow one): Morty's own step's, so the stairs never outrun him
 });
 
 // what the HUD's line says: the mood of the stair under him or next up; past them, how high
@@ -82,6 +84,8 @@ export function stairPose(g, i) {
   return { mood: 'bite', k: (c - TUNING.still - TUNING.shiver) / TUNING.bite };
 }
 
+export const poseTime = (shown, g, dt) => (g.phase === 'lost' ? Math.max(shown, g.t) + Math.min(Math.max(dt, 0), TUNING.frame) : g.t);
+
 export const moods = (g) => Object.fromEntries(g.stairs.map((s, i) => [s.id, stairPose(g, i).mood]));
 
 const topOf = (g, id) => g.ledges.find((l) => l.id === id)?.top ?? 0;
@@ -115,11 +119,8 @@ export function stepClimb(prev, { morty = null } = {}, dt = 1 / 60) {
     g.events.push({ type: 'lost', why: 'bitten', stair: g.stairs[bitten].id });
     return g;
   }
-  // (back on the ground from high enough: said once, and nothing lost but the height)
-  if (!g.on && morty && !morty.air && g.stand === 0) {
-    if (g.high >= TUNING.fall) g.events.push({ type: 'fell', from: g.high });
-    g.high = 0;
-  }
+  // (back on the ground off a ledge high enough, his stand till he lands: said once, and nothing lost but the height)
+  if (!g.on && morty && !morty.air && g.stand === 0 && prev.stand >= TUNING.fall) g.events.push({ type: 'fell', from: prev.stand });
   return g;
 }
 

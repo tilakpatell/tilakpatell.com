@@ -136,6 +136,17 @@ describe('the code buildings', () => {
     });
   }
 
+  it('draws a plain dome in its own colour, with no windows painted on it (a cloud)', () => {
+    const { R, parts, tiled } = fakeRoom();
+    lot(R, { x: 0, z: 0, turn: 0, w: 28, d: 22, h: 2, y: 20, style: 'dome', landmark: true, plain: true }, LOOK, { windows: windowPaints(R, LOOK), list: 'fixed' });
+    expect(tiled).toEqual([]);
+    expect(parts.some((p) => p.geo === 'cyl')).toBe(true);
+    // (a dome that isn't plain still wears its windows)
+    const other = fakeRoom();
+    lot(other.R, { x: 0, z: 0, turn: 0, w: 28, d: 22, h: 2, y: 20, style: 'dome', landmark: true }, LOOK, { windows: windowPaints(other.R, LOOK), list: 'fixed' });
+    expect(other.tiled.length).toBeGreaterThan(0);
+  });
+
   it('stands a hangar’s door proud of its front, so the two never flicker in the one plane', () => {
     const { R, parts, tiled } = fakeRoom();
     const L = { x: 0, z: 0, turn: 0, w: 12, d: 9, h: 14, y: 0, style: 'hangar' };

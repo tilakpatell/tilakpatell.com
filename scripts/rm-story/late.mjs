@@ -1,6 +1,7 @@
-// The browser check's scenarios for episodes 5 to 8 (../rm-story-check.mjs):
+// The browser check's scenarios for episodes 5 to 9 (../rm-story-check.mjs):
 // the cruiser's chase and the Gromflomite base, Needful Things and the vat,
-// the Jerryboree and St. Gloopy Noops, the cable studio and Get Schwifty.
+// the Jerryboree and St. Gloopy Noops, the cable studio and Get Schwifty,
+// Fantasy World's climb and Froopyland.
 /* global window, document */
 import { COURSE, chaseStart, newChase } from '../../src/components/rickmorty/world/games/chase.js';
 import { BASE, OUT, N, check, done, built, goto, use, story, reads, WIPED, SMALL, HEAT, DEALS, JERRY, throughPortal, toast, inArea, cardFor, at, opens, warpUse, caught, before, chasing, playTo, game, homeOf, spotAt, wayInOf, place, PRIME, FAIRY, standOn, later, PLACES } from './helpers.mjs';
@@ -467,5 +468,7 @@ export const LATE = {
     await opens(page, [...FAIRY.unlocks, 'squanch', 'evilrick'], true, 'after episode 9');
     await page.waitForTimeout(1500);
     check((await page.locator('.rm-episode').count()) === 0, 'a card showed for an episode that isn’t built');
+    // (past the last built episode, the objective is the checklist's next)
+    await reads(page, 'Go into the Smith house and put interdimensional cable on the TV.');
   },
 };

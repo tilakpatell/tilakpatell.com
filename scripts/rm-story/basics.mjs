@@ -137,10 +137,13 @@ export const BASICS = {
       await page.evaluate(([x, z]) => window.__C137__.warp('fantasy', x, z, Math.PI / 2), [foot.x, foot.z + 1]);
       await page.waitForTimeout(1000);
       check(!(await page.locator('.rm-cluster[aria-label="Up the beanstalk"][data-on]').count()), 'a returner saw the climb’s meter');
+      // (the first stair mid-bite and Morty on its top tread: a done climb is never stepped, so its clock stays where
+      // it was set and he stays on the tread; a bite would have put him back at the way in and dealt the climb afresh)
       await page.evaluate(() => window.__C137__.api.act('fantasy', 'setClimb', { t: 3.45 }));
       await standOn(page, 'fantasy', 'g1-top');
       await page.waitForTimeout(1500);
-      check((await game(page, 'fantasy', 'climb')).phase === 'idle' && (await page.evaluate(() => window.__C137__.sim.area)) === 'fantasy' && !(await page.evaluate(() => window.__C137__.sim.fading)), 'a returner’s stairs bit him');
+      const kept = await page.evaluate(() => ({ climb: window.__C137__.api.act('fantasy', 'climb'), y: window.__C137__.sim.m.y, area: window.__C137__.sim.area, fading: window.__C137__.sim.fading }));
+      check(kept.climb.phase === 'idle' && kept.climb.t === 3.45 && Math.abs(kept.y - PLACES.ledge('fantasy', 'g1-top')[2]) < 1e-3 && kept.area === 'fantasy' && !kept.fading, `a returner’s stairs bit him (${JSON.stringify(kept)})`);
     },
     { seed: { 'tp-c137-done': ['cable', 'vat', 'jerryboree', 'cablestudio', 'fantasy'] } },
   ),

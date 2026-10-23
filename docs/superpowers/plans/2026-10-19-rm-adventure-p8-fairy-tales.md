@@ -300,9 +300,9 @@ The layout (all ledges `ledge: true`):
 
 The lines:
 - Task name: 'Climb the beanstalk to the giants'.
-- Hint: 'Dial Fantasy World on the portal gun in Rick’s garage, go up the Stair Goblins by the tavern while they keep still, and climb the beanstalk to the giants.'
-- `lost`: 'The stair bit you. One that shivers is about to bite.'
-- `fell`: 'A long way down. Back up the stairs, then.'
+- Hint: 'Dial Fantasy World on the portal gun in Rick’s garage and go up the Stair Goblins by the tavern while they keep still, then climb the beanstalk to the giants.'
+- `lost`: 'The stair bit you: one that shivers is about to bite.'
+- `fell`: 'A long way down: back up the stairs, then.'
 - `fmeeseeks`: 'Existence is pain to a Meeseeks, Morty. Give me something to do.' This is his recorded bark, so it stays voiced, and the bark list is untouched.
 - `giants`: `{ who: 'A giant', text: 'A little man, all the way up our beanstalk. Wipe your feet. And mind the edge: it’s cloud.' }`.
 - Achievement: 'Mind the stairs' keeps its name; the description becomes 'Got past the Stair Goblins and up the beanstalk to the giants in Fantasy World'.
