@@ -14,10 +14,12 @@
 //   let go, the blast (step hands back the charge, 0…1, for the scene to
 //   fire), drawn as a short, fat burst of light.
 //
-// createHandArms({ parent, muzzle }) → { unfloored(w), climb(w, now, ads),
+// createHandArms({ parent, muzzle, size }) → { unfloored(w), climb(w, now, ads),
 //   charge(now), charging, step(now, w, held) → the charge let go, or null,
 //   beam(from, to), blast(from, to, scale), frame(dt), clear(), dispose() }
 // `muzzle()`: where the gun's muzzle is now (a Vector3 in `parent`'s space), or null.
+// `size`: a metre in `parent`'s units (1 here; the universe map's planets, its METRE: they
+// draw the beam and the blast too, galaxy/shared/fx.js).
 
 import * as THREE from 'three';
 import { HAND_FX, chargeOf, climbOf } from '../../../lib/arms/behaviours';
@@ -30,7 +32,7 @@ const Z = new THREE.Vector3(0, 0, 1);
 
 const glow = (color) => new THREE.MeshBasicMaterial({ color, toneMapped: false, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false });
 
-export function createHandArms({ parent, muzzle = () => null }) {
+export function createHandArms({ parent, muzzle = () => null, size = 1 }) {
   const owned = [];
   const keep = (o) => (owned.push(o), o);
   const rod = keep(new THREE.CylinderGeometry(1, 1, 1, 8, 1).rotateX(Math.PI / 2).translate(0, 0, 0.5)); // (along z, 0 to 1)
@@ -108,7 +110,7 @@ export function createHandArms({ parent, muzzle = () => null }) {
     },
     blast(from, to, scale = 1) {
       blastAge = 0;
-      lay(burst, from, to, 0.08 * scale);
+      lay(burst, from, to, 0.08 * scale * size);
     },
     frame(dt) {
       clock += dt;
@@ -117,10 +119,10 @@ export function createHandArms({ parent, muzzle = () => null }) {
       if (on) {
         const flick = 1 + Math.sin(clock * 70) * 0.18;
         const at = muzzle() ?? beamFrom;
-        lay(ray, at, beamTo, 0.05 * flick);
-        lay(core, at, beamTo, 0.018);
+        lay(ray, at, beamTo, 0.05 * flick * size);
+        lay(core, at, beamTo, 0.018 * size);
         end.position.copy(beamTo);
-        end.scale.setScalar(0.16 * flick);
+        end.scale.setScalar(0.16 * flick * size);
         end.visible = true;
       } else ray.visible = core.visible = end.visible = false;
       // the palm's light, swelling as the charge does
@@ -129,7 +131,7 @@ export function createHandArms({ parent, muzzle = () => null }) {
       if (at) {
         const k = chargeOf(held, gauntlet);
         palm.position.copy(at);
-        palm.scale.setScalar((0.025 + 0.06 * k) * (1 + Math.sin(clock * 30) * 0.1 * k));
+        palm.scale.setScalar((0.025 + 0.06 * k) * (1 + Math.sin(clock * 30) * 0.1 * k) * size);
         palm.material.color.copy(REPULSOR).multiplyScalar(0.3 + 0.6 * k);
       }
       // the blast, gone in a moment

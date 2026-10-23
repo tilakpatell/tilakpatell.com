@@ -17,7 +17,7 @@ const FACE = [
   [weather, ['createWeather', 'strikeAt']],
   [level, ['createLevelLoader', 'createLevelPhysics', 'createLevelScene', 'createLevelStream', 'imageLayerOf', 'instancesOf', 'packBytes', 'packUrl', 'tierTexture', 'wantsEngine', 'wanted']],
   [stage, ['HeroStage', 'stageFor']],
-  [fx, ['LASER', 'createBolts', 'createFlashes']],
+  [fx, ['LASER', 'createBolts', 'createFlashes', 'createHandArms']],
   [arms, ['HAND_WEAPONS', 'HERO_KEY', 'HILTS', 'PICKABLE', 'SABER_COLORS', 'heroById', 'pickableWith', 'readCrewStyle', 'skinsOf']],
 ];
 
