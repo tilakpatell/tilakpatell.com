@@ -494,3 +494,55 @@ describe('season two’s foes (./season2.js)', () => {
     expect(KINDS.mirror.hits).toBe(4);
   });
 });
+
+describe('Battle Beast (./season2.js)', () => {
+  const pad = [1618, 0, -384];
+  const before = () => ({ p: [pad[0], 0, pad[2] + 2.5], v: [0, 0, 0], mode: 'ground' });
+  const look = [0, 0, -1];
+  it('turns a punch aside unless he is staggered', () => {
+    const f = spawnFoes(newFoes(), 'beast', 1, pad);
+    const r = run(f, before(), 0.1, (s) => ({ ...idle, look, punch: s === 0 }));
+    expect(r.ev.some((e) => e.type === 'parried')).toBe(true);
+    expect(r.ev.some((e) => e.type === 'hit')).toBe(false);
+    expect(r.f.foes[0].hits).toBe(0);
+  });
+  it('a blocked swing staggers him, and the counter lands', () => {
+    const f = spawnFoes(newFoes(), 'beast', 1, pad);
+    // blocking before him until his swing comes, and is blocked
+    let g = f;
+    let got = false;
+    for (let t = 0; t < 8 && !got; t += 1 / 30) {
+      const r = stepFoes(g, before(), { ...idle, look, block: true }, 1 / 30, {});
+      g = r.foes;
+      got = r.ev.some((e) => e.type === 'blocked');
+    }
+    expect(got).toBe(true);
+    const blocked = { f: g };
+    expect(blocked.f.foes[0].state).toBe('stagger');
+    expect(blocked.f.counter).toBeGreaterThan(0);
+    const hit = run(blocked.f, before(), 0.1, (s) => ({ ...idle, look, punch: s === 0 }));
+    expect(hit.ev.filter((e) => e.type === 'hit' && e.kind === 'beast').length).toBeGreaterThanOrEqual(1);
+    expect(KINDS.beast.hits).toBe(14);
+  });
+  it('leaps at him from a way off, craters where he lands, and floors him within 15 m', () => {
+    const f = spawnFoes(newFoes(), 'beast', 1, pad);
+    const h = { p: [pad[0], 0, pad[2] + 20], v: [0, 0, 0], mode: 'ground' };
+    const r = run(f, h, 8, { ...idle, look });
+    const leap = r.ev.find((e) => e.type === 'leap');
+    expect(leap).toBeTruthy();
+    expect(leap.r).toBe(15);
+    expect(Math.hypot(leap.at[0] - h.p[0], leap.at[2] - h.p[2])).toBeLessThan(2);
+    expect(r.ev.some((e) => e.type === 'floored')).toBe(true);
+    expect(r.ev.some((e) => e.type === 'hurt' && e.by === 'beast')).toBe(true);
+  });
+  it('beaten, he leaves', () => {
+    const f = spawnFoes(newFoes(), 'beast', 1, pad);
+    f.foes[0].hits = 13;
+    f.foes[0].state = 'stagger';
+    f.foes[0].t = 5;
+    const r = run(f, before(), 0.1, (s) => ({ ...idle, look, punch: s === 0 }));
+    expect(r.ev.some((e) => e.type === 'ko' && e.kind === 'beast')).toBe(true);
+    expect(r.ev.some((e) => e.type === 'leaves')).toBe(true);
+    expect(r.f.foes[0].state).toBe('down');
+  });
+});

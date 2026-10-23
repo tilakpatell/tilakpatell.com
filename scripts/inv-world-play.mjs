@@ -53,7 +53,8 @@ async function player() {
     window.dispatchEvent(new KeyboardEvent('keyup', { code, key, bubbles: true }));
   };
   const aim = (at, from = chest()) => {
-    const d = sub(at, from);
+    // (out there his look is turned to the ground he is over, ./orbit.js's upOver: the way, turned back)
+    const d = inSpace() ? O.turnUp(sub(at, from), O.upOver(sim.h.p), true) : sub(at, from);
     sim.yaw = Math.atan2(d[0], d[2]);
     sim.pitch = Math.atan2(d[1], Math.hypot(d[0], d[2]));
     sim.dragAt = 1e12; // (the camera's own swing behind him stays off: he's steered)
@@ -77,6 +78,10 @@ async function player() {
       said = wall;
       const h = sim.h;
       console.log(`[play]   ${h.zone ?? 'city'} ${h.mode} at [${h.p.map((v) => Math.round(v))}] ${Math.round(len(h.v))} m/s, keys ${[...sim.keys].join('+') || 'none'}; dad ${api.debug.dad().state} at [${api.debug.dad().p.map(Math.round)}]`);
+      // (the fight, when there is one: each foe standing, and the block and the counter)
+      const up = (sim.foes?.foes ?? []).filter((e) => e.state !== 'down' && e.state !== 'ko');
+      if (up.length) console.log(`[play]   foes ${up.map((e) => `${e.kind} ${e.state} ${e.hits ?? ''} at [${e.p.map(Math.round)}] ${len(sub(e.p, h.p)).toFixed(1)} m`).join('; ')}; blocking ${sim.brawl?.blocking}, counter ${(sim.foes.counter ?? 0).toFixed(2)}`);
+      if (sim.mars) console.log(`[play]   mars host ${sim.mars.host.state} ${sim.mars.host.hits} at [${sim.mars.host.p.map(Math.round)}], swarm ${sim.mars.swarm.alive}, aboard ${sim.mars.aboard}`);
     }
     if (job) {
       try {
@@ -136,10 +141,12 @@ async function player() {
         return false;
       }
     } else stuck = null;
-    const [cruise, brake, margin] = inSpace() ? [500, 600, 4000] : [40, 40, 80];
+    // (low over the Moon or Mars he flies at the air's speeds, ./orbit.js's `low`: steered as in the city)
+    const far = inSpace() && O.overBody(h.p) > O.SPACE.low;
+    const [cruise, brake, margin] = far ? [500, 600, 4000] : [40, 40, 80];
     const stop = Math.max(0, v * v - cruise * cruise) / (2 * brake);
     if (!o.slow && dist > stop + margin + r) hold('fwd', 'boost');
-    else if (o.pass || dist > (inSpace() ? 0 : Math.min(v, cruise) ** 2 / 110) + r * 0.6) hold('fwd');
+    else if (o.pass || dist > (far ? 0 : Math.min(v, cruise) ** 2 / 110) + r * 0.6) hold('fwd');
     else hold();
     return false;
   }
@@ -461,6 +468,102 @@ async function player() {
       if (!fight((e) => e.kind === 'angstrom')) steer([0, 6, 40], 6);
       return false;
     }, 300000);
+  };
+
+  // the Sequids on Mars: to the planet flat out and down on the site, each astronaut carried to
+  // the ship, the host punched down (the swarm scattered as it comes), the three gates home
+  EPISODES.sequids = async () => {
+    await fromCecil('sequids');
+    const MR = await import('/src/components/invincible/world/offworld/mars.js');
+    await every(() => {
+      if (inSpace()) return true;
+      sim.pitch = 1.5;
+      sim.dragAt = 1e12;
+      if (sim.h.mode === 'ground') hold('up');
+      else hold('fwd', 'boost');
+      return false;
+    }, 240000);
+    await go([0, O.SPACE.RE + 40000, 0], 3000, { done: () => len(sim.h.p) - O.SPACE.RE > 35000 || !inSpace() });
+    // down onto the site: at its ship's pad
+    const pad = MR.toWorld([MR.BASE.ship[0] + 14, MR.groundAt(MR.BASE.ship[0] + 14, MR.BASE.ship[2]), MR.BASE.ship[2]]);
+    await every(() => {
+      if (sim.h.mode === 'perch') return true;
+      steer(pad, 1);
+      return false;
+    }, 300000);
+    await until(() => step() >= 1, 10000);
+    sim.speedup = 1; // (the astronauts within 3 m, the host's reach: judged a frame at a time)
+    const local = (l) => MR.toWorld([l[0], MR.groundAt(l[0], l[2]) + 1.5, l[2]]);
+    await every(() => {
+      if (step() !== 1) return true;
+      const m = sim.mars;
+      if (!m) return false;
+      const carried = m.astronauts.find((q) => q.state === 'carried');
+      if (carried) steer(local(MR.BASE.ship), 3);
+      else {
+        const lost = m.astronauts.filter((q) => q.state === 'lost');
+        if (!lost.length) return false;
+        const me = MR.toLocal(sim.h.p);
+        const a = lost.reduce((p, q) => (Math.hypot(q.p[0] - me[0], q.p[2] - me[2]) < Math.hypot(p.p[0] - me[0], p.p[2] - me[2]) ? q : p));
+        steer(local(a.p), 1.2);
+      }
+      return false;
+    }, 600000);
+    await every(() => {
+      if (step() !== 2) return true;
+      const m = sim.mars;
+      if (!m) return false;
+      const hp = MR.toWorld([m.host.p[0], m.host.p[1] + 1, m.host.p[2]]);
+      const d = len(sub(hp, chest()));
+      if (d < 3) {
+        aim(hp);
+        hold();
+        sim.punch = true;
+      } else steer(MR.toWorld([m.host.p[0], m.host.p[1] + 1.2, m.host.p[2] + 2.2]), 1);
+      return false;
+    }, 600000);
+    sim.speedup = 3;
+    const gates = M.missionOf('sequids').steps[3].gates;
+    for (let i = 0; i < gates.length; i++) await go(gates[i], 120, { pass: true, done: () => step() !== 3 || (sim.mission?.count ?? 0) > i, ms: 180000 });
+    await home();
+  };
+
+  // Battle Beast: Cecil's panels on E, then on the ground before him with Shift held (a block)
+  // until his swing is blocked, then a punch in the counter's window; a leap floors Mark, who gets up
+  EPISODES.beast = async () => {
+    await fromCecil('beast');
+    await every(() => {
+      if (step() >= 1 || step() < 0) return true;
+      if (sim.panels && sim.panels.t > 0.3) press('KeyE', 'e');
+      return false;
+    }, 120000);
+    sim.speedup = 1; // (the counter's window is 0.6 s: judged a frame at a time)
+    let counterAt = 0;
+    await every(() => {
+      if (step() < 0) return true;
+      const e = sim.foes.foes.find((q) => q.kind === 'beast' && live(q));
+      if (!e) return false;
+      const m = midOf(e);
+      const d = len(sub(m, chest()));
+      if (sim.foes.counter > 0 && d < 5) {
+        // the window open: a punch
+        aim(m);
+        hold();
+        sim.punch = true;
+        counterAt = performance.now();
+      } else if (sim.h.mode === 'ground' && d < 5) {
+        // before him, blocking, facing him
+        aim(m);
+        hold('boost');
+      } else if (sim.h.mode !== 'ground') {
+        sim.pitch = -1.2;
+        sim.dragAt = 1e12;
+        hold('down');
+      } else steer([m[0], m[1] - 1, m[2]], 3.2);
+      return false;
+    }, 900000);
+    sim.speedup = 3;
+    void counterAt;
   };
 
   window.__INV_PLAY__ = {

@@ -19,6 +19,16 @@ export const SPACE = {
   boostAccel: 1600,
   brake: 700,
   drift: 0.04, // how much of his speed goes, a second, with nothing held
+  // low over the Moon or Mars (within `low` m of the ground) he flies as in the air: a walk's
+  // cruise and the air's flat out, braking hard into them, and still when let go, so he can come
+  // to an astronaut, carry one to the ship and fight on the ground (./offworld/mars.js)
+  low: 400,
+  lowCruise: 30,
+  lowTop: 160,
+  lowAccel: 120,
+  lowBrake: 2100,
+  lowStop: 2,
+  blend: 600, // over `low`, up turns from the ground's to the sky's across this many metres
   reentry: WORLD.ceiling - 1500, // back into the air below this
   bound: 900000,
 };
@@ -57,6 +67,46 @@ export function outOfSpace(h) {
   return { ...h, zone: 'city', mode: 'air', p: [x, WORLD.ceiling - 300, z], v, spd: s, dir: v.map((c) => c / s), perch: null, boomed: s > 120, exited: true, stun: 0, crouch: 0, ev: [] };
 }
 
+// how high a point is over the ground of the nearest of the Moon and Mars
+export function overBody(p) {
+  let best = Infinity;
+  for (const b of BODIES) best = Math.min(best, Math.hypot(p[0] - b.c[0], p[1] - b.c[1], p[2] - b.c[2]) - b.r);
+  return best;
+}
+// Which way is up at p: away from the ground of the Moon or Mars low over it
+// (and on it), the sky's up (+y) far from both, turned between across
+// `blend` over `low`. The camera's frame (./scene.js), his look
+// (./InvWorld.jsx) and his flight here all stand on it.
+export function upOver(p) {
+  let best = null;
+  for (const b of BODIES) {
+    const d = [p[0] - b.c[0], p[1] - b.c[1], p[2] - b.c[2]];
+    const l = Math.hypot(...d);
+    if (!best || l - b.r < best.alt) best = { alt: l - b.r, n: d.map((c) => c / (l || 1)) };
+  }
+  const t = Math.min(1, Math.max(0, (best.alt - SPACE.low) / SPACE.blend));
+  const k = t * t * (3 - 2 * t);
+  const u = [best.n[0] * (1 - k), best.n[1] * (1 - k) + k, best.n[2] * (1 - k)];
+  const l = Math.hypot(...u) || 1;
+  return u.map((c) => c / l);
+}
+// v turned by the least turn that takes +y to `up` (or back, `inverse`)
+export function turnUp(v, up, inverse = false) {
+  const c = up[1]; // (+y · up)
+  if (c > 1 - 1e-12) return [...v];
+  // the axis +y × up, and the angle's sine (its length); straight down, any level axis
+  let k = [up[2], 0, -up[0]];
+  let sn = Math.hypot(k[0], k[2]);
+  if (sn < 1e-9) {
+    k = [1, 0, 0];
+    sn = 0;
+  } else k = k.map((x) => x / sn);
+  if (inverse) sn = -sn;
+  const kv = k[0] * v[0] + k[1] * v[1] + k[2] * v[2];
+  const kx = [k[1] * v[2] - k[2] * v[1], k[2] * v[0] - k[0] * v[2], k[0] * v[1] - k[1] * v[0]];
+  return v.map((x, i) => x * c + kx[i] * sn + k[i] * kv * (1 - c));
+}
+
 function stepOnce(h, input, dt, press) {
   if (h.mode === 'perch') {
     if (press.take() || (input.up ?? 0) > 0.5) {
@@ -68,23 +118,27 @@ function stepOnce(h, input, dt, press) {
       h.perch = null;
     } else return;
   }
-  // where he wants to go: the camera's way, and up or down
+  // where he wants to go: the camera's way, and up or down (off the ground he is over, upOver)
   const [lx, ly, lz] = input.look;
-  const rl = Math.hypot(lx, lz) || 1;
-  const right = [-lz / rl, 0, lx / rl];
+  const U = upOver(h.p);
+  const cr = [ly * U[2] - lz * U[1], lz * U[0] - lx * U[2], lx * U[1] - ly * U[0]];
+  const rl = Math.hypot(...cr) || 1;
+  const right = cr.map((c) => c / rl);
   const fwd = input.fwd ?? 0;
   const side = input.side ?? 0;
   const vert = (input.up ?? 0) - (input.down ?? 0);
-  const m = [lx * fwd + right[0] * side, ly * fwd + vert, lz * fwd + right[2] * side];
+  const m = [0, 1, 2].map((i) => input.look[i] * fwd + right[i] * side + U[i] * vert);
   const ml = len(m);
   const sp = len(h.v);
+  const low = overBody(h.p) < SPACE.low;
   if (input.boost || ml > 0.05) {
     const D = ml > 0.05 ? m.map((c) => c / ml) : [lx, ly, lz];
-    const S = input.boost ? SPACE.top : SPACE.cruise * Math.min(1, ml);
+    const S = input.boost ? (low ? SPACE.lowTop : SPACE.top) : (low ? SPACE.lowCruise : SPACE.cruise) * Math.min(1, ml);
     const dir = sp > 1 ? turn(h.v.map((c) => c / sp), D, (3 - 1.8 * Math.min(1, sp / SPACE.top)) * dt) : D;
-    const ns = sp < S ? Math.min(S, sp + (input.boost ? SPACE.boostAccel : SPACE.accel) * dt) : Math.max(S, sp - SPACE.brake * dt);
+    const accel = low ? SPACE.lowAccel : input.boost ? SPACE.boostAccel : SPACE.accel;
+    const ns = sp < S ? Math.min(S, sp + accel * dt) : Math.max(S, sp - (low ? SPACE.lowBrake : SPACE.brake) * dt);
     h.v = dir.map((c) => c * ns);
-  } else h.v = h.v.map((c) => c * (1 - SPACE.drift * dt));
+  } else h.v = h.v.map((c) => c * Math.max(0, 1 - (low ? SPACE.lowStop : SPACE.drift) * dt));
   h.p = h.p.map((c, i) => c + h.v[i] * dt);
 
   // the Moon and Mars: stand on whichever he comes down on
@@ -123,6 +177,8 @@ export function stepSpace(hero, input, dt) {
   const s = len(h.v);
   h.spd = s;
   if (s > 1e-6) h.dir = h.v.map((c) => c / s);
-  if (s > 3) h.face = Math.atan2(h.v[0], h.v[2]);
+  // (his heading across the ground he is over: the sky's, far from the Moon and Mars)
+  const vl = turnUp(h.v, upOver(h.p), true);
+  if (s > 3) h.face = Math.atan2(vl[0], vl[2]);
   return h;
 }

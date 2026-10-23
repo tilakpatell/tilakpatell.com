@@ -3,6 +3,7 @@
 // compass's marks, the mission's marker and the objective line. Moved from
 // InvWorld.jsx's frame loop as it was, so that file stays under the size
 // rule; nothing shown changed.
+import { nearestLost, toWorld as marsWorld } from './offworld/mars';
 import { objectiveText } from '../../../runtime/hud';
 import { FLY } from './flight';
 import { PORTAL, portalOpen, standing } from './foes';
@@ -22,6 +23,10 @@ function foesText(f, up) {
   if (flax || f.foes.some((e) => (e.kind ?? 'flaxan').startsWith('flaxan'))) parts.push(`Flaxans over the river · ${flax} left`);
   if (maulers) parts.push(maulers > 1 ? `The Mauler twins · ${maulers} standing` : 'A Mauler · 1 standing');
   if (up.some((e) => e.kind === 'seismic')) parts.push('Doc Seismic over the school');
+  // season two's (./season2.js)
+  if (up.some((e) => e.kind === 'beast')) parts.push('Battle Beast');
+  if (up.some((e) => e.kind === 'angstrom')) parts.push('Angstrom Levy');
+  if (up.some((e) => e.kind === 'mirror')) parts.push('The other you');
   return parts.join(' · ');
 }
 
@@ -44,7 +49,8 @@ export function writeHud(H, { s, h, a, speed, alt, inSpace }) {
   // the villains (./foes.js): the portal while it's open, and the ones on the ground
   const up = standing(s.foes);
   if (portalOpen(s.foes)) marks.push({ x: PORTAL.p[0], z: PORTAL.p[2], color: '#d04dff', name: 'Portal' });
-  for (const e of up) if (e.kind === 'mauler' || e.kind === 'seismic') marks.push({ x: e.p[0], z: e.p[2], color: '#d04dff', name: e.kind === 'mauler' ? 'Mauler' : 'Doc Seismic' });
+  const NAMES = { mauler: 'Mauler', seismic: 'Doc Seismic', beast: 'Battle Beast', angstrom: 'Angstrom', mirror: 'The other you' };
+  for (const e of up) if (NAMES[e.kind]) marks.push({ x: e.p[0], z: e.p[2], color: '#d04dff', name: NAMES[e.kind] });
   if (q.rescue && !q.rescue.carried) marks.push({ x: q.rescue.p[0], z: q.rescue.p[2], color: '#ff3b30', name: 'Help' });
   // Robot's mark (./guardians.js): the strongest foe standing, for the team to go for
   if (s.cavalry?.marked != null) for (const e of up) if (e.id === s.cavalry.marked) marks.push({ x: e.p[0], z: e.p[2], color: '#4fa3b8', name: 'Marked' });
@@ -61,7 +67,7 @@ export function writeHud(H, { s, h, a, speed, alt, inSpace }) {
       .sort((e1, e2) => Math.hypot(e1.p[0] - h.p[0], e1.p[2] - h.p[2]) - Math.hypot(e2.p[0] - h.p[0], e2.p[2] - h.p[2]))
       .map((e) => e.p);
     const moon = a.debug.bodies.find((b) => b.id === 'moon');
-    const mk = markerOf(s.mission, { npcs: { omni: a.debug.dad().p, allen: a.debug.allen }, car: getawayAt(s.getaway), foes, faller: q.rescue && !q.rescue.carried ? q.rescue.p : null, bodies: { moon: moon?.c } });
+    const mk = markerOf(s.mission, { npcs: { omni: a.debug.dad().p, allen: a.debug.allen, astro: s.mars ? nearestLost(s.mars, h.p) : null, host: s.mars ? marsWorld(s.mars.host.p) : null }, car: getawayAt(s.getaway), foes, faller: q.rescue && !q.rescue.carried ? q.rescue.p : null, bodies: { moon: moon?.c } });
     s.marker = mk ? { p: mk, color: m.colour } : null;
     if (mk) {
       mdist = Math.hypot(mk[0] - h.p[0], mk[1] - h.p[1], mk[2] - h.p[2]);

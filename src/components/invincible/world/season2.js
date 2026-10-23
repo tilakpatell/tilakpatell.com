@@ -6,6 +6,7 @@
 // `portal` is one of Angstrom's green portals, drawn as a ring.
 
 import { PORTAL_R, PORTAL_SPEED } from './dimensions';
+import { GATES as MARS_GATES, GATE_R as MARS_GATE_R } from './offworld/mars';
 
 const step = (type, text, extra = {}) => ({ type, text, ...extra });
 const portal = (text, at, dimension) => step('through', text, { at, r: PORTAL_R, speed: PORTAL_SPEED, portal: true, marker: at, dimension });
@@ -32,6 +33,8 @@ export const BURNT_LEDGE = [106.9, 167, -80];
 // where the mirror Mark comes from, and where Angstrom waits (the hall's plaza)
 export const MIRROR_AT = [40, 60, -360];
 export const ANGSTROM_AT = [0, 0, 40];
+// where Battle Beast waits: the GDA's pad, its south side (the helicopter sits at its middle)
+export const BEAST_AT = [1618, 0, -366];
 
 export const SEASON2 = [
   {
@@ -59,5 +62,44 @@ export const SEASON2 = [
     ],
     done: [['cecil', 'Every version of you came home. Levy didn’t. That’s a win, kid.']],
     achievement: 'levy',
+  },
+  // the Sequids on Mars (./offworld/mars.js runs it while he is there): land at the base, the
+  // four astronauts carried to the ship one at a time (each aboard is a `caught` from Mars),
+  // the host under the swarm put down (a `ko` of kind host), and the gates home at speed
+  {
+    id: 'sequids',
+    ep: 10,
+    season: 2,
+    title: 'The Martian mission',
+    colour: '#c8553d',
+    giver: 'cecil',
+    start: { npc: 'cecil', place: 'gda', after: ['ep8'] },
+    intro: [['cecil', 'The Mars crew stopped answering. Something up there is wearing them. Go and get them back.']],
+    steps: [
+      step('land', 'Fly to Mars and land at the base', { body: 'mars', marker: { body: 'mars' } }),
+      step('catch', 'Carry the four astronauts to the ship, one at a time', { n: 4, source: 'mars', marker: { npc: 'astro' } }),
+      step('defeat', 'Put the host down: the Martian under the swarm', { kind: 'host', n: 1, marker: { npc: 'host' } }),
+      step('race', 'The ship home: three gates over Mars, flat out', { gates: MARS_GATES, r: MARS_GATE_R, time: 120, marker: { gate: true } }),
+    ],
+    done: [['cecil', 'Four back, and whatever was in them left on Mars. Good.']],
+    achievement: 'sequids',
+  },
+  // Battle Beast (foes.js's beast): Cecil's call after the Machine Head business; the lesson in
+  // panels at the GDA's pad (the world feeds `use panels` as they end), then the fight on it
+  {
+    id: 'beast',
+    ep: 11,
+    season: 2,
+    title: 'Battle Beast',
+    colour: '#e8e6e0',
+    giver: 'cecil',
+    start: { npc: 'cecil', place: 'gda', after: ['ep8'] },
+    intro: [['cecil', 'Machine Head hired something. It is not from here. It’s on my pad, and it wants you.']],
+    steps: [
+      step('use', 'Cecil, on the block and the counter', { id: 'panels', marker: BEAST_AT }),
+      step('defeat', 'Battle Beast: take its swing, then hit it', { kind: 'beast', n: 1, spawn: [['beast', 1, BEAST_AT]], marker: { foe: true } }),
+    ],
+    done: [['cecil', 'It walked off. Walked. I’m going to pretend that’s a win.']],
+    achievement: 'beast',
   },
 ];
