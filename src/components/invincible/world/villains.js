@@ -18,6 +18,7 @@ import * as THREE from 'three';
 import { hot } from '../../avengers/hq/stage';
 import { buildHumanoid, poseHumanoid } from '../../avengers/hq/kit/humanoid';
 import { POSES, figure } from '../../../lib/three/rig';
+import { faceForward } from '../../../lib/three/clipLibrary';
 import { CAST } from '../cast';
 import { FIGHT, KINDS, PORTAL, portalOpen } from './foes';
 import { ANGSTROM_GREEN } from './dimensions';
@@ -116,9 +117,24 @@ export function createVillains(scene, vfx, { calm = false, templates = {}, rim =
   // a Flaxan: the model at the kit's sizes (1.35 m, an elite 1.68), the
   // elite's white gone a third of the way to gold
   const GOLD = new THREE.Color(0xd9a640);
+  // Meshy's idle stands turned off to one side, a fighter's stance; the rig
+  // turns it to face ahead by the walk (../../../lib/three/rig.js), which the
+  // Flaxan hasn't, so here it is turned to the hips' own heading at rest, once
+  let faced = false;
+  function faceIdle(t) {
+    faced = true;
+    const idle = t.clips?.find((c) => c.name === 'idle');
+    const hips = t.scene.getObjectByName('Hips');
+    if (!idle || !hips?.parent) return;
+    t.scene.updateMatrixWorld(true);
+    const up = UP.clone().applyQuaternion(hips.parent.getWorldQuaternion(new THREE.Quaternion()).invert()).normalize();
+    const q = hips.quaternion;
+    faceForward(idle, up, 2 * Math.atan2(q.x * up.x + q.y * up.y + q.z * up.z, q.w));
+  }
   function flaxanFoe(elite) {
     const t = templates.flaxan;
     if (!t) return kitFoe(elite ? mats.flaxanElite : mats.flaxan, elite ? 0.92 : 0.74);
+    if (!faced) faceIdle(t);
     const f = figure(t, { ...CAST.flaxan, h: CAST.flaxan.h * (elite ? 0.92 / 0.74 : 1) });
     if (elite) for (const m of f.materials) m.color?.lerp(GOLD, 0.35);
     f.snap(POSES.hover(0));

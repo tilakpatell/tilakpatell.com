@@ -103,7 +103,7 @@ const SHOTS = {
   rescue: { rescue: true, back: 28 },
   fight: { fight: true },
   // the Flaxans close, through the portal at him: three and an elite (the cast's model, ../src/components/invincible/world/villains.js)
-  flaxans: { drive: [['go', [1096, 150, -411], Math.PI / 2, 'air'], ['spawn', 'flaxan', 3], ['spawn', 'flaxanElite', 1], ['put', 0, [1106, 151, -413.5]], ['put', 1, [1109, 153.5, -407.5]], ['put', 2, [1113, 149, -410]], ['put', 3, [1108, 149.5, -415.5]], ['wait', 900]], pitch: 0.08 },
+  flaxans: { drive: [['go', [1096, 150, -411], Math.PI / 2, 'air'], ['spawn', 'flaxan', 3], ['spawn', 'flaxanElite', 1], ['put', 0, [1101.5, 150.6, -413.6]], ['put', 1, [1104, 152.2, -408.6]], ['put', 2, [1106.5, 149.6, -411.8]], ['put', 3, [1102.5, 150.2, -408.8]], ['wait', 6000]], pitch: 0.08 },
   climb: { p: [0, 7600, 600], mode: 'air', yaw: Math.PI, pitch: 0.12 },
   orbit: { space: 'earth' },
   orbitnight: { space: 'earth', time: 'night' },
