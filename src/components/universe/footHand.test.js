@@ -16,12 +16,15 @@ const play = (gun, o = {}) => {
   const hand = createFootHand({ root, metre: METRE });
   const struck = [];
   const shoved = [];
-  const ctx = { aimed: { at: [0, R + METRE, 4 * METRE], target: { id: 7 } }, charge: null, damage: 2, me, R, troops: [trooper], strike: (t, d, along, how) => struck.push({ id: t.id, d, how }), shove: (t, s, lift) => shoved.push({ id: t.id, s, lift }), ...o };
+  const lines = [];
+  // (the scene's line from the muzzle: the trooper 4 m on, if the line's that wide; else the ground 9 m on)
+  const line = (a, d, reach, girth) => (lines.push({ reach, girth }), o.miss ? { at: [0, R, 9 * METRE], target: null } : { at: [0, R + METRE, 4 * METRE], target: trooper });
+  const ctx = { line, charge: null, damage: 2, me, strike: (t, d, along, how) => struck.push({ id: t.id, d, how }), shove: (t, s, lift) => shoved.push({ id: t.id, s, lift }), ...o };
   const was = hand.shot(footWeapon(gun, {}), from, dir, ctx);
   hand.frame(1 / 60, footWeapon(gun, {}), null, 0);
   const drawn = root.children.filter((m) => m.visible).map((m) => m.name);
   hand.dispose();
-  return { was, struck, shoved, drawn };
+  return { was, struck, shoved, drawn, lines };
 };
 
 describe('the skill tree’s guns past a bolt, on the planets', () => {
@@ -48,9 +51,19 @@ describe('the skill tree’s guns past a bolt, on the planets', () => {
     expect(play('blaster').was).toBe(false);
   });
 
-  it('hits nobody past the line’s end, the beam drawn to it all the same', () => {
-    const r = play('particle', { aimed: { at: [0, R + METRE, 9 * METRE], target: null } });
+  it('hits nobody the line misses, the beam drawn to where it stops all the same', () => {
+    const r = play('particle', { miss: true });
     expect(r.struck).toEqual([]);
     expect(r.drawn).toContain('hand-beam');
+  });
+
+  it('looks along its own line, the gun’s reach, wider than a bolt, the full blast wider still', () => {
+    const beam = play('particle').lines[0];
+    expect(beam.reach).toBeCloseTo(footWeapon('particle', {}).range * METRE);
+    expect(beam.girth).toBeGreaterThan(0);
+    const light = play('gauntlet', { charge: 0 }).lines[0];
+    const full = play('gauntlet', { charge: 1 }).lines[0];
+    expect(full.girth).toBeGreaterThan(light.girth);
+    expect(light.girth).toBeGreaterThan(beam.girth);
   });
 });

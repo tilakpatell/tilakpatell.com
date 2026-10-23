@@ -93,7 +93,7 @@ import { impactGroups } from '../../lib/impact';
 import { pressGroups } from '../../lib/press';
 import { springGroups } from '../../lib/spring';
 import { SIDES, sideFor, squadKinds } from './sides';
-import { ASSIST, friction } from '../../lib/combat/aim';
+import { ASSIST, aimPoint, friction } from '../../lib/combat/aim';
 import { footAim } from './footAim';
 import { BOLT, FOOT, METRE, PARKED, TROOPS, aimAt, apart, at, bearing, byTrench, createJump, facingAlong, flat, footBodies, footSkills, footSolids, inTrench, landingSpot, march, offset, person, rightOf, squad, turnToward, vec, walk } from './foot';
 import { TRENCH_MODEL, trenchOf } from './deep';
@@ -1537,6 +1537,13 @@ export function createFoot({ map, emit, reduced = false, small = false, planetOf
     return r;
   };
 
+  // the first trooper (each `girth` wider) or solid on a line from a muzzle, in
+  // reach, as a bolt's flight would meet them: the beam's and the blast's (footHand.js)
+  const muzzleLine = (from, dir, reach, girth = 0) => {
+    const bodies = footBodies({ troops: S.troops, R: S.R }).map((b) => ({ ...b, r: b.r + girth }));
+    const r = aimPoint({ from: arr(from), dir: arr(dir) }, footSolids(obstacles(), S.R), bodies, { min: 0, max: reach });
+    return { at: r.at, target: r.target ? (S.troops.find((t) => t.id === r.target.id && t.alive) ?? null) : null };
+  };
   // a shot by p at `target` (a trooper, or null for straight ahead): the
   // gun kicks and the bolt leaves its muzzle for the mark; `past(from, dir)`
   // true, it was more than a bolt (footHand.js's: the beam, the blast), drawn there
@@ -1605,7 +1612,7 @@ export function createFoot({ map, emit, reduced = false, small = false, planetOf
     if (aimed) S.aimed = aimed;
     const jitter = spreadAt(w, false) * 2;
     const damage = r.damage * own().damage;
-    const past = (from, dir) => footHand.shot(w, from, dir, { aimed, charge: r.charge ?? null, damage, me: S.me, R: S.R, troops: S.troops, strike: (t, d, along, how) => strikeTroop(t, d, along, { by: 'me', how }), shove: shoveTroop });
+    const past = (from, dir) => footHand.shot(w, from, dir, { line: muzzleLine, charge: r.charge ?? null, damage, me: S.me, strike: (t, d, along, how) => strikeTroop(t, d, along, { by: 'me', how }), shove: shoveTroop });
     for (let i = 0; i < r.shots; i++) shoot(me, target, 'me', damage, jitter, aimed ? new V(...aimed.at) : null, undefined, past);
     S.acted = true;
     S.aim = 1;
