@@ -43,5 +43,6 @@ export const C137 = {
     ['St. Gloopy Noops', 'The hospital in space, where the doctors want something of Jerry’s. Get past them to the theatre at the end of the ward, visit Shrimply Pibbles and take back Jerry’s things, then get out through the portal before the clock runs out; caught, you’re back at the door.'],
     ['The cable studio', 'Every channel’s set on one floor, and the studio about to go live. Start the countdown at the control booth, then switch the sets on in the running order the meter gives; a wrong set turns them all dark, and when the clock runs out you’re back at the door.'],
     ['Get Schwifty', 'Take the mic and the heads want a song. Hit each note as it reaches the line, on the beat; a miss or a wild swing costs the heads’ meter, and if it empties before the end of the song you’re disqualified.'],
+    ['Fantasy World', 'The Stair Goblins by the tavern are the way up the beanstalk. Go up one while it keeps still: one that shivers is about to bite, and a bite puts you back at the portal. A fall only costs you the height. The giants are on the cloud at the top.'],
   ],
 };

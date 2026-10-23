@@ -6,6 +6,8 @@
 //     [--out lab/universe/<tier>] [--baseline] [--url http://127.0.0.1:5173] [--chromium /path]
 //     [--frames 20] (how many frames are timed: fewer in a container that draws in software, where a frame takes seconds)
 //     [--near off] (without the planets' near maps and finer spheres, nearMaps.js: what they cost, measured on one tree)
+//     [--dpr 2] (the screen's device pixels to a CSS one: 1 by default; post.js's finish draws a 2× screen otherwise than a 1×)
+//     [--level 3] (the pace's step held at each pose, runtime/quality.js's setLevel: what a weak chip's calibration lands on)
 //
 // It starts the dev server (the poses are a DEV hook, `window.__universe().pose`,
 // which a production build leaves out) unless --url names one, opens
@@ -44,6 +46,8 @@ const list = (s) => (typeof s === 'string' ? s.split(',').map((x) => x.trim()).f
 const tiers = !args.quality || args.quality === 'all' ? TIERS : list(args.quality);
 const poses = list(args.poses).length ? list(args.poses) : POSES;
 const FRAMES = Math.max(3, Number(args.frames) || 20);
+const DPR = Number(args.dpr) > 0 ? Number(args.dpr) : 1;
+const LEVEL = args.level === undefined ? null : Math.max(0, Math.floor(Number(args.level)));
 for (const t of tiers) if (!TIERS.includes(t)) throw new Error(`no tier ${t} (high, mid, low or all)`);
 for (const p of poses) if (!POSES.includes(p)) throw new Error(`no pose ${p} (${POSES.join(', ')})`);
 const outFor = (tier) => (args.baseline ? join(ROOT, 'lab/universe/baseline', tier) : args.out && tiers.length === 1 ? join(ROOT, args.out) : join(ROOT, 'lab/universe', tier));
@@ -142,11 +146,11 @@ const fail = (what) => {
 for (const tier of tiers) {
   const out = outFor(tier);
   await mkdir(out, { recursive: true });
-  const report = { tier, viewport: [1280, 720], poses: {} };
+  const report = { tier, viewport: [1280, 720], dpr: DPR, level: LEVEL, poses: {} };
   // a landing can't be flown back from in a script (the take-off is a
   // scene of its own): each pose gets a fresh page, the same start
   for (const name of poses) {
-    const ctx = await browser.newContext({ viewport: { width: 1280, height: 720 }, deviceScaleFactor: 1 });
+    const ctx = await browser.newContext({ viewport: { width: 1280, height: 720 }, deviceScaleFactor: DPR });
     await ctx.addInitScript(([q, near]) => {
       window.localStorage.setItem('tp-intro', '1');
       window.localStorage.setItem('tp-start', '"universe"');
@@ -172,6 +176,16 @@ for (const tier of tiers) {
       await page.evaluate((n) => window.__universe().pose(n), name);
       // (a planet pose: its near maps given a moment to land, unless they're off)
       if (args.near !== 'off') await page.waitForFunction(() => (window.__universe().near ?? []).length > 0, null, { timeout: 15000, polling: 250 }).catch(() => {});
+      // (the pace held at a step, twice: it may step on while the first frames are drawn)
+      if (LEVEL !== null) {
+        for (let i = 0; i < 2; i++) {
+          await page.evaluate((l) => {
+            window.__RUNTIME__?.quality?.setLevel?.(l);
+            window.__RUNTIME__?.current?.world?.lowerQuality?.(l);
+          }, LEVEL);
+          await page.evaluate(() => window.__universe().frames(2));
+        }
+      }
       // the grain moves frame to frame; the shots and their metrics shouldn't (post.js: checkpoint 1)
       await page.evaluate(() => window.__universeDebug.post?.grain?.(0));
       const numbers = await page.evaluate(async (n) => {
@@ -195,7 +209,10 @@ for (const tier of tiers) {
         const r1 = (v) => Number(v.toFixed(1));
         // the ship's box on screen (scene.js's DEV hook, where it has one)
         const shipPx = u.shipPx?.() ?? null;
-        return { calls, triangles, shipPx, frameMs: r1(times.reduce((s, v) => s + v, 0) / times.length), frameMsMedian: r1(sorted[Math.floor(n / 2)]), memory: { ...renderer.info.memory } };
+        // (how sharp the scene was drawn, and post.js's finish: brought up or not, its samples)
+        const post = window.__universeDebug.post;
+        const drawn = { canvas: renderer.getPixelRatio(), scene: post ? Number(post.ratio.toFixed(3)) : null, finish: post?.finish ?? null };
+        return { calls, triangles, shipPx, drawn, frameMs: r1(times.reduce((s, v) => s + v, 0) / times.length), frameMsMedian: r1(sorted[Math.floor(n / 2)]), memory: { ...renderer.info.memory } };
       }, FRAMES);
       // the picture alone: the page's bar, panel and HUD hidden (they'd be
       // half the shot, and in its metrics), the map's own canvas (the

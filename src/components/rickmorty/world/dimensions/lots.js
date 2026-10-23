@@ -120,7 +120,9 @@ const DRAW = {
   dome(R, f, L, look, paint, wall, roof) {
     const r = Math.min(L.w, L.d) / 2;
     const drum = L.h * 0.45;
-    R.tiled.add(CYL8, paint, f.mat(0, drum / 2, 0, 0, r * 2, drum, r * 2));
+    // (a plain one, a cloud, in its own colour: no windows painted on its drum)
+    if (L.plain) f.cyl(wall, 0, 0, 0, r, drum, 0, 0, CYL8);
+    else R.tiled.add(CYL8, paint, f.mat(0, drum / 2, 0, 0, r * 2, drum, r * 2));
     f.ball(roof, 0, drum, 0, r, (L.h - drum) / r, BALL8);
   },
   hut(R, f, L, look, paint, wall, roof) {

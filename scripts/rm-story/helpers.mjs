@@ -4,7 +4,8 @@
 // takes through C-137's dev hooks (window.__C137__, window.__RMSTORY__):
 // Morty sent somewhere and stood till it's built, E at a hotspot, the
 // objective read, a toast waited for, an episode's card checked, the story
-// played to an episode's start, a catch seen through; and where a place
+// played to an episode's start, a catch seen through, Morty stood on a
+// ledge, time waited out on the game's own clock; and where a place
 // through the portal has its way in, its portal home and its spots, read
 // from its data (./places.mjs). Kept apart from the scenarios so no file
 // passes 800 lines.
@@ -82,6 +83,7 @@ export const HEAT = EPISODES[4];
 export const DEALS = EPISODES[5];
 export const JERRY = EPISODES[6];
 export const PRIME = EPISODES[7];
+export const FAIRY = EPISODES[8];
 // Morty by the garage portal, stepped through it, and stood where it took him
 export async function throughPortal(page) {
   await goto(page, 'garage', -302.3, 101.4, Math.PI);
@@ -173,4 +175,18 @@ export async function playTo(page, e, wins = []) {
 }
 // a place's game, as its stage has it (Needful Things' deal, the vat's freeze, the Jerryboree's find)
 export const game = (page, area, what) => page.evaluate(([a, w]) => window.__C137__.api.act(a, w), [area, what]);
+// Morty stood on one of a place's ledges (`dx`, `dz` off its middle), on his feet
+export const standOn = (page, area, id, { dx = 0, dz = 0 } = {}) => {
+  const [x, z, y] = PLACES.ledge(area, id);
+  return page.evaluate(([x, z, y]) => {
+    const s = window.__C137__.sim;
+    s.m = { ...s.m, x, z, y, vy: 0, vx: 0, vz: 0, speed: 0, air: false };
+  }, [x + dx, z + dz, y]);
+};
+// `s` seconds of the game's own time gone by (a headless frame is slow: a key
+// held for wall-clock milliseconds would be a frame or two)
+export async function later(page, s) {
+  const t0 = await page.evaluate(() => window.__C137__.sim.t);
+  await page.waitForFunction((t) => window.__C137__.sim.t >= t, t0 + s, { timeout: 120000, polling: 16 });
+}
 export const rickallOn = (page) => page.waitForFunction(() => window.__C137__.sim.rickall?.phase === 'on', null, { timeout: 300000, polling: 250 });

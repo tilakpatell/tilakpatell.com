@@ -75,7 +75,7 @@ export default function FlightSettings({ controls, onChange, open, onOpen }) {
         </svg>
       </button>
       {open && (
-        <section ref={panel} id={id} className="universe-settings" role="dialog" aria-label="Flight settings">
+        <section ref={panel} id={id} className="universe-settings dialog overflow-y-auto" role="dialog" aria-label="Flight settings">
           <header className="universe-settings-head">
             <h2>Flight settings</h2>
             <button type="button" className="universe-settings-close" aria-label="Close" onClick={() => onOpen(false)}>

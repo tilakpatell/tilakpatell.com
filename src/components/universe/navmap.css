@@ -1,7 +1,9 @@
 /* The nav map (NavMap.jsx): the universe's chart table. The galaxy's
    holotable's cousin (galaxy.css's .holomap), in a neutral blue-white so
    each place's own colour is what reads; the course is drawn the way the
-   drive goes (a bright straight jump, dashes for super speed, dots cruising). */
+   drive goes (a bright straight jump, dashes for super speed, dots cruising).
+   Its frame is a .dialog, the colour's: its glass, edge, corners, shadow and
+   dress (styles/dialogs.css); the blue is navigation's, on what you pick. */
 .navmap {
   position: fixed;
   z-index: var(--z-cover);
@@ -19,11 +21,12 @@
   gap: 0.65rem;
   width: min(1220px, 100%);
   height: min(880px, 100%);
+  position: relative; /* (the colour's dress is drawn on its ::before, inset to it) */
   padding: 1rem 1.1rem 1.1rem;
-  border: 1px solid rgb(159 216 255 / 0.3);
-  border-radius: 18px;
-  background: radial-gradient(110% 80% at 25% 0%, rgb(40 60 120 / 0.32), transparent 60%), rgb(3 6 16 / 0.97);
-  box-shadow: 0 0 60px rgb(80 150 255 / 0.12), inset 0 0 40px rgb(80 150 255 / 0.05);
+  border: 1px solid color-mix(in srgb, var(--saber) 22%, var(--border));
+  border-radius: var(--r-card);
+  background: radial-gradient(110% 80% at 25% 0%, color-mix(in srgb, var(--saber) 12%, transparent), transparent 60%), color-mix(in srgb, var(--glass-solid) 97%, transparent);
+  box-shadow: var(--shadow-dialog);
   color: #dce9ff;
   overflow: hidden;
 }
@@ -38,7 +41,7 @@
   width: 36px;
   height: 36px;
   border: 1px solid rgb(159 216 255 / 0.35);
-  border-radius: 50%;
+  border-radius: var(--r-btn);
   color: #cfe9ff;
 }
 .navmap-close:hover { background: rgb(159 216 255 / 0.12); }
@@ -51,7 +54,7 @@
   height: 32px;
   padding: 0 0.7rem;
   border: 1px solid rgb(159 216 255 / 0.25);
-  border-radius: 999px;
+  border-radius: var(--r-btn);
   color: #cfe9ff;
   font-size: 0.74rem;
 }
@@ -76,13 +79,21 @@
   height: 30px;
   padding: 0 0.7rem;
   border: 1px solid rgb(159 216 255 / 0.22);
-  border-radius: 999px;
+  border-radius: var(--r-btn);
   color: #cfe9ff;
   font-size: 0.74rem;
 }
 .navmap-views button[aria-pressed='true'],
 .navmap-kinds button[aria-pressed='true'] { border-color: #9fd8ff; background: rgb(159 216 255 / 0.16); color: #fff; }
 .navmap-filters { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.5rem; }
+/* a phone's: List or Chart, and the charts over its chart (on a desktop both show, and the charts are in the header) */
+.navmap-modes,
+.navmap-filters > .navmap-views,
+.navmap-tap { display: none; }
+.navmap-modes { gap: 2px; padding: 2px; border: 1px solid rgb(159 216 255 / 0.25); border-radius: min(var(--r-btn), 10px); }
+.navmap-modes button { display: inline-flex; align-items: center; gap: 0.3rem; height: 34px; padding: 0 0.65rem; border-radius: min(var(--r-btn), 8px); color: #cfe9ff; font-size: 0.76rem; }
+.navmap-modes button[aria-pressed='true'] { background: rgb(159 216 255 / 0.18); color: #fff; }
+.navmap-tap { margin: 0; color: rgb(220 233 255 / 0.72); font-size: 0.8rem; line-height: 1.45; }
 .navmap-search {
   display: flex;
   align-items: center;
@@ -91,8 +102,8 @@
   height: 34px;
   padding: 0 0.7rem;
   border: 1px solid rgb(159 216 255 / 0.25);
-  border-radius: 10px;
-  background: rgb(4 10 24 / 0.8);
+  border-radius: min(var(--r-btn), 10px);
+  background: color-mix(in srgb, var(--glass-solid) 80%, #000);
   color: #9fd8ff;
 }
 .navmap-search input { flex: 1; min-width: 0; border: 0; background: none; color: #fff; font-size: 0.85rem; outline: none; }
@@ -141,26 +152,45 @@
 @keyframes navmap-ping { from { transform: scale(0.6); opacity: 1; } to { transform: scale(1.6); opacity: 0; } }
 .navmap-pilot { fill: #7dff9a; stroke: #04120a; stroke-width: 1; }
 
-.navmap-places { position: absolute; inset: 0; margin: 0; padding: 0; list-style: none; }
+/* The places: a dot each, a button round it, and its name on whichever
+   side chartLabels.js found clear (--lx and --ly, the name's top-left from
+   the dot's middle). A name with no room is left off till it's hovered,
+   focused, picked or lit from the list, and then shows on glass over the rest. */
+.navmap-places { position: absolute; z-index: 0; inset: 0; margin: 0; padding: 0; list-style: none; } /* (a stack of its own: a dot's wider hit area on a touch screen stays under every dot) */
 .navmap-places > li { position: absolute; width: 0; height: 0; transition: opacity 0.2s; }
 .navmap-places > li[data-dim] { opacity: 0.22; }
+.navmap-places > li:is(:hover, :focus-within, [data-hover], [data-pick]) { z-index: 1; opacity: 1; }
 .navmap-place {
   position: absolute;
-  left: 0;
-  top: 0;
-  display: flex;
-  align-items: center;
-  gap: 0.3rem;
-  translate: -8px -50%;
-  min-height: 24px;
-  padding: 0.1rem 0.35rem 0.1rem 0;
-  border-radius: 7px;
+  left: -14px;
+  top: -14px; /* (a 28 px button round the dot, placed rather than translated, so it makes no stack of its own) */
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
   color: #e8f2ff;
-  font-size: 0.7rem;
-  white-space: nowrap;
+  font-size: 0.7rem; /* (NavMap.jsx's NAME_REM: chartLabels.js measures the names at it) */
 }
-.navmap-places > li[data-side='left'] .navmap-place { flex-direction: row-reverse; translate: calc(-100% + 8px) -50%; padding: 0.1rem 0 0.1rem 0.35rem; }
-.navmap-places > li[data-side='under'] .navmap-place { flex-direction: column; gap: 0; translate: -50% -8px; padding: 0 0.3rem 0.1rem; }
+@media (pointer: coarse) {
+  .navmap-place::before { content: ''; position: absolute; z-index: -1; inset: -8px; border-radius: 50%; } /* (44 px to a finger) */
+}
+.navmap-name {
+  position: absolute;
+  left: calc(50% + var(--lx, 9px));
+  top: calc(50% + var(--ly, -9px));
+  height: 18px; /* (NavMap.jsx's NAME_H, and NAME_PAD the padding either side) */
+  padding: 0 5px;
+  border-radius: 6px;
+  line-height: 18px;
+  white-space: nowrap;
+  text-shadow: 0 0 6px #000, 0 0 2px #000;
+}
+.navmap-name[data-off] { display: none; }
+.navmap-places > li:is(:hover, :focus-within, [data-hover], [data-pick]) .navmap-name { display: block; background: rgb(3 6 16 / 0.85); }
+.navmap-place:hover .navmap-name { color: var(--c); }
+.navmap-place[aria-pressed='true'] .navmap-name { box-shadow: 0 0 0 1px var(--c); color: #fff; }
+.navmap-places > li[data-hover] .navmap-dot { box-shadow: 0 0 0 2px var(--c); }
 .navmap-dot {
   flex: none;
   width: 16px;
@@ -171,11 +201,23 @@
 .navmap-places > li[data-kind='world'] .navmap-dot { background: radial-gradient(circle, var(--c) 0 4.5px, color-mix(in srgb, var(--c) 35%, transparent) 5.5px, transparent 8px); }
 .navmap-place[aria-current='location'] .navmap-dot { box-shadow: 0 0 0 2px #fff; animation: navmap-here 1.6s ease-in-out infinite; }
 @keyframes navmap-here { 50% { box-shadow: 0 0 0 5px rgb(255 255 255 / 0.25); } }
-.navmap-place[aria-pressed='true'] { background: rgb(3 6 16 / 0.85); box-shadow: 0 0 0 1px var(--c); color: #fff; }
-.navmap-place:hover .navmap-name { color: var(--c); }
-.navmap-name { text-shadow: 0 0 6px #000, 0 0 2px #000; }
-.navmap-places > li[data-kind='home'] .navmap-place { translate: -50% 4px; padding: 0.1rem 0.45rem; color: #ffd9a0; font-family: var(--font-mono); font-size: 0.6rem; letter-spacing: 0.08em; text-transform: uppercase; }
-.navmap-places > li[data-kind='home'] .navmap-place:hover { background: rgb(255 200 120 / 0.12); }
+.navmap-place[aria-pressed='true'] .navmap-dot { box-shadow: 0 0 0 2px var(--c); }
+.navmap-homebtn {
+  position: absolute;
+  left: 0;
+  top: 0;
+  translate: -50% 4px;
+  padding: 0.1rem 0.45rem;
+  border-radius: 7px;
+  color: #ffd9a0;
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  text-shadow: 0 0 6px #000, 0 0 2px #000;
+}
+.navmap-homebtn:hover { background: rgb(255 200 120 / 0.12); }
 .navmap-out {
   position: absolute;
   left: 50%;
@@ -200,9 +242,9 @@
   overflow-y: auto;
   overscroll-behavior: contain;
   padding: 0.9rem;
-  border: 1px solid rgb(159 216 255 / 0.18);
-  border-radius: 12px;
-  background: rgb(5 12 28 / 0.72);
+  border: 1px solid var(--border);
+  border-radius: var(--r-panel);
+  background: color-mix(in srgb, var(--glass-solid) 70%, #000);
 }
 .navmap-side > * { flex-shrink: 0; }
 .navmap-status { padding-bottom: 0.75rem; border-bottom: 1px solid rgb(159 216 255 / 0.12); }
@@ -217,7 +259,7 @@
   min-height: 72px;
   padding: 0.5rem 0.3rem;
   border: 1px solid rgb(159 216 255 / 0.2);
-  border-radius: 10px;
+  border-radius: min(var(--r-panel), 10px);
   color: #cfe9ff;
   text-align: center;
 }
@@ -230,7 +272,7 @@
 .navmap-drive-name { font-size: 0.72rem; font-weight: 600; line-height: 1.1; }
 .navmap-drive-time { font-family: var(--font-mono); font-size: 0.68rem; opacity: 0.8; }
 .navmap-drive-about { margin: -0.2rem 0 0; color: rgb(220 233 255 / 0.65); font-size: 0.74rem; line-height: 1.45; }
-.navmap-note { margin: 0; padding: 0.45rem 0.6rem; border-radius: 8px; background: rgb(255 207 122 / 0.1); color: #ffdca0; font-size: 0.74rem; line-height: 1.4; }
+.navmap-note { margin: 0; padding: 0.45rem 0.6rem; border-radius: min(var(--r-panel), 8px); background: rgb(255 207 122 / 0.1); color: #ffdca0; font-size: 0.74rem; line-height: 1.4; }
 .navmap-pick { display: flex; flex-direction: column; gap: 0.35rem; }
 .navmap-back { align-self: flex-start; display: inline-flex; align-items: center; gap: 0.3rem; margin-bottom: 0.3rem; color: #9fd8ff; font-size: 0.74rem; }
 .navmap-back:hover { text-decoration: underline; text-underline-offset: 2px; }
@@ -243,6 +285,25 @@
 .navmap-go:disabled { opacity: 0.55; cursor: default; }
 .navmap-enter { width: 100%; justify-content: center; }
 .navmap-list-box { display: flex; flex-direction: column; gap: 0.4rem; min-height: 0; }
+.navmap-group + .navmap-group { margin-top: 0.35rem; }
+.navmap-group-name {
+  position: sticky;
+  z-index: 1;
+  top: 0;
+  display: flex;
+  justify-content: space-between;
+  margin: 0 0 2px;
+  padding: 0.4rem 0.4rem 0.3rem;
+  border-bottom: 1px solid rgb(159 216 255 / 0.12);
+  background: color-mix(in srgb, var(--glass-solid) 70%, #000); /* (the side panel's own glass: the rows scroll under it) */
+  color: #9fd8ff;
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.navmap-group-name span { color: rgb(220 233 255 / 0.6); letter-spacing: 0.05em; }
 .navmap-list { display: grid; gap: 2px; margin: 0; padding: 0; list-style: none; }
 .navmap-list button {
   display: flex;
@@ -251,41 +312,66 @@
   width: 100%;
   min-height: 34px;
   padding: 0.2rem 0.4rem;
-  border-radius: 8px;
+  border-radius: min(var(--r-panel), 8px);
   color: #e8f2ff;
   font-size: 0.8rem;
   text-align: left;
 }
 .navmap-list button:hover { background: rgb(159 216 255 / 0.08); }
 .navmap-list-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* (flying, the meta is the distance: what the place is goes under its name) */
+.navmap-list-type { display: block; overflow: hidden; color: rgb(220 233 255 / 0.6); font-family: var(--font-mono); font-size: 0.62rem; text-overflow: ellipsis; }
 .navmap-list-meta { flex: none; color: rgb(220 233 255 / 0.55); font-family: var(--font-mono); font-size: 0.64rem; }
 .navmap-list button[aria-current='location'] .navmap-list-meta { color: #7dff9a; }
 .navmap-keys { margin: auto 0 0; padding-top: 0.5rem; color: rgb(220 233 255 / 0.5); font-size: 0.68rem; }
 .navmap-keys kbd { padding: 0 0.3rem; border: 1px solid rgb(159 216 255 / 0.3); border-radius: 4px; font-family: var(--font-mono); font-size: 0.62rem; }
 
+/* A phone: the list or the chart (NavMap.jsx's mode, the list first), the
+   kinds or the charts in a row that scrolls under the search, and the go
+   button held at the foot of the panel as it scrolls. */
 @media (max-width: 820px) {
   .navmap { padding: 8px; }
-  .navmap-frame { height: 100%; padding: 0.75rem; gap: 0.45rem; border-radius: 14px; }
+  .navmap-frame { height: 100%; padding: 0.75rem; gap: 0.5rem; border-radius: min(var(--r-card), 14px); }
   .navmap-head { align-items: center; gap: 0.5rem; }
   .navmap-head .navmap-kicker { display: none; }
   .navmap-title { margin: 0; font-size: 1.1rem; white-space: nowrap; }
   .navmap-head-tools { gap: 0.3rem; min-width: 0; }
-  .navmap-tool { width: 32px; height: 32px; padding: 0; justify-content: center; }
+  .navmap-head-tools .navmap-views { display: none; }
+  .navmap-tool { width: 36px; height: 36px; padding: 0; justify-content: center; }
   .navmap-tool span { display: none; }
-  .navmap-close { width: 32px; height: 32px; }
+  .navmap-close { width: 36px; height: 36px; }
+  /* List or Chart, then beside it the search (the list's) or the charts (the
+     chart's: the list is the place to search), and under them the kinds */
+  .navmap-filters { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 0.45rem; }
+  .navmap-modes { display: flex; }
+  .navmap-modes button { padding: 0 0.55rem; }
+  .navmap-filters > .navmap-views,
+  .navmap-kinds { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+  .navmap-kinds { grid-column: 1 / -1; margin: 0 -0.75rem; padding: 0 0.75rem; }
+  .navmap-filters > .navmap-views { display: flex; grid-row: 1; grid-column: 2; margin-right: -0.75rem; padding-right: 0.75rem; }
+  .navmap-search { grid-row: 1; grid-column: 2; }
+  .navmap[data-mode='list'] .navmap-filters > .navmap-views,
+  .navmap[data-mode='chart'] :is(.navmap-kinds, .navmap-search) { display: none; }
   .navmap-views button,
-  .navmap-kinds button { height: 28px; padding: 0 0.55rem; font-size: 0.68rem; }
-  .navmap-filters { gap: 0.4rem; }
-  .navmap-search { width: 100%; height: 34px; }
+  .navmap-kinds button { flex: none; height: 34px; padding: 0 0.7rem; font-size: 0.74rem; }
+  .navmap-search { width: 100%; height: 40px; }
   .navmap-search input { font-size: 16px; } /* (under 16px, iOS zooms the page in on focus) */
-  .navmap-side { padding: 0.75rem; gap: 0.6rem; }
-  .navmap-drive { min-height: 62px; padding: 0.4rem 0.2rem; }
-  .navmap-place-name { font-size: 1.2rem; }
   .navmap-body { grid-template-columns: 1fr; grid-template-rows: auto minmax(0, 1fr); container-type: normal; gap: 0.6rem; }
-  .navmap-chart { width: min(100%, 42svh); }
-  .navmap-place { font-size: 0.6rem; }
-  .navmap-places > li[data-kind='wonder'] .navmap-name { display: none; } /* (the list has them by name) */
-  .navmap-places > li[data-kind='wonder'] .navmap-place[aria-pressed='true'] .navmap-name { display: inline; }
+  .navmap[data-mode='list'] .navmap-body { grid-template-rows: minmax(0, 1fr); }
+  .navmap[data-mode='list'] .navmap-chart { display: none; }
+  .navmap-chart { width: min(100%, 50svh); }
+  .navmap-side { padding: 0.75rem; gap: 0.6rem; }
+  /* the ship in two lines: where, then how it's going and the jump */
+  .navmap-status[data-flying] { display: flex; flex-wrap: wrap; column-gap: 0.75rem; padding-bottom: 0.6rem; }
+  .navmap-status[data-flying] .navmap-kicker { display: none; }
+  .navmap-status[data-flying] .navmap-where { flex-basis: 100%; margin: 0; }
+  .navmap-drive { min-height: 56px; padding: 0.35rem 0.2rem; }
+  .navmap-drive-about { display: none; } /* (each drive says what it is by its name and its time; the list wants the room) */
+  .navmap-place-name { font-size: 1.2rem; }
+  .navmap[data-mode='chart'] .navmap-list-box > :not(.navmap-tap) { display: none; }
+  .navmap[data-mode='chart'] .navmap-tap { display: block; }
+  .navmap-list button { min-height: 44px; font-size: 0.86rem; }
+  .navmap .navmap-pick > .navmap-go { position: sticky; z-index: 1; bottom: 0; box-shadow: 0 0 0 6px color-mix(in srgb, var(--glass-solid) 70%, #000); } /* (over a theme's own .btn-primary, styles/feel.css) */
   .navmap-keys { display: none; }
 }
 @media (hover: none) {
@@ -306,7 +392,6 @@
   50% { scale: 1.35; opacity: 0.4; }
 }
 .navmap-frontbtn .navmap-name { color: #ffb347; }
-.navmap-places > li[data-kind='front'] .navmap-place { translate: calc(-100% - 10px) -50%; }
 @media (prefers-reduced-motion: reduce) {
   .navmap-war-front { animation: none; }
 }
@@ -314,4 +399,5 @@
 /* a far fight (farFights.js): someone's fight out in deep space, a burst and its region's name */
 .navmap-fight { stroke: #ff8a5c; stroke-width: 2; stroke-linecap: round; fill: none; }
 .navmap-fight-ring { stroke-width: 1.5; stroke-dasharray: 3 3; opacity: 0.7; }
-.navmap-places > li[data-kind='fight'] .navmap-place { translate: -50% 12px; white-space: nowrap; pointer-events: none; color: #ff8a5c; font-size: 0.62rem; }
+.navmap-places > li[data-kind='fight'] { pointer-events: none; }
+.navmap-places > li[data-kind='fight'] .navmap-place { color: #ff8a5c; }

@@ -75,7 +75,8 @@ import { audioContext } from '../../lib/audio';
 import { clamp01, disposeTree, precompile, precompilePasses, singlePass } from '../../lib/three/renderer';
 import { prepareScene } from '../../lib/three/gpuWork';
 import { settle as settleWithin } from '../../lib/settle';
-import { device } from '../../lib/device';
+import { device, pixelRatio, quality as qualityNow } from '../../lib/device';
+import { fromVideo } from '../../lib/videoLook';
 import { dropTransmission } from '../../lib/three/glass';
 import { gltfStats } from '../../lib/three/gltfCache';
 import { STEPS } from '../../lib/three/pace';
@@ -253,7 +254,24 @@ export async function create(canvas, ctx) {
   const tier = device().tier;
   const small = tier !== 'high' || Math.min(window.innerWidth, window.innerHeight) < 600;
   const coarse = window.matchMedia?.('(pointer: coarse)').matches ?? false;
-  const post = createPost(renderer, scene, camera, { small, bloom: LOOK.bloom });
+  // (drawn at the most the runtime's quality gives, 1.5 at most as the
+  // galaxy always drew, over a canvas of the screen's own pixels, module.js's
+  // `canvas: 'screen'`; the pace's steps come off it, sharper than the
+  // canvas folded down and softer brought up by FSR 1, multisampled by how
+  // sharp it's drawn: universe/post.js's finish. Asked each frame, so the
+  // settings' render resolution is the next frame's)
+  const mostRatio = () => rt?.quality?.ratioUnder?.(1.5, { unscaled: true }) ?? pixelRatio(1.5);
+  const post = createPost(renderer, scene, camera, { small, bloom: LOOK.bloom, ratio: mostRatio(), upscale: true, top: mostRatio });
+  // the visitor's video settings, what they turned of them (lib/videoLook.js):
+  // the bloom and the multisampling (the galaxy draws no grain and no
+  // aberration of its own), at the start and live (onVideo, below)
+  let video = fromVideo(rt?.video, qualityNow().level);
+  let floored = false; // (the runtime's floor took the bloom: lowerQuality)
+  const applyVideo = () => {
+    post.glowing(video.bloom && !floored);
+    post.maxSamples(video.samples);
+  };
+  applyVideo();
   // the map in 3D, drawn in the flight's place while it's open (./holo/drive.js)
   const holo = createHoloDriver({ post, small, reduced, invalidate: () => ctx.invalidate() });
   // (the house look, below, on whatever's warmed: patched before it's compiled)
@@ -2774,7 +2792,7 @@ export async function create(canvas, ctx) {
     }
   }
   scene.add(spares);
-  const ready = Promise.all([built, dressed, warm(scene), post.composer ? precompilePasses(renderer, post.composer, camera) : null]).then(() => {
+  const ready = Promise.all([built, dressed, warm(scene), post.composer ? precompilePasses(renderer, post.composer, camera) : null, post.precompileFinish?.(camera)]).then(() => {
     scene.remove(spares);
     if (disposed) return;
     for (const [k, model] of stock) fleet.stock(k, model);
@@ -2902,6 +2920,13 @@ export async function create(canvas, ctx) {
       state.shown = on;
       if (!on) engine?.set({ speed: 0, on: false });
     },
+    // a video control turned in the settings (lib/video.js): the bloom and
+    // the multisampling taken live; the rest the panel offers a reload for
+    onVideo(values) {
+      video = fromVideo(values, qualityNow().level);
+      applyVideo();
+      ctx.invalidate();
+    },
     // the runtime's quality: drawn softer through the post chain, a step at
     // a time, over a canvas that keeps its size (module.js's sharpness 'own': no
     // resize, so no cleared frame and the HUD stays crisp); at the floor
@@ -2911,6 +2936,7 @@ export async function create(canvas, ctx) {
       post.sharpness = STEPS[Math.min(level, STEPS.length - 1)];
       followDrawn();
       if (level < STEPS.length) return;
+      floored = true;
       post.lite();
       capDetail = true;
       ctx.invalidate();

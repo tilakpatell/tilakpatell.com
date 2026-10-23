@@ -725,7 +725,7 @@ export const COLLIDERS = {
   wong: furnished('wong'),
   // each destination's buildings and fittings, and its people (but those who
   // roam, people or crowd: they're never where they started for long)
-  ...Object.fromEntries(DESTINATIONS.map((d) => [d.id, [...d.solids.map((o) => (o.r ? circle(o.id, o.x, o.z, o.r) : box(o.id, o.x, o.z, o.w, o.d))), ...d.people.filter((o) => !o.roams).map((o) => circle(o.id, o.x, o.z, PERSON)), ...d.extras.flatMap((o, n) => (o.roams ? [] : [circle(`${d.id}-extra-${n}`, o.x, o.z, PERSON)]))]])),
+  ...Object.fromEntries(DESTINATIONS.map((d) => [d.id, [...d.solids.map((o) => ({ ...(o.r ? circle(o.id, o.x, o.z, o.r) : box(o.id, o.x, o.z, o.w, o.d, o.turn)), ...(o.top != null && { top: o.top }), ...(o.ledge && { ledge: true }) })), ...d.people.filter((o) => !o.roams).map((o) => circle(o.id, o.x, o.z, PERSON)), ...d.extras.flatMap((o, n) => (o.roams ? [] : [circle(`${d.id}-extra-${n}`, o.x, o.z, PERSON)]))]])),
 };
 // Walls: the street's fences, the house's inner walls and the low banister up
 // the stairs' open side, and the balcony's low railing on its south edge. A
@@ -829,10 +829,11 @@ export const CLIMB = MORTY.step + MORTY.jump ** 2 / (2 * MORTY.gravity);
 // each area's ceiling (in the rooms, as ./interiors draws them; outside, the sky)
 export const CEILING = { street: Infinity, annex: Infinity, house: 2.6, upstairs: 2.6, garage: 2.9, school: 2.9, arcade: 8, basement: 4.4, mindblowers: 3.6, oval: 3.4, diner: 3, wong: 2.8, ...Object.fromEntries(DESTINATIONS.map((d) => [d.id, d.kind === 'outdoor' ? Infinity : d.ceiling])) };
 
-// What Morty can stand on in an area: what's low enough to get onto, with
-// room for him under the ceiling once he's up. Everything else is solid,
-// however high he jumps.
-const standable = (area, c) => c.top != null && c.top <= CLIMB + 1e-9 && c.top + MORTY.height <= CEILING[area] + 1e-9;
+// What Morty can stand on in an area: what's low enough to get onto (or a
+// place's ledge, `ledge: true`: got onto from the one below it, however high:
+// ./dimensions/beanstalk.js), with room for him under the ceiling once he's
+// up. Everything else is solid, however high he jumps.
+export const standable = (area, c) => c.top != null && (c.top <= CLIMB + 1e-9 || c.ledge === true) && c.top + MORTY.height <= CEILING[area] + 1e-9;
 const LOW = Object.fromEntries(Object.keys(AREAS).map((id) => [id, collidersIn(id).filter((c) => standable(id, c))]));
 const TOPS = Object.fromEntries(Object.keys(LOW).map((id) => [id, [...new Set(LOW[id].map((c) => c.top))].sort((a, b) => a - b)]));
 // what's in his way wherever he stands or jumps: the colliders he can't get onto

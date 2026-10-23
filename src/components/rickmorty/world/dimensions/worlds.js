@@ -14,8 +14,9 @@
 //   far { n, e, s, w }: { styles, h } | null    the skyline
 //   vista, hero [dx, dz]                       the open view north from the
 //                                             way in, and what it's on
-//   landmarks [{ at: [dx, dz], style, w, d, h, y, look }]   a building of the
-//                                             record's own, where it says (`y`: up in the sky)
+//   landmarks [{ at: [dx, dz], style, w, d, h, y, plain, look }]   a building of the
+//                                             record's own, where it says (`y`: up in the sky;
+//                                             `plain`: no windows on it, a cloud)
 //   scatter [{ model, h, n: { high, mid, low }, r: [near, far] }]   kit models out round it
 //   forecourt { path: { w, color }, props: [{ model, h, n }] }
 //   stands [{ at, w, d, h, rows, face, kinds, n, beat, look, always }]   seats facing
@@ -46,6 +47,7 @@
 // The rest of the places' records are ./worlds2.js's, merged in here.
 
 import { WORLDS2 } from './worlds2';
+import { CASTLE, CLOUD } from './beanstalk';
 
 // each crowd kind's triangles (its model's own, held to the file by
 // ./worlds.test.js): what a level's crowd allowance is counted in
@@ -266,8 +268,9 @@ export const WORLDS = {
   },
 
   // Fantasy World: a village of Tudor houses round the square, hills and a
-  // castle's towers beyond, woods out to the fog, and up the beanstalk, on a
-  // cloud, the giants' castle: P8's climb on screen from the way in
+  // castle's towers beyond, woods out to the fog, and at the top of the
+  // beanstalk, level with its crown, the giants' cloud and their castle on
+  // it: the climb's top, on screen from the way in (./beanstalk.js)
   fantasy: {
     look: { walls: [0xf2e8d0, 0xe8dcc0, 0xf6eedc], roofs: [0x8a5a3a, 0x6a4a3a, 0x7a6a4a], lit: [0xffe08a], trim: 0x4a3020 },
     edge: { kind: 'fence', h: 1.2, color: 0x7a5a3a },
@@ -276,8 +279,8 @@ export const WORLDS = {
     hero: [-6, -19],
     vista: 0.26,
     landmarks: [
-      { at: [-22, -24], y: 52, style: 'dome', w: 28, d: 22, h: 7, look: { walls: [0xffffff], roofs: [0xf2f6ff], lit: [0xffffff], trim: 0xe8eef8 } },
-      { at: [-22, -24], y: 56, style: 'tower', w: 14, d: 14, h: 22, look: { walls: [0xb8b4a8, 0xa8a49a], roofs: [0x6a5a7a], lit: [0xffe08a], trim: 0x5a5650 } },
+      { ...CLOUD, style: 'dome', plain: true, look: { walls: [0xffffff], roofs: [0xf2f6ff], lit: [0xffffff], trim: 0xe8eef8 } },
+      { ...CASTLE, style: 'tower', look: { walls: [0xb8b4a8, 0xa8a49a], roofs: [0x6a5a7a], lit: [0xffe08a], trim: 0x5a5650 } },
     ],
     scatter: [
       { model: 'q:CommonTree_4', h: 9.4, n: { high: 30, mid: 18, low: 8 }, r: [20, 170] },

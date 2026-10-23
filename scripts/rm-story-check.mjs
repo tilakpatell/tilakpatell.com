@@ -6,10 +6,13 @@
 // actions: the Microverse's power, setPower), the cruiser's board and the
 // street's fight (sim.chase is the cruiser's chase), Needful Things' deal
 // and the vat's freeze (the places' actions deal, setDeal, freeze, setFreeze),
-// the Jerryboree's find (find, setFind),
-// and Total Rickall's rickall,
+// the Jerryboree's find (find, setFind), the cable studio's running order
+// (sequence, setSequence, sequence-start), Fantasy World's climb (climb,
+// setClimb; sim.m and sim.t: Morty stood on a ledge, and the game's own
+// time), and Total Rickall's rickall,
 // lookAt, shoot, stopRickall; window.__RMSTORY__: get, feed, dialOpen, jump,
-// reset; the games' own, window.__CABINET__ and window.__SEWER__), as
+// reset; the games' own, window.__CABINET__, window.__SEWER__ and
+// window.__SCHWIFTY__), as
 // scripts/c137-shots.mjs drives C-137. With the dev server up (or a preview of
 // a DEV-hooked build):
 //

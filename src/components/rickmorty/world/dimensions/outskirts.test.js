@@ -327,6 +327,14 @@ describe('a landmark and a scatter round a place', () => {
     expect(m).toMatchObject({ y: 56, look: stone });
   });
 
+  it('keeps a landmark plain where the record says so (a cloud, not a building)', () => {
+    const d = outdoor();
+    const L = lay(d, world({ landmarks: [{ at: [-23, -31], y: 20, style: 'dome', w: 28, d: 22, h: 2, plain: true }, { at: [20, -40], style: 'hut', w: 10, d: 8, h: 6 }] }));
+    const [cloud, hut] = L.lots.filter((l) => l.landmark);
+    expect(cloud.plain).toBe(true);
+    expect(hut.plain).toBe(false);
+  });
+
   it('scatters its models out round the place, as many as the level says, clear of the box and the buildings', () => {
     const d = outdoor();
     const w = world({ scatter: [{ model: 'q:CommonTree_3', h: 9.4, n: { high: 30, mid: 15, low: 6 }, r: [20, 130] }] });
