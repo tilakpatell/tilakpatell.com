@@ -52,3 +52,35 @@ What `src/components/universe/chart/input.js`, `useChartView.js` and `ChartTools
 - A pinch also turns and tilts by however much its fingers' angle and midpoint drift, with no dead zone. If a phone's pinch feels twitchy in Task 10, `gestureStep` is where a dead zone would go.
 - The turn's direction is the plan's: a drag right turns the chart clockwise, so its far side follows the hand. The owner's eye in Task 10 is where to check that it feels right.
 - The wheel's listener goes on `boxRef.current` at mount, so the box must be in the DOM from the first render. The nav map's chart is: on a phone in list mode, CSS hides it.
+
+## Task 8: the nav map draws through the chart
+
+What `src/components/universe/chart/NavChart.jsx` and the rewired `NavMap.jsx` do now, where it differs from the lane plan.
+
+### Landed
+
+- `NavChart` (default export of `chart/NavChart.jsx`) draws the nav map's chart: `.navmap-stage` holds the circle (`.navmap-chart[data-level][data-pitched]`, with the canvas of stars, the SVG, `ul.navmap-places` and `.navmap-out`) and the bar under it (`p.navmap-readout`, then the tools). Props: `view`, `marks`, `ship`, `course`, `front`, `onFront`, `frontTitle`, `frontOff`, `pick`, `here`, `hover`, `dim`, `onChoose`, `onGo`, `onRegion`, `out`, `tools`, `readout`, `handlers`, `boxRef`.
+- `NavMap.jsx` keeps its header, filters and side panel, and its view in `useChartView`. It opens on `openView(ship)`, a chip is pressed when `presetOf(view)` is its id, a list or search pick reveals the place (its gate for a star system), the course goes to `legOf`'s leg, and the capture listener sends `+`, `−` and `0` through `chartKey` (never while typing in the search). It is 436 lines, from 667.
+- The guide has an "On the nav map" group and a touch row for two fingers. `words.test.js` reads `chart/*.jsx`.
+- A browser smoke run (`lab/navchart/smoke.mjs`, not committed) passed: the ship in the middle, the readout, the keys, a minus typed in the search, a drag, `0`, a Shift-drag, Look straight down, a drag from a name picking nothing, the Home system chip with all six stations, the way out, the wheel, and the ship two sectors out. `navmap-check.mjs` desktop: 16 ok, the same five Citadel failures as on `main`; phone: all ok; no page errors, the fonts served.
+
+### Deviations from the plan
+
+- `NavChart` takes a `hover` prop the plan doesn't list: the place lit from the list (`data-hover`), as the nav map does today.
+- A `Mark` may carry `type` (nav.js's words for what it is), and `marks.js` copies it, so a place's button still says "Ember, Star".
+- `placeMarks` takes `measure(mark)`, a name's width in px. The nav map measures its names with a canvas in the page's own font, as today's map did; without it (server-side, the tests) it uses `labelSize`'s estimate.
+- `project`'s `inside` is within the range across (x and z), not in 3D. With the ship 600 below the disc, the Home system chip (a range of 381) showed none of the stations. A height never takes a place off the chart now; its stem says how far it is.
+- `CHART_WORDS.keys` is `{ zoom, back }`, so the keys line draws the 0 as a cap: "+ − zoom in and out, 0 back to the ship".
+- The front is a mark `NavChart` makes from `where().front` (id `front`, all levels, priority 47, after the wonders as before), so its name thins with the rest. The war's SVG is never left off.
+- Home system's and the Curve's marks are `button.navmap-place.navmap-homebtn`, a name and no dot, in today's Home system look (mono capitals at 0.6rem) in each one's colour.
+- A place the filter dims has no name of its own (today's `label: false`); it shows on a hover. A dimmed pick keeps its name.
+- `.navmap-chart` keeps `position: relative` with `aspect-ratio: 1` inside the stage (a flex column), not `position: absolute; inset: 0`, so the circle never takes the bar's height. It also gets `user-select: none`: a drag across the names selected them.
+- The phone's stage is `min(100%, calc(50svh − 3.25rem))`: today's rule is 50svh (the plan's 42svh isn't in the code), and the chart and its bar together are as tall as the chart was.
+- Moons keep the worlds' bigger dot (`data-kind='moon'` joins the world dot's rule).
+- The plan's line numbers for `NavMap.jsx` and `navmap.css` (`UNDER`, the phone's wonder-name rule) are not in today's code. The names were laid out by `chartLabels.js`, which this replaces.
+
+### Left
+
+- `chartLabels.js` and its test have no other importer now. `nav.js`'s `chartAt`, `chartRadius`, `chartHeading` and `onChart` are used only by `nav.js` and `nav.test.js`. `nav.js` is not this lane's to edit; both are for a later clean-up.
+- At the opening zoom (120,000 round the ship), the chart names fewer places than `main`'s whole-universe chart did (18 of 39 in the smoke run). The rest show on a hover. `labelSize`'s 24 px box height, against 18 px names, is the knob if Task 10's owner look wants more.
+- `universe-war-check.mjs` and `sector-check.mjs` were not run in a browser here; `NavChart.test.jsx` pins the seven war sectors and the front's button, and `marks.test.js` pins The Curve's chip.

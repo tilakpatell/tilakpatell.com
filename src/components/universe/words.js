@@ -56,5 +56,6 @@ export const CHART_WORDS = {
   sector: ([sx, sy, sz]) => `Sector ${[sx, sy, sz].map((n) => String(n).replace('-', '−')).join(', ')}`,
   // far is formatDistance's words for the height; side is its sign, 0 within a ship's length of the disc
   height: (far, side) => (side === 0 ? 'Level with the disc' : `${far} ${side > 0 ? 'above' : 'below'} the disc`),
-  keys: 'zoom in and out, 0 back to the ship', // after the keys line's + and − caps
+  // the keys line's: after its + and − caps, then after its 0
+  keys: { zoom: 'zoom in and out', back: 'back to the ship' },
 };
