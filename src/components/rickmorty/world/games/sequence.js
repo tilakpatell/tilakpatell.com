@@ -5,13 +5,14 @@
 // the first, while the clock runs on; one already on, used again, costs
 // nothing. The clock runs from the place's start spot (the control booth's
 // countdown), or from the first set used where there's none; out of time and
-// it's lost, as caught is. Pure and import-free, stepped by the place's stage
+// it's lost, as caught is (and, held for the place, from its say-so: Heist-Con's
+// crew). Pure and import-free, stepped by the place's stage
 // (../dimensions/stage.js) inside its own update, its presses at no time and
 // then the clock; tested in Node.
 //
-//   newSequence({ items, order, s, start, perks }) → game
-//   stepSequence(game, { use, start }, dt) → game   use: a set's id, or null; start: the start spot pressed
-//     events: start | early { id } (a set used before the countdown) | on { id } | dark { id } | won | lost { why: 'time' }
+//   newSequence({ items, order, s, start, ready, perks }) → game   ready: false holds the countdown till the place says (Heist-Con's crew)
+//   stepSequence(game, { use, start, ready }, dt) → game   use: a set's id, or null; start: the start spot pressed; ready: the place's say-so, kept once given
+//     events: start | wait (the start pressed before it's ready) | early { id } (a set used before the countdown) | on { id } | dark { id } | won | lost { why: 'time' }
 //   runningOrder(items, n, rand) → n of the sets, in a running order drawn by rand
 //   sequenceNews(game, { done, fading }) → 'done' | 'caught' | null   what the place says
 //   sequenceReadout(snapshot, labels, words) → { on, vitals, line }   for the HUD's meter
@@ -35,16 +36,20 @@ export const WORDS = Object.freeze({
 });
 
 // (the options may carry `perks`; none is read yet)
-export function newSequence({ items, order, s = TUNING.s, start = false } = {}) {
-  return { phase: 'idle', items, order, on: 0, start, left: s, len: s, last: null, told: false, events: [] };
+export function newSequence({ items, order, s = TUNING.s, start = false, ready = true } = {}) {
+  return { phase: 'idle', items, order, on: 0, start, ready, left: s, len: s, last: null, told: false, events: [] };
 }
 
-export function stepSequence(prev, { use = null, start = false } = {}, dt = 1 / 60) {
+export function stepSequence(prev, { use = null, start = false, ready = false } = {}, dt = 1 / 60) {
   if (prev.phase === 'won' || prev.phase === 'lost') return { ...prev, events: [] };
-  const g = { ...prev, events: [] };
+  const g = { ...prev, events: [], ready: prev.ready || ready };
+  // (the start, once the place has said so; before then it only says it's waiting)
   if (start && g.start && g.phase === 'idle') {
-    g.phase = 'run';
-    g.events.push({ type: 'start' });
+    if (!g.ready) g.events.push({ type: 'wait' });
+    else {
+      g.phase = 'run';
+      g.events.push({ type: 'start' });
+    }
   }
   // (a set before the countdown's started does nothing but say so; with no start spot, the first set starts it)
   if (g.items.includes(use) && g.phase === 'idle' && g.start) g.events.push({ type: 'early', id: use });

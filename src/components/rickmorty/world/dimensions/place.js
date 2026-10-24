@@ -66,7 +66,9 @@ export const GARAGE_BACK = { x: -301.2, z: 101.4, face: 0 };
 // out of time is `lost`, said by `who`; with `hunt`, the place's hunters are
 // after him while the clock runs (`spotted` said as it starts); `words`, the
 // HUD's. Each set's spot tells the stage (`sequence-<id>`), and the start
-// spot `sequence-start`.
+// spot `sequence-start`. `before?`: with the place's `collect` `start`ed
+// (sharing the task, ticking nothing), the countdown waits for it, and the
+// start spot says `before` till then.
 // `rhythm`: the place's song on the rhythm kind (../games/rhythm.js), played
 // over the page from its `spot` (RmWorld's PLACES opens ../games/Schwifty.jsx
 // there): { task, spot, unlock }: the song won is the task, `unlock` its

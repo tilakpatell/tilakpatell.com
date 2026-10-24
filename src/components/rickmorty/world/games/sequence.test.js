@@ -16,9 +16,37 @@ const play = (g, ...ids) => {
 const LABELS = { 'set-ants': 'Ants in my Eyes Johnson’s Electronics', 'set-sneezy': 'Mr. Sneezy', 'set-legs': 'Baby Legs and Regular Legs' };
 
 describe('the sequence kind: the sets on in the running order, against the clock', () => {
+  it('holds the countdown till the place says it’s ready, a start before then only saying so', () => {
+    const held = game({ ready: false });
+    expect(held).toMatchObject({ phase: 'idle', ready: false });
+    // (the start pressed before the place's say-so: still idle, the clock untouched, and it says so)
+    const waited = stepSequence(held, { start: true }, 0);
+    expect(waited).toMatchObject({ phase: 'idle', ready: false, left: TUNING.s });
+    expect(waited.events).toEqual([{ type: 'wait' }]);
+    // (a set used then is early, as ever)
+    expect(stepSequence(held, { use: 'set-sneezy' }, 0).events).toEqual([{ type: 'early', id: 'set-sneezy' }]);
+    // (the say-so alone starts nothing, and is kept)
+    const ready = stepSequence(held, { ready: true }, 5);
+    expect(ready).toMatchObject({ phase: 'idle', ready: true, left: TUNING.s });
+    expect(ready.events).toEqual([]);
+    expect(stepSequence(ready, {}, 1)).toMatchObject({ phase: 'idle', ready: true });
+    // (then the start runs it)
+    const run = stepSequence(ready, { start: true }, 0);
+    expect(run).toMatchObject({ phase: 'run' });
+    expect(run.events).toEqual([{ type: 'start' }]);
+    // (both in one step: it runs)
+    expect(stepSequence(held, { ready: true, start: true }, 0)).toMatchObject({ phase: 'run', ready: true });
+    // (a fresh game is held again, and a lost one takes nothing)
+    expect(game({ ready: false }).ready).toBe(false);
+    const lost = { ...held, phase: 'lost' };
+    const after = stepSequence(lost, { ready: true, start: true }, 1);
+    expect(after).toMatchObject({ phase: 'lost', ready: false });
+    expect(after.events).toEqual([]);
+  });
+
   it('waits, the clock still, till the countdown’s started, and a set used first only says to start it', () => {
     const g = game();
-    expect(g).toMatchObject({ phase: 'idle', items: ITEMS, order: ORDER, on: 0, start: true, left: TUNING.s, len: TUNING.s, last: null, told: false, events: [] });
+    expect(g).toMatchObject({ phase: 'idle', items: ITEMS, order: ORDER, on: 0, start: true, ready: true, left: TUNING.s, len: TUNING.s, last: null, told: false, events: [] });
     expect(stepSequence(g, {}, 5)).toMatchObject({ phase: 'idle', left: TUNING.s });
     const early = stepSequence(g, { use: 'set-sneezy' }, 0);
     expect(early).toMatchObject({ phase: 'idle', on: 0, last: null });

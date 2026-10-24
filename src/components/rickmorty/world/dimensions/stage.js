@@ -228,9 +228,10 @@ export function stage(kit, id, { ground, groundTile = 4, floor, floorTile = 2, w
   // before the countdown answered with the place's `early`. Its running
   // order dealt afresh whenever the place calms; the builder's lamps
   // (`sequence({ lamps })`: a set's id to its glow) lit as their sets go on,
-  // and every one once its task's done. ──
+  // and every one once its task's done. With `before`, its countdown waits
+  // for the place's collect (the `collected` it's told: Heist-Con's crew). ──
   const sq = d.sequence;
-  const aired = () => newSequence({ items: sq.items, order: sq.order ?? runningOrder(sq.items, sq.need, Math.random), s: sq.s, start: Boolean(sq.start) });
+  const aired = () => newSequence({ items: sq.items, order: sq.order ?? runningOrder(sq.items, sq.need, Math.random), s: sq.s, start: Boolean(sq.start), ready: !sq.before });
   let airing = sq ? aired() : null;
   let switched = [];
   let lamps = null;
@@ -260,6 +261,8 @@ export function stage(kit, id, { ground, groundTile = 4, floor, floorTile = 2, w
       if (sq.spotted && airing.events.some((e) => e.type === 'start')) state.emit?.('spotted', { area: id, who: null, text: sq.spotted });
       // (a set used before the countdown says so, over its own line)
       if (sq.early && airing.events.some((e) => e.type === 'early')) state.emit?.('note', { area: id, text: sq.early });
+      // (the start before the place's collect is in says so, over its own line: Heist-Con's crew)
+      if (sq.before && airing.events.some((e) => e.type === 'wait')) state.emit?.('note', { area: id, text: sq.before });
     }
     airing = stepSequence(airing, {}, dt);
     airing = told(sequenceNews(airing, { done, fading: false }), airing, sq, state);
@@ -496,7 +499,8 @@ export function stage(kit, id, { ground, groundTile = 4, floor, floorTile = 2, w
       Object.assign(area.actions, {
         ...Object.fromEntries(sq.items.map((u) => [`sequence-${u}`, () => switched.push({ use: u })])),
         'sequence-start': () => switched.push({ start: true }),
-        sequence: () => ({ phase: airing.phase, order: [...airing.order], on: airing.on, left: airing.left, len: airing.len, last: airing.last }),
+        ...(sq.before && { collected: () => switched.push({ ready: true }) }),
+        sequence: () => ({ phase: airing.phase, order: [...airing.order], on: airing.on, left: airing.left, len: airing.len, last: airing.last, ready: airing.ready }),
         meter: () => sequenceReadout(woundUp ? null : airing, labels, sq.words),
         ...(import.meta.env.DEV && { setSequence: (patch) => (airing = { ...airing, ...patch }) }),
       });
