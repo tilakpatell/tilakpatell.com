@@ -13,7 +13,9 @@
 // with no dome on it), the part is built (`part: 'built'`): a dome for a
 // shield generator, a block with its windows lit for a bridge, a bulb with
 // a glowing ring for a reactor, in the ship's own grey. A battery is the
-// model's own pieces round it, where it has any.
+// model's own pieces round it, where it has any, else a turbolaser turret
+// built there (a base, a housing, its two barrels forward), so every
+// battery a bolt can hit is a gun on the hull that can be shot off it.
 // The places are shares of the ship's length on the hull it's drawn with
 // (scripts/capital-parts.mjs measures them), the same the battle hits, so
 // what's hit is what's seen and what goes is what was hit.
@@ -193,6 +195,9 @@ const shapes = () =>
     windows: new THREE.BoxGeometry(2.2, 0.12, 0.04),
     bulb: new THREE.SphereGeometry(1, 20, 12),
     ring: new THREE.TorusGeometry(0.99, 0.045, 6, 28),
+    base: new THREE.CylinderGeometry(0.9, 1, 0.35, 16),
+    housing: new THREE.BoxGeometry(1.3, 0.55, 1.1),
+    barrel: new THREE.CylinderGeometry(0.07, 0.07, 1.4, 8).rotateX(Math.PI / 2),
   });
 const looks = new Map(); // a kind → its built parts' materials (shared by every copy)
 function looksOf(kind) {
@@ -224,6 +229,10 @@ function build(spec, kind, k) {
   } else if (spec.build === 'block') {
     add(s.block, hull, [0, 0.4, 0], [1, 1, 1]);
     add(s.windows, lit, [0, 0.5, 0.66], [1, 1, 1]);
+  } else if (spec.build === 'turret') {
+    add(s.base, hull, [0, 0.17, 0], [1, 1, 1]);
+    add(s.housing, hull, [0, 0.6, 0], [1, 1, 1]);
+    for (const x of [-0.3, 0.3]) add(s.barrel, hull, [x, 0.62, 1.1], [1, 1, 1]);
   } else {
     add(s.bulb, hull, [0, 0.2, 0], [1, 0.72, 1]);
     add(s.ring, lit, [0, 0.2, 0], [1, 1, 1]);
@@ -233,7 +242,8 @@ function build(spec, kind, k) {
   const r = spec.r;
   const down = spec.at[1] < 0 ? -1 : 1;
   g.scale.setScalar(r / k);
-  if (down < 0) g.rotation.x = Math.PI;
+  // (turned over under the keel: a turret about its length, so its barrels still point forward)
+  if (down < 0) g.rotation[spec.build === 'turret' ? 'z' : 'x'] = Math.PI;
   g.position.set(spec.at[0] / k, (spec.at[1] - down * 0.45 * r) / k, spec.at[2] / k);
   return g;
 }
@@ -289,10 +299,12 @@ export function* cutting(template, kind, specs = partSpecs(kind)) {
     }
   }
   const ids = [];
-  // the built ones: the subsystems the model has (next to) nothing for
+  // the built ones: the subsystems the model has (next to) nothing for, and
+  // a turret for a battery it has no piece at
   for (const spec of specs) {
-    const built = Boolean(spec.build);
-    if (built) holder.add(build(spec, kind, k));
+    const turret = !spec.build && spec.kind === 'battery' && !counts.get(spec.id);
+    const built = Boolean(spec.build) || turret;
+    if (built) holder.add(build(turret ? { ...spec, build: 'turret' } : spec, kind, k));
     if (built || counts.get(spec.id) > 0) ids.push(spec.id);
   }
   // each mesh in its parts and its three sections

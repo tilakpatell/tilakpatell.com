@@ -99,4 +99,24 @@ describe('capitalParts', () => {
     expect(built.rotation.x).toBeCloseTo(Math.PI, 6);
     expect(built.position.y * holder.scale.x).toBeGreaterThan(at[1]);
   });
+
+  it('builds a turret for a battery the model has no piece at, its barrels forward, and takes the model’s own where it has one', () => {
+    const { holder } = ship();
+    const dome = SUBSYSTEMS.destroyer[0].at;
+    const specs = [
+      { id: 'battery-0', kind: 'battery', at: [0.3, -0.2, 0.3], r: 0.014, build: null },
+      { id: 'battery-1', kind: 'battery', at: dome, r: 0.017, reach: 0.03, build: null },
+    ];
+    const { holder: cut, ids } = cutParts(holder, 'destroyer', specs);
+    expect(ids).toEqual(['battery-0', 'battery-1']);
+    const parts = partsOf(cut);
+    const turret = parts.knock('battery-0');
+    // (a base, a housing and two barrels, built: under the keel turned about its length)
+    expect(turret).toHaveLength(4);
+    expect(turret[0].parent.rotation.z).toBeCloseTo(Math.PI, 6);
+    expect(turret[0].parent.rotation.x).toBe(0);
+    // (the other the model's own piece: no turret built for it)
+    expect(parts.knock('battery-1').every((m) => m.geometry !== turret[0].geometry)).toBe(true);
+    expect(cut.children.filter((o) => o.isGroup && o.children.some((m) => m.userData.part === 'battery-1'))).toHaveLength(0);
+  });
 });
