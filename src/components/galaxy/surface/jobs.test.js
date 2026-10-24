@@ -107,6 +107,22 @@ describe('free roam’s jobs', () => {
     expect(end.out).toEqual([{ type: 'done' }]);
   });
 
+  it('lays a downed ship at a salvage out on open ground, its crates clear of its length', () => {
+    const { board } = boardOf('tatooine', { n: 5 });
+    const job = board.find((j) => j.job === 'salvage');
+    const [ship, smoke] = job.props;
+    expect(ship).toMatchObject({ kind: 'downed', at: job.steps[0].at });
+    expect(smoke.kind).toBe('wrecksmoke');
+    for (const [x, z] of job.steps[0].spots) expect(Math.hypot(x - ship.at[0], z - ship.at[1])).toBeGreaterThan(ship.opts.metres / 2);
+    // (at one of the world's places there's no wreck to lay: the place is what's there)
+    const mill = { id: 'mill', land: { at: [0, 0] }, places: [{ name: 'The old mill', at: [150, 0] }], quests: [], rides: [] };
+    const atMill = [];
+    for (let seed = 1; seed < 40; seed++) atMill.push(...jobBoard(mill, { from: [0, 0], ok: ([x, z]) => x === 150 && z === 0, rand: seeded(seed), n: 1 }).filter((j) => j.job === 'salvage'));
+    expect(atMill.length).toBeGreaterThan(0);
+    for (const j of atMill) expect(j.name).toBe('Salvage at the old mill');
+    for (const j of atMill) expect(j.props).toBeUndefined();
+  });
+
   it('gives a courier longer the further it has to go', () => {
     const { board } = boardOf('naboo', { n: 5 });
     const job = board.find((j) => j.job === 'courier');

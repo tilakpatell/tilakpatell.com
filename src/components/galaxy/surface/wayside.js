@@ -15,6 +15,8 @@
 //     ship across a hilltop)
 //     (a thing's `lie`: metres each way the scene lays it along the land's slope)
 //   regionsAround(x, z, reach) → [[rx, rz]] whose middles are within reach
+//   wreckOf(at, yaw, rand) → { things: [a downed ship, its smoke], metres } (the
+//     wreck's own, alone: free roam's salvage jobs lay one at their spot, jobs.js)
 //   laidOn(thing, height) → the thing on the land's own height (`abs`, `y`),
 //     one with a `lie` pitched and rolled to the land's slope under it, one
 //     with a `seat` (a house's) on the lowest of the land round it, so no
@@ -125,6 +127,21 @@ export function waysideAt(site, rx, rz, height = null) {
     yaw: yaw + (more.yaw ?? 0),
   }));
   return { id: `wayside:${rx},${rz}`, kind, at: [x, z], things };
+}
+
+export function wreckOf(at, yaw, rand) {
+  const [ship, metres] = SHIPS[Math.floor(rand() * SHIPS.length)];
+  const roll = (rand() < 0.5 ? -1 : 1) * (0.3 + rand() * 0.3);
+  const c = Math.cos(yaw);
+  const s = Math.sin(yaw);
+  // (its smoke a metre off each way, turned with it, as the wreck's kit has it)
+  return {
+    metres,
+    things: [
+      { kind: 'downed', opts: { ship, metres, roll }, lie: metres * 0.45, at: [at[0], at[1]], yaw },
+      { kind: 'wrecksmoke', solid: false, opts: { h: 18, r: 1.1 }, at: [at[0] + c + s, at[1] - s + c], yaw },
+    ],
+  };
 }
 
 export function regionsAround(x, z, reach) {
