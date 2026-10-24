@@ -77,8 +77,8 @@ import { speak, stopSpeaking } from './shipVoice';
 import { ROOMS_SAY, SAY } from './say';
 import { gameGoal } from './dimensions/gameGoal';
 import { BANDSTAND, LOT, PARK, POND, POSTERS, ROADS, SHOPS, TOWN_HOUSES, TOWN_TREES } from './town/plan';
-import { lineSaid } from './voicelines';
-import { preloadVoiced, sayVoiced, stopVoiced } from '../../../lib/voiced';
+import { useRmToast } from './useRmToast';
+import { stopVoiced } from '../../../lib/voiced';
 import { useLooks } from '../wardrobe/useLooks';
 import './world.css';
 import { useTravellers } from '../../middleearth/towns/useTravellers';
@@ -363,23 +363,10 @@ export default function RmWorld({ start = null, onLeave = null, frozen = false, 
   const [open, setOpen] = useState(null);
   const openRef = useRef(null);
   const [gl, setGl] = useState('loading'); // loading | on | failed | lost
-  const [toast, setToast] = useState(null);
+  const { toast, say } = useRmToast();
   const pending = useRef([]); // tasks done while something's open over the page, told on the way out
   const api = useRef(null);
 
-  // (what someone says is heard in their own voice where it's been made
-  // (./voicelines.js, lib/voiced.js); the next thing said, voiced or not, stops it)
-  const say = useCallback((t) => {
-    setToast({ ...t, at: performance.now() });
-    if (t.kind === 'say') {
-      const said = lineSaid(t.text);
-      sayVoiced(said?.who, said?.text);
-    }
-  }, []);
-  useEffect(() => {
-    preloadVoiced();
-    return stopVoiced;
-  }, []);
   // the adventure told what's happened (../adventure/), and what it says
   // back: an episode's closing line, and the next one's card (a new
   // visitor's first, once C-137's world is on). While something's open over
@@ -391,7 +378,7 @@ export default function RmWorld({ start = null, onLeave = null, frozen = false, 
   const show = useCallback(
     (out) => {
       const news = newsOf(out);
-      news.say.forEach(say);
+      news.say.forEach((t) => say(t, { after: true }));
       if (news.card != null) setCard(news.card);
     },
     [say],
@@ -414,8 +401,8 @@ export default function RmWorld({ start = null, onLeave = null, frozen = false, 
   const tellDone = useCallback((ids) => {
     const names = ids.map((id) => TASKS.find((t) => t.id === id)?.name).filter(Boolean);
     const p = progress(doneRef.current);
-    setToast({ kind: 'done', who: names.join(' and '), text: p.next ? `${p.count} of ${p.total} done` : `All ${p.total} done. Wubba lubba dub dub.`, at: performance.now() });
-  }, []);
+    say({ kind: 'done', who: names.join(' and '), text: p.next ? `${p.count} of ${p.total} done` : `All ${p.total} done. Wubba lubba dub dub.` }, { after: true });
+  }, [say]);
 
   // A thing to do, done: kept straight away (not only when the page is left),
   // sparks over Morty, and a toast now or when what's open closes.
@@ -485,12 +472,6 @@ export default function RmWorld({ start = null, onLeave = null, frozen = false, 
   );
   // a walkway cabinet's target beaten (told as it's beaten, said when it closes)
   const cabinetWon = useCallback(() => tell({ type: 'win', game: 'cabinet' }), [tell]);
-
-  useEffect(() => {
-    if (!toast) return undefined;
-    const t = setTimeout(() => setToast(null), toast.kind === 'say' ? 5600 : toast.bad ? 3400 : 4400);
-    return () => clearTimeout(t);
-  }, [toast]);
 
   const world = three.on && gl !== 'failed' && gl !== 'lost';
   return (
@@ -1112,14 +1093,14 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
         s.escape = { ...e, at: s.t };
         sound('siren');
       }
-      // (done once they've had their say, a long one read first: the President gets in his car then)
-      if (TALK_DONE[n.id]) later(() => complete(TALK_DONE[n.id]), Math.max(TALK_MS, lineHold(line?.text) * 1000));
+      // (done once they've had their say: the President gets in his car then; what's told of it waits till a long one's read)
+      if (TALK_DONE[n.id]) later(() => complete(TALK_DONE[n.id]), TALK_MS);
       // a missing-cat poster read: kept, and the last of them is the thing done
       if (POSTER_IDS.has(n.id) && !postersRead().includes(n.id)) {
         const read = [...postersRead(), n.id];
         local.set(POSTERS_READ, read);
         if (POSTER_IDS.size === read.length) later(() => complete('posters'), TALK_MS);
-        else later(() => say({ kind: 'note', text: `${read.length} of ${POSTER_IDS.size} posters read` }), TALK_MS);
+        else later(() => say({ kind: 'note', text: `${read.length} of ${POSTER_IDS.size} posters read` }, { after: true }), TALK_MS);
       }
       if (COLLECT[n.id] && COLLECT[n.id].spots.every((id) => s.used.has(id))) {
         const c = COLLECT[n.id];

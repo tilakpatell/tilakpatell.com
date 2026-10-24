@@ -179,16 +179,17 @@ export const EVIL_CHECKS = {
     await at(page, 12, 2, 'after Evil Rick');
     await goalIs(page, 'evilmorty', 'with Evil Rick down');
 
-    // the Morty with the eyepatch: through his portal while it's open (4 s
-    // of the place's time, evilrick.js's), his reveal read before what
-    // follows covers it, and then the tick told
+    // the Morty with the eyepatch: through his portal while it's open (4 s,
+    // evilrick.js's; the tick's timer is the page's, so it's timed here by
+    // the clock, not the game's time, which runs slow on a slow machine),
+    // his reveal read before what follows covers it, and then the tick told
     await warpUse(page, 'evilrick', 'evilmorty', ...spotAt('evilrick', 'evilmorty'));
     await toast(page, said('evilrick', 'evilmorty'));
-    const t0 = await page.evaluate(() => window.__C137__.sim.t);
+    const t0 = Date.now();
     await isDone(page, 'evilmorty', 'the talk didn’t tick the Morty with the eyepatch');
-    const gone = (await page.evaluate(() => window.__C137__.sim.t)) - t0;
+    const gone = (Date.now() - t0) / 1000;
     check(gone < 3.9, `the Morty with the eyepatch outstayed his portal (gone at ${gone.toFixed(1)} s)`);
-    await page.waitForTimeout(Math.max(0, 4000 - gone * 1000));
+    await page.waitForTimeout(Math.max(0, 4000 - (Date.now() - t0)));
     check((await page.locator('.rm-toast', { hasText: said('evilrick', 'evilmorty') }).count()) === 1, 'the reveal was covered before it was read');
     await page.locator('.rm-toast', { hasText: /\d+ of \d+ done/ }).waitFor({ timeout: 10000 }).catch(() => {
       throw new Error('the reveal’s tick was never told');
