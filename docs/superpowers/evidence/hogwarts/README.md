@@ -28,4 +28,34 @@ The pictures (960 × 600, WebP, here):
 - `c1-noon.webp`: the cliff and the Great Hall at noon
 - `c1-night.webp`: from a boat at midnight, the moon up
 
-What is left for the grounds’ second task (`world/grounds/`): the Whomping Willow, Hagrid’s hut, the greenhouses’ insides, the pitch’s hoops and stands, the forest’s edge, the covered bridge’s sway, the station.
+What is left for the grounds’ second task (`world/grounds/`): the Whomping Willow, Hagrid’s hut, the greenhouses’ insides, the pitch’s hoops and stands, the forest’s edge, the covered bridge’s sway, the station. (Done in task 2, below.)
+
+## Lane C, task 2: the landmarks
+
+Measured on 2026-10-21 the same way (the desktop’s graphics chip on WebGPU, 1440 × 900, the world’s dusk), with the landmarks built and every lane on `main` in the world with them (Lane D’s rooms and arrival, Lane E’s wand, broom and match, Lane F’s Map, term and notice board), so the counts are the whole world’s, not the grounds’ alone. The poses are fixed now, so a later lane can measure the same ones: each a camera through the development hook’s `view(at, look)` (heights over the ground where it stands):
+
+| pose | the camera (x, z; eye over the ground) → where it looks | high: draws | high: triangles | high: memory (textures / geometry) | low: draws | low: triangles | low: memory |
+| --- | --- | ---: | ---: | --- | ---: | ---: | --- |
+| a boat on the lake | (10, 250) 2.2 m over the water → the castle, (−10, 70, −40) | 175 | 674,364 | 342 / 24 MB | 111 | 147,381 | 35 / 5 MB |
+| the lawn | (196, −14), 1.7 m → the castle’s east front | 220 | 858,727 | 368 / 46 MB | 94 | 137,825 | 35 / 6 MB |
+| the Great Hall’s door | (72, −8), 1.7 m → the great doors | 130 | 759,350 | 368 / 46 MB | 43 | 104,435 | 36 / 5 MB |
+| the Grand Staircase’s door | (32, −36), 1.7 m → the courtyard door | 129 | 736,567 | 368 / 47 MB | 42 | 101,941 | 36 / 6 MB |
+| the pitch | (300, 34), 1.7 m → up its length | 97 | 597,134 | 368 / 48 MB | 53 | 108,837 | 36 / 6 MB |
+| the station | (540, −452), 3.3 m → along the platform | 92 | 862,263 | 370 / 51 MB | 49 | 124,469 | 39 / 6 MB |
+| **the most** | | **220** | **862,263** | | **111** | **147,381** | |
+| the design’s ceiling (§2) | | 400 | 1,400,000 | | 220 | 450,000 | |
+
+Since task 1 the draws went up with the other lanes’ things in the world (the wand and its practice set, the broom, the Map’s figures, the notice board) and with the landmarks: the Willow five draws (its trunk, its bones, its fronds, its crown, the book), the hut and its paddock eight, the greenhouse’s insides five, the pitch five, the forest’s edge three, the stone circle one, the station nine. The triangles hardly moved: everything a landmark repeats is instanced (the Willow’s bones and fronds, the pumpkins, the logs, the pots and plants, the Tentacula’s vines, the sleepers, the smoke, the centaurs) and the rest is merged by material. The memory is the renderer’s own count, render targets and all: on high the textures are mostly the chain’s targets at the window’s size. Inside Hagrid’s hut: 19 draws, 1,950 triangles.
+
+Where the landmarks are walked, the counts stay under the ceiling too: the Willow’s slope at noon 165 draws and 1,034,953 triangles, the hut 147 and 1,122,702, the stone circle with the castle behind it 212 and 1,061,388, the forest’s edge at night 113 and 1,320,587 (the pines in sight, the most of anywhere on the grounds).
+
+The pictures (960 × 600, WebP, here):
+
+- `c2-willow.webp`: the Whomping Willow on its slope at noon, its limbs drooping, its fronds stirring
+- `c2-hut.webp`: Hagrid’s hut, its smoke, the woodpile, the paddock’s fence and the forest behind
+- `c2-pitch.webp`: the pitch from over the staff stand: the six stands in the houses’ colours, the hoops, the lake’s arm beyond
+- `c2-greenhouse.webp`: inside greenhouse three: the benches, the pots and the Tentacula at the far end
+- `c2-circle.webp`: the stone circle at the covered bridge’s end, the castle beyond
+- `c2-station.webp`: Hogsmeade station at noon, the scarlet train (a stand-in until the cast lane’s Express) at the platform
+- `c2-forest.webp`: the forest’s edge at night, the lanterns lit down the path
+- `c2-hutroom.webp`: inside Hagrid’s hut, the fire and the kettle
