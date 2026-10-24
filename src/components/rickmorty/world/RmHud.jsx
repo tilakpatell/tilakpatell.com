@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import RmEarnNote from '../RmEarnNote';
 import { PowerBar } from '../../universe/shared/powerBar';
 import { Link as RouterLink } from 'react-router-dom';
-import { RiArrowDownLine, RiArrowLeftLine, RiArrowUpLine, RiCheckLine, RiCloseLine, RiCrosshair2Line, RiEmotionLaughLine, RiEyeLine, RiHeart3Line, RiHome4Line, RiListCheck2, RiFlashlightLine, RiLiveLine, RiPlantLine, RiSearchEyeLine, RiSettings3Line, RiShieldLine, RiShirtLine, RiTimerLine, RiToolsLine, RiTyphoonLine, RiVipCrownLine, RiVipDiamondLine } from 'react-icons/ri';
+import { RiArrowDownLine, RiArrowLeftLine, RiArrowUpLine, RiCheckLine, RiCloseLine, RiCrosshair2Line, RiEmotionLaughLine, RiEyeLine, RiHeart3Line, RiHome4Line, RiListCheck2, RiFlashlightLine, RiLiveLine, RiPlantLine, RiSafe2Line, RiSearchEyeLine, RiSettings3Line, RiShieldLine, RiShirtLine, RiTimerLine, RiToolsLine, RiTyphoonLine, RiVipCrownLine, RiVipDiamondLine } from 'react-icons/ri';
 import { EMOTES, wheelAngle } from '../../../lib/emote';
 import { local } from '../../../lib/hooks';
 import { Arms, Cluster, Prompt, Reticle, Stick, TouchButton, Vitals, createFlightCluster, reticleState } from '../../../runtime/hud';
@@ -43,7 +43,7 @@ const EMOTE_NAME = { wave: 'Wave', cheer: 'Cheer', dance: 'Dance', taunt: 'Taunt
 const HAND_GUN = { name: 'Rick’s gun', line: 'primary', index: 0, ammo: 0, max: 0, filling: 0 };
 
 // a place's game's meter, its icon by the kind, or the place's own (./games/meter.js)
-const METER_ICON = { power: <RiFlashlightLine aria-hidden="true" />, deal: <RiSearchEyeLine aria-hidden="true" />, freeze: <RiEyeLine aria-hidden="true" />, find: <RiTimerLine aria-hidden="true" />, sequence: <RiLiveLine aria-hidden="true" />, climb: <RiPlantLine aria-hidden="true" />, gem: <RiVipDiamondLine aria-hidden="true" />, cog: <RiSettings3Line aria-hidden="true" />, crown: <RiVipCrownLine aria-hidden="true" /> };
+const METER_ICON = { power: <RiFlashlightLine aria-hidden="true" />, deal: <RiSearchEyeLine aria-hidden="true" />, freeze: <RiEyeLine aria-hidden="true" />, find: <RiTimerLine aria-hidden="true" />, sequence: <RiLiveLine aria-hidden="true" />, climb: <RiPlantLine aria-hidden="true" />, gem: <RiVipDiamondLine aria-hidden="true" />, cog: <RiSettings3Line aria-hidden="true" />, crown: <RiVipCrownLine aria-hidden="true" />, safe: <RiSafe2Line aria-hidden="true" /> };
 
 export default function RmHud({
   touch,

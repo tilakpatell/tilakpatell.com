@@ -22,6 +22,8 @@ const USED = {
   pluto: ['claim-growing', 'claim-moons', 'claim-mines', 'claim-planet'],
   gearworld: ['cogs', 'gcog-nw', 'gcog-ne', 'gcog-se', 'gcog-sw'],
   birdworld: ['bcrystal-path', 'bcrystal-trees', 'bcrystal-east', 'bcrystal-west', 'bcrystal-grass'],
+  heistcon: ['heistbadge', 'heister-b1', 'heister-a1', 'heistplan', 'heistbooth', 'heisthire', 'heistskull', 'heistcars'],
+  vindicators: ['saw'],
 };
 
 describe('where the browser check stands Morty', () => {

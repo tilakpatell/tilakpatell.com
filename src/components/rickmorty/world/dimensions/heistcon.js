@@ -3,9 +3,13 @@
 // onto a casino strip at night (its world, ./worlds.js) and the con's banner
 // over the glass, booths down the sides, a badge table by the way in,
 // and heisters milling about (./destinations.js; stage.js's NPC behaviour).
-// Miles Knightly is assembling a crew.
+// Miles's job: his crew, then Heistotron's plan, the booths lifted in a
+// dealt order (./destinations.js's `sequence`, played by ./stage.js), their
+// alarms lit as they go.
 
-import { BALL, fitText } from '../interiors/shell';
+import * as THREE from 'three';
+import { BALL, BOX, fitText } from '../interiors/shell';
+import { mergeParts } from '../kit';
 import { specks, stage } from './stage';
 
 const LIGHT = { sun: [0xfff0d8, 0.8], hemi: [0xffe8c8, 0x3a2a1a, 1.7], fog: null, background: 0x0c0a08 };
@@ -32,17 +36,25 @@ export async function buildHeistcon(kit) {
   // (over the glass behind the stage, which shows the strip outside: ./worlds.js)
   R.frame(...P(0, -(A.z1 - A.z0) / 2 + 0.14), 0, { list: 'fixed' }).box(BLACK, 0, 6.15, 0, 7.2, 1.7, 0.1).decal('heistbanner', 0, 7.0, 0.07, 6.8, 1.7, { bright: true });
   for (const dx of [-5, 0, 5]) R.frame(...P(dx, -8), 0, { list: 'fixed' }).cyl(BLACK, 0, H - 0.6, 0, 0.2, 0.6).glow(BALL, 0xffe0a0, 1.6, 0, H - 0.7, 0, 0, 0.4);
-  // the booths: a counter, a back board, a lamp
-  for (const [dx, dz, turn] of [
-    [15, 12, Math.PI],
-    [-15, 12, Math.PI],
-    [17, -10, -Math.PI / 2],
-    [-17, -10, Math.PI / 2],
+  // the booths: a counter, a back board, a lamp, and a red alarm over the
+  // board, each its own mesh for the job to light as its booth is lifted
+  const lamps = {};
+  for (const [set, dx, dz, turn] of [
+    ['heistbooth', 15, 12, Math.PI],
+    ['heisthire', -15, 12, Math.PI],
+    ['heistskull', 17, -10, -Math.PI / 2],
+    ['heistcars', -17, -10, Math.PI / 2],
   ]) {
     const f = R.frame(...P(dx, dz), turn);
     f.box(0x3a302a, 0, 0, 0, 4, 1.05, 1.2).box(GOLD, 0, 1.05, 0, 4.1, 0.05, 1.3);
     f.box(BLACK, 0, 0, -1.1, 4, 2.6, 0.1).glow(BALL, 0xffd080, 1.5, 0, 2.4, -0.6, 0, 0.22);
     for (let k = 0; k < 4; k++) f.box([0x8a8a90, 0x4a4a50, 0xc8a24a, 0x2a2a30][k], -1.4 + k * 0.9, 1.1, 0, 0.5, 0.3 + (k % 2) * 0.3, 0.4);
+    const lit = [];
+    R.frame(...P(dx, dz), turn, { glows: lit }).glow(BOX, 0xff3a3a, 1.6, 0, 2.72, -1.1, 0, 0.9, 0.2, 0.14);
+    const lamp = new THREE.Mesh(R.own(mergeParts(lit)), R.own(new THREE.MeshBasicMaterial({ vertexColors: true })));
+    lamp.material.color.setScalar(0.15);
+    R.add(lamp, { ink: false });
+    lamps[set] = lamp;
   }
   // the badge table
   const [bx, bz] = P(-8, 13);
@@ -52,6 +64,7 @@ export async function buildHeistcon(kit) {
   for (const dz of [-6, -2, 2, 6]) for (const dx of [-4, 4]) R.frame(...P(dx, dz), 0, { list: 'fixed' }).cyl(GOLD, 0, 0, 0, 0.05, 0.95).ball(GOLD, 0, 0.95, 0, 0.07);
   for (const dx of [-4, 4]) R.frame(...P(dx, 0), 0, { list: 'fixed' }).cyl(0x8a1e22, 0, 0.85, 0, 0.025, 12, Math.PI / 2);
 
+  S.sequence({ lamps });
   S.people();
   return S.done(LIGHT, () => {});
 }
