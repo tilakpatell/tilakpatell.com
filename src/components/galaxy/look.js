@@ -19,11 +19,28 @@
 // up to 960 across on a large screen, so a thin bolt’s glow holds still.
 // Measured at a forced Endor battle (scripts/galaxy-bloom-check.mjs): the
 // darkest half of a dogfight 0.022, of a panorama 0.0004 (from 0.033–0.044).
+//
+// The models' shade is space's, as the films' and the 2017 game's capital
+// ships are lit: a hard sun, and the side away from it a dark cool grey with
+// its plating still in it, not the house's blue-violet (which on a Star
+// Destroyer's 1,600 m read as a navy slab). `house` is the house look's
+// (lib/three/house: its shade leaned most of the way to grey, the turn to
+// shade quick, and only part of the shade the look's own colour, so the
+// light the environment gives each face, the relief, shows through);
+// `space` the light the shade is made of: the ambient's colour, the dark of
+// the sky the environment is drawn on (what metal and the shade reflect,
+// ./scene.js's systemEnvironment) and the bounce opposite the sun, a grey
+// a little blue (a planet's, the nebula's), not a saturated blue.
+// Measured on the capitals' preview (scripts/preview/capitals.html) against
+// the films' Star Destroyers: the deck's lit grey 0.55–0.7 on screen, its
+// underside 0.12–0.2, both with the plates in them.
 
 export const LOOK = {
   art: 'own',
   tone: 'none',
   bloom: Object.freeze({ threshold: 1.4, knee: 0.5, strength: 0.5, radius: 0, falloff: Object.freeze([1, 0.6, 0.3, 0.12, 0.04]), flareMax: 1.6, cap: 960 }),
+  house: Object.freeze({ grey: 0.65, edge: Object.freeze([0.06, 0.45]), mix: 0.6 }),
+  space: Object.freeze({ ambient: '#b0b6c4', sky: '#101216', bounce: Object.freeze([0.26, 0.29, 0.36]) }),
   why: {
     art: 'drawn in code: the planets, the stars, the lanes, most ships and the fleets; the few models take the house’s shade',
     tone: 'the universe map’s lens (universe/post.js) tone-maps and grades the picture in its last pass, so the renderer maps none',

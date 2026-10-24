@@ -75,7 +75,7 @@ import { audioContext } from '../../lib/audio';
 import { clamp01, disposeTree, precompile, precompilePasses, singlePass } from '../../lib/three/renderer';
 import { prepareScene } from '../../lib/three/gpuWork';
 import { settle as settleWithin } from '../../lib/settle';
-import { device, pixelRatio, quality as qualityNow } from '../../lib/device';
+import { budget, device, pixelRatio, quality as qualityNow } from '../../lib/device';
 import { fromVideo } from '../../lib/videoLook';
 import { dropTransmission } from '../../lib/three/glass';
 import { gltfStats } from '../../lib/three/gltfCache';
@@ -86,6 +86,7 @@ import { createHoloDriver } from './holo/drive';
 import { GLOW, glowAt } from '../universe/battleFx';
 import { bloomGroups } from '../../lib/three/bloom';
 import { LOOK } from './look';
+import { createCapitalShadows, shadowSize } from './capitalShadow';
 import { followRatio } from './drawnAt';
 import { houseOn } from '../../lib/three/house';
 import { SHIP, TUNE, autopilot, forward, spawn, step } from '../universe/ship';
@@ -189,7 +190,8 @@ const apart = (ax, ay, az, bx, by, bz) => Math.sqrt((ax - bx) * (ax - bx) + (ay 
 // the wall clock, in seconds: every pilot's set pieces keep the same time
 const wall = () => Date.now() / 1000;
 
-// what metal reflects in a system: its star, a little of the sky
+// what metal reflects in a system, and the light its models' shade is made
+// of: its star, the dark of its sky, a bounce opposite (./look.js's `space`)
 function systemEnvironment(renderer, sys) {
   const env = new THREE.Scene();
   const made = [];
@@ -199,9 +201,9 @@ function systemEnvironment(renderer, sys) {
     env.add(m);
     made.push(geo, mat);
   };
-  add(new THREE.SphereGeometry(10, 32, 16), new THREE.MeshBasicMaterial({ color: '#0c1220', side: THREE.BackSide }));
+  add(new THREE.SphereGeometry(10, 32, 16), new THREE.MeshBasicMaterial({ color: LOOK.space.sky, side: THREE.BackSide }));
   sys.suns.forEach((s, i) => add(new THREE.SphereGeometry(i ? 1.1 : 1.5, 16, 8), new THREE.MeshBasicMaterial({ color: new THREE.Color(s.color).multiplyScalar(i ? 5 : 8) }), new THREE.Vector3(...s.dir).normalize().multiplyScalar(7)));
-  add(new THREE.SphereGeometry(2.4, 16, 8), new THREE.MeshBasicMaterial({ color: new THREE.Color(0.3, 0.38, 0.9) }), new THREE.Vector3(...s3(sys.suns[0].dir)).multiplyScalar(-7));
+  add(new THREE.SphereGeometry(2.4, 16, 8), new THREE.MeshBasicMaterial({ color: new THREE.Color(...LOOK.space.bounce) }), new THREE.Vector3(...s3(sys.suns[0].dir)).multiplyScalar(-7));
   const pmrem = new THREE.PMREMGenerator(renderer);
   const rt = pmrem.fromScene(env, 0.02);
   pmrem.dispose();
@@ -284,14 +286,19 @@ export async function create(canvas, ctx) {
   // light: each sun from its way, and a little ambient
   const keys = [new THREE.DirectionalLight('#ffffff', 2.2), new THREE.DirectionalLight('#ffffff', 0)];
   for (const k of keys) scene.add(k, k.target);
-  const ambient = new THREE.AmbientLight('#9fb0d8', 0.32);
+  // the first sun's shadow on the capital ships (capitalShadow.js): on before
+  // anything's compiled, where the device draws shadows, so every shader's
+  // made once with it
+  const shadows = createCapitalShadows({ renderer, sun: keys[0], size: shadowSize(device(), budget()) });
+  const ambient = new THREE.AmbientLight(LOOK.space.ambient, 0.32);
   // (inside a level's area of its own, the scene under its light: areaLook.js)
   let areaLook = null;
   scene.add(ambient);
   // the house look (lib/three/house), as on the universe map: the ships'
-  // and stations' shade one colour, from the space light; the post pass
+  // and stations' shade one colour, from the space light, in space's way
+  // (./look.js's `house`: a cool grey, the relief kept in it); the post pass
   // already tone-maps the house's way, and space has no fog
-  house = houseOn({ renderer, scene, sun: keys[0], ambient, toneMap: false, look: { fog: false } });
+  house = houseOn({ renderer, scene, sun: keys[0], ambient, toneMap: false, look: { fog: false, ...LOOK.house } });
   let houseFrames = 0;
 
   const sky = createSky({ small, level: device().detail, renderer });
@@ -2498,8 +2505,10 @@ export async function create(canvas, ctx) {
     post.overlay(showCab ? cabScene : null, camIn);
     // (the shade follows the suns through an eclipse; what's come in since, taken on now and then)
     house.follow({ adopt: houseFrames++ % 30 === 0 });
+    shadows?.place(camera, models.slots);
     renderer.info.reset();
     post.render(size.w, size.h);
+    shadows?.home();
     if (first) {
       first = false;
       emit({ type: 'ready' });
@@ -3073,6 +3082,7 @@ export async function create(canvas, ctx) {
       pilots.dispose();
       fleet.dispose();
       models.dispose();
+      shadows?.dispose();
       bolts.dispose();
       flashes.dispose();
       speedLines.dispose();

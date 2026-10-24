@@ -15,7 +15,7 @@
 // it has none), and a slot swaps over the moment it is.
 //
 // createModels({ prepare(object) → Promise }) → { slot(kind, size, { tint, parts }) → slot,
-//   want(kinds), prebuild(kinds), withParts(slot), hulls, builtCount, update(t), dispose() }
+//   want(kinds), prebuild(kinds), withParts(slot), hulls, slots, builtCount, update(t), dispose() }
 // hulls: the kinds’ hit shapes, loaded with their models (hulls.js); `hulls.get(kind)`
 // is a Hull or null until it has loaded
 // slot: { holder (place it, turn it), kind, size, ready, parts (a flagship's
@@ -36,7 +36,8 @@ import { GALAXY_KINDS, buildGalaxyShip } from './fleet';
 import { createHulls } from './hulls';
 import { cutting, disposeLooks, partsOf, partSpecs } from './capitalParts';
 import { dressCapital } from './capitalLook';
-import { dressGameHull } from './capitalHull';
+import { shadowed } from './capitalShadow';
+import { dressGameHull, dressGameMaps } from './capitalHull';
 
 // which way each loaded model's nose points as it comes (turned to +z): the
 // game's wherever Battlefront II (2017) has the ship, and the galaxy's own
@@ -215,7 +216,7 @@ export const HQ = {
 // less than 8,000; `_source`: bf2017-space.mjs's capOf) with every map at the
 // game's own 1,024, in the bucket (scripts/assets-publish.mjs), loaded on a
 // desktop (high and ultra) since the space fidelity design (2026-10-15), and
-// on any computer at mid since 2026-10-24 (rowsFor): the
+// on any computer at mid with the memory for them since 2026-10-24 (rowsFor): the
 // fleet's cut carries its maps at 256 and 128 (bf2017-space.mjs's FLEET_CUT),
 // a texel to several metres of a Star Destroyer, which is why the war's
 // capitals read blurred close up; a phone and the lowest detail keep that
@@ -261,11 +262,13 @@ export const withHq = (models, detail) =>
 // a computer at mid draws a desktop's rows, the capitals' ultra cuts and the
 // fighters' plain ones (the owner, 2026-10-24: medium and up as good as the
 // ships get; only a phone and the lowest detail cut hard), a phone at mid the
-// light ones (lib/device's `phone`)
+// light ones (lib/device's `phone`), and so does a computer at mid for its
+// memory (lib/device's `why`: 4 GB or less, where the ultra cuts' quarter of
+// a gigabyte of maps would crowd out the rest)
 const LIGHT = { ...MODELS };
-export const rowsFor = (detail, { phone = false } = {}) => (detail === 'mid' && !phone ? 'high' : detail);
+export const rowsFor = (detail, { phone = false, memory = false } = {}) => (detail === 'mid' && !phone && !memory ? 'high' : detail);
 export const modelsAt = (detail, opts) => withHq(LIGHT, rowsFor(detail, opts));
-Object.assign(MODELS, modelsAt(device().detail, { phone: device().phone }));
+Object.assign(MODELS, modelsAt(device().detail, { phone: device().phone, memory: device().why.includes('memory') }));
 
 // what every system's arrival loads, whatever's there (galaxy/scene.js): the
 // Star Destroyer and the corvette the set pieces and the battles fly, and the
@@ -463,11 +466,14 @@ export function createModels({ prepare = null, load: fetchModel = loadGLTF, hull
         if (!root) return;
         tune(root);
         // (the game's own hull where the export left it bare: capitalHull.js; as it came if that fails)
-        await dressGameHull(root, kind, { detail: device().detail, phone: device().phone, aniso: budget().aniso });
+        // (and a cut that wears the game's maps already, them at the pack's sizes, with their ORM)
+        const dressing = { detail: device().detail, phone: device().phone, aniso: budget().aniso };
+        await Promise.all([dressGameHull(root, kind, dressing), dressGameMaps(root, kind, dressing)]);
         if (dead) return;
         const n = normalise(root, def.nose, kind);
-        // (a capital's hull plated, its windows lit, its engines burning aft: capitalLook.js)
-        dressCapital(n.holder, kind, { plating: device().detail !== 'low', size: device().phone ? 1024 : 2048, lite: device().phone });
+        // (a capital's hull plated, its windows lit, its engines burning aft:
+        // capitalLook.js; and the sun's shadow on it, cast and taken: capitalShadow.js)
+        if (dressCapital(n.holder, kind, { plating: device().detail !== 'low', size: device().phone ? 1024 : 2048, lite: device().phone })) shadowed(n.holder);
         // (a skinned one's copies need bones of their own: SkeletonUtils)
         root.traverse((o) => o.isSkinnedMesh && (n.skinned = true));
         if (prepare) await prepare(n.holder);
@@ -532,6 +538,8 @@ export function createModels({ prepare = null, load: fetchModel = loadGLTF, hull
       while (!r.done && performance.now() < until);
       if (!r.done) return idle(step);
       const cut = r.value;
+      // (its new pieces too: the sun's shadow on them as on the whole ship)
+      shadowed(cut.holder);
       if (prepare) await prepare(cut.holder);
       if (dead) return;
       n.cut = cut;
@@ -640,6 +648,10 @@ export function createModels({ prepare = null, load: fetchModel = loadGLTF, hull
     },
     // the hit shapes, for the battle (Hull | null by kind)
     hulls,
+    // the slots out there now (the capitals' shadow fits itself to one: capitalShadow.js)
+    get slots() {
+      return slots;
+    },
     // how many templates are built (for the tests)
     get builtCount() {
       return built.size;

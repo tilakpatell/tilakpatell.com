@@ -33,6 +33,8 @@
       import { detailMap } from '/src/components/galaxy/capitalPlating.js';
       import { createDamage } from '/src/components/universe/battleDamage.js';
       import { createDebris } from '/src/components/universe/battleDebris.js';
+      import { LOOK } from '/src/components/galaxy/look.js';
+      import { createCapitalShadows } from '/src/components/galaxy/capitalShadow.js';
 
       const q = new URLSearchParams(location.search);
       const kind = q.get('kind') ?? 'destroyer';
@@ -47,23 +49,27 @@
       const scene = new THREE.Scene();
       scene.background = new THREE.Color('#03050a');
       // lit as a system lights its ships (galaxy/scene.js): its sun, a little
-      // ambient, what metal reflects there (its star, a dark sky, a blue
-      // bounce opposite), and the house look over all of it
+      // ambient, what metal reflects there (its star, a dark sky, a grey-blue
+      // bounce opposite: galaxy/look.js's `space`), the house look over all
+      // of it in space's way (`house`), at the galaxy's exposure (its post
+      // pass leaves what's under 0.8 as drawn: no lift), and the sun's shadow
+      // on the capital (galaxy/capitalShadow.js; ?shadows=0 without)
       const sunDir = new THREE.Vector3(2, 3, 1.5).normalize();
       const env = new THREE.Scene();
-      env.add(new THREE.Mesh(new THREE.SphereGeometry(10, 32, 16), new THREE.MeshBasicMaterial({ color: '#0c1220', side: THREE.BackSide })));
+      env.add(new THREE.Mesh(new THREE.SphereGeometry(10, 32, 16), new THREE.MeshBasicMaterial({ color: LOOK.space.sky, side: THREE.BackSide })));
       const star = new THREE.Mesh(new THREE.SphereGeometry(1.5, 16, 8), new THREE.MeshBasicMaterial({ color: new THREE.Color('#fff4e0').multiplyScalar(8) }));
       star.position.copy(sunDir).multiplyScalar(7);
-      const bounce = new THREE.Mesh(new THREE.SphereGeometry(2.4, 16, 8), new THREE.MeshBasicMaterial({ color: new THREE.Color(0.3, 0.38, 0.9) }));
+      const bounce = new THREE.Mesh(new THREE.SphereGeometry(2.4, 16, 8), new THREE.MeshBasicMaterial({ color: new THREE.Color(...LOOK.space.bounce) }));
       bounce.position.set(sunDir.x, -sunDir.y * 0.5, sunDir.z).multiplyScalar(-7);
       env.add(star, bounce);
       const pm = new THREE.PMREMGenerator(renderer);
       scene.environment = pm.fromScene(env, 0.02).texture;
       const sun = new THREE.DirectionalLight('#ffffff', 2.2);
       sun.position.copy(sunDir);
-      const ambient = new THREE.AmbientLight('#9fb0d8', 0.32);
-      scene.add(sun, ambient);
-      const house = houseOn({ renderer, scene, sun, ambient, look: { fog: false } });
+      const ambient = new THREE.AmbientLight(LOOK.space.ambient, 0.32);
+      scene.add(sun, sun.target, ambient);
+      const shadows = q.get('shadows') === '0' ? null : createCapitalShadows({ renderer, sun, size: 2048 });
+      const house = houseOn({ renderer, scene, sun, ambient, keepExposure: true, look: { fog: false, ...LOOK.house } });
 
       const models = createModels();
       const wait = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -145,7 +151,9 @@
         const y = (1 - Math.floor(i / 2)) * H;
         renderer.setViewport(x, y, W, H);
         renderer.setScissor(x, y, W, H);
+        shadows?.place(cam, [slot]);
         renderer.render(scene, cam);
+        shadows?.home();
       });
       window.__slot = slot; // (for a check to look into)
       window.__renderer = renderer;

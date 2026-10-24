@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
-import { GAME_HULLS, dressGameHull, hullMaterial, inFrame, sizesFor } from './capitalHull';
+import { GAME_HULLS, GAME_MAPS, dressGameHull, dressGameMaps, hullMaterial, inFrame, sizesFor } from './capitalHull';
 
 // a texture as the loader gives one (the sheets tile)
 const map = () => new THREE.Texture();
@@ -111,5 +111,37 @@ describe('capitalHull', () => {
     await dressGameHull(root, 'destroyer', { detail: 'low', loadMesh: async () => packHull(), loadTexture: async (path) => (asked.push(path.split('/').pop()), map()) });
     expect(asked).toEqual(['t_stardestroyer_hull_01_cs']);
     expect(hull.material.normalMap).toBeNull();
+  });
+
+  it('gives a cut that wears the game’s maps the pack’s, at the device’s sizes, with their ORM, a dielectric, shared as the cut’s was', async () => {
+    expect(GAME_MAPS.corvette.material.test('NEWHULL')).toBe(true);
+    expect(GAME_MAPS.providence.material.test('M_ProvidenceClass_DestroyerBackdrop_01')).toBe(true);
+    const root = new THREE.Group();
+    const cut = new THREE.MeshStandardMaterial({ name: 'M_ProvidenceClass_DestroyerBackdrop_01', map: map(), normalMap: map(), metalness: 1 });
+    cut.normalScale.set(1, -1);
+    const a = new THREE.Mesh(new THREE.BoxGeometry(), cut);
+    const b = new THREE.Mesh(new THREE.BoxGeometry(), cut);
+    const other = new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshStandardMaterial({ name: 'Extras' }));
+    root.add(a, b, other);
+    const asked = [];
+    const done = await dressGameMaps(root, 'providence', { detail: 'mid', loadTexture: async (path, size) => (asked.push(`${path.split('/').pop()}.${size}`), map()) });
+    expect(done).toBe(true);
+    expect(asked).toEqual(['t_providenceclassdreadnaught_01_cs.1024', 't_providenceclassdreadnaught_01_nam__normal.2048', 't_providenceclassdreadnaught_01_nam__orm_977091d1.512']);
+    expect(a.material).toBe(b.material);
+    expect(a.material).not.toBe(cut);
+    expect(a.material.userData.gameHull).toBe(true);
+    expect(a.material.map).not.toBe(cut.map);
+    expect(a.material.roughnessMap).toBe(a.material.aoMap);
+    expect(a.material.metalness).toBe(0);
+    // (the cut's own normal convention kept)
+    expect(a.material.normalScale.y).toBe(-1);
+    expect(other.material.userData.gameHull).toBeUndefined();
+    // (the lowest detail keeps the cut's own; a failed load or another kind leaves it be)
+    const kept = new THREE.Mesh(new THREE.BoxGeometry(), cut);
+    const low = new THREE.Group().add(kept);
+    expect(await dressGameMaps(low, 'providence', { detail: 'low', loadTexture: async () => map() })).toBe(false);
+    expect(await dressGameMaps(low, 'providence', { loadTexture: async () => null })).toBe(false);
+    expect(await dressGameMaps(low, 'destroyer', { loadTexture: async () => map() })).toBe(false);
+    expect(kept.material).toBe(cut);
   });
 });

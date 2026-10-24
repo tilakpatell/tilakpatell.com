@@ -86,9 +86,11 @@ describe('the galaxy’s models', () => {
     const MID = modelsAt('mid', { phone: true });
     const light = (detail) => modelsAt(detail, { phone: true });
 
-    it('draws a desktop’s rows on a computer at mid, and a phone’s light ones only on a phone', () => {
+    it('draws a desktop’s rows on a computer at mid, and a phone’s light ones only on a phone or a computer short of memory', () => {
       expect(modelsAt('mid')).toEqual(HIGH);
       expect(modelsAt('mid', { phone: false })).toEqual(HIGH);
+      expect(modelsAt('mid', { memory: true })).toEqual(MID);
+      expect(modelsAt('high', { memory: true })).toEqual(HIGH);
       expect(light('mid').destroyer.url).toBe('/models/galaxy/destroyer.glb');
       expect(light('high')).toEqual(HIGH);
       expect(modelsAt('low')).toEqual(light('low'));

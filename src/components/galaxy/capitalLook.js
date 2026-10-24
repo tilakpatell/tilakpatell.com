@@ -276,6 +276,17 @@ export function dressCapital(holder, kind, { plating = true, size = 2048, lite =
         if (plating) panes(w, unit, length);
         return w;
       }
+      // an engine's own glow, a bare material named for it (the Executor's,
+      // the Gozanti's, the GR-75's, whatever colour the model gave it): alight
+      // in its side's engine light, and its faces aft the nozzles' glow
+      if (ENGINE_NAME.test(m.name) && !m.map && !m.transparent) {
+        const g = m.clone();
+        g.color.setRGB(...colour).multiplyScalar(0.25);
+        g.emissive.setRGB(...colour);
+        g.emissiveIntensity = 1.6;
+        engines.push(mesh);
+        return g;
+      }
       // a lamp, glass, black: as it came
       if (m.transparent || LAMP.test(m.name) || BARE_BLACK.test(m.name)) return m;
       // (a bare one of a strong colour a model didn't name, the Acclamator's

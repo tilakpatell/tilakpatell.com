@@ -25,7 +25,10 @@
 // GAME_HULLS (kind → its hull's files), sizesFor(detail, phone),
 // dressGameHull(root, kind, { detail, phone, aniso, loadMesh, loadTexture })
 // → Promise<boolean> (true when the game's hull is on), hullMaterial(maps,
-// def, { name }) and inFrame(geometry, from, to) are the parts, for tests.
+// def, { name }) and inFrame(geometry, from, to) are the parts, for tests;
+// and GAME_MAPS, dressGameMaps(root, kind, { detail, phone, aniso,
+// loadTexture }) → Promise<boolean>, for the capitals whose cut wears the
+// game's maps already, small (below).
 
 import * as THREE from 'three';
 import { withFallback } from '../../lib/assetBase';
@@ -47,6 +50,31 @@ export const GAME_HULLS = {
     atlas: { colour: tex('sb_endor', 't_stardestroyer_hull_01_cs'), orm: tex('sb_endor', 't_stardestroyer_hull_01_cs__orm_240cdb7c') },
     panels: { colour: tex('sb_endor', 't_stardestroyerpanels_01_cs'), normal: tex('sb_endor', 't_stardestroyerpanels_01_nw__normal'), mean: [0.795, 0.792, 0.699], tiling: 1 },
     details: { colour: tex('sb_endor', 't_stardestroyerdetails_01_cs'), normal: tex('sb_endor', 't_stardestroyerdetails_01_nw__normal'), mean: [0.769, 0.768, 0.7], tiling: 4, strength: 0.8 },
+  },
+};
+
+// The capitals whose cut already wears the game's own maps on the game's
+// own UVs (the CR90's, the Providence's: one unique atlas each, no tiling
+// sheet, their shaders' whole hull), but smaller than the packs publish
+// them (the ultra cut's 1,024, the fleet's 256 and 128) and without their
+// ORM (bf2017-space.mjs bound the colour and the normal only): each map
+// swapped for the pack's at the device's size, the ORM's roughness and
+// occlusion bound, and the paint a dielectric's, as the game's (the
+// Providence came as a whole metal). The material's name is the cut's;
+// nothing laid over them (capitalLook.js leaves a game hull as it is).
+export const GAME_MAPS = {
+  corvette: {
+    material: /^NEWHULL$/,
+    colour: tex('sb_endor', 't_corvettecr90_hull_cs'),
+    normal: tex('sb_endor', 't_corvettecr90_hull_n__normal'),
+    orm: tex('sb_endor', 't_corvettecr90_hull_n__orm_3a53a0f8'),
+  },
+  providence: {
+    material: /^M_ProvidenceClass_DestroyerBackdrop_01(_lods)?$/,
+    // (sb_droidbattleship's: sb_kamino's ORM stops at 1,024)
+    colour: tex('sb_droidbattleship', 't_providenceclassdreadnaught_01_cs'),
+    normal: tex('sb_droidbattleship', 't_providenceclassdreadnaught_01_nam__normal'),
+    orm: tex('sb_droidbattleship', 't_providenceclassdreadnaught_01_nam__orm_977091d1'),
   },
 };
 
@@ -181,6 +209,43 @@ function packMap(path, size, { srgb, aniso, repeat }) {
     maps.set(url, p);
   }
   return maps.get(url);
+}
+
+// a cut's own game maps at the pack's sizes (GAME_MAPS): true when any came
+export async function dressGameMaps(root, kind, { detail = 'high', phone = false, aniso = 8, loadTexture = packMap } = {}) {
+  const def = GAME_MAPS[kind];
+  if (!def || detail === 'low') return false;
+  const meshes = [];
+  root.traverse((o) => o.isMesh && [o.material].flat().some((m) => def.material.test(m?.name ?? '')) && meshes.push(o));
+  if (!meshes.length) return false;
+  const size = sizesFor(detail, phone);
+  const [colour, normal, orm] = await Promise.all([
+    loadTexture(def.colour, size.atlas, { aniso, srgb: true }),
+    loadTexture(def.normal, size.normal, { aniso, srgb: false }),
+    loadTexture(def.orm, size.orm, { aniso, srgb: false }),
+  ]);
+  if (!colour && !normal && !orm) return false;
+  const made = new Map(); // the cut's material → its game one (the meshes share it)
+  const swap = (m) => {
+    if (!m || !def.material.test(m.name ?? '')) return m;
+    if (!made.has(m)) {
+      const g = m.clone();
+      g.userData.gameHull = true;
+      if (colour) g.map = colour;
+      if (normal) g.normalMap = normal;
+      if (orm) {
+        g.roughnessMap = orm;
+        g.roughness = 1;
+        g.aoMap = orm;
+      }
+      g.metalness = 0;
+      g.metalnessMap = null;
+      made.set(m, g);
+    }
+    return made.get(m);
+  };
+  for (const mesh of meshes) mesh.material = Array.isArray(mesh.material) ? mesh.material.map(swap) : swap(mesh.material);
+  return true;
 }
 
 export async function dressGameHull(root, kind, { detail = 'high', phone = false, aniso = 8, loadMesh = packMesh, loadTexture = packMap } = {}) {

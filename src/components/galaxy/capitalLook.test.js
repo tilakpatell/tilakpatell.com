@@ -83,6 +83,20 @@ describe('capitalLook', () => {
     expect(lamp.material.userData.plated).toBeUndefined();
   });
 
+  it('lights an engine’s own bare glow in its side’s engine light, and puts its nozzles’ glow on', () => {
+    const { holder } = ship();
+    holder.remove(...holder.children.filter((o) => /Engine/.test(o.material.name)));
+    const g = new THREE.CylinderGeometry(0.08, 0.08, 0.3, 12).rotateX(Math.PI / 2).translate(0, 0, -2.1);
+    const glow = new THREE.Mesh(g, new THREE.MeshStandardMaterial({ name: 'RedEngineGlow', color: 0xf50000, emissive: 0xf50000, emissiveIntensity: 3.2 }));
+    holder.add(glow);
+    const done = dressCapital(holder, 'executor');
+    // (blue-white, as the films' Imperial engines: not the model's red)
+    expect(glow.material.emissive.b).toBeGreaterThan(glow.material.emissive.r);
+    expect(glow.material.userData.plated).toBeUndefined();
+    expect(done.nozzles).toHaveLength(1);
+    expect(holder.children.filter((o) => o.userData.glows)).toHaveLength(1);
+  });
+
   it('leaves a ship that isn’t a capital as it was', () => {
     const { holder, hull } = ship();
     expect(dressCapital(holder, 'xwing')).toBeNull();
