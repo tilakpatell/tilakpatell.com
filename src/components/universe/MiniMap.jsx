@@ -3,34 +3,32 @@ import { Link } from 'react-router-dom';
 import { byId } from './universes';
 import { BELT } from './layout';
 import { CHART_WORDS as W } from './words';
-import ChartTools from './chart/ChartTools';
-import { chartKey, ringStep } from './chart/input';
 import { HAND_MARKS } from './chart/marks';
 import { miniView, placeMarks, placeShip, ringOn } from './chart/place';
 import { FRAMES, levelOf, reachOn } from './chart/projection';
-import { useChartView } from './chart/useChartView';
 import './universe.css';
 
 // The universe map drawn flat: Home's teaser (just the fandoms, each dot a
-// link into the map) and the map itself when 3D is off (every place: the
-// stations, the worlds, their moons and the wonders, each a button in one
-// focus group: the arrow keys step through them, Home and End jump to the
-// ends). It is the nav map's chart in a box: the same marks (chart/marks.js),
-// the same projection and the same placing (chart/place.js), seen from the
-// old flat map's tilt with the sun in the middle and the belt round it. Each
-// place stands on a stem from the disc, up for above it and dashed down for
-// below, and its name hangs under its dot, or beside it, where there's room;
-// one with none shows on a hover or a focus, and the picked one's always does.
+// link into the map) and, under FlatMap.jsx, the map itself when 3D is off
+// (every place: the stations, the worlds, their moons and the wonders, each a
+// button in one focus group). It is the nav map's chart in a box: the same
+// marks (chart/marks.js), the same projection and the same placing
+// (chart/place.js), seen from the old flat map's tilt with the sun in the
+// middle and the belt round it. Each place stands on a stem from the disc, up
+// for above it and dashed down for below, and its name hangs under its dot,
+// or beside it, where there's room (a world's over a lesser place's dot,
+// where it has none clear of them all); one with none shows on a hover or a
+// focus, and the picked one's always does. It only draws: the hands, the keys
+// and the tools are FlatMap's, so the teaser loads none of them.
 //
-// <MiniMap selected onSelect linkTo kind className interactive ship />
+// <MiniMap selected onSelect linkTo kind className ship view boxRef handlers onKeyDown onListKey>{children}</MiniMap>
 //   kind 'fandom' keeps it to the worlds (the teaser); linkTo(id) makes each
-//   place a link, else a click is onSelect(id). interactive (the 3D-off map)
-//   gives it the chart's hands: a drag moves it, the wheel and a pinch zoom,
-//   + and − zoom with the focus inside it and 0 goes back to the whole map,
-//   and its tools are under it. ship ({ x, y, z, heading }) is drawn, pinned
-//   to the box when it's off it. Nothing passes one yet: with 3D off nothing
-//   knows where the ship is until its place is saved.
-// <FlatMap selected startAt onSelect />: the map when 3D is off, UniverseMap.jsx's
+//   place a link, else a click is onSelect(id). ship ({ x, y, z, heading }) is
+//   drawn, pinned to the box when it's off it; nothing passes one yet: with
+//   3D off nothing knows where the ship is until its place is saved. view is
+//   the chart's (the whole map without one); handlers go on the box (boxRef)
+//   and make it live; onKeyDown is the root's, onListKey(e, ids) the list's,
+//   with the ids of the places on the chart in order; children go under the box.
 
 const F = FRAMES.mini;
 const SUN = 'chart:sun';
@@ -45,7 +43,6 @@ const MONO = 0.62;
 // a name beside a bigger dot starts as far past that, and its box is as much
 // longer, universe.css's --dot)
 const DOT_PX = 8;
-const STILL = { current: null }; // (the teaser's box, for the hook: no wheel on it)
 const finite = (n) => typeof n === 'number' && Number.isFinite(n);
 const rankOf = (p) => (finite(p.mark.priority) ? p.mark.priority : 0);
 const r2 = (n) => Math.round(n * 100) / 100;
@@ -96,26 +93,31 @@ function useBoxScale(box) {
   return fit;
 }
 
-export default function MiniMap({ selected = null, onSelect, linkTo, kind = null, className = '', interactive = false, ship = null }) {
+export default function MiniMap({ selected = null, onSelect, linkTo, kind = null, className = '', ship = null, view = null, boxRef = null, handlers = null, onKeyDown, onListKey, children }) {
   const { marks, open } = shownFor(kind);
-  const box = useRef(null);
-  const list = useRef(null);
+  const own = useRef(null);
+  const box = boxRef ?? own;
   const clip = useId(); // (the belt's clip, its own on each map: two on one page never share an id)
-  // the place with the focus, kept on the chart as the pick is: a zoom or a
-  // drag that took its button off would drop the focus, and the keys with it
+  const live = Boolean(handlers);
+  // the place with the keys' focus, kept on the chart as the pick is: a zoom
+  // or a drag that took its button off would drop the focus, and the keys
+  // with it. Only the keys' (it shows its ring): a press of the mouse focuses
+  // a button too, and a drag from its name would leave it stuck to the edge
   const [focused, setFocused] = useState(null);
-  const chart = useChartView(interactive ? box : STILL, { open, frame: F, orbit: false });
-  const view = interactive ? chart.view : open;
+  const at = view ?? open;
   const { scale, fontPx } = useBoxScale(box);
 
-  const shipAt = placeShip(view, ship, F);
-  const placed = placeMarks(view, marks, F, {
+  const shipAt = placeShip(at, ship, F);
+  const placed = placeMarks(at, marks, F, {
     levels: false,
     sides: SIDES,
-    keep: [selected, interactive && focused].filter(Boolean),
+    keep: [selected, live && focused].filter(Boolean),
     fontPx,
     scale,
     avoid: [shipAt],
+    // (a world's name may lie over a wonder's or a moon's dot where it has no
+    // other room: names are under every button, so that dot stays its own)
+    ranked: true,
     measure: (m) => m.name.length * MONO * fontPx + Math.max(0, dot(m.id) * scale - DOT_PX),
   });
   const sun = placed.find((p) => p.id === SUN);
@@ -125,33 +127,21 @@ export default function MiniMap({ selected = null, onSelect, linkTo, kind = null
   // a button stacks by its place's priority, the highest on top, whatever its
   // place in the list: a wonder or a moon comes later in it, and its 44 px
   // button would sit over a world's dot beside it (the portal's over Rick
-  // and Morty's), and a click on the world pick it. A hover or a focus lifts
-  // one over them all (--top: universe.css)
+  // and Morty's), and a click on the world pick it. Nothing lifts a button: a
+  // hover or the keys' focus lifts its name alone over them all, and a click
+  // goes through it (--top: universe.css)
   const tiers = [...new Set(places.map(rankOf))].sort((a, b) => a - b);
-  // the belt, a dotted band between the stations and the planets, as wide as half of it
+  // the belt, a dotted band between the stations and the planets, as wide as
+  // half of it where it's nearest the chart's focus: the scale is biggest
+  // there, and one line is one width all round
   const mid = (BELT.inner + BELT.outer) / 2;
-  const belt = ringOn(view, [0, 0, 0], mid).map(([u, v]) => `${r2(F.cx + u * F.r)},${r2(F.cy + v * F.r)}`).join(' ');
-  const beltWide = reachOn(view, [mid, 0, 0], (BELT.outer - BELT.inner) / 2) * F.r;
-
-  // the chart's keys, the focus anywhere inside it: + and − zoom, 0 shows it all again
-  const onChartKey = (e) => {
-    const act = chartKey(e);
-    if (!act) return;
-    e.preventDefault();
-    chart[act]();
-  };
-  const onKeyDown = (e) => {
-    if (!onSelect || e.altKey || e.ctrlKey || e.metaKey) return;
-    const to = ringStep(order, e.key, selected);
-    if (to === undefined) return;
-    e.preventDefault();
-    onSelect(to);
-    list.current?.querySelector(`[data-id="${to}"] .minimap-hit`)?.focus();
-  };
+  const belt = ringOn(at, [0, 0, 0], mid).map(([u, v]) => `${r2(F.cx + u * F.r)},${r2(F.cy + v * F.r)}`).join(' ');
+  const toward = Math.atan2(at.focus[2], at.focus[0]);
+  const beltWide = reachOn(at, [mid * Math.cos(toward), 0, mid * Math.sin(toward)], (BELT.outer - BELT.inner) / 2) * F.r;
 
   return (
-    <div className={`minimap ${className}`} data-level={levelOf(view.range)} data-live={interactive || undefined} data-selected={selected || undefined} onKeyDown={interactive ? onChartKey : undefined}>
-      <div ref={box} className="minimap-chart" {...(interactive ? chart.handlers : null)}>
+    <div className={`minimap ${className}`} data-level={levelOf(at.range)} data-live={live || undefined} data-selected={selected || undefined} onKeyDown={onKeyDown}>
+      <div ref={box} className="minimap-chart" {...handlers}>
         <svg viewBox={`0 0 ${F.w} ${F.h}`} aria-hidden="true" className="minimap-svg">
           {/* (the belt is the one thing drawn whatever the range, so it's held to the box: zoomed
               in away from the sun it would run off it, over the page; the same box on every map) */}
@@ -178,7 +168,7 @@ export default function MiniMap({ selected = null, onSelect, linkTo, kind = null
             </g>
           )}
         </svg>
-        <ul ref={list} className="minimap-labels" aria-label={W.places} style={{ '--top': tiers.length + 1 }} onKeyDown={onKeyDown}>
+        <ul className="minimap-labels" aria-label={W.places} style={{ '--top': tiers.length + 1 }} onKeyDown={onListKey && ((e) => onListKey(e, order))}>
           {places.map((p) => {
             const name = p.mark.name;
             const inner = <span className="minimap-name">{name}</span>;
@@ -191,7 +181,7 @@ export default function MiniMap({ selected = null, onSelect, linkTo, kind = null
                 data-kind={p.mark.kind}
                 data-side={p.side ?? p.spare ?? 'under'}
                 data-quiet={p.side === null || undefined}
-                onFocus={() => setFocused(p.id)}
+                onFocus={(e) => setFocused(e.target?.matches?.(':focus-visible') ? p.id : null)}
                 onBlur={() => setFocused(null)}
               >
                 {linkTo ? (
@@ -208,13 +198,7 @@ export default function MiniMap({ selected = null, onSelect, linkTo, kind = null
           })}
         </ul>
       </div>
-      {interactive && <ChartTools className="minimap-tools" buttonClass="chip" onZoomIn={chart.zoomIn} onZoomOut={chart.zoomOut} onFit={() => chart.setView(open)} fitKey="0" />}
+      {children}
     </div>
   );
-}
-
-// the page's pick is a universe's or a moon's id: a wonder picked on the flat
-// map is startAt, its link's, and is pressed there, the arrows going on from it
-export function FlatMap({ selected = null, startAt = null, onSelect }) {
-  return <MiniMap selected={selected ?? startAt} onSelect={onSelect} interactive />;
 }

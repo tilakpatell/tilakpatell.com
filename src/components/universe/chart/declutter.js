@@ -25,17 +25,22 @@
 //   over the rest, on a hover or a focus: the first side inside the frame and
 //   clear of everything hard, else the first inside the frame, else null
 //
-// A label is { id, x, y, w, h, priority, firm? }: x and y its dot's middle, w and h
+// A label is { id, x, y, w, h, priority, firm?, rank? }: x and y its dot's middle, w and h
 // its dot and name together, so a box's near end is the dot's far edge, 8 px
 // past its middle (navmap.css's 16 px dot). bounds is the frame's box, or
 // its circle { cx, cy, r } (the nav map's, which cuts off the rest), and a
 // name's box keeps every corner inside it.
-// dots are the { x, y } middles of the places' dots drawn, and hard the same
+// dots are the { x, y, rank? } middles of the places' dots drawn, and hard the same
 // for the marks no name may ever cover (the ship's): a name keeps off each
 // one's 16 px box, but never off one within 8 px of its own point, which is
 // its own dot or one drawn on top of it. A hard one may be a box instead,
 // { x0, y0, x1, y1 } (a button over the chart): no name meets it, whatever
 // is under it.
+// A label and a dot may each carry a rank (their places' priorities: the
+// mini-map's, whose names lie under every place's button). Once every name
+// that keeps clear of the dots is down, a ranked label still with no side
+// may lie over the dots of lesser ranks, never over its equal's, a higher
+// one's or a dot with no rank (the sun's), and never over a name already down.
 
 export const SIDES = Object.freeze(['right', 'left', 'under']);
 
@@ -62,22 +67,32 @@ function byPriority(a, b) {
 
 // the boxes a label must keep off: each dot's 16 px, not its own nor one drawn on it, and each box
 const isBox = (d) => 'x0' in d;
+const ranked = (o) => typeof o.rank === 'number' && !Number.isNaN(o.rank);
 const blocksFor = (l, points) => points.filter((d) => isBox(d) || !(Math.hypot(d.x - l.x, d.y - l.y) <= DOT)).map((d) => (isBox(d) ? d : { x0: d.x - DOT, y0: d.y - DOT, x1: d.x + DOT, y1: d.y + DOT }));
 
 export function declutter(labels, { bounds, sides = SIDES, dots = [], hard = [] }) {
   const out = new Map(labels.map((l) => [l.id, null]));
   const kept = [];
-  for (const l of [...labels].sort(byPriority)) {
-    const hardBlocks = blocksFor(l, hard);
-    const blocks = [...blocksFor(l, dots), ...hardBlocks];
-    const fits = (side, off) => {
-      const box = boxOf(side, l);
+  // the first side inside the frame that meets no name already down and none of off, if any, put down
+  const put = (l, off) => {
+    const side = sides.find((s) => {
+      const box = boxOf(s, l);
       return within(box, bounds) && !kept.some((k) => meet(box, k)) && !off.some((d) => meet(box, d));
-    };
-    const side = sides.find((s) => fits(s, blocks)) ?? (l.firm ? sides.find((s) => fits(s, hardBlocks)) : undefined);
-    if (side === undefined) continue;
+    });
+    if (side === undefined) return false;
     kept.push(boxOf(side, l));
     out.set(l.id, side);
+    return true;
+  };
+  const order = [...labels].sort(byPriority);
+  for (const l of order) {
+    const hardBlocks = blocksFor(l, hard);
+    if (!put(l, [...blocksFor(l, dots), ...hardBlocks]) && l.firm) put(l, hardBlocks);
+  }
+  // (after the rest, so a name over a lesser dot never takes the room of one clear of them all)
+  for (const l of order) {
+    if (out.get(l.id) !== null || !ranked(l)) continue;
+    put(l, [...blocksFor(l, dots.filter((d) => !(ranked(d) && d.rank < l.rank))), ...blocksFor(l, hard)]);
   }
   return out;
 }

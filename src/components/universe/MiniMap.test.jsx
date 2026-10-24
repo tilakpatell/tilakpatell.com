@@ -1,7 +1,9 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { MemoryRouter } from 'react-router-dom';
-import MiniMap, { FlatMap } from './MiniMap';
+import MiniMap from './MiniMap';
+import FlatMap from './FlatMap';
 import NavChart from './chart/NavChart';
 import { DESTINATIONS } from './nav';
 import { UNIVERSES, byId } from './universes';
@@ -85,13 +87,35 @@ describe('the mini-map', () => {
     const meet = (a, b) => a.x0 < b.x1 && b.x0 < a.x1 && a.y0 < b.y1 && b.y0 < a.y1;
     for (let i = 0; i < boxes.length; i++) for (let j = i + 1; j < boxes.length; j++) expect(meet(boxes[i], boxes[j]), `${named[i]} and ${named[j]}`).toBe(false);
   });
+  it('lets a world’s name lie over a lesser place’s dot where there’s no other room, never over another world’s', () => {
+    // (its name is under every place's button, universe.css: the lesser place's dot stays its own)
+    const html = draw({});
+    const F = FRAMES.mini;
+    const at = (id) => {
+      const [l, t] = /left:([-\d.e]+)%;top:([-\d.e]+)%/.exec(li(html, id)).slice(1).map(Number);
+      return { x: (l / 100) * F.w, y: (t / 100) * F.h };
+    };
+    const worlds = ids(html).filter((id) => markById(id).kind === 'world');
+    const named = worlds.filter((id) => !li(html, id).includes('data-quiet'));
+    // (with every dot kept clear, 7 of the 13 at the server's 600 px)
+    expect(named.length).toBeGreaterThanOrEqual(9);
+    // each name's box as the server lays it out, and each other place's dot as declutter keeps names off it: 16 px
+    const nameOf = (id) => new RegExp(`data-id="${id}"[^>]*>.*?<span class="minimap-name">([^<]*)</span>`).exec(html)[1];
+    const box = (id) => boxOf(/data-side="(\w+)"/.exec(li(html, id))[1], { ...at(id), w: nameOf(id).length * 0.62 * 11 + 22, h: 24 });
+    const dotBox = ({ x, y }) => ({ x0: x - 8, y0: y - 8, x1: x + 8, y1: y + 8 });
+    const meet = (a, b) => a.x0 < b.x1 && b.x0 < a.x1 && a.y0 < b.y1 && b.y0 < a.y1;
+    const over = (id, others) => others.filter((o) => o !== id && Math.hypot(at(o).x - at(id).x, at(o).y - at(id).y) > 8 && meet(box(id), dotBox(at(o))));
+    const lesser = ids(html).filter((id) => markById(id).priority < markById('marvel').priority);
+    expect(named.some((id) => over(id, lesser).length), 'a world’s name over a lesser dot').toBe(true);
+    for (const id of named) expect(over(id, worlds), id).toEqual([]);
+  });
   it('stands each place on a stem: up for above the disc, down for below', () => {
     const stems = tags(draw({}), 'minimap-stem');
     expect(stems.some((t) => t.includes('data-dir="up"'))).toBe(true);
     expect(stems.some((t) => t.includes('data-dir="down"'))).toBe(true);
   });
   it('has its tools and says its level when it is the whole map, and none as the teaser', () => {
-    const live = draw({ interactive: true });
+    const live = renderToStaticMarkup(<FlatMap onSelect={() => {}} />);
     expect(live).toMatch(/<div[^>]*class="minimap[^"]*"[^>]*data-level="neighbourhood"/);
     for (const w of [W.zoomIn, W.zoomOut, W.fit]) expect(live.match(new RegExp(`<button[^>]*aria-label="${w}"[^>]*>`))?.[0], w).toContain('class="chip"');
     for (const w of [W.toShip, W.flat]) expect(live).not.toContain(`aria-label="${w}"`);
@@ -130,13 +154,25 @@ describe('the mini-map', () => {
     const html = renderToStaticMarkup(
       <>
         <MiniMap onSelect={() => {}} />
-        <MiniMap onSelect={() => {}} interactive />
+        <FlatMap onSelect={() => {}} />
       </>,
     );
     const clips = [...html.matchAll(/<clipPath id="([^"]+)"/g)].map((m) => m[1]);
     expect(clips).toHaveLength(2);
     expect(new Set(clips).size).toBe(2);
     expect([...html.matchAll(/clip-path="url\(#([^)]+)\)"/g)].map((m) => m[1])).toEqual(clips);
+  });
+  it('opens the 3D-off map on the whole map, as the mini-map draws it', () => {
+    const flat = renderToStaticMarkup(<FlatMap onSelect={() => {}} />);
+    const mini = draw({});
+    expect(ids(flat)).toEqual(ids(mini));
+    for (const id of ids(mini)) expect(li(flat, id), id).toBe(li(mini, id));
+  });
+  it('draws only: Home’s teaser loads none of the chart’s hands, keys or tools', () => {
+    const src = readFileSync(new URL('./MiniMap.jsx', import.meta.url), 'utf8');
+    const from = [...src.matchAll(/^import .* from '([^']+)';$/gm)].map((m) => m[1]);
+    expect(from).toContain('./chart/place');
+    for (const hands of ['./chart/useChartView', './chart/input', './chart/ChartTools', 'react-icons/ri']) expect(from, hands).not.toContain(hands);
   });
   it('presses a wonder from its link on the 3D-off map, and starts the arrows from it', () => {
     const button = (html, id) => html.match(new RegExp(`<li[^>]*data-id="${id}"[^>]*><button[^>]*>`))[0];
@@ -148,5 +184,44 @@ describe('the mini-map', () => {
     const picked = renderToStaticMarkup(<FlatMap selected="marvel" startAt="aurelia" onSelect={() => {}} />);
     expect(button(picked, 'marvel')).toContain('aria-pressed="true"');
     expect(button(picked, 'aurelia')).toContain('aria-pressed="false"');
+  });
+});
+
+describe('universe.css: the flat map’s buttons', () => {
+  const css = readFileSync(new URL('./universe.css', import.meta.url), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+  const rules = [...css.matchAll(/([^{}]+)\{([^{}]*)\}/g)].map(([, sel, body]) => ({ sel: sel.trim(), body: body.trim() })).filter((r) => r.sel.includes('minimap'));
+  const rule = (sel) => rules.find((r) => r.sel === sel)?.body ?? '';
+  // what a selector picks: its last compound, with what's in its brackets left out
+  const subject = (sel) => {
+    let bare = sel;
+    while (/\([^()]*\)/.test(bare)) bare = bare.replace(/\([^()]*\)/g, '');
+    return bare.split(/[\s>+~]+/).at(-1);
+  };
+
+  it('never lifts a place’s button on a hover or a focus, only its name, and a click goes through that', () => {
+    // (lifted, a lesser place's button lay over the world's dot beside it: a
+    // pointer that crossed it on its way there, or its focus, kept it up, and
+    // a click on the world's dot picked the lesser place)
+    const lifts = rules.filter((r) => /z-index/.test(r.body) && /:hover|:focus/.test(r.sel));
+    expect(lifts.length).toBeGreaterThan(0);
+    for (const r of lifts) {
+      expect(subject(r.sel), r.sel).toBe('.minimap-name');
+      expect(r.body, r.sel).toContain('pointer-events: none');
+    }
+  });
+  it('stacks each button by its tier alone, the names under them all', () => {
+    expect(rule('.minimap-hit::before')).toContain('z-index: var(--z)');
+    expect(rule('.minimap-name')).toContain('z-index: 0');
+    // (nothing round a button makes a stack of its own, which its name could never leave)
+    for (const sel of ['.minimap-item', '.minimap-hit']) expect(rule(sel), sel).not.toMatch(/z-index|translate|transform|opacity|filter|isolation/);
+    const stacked = rules.filter((r) => /z-index/.test(r.body) && !/:hover|:focus/.test(r.sel)).map((r) => r.sel);
+    expect(stacked.sort()).toEqual(['.minimap-hit::before', '.minimap-name']);
+  });
+  it('makes a button the 44 px round its dot, its name beside it or under it, not in it', () => {
+    expect(rule('.minimap-hit')).toMatch(/(?:^|;\s*)width: 44px/);
+    expect(rule('.minimap-hit')).toMatch(/(?:^|;\s*)height: 44px/);
+    expect(rule('.minimap-hit')).toContain('left: -22px');
+    expect(rule('.minimap-hit')).toContain('top: -22px');
+    expect(rule('.minimap-name')).toContain('position: absolute');
   });
 });

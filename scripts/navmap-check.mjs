@@ -9,7 +9,9 @@
 // hyperdrive charges, flies out to a wonder at super speed with the
 // selection cleared under it, then the phone layout: the list first, the
 // chart a tap away, its names clear of each other. `minimap` shoots the
-// flat map (3D off), on a desktop and on a phone, and Home's teaser; `far` puts the ship two sectors out
+// flat map (3D off), on a desktop and on a phone, and Home's teaser; on the
+// desktop a pointer that crosses a lesser place's button to a world's dot
+// beside it must pick the world, and the phone's must name a place; `far` puts the ship two sectors out
 // and shoots the map. Screenshots go to $OUT. Headless Chrome draws in
 // software, slowly: clicks go through the DOM, and the waits are long.
 import { chromium } from 'playwright-core';
@@ -289,6 +291,37 @@ async function openFlat(viewport) {
 if (run('minimap')) {
   const { ctx, page, flat } = await openFlat({ width: 1280, height: 800 });
   await shot(page, '11-minimap-flat', flat);
+  // a pointer that crosses a lesser place's button on its way to a world's dot
+  // beside it (its 44 px round over the dot), and clicks there, picks the
+  // world: a hover lifts no button
+  await page.waitForSelector('.universe-flat .minimap li[data-id]', { state: 'attached', timeout: 60000 });
+  const pair = await page.evaluate(() => {
+    const root = document.querySelector('.universe-flat .minimap');
+    const lis = [...root.querySelectorAll('li[data-id]')];
+    const dots = [...root.querySelectorAll('g.minimap-planet')].map((g) => g.lastElementChild.getBoundingClientRect());
+    const at = lis.map((li, i) => ({ id: li.dataset.id, kind: li.dataset.kind, x: dots[i].left + dots[i].width / 2, y: dots[i].top + dots[i].height / 2 }));
+    const own = (id, x, y) => document.elementFromPoint(x, y)?.closest('li[data-id]')?.dataset.id === id;
+    for (const w of at.filter((p) => p.kind === 'world' && own(p.id, p.x, p.y)))
+      for (const l of at.filter((p) => p.kind !== 'world' && Math.abs(p.x - w.x) < 22 && Math.abs(p.y - w.y) < 22)) {
+        // (a point of the lesser one's round that's its own, from its far side in)
+        const far = Math.hypot(l.x - w.x, l.y - w.y) || 1;
+        for (let r = 20; r >= 0; r -= 4) {
+          const from = [l.x + ((l.x - w.x) * r) / far, l.y + ((l.y - w.y) * r) / far];
+          if (own(l.id, ...from)) return { world: w.id, lesser: l.id, from, to: [w.x, w.y] };
+        }
+      }
+    return null;
+  });
+  check(Boolean(pair), 'the flat map has a world with a lesser place’s button beside its dot');
+  if (pair) {
+    await page.mouse.move(...pair.from);
+    await page.mouse.move(...pair.to, { steps: 6 });
+    await page.mouse.down();
+    await page.mouse.up();
+    const picked = () => page.evaluate(() => document.querySelector('.universe-flat .minimap').dataset.selected ?? null);
+    await page.waitForFunction(() => document.querySelector('.universe-flat .minimap').dataset.selected, null, { timeout: 30000 }).catch(() => {});
+    check((await picked()) === pair.world, `a pointer over ${pair.lesser}, then a click on ${pair.world}’s dot beside it, picks ${pair.world} (${await picked()})`);
+  }
   // Home's teaser, at the foot of the page: its section mounts only as it
   // nears the screen, so scroll down a screen at a time till it's there
   await page.goto(`${base}/#/home`, { waitUntil: 'domcontentloaded', timeout: GOTO });
@@ -308,6 +341,9 @@ if (run('minimap')) {
   // the whole map on a phone, in a box 342 px across
   const phone = await openFlat({ width: 390, height: 844 });
   await shot(phone.page, '18-phone-minimap-flat', phone.flat);
+  // (a world's name may lie over a lesser place's dot there: without it, none had room)
+  const named = await phone.page.evaluate(() => [...document.querySelectorAll('.universe-flat li[data-id]:not([data-quiet])')].map((li) => li.dataset.id));
+  check(named.length > 0, `the flat map on a phone names a place at its opening zoom (${named.join(', ')})`);
   await phone.ctx.close();
 }
 

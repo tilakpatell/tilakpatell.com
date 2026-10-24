@@ -67,7 +67,7 @@ The check’s shots of the flights (`3-jumping`, `4-after-jump`, `6-super-to-aur
 
 `7-home-system` was shot on `main` with the ship where the failed Citadel step (below) left it: in the Rick and Morty sector, 350 ship-lengths from The Citadel, on the pulse drive to Aurelia, the jump ready. So no ship marker is expected on the Home chart in the before shot. Once the Citadel step works, the after shot starts from another place, and the two won’t compare like for like there.
 
-`18-phone-minimap-flat` was added in Task 9’s review and shot on `main` at `cc5e2eaf` the same way, by the check’s `minimap` mode at 390 × 844. On `main` the 3D-off map names every world on a phone, some names over others (Pirates of the Caribbean over The Lord of the Rings, the stations’ in a heap). After Task 9 it has all 44 places in that 342 px box, and at its opening zoom it names none: no name has room clear of the other places’ dots. A name shows for the pick, on a tap or a hover, and zoomed in. That is a decision, not a slip: a world’s name over a wonder’s or a moon’s dot would put the world’s button over that dot (a world’s stacks above them), and a tap on the dot would pick the world. The other way is to let a world’s name cover the lesser dots in a small box; Task 10’s look at the phone is where to weigh it again.
+`18-phone-minimap-flat` was added in Task 9’s review and shot on `main` at `cc5e2eaf` the same way, by the check’s `minimap` mode at 390 × 844. On `main` the 3D-off map names every world on a phone, some names over others (Pirates of the Caribbean over The Lord of the Rings, the stations’ in a heap). After Task 9 it has all 44 places in that 342 px box. At first it named none at its opening zoom: no name had room clear of the other places’ dots, and a world’s name over a lesser dot would have put the world’s button over that dot. After the second review a place’s name lies under every button, so a world’s name may lie over a wonder’s or a moon’s dot where it has no other room, and that dot stays the wonder’s. The phone’s map now names four: The Office, Gaming, Travel and The Citadel. More won’t fit: with every dot let go, the names’ own boxes leave room for seven. The rest show for the pick, on a tap or a hover, and zoomed in. The desktop’s 19 names are the same 19 as before.
 
 ## The checks on `main`
 
@@ -85,10 +85,12 @@ The `far` mode says the ship’s marker is missing from the chart: `NavMap.jsx` 
 
 The mini-map now reads the nav map’s own marks (`chart/marks.js`, from `nav.js`), its projection and its hook, so Home’s lazy section (`Interests`) loads them too. Built with `npx vite build` (the plain build, without `prebuild`’s GitHub snapshot) on Task 8’s commit (`5c76fb0b`) and on Task 9’s, Vite’s report for the two chunks, and the whole of what `Interests` loads that the first page and Home don’t (its chunk and the static imports under it, read from the built files):
 
-| | Task 8 (`5c76fb0b`) | Task 9 |
-| --- | --- | --- |
-| `Interests` chunk | 7.41 kB (gzip 2.90 kB) | 7.41 kB (gzip 2.91 kB) |
-| `MiniMap` chunk | 2.62 kB (gzip 1.30 kB) | 4.20 kB (gzip 2.11 kB) |
-| Home’s lazy section, all of it | 24.70 kB (gzip 10.71 kB), 4 files | 55.22 kB (gzip 24.80 kB), 9 files |
+| | Task 8 (`5c76fb0b`) | Task 9 | Task 9’s first review (`d04e23c3`) | Task 9’s second review |
+| --- | --- | --- | --- | --- |
+| `Interests` chunk | 7.41 kB (gzip 2.90 kB) | 7.41 kB (gzip 2.91 kB) | 7.41 kB (gzip 2.91 kB) | 7.41 kB (gzip 2.90 kB) |
+| `MiniMap` chunk | 2.62 kB (gzip 1.30 kB) | 4.20 kB (gzip 2.11 kB) | 4.68 kB (gzip 2.33 kB) | 4.24 kB (gzip 2.16 kB) |
+| Home’s lazy section, all of it | 24.70 kB (gzip 10.71 kB), 4 files | 55.22 kB (gzip 24.80 kB), 9 files | 55.73 kB (gzip 25.02 kB), 9 files | 48.54 kB (gzip 21.73 kB), 7 files |
 
 The five new files are `nav.js` (9.74 kB), the chart’s modules and hook (16.57 kB), the gesture reader (1.20 kB), the universe’s glossary (1.16 kB) and an icon. `ship.js` was already in the first page’s load, so it adds nothing here.
+
+After the second review the 3D-off map’s hands, keys and tools are `FlatMap.jsx`’s, and `MiniMap.jsx` only draws, so the teaser no longer loads the hook, `input.js`, `ChartTools`, the gesture reader or the icon. What it still loads past Task 8 is the data and the drawing: `nav.js` (9.74 kB), the marks and the projection (14.33 kB) and `place.js` with `declutter.js` (11.32 kB, its own chunk now: before, it was inside the hook’s). The last two columns were built the same way from the worktree, `src` as at each commit, and the whole section read from Vite’s manifest (`build.manifest`): each file `Interests` imports, on down, less those the entry and `Home.jsx` load, gzipped by Node at its default level.

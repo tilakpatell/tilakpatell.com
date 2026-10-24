@@ -84,6 +84,22 @@ describe('declutter', () => {
     expect(declutter([L('a', 380, 884, 1, 60)], { bounds, hard: [button] }).get('a')).toBe('left');
     expect(declutter([firm(L('a', 500, 894, 1))], { bounds, hard: [button] }).get('a')).toBeNull(); // (its dot under the button)
   });
+  it('lets a name with a rank lie over a lesser place’s dot, where it has no side clear of every dot', () => {
+    const ranked = (l, rank) => ({ ...l, rank });
+    // a dot on each side: the world's name goes over the wonder's, never over a world's
+    const wonder = [{ x: 560, y: 500, rank: 50 }, { x: 440, y: 500, rank: 50 }, { x: 500, y: 530, rank: 50 }];
+    expect(declutter([L('w', 500, 500, 60)], { bounds, dots: wonder }).get('w')).toBeNull();
+    expect(declutter([ranked(L('w', 500, 500, 60), 60)], { bounds, dots: wonder }).get('w')).toBe('right');
+    expect(declutter([ranked(L('w', 500, 500, 60), 60)], { bounds, dots: wonder.map((d) => ({ ...d, rank: 60 })) }).get('w')).toBeNull();
+    // (a dot with no rank, the sun's, is kept clear as ever)
+    expect(declutter([ranked(L('w', 500, 500, 60), 60)], { bounds, dots: wonder.map(({ x, y }) => ({ x, y })) }).get('w')).toBeNull();
+    // one side clear of every dot is taken first
+    expect(declutter([ranked(L('w', 500, 500, 60), 60)], { bounds, dots: wonder.slice(0, 1) }).get('w')).toBe('left');
+    // a name over a lesser dot comes after every name clear of the dots, so it never takes their room:
+    // the lesser place's own name, clear of every dot, is down first
+    const s = declutter([ranked(L('w', 500, 500, 60), 60), ranked(L('m', 600, 500, 50), 50)], { bounds, sides: ['right'], dots: [{ x: 560, y: 500, rank: 50 }] });
+    expect([s.get('w'), s.get('m')]).toEqual([null, 'right']);
+  });
   it('shows a name left off on a side clear of anything hard where it has one, else the first inside the frame', () => {
     const button = { x0: 405, y0: 878, x1: 595, y1: 910 };
     expect(firstInside(L('a', 395, 894, 1), { bounds })).toBe('right');

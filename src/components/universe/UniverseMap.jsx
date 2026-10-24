@@ -8,7 +8,7 @@ import FlightSettings from './FlightSettings';
 import Hangar from './Hangar';
 import { UNIVERSES } from './universes';
 import { ORDER, keyStep } from './layout';
-import { FlatMap } from './MiniMap';
+import FlatMap from './FlatMap';
 import GuideCue from '../guide/GuideCue';
 import { askBrief } from '../tour/brief';
 import LoadingVeil from '../worlds/LoadingVeil';

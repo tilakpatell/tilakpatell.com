@@ -182,6 +182,15 @@ describe('placing marks', () => {
     // a box with no number for a corner is let go, as a point is
     expect(placeMarks(view, low, FRAMES.nav, { avoid: [{ ...button, x1: NaN }] })[0].side).toBe('right');
   });
+  it('ranked, lets a name lie over a lesser place’s dot where nothing clear of the dots is left, never over its equal’s or a nameless mark’s', () => {
+    // a world ringed by three lesser places, whose own names are too long to go anywhere
+    const ring = (more) => [M('world', [0, 0, 0], { priority: 60 }), ...[[540, 500], [460, 500], [500, 530]].map(([x, y], i) => M(`dot${i}`, drawnAt(x, y), { priority: 50, name: 'X'.repeat(200), ...more }))];
+    expect(placeMarks(view, ring(), FRAMES.nav)[0].side).toBeNull();
+    expect(placeMarks(view, ring(), FRAMES.nav, { ranked: true })[0].side).toBe('right');
+    expect(placeMarks(view, ring({ priority: 60 }), FRAMES.nav, { ranked: true })[0].side).toBeNull();
+    // (a mark with no name, the sun, is kept clear as ever)
+    expect(placeMarks(view, ring({ name: '' }), FRAMES.nav, { ranked: true })[0].side).toBeNull();
+  });
   it('sizes a name with the map’s own ruler when it has one, and by the estimate without', () => {
     const one = [M('near', drawnAt(400, 500), { name: 'Near' }), M('wide', drawnAt(400, 560), { name: 'Wide' })];
     expect(placeMarks(view, one, FRAMES.nav).map((p) => p.side)).toEqual(['right', 'right']);

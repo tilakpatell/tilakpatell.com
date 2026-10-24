@@ -18,40 +18,48 @@
 .minimap-ship { fill: #fff; filter: drop-shadow(0 0 3px #9fd8ff); }
 /* (its own stacking: a place's tier never reaches over the page's panel) */
 .minimap-labels { position: absolute; inset: 0; margin: 0; padding: 0; list-style: none; isolation: isolate; }
-/* a place stacks by its tier, a world over the wonders and moons beside it
-   (--z, MiniMap.jsx's), and a hover or a focus lifts its name over them all */
-.minimap-item { position: absolute; width: 0; height: 0; z-index: var(--z, auto); }
-.minimap-item:is(:hover, :focus-within) { z-index: var(--top, 1); }
+/* A place's button is the 44px round its dot, stacked by its tier alone
+   (--z, MiniMap.jsx's): a world's over the wonders and moons beside it.
+   Nothing lifts a button, not a hover nor a focus: lifted, a lesser place's
+   lay over the world's dot beside it, and a pointer that crossed it on its
+   way there kept it up, so a click on the world's dot picked the lesser
+   place. Its name is in it, so a click on the name picks the place too, but
+   under every button: a world's name over a wonder's dot leaves that dot
+   the wonder's. A hover on the button's round, or the keys' focus, lifts
+   the name alone over them all (--top), and a click goes through it. (The
+   item and the button make no stack of their own, so the name can leave
+   them: no z-index, no translate.) */
+.minimap-item { position: absolute; width: 0; height: 0; }
 .minimap-hit {
   position: absolute;
-  left: 0;
-  top: 0;
-  translate: -50% -50%;
-  display: grid;
-  justify-items: center;
-  min-width: 44px;
-  min-height: 44px;
-  padding-top: 30px;
-  border-radius: 999px;
+  left: -22px;
+  top: -22px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
   color: var(--muted);
   font-family: var(--font-mono);
   font-size: 0.68rem;
   line-height: 1.2;
   letter-spacing: 0.02em;
-  text-align: center;
   white-space: nowrap;
   text-decoration: none;
   transition: color 0.2s;
 }
+.minimap-hit::before { content: ''; position: absolute; inset: 0; z-index: var(--z); border-radius: inherit; }
 .minimap-hit:hover,
 .minimap-hit[aria-pressed='true'] { color: var(--swatch); }
 .minimap-hit:focus-visible { outline: 2px solid var(--swatch); outline-offset: 2px; }
-.minimap-name { pointer-events: none; }
-/* a name beside its dot: the button a 44px square round the dot, the name
-   6px past the dot's edge (--dot, its radius: MiniMap.jsx), 14px out at the
-   least (chart/declutter.js's boxes: a 16px dot and the gap) */
-.minimap-item[data-side='right'] .minimap-hit { translate: -22px -50%; padding: 0 0 0 max(36px, calc(var(--dot) + 28px)); align-content: center; justify-items: start; }
-.minimap-item[data-side='left'] .minimap-hit { translate: calc(22px - 100%) -50%; padding: 0 max(36px, calc(var(--dot) + 28px)) 0 0; align-content: center; justify-items: end; }
+/* a name hangs from 8px below its dot's middle, as it always has, or goes
+   beside it, 6px past the dot's edge (--dot, its radius: MiniMap.jsx), 14px
+   out at the least (chart/declutter.js's boxes: a 16px dot and the gap) */
+.minimap-name { position: absolute; z-index: 0; left: 50%; top: calc(50% + 8px); translate: -50% 0; }
+.minimap-item[data-side='right'] .minimap-name { left: calc(50% + max(14px, var(--dot) + 6px)); top: 50%; translate: 0 -50%; }
+.minimap-item[data-side='left'] .minimap-name { left: auto; right: calc(50% + max(14px, var(--dot) + 6px)); top: 50%; translate: 0 -50%; }
+/* (lifted for a hover on the round, not on the name: a pointer that moves on
+   to the name finds it where it lies, under the buttons, and a click there
+   picks it) */
+.minimap-hit:is(:hover, :focus-visible):not(:has(.minimap-name:hover)) .minimap-name { z-index: var(--top); pointer-events: none; }
 /* a name with no room shows on a hover or a focus, and the picked one's always, on glass */
 .minimap-item[data-quiet] .minimap-name { display: none; }
 .minimap-item[data-quiet] .minimap-hit:is(:hover, :focus-visible, [aria-pressed='true']) .minimap-name { display: block; padding: 0 0.3em; border-radius: var(--r-chip); background: rgb(3 6 16 / 0.85); }
@@ -62,7 +70,8 @@
   .minimap-tools .chip { width: 44px; height: 44px; }
 }
 @media (max-width: 640px) {
-  .minimap-hit { font-size: 0.58rem; padding-top: 24px; }
+  .minimap-hit { font-size: 0.58rem; }
+  .minimap-name { top: calc(50% + 2px); }
   /* on a phone the long names crowd: the teaser keeps the dots, the map keeps the selected name */
   .minimap-teaser .minimap-name { display: none; }
 }

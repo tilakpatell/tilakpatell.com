@@ -22,13 +22,16 @@
 //   regionPx, pad added to each. Each name is measured once, a region's apart
 //   from a place's; a new ruler measures afresh (a resize, the fonts in)
 // placeMarks(view, marks, frame, opts) → Placed[], in the marks' order (the tab order)
-//   opts = { level, keep, fontPx, scale, sides, avoid, levels, measure }: avoid
+//   opts = { level, keep, fontPx, scale, sides, avoid, levels, measure, ranked }: avoid
 //   is the { x, y } points, in frame units, whose dots no name may cover, not
 //   even the pick's, which may cover another place's (placeShip's result, null
 //   with no ship, which is let go), and the { x0, y0, x1, y1 } boxes no name
 //   may meet (a button over the chart); measure(mark) is a name's own width in px,
 //   the map's ruler on its own font (labelSize's estimate without one), to
-//   which the dot and its gap are added
+//   which the dot and its gap are added; ranked lets a name with no room
+//   clear of the dots lie over a lesser place's dot (declutter.js's ranks:
+//   each named mark's priority, the pick's its own), for the mini-map, whose
+//   names lie under every place's button
 //   Placed = { id, mark, x, y, footX, footY, size, side, spare, edge, depth }, in frame units:
 //   side is where its name goes, or null to leave it off; spare is where a
 //   name left off shows over the rest, on a hover or a focus (the first side
@@ -107,7 +110,7 @@ function stand(frame, p) {
 }
 
 export function placeMarks(view, marks, frame, opts = {}) {
-  const { level = levelOf(view.range), keep = [], fontPx = 11, scale = 1, sides, avoid = [], levels = true, measure = null } = opts;
+  const { level = levelOf(view.range), keep = [], fontPx = 11, scale = 1, sides, avoid = [], levels = true, measure = null, ranked = false } = opts;
   const kept = new Set(keep);
   const placed = [];
   for (const mark of marks) {
@@ -124,11 +127,12 @@ export function placeMarks(view, marks, frame, opts = {}) {
       const [guess, h] = labelSize(p.mark.name, fontPx);
       const w = measure ? measure(p.mark) + DOT_GAP : guess;
       const firm = kept.has(p.id) || p.mark.firm === true;
-      return { id: p.id, x: p.x * scale, y: p.y * scale, w, h, priority: kept.has(p.id) ? Infinity : p.mark.priority, firm };
+      return { id: p.id, x: p.x * scale, y: p.y * scale, w, h, priority: kept.has(p.id) ? Infinity : p.mark.priority, firm, ...(ranked && { rank: p.mark.priority }) };
     });
   const px = (d) => ('x0' in d ? { x0: d.x0 * scale, y0: d.y0 * scale, x1: d.x1 * scale, y1: d.y1 * scale } : { x: d.x * scale, y: d.y * scale });
   const known = (d) => Boolean(d) && ('x0' in d ? [d.x0, d.y0, d.x1, d.y1].every(finite) : finite(d.x) && finite(d.y));
-  const dots = placed.map(px);
+  // (a nameless mark's dot, the sun's, has no rank: no name lies over it)
+  const dots = placed.map((p) => ({ ...px(p), ...(ranked && p.mark.name && { rank: p.mark.priority }) }));
   const hard = avoid.filter(known).map(px);
   const bounds = boundsOf(frame, scale);
   const side = declutter(labels, { bounds, sides, dots, hard });
