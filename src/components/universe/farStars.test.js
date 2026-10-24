@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { FAR_STARS, brightness, createFarStars, realAt, starK, starPx } from './farStars';
 import { MOONS, UNIVERSES } from './universes';
 import { SUN } from './layout';
+import { FADE, FAR, REAL_REACHES, SPECK_LEAST, discPx, speckBright } from '../expanse/scene/levels';
 
 // a camera at a point, looking down -z, its world matrix up to date
 const camAt = (x, y, z) => {
@@ -119,6 +120,248 @@ describe('on foot', () => {
   it('is never cut by the far plane (on foot it is the landing sky, well short of the stars)', () => {
     const stars = createFarStars(new THREE.Group(), { places: [], skyFar: 24000 });
     expect(stars.points.material.vertexShader).toMatch(/gl_Position\.z = min\(gl_Position\.z, gl_Position\.w \* 0\.999999\)/);
+    stars.dispose();
+  });
+});
+
+// ── the far layer: hand-made places, generated discs and slots of specks, one draw ──
+
+const slotOf = (centre, pts) => ({
+  centre,
+  at: Float32Array.from(pts.flatMap((p) => p.at)),
+  color: Uint8Array.from(pts.flatMap((p) => p.color)),
+  r: Float32Array.from(pts.map((p) => p.r)),
+  count: pts.length,
+});
+const uSlot = (stars) => stars.points.material.uniforms.uSlot.value;
+const ONE = { at: [0, 0, 0], color: [255, 255, 255], r: 50 };
+
+describe('round the camera', () => {
+  it('sits at the camera, map-local, with each place on the sky from it as today', () => {
+    const parent = new THREE.Group();
+    parent.position.set(-250, 40, 3000); // (the map, moved)
+    parent.updateMatrixWorld(true);
+    const cam = [1e9, 2e8, -7e8];
+    const local = [cam[0] + 250, cam[1] - 40, cam[2] - 3000];
+    const places = [
+      { id: 'a', at: [local[0] + 12000, local[1] - 300, local[2] + 5000], reach: 100, color: '#88aaff' },
+      { id: 'b', at: [0, 0, 0], reach: 60, color: '#ffffff' },
+      { id: 'c', at: [local[0] + 900, local[1] + 30, local[2] - 500], reach: 100, color: '#ffcc66' },
+    ];
+    const stars = createFarStars(parent, { places, skyFar: 24000 });
+    stars.update(camAt(...cam));
+    stars.points.position.toArray().forEach((v, j) => expect(Math.abs(v - local[j])).toBeLessThan(1e-6));
+    const pos = stars.points.geometry.attributes.position;
+    places.forEach((p, i) => {
+      const d = p.at.map((v, j) => v - local[j]);
+      const dist = Math.hypot(...d);
+      const sky = local.map((c, j) => c + d[j] * (24000 / dist)); // (today's sky point, in the map)
+      for (let j = 0; j < 3; j++) expect(Math.abs(pos.getComponent(i, j) + stars.points.position.getComponent(j) - sky[j]), `${p.id} ${j}`).toBeLessThan(1e-3);
+      expect(stars.kOf(p.id)).toBe(starK(dist, realAt(p)));
+    });
+    expect(stars.kOf('c')).toBe(0); // (about 1,030 off: real)
+    stars.dispose();
+  });
+});
+
+describe('one draw', () => {
+  it('draws places, discs and slots in its one Points', () => {
+    const parent = new THREE.Group();
+    const stars = createFarStars(parent, { places: [{ id: 'a', at: [0, 0, -10000], reach: 100, color: '#ffffff' }], skyFar: 24000, slots: [4, 4], discs: 2 });
+    stars.update(camAt(0, 0, 0));
+    stars.setSlot(1, slotOf([0, 0, -100000], [ONE, { ...ONE, at: [500, 0, 0] }]));
+    stars.showSlots([1]);
+    stars.discs.begin();
+    stars.discs.push(0, 0, -20000, 300, 0.4, 0.3, 0.2, 1, 0, 0, 1);
+    stars.discs.end();
+    stars.update(camAt(0, 0, 0));
+    expect(parent.children).toEqual([stars.points]);
+    expect(stars.points.isPoints).toBe(true);
+    expect(stars.points.geometry.groups).toHaveLength(0);
+    expect(stars.points.geometry.attributes.position.count).toBe(1 + 2 + 8);
+    stars.dispose();
+    expect(parent.children).toHaveLength(0);
+  });
+});
+
+describe('slots', () => {
+  const SLOTS = [400, 400, 400, 400, 400];
+  const make = () => createFarStars(new THREE.Group(), { places: [{ id: 'a', at: [0, 0, -10000], reach: 100, color: '#ffffff' }], skyFar: 24000, slots: SLOTS, discs: 4 });
+  const start = (i) => 1 + 4 + 400 * i; // (the places, the discs, then the slots)
+
+  it('takes a sector into its slot, uploads only that slot, and keeps it hidden', () => {
+    const stars = make();
+    stars.update(camAt(0, 0, 0));
+    const attrs = stars.points.geometry.attributes;
+    const was = Object.fromEntries(['position', 'aColor', 'aSize'].map((k) => [k, attrs[k].updateRanges.length]));
+    stars.setSlot(3, slotOf([1e9, 0, 0], [{ at: [10, 20, 30], color: [255, 128, 0], r: 40 }, { at: [-5, 0, 7], color: [0, 0, 255], r: 12 }]));
+    for (const [k, size] of [['position', 3], ['aColor', 3], ['aSize', 1]]) {
+      expect(attrs[k].updateRanges.length - was[k], k).toBe(1);
+      expect(attrs[k].updateRanges.at(-1), k).toEqual({ start: start(3) * size, count: 400 * size });
+    }
+    expect(uSlot(stars)[3].w).toBe(0);
+    expect([...attrs.position.array.slice(start(3) * 3, start(3) * 3 + 6)]).toEqual([10, 20, 30, -5, 0, 7]);
+    expect([...attrs.aSize.array.slice(start(3), start(3) + 3)]).toEqual([40, 12, 0]);
+    // (its colour as a swatch's hex reads: sRGB bytes into the working space)
+    const c = new THREE.Color().setRGB(1, 128 / 255, 0, THREE.SRGBColorSpace);
+    expect(attrs.aColor.array[start(3) * 3 + 1]).toBeCloseTo(c.g, 6);
+    stars.dispose();
+  });
+
+  it('shows and hides in the call, so a swap is one frame', () => {
+    const stars = make();
+    stars.update(camAt(0, 0, 0));
+    for (const i of [1, 3, 4]) stars.setSlot(i, slotOf([0, 0, -1e5], [ONE]));
+    stars.showSlots([1]);
+    expect(uSlot(stars)[1].w).toBe(1);
+    stars.showSlots([3, 4]);
+    expect([uSlot(stars)[3].w, uSlot(stars)[4].w]).toEqual([1, 1]);
+    stars.hideSlots([1]);
+    expect(uSlot(stars)[1].w).toBe(0);
+    // a slot set again is hidden till it's shown
+    stars.setSlot(3, slotOf([0, 0, -1e5], [ONE]));
+    expect(uSlot(stars)[3].w).toBe(0);
+    stars.dispose();
+  });
+
+  it('puts a slot round the camera, worked out in doubles', () => {
+    const stars = make();
+    stars.setSlot(0, slotOf([1e9 + 50000, -2e8, 7], [ONE]));
+    stars.update(camAt(1e9, -2e8 + 10, 0));
+    expect(uSlot(stars)[0].toArray()).toEqual([50000, -10, 7, 0]);
+    stars.dispose();
+  });
+
+  it('fades a slot in over the seconds given', () => {
+    const stars = make();
+    stars.setSlot(2, slotOf([0, 0, -1e5], [ONE]));
+    stars.update(camAt(0, 0, 0));
+    stars.fadeSlot(2, 0.5);
+    stars.update(camAt(0, 0, 0), 0.25);
+    expect(uSlot(stars)[2].w).toBeCloseTo(0.5);
+    stars.update(camAt(0, 0, 0), 0.25);
+    expect(uSlot(stars)[2].w).toBe(1);
+    stars.update(camAt(0, 0, 0), 0.25);
+    expect(uSlot(stars)[2].w).toBe(1);
+    stars.dispose();
+  });
+
+  it('draws no hidden slot past the last one shown', () => {
+    const stars = make();
+    stars.update(camAt(0, 0, 0));
+    expect(stars.points.geometry.drawRange.count).toBe(start(0));
+    stars.setSlot(3, slotOf([0, 0, -1e5], [ONE]));
+    stars.showSlots([3]);
+    expect(stars.points.geometry.drawRange.count).toBe(start(4));
+    stars.hideSlots([3]);
+    stars.setSlot(1, slotOf([0, 0, -1e5], [ONE]));
+    stars.fadeSlot(1, 0.5);
+    expect(stars.points.geometry.drawRange.count).toBe(start(2));
+    stars.dispose();
+  });
+});
+
+describe('discs', () => {
+  it('draws them far to near, from the camera, keeping the nearest it has room for', () => {
+    const stars = createFarStars(new THREE.Group(), { places: [], skyFar: 24000, discs: 3 });
+    const { position, aSize, aK, aLight, aColor } = stars.points.geometry.attributes;
+    stars.update(camAt(1e9, 0, 0));
+    stars.discs.begin();
+    for (const d of [1000, 5000, 3000, 20000, 2000]) stars.discs.push(1e9 + d, 0, 0, d / 100, 0.5, 0.25, 1, 0, 1, 0, 0.75);
+    stars.discs.end();
+    const xs = () => [0, 1, 2].map((i) => position.getX(i));
+    expect(xs()).toEqual([3000, 2000, 1000]);
+    expect([...aSize.array.slice(0, 3)]).toEqual([30, 20, 10]);
+    expect([...aK.array.slice(0, 3)]).toEqual([0.75, 0.75, 0.75]);
+    expect([aLight.getX(1), aLight.getY(1), aLight.getZ(1)]).toEqual([0, 1, 0]);
+    expect([aColor.getX(2), aColor.getY(2), aColor.getZ(2)]).toEqual([0.5, 0.25, 1]);
+    // the camera moves on: they're written from it again
+    stars.update(camAt(1e9 + 500, 0, 0));
+    expect(xs()).toEqual([2500, 1500, 500]);
+    // fewer the next frame: the rest drawn as nothing
+    stars.discs.begin();
+    stars.discs.push(1e9 + 9000, 0, 0, 5, 1, 1, 1, 0, 0, 0, 0.4);
+    stars.discs.end();
+    expect([...aK.array.slice(0, 3)]).toEqual([Math.fround(0.4), 0, 0]);
+    expect(position.getX(0)).toBe(8500);
+    stars.dispose();
+  });
+
+  it('blends premultiplied: a speck adds, a disc covers what is behind it', () => {
+    const stars = createFarStars(new THREE.Group(), { places: [], skyFar: 24000, discs: 3 });
+    const m = stars.points.material;
+    expect(m.blending).toBe(THREE.CustomBlending);
+    expect(m.blendEquation).toBe(THREE.AddEquation);
+    expect(m.blendSrc).toBe(THREE.OneFactor);
+    expect(m.blendDst).toBe(THREE.OneMinusSrcAlphaFactor);
+    expect(m.fragmentShader).toMatch(/gl_FragColor = vec4\(c \* smoothstep\(1\.0, 0\.75, r\) \* vK, 0\.0\)/); // (a star's alpha 0: added)
+    expect(m.fragmentShader).toMatch(/gl_FragColor = vec4\(vColor \* lit \* a, a\)/); // (a disc's: over)
+    stars.dispose();
+  });
+
+  it('takes its numbers from the levels, so the chip cannot drift from them', () => {
+    const v = createFarStars(new THREE.Group(), { places: [], skyFar: 24000 }).points.material.vertexShader;
+    expect(v).toContain(String(REAL_REACHES));
+    expect(v).toContain(`FADE = ${FADE}`);
+    expect(v).toContain(`FAR = ${FAR}`);
+    expect(v).toContain(`SPECK_LEAST = ${SPECK_LEAST}`);
+  });
+});
+
+describe('pops (dev)', () => {
+  const H = 1080;
+  const stubRenderer = { getRenderTarget: () => null, getDrawingBufferSize: (v) => v.set(1920, H), domElement: { clientHeight: H }, getPixelRatio: () => 1 };
+
+  it('counts a disc that comes in at over half, never one that fades in', () => {
+    const stars = createFarStars(new THREE.Group(), { places: [], skyFar: 24000, discs: 4 });
+    const cam = camAt(0, 0, 0);
+    stars.update(cam);
+    stars.points.onBeforeRender(stubRenderer);
+    expect(stars.pops()).toEqual({ count: 0, px: 0 }); // (from now)
+    const frame = (rows) => {
+      stars.discs.begin();
+      for (const [id, z, r, a] of rows) stars.discs.push(0, 0, z, r, 1, 1, 1, 0, 0, 0, a, id);
+      stars.discs.end();
+      stars.update(cam);
+    };
+    frame([['a', -30000, 200, 0.9]]); // (first frame counted from: what's there was there)
+    frame([['a', -30000, 200, 0.9], ['b', -20000, 100, 0.05]]);
+    frame([['a', -30000, 200, 0.9], ['b', -20000, 100, 0.3]]);
+    expect(stars.pops()).toEqual({ count: 0, px: 0 });
+    frame([['a', -30000, 200, 0.9], ['b', -20000, 100, 0.6], ['c', -10000, 80, 0.8]]);
+    const p = stars.pops();
+    expect(p.count).toBe(1);
+    expect(p.px).toBeCloseTo(discPx(10000, 80, { fovY: 34, height: H }), 6);
+    expect(stars.pops()).toEqual({ count: 0, px: 0 }); // (each asking reads what's popped since the last)
+    stars.dispose();
+  });
+
+  it('counts a slot shown out of nothing, but not a swap or a fade', () => {
+    const stars = createFarStars(new THREE.Group(), { places: [], skyFar: 24000, slots: [4, 4, 4] });
+    const cam = camAt(0, 0, 0);
+    stars.update(cam);
+    stars.points.onBeforeRender(stubRenderer);
+    stars.pops();
+    for (const i of [0, 1, 2]) stars.setSlot(i, slotOf([0, 0, -100000], [ONE]));
+    stars.showSlots([0]);
+    stars.update(cam);
+    const p = stars.pops();
+    expect(p.count).toBe(1);
+    expect(p.px).toBeCloseTo(starPx(speckBright(100000, 50)), 5);
+    // a swap: shown as another goes, in one frame
+    stars.hideSlots([0]);
+    stars.showSlots([1]);
+    stars.update(cam);
+    // a fade
+    stars.fadeSlot(2, 0.5);
+    for (let f = 0; f < 40; f++) stars.update(cam, 1 / 60);
+    expect(uSlot(stars)[2].w).toBe(1);
+    expect(stars.pops()).toEqual({ count: 0, px: 0 });
+    // and a slot whose specks are all within the far plane (discs there) shows nothing to pop
+    stars.setSlot(0, slotOf([0, 0, -10000], [ONE]));
+    stars.showSlots([0]);
+    stars.update(cam);
+    expect(stars.pops()).toEqual({ count: 0, px: 0 });
     stars.dispose();
   });
 });
