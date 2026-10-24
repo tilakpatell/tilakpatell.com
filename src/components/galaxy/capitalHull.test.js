@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
-import { GAME_HULLS, GAME_MAPS, dressGameHull, dressGameMaps, hullMaterial, inFrame, sizesFor } from './capitalHull';
+import { GAME_HULLS, GAME_MAPS, combineMaterial, dressGameHull, dressGameMaps, hullMaterial, inFrame, joined, sizesFor } from './capitalHull';
 
 // a texture as the loader gives one (the sheets tile)
 const map = () => new THREE.Texture();
@@ -36,7 +36,9 @@ describe('capitalHull', () => {
     const d = GAME_HULLS.destroyer;
     expect(d.material.test('M_Hull_01_lods')).toBe(true);
     expect(d.material.test('M_Hull_lods')).toBe(false);
-    expect(d.mesh).toMatch(/levels\/sb_endor\/meshes\/stardestroyer_hull_01_sb_endor_mesh\.lod0\.glb$/);
+    expect(d.parts).toHaveLength(1);
+    expect(d.parts[0].mesh).toMatch(/levels\/sb_endor\/meshes\/stardestroyer_hull_01_sb_endor_mesh$/);
+    expect(d.lod).toEqual({ computer: 0, phone: 0 });
     expect(d.atlas.colour).toMatch(/t_stardestroyer_hull_01_cs$/);
     expect(d.panels.colour).toMatch(/t_stardestroyerpanels_01_cs$/);
     expect(d.details.normal).toMatch(/t_stardestroyerdetails_01_nw__normal$/);
@@ -87,8 +89,10 @@ describe('capitalHull', () => {
     const { root, hull, part } = ship();
     const partMaterial = part.material;
     const asked = [];
-    const ok = await dressGameHull(root, 'destroyer', { detail: 'high', loadMesh: async () => packHull(), loadTexture: async (path, size) => (asked.push([path.split('/').pop(), size]), map()) });
+    const urls = [];
+    const ok = await dressGameHull(root, 'destroyer', { detail: 'high', loadMesh: async (url) => (urls.push(url), packHull()), loadTexture: async (path, size) => (asked.push([path.split('/').pop(), size]), map()) });
     expect(ok).toBe(true);
+    expect(urls).toEqual([`${GAME_HULLS.destroyer.parts[0].mesh}.lod0.glb`]);
     expect(hull.material.userData.gameHull).toBe(true);
     expect(part.material).toBe(partMaterial);
     // (the pack's corner at 2 m on x, in the hull's frame of halves, 4)
@@ -143,5 +147,96 @@ describe('capitalHull', () => {
     expect(await dressGameMaps(low, 'providence', { loadTexture: async () => null })).toBe(false);
     expect(await dressGameMaps(low, 'destroyer', { loadTexture: async () => map() })).toBe(false);
     expect(kept.material).toBe(cut);
+  });
+
+  it('names the Venator’s five parts in the space level’s pack, the towers turned as the level sets them, and its mask and sheets', () => {
+    const v = GAME_HULLS.venator;
+    expect(v.material.test('M_VenatorStarDestroyer_Hull_01_lods')).toBe(true);
+    expect(v.material.test('red')).toBe(false);
+    expect(v.parts.map((p) => p.mesh.split('/').pop())).toEqual(['venatorstardestroyer_hull_01_mesh', 'venatorstardestroyer_controltower_01_mesh', 'venatorstardestroyer_controltower_left_mesh', 'venatorstardestroyer_controltower_right_mesh', 'venatorstardestroyer_detailback_01_mesh']);
+    expect(v.parts[2].own.test('M_VenatorStarDestroyer_ControlTower_01_lods')).toBe(true);
+    // (the left tower: turned half round, 195 m up and 222 m aft of the hull's middle)
+    const e = v.parts[2].place.elements;
+    expect(e[0]).toBeCloseTo(-1, 6);
+    expect(e[10]).toBeCloseTo(-1, 6);
+    expect([e[12], e[13], e[14]]).toEqual([-28.71, 194.968, 222.196]);
+    expect(v.combine.map).toMatch(/levels\/kamino\/tex\/t_venatorstardestroyer_hull_01_combine_rgba$/);
+  });
+
+  it('joins the parts’ geometries into one, their attributes as floats and their indices offset', () => {
+    const a = packHull().geometry;
+    a.setIndex([0, 1, 2]);
+    const b = packHull().geometry;
+    const g = joined([a, b]);
+    expect(g.getAttribute('position').count).toBe(6);
+    expect(g.getAttribute('position').array).toBeInstanceOf(Float32Array);
+    expect(g.getAttribute('uv1').count).toBe(6);
+    expect(Array.from(g.index.array)).toEqual([0, 1, 2, 3, 4, 5]);
+    expect(joined([a])).toBe(a);
+  });
+
+  it('paints the Venator’s hull grey under its mask on UV1, the occlusion read from green, and the sheets on UV0', () => {
+    const maps = { combine: map(), tilingNormal: map(), breakup: map(), breakupNormal: map() };
+    const m = combineMaterial(maps, GAME_HULLS.venator);
+    expect(m.userData.gameHull).toBe(true);
+    expect(m.aoMap).toBe(maps.combine);
+    expect(maps.combine.channel).toBe(1);
+    expect(m.normalMap).toBe(maps.tilingNormal);
+    expect(m.metalness).toBe(0);
+    const shader = compiled(m);
+    expect(shader.fragmentShader).toMatch(/texture2D\( aoMap, vAoMapUv \)\.g/);
+    expect(shader.fragmentShader).not.toMatch(/texture2D\( aoMap, vAoMapUv \)\.r/);
+    expect(shader.fragmentShader).toMatch(/ghMask\.r \/ 0\.3330/);
+    expect(shader.fragmentShader).toMatch(/uGhBreakN/);
+    expect(shader.uniforms.uGhBreak.value).toBe(maps.breakup);
+    // (the mask alone, the lowest detail's: no sheets in the shader)
+    const bare = compiled(combineMaterial({ combine: map() }, GAME_HULLS.venator));
+    expect(bare.fragmentShader).toMatch(/ghMask/);
+    expect(bare.fragmentShader).not.toMatch(/ghBn/);
+  });
+
+  it('puts the Venator’s five parts in its stand-in’s place, through the cut’s turned nose, at a computer’s LOD and the mask’s sizes', async () => {
+    const root = new THREE.Group();
+    const nose = new THREE.Group();
+    nose.name = 'nose';
+    nose.rotation.y = Math.PI;
+    const standIn = new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshStandardMaterial({ name: 'M_VenatorStarDestroyer_Hull_01_lods' }));
+    const red = new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshStandardMaterial({ name: 'red' }));
+    nose.add(standIn, red);
+    root.add(nose);
+    const urls = [];
+    const asked = [];
+    // (each part a single triangle, its first corner at its own origin in metres)
+    const part = () => {
+      const g = new THREE.BufferGeometry();
+      g.setAttribute('position', new THREE.BufferAttribute(new Float32Array([0, 0, 0, 1, 0, 0, 0, 1, 0]), 3));
+      g.setAttribute('normal', new THREE.BufferAttribute(new Float32Array([0, 0, 1, 0, 0, 1, 0, 0, 1]), 3));
+      g.setAttribute('uv', new THREE.BufferAttribute(new Float32Array(6), 2));
+      g.setAttribute('uv1', new THREE.BufferAttribute(new Float32Array(6), 2));
+      return { geometry: g, matrix: new THREE.Matrix4() };
+    };
+    const ok = await dressGameHull(root, 'venator', { detail: 'high', loadMesh: async (url) => (urls.push(url.split('/').pop()), part()), loadTexture: async (path, size) => (asked.push([path.split('/').pop(), size]), map()) });
+    expect(ok).toBe(true);
+    expect(urls).toHaveLength(5);
+    expect(urls.every((u) => u.endsWith('.lod1.glb'))).toBe(true);
+    expect(asked).toContainEqual(['t_venatorstardestroyer_hull_01_combine_rgba', 1024]);
+    expect(asked).toContainEqual(['t_venatorstardestroyer_paneltile_02_n', 1024]);
+    expect(standIn.material.userData.gameHull).toBe(true);
+    expect(red.material.name).toBe('red');
+    const pos = standIn.geometry.getAttribute('position');
+    expect(pos.count).toBe(15);
+    // (the left tower's origin: in the kit's frame (-28.71, 194.968, 222.196), the nose's half turn on it in the root's, the stand-in's frame the nose's)
+    const left = new THREE.Vector3().fromBufferAttribute(pos, 6);
+    expect(left.x).toBeCloseTo(-28.71, 3);
+    expect(left.y).toBeCloseTo(194.968, 3);
+    expect(left.z).toBeCloseTo(222.196, 3);
+    // (and its next corner, a metre along its own x, turned half round with it: a metre back along the kit's x)
+    expect(pos.getX(7)).toBeCloseTo(-29.71, 3);
+    // (on a phone, the coarser LOD; one part short, the stand-in as it came)
+    const urls2 = [];
+    const again = new THREE.Group().add(new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshStandardMaterial({ name: 'M_VenatorStarDestroyer_Hull_01_lods' })));
+    await dressGameHull(again, 'venator', { phone: true, loadMesh: async (url) => (urls2.push(url), url.includes('detailback') ? null : part()), loadTexture: async () => map() });
+    expect(urls2.every((u) => u.endsWith('.lod2.glb'))).toBe(true);
+    expect(again.children[0].material.userData.gameHull).toBeUndefined();
   });
 });
