@@ -268,4 +268,39 @@ describe('capitalHull', () => {
     expect(shader.fragmentShader).toMatch(/mapN\.z = sqrt/);
     expect(shader.fragmentShader).not.toMatch(/ghBn/);
   });
+
+  it('puts a mirrored part’s triangles back the right way out', () => {
+    const g = packHull().geometry;
+    const flat = inFrame(g, new THREE.Matrix4(), new THREE.Matrix4());
+    const mirrored = inFrame(g, new THREE.Matrix4().makeScale(-1, 1, 1), new THREE.Matrix4());
+    const facing = (geo) => {
+      const p = geo.getAttribute('position');
+      const [a, b, c] = (geo.index ? [0, 1, 2].map((i) => geo.index.getX(i)) : [0, 1, 2]).map((i) => new THREE.Vector3().fromBufferAttribute(p, i));
+      return new THREE.Vector3().crossVectors(b.sub(a), c.sub(a)).z;
+    };
+    // (the triangle faces +z either way: its normal's side, as the normals say)
+    expect(facing(flat)).toBeGreaterThan(0);
+    expect(facing(mirrored)).toBeGreaterThan(0);
+    expect(mirrored.getAttribute('normal').getZ(0)).toBeGreaterThan(0);
+  });
+
+  it('gives the Lucrehulk all 25 of its plates, its ring’s six arcs and its mirrored twins, keeping the stand-in’s material for the plating', async () => {
+    const l = GAME_HULLS.lucrehulk;
+    expect(l.keep).toBe(true);
+    expect(l.parts).toHaveLength(25);
+    expect(l.parts.filter((p) => /mainhull_03/.test(p.mesh))).toHaveLength(6);
+    expect(l.parts.filter((p) => p.place && p.place.determinant() < 0)).toHaveLength(3);
+    expect(l.parts[0].own.test('M_LucrehulkClass_DroidBattleShip_ControlBridgeTower_01_lods1')).toBe(true);
+    expect(l.parts[0].own.test('M_LucrehulkClass_DroidBattleShip_MainHull_03_detail_lods')).toBe(false);
+    const root = new THREE.Group();
+    const bare = new THREE.MeshStandardMaterial({ name: 'M_LucrehulkClass_DroidBattleShip_MainHull_01_lods' });
+    const standIn = new THREE.Mesh(new THREE.BoxGeometry(), bare);
+    root.add(standIn);
+    const asked = [];
+    const ok = await dressGameHull(root, 'lucrehulk', { loadMesh: async () => packHull(), loadTexture: async (path) => (asked.push(path), map()) });
+    expect(ok).toBe(true);
+    expect(asked).toEqual([]);
+    expect(standIn.material).toBe(bare);
+    expect(standIn.geometry.getAttribute('position').count).toBe(25 * 3);
+  });
 });

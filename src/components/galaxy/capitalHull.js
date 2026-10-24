@@ -57,6 +57,9 @@ const tex = (level, name) => `${LEVELS}/${level}/tex/${name}`;
 
 const turned = new THREE.Matrix4().makeRotationY(Math.PI);
 const at = (x, y, z, turn = false) => new THREE.Matrix4().makeTranslation(x, y, z).multiply(turn ? turned : new THREE.Matrix4());
+// a turn about y by a quaternion's y and w (the Lucrehulk's ring), and a placement by its axes' signs
+const yaw = (y, w) => new THREE.Matrix4().makeRotationFromQuaternion(new THREE.Quaternion(0, y, 0, w).normalize());
+const signs = (x, y, z) => new THREE.Matrix4().makeScale(x, y, z);
 
 // a sheet's colour, linear, averaged over the whole map (its smallest mip:
 // measured on the published 2048 rows), which its colour is divided by.
@@ -95,6 +98,54 @@ export const GAME_HULLS = {
     combine: { map: tex('kamino', 't_venatorstardestroyer_hull_01_combine_rgba'), tone: 0.333 },
     tiling: { normal: tex('kamino', 't_venatorstardestroyer_paneltile_02_n'), tiling: 1 },
     breakup: { colour: tex('kamino', 't_venatorstardestroyer_paneltile_01_breakup_02_rgba'), normal: tex('kamino', 't_venatorstardestroyer_paneltile_01_breakup_01_rgba'), mean: [0.465, 0.463, 0.451], tiling: 1, strength: 0.6 },
+  },
+  lucrehulk: {
+    // (its plates' geometry alone: their maps aren't published, so the
+    // stand-in's material stays, plated as before, capitalLook.js. The fleet
+    // cut kept one instance a mesh and a spot, so of the ring's six arcs, all
+    // at the hull's middle, one, and none of the three mirrored twins: the
+    // ring was a sixth of itself. The plates are all 25 instances
+    // sb_droidbattleship's far.bin sets, in the hull's frame, mirrors as
+    // they are; the two force fields joined into the stand-in go)
+    material: /^M_LucrehulkClass_DroidBattleShip_MainHull_01_lods$/,
+    own: 'M_LucrehulkClass_DroidBattleShip_MainHull_01',
+    keep: true,
+    parts: [
+      ['mainhull_01'],
+      ['mainhull_02'],
+      ...[
+        [-0.2588, 0.9659],
+        [0.866, 0.5],
+        [-0.5, 0.866],
+        [-0.7071, 0.7071],
+        [0.9659, 0.2588],
+        [1, 0],
+      ].map(([y, w]) => ['mainhull_03', yaw(y, w)]),
+      ['mainhull_04'],
+      ['mainhull_05'],
+      ['mainhull_06'],
+      ['mainhull_07'],
+      ['centersphere_exterior_01', at(0, 11.56, 0)],
+      ['forwardcontroltower_01'],
+      ['controlbridgetower_01'],
+      ['controlbridgetower_01_left', at(137.56, 608.58, -180.26)],
+      ['controlbridgetower_01_right', at(-137.51, 608.68, -180.5)],
+      ['hangar_03'],
+      ['hangar_03', signs(-1, 1, 1)],
+      ['tractor_01'],
+      ['tractor_01', signs(-1, 1, 1)],
+      ['tractor_01_base', at(328.743, 79.2508, 1200.6748, true)],
+      ['tractor_01_base', at(-328.743, 79.2508, 1200.6748)],
+      ['tractor_02', signs(-1, -1, 1)],
+      ['tractor_02', signs(1, -1, 1)],
+    ].map(([name, place]) => ({
+      mesh: `${LEVELS}/sb_droidbattleship/meshes/lucrehulkclass_droidbattleship_${name}_mesh`,
+      // (a plate's material, by its LOD: the towers' at the third LOD end in a 1)
+      own: /^(ccc_)?M_LucrehulkClass_DroidBattleShip_(MainHull_0\d|CenterSphere_01|ForwardControlTower_01|ControlBridgeTower_0[12]|Tractor_0[12])(_lods)?1?$/,
+      place,
+    })),
+    // (the plates at the third LOD: about 75,000 triangles over 3.2 km)
+    lod: { computer: 2, phone: 3 },
   },
   moncal: {
     // (MC_80_light_Met, the windows, its own mesh and maps: left as it is)
@@ -295,7 +346,8 @@ export function paintMaterial(maps, def, { name = def.own } = {}) {
 }
 
 // a geometry from one frame into another: `from` its mesh's matrix in its
-// own file, `to` the matrix of the mesh it stands in for, in that one's.
+// own file, `to` the matrix of the mesh it stands in for, in that one's (a
+// mirror's triangles put back the right way out).
 // (The pack's meshes are quantized, KHR_mesh_quantization: their positions
 // whole numbers its node's scale makes metres, their normals and tangents
 // packed in shorts; each is widened to floats first, or moving it would
@@ -309,7 +361,19 @@ export function inFrame(geometry, from, to) {
     for (let i = 0; i < a.count; i++) for (let c = 0; c < a.itemSize; c++) out[i * a.itemSize + c] = a.getComponent(i, c);
     g.setAttribute(name, new THREE.BufferAttribute(out, a.itemSize));
   }
-  return g.applyMatrix4(new THREE.Matrix4().copy(to).invert().multiply(from));
+  const m = new THREE.Matrix4().copy(to).invert().multiply(from);
+  g.applyMatrix4(m);
+  // (a mirror turns every triangle inside out: its corners put back in order)
+  if (m.determinant() < 0) {
+    if (!g.index) g.setIndex([...Array(g.getAttribute('position').count).keys()]);
+    const index = g.index;
+    for (let i = 0; i + 2 < index.count; i += 3) {
+      const b = index.getX(i + 1);
+      index.setX(i + 1, index.getX(i + 2));
+      index.setX(i + 2, b);
+    }
+  }
+  return g;
 }
 
 // the parts' geometries as one (the stand-in was one): the attributes all
@@ -447,6 +511,12 @@ export async function dressGameHull(root, kind, { detail = 'high', phone = false
   const want = sizesFor(detail, phone);
   const size = Object.fromEntries(Object.entries(want).map(([k, n]) => [k, fit(n, def.have)]));
   const lod = phone ? def.lod.phone : def.lod.computer;
+  if (def.keep) {
+    const parts = await Promise.all(def.parts.map((p) => loadMesh(`${p.mesh}.lod${lod}.glb`, p.own)));
+    if (parts.some((p) => !p)) return false;
+    swapIn(root, targets, def, parts, null);
+    return true;
+  }
   const get = (path, n, opts) => (path && n ? loadTexture(path, n, { aniso, ...opts }) : Promise.resolve(null));
   const painted = Boolean(def.paint);
   // (a sheet the cut carries already, on the wrong UVs: the MC80's breakup)
@@ -484,9 +554,15 @@ export async function dressGameHull(root, kind, { detail = 'high', phone = false
   const maps = { ...got };
   if (!sheetNames.every((k) => maps[k])) for (const k of sheetNames) delete maps[k];
   const material = painted ? paintMaterial(maps, def) : hullMaterial(maps, def, { name: def.own });
+  swapIn(root, targets, def, parts, material);
+  return true;
+}
+
+// the parts, joined, in the first stand-in's place (and its material, unless
+// `material` is null); any other stand-in is the same hull split, gone
+function swapIn(root, targets, def, parts, material) {
   const rootInverse = new THREE.Matrix4().copy(root.matrixWorld).invert();
   targets.forEach((mesh, i) => {
-    // (the first stand-in takes the whole hull; any other is the same hull split, gone)
     if (i > 0) {
       mesh.visible = false;
       return;
@@ -497,7 +573,6 @@ export async function dressGameHull(root, kind, { detail = 'high', phone = false
     const frame = new THREE.Matrix4().multiplyMatrices(rootInverse, kit?.name === 'nose' ? kit.matrixWorld : root.matrixWorld);
     const to = new THREE.Matrix4().multiplyMatrices(rootInverse, mesh.matrixWorld);
     mesh.geometry = joined(parts.map((p, k) => inFrame(p.geometry, new THREE.Matrix4().multiplyMatrices(frame, def.parts[k].place ?? new THREE.Matrix4()).multiply(p.matrix), to)));
-    mesh.material = material;
+    if (material) mesh.material = material;
   });
-  return true;
 }
