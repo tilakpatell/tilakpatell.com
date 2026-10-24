@@ -47,8 +47,8 @@ describe('capitalLook', () => {
     expect(glass.material.emissiveIntensity).toBeGreaterThan(1);
     expect(engine.material.userData.burning).toBe(true);
     expect(metal.material.emissive.getHex()).toBe(0);
-    // (the export's whole metal brought down to paint; a material made plain left plain)
-    expect(engine.material.metalness).toBeCloseTo(0.28, 6);
+    // (the export's whole metal brought down to paint, a dielectric as the game's; a material made plain left plain)
+    expect(engine.material.metalness).toBe(0);
     expect(hull.material.metalness).toBe(0);
     // (and the nozzles' glows, one mesh)
     expect(done.nozzles).toHaveLength(2);

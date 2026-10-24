@@ -54,10 +54,13 @@ const PLATE_ALL = new Set(['acclamator', 'executor', 'gozanti']);
 const LAMP = /glow|lamp|bluelight|redlight|whitelight|beacon/i;
 // (black and glass: no paint to layer)
 const BARE_BLACK = /^dark$|glass/i;
-// painted metal, as the hull is (the export gave most of the game's
-// materials a metal's whole shine with nothing to reflect but a dark sky:
-// a navy speckle where the films have grey plating)
-const PAINT = { metalness: 0.28, roughness: 0.58 };
+// paint, as the game's is: a dielectric (the export gave most of the
+// game's materials a metal's whole shine with nothing to reflect but a dark
+// sky, a navy speckle where the films have grey plating; the game's
+// capitals' materials are dielectrics, their metal only where a mask says,
+// bf2-re's findings/17-materials.md), so the parts and the hull's own map
+// (capitalHull.js, metalness 0) are one paint
+const PAINT = { metalness: 0, roughness: 0.58 };
 const saturation = (c) => {
   const hi = Math.max(c.r, c.g, c.b);
   return hi > 0 ? (hi - Math.min(c.r, c.g, c.b)) / hi : 0;
@@ -228,6 +231,8 @@ export function dressCapital(holder, kind, { plating = true, size = 2048, lite =
     const unit = mesh.matrixWorld.clone();
     const one = (m) => {
       if (!m?.isMeshStandardMaterial) return m;
+      // (the game's own hull, capitalHull.js: its maps are the game's, nothing laid over them)
+      if (m.userData.gameHull) return m;
       // the game's lights and engine glow in one material of their own (the
       // Nebulon-B's `Emissive`, bare as it came: tune() greyed it, and its
       // mask, which lights only its windows and lamps, didn't come through):

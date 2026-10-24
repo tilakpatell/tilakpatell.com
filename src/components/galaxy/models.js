@@ -27,7 +27,7 @@
 
 import * as THREE from 'three';
 import { clone as cloneSkinned } from 'three/examples/jsm/utils/SkeletonUtils.js';
-import { device } from '../../lib/device';
+import { budget, device } from '../../lib/device';
 import { gen3dUrl } from '../../lib/three/gen3d';
 import { cloneScene, loadGLTF } from '../../lib/three/gltfCache';
 import { fitScale } from '../universe/shipFit';
@@ -36,6 +36,7 @@ import { GALAXY_KINDS, buildGalaxyShip } from './fleet';
 import { createHulls } from './hulls';
 import { cutting, disposeLooks, partsOf, partSpecs } from './capitalParts';
 import { dressCapital } from './capitalLook';
+import { dressGameHull } from './capitalHull';
 
 // which way each loaded model's nose points as it comes (turned to +z): the
 // game's wherever Battlefront II (2017) has the ship, and the galaxy's own
@@ -461,6 +462,9 @@ export function createModels({ prepare = null, load: fetchModel = loadGLTF, hull
       .then(async (root) => {
         if (!root) return;
         tune(root);
+        // (the game's own hull where the export left it bare: capitalHull.js; as it came if that fails)
+        await dressGameHull(root, kind, { detail: device().detail, phone: device().phone, aniso: budget().aniso });
+        if (dead) return;
         const n = normalise(root, def.nose, kind);
         // (a capital's hull plated, its windows lit, its engines burning aft: capitalLook.js)
         dressCapital(n.holder, kind, { plating: device().detail !== 'low', size: device().phone ? 1024 : 2048, lite: device().phone });
