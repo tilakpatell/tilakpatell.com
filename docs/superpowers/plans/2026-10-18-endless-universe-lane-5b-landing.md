@@ -18,6 +18,7 @@
   - `sceneLanding.js` takes over the scene's whole air check, the fandom planets' rule moved unchanged beside the new one. It flies the dive, plays the existing entry show (`reentry.js`) and hands off.
   - `lib/land/flight/arrival.js` starts the flight over the spot.
   - `lib/land/flight/touchdown.js` sets the ship down and lifts it off.
+  - The flight's key tables move out of `module.js` and `shared.js` into a pure `expanse/flight/keys.js`, so the landing's phases (`expanse/flight/landing.js`) are pure too.
   - `foot.js` gives the universe's walk, its camera rule and its figure motion to a pure adapter on the flight's chart, `expanse/flight/footing.js`. The camera rule and the figure motion are moved out of `footScene.js` so both use them.
   - `lib/view.js` names the way back.
 - **Three PR groups on the one branch.** The coordinator merges every lane; this plan opens no pull request.
@@ -60,7 +61,7 @@ Line numbers are from `main` at `cc5e2eaf`. Lanes 2, 3 and 5a move them, so find
 - Pure first. These import no React, no DOM and no three.js, and each has its Node test before its drawing half:
   - `entry.js`
   - `lib/land/flight/{arrival,touchdown,biomeTint}.js`
-  - `expanse/flight/{rows,footing,landing}.js`
+  - `expanse/flight/{rows,keys,footing,landing}.js`
   - `expanse/shared/flight.js`
 - A changed picture is on purpose. The before shots come first, at `--quality mid`, in the task that changes them (Tasks 5, 7, 8).
 - Draw calls and triangles are no higher at any pose in `lab/universe/baseline/<tier>.json`, nor at `/fly/hoth`. The one rise this lane makes on purpose is a generated planet's weather, one draw on `/fly/<id>` while it falls (finding 6). Say the numbers.
@@ -74,17 +75,22 @@ Line numbers are from `main` at `cc5e2eaf`. Lanes 2, 3 and 5a move them, so find
   - Over the lane, the scene loses `diveAt` with its comment (16 lines), the air check (19), `state.hotSaid` (1), `SHIP_NAMES` (1) and `FOOT_FOV` (1): 38 lines. It gains 3: an import, the landing's line and the dive's ride.
 - `src/components/universe/footScene.js` (3,530 lines, over the ceiling) doesn't grow. Task 13 moves its walk-phase camera rule and its figure-motion rule into `foot.js` (about −25) and adds one export.
 - New files stay under 800 lines. `Universe.jsx` (649), `Fly.jsx` (100), `module.js` (315) and `entry.js` (226) stay under 800.
-- No `requestAnimationFrame` (`loops` is at budget). No new GLSL site: every shader change is a define or a branch in a material that exists, so `glsl-sites` stays 613. `boundary-breaks` (484) and `cycles` (5) don't rise.
+- No `requestAnimationFrame` (`loops` is at budget). No new GLSL site: every shader change is a define, a branch or a spliced line in a material that exists, so `glsl-sites` stays 613. `boundary-breaks` (484) and `cycles` (5) don't rise.
 
 **The island (`scripts/lib/flight-island.mjs`, `docs/superpowers/specs/2026-10-10-planet-flight-removable-island-design.md`):**
 - The universe reaches the flight through **one face**, `src/components/expanse/shared/flight.js`.
-  - It goes in `ISLAND.files`, and `NAMES` gains `/expanse\/shared\/flight\b/`.
+  - It and its test, `src/components/expanse/shared/flight.test.js`, go in `ISLAND.files`, and `NAMES` gains `/expanse\/shared\/flight\b/`.
   - The one file that imports it, `universe/landing/sceneLanding.js`, marks that import and the one line that uses it `// planet flight`, and joins `ISLAND.rows`.
   - With the flight gone, those two lines go. Generated planets keep their procedural look and don't land; gas giants still turn you back.
-- `lib/view.js`'s way back from `/fly/e:…` is a marked block, and `lib/view.js` joins `ISLAND.rows`. So do `scripts/universe-endless-check.mjs`'s landing steps.
+- **Every file outside the island that names the flight is marked and listed, tests included.** `check()` reads every tracked file (`repoTree` is `git ls-files`), so a test is held to the rule as its file is. The files this lane adds to `ISLAND.rows`:
+  - `src/components/universe/landing/sceneLanding.js` (Task 5): the face's import and the link's line
+  - `scripts/universe-endless-check.mjs` (Task 11): one `// planet flight: begin` … `end` block, which this lane adds, holding the `dive`, `ground` and `back` steps. The `gas` step is outside it, since a giant turns you back with the flight gone too.
+  - `src/lib/view.js` and `src/lib/view.test.js` (Task 14): the way back from `/fly/e:…`, and its cases
+- **A test outside the island never names the flight to fake it.** `sceneLanding.test.js`'s fake link writes `'/to/' + id`. The check that nothing under `expanse/flight/` imports the crew face statically lives in the flight's own folder (`walker.test.js`), not in `universe/shared/shared.test.js`.
+- **The island's pure layer imports nothing outside it** (`CROSS`'s `lib → components` rule reads tests too). No test under `src/lib/land/flight/` imports a component: Task 2 pins the orbit map's size by literal, as lane 2's budget test pins its own.
 - The flight reaches the universe only through `universe/shared/` (`CROSS`): `universe/shared/foot.js` (light) and `universe/shared/crew.js` (the figures, loaded lazily).
 - `scripts/flight-island.test.mjs` stays as it is. In particular, removal deletes no file under `src/components/universe/` or `src/components/galaxy/`.
-- `node scripts/flight-island.mjs --check` prints `ok` after every task.
+- `node scripts/flight-island.mjs --check` prints `ok` after every task. It prints `ok   <F> files on the island, <R> marked rows, <N> references`. Each task reads that line before it starts, and its island step names the `F` and `R` it expects after, as deltas from that line (on `main` at `cc5e2eaf` it is 151 files and 39 rows; lane 5a adds files before this lane begins).
 
 **The roster and the galaxy keep their look:**
 - Lane 5a's `ROSTER_LOCK` and `planetSpec.test.js`'s `GROUND` hash hold through every task.
@@ -103,19 +109,21 @@ Line numbers are from `main` at `cc5e2eaf`. Lanes 2, 3 and 5a move them, so find
 
 **Numbers the spec pins:**
 - **The entry is two to three seconds.** `DIVE.T = 2.4` s, and the route changes at `DIVE.hand = 2.1` s, behind the white-out.
+  - `fxAt`'s white-out peaks at `0.62 × ENTRY.glide` = 2.852 s of the fandom show (`entry.js:223`). The dive plays it `DIVE.quick = 1.4` times as fast, so it peaks at 2.852 / 1.4 = 2.04 s, just before the hand-off, and `diveFx(2.1).white` is 0.79.
 - **The air** is `AIR = 1.2` radii (`entry.js:33`, the fandom planets' own).
-- **Orbit maps** are 256 × 128 on `low` and `mid`, and 512 × 256 on `high` and `ultra`: lane 5a's `ORBIT_MAP_SIZE`, which equals lane 2's `BUDGET[tier].planetMap` (Task 2 pins that).
+- **Orbit maps** are 256 × 128 on `low` and `mid`, and 512 × 256 on `high` and `ultra`. These are lane 5a's `ORBIT_MAP_SIZE` and lane 2's `BUDGET[tier].planetMap`, one table held by two literal pins: lane 2's `budget.test.js` (`'holds the plan’s rows'`, on `eu/lane-2` at `439f22b8`) and lane 5a's `orbitMap.test.js`. No test imports across the island to compare them (Task 2).
 - **Taking off leaves you in orbit of that same planet.** The route is `/universe/<E: id>`, and lane 3's start parks you at `reach + 4`, facing it.
 - **Gas giants and ringed giants don't land.** Pocket universes don't either (spec: "need not land").
 
 **Numbers this plan picks (pinned by tests, so they can be tuned):**
-- `DIVE = { T: 2.4, hand: 2.1, quick: 1.3, hover: 0.06, giveUp: 4 }`
+- `DIVE = { T: 2.4, hand: 2.1, quick: 1.4, hover: 0.06, giveUp: 4 }`
   - seconds; the entry show runs `quick` times its fandom speed; the dive never goes nearer the ground than `hover` radii
 - `ORBIT_SKIN = { fade: 0.6, normal: 0.35, seas: 0.5, glow: 1.4 }`
   - a map fades in over 0.6 s and never pops
 - `RELIEF_GAIN = 6`
 - `ARRIVE = { up: 320, pitch: -0.16, speed: 110 }` (m, rad, m/s)
 - `LAND = { alt: 450, speed: 160, reach: 700, step: 25, foot: 9, slope: 0.12, dry: 2, hover: 30, glide: 3.5, settle: 2, rest: 2.5 }`
+  - `rest` is under the flight's `SHIP.clearance = 3` (`flightRules.js:13`). So `module.js` runs `crashed` and its respawns only in the `'fly'` phase: in every other phase the landing's paths own the ship (Task 14).
 - `LIFT = { up: 60, rise: 2, climb: 5 }`
 - `LEAVE = { alt: 4000 }`
 - the walker: `PLANE_R = 1e7` m for a plane spec's chart, `SHORE = 0.3` m, `BOARD = 14` m, `STEP_OUT = { side: 9, back: 2 }` m
@@ -124,6 +132,8 @@ Line numbers are from `main` at `cc5e2eaf`. Lanes 2, 3 and 5a move them, so find
 - Every new on-screen word goes into `src/components/universe/words.js` first: `LAND_WORDS`, `FOOT_WORDS` and `SHIP_NAMES` (Task 9).
 - British spelling, sentence case, curly quotes, no Oxford comma. No retired word.
 - The flight's HUD takes its parts from `src/runtime/hud` only (`hud-kit` stays 0).
+- **One prompt** (RULES.md, "The worlds' HUDs"): the flight's foot shows one `Prompt`, with at most one second action as its `alt`, as the shared world's B and X do today (`FlightHud.jsx:19-20`). Task 14 gives the order.
+- **The keys are written once**, in `src/components/guide/pages.js`. The new ones (L, G, T and the walking keys) go in its `'/fly'` block, which is already a marked block (`pages.js:226-250`), so they go with the flight.
 
 **Browser checks (as lane 3's):**
 - Headless Chromium draws in software here at a frame or two a second.
@@ -153,20 +163,27 @@ Line numbers are from `main` at `cc5e2eaf`. Lanes 2, 3 and 5a move them, so find
 
    Pinned in Task 11.
 3. **A planet that won't take you.** Each of these turns you back with its own line, or crashes as today, and never dives into nothing:
-   - a gas giant
+   - a gas giant, or a gas rogue (its type is its traits', carried in its build's `of`)
    - a ringed giant
+   - any body the link says won't land (`!link.landable(of)`), with the giants' line
    - any planet in a pocket universe
    - a ship too fast for the air
    - a rocky planet with the flight removed
 
-   Pinned in Task 9 (`turnBack`) and Task 11 (each case, and the fandom rule as it was).
-4. **Walking where you shouldn't.** Out into the sea, up a cliff, into the parked ship, a jump on a slope, a long way off: the walker is never under the ground or NaN, and the way back to the ship is always shown. Pinned in Task 13 (`footing`) and Task 14 (the way back, boarding only near the ship).
+   Pinned in Task 9 (`turnBack`), Task 11 (each case, and the fandom rule as it was) and Task 15 (a gas rogue).
+4. **Walking where you shouldn't.** Out into the sea, up a cliff, into the parked ship, a jump on a slope, a long way off: the walker is never under the ground or NaN, and the way back to the ship is always shown.
+   - The feet stand on the ground that is drawn: the finest leaf in under the walker, else the field (the flight's own `groundAt`, `module.js:194-197`).
+   - The ground streams round the walker, not the parked ship, so a long walk keeps the finest leaves under the feet.
+
+   Pinned in Task 13 (`footing`) and Task 14 (the way back, boarding only near the ship, the stream following the walker, and the `ground` step's walker put 300 m off).
 5. **Touch, keys and leaving mid-landing.**
    - On a phone you can land, get out, walk, get back in and take off with the HUD's buttons.
    - The flying keys and the walking keys are never bound at once.
+   - A key acts on its press, never while held: `snap.action(name)` is a key held (`src/runtime/input.js:40-45`), so G held over two frames by the ship would get out and back in every frame. The landing reads `snap.pressed`.
+   - Nothing the flight did before is lost: Space still fires in flight, and parked or walking the ship is never put back up 200 m by the crash rule or a turret.
    - Leaving the page mid-landing unbinds everything and keeps nothing.
 
-   Pinned in Task 14 (key sets by phase, the prompts' `onClick`, dispose) and its phone shot.
+   Pinned in Task 14 (key sets by phase, presses, the prompts' `onClick`, the crash rule by phase, dispose) and its phone shot.
 
 ## Files
 
@@ -175,10 +192,10 @@ Line numbers are from `main` at `cc5e2eaf`. Lanes 2, 3 and 5a move them, so find
 | `src/components/expanse/flight/rows.js` (new) | lane 5a's rows for a planet, a moon (and a rogue, Task 15) from the generator's rows | 1, 15 |
 | `src/components/expanse/flight/planets.js` | `expanseRow` through lane 2's `placeOf`, in 3D; `planetSpecOf(id, { row })` | 1, 10, 15 |
 | `src/lib/land/flight/orbitMap.js`, `orbitMap.worker.js`, `orbitMaps.js` (lane 5a's) | the bake's relief; a bake from a row; `forRow` | 2, 6 |
-| `src/components/galaxy/bodySkin.js`, `bodies.js` | `skinBytes`, `skinRelief`, `ORBIT_SKIN`, `SKIN_GLOW`; `buildBody`'s `orbit` option | 3 |
-| `src/components/expanse/shared/flight.js` (new, on the island) | the flight's face for the universe: rows, orbit looks, who lands, the route | 4, 15 |
+| `src/components/galaxy/bodySkin.js`, `bodyShaders.js`, `bodies.js` | `skinBytes`, `skinRelief`, `ORBIT_SKIN`, `withSkin(frag, { glow })`; `surfaceFrag`'s `glow`; `buildBody`'s `orbit` option | 3 |
+| `src/components/expanse/shared/flight.js`, `flight.test.js` (new, both on the island) | the flight's face for the universe: rows, orbit looks, who lands, the route | 4, 15 |
 | `src/lib/land/flight/arrival.js` (new) | the spot in the URL; where the flight starts | 4, 10 |
-| `scripts/lib/flight-island.mjs` | the face, its name, the new marked files | 4, 5, 11, 14 |
+| `scripts/lib/flight-island.mjs` | the face and its test, its name, the new marked files | 4, 5, 11, 14 |
 | `src/components/universe/landing/sceneLanding.js` (new) | the scene's landings: orbit skins, the air (fandom and generated), the dive, the hand-off, the dev hooks | 5, 11, 15 |
 | `src/components/expanse/scene/near.js`, `expanse.js` (lane 2's) | a build's `of`; `build` threaded through | 5 |
 | `src/components/universe/scene.js` | wiring only, smaller after | 5, 9, 11, 13 |
@@ -189,13 +206,15 @@ Line numbers are from `main` at `cc5e2eaf`. Lanes 2, 3 and 5a move them, so find
 | `src/components/universe/entry.js`, `words.js` | the dive's rules; `LAND_WORDS`, `FOOT_WORDS`, `SHIP_NAMES` | 9 |
 | `src/pages/Fly.jsx`, `src/components/expanse/flight/flight.css` | the spot, the row, the cover in and out, leaving | 10, 14 |
 | `src/pages/Universe.jsx` | the hand-off: the fade and the route | 11 |
-| `scripts/universe-endless-check.mjs` | the `dive`, `ground`, `back` and `gas` steps | 11, 14 |
+| `scripts/universe-endless-check.mjs` | the `dive`, `ground` and `back` steps in a marked block; the `gas` step outside it | 11, 14 |
 | `src/lib/land/flight/touchdown.js` (new) | setting down, lifting off, leaving the air | 12 |
 | `src/components/universe/foot.js`, `footScene.js` | `CAM`, `FOOT_FOV`, `chaseView`, `easeView`, `motionOf` moved out of the scenes; `crewCast` | 13 |
-| `src/components/universe/shared/foot.js`, `crew.js` (new faces) | the walker and its words; the figures, lazily | 13 |
-| `src/components/expanse/flight/footing.js` (new) | the universe's walk on the flight's chart, heights from the field | 13 |
-| `src/components/expanse/flight/landing.js` (new), `walker.js` (new), `module.js`, `scene.js`, `FlightHud.jsx` | phases, the walker drawn, keys, the camera on foot, the HUD | 14 |
-| `src/lib/view.js` | `/fly/e:…` goes back to `/universe/E:…` | 14, 15 |
+| `src/components/universe/shared/foot.js`, `crew.js` (new faces), `shared.test.js` | the walker and its words; the figures, lazily | 13 |
+| `src/components/expanse/flight/footing.js` (new) | the universe's walk on the flight's chart, its feet on the ground drawn | 13 |
+| `src/components/expanse/flight/keys.js` (new); `module.js` and `shared.js` re-export from it | the flight's key tables and `inputOf`, pure | 14 |
+| `src/components/expanse/flight/landing.js` (new), `walker.js` (new), `module.js`, `scene.js`, `groundCore.js`, `ground.js`, `FlightHud.jsx` | phases, the walker drawn, keys by phase, the crash rule by phase, the ground streamed round the walker, the camera on foot, the HUD | 14 |
+| `src/components/guide/pages.js` | the new keys, in the `'/fly'` block | 14 |
+| `src/lib/view.js`, `src/lib/view.test.js` | `/fly/e:…` goes back to `/universe/E:…` | 14, 15 |
 | `src/lib/land/flight/expanse.js`, `variety.js` (lane 5a's); `src/components/universe/things/looks/rogue.js` (lane 4a's) | a rogue planet's id, row and variety; its body through the landing's build | 15 |
 | `docs/superpowers/evidence/endless-universe-lane-5b/` | README, shots, HANDOFF-NOTES.md | 5–16 |
 
@@ -272,9 +291,9 @@ Expected: FAIL. The appended system's planet and `E:2,-3,1`'s are null; `./rows`
 
 - [ ] **Step 3: Implement `rows.js` and the new `expanseRow`.** Header comment in the house style. `placeOf` keeps its own LRU of eight sectors, so a page that asks twice makes one sector.
 
-- [ ] **Step 4: Run them, and the flight's tests and the lock.**
-Run: `npx vitest run src/components/expanse/flight src/lib/land/flight`
-Expected: PASS, `the roster` and `'makes the rows the fixture holds'` included.
+- [ ] **Step 4: Run them, the flight's tests and the lock, and the island.**
+Run: `npx vitest run src/components/expanse/flight src/lib/land/flight && node scripts/flight-island.mjs --check`
+Expected: PASS, `the roster` and `'makes the rows the fixture holds'` included. Then `ok` with 2 more files on the island (`rows.js` and its test) and the same marked rows as before the task.
 
 - [ ] **Step 5: Commit.** `git commit -m "The planet flight reads any generated planet or moon, in every layer and every appended system"`
 
@@ -288,11 +307,12 @@ The universe never makes a spec on its main thread: a generated spec places its 
 **Interfaces:**
 - Consumes:
   - lane 5a's `bakeOrbitMap`, `ORBIT_MAP_SIZE`, `orbitMapSize`, `PLANE_WINDOW`, `createOrbitMaps`, `planetSpecOf(id, { expanse })`, `sphereField`, `dirOfUv`
-  - lane 2's `BUDGET` (`universe/budget.js`), in the test only
+  - nothing outside the island: `orbitMap.test.js` is on it, and `CROSS`'s `lib → components` rule reads its imports as it reads `orbitMap.js`'s
 - Produces:
   - `RELIEF_GAIN = 6`.
-  - `bakeOrbitMap(spec, { width, height }) → { width, height, rgba, biome, relief }`. `relief` is a `Uint8Array(width × height × 4)`:
-    - R is `128 + 127 × clamp(gE × RELIEF_GAIN, −1, 1)`, G is the same for `gN`, B is 128 and A is 255.
+  - `bakeOrbitMap(spec, { width, height }) → { width, height, rgba, biome, relief }`. `relief` is a `Uint8Array(width × height × 4)`, **a normal map's tilt**, as the galaxy's skins store theirs:
+    - R is `128 − 127 × clamp(gE × RELIEF_GAIN, −1, 1)`, G is `128 − 127 × clamp(gN × RELIEF_GAIN, −1, 1)`, B is 128 and A is 255. Ground rising to the east is an R under 128.
+    - Why the minus: the skin reads the bytes as a normal, `g = −(east·n.x + north·n.y·uSkinK.z)·uSkinK.y` (`bodySkin.js:88-90`), and the body's shader takes `s.grad` as `+∇h`, since it adds `+Δh` (`bodyShaders.js:666`) and lights `N = normalize(P − Gt)` (`:703-704`). Stored as the slope, `s.grad` would be `−∇h`, and from orbit every ridge would be lit as a hollow.
     - `gE = (h[i+1] − h[i−1]) / (2·ΔE)`, with `i` wrapping round. `gN = (h[j−1] − h[j+1]) / (2·ΔN)`: row `j − 1` is further north, and the first and last rows are one-sided.
     - Round specs: `ΔE = 2πR·max(cos lat, 1e−3) / width` and `ΔN = πR / height`.
     - Plane specs: `ΔE = PLANE_WINDOW / width` and `ΔN = PLANE_WINDOW / (2·height)`.
@@ -304,24 +324,32 @@ The universe never makes a spec on its main thread: a generated spec places its 
 - [ ] **Step 1: Write the failing tests.**
   - `orbitMap.test.js`, `describe('the relief')`:
     - `'is flat on a gas giant'`: every texel of a 16 × 8 gas bake is `[128, 128, 128, 255]`.
-    - `'is the height’s slope, east and north, wrapping round'`: for `round[0]` at 64 × 32, a texel's R decodes to `clamp(gE × RELIEF_GAIN, −1, 1)` within 1/127. `gE` is worked out from `sphereField(spec).sample(dirOfUv(...)).h` at the two neighbours' centres, column 0 reading column 63.
+    - `'is the height’s slope as a normal’s tilt, east and north, wrapping round'`: for `round[0]` at 64 × 32, a texel's R decodes as `(128 − R) / 127` to `clamp(gE × RELIEF_GAIN, −1, 1)` within 1/127, and its G as `(128 − G) / 127` to the same for `gN`. `gE` and `gN` are worked out from `sphereField(spec).sample(dirOfUv(...)).h` at the neighbours' centres, column 0 reading column 63. A texel where the ground rises east has R under 128.
     - `'is the same bytes twice'` extends to `relief`.
-  - `orbitMap.test.js`: `'is one table with the universe’s budget'`. For each tier, `ORBIT_MAP_SIZE[t]` deep-equals `BUDGET[t].planetMap`.
+    - `'lights a ridge as a ridge: the skin’s decode gives +∇h'`. The end-to-end sign, on the island:
+      - Take `round[0]`'s 64 × 32 bake and the texel with the largest relief tilt between latitudes −60° and 60°. `P` is its centre, `dirOfUv((i + 0.5) / 64, (j + 0.5) / 32)`.
+      - Decode it as the skin does: a JS copy of `bodySkin.js:88-90`, with `n = byte / 127.5 − 1`, `east = normalize([P.z, 0, −P.x])`, `north = P × east`, `uSkinK.y = uSkinK.z = 1`, and `g = −(east·n.x + north·n.y)`. Task 3's `'decodes a relief as the orbit bake writes it'` pins the copied line to `SKIN_FRAG`.
+      - `∇h` is `east·(h(P turned +δE) − h(P turned −δE)) / (2·ΔE) + north·(the same, north)`, from point samples of `sphereField(spec).sample(dir).h`, one texel either way.
+      - `dot(g, ∇h) > 0`: from orbit, the ground rises where it rises.
+  - `orbitMap.test.js`: no new test for the size. Lane 5a's literal pin of `ORBIT_MAP_SIZE` stays as it is, and gains a one-line comment naming its twin: lane 2's `budget.test.js` pins `BUDGET[t].planetMap` to the same literal in `'holds the plan’s rows'`. Importing `components/universe/budget.js` here would be a `crossWorld` row for the island check and a new "lib knows no page" break (484 to 485).
   - `orbitMap.worker.test.js`: `'bakes from a row, making the spec itself'`. The answer for `{ key, row: MOONS[0], width: 16, height: 8 }` has `rgba`, `biome` and `relief` transferred. Its `rgba` equals `bakeOrbitMap(planetSpecOf(MOONS[0].id, { expanse: MOONS }), { width: 16, height: 8 }).rgba`.
   - `orbitMaps.test.js`: `'bakes from a row, once for two asks, sharing get’s cache'`. Two `forRow(row, 'mid')` calls at once make one request with `{ key: `${row.id}:256x128`, row }`. A third gives the same map.
 - [ ] **Step 2: Run them to see them fail.**
 Run: `npx vitest run src/lib/land/flight/orbitMap.test.js src/lib/land/flight/orbitMap.worker.test.js src/lib/land/flight/orbitMaps.test.js`
 Expected: FAIL. There's no `relief`, no `forRow`, and the worker ignores `row`.
 - [ ] **Step 3: Implement.** Time a 256 × 128 bake of a rocky round planet in Node, five times. Write the median into the README under "The bake". Over 1,000 ms is finding 5.
-- [ ] **Step 4: Run them to see them pass.** Same command. Expected: PASS, and lane 5a's texel test unchanged.
+- [ ] **Step 4: Run them to see them pass, and the island.**
+Run: the same command, then `node scripts/flight-island.mjs --check`.
+Expected: PASS, and lane 5a's texel test unchanged. Then `ok` with the same files and marked rows as before the task, and no `crossWorld` row.
 - [ ] **Step 5: Commit.** `git commit -m "An orbit map carries its relief, and is baked from the planet's row in the worker"`
 
 ### Task 3: `buildBody` wears an orbit map
 
 **Files:**
 - Modify: `src/components/galaxy/bodySkin.js`
-  - `SKIN_FRAG` (`:39-107`) gains a `SKIN_GLOW` branch
+  - `withSkin(frag)` (`:114-120`) becomes `withSkin(frag, { glow = null } = {})`. `SKIN_FRAG` (`:39-107`) is not changed, so every painted look's shader is byte for byte what it was.
   - add `ORBIT_SKIN`, `skinBytes` and `skinRelief`
+- Modify: `src/components/galaxy/bodyShaders.js`. `surfaceFrag(family, slots, { skin })` (`:741-745`) becomes `surfaceFrag(family, slots, { skin, glow = null })`, handing `glow` to `withSkin`.
 - Modify: `src/components/galaxy/bodies.js`
   - `buildBody` (`:330`), its options, `defines` (`:366-370`), the skin's block (`:394-446`), `update` (`:518-530`) and `dispose`
 - Test: `src/components/galaxy/bodySkin.test.js`, `src/components/galaxy/bodies.test.js`
@@ -333,9 +361,11 @@ Expected: FAIL. There's no `relief`, no `forRow`, and the worker ignores `row`.
   - **`skinBytes(map) → Uint8Array`**. It takes lane 5a's map (row 0 is the north pole, alpha 0 under water) to the skin's texture:
     - the rows are reversed, so texture row 0 is the south pole and `skinUv`'s `v = 1` reads the map's top row
     - the alpha is `255 − a`, so water is 255 and `SKIN_SEAS` reads it as wet at `seas = 0.5`
-  - **`skinRelief(map) → Uint8Array | null`**: the relief's rows reversed, or null when the map has none.
+  - **`skinRelief(map) → Uint8Array | null`**: the relief's rows reversed, or null when the map has none. The bytes are Task 2's normal tilt, which `SKIN_NORMAL`'s decode (`bodySkin.js:88-90`) turns into `+∇h`.
+  - **`withSkin(frag, { glow })`**. With `glow` a number, the spliced chunk's `  s.emit *= 1.0 - k;\n` (`:84`) is replaced by `  s.emit = mix(s.emit, c.rgb * smoothstep(uSkinK.w - 0.06, uSkinK.w + 0.06, c.a) * <glow, as a GLSL float>, k);\n`: the wet part (lava, under an orbit map) glows in its own colour. With `glow` null, the text is exactly today's. There is no `SKIN_GLOW` define.
   - **`buildBody(look, { r, small, tier, load, orbit })`**, with `orbit = { map: Promise<map | null> | map | null, clouds: { cover, color } | null, atmo: { color, density } | null, glow = false }`:
-    - **Defines.** `SKIN` and `SKIN_SEAS` always; `SKIN_NORMAL` once a relief is given; `SKIN_GLOW` when `glow`. The surface shader is `surfaceFrag(…, { skin: true })`.
+    - **The painted path is off.** With `orbit` given, `painted` is false whatever the look: no `take` of a colour, normal or cloud map, no `SKIN_CLOUDS`, no `skinMixAt`, no `atmoSkin`. Lane 2 builds generated forest, ocean and ringed planets with `'endor'`, `'kamino'` and `'bespin'` (`expanse/scene/sectors.js:29-37`), each with a galaxy skin (`bodies.js:266`). Both paths at once would race for `uSkinColor` and fade with distance (`:526-533`). A skin's rings (Geonosis's, a skin of rings alone) are a mesh of their own (`:476-498`) and stay as they are.
+    - **Defines.** `SKIN` and `SKIN_SEAS` always; `SKIN_NORMAL` once a relief is given. The surface shader is `surfaceFrag(…, { skin: true, glow: orbit.glow ? ORBIT_SKIN.glow : null })`.
     - **Uniforms.** `uSkinK = (1, ORBIT_SKIN.normal, 1, ORBIT_SKIN.seas)` and `uSkinC = (1, 0, 0, 0)`. `uSkinColor` and `uSkinNormal` are the blanks until the map lands. Then each is a `DataTexture`:
       - sRGB colour space for the colour, linear for the relief
       - `RepeatWrapping` across, mipmapped, `LinearMipmapLinearFilter`
@@ -344,23 +374,25 @@ Expected: FAIL. There's no `relief`, no `forRow`, and the worker ignores `row`.
     - It works on a `small` body too (moons).
     - `dispose` frees both textures.
     - The body gains `orbitIn() → 0…1`, the mix.
-  - **`SKIN_GLOW`**: `s.emit = mix(s.emit, c.rgb * wetness * ORBIT_SKIN.glow, k)`. `wetness` is the `SKIN_SEAS` term, and the glow value is spliced in from the JS constant. A lava planet's lava glows from orbit. Without the define, `s.emit *= 1.0 - k`, as today.
   - **Without `orbit`**, nothing changes: the same defines, uniforms and fragment shader as before, for every look, painted or not.
 
 - [ ] **Step 1: Write the failing tests.**
   - `bodySkin.test.js`:
     - `'lays a baked map as the skin reads it'`. Use a 4 × 2 map whose row 0 is red with alpha 255 and row 1 is blue with alpha 0. `skinBytes` gives row 0 blue with alpha 255 and row 1 red with alpha 0.
     - `skinRelief` reverses the rows the same way, and is null with no relief.
+    - `'decodes a relief as the orbit bake writes it'`: `SKIN_FRAG` holds the line `g = -(east * n.x + cross(P, east) * n.y * uSkinK.z) * uSkinK.y;` exactly. Task 2's test copies that line to prove a baked ridge decodes as `+∇h`. This pins the copy to the shader, since that test is on the island and can't import a component.
+    - `'splices the glow only when asked'`: `withSkin(frag)` equals today's output for the surface shader (the same string as before this task); `withSkin(frag, { glow: 1.4 })` has no `s.emit *= 1.0 - k;` and holds `1.4`.
   - `bodies.test.js`:
-    - `'compiles what it did without an orbit map'`. Before any change, record `[mat.defines, sha1(mat.fragmentShader)]` for `'hoth'`, `'mustafar'`, `'moon-grey'` small, and a look with `skin` (the first in `planetSkins.json`), into `bodies.fixture.json`. The test asserts they are unchanged.
+    - `'compiles what it did without an orbit map'`. Before any change, record `[mat.defines, sha1(mat.fragmentShader)]` for `'hoth'`, `'mustafar'`, `'moon-grey'` small, and a look with `skin` (`'bespin'`, the first in `planetSkins.json`), into `bodies.fixture.json`. The test asserts they are unchanged.
     - `'wears an orbit map once it lands, fading in, never by distance'`:
       - `buildBody('moon-dust', { r: 40, orbit: { map: Promise.resolve(map), clouds: { cover: 0.4, color: '#ffffff' }, atmo: null } })`
       - after `await` and `update(0, cam)`, `orbitIn()` is 0 and `uSkinColor` is a `DataTexture` of the map's size
       - with updates 0.1 s apart (`update` holds its step to 0.1 s, `bodies.js:519`), it is 0.5 ± 0.01 after three and 1 after six
       - a camera at 1.1 radii keeps it at 1
       - `defines` has `SKIN`, `SKIN_SEAS`, `SKIN_NORMAL` and `CLOUDS`
+    - `'leaves a painted look’s skin alone under an orbit map'`: `buildBody('endor', { r: 40, tier: 'mid', load, orbit })` with a counting `load` calls it 0 times, `defines` has no `SKIN_CLOUDS`, and `orbitIn()` is 1 at 1.1 radii once the map is in and six updates have run. `'kamino'` and `'bespin'` the same: 0 calls (neither skin has rings; a skin's rings, Geonosis's, would still load, as a mesh of their own).
     - `'stays procedural for a map that never comes, and frees what it made'`: `map: Promise.resolve(null)` keeps `orbitIn()` 0. `dispose()` disposes each texture made (spy).
-    - `'lets lava glow'`: `glow: true` adds `SKIN_GLOW`, and the fragment holds `ORBIT_SKIN.glow`'s value.
+    - `'lets lava glow'`: `glow: true` gives a fragment holding `ORBIT_SKIN.glow`'s value and no `s.emit *= 1.0 - k;`. `glow: false` gives the fragment `withSkin` makes with no glow.
     - `'takes a moon'`: `small: true` with `orbit` still defines `SKIN`.
 - [ ] **Step 2: Run them to see them fail.**
 Run: `npx vitest run src/components/galaxy/bodySkin.test.js src/components/galaxy/bodies.test.js`
@@ -368,7 +400,7 @@ Expected: FAIL. The fixture test passes on the unchanged code: write the fixture
 - [ ] **Step 3: Implement.** The `orbit` path reuses `take`'s structure, with the textures made from the map, not loaded.
 - [ ] **Step 4: Run them to see them pass.**
 Run: `npx vitest run src/components/galaxy`
-Expected: PASS, the galaxy's tests unchanged.
+Expected: PASS, the galaxy's tests unchanged, the fixture included.
 - [ ] **Step 5: Commit.** `git commit -m "A body can wear a baked orbit map, its clouds, air and relief, fading in"`
 
 ### Task 4: The flight's face for the universe
@@ -377,7 +409,7 @@ Expected: PASS, the galaxy's tests unchanged.
 - Create: `src/components/expanse/shared/flight.js`, `src/components/expanse/shared/flight.test.js`
 - Create: `src/lib/land/flight/arrival.js`, `src/lib/land/flight/arrival.test.js` (the spot's query; Task 10 adds the rest)
 - Modify: `scripts/lib/flight-island.mjs`
-  - `ISLAND.files` gains `'src/components/expanse/shared/flight.js'`
+  - `ISLAND.files` gains `'src/components/expanse/shared/flight.js'` and `'src/components/expanse/shared/flight.test.js'`. The test imports `lib/land/flight/*` and matches routes with `/^\/fly\/…/`, so off the island it would be `unmarked` and `outsideImports` and be left failing after a removal.
   - `NAMES` gains `/expanse\/shared\/flight\b/`
   - the header's comment says why: the universe's one way in
 - Modify: `scripts/lib/flight-island.test.mjs`. Add `'takes a row that imports the flight’s face as a reference'`: a fake tree with a universe file importing `'../../expanse/shared/flight'`, unmarked, is reported `unmarked`, and marked it is clean.
@@ -438,7 +470,7 @@ Expected: FAIL. The modules don't exist, and the island lib doesn't know the fac
 - [ ] **Step 3: Implement.** The face's header says what it is: the flight's one way into the universe, on the island, so the flight goes whole.
 - [ ] **Step 4: Run them, and the island.**
 Run: `npx vitest run src/lib/land/flight src/components/expanse scripts/lib/flight-island.test.mjs scripts/flight-island.test.mjs && node scripts/flight-island.mjs --check`
-Expected: PASS, then `ok …` with one more file on the island.
+Expected: PASS, then `ok` with 4 more files on the island (the face, its test, `arrival.js` and its test) and the same marked rows as before the task.
 - [ ] **Step 5: Commit.** `git commit -m "The flight lends the universe one face: a planet's row, its orbit look, whether it lands and the way down"`
 
 ### Task 5: Generated planets and moons wear their orbit maps
@@ -494,7 +526,7 @@ Expected: PASS, then `ok …` with one more file on the island.
   - **`debug`**: `{ diveAt(id, speed = SHIP.cruise, from = [1, 0, 0]), pending }`. `diveAt` is today's (`scene.js:5832-5847`), word for word, reading the ship through `ship()` and writing it through `setShip`.
   - **`dispose()`**: the link's, and the registry cleared.
 
-- [ ] **Step 1: Take the before shots on the branch as it is.** Run `node scripts/universe-check.mjs --quality mid --poses expanse-system,expanse-station --out lab/universe/before-5b/mid`. Leave `expanse-station` out if lane 3's pose isn't on the branch. Keep its JSON.
+- [ ] **Step 1: Take the before shots on the branch as it is.** Run `node scripts/universe-check.mjs --quality mid --poses expanse-system,expanse-station --out lab/universe/before-5b/mid`. Leave `expanse-station` out if lane 3's pose isn't on the branch. Keep its JSON. Copy `lab/universe/endless/<tier>.json` for `high`, `mid` and `low`, as the lanes before this one left them, to `lab/universe/before-5b/endless-<tier>.json`: Task 16 measures against them.
 - [ ] **Step 2: Write the failing tests** in `sceneLanding.test.js` (Node, three). Use a fake `build` returning `{ group: new THREE.Group(), radius: r, dispose: vi.fn() }`, and a fake link whose `orbit` returns `{ map: Promise.resolve(MAP), clouds: null, atmo: null, glow: false }`.
   - `'dresses a generated planet and a moon in their orbit maps, and nothing else'`:
     - `build('moon-dust', { r: 30, of })` passes `orbit` from `link.orbit(of)`
@@ -509,7 +541,7 @@ Expected: FAIL, `./sceneLanding` not found.
 - [ ] **Step 4: Implement, wire, and count `scene.js`'s lines.**
 - [ ] **Step 5: Run the tests and the island.**
 Run: `npm test && node scripts/flight-island.mjs --check`
-Expected: PASS, then `ok`.
+Expected: PASS, then `ok` with the same files on the island and 2 more marked rows (`sceneLanding.js`'s import and link line). `sceneLanding.test.js` names nothing of the flight, so it needs no mark.
 - [ ] **Step 6: Check it in the browser.**
   - Run `node scripts/universe-check.mjs --quality mid --poses expanse-system,expanse-station --out lab/universe/after-5b/mid`.
   - Expected:
@@ -565,9 +597,9 @@ Lane 5a's finding 1: biomes show from orbit only through their heights, because 
 Run: `npx vitest run src/lib/land/flight/biomeTint.test.js src/lib/land/flight/orbitMap.test.js src/lib/land/flight/field.test.js`
 Expected: FAIL. Record the fifty's fixture on unchanged code first.
 - [ ] **Step 3: Implement.** If `'shows the biomes apart'` fails, raise that family's `k` values, never the threshold.
-- [ ] **Step 4: Run them, and the lock.**
-Run: `npx vitest run src/lib/land/flight`
-Expected: PASS, `the roster` included.
+- [ ] **Step 4: Run them, the lock and the island.**
+Run: `npx vitest run src/lib/land/flight && node scripts/flight-island.mjs --check`
+Expected: PASS, `the roster` included. Then `ok` with 2 more files on the island (`biomeTint.js` and its test) and the same marked rows.
 - [ ] **Step 5: Commit.** `git commit -m "Each biome of a generated planet takes a tint from its palette, on the ground and from orbit alike"`
 
 ### Task 7: The flight's ground wears the tints
@@ -613,9 +645,9 @@ Expected: PASS, `the roster` included.
 Run: `npx vitest run src/lib/land/flight/leafMesh.test.js src/lib/three/groundLook.test.js src/components/expanse/flight`
 Expected: FAIL. Record the `groundLook` fixture on unchanged code first.
 - [ ] **Step 4: Implement.**
-- [ ] **Step 5: Run them, and the lock.**
-Run: `npx vitest run src/lib src/components/expanse src/components/galaxy`
-Expected: PASS.
+- [ ] **Step 5: Run them, the lock and the island.**
+Run: `npx vitest run src/lib src/components/expanse src/components/galaxy && node scripts/flight-island.mjs --check`
+Expected: PASS. Then `ok` with the same files and marked rows: `src/lib/three/groundLook.test.js` is off the island and names nothing of the flight (its stub shader is three's own).
 - [ ] **Step 6: Take the after shots and compare.**
   - Run the same smoke and probes as Step 1.
   - `/fly/hoth`: the same calls and triangles. Its picture can't move: Step 2's pinned shader text is the proof, since the flight never holds still for a byte-for-byte shot. Its shot goes beside the before for the eye.
@@ -667,9 +699,9 @@ Expected: PASS.
 Run: `npx vitest run src/components/expanse/flight/weather.test.js`
 Expected: FAIL. Record the dome's fixture on unchanged code first.
 - [ ] **Step 3: Implement and wire.**
-- [ ] **Step 4: Run the flight's tests.**
-Run: `npx vitest run src/components/expanse/flight src/lib/land/flight`
-Expected: PASS, `eventPlays`' and `module.test.js`'s unchanged.
+- [ ] **Step 4: Run the flight's tests and the island.**
+Run: `npx vitest run src/components/expanse/flight src/lib/land/flight && node scripts/flight-island.mjs --check`
+Expected: PASS, `eventPlays`' and `module.test.js`'s unchanged. Then `ok` with 2 more files on the island (`weather.js` and its test) and the same marked rows.
 - [ ] **Step 5: Check it in the browser.**
   - Take the before shot of `/fly/<id>` first: the first contact-sheet planet with weather that isn't `none`, and `sky.clouds > 0.3`.
   - Then run Task 7's smoke and probes on it, and on `/fly/hoth`.
@@ -698,8 +730,8 @@ Expected: PASS, `eventPlays`' and `module.test.js`'s unchanged.
 **Interfaces:**
 - Consumes: `entry.js`'s `ENTRY`, `AIR`, `airTop`, `entering`, `entrySpot`, `entryPath`, `fxAt`, `velocityOf`; `ship.js`'s `headingTo`.
 - Produces, in `entry.js` (pure):
-  - **`DIVE = { T: 2.4, hand: 2.1, quick: 1.3, hover: 0.06, giveUp: 4 }`.**
-  - **`diveFx(t) → fxAt(t × DIVE.quick)`**: the white-out peaks just before `DIVE.hand`.
+  - **`DIVE = { T: 2.4, hand: 2.1, quick: 1.4, hover: 0.06, giveUp: 4 }`.**
+  - **`diveFx(t) → fxAt(t × DIVE.quick)`**: the white-out peaks just before `DIVE.hand`. `fxAt`'s white peaks at `0.62 × ENTRY.glide` = 2.852 s (`entry.js:223`), so the dive's peaks at 2.852 / 1.4 = 2.04 s. At 1.3 it would peak at 2.19 s, after the hand-off.
   - **`divePath({ nE, hE, nS, R, track }) → { T: DIVE.T, at(t) }`**: `entryPath({ nE, hE, nS, hH: DIVE.hover × R, rest: DIVE.hover × R, R, track })`, read at `min(t, DIVE.T) × ENTRY.glide / DIVE.T`. That is the glide only, never the settle.
   - **`diveSpot({ n, track, speed, R }) → { n, f }`**: `entrySpot` with `light: null`. The flight's sun is always up, so it needs no lean to the day.
   - **`turnBack(ship, body) → ship`**:
@@ -735,7 +767,7 @@ Expected: PASS, `eventPlays`' and `module.test.js`'s unchanged.
     ```
 
 - [ ] **Step 1: Write the failing tests** in `entry.test.js`'s new `describe('diving into a generated planet')`:
-  - `'peaks the white-out just before the hand-off'`: the argmax of `diveFx(t).white` over `t` in steps of 0.01 lies in `[DIVE.hand − 0.3, DIVE.hand]`. `diveFx(DIVE.hand).white > 0.6`.
+  - `'peaks the white-out just before the hand-off'`: the argmax of `diveFx(t).white` over `t` in `[0, DIVE.T]` in steps of 0.01 lies in `[DIVE.hand − 0.3, DIVE.hand]` (it is 2.04). `diveFx(DIVE.hand).white > 0.6` (it is 0.79). `diveFx(DIVE.T).white < 0.05`: the cloud has cleared by the dive's end.
   - `'dives down, never nearer than its hover, ending over the spot'`:
     - for R in `[18, 70]` and five entries, `divePath(…).at(t).h ≥ DIVE.hover × R − 1e−9` at 100 steps
     - `at(0).n` is `nE`
@@ -759,7 +791,9 @@ Expected: PASS.
 
 **Files:**
 - Modify: `src/lib/land/flight/arrival.js`, `arrival.test.js`
-- Modify: `src/components/expanse/flight/planets.js`. `planetSpecOf(id, { row = null } = {})`: a row whose id is the same place as `id` is the lookup, and anything else is `expanseRow`.
+- Modify: `src/components/expanse/flight/planets.js`
+  - `planetSpecOf(id, { row = null } = {})`: a row whose id is the same place as `id` is kept, and anything else is `expanseRow`.
+  - The kept rows are a small `Map` by canonical id (the last 16), and `expanseRow(id)` answers from it before it asks `placeOf`. So `lifeOf`, `occurrencesOf` and `eventsOf` (`planets.js:56-58`), which reach the row through `systemOf(spec.id, { expanse: expanseRow })` (`lifeTables.js:400-401`), find it too, and a dive's flight makes no sector.
 - Modify: `src/pages/Fly.jsx` (`:21-28`, `:30-48`, `:75-98`)
 - Modify: `src/components/expanse/flight/module.js`. `create` reads `props.landing`, and the ship starts at `arrivalShip(props.landing, groundAt)` when it's given, `spawnOf(...)` otherwise (`:204`).
 - Modify: `src/components/expanse/flight/flight.css`. `.fly-cover`: fixed, full, `pointer-events: none`, `opacity` 1 when `[data-on]`, else 0, with a 0.8 s transition (none under `prefers-reduced-motion`).
@@ -781,7 +815,7 @@ Expected: PASS.
 - Produces, in `Fly.jsx`:
   - The spec is `planetSpecOf(planet ?? 'hoth', { row: location.state?.row ?? null })`.
   - `landing = landingOf(spec, readSpot(location.search))`.
-  - `props` becomes `{ spec: landing?.spec ?? spec, landing }`.
+  - `props` becomes `{ spec: landing?.spec ?? spec, landing, from: location.state?.from ?? null }`. Task 14 reads `from`: only a flight entered from the universe leaves it by climbing.
   - `<div className="fly-cover" style={{ background: location.state?.cover }} data-on={status !== 'on' ? '' : undefined} />` is drawn only when `location.state?.cover` is set.
   - `<Flight>`'s key (`Fly.jsx:27`) is the spec's id and the `at` query together, so a new spot on the same planet builds the flight again.
 
@@ -793,14 +827,14 @@ Expected: PASS.
     - `'never throws on junk'`: `landingOf(spec, null)` and `landingOf(null, spot)` are null.
     - `'comes down low, descending, over the spot'`: `arrivalShip(l, () => 40)` has `y` 360, a pitch under 0 and speed 110. `() => NaN` gives `y` 320.
   - `planets.test.js`:
-    - `'takes the row the universe sent, and makes no sector'`: `planetSpecOf('e:9,4:120:0', { row })` (a row for that id) equals `planetSpecOf(row.id, { expanse: [row] })` from lane 5a. A `vi.mock` of `../gen/space` that counts `placeOf` sees no call.
+    - `'takes the row the universe sent, and makes no sector'`: `planetSpecOf('e:9,4:120:0', { row })` (a row for that id) equals `planetSpecOf(row.id, { expanse: [row] })` from lane 5a. Then `lifeOf(spec)`, `occurrencesOf(spec)` and `eventsOf(spec)` run on it. A `vi.mock` of `../gen/space` that counts `placeOf` sees no call across all four.
     - `'ignores a row for another place'`.
   - `module.test.js`: `'starts over the spot it lands at'`. `flight.create(fakeRt(), { spec, landing })` gives a `world.ship` at `landing.start` with the pitch under 0.
 - [ ] **Step 2: Run them to see them fail.**
 Run: `npx vitest run src/lib/land/flight/arrival.test.js src/components/expanse/flight`
 Expected: FAIL.
 - [ ] **Step 3: Implement.**
-- [ ] **Step 4: Run them to see them pass.** Same command. Expected: PASS, the existing spawn test included.
+- [ ] **Step 4: Run them to see them pass, and the island.** The same command, then `node scripts/flight-island.mjs --check`. Expected: PASS, the existing spawn test included. Then `ok` with the same files and marked rows.
 - [ ] **Step 5: Commit.** `git commit -m "The planet flight starts low over the spot it was sent to, coming down"`
 
 ### Task 11: The dive and the hand-off in the universe
@@ -831,7 +865,9 @@ Expected: FAIL.
   - `onEvent` (`:359`) gains, first: `if (e.type === 'land') { landed(e); return; }` (+1)
   - `landed(e)` (new, beside `crashInto`): for `what === 'hand'`, `setLeaving({ id: e.id, mode: 'dive', colour: e.colour })`, then `timer.current = setTimeout(() => navigate(e.to, { state: e.state }), landPlan({ reduced }).delay)`. `landPlan` (Task 9) joins `flight.js`'s import (`:7`). It ignores any other `what` (the line is the scene's).
   - `fade` (`:510`) reads `leaving?.colour` first: `leaving?.colour ?? (…today's expression…)`, so a generated id never reaches `byId`.
-- Modify: `scripts/universe-endless-check.mjs`. Add the `dive` and `gas` steps, between `// planet flight: begin` and `// planet flight: end`.
+- Modify: `scripts/universe-endless-check.mjs`.
+  - Add a marked block, `// planet flight: begin` … `// planet flight: end`. Lane 2's script has none (its Task 22), so this task adds it, holding the `dive` step. Task 14 adds `ground` and `back` inside the same block.
+  - Add the `gas` step after the block, unmarked: it names nothing of the flight, and a giant still turns you back with the flight gone.
 - Modify: `scripts/lib/flight-island.mjs`. `ISLAND.rows` gains `'scripts/universe-endless-check.mjs'`.
 
 **Interfaces:**
@@ -849,9 +885,12 @@ Expected: FAIL.
        - for `'enter'`, `return flyInto(id)` when that is true
        - for `'hot'`, `note(LAND_WORDS.hot(placeName(id)))` once an entry
     2. **The generated bodies.** These are the registry's bodies, as `{ id, at, r }`. `at` is the body's centre in `map`'s frame, `map.worldToLocal(group.getWorldPosition(v))`, and `r` is `body.radius`. Then `entering(ship, those)`, and by what the body is:
-       - **A gas or ringed giant** (`of.row.type` is `gas` or `ringed`, read from lane 2's row, so it holds with the flight gone): `setShip(turnBack(ship, body))`. Then `note(LAND_WORDS.gas(of.row.name))` once an entry, and `emit({ type: 'land', what: 'turned', id, why: 'gas' })`. It returns false.
-       - **A pocket universe, or no link, or `!link.landable(of)`**, for a rocky body: with `pocket`, the same with `LAND_WORDS.pocket` and `why: 'pocket'`. With no link, nothing: the solid takes it, as lane 2 has it.
-       - **`'hot'`**: `note(LAND_WORDS.hot(of.row.name))` once an entry, and false.
+       - **What a body is** comes from a link-free rule, so it holds with the flight gone: `typeOf(of) = of.type ?? of.row.type`. A planet's or a moon's type is its generator row's (lane 2's). A rogue's isn't on its row: Task 15's rogue build passes `of.type = traitsOf(row).type` (lane 4a), so this file imports nothing of lane 4a's.
+       - **A gas or ringed giant** (`typeOf(of)` is `gas` or `ringed`): `setShip(turnBack(ship, body))`. Then `note(LAND_WORDS.gas(of.row.name))` once an entry, and `emit({ type: 'land', what: 'turned', id, why: 'gas' })`. It returns false.
+       - **A body the link won't land** (`link && !link.landable(of)`), whatever its type: turned back the same way, with `LAND_WORDS.gas` and `why: 'gas'`. The link says no only for a giant's family (lane 5a's `familyOf`), so this is the giants' rule read the flight's way.
+       - **A pocket universe**, for a rocky body: the same, with `LAND_WORDS.pocket` and `why: 'pocket'`.
+       - **No link**, for a rocky body: nothing. The solid takes it, as lane 2 has it.
+       - **`'hot'`**, on any of them: `note(LAND_WORDS.hot(of.row.name))` once an entry, and false. Nothing turns a boosting ship back; it carries on into the solid and crashes, as at a fandom planet (finding 8). The four rules above act on an `'enter'`, checked in the order given.
        - **`'enter'` on a landable body**: start the dive and return true.
          - Call `begin(id)`. `id` is the body's id, upper-case canonical.
          - The spot is `diveSpot({ n, track: velocityOf(ship), speed, R: r })`, in the map's frame.
@@ -870,15 +909,15 @@ Expected: FAIL.
   - **`forget()`**: the said-once flags cleared (the fandom block's `state.hotSaid = null`).
   - **`diving() → id | null`.**
   - **`debug`** gains `diveAt(id, …)` for a generated id: the registry's body, taken as Task 5's fandom one is. It also gains:
-    - `nearest(kind) → id | null`: the registry's nearest landable body for `'rock'`, the nearest giant for `'gas'`
-    - `state() → { diving, id, τ, handed, turned }`
+    - `nearest(kind) → id | null`: the registry's nearest landable body for `'rock'`, the nearest giant (by `typeOf`) for `'gas'`
+    - `state() → { diving, id, τ, handed, turned, to }`, where `to` is the route the hand-off emitted (null before it)
   - **`dispose()`** also disposes the show.
 - Produces: the scene's event `{ type: 'land', what: 'hand' | 'turned', id, why?, to?, state?, colour? }`.
 
 - [ ] **Step 1: Write the failing tests** in `sceneLanding.test.js`, with the fakes of Task 5:
   - a body built at `[1000, 0, 0]`, r 40, with `of` for a rock planet, and one for a gas giant at `[−1000, 0, 0]`
   - a fake `clock` the test moves
-  - a fake link: `landable` by type, `route: (of, spot) => ({ to: '/fly/' + of.row.id, state: { row: of.row }, spot })`, `cover: () => '#ffffff'`
+  - a fake link: `landable` by type, `route: (of, spot) => ({ to: '/to/' + of.row.id, state: { row: of.row }, spot })`, `cover: () => '#ffffff'`. The path is neutral on purpose: this test is off the island, and `'/fly/'` in it would be an unmarked reference.
 
   The tests:
   - `'flies into a rocky planet’s air and dives, once'`:
@@ -899,6 +938,8 @@ Expected: FAIL.
     - `note` is called once with `LAND_WORDS.gas(name)` over three frames in the air
     - the ship given to `setShip` has `entering(…, [gas])` null
     - one `what: 'turned', why: 'gas'`
+  - `'turns back from a gas rogue, by the type its build gave'`: a body whose `of` is `{ id, row: { name }, rogue: true, type: 'gas' }`, with no `row.type`, is turned back with `LAND_WORDS.gas(name)`, and `begin` isn't called. With `link: null` too.
+  - `'turns back from what the link won’t land'`: a rocky-typed body with a fake link whose `landable` is false is turned back with `LAND_WORDS.gas` and `why: 'gas'`.
   - `'turns back in a pocket universe'`: `pocket: true` gives the rocky planet `LAND_WORDS.pocket`.
   - `'says when a ship is too fast to fly in'`: a speed of 12 gives `LAND_WORDS.hot(name)` once, and no `begin`.
   - `'without the flight, a rocky planet’s air takes nothing; a giant still turns you back'`: `link: null`.
@@ -911,22 +952,23 @@ Expected: FAIL.
 Run: `npx vitest run src/components/universe/landing`
 Expected: FAIL.
 - [ ] **Step 3: Implement, wire `scene.js` and `Universe.jsx`, and count `scene.js`'s lines.**
-- [ ] **Step 4: Run the tests and the island.**
-Run: `npm test && node scripts/flight-island.mjs --check`
-Expected: PASS, then `ok`.
-- [ ] **Step 5: Add the endless check's steps.**
-  - **`dive`.** It runs after lane 2's `system` step, inside a generated system with its bodies built.
+- [ ] **Step 4: Run the tests.**
+Run: `npm test`
+Expected: PASS.
+- [ ] **Step 5: Add the endless check's steps, and run the island.**
+  - **`dive`**, in the new marked block. It runs after lane 2's `system` step, inside a generated system with its bodies built.
     1. Wait until `__universeDebug.landing.nearest('rock')` is an id and `landing.pending() === 0`. If the system has no landable body, `teleport` into the next nearest system (lane 2's `expanse.nearestSystem`) and wait again, up to five systems.
     2. `diveAt(id, SHIP.cruise)`.
-    3. Wait until `location.hash` starts with `#/fly/e:`, and read its `at`.
-    4. Wait until `window.__FLIGHT__?.landing` is there and `__FLIGHT__.groundUnder()` is finite. Task 14 makes `landing`; until then wait on `__FLIGHT__` alone.
-    5. The ship is within 200 m of the chart's middle, Task 10's `start`.
+    3. Wait until `landing.state().handed`, and read `landing.state().to` straight away, while the universe is still up.
+    4. Wait until `location.hash` is `#` followed by that `to`.
+    5. Wait until `window.__FLIGHT__` is there and `__FLIGHT__.groundUnder()` is finite. Task 14 adds `__FLIGHT__.landing`; from then the step reads `landing.first`, the ship as the flight made it, which is fixed at creation and so can't drift with the frames. Its x and z are within 1 m of `landing.spot`, Task 10's `start` for the `at` the hash carries.
     6. Shoot `arrive.jpg`. Record the hand-off's time from `diveAt`, on the wall clock.
-  - **`gas`.**
+  - **`gas`**, after the block, unmarked.
     1. Open `#/universe` again and wait for the `system` step's place.
     2. `diveAt(landing.nearest('gas'))`.
     3. Wait until `landing.state().turned` is that id.
     4. Over 30 frames, the hash stays `#/universe` and the ship stays outside the giant's air.
+  - Run `node scripts/flight-island.mjs --check`. Expected: `ok` with the same files on the island and 1 more marked row (the endless check's block).
 - [ ] **Step 6: Check it in the browser.**
   - Run `node scripts/universe-endless-check.mjs --quality mid --only dive,gas`.
   - Then, with the dev server up, `node scripts/entry-check.mjs` and `node scripts/landing-check.mjs`.
@@ -972,7 +1014,7 @@ Expected: PASS, then `ok`.
 Run: `npx vitest run src/lib/land/flight/touchdown.test.js`
 Expected: FAIL.
 - [ ] **Step 3: Implement.** Pure, with the header in the house style.
-- [ ] **Step 4: Run them to see them pass.** Same command. Expected: PASS, under a second.
+- [ ] **Step 4: Run them to see them pass, and the island.** The same command, then `node scripts/flight-island.mjs --check`. Expected: PASS, under a second. Then `ok` with 2 more files on the island (`touchdown.js` and its test) and the same marked rows.
 - [ ] **Step 5: Commit.** `git commit -m "The rules for setting a ship down on flat ground and lifting it off again"`
 
 ### Task 13: The universe's walker and camera, for any ground
@@ -1011,13 +1053,13 @@ Expected: FAIL.
   - **`universe/shared/crew.js`** (heavy, for a lazy `import()`): `PARTY`, `loadPartyFigure`, `crewCast` from `../footScene`, and `SHIP_KEY`, `parseShip` from `../crews`.
 - Produces, in `footing.js` (pure; it imports the light face and lib only):
   - `PLANE_R = 1e7` and `SHORE = 0.3`.
-  - **`createFooting(spec, field) → footing`.**
+  - **`createFooting(spec, ground) → footing`**, where `ground.heightAt(x, z)` gives metres. The flight passes `{ heightAt: groundAt }` (`module.js:194-197`): the finest leaf drawn under the point, else the field. So the feet stand on what is drawn, as the ship crashes on what is drawn ("what the ship sees is what it hits", `groundCore.js:169-171`). The tests pass lane 5a's `planetField(spec)`.
     - `radius = spec.round?.radius ?? PLANE_R`, `R = radius × METRE`, and `chart = chartOf(spec.round?.at ?? dirOfLatLon(0, 0), radius)`.
     - The footing's members:
       - **`stand(x, z, yaw) → w`**: `person(chart.toDir(x, z), f)`, where `f` is the chart's `[−sin yaw, −cos yaw]` (the flight's forward) carried onto the sphere.
       - **`step(w, input, dt, obstacles = []) → w`**: `walk(w, input, dt, R, obstacles mapped to { n: chart.toDir(x, z), r: r × METRE })`.
         - A step whose new point's ground is under `water.level + SHORE` keeps `w.n`, takes the new `f`, and has speed and side 0.
-      - **`at(w) → [x, y, z]`**: metres in the flight's frame. `[x, z] = chart.toChart(w.n)` and `y = field.heightAt(x, z) + w.h / METRE`.
+      - **`at(w) → [x, y, z]`**: metres in the flight's frame. `[x, z] = chart.toChart(w.n)` and `y = ground.heightAt(x, z) + w.h / METRE`. A height that isn't finite counts as the last finite one under the walker (0 at first), so `at` is never NaN.
       - **`yaw(w) → radians`**, the flight's yaw of `w.f`, read from `chart.toChart` of a point 1 m ahead.
       - **`frame(w, tall) → { head, n: [0, 1, 0], f: [fx, 0, fz] }`**: in metres, for `chaseView({ …, metre: 1 })`, with `head = at(w) + [0, tall × 0.92, 0]`.
       - `R`, `chart`.
@@ -1028,10 +1070,10 @@ Expected: FAIL.
     - `'moves a figure as the landing did'`: the same for `motionOf` against `:2835-2837` and `turnRate` (`:1435-1440`), copied the same way.
     - `'eases a view, at once with reduced motion'`.
     - `'reads a walker’s motion'`: the turn is `+π/2 / dt` for a quarter turn left, and `move` is 1 running.
-  - `shared.test.js`: the two faces export those names. `crew.js` isn't imported statically by anything under `expanse/flight/` (walk the static imports as lane 3's `weight.test.js` does).
+  - `shared.test.js`: `'the landing’s faces lend exactly their names'`, a test of its own beside `FACE`: `Object.keys` of each new face, sorted, equals its list, and each name is defined. (`FACE`'s `typeof` rule takes no string, and `crew.js` lends `SHIP_KEY`, a string.) This file names nothing of the flight. The check that nothing under `expanse/flight/` imports `crew.js` statically is the flight's own, in Task 14's `walker.test.js`: in this file, off the island, the path `expanse/flight` would be an unmarked reference.
   - `footing.test.js` (with `roundSpec()` and hoth's plane spec):
     - `'walks the planet’s own sphere, at the universe’s pace'`: ten seconds of `{ move: 1 }` from `stand(0, 0, 0)` go `10 × FOOT.walk / METRE` m (±2%) north, along −z.
-    - `'keeps its feet on the field’s ground'`: at 200 steps of a walk, `at(w)[1] − field.heightAt(x, z)` is `w.h / METRE`, and never under 0.
+    - `'keeps its feet on the ground it’s given'`: at 200 steps of a walk, `at(w)[1] − ground.heightAt(x, z)` is `w.h / METRE`, and never under 0. A `ground` that answers NaN for a step keeps the last height, never NaN.
     - `'stops at the shore'`: on an ocean round spec, walking out to sea never puts `at(w)`'s ground under `level + SHORE − 1e−9`.
     - `'goes round the ship'`: an obstacle `{ x: 0, z: −10, r: 6 }` is never nearer than `6 + FOOT.radius / METRE − 1e−6` m.
     - `'walks a plane planet too'`: hoth's, ten seconds north is the same distance, and `at` is finite.
@@ -1043,9 +1085,9 @@ Expected: FAIL.
 - [ ] **Step 3: Implement.**
   - Move the rules out of `footScene.js`, which then calls `chaseView`, `easeView` and `motionOf` with `metre: METRE`, in the map's units, as it did.
   - Count `footScene.js`'s and `scene.js`'s lines.
-- [ ] **Step 4: Run the universe's and the flight's tests.**
-Run: `npx vitest run src/components/universe src/components/expanse`
-Expected: PASS, `footScene.figures.test.js` and every foot test unchanged.
+- [ ] **Step 4: Run the universe's and the flight's tests, and the island.**
+Run: `npx vitest run src/components/universe src/components/expanse && node scripts/flight-island.mjs --check`
+Expected: PASS, `footScene.figures.test.js` and every foot test unchanged. Then `ok` with 2 more files on the island (`footing.js` and its test) and the same marked rows; `universe/shared/foot.js`, `crew.js` and `shared.test.js` name nothing of the flight.
 - [ ] **Step 5: Check the hand-made landings in the browser.**
   - With the dev server up, run `node scripts/landing-check.mjs`, then `node scripts/entry-check.mjs`.
   - Expected: both pass as on the branch before this task, with no console errors. The rule is moved, not changed, and Step 1's oracle test is what pins that.
@@ -1054,48 +1096,76 @@ Expected: PASS, `footScene.figures.test.js` and every foot test unchanged.
 ### Task 14: Landing, walking and taking off in the flight
 
 **Files:**
+- Create: `src/components/expanse/flight/keys.js` (pure).
+  - `KEYS`, `AXES` and `inputOf` move here from `module.js` (`:32-44`, `:120-130`) unchanged, and `module.js` re-exports them (`export { KEYS, AXES, inputOf } from './keys';`), so `module.test.js:3` and every importer read them where they did.
+  - `SHARED_KEYS` moves here from `shared.js:37` unchanged, and `shared.js` re-exports it (`shared.test.js:2` and `:97` unchanged).
+  - Why: `module.js` imports three (`:18`) and `shared.js` the durable client and Supabase (`:25-27`), so a pure `landing.js` can't take its keys from either. `module.js` importing `landing.js` importing `module.js` would also be a new cycle, and `cycles` is at its budget of 5.
 - Create: `src/components/expanse/flight/landing.js`, `landing.test.js` (the phases, pure), `src/components/expanse/flight/walker.js`, `walker.test.js` (drawn)
 - Modify: `src/components/expanse/flight/module.js`
   - `create` (`:137-314`) makes the landing and the walker, binds the keys by phase, and steps, anchors and draws by phase
+  - the crash rule and the respawns act in `'fly'` alone
   - `world.landing` for the checks
+- Modify: `src/components/expanse/flight/groundCore.js` and `ground.js`. `depthUnder(x, z) → d | −1`: the depth of the finest leaf shown under a point, from `heightUnder`'s own loop (`groundCore.js:172-176`). The check reads it; nothing draws by it.
 - Modify: `src/components/expanse/flight/scene.js`. `createFlightScene` gains `look(view, at)`: the camera set from a walker's view, minus the origin, the sky and the sun round it, and `camera.fov` from `FOOT_FOV` (back to 62 in `place`). It also gains `park(ship, at)`: the ship's model placed, the camera untouched.
 - Modify: `src/components/expanse/flight/FlightHud.jsx`
-  - the prompts for landing, getting out and in, and taking off
+  - one prompt, by phase (below)
   - the way back, through the kit's `Objective`
   - the Menu's `Take off` item
+- Modify: `src/components/guide/pages.js`. The new keys go in the `'/fly'` block (`:226-250`), already marked, so they go with the flight.
 - Modify: `src/pages/Fly.jsx`
-  - `onEvent` takes `'landing'` (HUD state) and `'leave'`
+  - `onEvent` takes `'landing'` (HUD state, set only when it changes) and `'leave'`
   - on `'leave'`, the cover comes back up in the sky's colour, then after `LEAVE_FADE` seconds (0 with reduced motion) it navigates to `universePathFor(pathname)` with `{ state: { from: 'fly' } }`
-- Modify: `src/lib/view.js`, `src/lib/view.test.js`. `universePathFor` (`:35-39`) gains a marked block for `/fly/e:…`. Its import of `parseSpaceId` and `spaceId` from `./space/address` is a marked row too, since only the block uses them.
-- Modify: `scripts/lib/flight-island.mjs`. `ISLAND.rows` gains `'src/lib/view.js'`.
-- Modify: `scripts/universe-endless-check.mjs`. The `ground` and `back` steps, inside the marked block.
+  - `onLanding(what)` is `api()?.landing?.[what]?.()`
+- Modify: `src/lib/view.js`, `src/lib/view.test.js`.
+  - `universePathFor` (`:35-39`) gains a marked block for `/fly/e:…`. Its import of `parseSpaceId` and `spaceId` from `./space/address` is a marked row too, since only the block uses them.
+  - The new cases in `view.test.js` are a marked block of their own.
+- Modify: `scripts/lib/flight-island.mjs`. `ISLAND.rows` gains `'src/lib/view.js'` and `'src/lib/view.test.js'`.
+- Modify: `scripts/universe-endless-check.mjs`. The `ground` and `back` steps, inside Task 11's marked block.
 
 **Interfaces:**
 - Consumes:
   - Task 12's `LAND`, `LIFT`, `LEAVE`, `canLand`, `flatSpot`, `landPath`, `liftPath`, `leaving`
   - Task 13's `createFooting`, and the faces' `LAND_WORDS`, `FOOT_WORDS`, `SHIP_NAMES`, `chaseView`, `easeView`, `motionOf`, `FOOT_FOV`
-  - `flightRules.js`'s `stepShip`, `SHIP`; the HUD kit's `Prompt`, `Objective`, `MenuItem`, `far`
+  - `flightRules.js`'s `SHIP`, `crashed`; the HUD kit's `Prompt` (with `alt`), `Objective`, `MenuItem`, `far`
+  - the runtime's snapshot: `snap.pressed`, the codes pressed since the last sample (`src/runtime/input.js:51`, `:171`), beside `snap.action`, which is a key held
   - `lib/hooks`' `local`; lane 5a's `canonicalId`; Task 0's `parseSpaceId`, `spaceId`
-- Produces, in `landing.js` (pure):
+- Produces, in `keys.js` (pure): `KEYS`, `AXES`, `inputOf` and `SHARED_KEYS`, as they were.
+- Produces, in `landing.js` (pure; it imports `keys.js`, `flightRules.js`, `lib/land/flight/touchdown.js` and the light face `universe/shared/foot.js`):
   - `LEAVE_FADE = 0.6` (s): the cover's fade on the way back up.
   - **The key sets:**
-    - `FLY_KEYS = { ...KEYS, land: ['KeyL'], out: ['KeyG'], takeoff: ['KeyT'] }`
+    - `flyKeys({ walkable, canLeave }) → keys`: `{ ...KEYS, ...SHARED_KEYS }`, with `land: ['KeyL']` when `walkable` and `takeoff: ['KeyT']` when `canLeave`. On a named world neither is added, so the flight binds exactly what it binds today, and `module.test.js:41` holds unchanged.
+    - `DOWN_KEYS = { out: ['KeyG'], takeoff: ['KeyT'], faster: KEYS.faster }`
     - `WALK_KEYS = { forward: ['KeyW', 'ArrowUp'], back: ['KeyS', 'ArrowDown'], left: ['KeyA', 'ArrowLeft'], right: ['KeyD', 'ArrowRight'], stepL: ['KeyQ'], stepR: ['KeyE'], run: ['ShiftLeft', 'ShiftRight'], jump: ['Space'], board: ['KeyG'] }`, as the universe's `FOOT_KEYS` (`scene.js:286`)
     - `WALK_AXES = { move: ['back', 'forward'], turn: ['left', 'right'], strafe: ['stepL', 'stepR'] }`
+  - **`pressed(snap, codes) → boolean`**: `codes.some((c) => snap?.pressed?.has?.(c))`. L, G, T and the throttle's lift-off act on a press, once, never while held. The walker's jump is `createJump`'s `hold(snap.action('jump'))`, which already makes a held key one jump.
   - **`walkInput(snap, jump) → { move, turn, strafe, run, jump }`**, the stick added in as `inputOf` adds it.
-  - **`createFlightLanding({ spec, field, groundAt, footing, canLeave, tell, now = () => performance.now() / 1000 }) → landing`**:
+  - **`createFlightLanding({ spec, field, groundAt, footing, walkable, canLeave, climbOut, tell, now = () => performance.now() / 1000 }) → landing`** (`field` is the module's `planetField(spec)`, for `flatSpot`):
+    - **Who lands.** `walkable` is a generated planet with ground (`Boolean(canonicalId(spec.id)) && !spec.soft`). `canLeave` is a generated place, which has an orbit to go back to (`Boolean(canonicalId(spec.id))`). The fifty named worlds have neither, and their flight is as today. A gas giant's cloud deck has no ground to land on.
+    - **`climbOut`**: only a flight entered from the universe (`props.from === 'universe'`, Task 10) leaves it by climbing past `LEAVE.alt`. Today `/fly/e:…` has no ceiling (`flightRules.js:24-34`), so a visitor who came from the Menu or a link keeps flying as high as they like, and leaves by the Menu's Take off.
     - `phase`: `'fly' | 'land' | 'down' | 'walk' | 'lift' | 'leave'`.
-    - `keys() → { keys, axes }` for the phase: `FLY_KEYS` and `AXES` (with `SHARED_KEYS`) in `'fly'`, `WALK_KEYS` and `WALK_AXES` in `'walk'`, and `{ out, takeoff }` alone while `'down'`.
-    - **`step(ship, snap, dt) → { ship, walker }`**. By phase:
-      - **`'fly'`**: `stepShip`. `L` (or `land()`) with `canLand` starts `'land'` at `flatSpot(field, [ship.x, ship.z], { water: spec.water })`; with no spot it tells `toast` `LAND_WORDS.rough`. With `canLeave`, `T` or `leaving(ship, groundAt)` goes to `'leave'`.
+    - **`keys() → { keys, axes }`** for the phase:
+      - `'fly'`: `flyKeys({ walkable, canLeave })` and `AXES`
+      - `'land'`, `'lift'` and `'leave'`: `{}` and `{}` (the path flies the ship; nothing is pressed)
+      - `'down'`: `DOWN_KEYS` and `{}`
+      - `'walk'`: `WALK_KEYS` and `WALK_AXES`
+    - **`step(ship, snap, dt, touch = 0) → { ship, walker }`**. `touch` is the HUD's throttle button (−1, 0 or 1). By phase:
+      - **`'fly'`**: the ship is the module's, flown as today; the landing only reads presses.
+        - `L` pressed (or `land()`), with `walkable` and `canLand`: `'land'` toward `flatSpot(field, [ship.x, ship.z], { water: spec.water })`, on `landPath`. With no spot it tells `toast` `LAND_WORDS.rough` and stays.
+        - `T` pressed (or `takeoff()`), with `canLeave`: `'leave'`.
+        - `climbOut` and `leaving(ship, groundAt)`: `'leave'`.
       - **`'land'`**: `landPath` on the clock `now()`, then `'down'` at its end.
-      - **`'down'`**: the ship held. `G` makes the walker `footing.stand(ship.x + STEP_OUT side, …)`, 9 m to the ship's left and 2 m back, facing as the ship does, and goes to `'walk'`. `T` starts `'lift'`.
-      - **`'walk'`**: `footing.step(walker, walkInput(snap), dt, [{ x: ship.x, z: ship.z, r: 6 }])`. `G` within `BOARD` m of the ship's middle goes back to `'down'`.
-      - **`'lift'`**: `liftPath`, then `'leave'` with `canLeave`, else `'fly'`.
+      - **`'down'`**: the ship held at rest.
+        - `G` pressed: the walker is `footing.stand(…)` 9 m to the ship's left and 2 m back, facing as the ship does, and the phase is `'walk'`.
+        - `T` pressed: `'lift'`, bound for `'leave'`.
+        - `faster` pressed, or `touch > 0`: `'lift'`, bound for `'fly'`, so a visitor can fly on over the planet.
+      - **`'walk'`**: `footing.step(walker, walkInput(snap, jump), dt, [{ x: ship.x, z: ship.z, r: 6 }])`. `G` pressed within `BOARD` m of the ship's middle goes back to `'down'`. Pressed further off, it does nothing.
+      - **`'lift'`**: `liftPath` on `now()`, then the phase it was bound for.
       - **`'leave'`**: tells `toast` `LAND_WORDS.leaving(spec.name)` and `'leave'`, each once, and holds.
-    - `land()`, `out()`, `board()`, `takeoff()`: the HUD's buttons and the checks press these, as the keys do. In `'fly'`, `takeoff()` with `canLeave` goes straight to `'leave'`.
+    - **`land() → [x, z] | null`**, `out()`, `board()`, `takeoff()`: the HUD's buttons and the checks press these, as the keys do. `land()` answers the ship's x and z as it was pressed when a landing starts, and null when none does. In `'fly'`, `takeoff()` with `canLeave` goes straight to `'leave'`.
     - **`info() → { phase, can: { land, out, in, takeoff, leave }, back: { dist } | null, rough }`**:
-      - `takeoff` is true while `'down'`
+      - `land` is true in `'fly'` with `walkable` and `canLand(ship, groundAt)`
+      - `out` and `takeoff` are true while `'down'`
+      - `in` is true in `'walk'` within `BOARD`
       - `leave` is true in `'fly'` with `canLeave`
       - told as `'landing'` when it changes, at most four times a second
 - Produces, in `walker.js`: **`createWalker(root, { footing, load = () => import('../../universe/shared/crew') }) → walker`**:
@@ -1106,22 +1176,37 @@ Expected: PASS, `footScene.figures.test.js` and every foot test unchanged.
   - **`info(w, ship) → { dist, near, who }`**: the distance on the chart to the ship's middle, whether it's within `BOARD`, and the figure's name.
   - `end()`, `dispose()`.
 - Produces, in `module.js`:
-  - `canLeave = Boolean(canonicalId(spec.id))`.
+  - `walkable`, `canLeave` and `climbOut` as above, from `spec` and `props.from`. The footing is `createFooting(spec, { heightAt: groundAt })`.
+  - **Binding.** `const { keys, axes } = landing.keys(); rt.input.bind(keys, { axes });` at creation and again on every phase change. (`landing.keys()` is one object: spread into the call, it would throw.)
+  - **The crash rule by phase.** In today's `step` (`:242-276`), the respawn after a crash (`:245-252`) and `crashed` with its 'Too low: back up you go.' (`:262-265`) run in `'fly'` alone. In every other phase `landPath`, `liftPath` or the parked ship own the ship, and `LAND.rest` (2.5 m) is under `SHIP.clearance` (3 m). The shared world's `respawn` (`:211`, a turret's bolt through your shield) becomes `() => { if (landing.phase === 'fly') down = true; }`, so a parked ship is never sent 200 m up while you walk.
+  - **The ground streams round who you are.** `ground.update` takes the ship in every phase but `'walk'`, and there `{ x, y, z }` of `footing.at(walker)`. `anchor()` is the walker's `at` in `'walk'`, else the ship's.
+  - `shared.step(dt, ship, snap)` runs in every phase (the pilots, the turrets, the room). Its keys are bound in `'fly'` alone, so B, X and Space do nothing on foot, and its prompt shows in `'fly'` alone (below).
   - The told `'landing'` info gains `ship: SHIP_NAMES[walker.kind] ?? null`.
-  - `anchor()` is the walker's `at` in `'walk'`, else the ship's.
-  - `rt.input.bind(...landing.keys())` again on every phase change.
-  - `world.landing = { get phase, land, out, board, takeoff, spot: props.landing?.start ?? null, walker: { at: () => …, teleport(x, z) } }`.
-- Produces, in `FlightHud.jsx`. It takes `landing` (the told info) and `onLanding(what)`:
-  - `Prompt k="L" verb={FOOT_WORDS.land}` when `can.land`
-  - `Prompt k="G" verb={FOOT_WORDS.out}` while down
-  - `Prompt k="G" verb={FOOT_WORDS.in(landing.ship)}` when `can.in`
-  - `Prompt k="T" verb={FOOT_WORDS.takeoff}` when `can.takeoff`
-  - each with `touch` and `onClick={() => onLanding(what)}`
-  - `<Objective text={FOOT_WORDS.back(landing.ship, far(back.dist))} />` while walking
-  - a `MenuItem` `FOOT_WORDS.takeoff` when `can.leave`
-- Produces, in `lib/view.js`, a marked block:
+  - `world.landing = { get phase, land, out, board, takeoff, spot: props.landing?.start ?? null, first, walker }`:
+    - `first` is a copy of the ship as `create` made it, fixed, for the checks
+    - `walker` is `{ at: () => [x, y, z] | null, teleport(x, z), depth: () => ground.depthUnder(x, z), under: () => ground.heightUnder(x, z) }`, at the walker's x and z
+- Produces, in `FlightHud.jsx`. It takes `landing` (the told info) and `onLanding(what)`. **One prompt** at the foot, with at most one `alt`, by phase:
+  - **`'fly'`**:
+    - with `can.land`: `<Prompt k="L" verb={FOOT_WORDS.land} …>`. Its `alt` is the shared world's one action when it offers exactly one (`B Build turret` or `X Take down`).
+    - When the shared world offers both, today's prompt stands as it is (B with X as its `alt`, `FlightHud.jsx:19-20`), and L still lands.
+    - Without `can.land`, today's prompt as it is.
+  - **`'down'`**: `<Prompt k="G" verb={FOOT_WORDS.out} alt={<Prompt k="T" verb={FOOT_WORDS.takeoff} …/>} …/>`.
+  - **`'walk'`**: `<Prompt k="G" verb={FOOT_WORDS.in(landing.ship)} …/>` when `can.in`, else none.
+  - **`'land'`, `'lift'`, `'leave'`**: none.
+  - Each `Prompt` has `touch={touch}` and `onClick={() => onLanding(what)}`.
+  - `<Objective text={FOOT_WORDS.back(landing.ship, far(back.dist))} />` while walking.
+  - A `MenuItem` `FOOT_WORDS.takeoff` when `can.leave`.
+  - On touch: while `'down'`, the throttle's `+` lifts off and flies on (`world.throttle(1)`, the `touch` above); while `'walk'`, the Stick walks (`walkInput` adds `snap.stick`) and the throttle buttons do nothing.
+- Produces, in `guide/pages.js`'s `'/fly'` block (the copy rules: key first, sentence case, British spelling):
+  - in its flying rows: `['L', 'Land, on a planet you came down to from the universe: low and slow, on the nearest flat ground']` and `['T', 'Take off, back out to orbit of that planet']`
+  - a group `{ label: 'Landed', rows: [['G', 'Get out, and back in by the ship'], ['T', 'Take off to orbit'], ['Shift / R', 'Lift off and fly on']] }`
+  - a group `{ label: 'On foot', rows: [['W S / ↑ ↓', 'Walk and back up'], ['A D / ← →', 'Turn'], ['Q E', 'Step aside'], ['Shift', 'Run'], ['Space', 'Jump']] }`
+  - touch rows: `['Land', 'The button at the foot, low and slow']`, `['Get out', 'And get back in, by the ship']`, `['Take off', 'Back out to orbit']`, `['Stick', 'Walk, on foot']`
+- Produces, in `lib/view.js`, two marked blocks and a marked import row:
 
   ```js
+  import { parseSpaceId, spaceId } from './space/address'; // planet flight
+  …
   // planet flight: begin
   // (a generated planet's flight goes back to that planet, in orbit)
   const FLOWN = /^\/fly\/(e:[^/?#]+)/i;
@@ -1132,58 +1217,77 @@ Expected: PASS, `footScene.figures.test.js` and every foot test unchanged.
   // planet flight: end
   ```
 
-  and, first in `universePathFor`: `if (FLOWN.test(pathname)) return flownBack(pathname) ?? '/universe'; // planet flight`.
+  and, first in `universePathFor`:
+
+  ```js
+    // planet flight: begin
+    const back = flownBack(pathname);
+    if (back) return back;
+    // planet flight: end
+  ```
+
+  Any other `/fly` path falls through to today's rule. That is `/universe/starwars`, through the flight's page row in `universes.js:127`, for `/fly`, `/fly/hoth` and an id that doesn't parse.
 
 - [ ] **Step 1: Write the failing tests.**
-  - `landing.test.js` (a flat field at 40, a fake footing from Task 13 over it, a fake `now`, `tell` recorded):
+  - `landing.test.js` (a flat field at 40, a fake footing from Task 13 over it, a fake `now`, `tell` recorded; a snapshot is `{ keys, pressed, action, axis, stick }`, with a code in `pressed` on the frame it goes down only):
     - `'sets down where L finds flat ground, and only low and slow'`:
       - `L` at 600 m does nothing
       - at 300 m and 100 m/s it goes to `'land'`, then to `'down'` once `now` passes `landPath`'s `T`
       - the ship ends at the spot's `h + LAND.rest`, with speed 0
+      - `land()` answers the ship's `[x, z]` as pressed, and null when it can't land
     - `'says when there’s nowhere flat'`: over an all-slope field, `L` tells `toast` `LAND_WORDS.rough` and stays `'fly'`.
     - `'gets out, walks, and gets back in only by the ship'`:
       - `G` while down gives `'walk'` with the walker 9 m to the ship's left
       - `G` 40 m off does nothing
       - `G` within `BOARD` gives `'down'`
+    - `'acts on a press, never while held'`: `G` held for 10 frames from `'down'` (in `keys` all ten, in `pressed` on the first only) ends in `'walk'`, and the phase told changed once. The same for `L` (one landing) and `T` (one lift).
     - `'takes off and climbs out to orbit, telling the page once'`: `T` while down gives `'lift'` then `'leave'`, with `tell('leave')` and the `LAND_WORDS.leaving` toast exactly once each.
-    - `'leaves the air by climbing too, or at once from the menu'`: in `'fly'`, a ship at `LEAVE.alt` goes to `'leave'`, and so does `takeoff()`.
-    - `'never leaves a named world'`: with `canLeave` false, `T`, `takeoff()` and the climb do nothing, and `can.leave` is false.
+    - `'flies on from the ground'`: while down, `faster` pressed gives `'lift'` then `'fly'`, never `'leave'`. So does `touch = 1`.
+    - `'leaves the air by climbing when it came from the universe, or at once from the menu'`: with `climbOut`, a ship at `LEAVE.alt` in `'fly'` goes to `'leave'`, and so does `takeoff()`.
+    - `'keeps the sky open for a flight it didn’t come down to'`: with `canLeave` and no `climbOut`, a ship at `LEAVE.alt × 2` stays `'fly'`; `takeoff()` still goes to `'leave'`.
+    - `'never lands on or leaves a named world'`: with `walkable` and `canLeave` false, `L`, `T`, `takeoff()` and the climb do nothing; `can.land` and `can.leave` are false; `keys()` in `'fly'` equals `{ ...KEYS, ...SHARED_KEYS }` exactly.
     - `'gives each phase its own keys'`:
-      - `'walk'` has no `KeyT`, `KeyL`, `KeyB`, `KeyX` or `KeyR`
-      - `'fly'` has no `Space`
-      - `'down'` has only `KeyG` and `KeyT`
-      - Task 14's `module.test.js` below pins that only one set is bound at once.
+      - in `'fly'`, no walking action is bound (`jump`, `board`, `stepL`, `stepR`), and `fire` is still `['Space']`
+      - in `'walk'`, no flying action is bound (`fire`, `build`, `unbuild`, `faster`, `land`, `takeoff`)
+      - `'down'` binds exactly `out`, `takeoff` and `faster`
+      - `'land'`, `'lift'` and `'leave'` bind nothing
   - `walker.test.js` (Node, three; `load` a fake resolving a figure with `update`, `after` and a `model` group):
     - `'stands a stand-in at once, then the crew’s figure'`
     - `'sits the figure on the ground, minus the origin'`
     - `'views from over the shoulder, eased'`: the first `view` equals `chaseView(...)` minus `at`.
     - `'says how far the ship is, and when it’s near'`
     - `'frees the figure on dispose'`
+    - `'reaches the crew only lazily'`: walk the static imports of every file under `src/components/expanse/flight/` (as lane 3's `weight.test.js` walks them). None reaches `universe/shared/crew.js` or `footScene.js`, and `walker.js` names the crew face in an `import()` alone. This test is on the island, so it may name the flight's folder.
   - `module.test.js`:
-    - `'rebinds the keys as the phases change, and unbinds on dispose'`: drive it through `world.landing.land()`, `out()`, `board()`.
-    - `'anchors the origin on the walker while walking'`.
-  - `view.test.js`:
-    - `'sends a generated planet’s flight back to it in orbit'`: `universePathFor('/fly/e:1,0:0:1')` is `'/universe/E:1,0:0:1'`. `'/fly/E:2,-3,1:0:0:1?at=1,2,3'` gives `'/universe/E:2,-3,1:0:0:1'`. `'/fly/hoth'` and `'/fly/e:junk'` give `'/universe'`.
-    - `'keeps every other way out as it was'`: the file's existing cases are untouched.
+    - `'binds its keys, and flies the ship from them'` (`:38`) stays as it is: Hoth binds `{ ...KEYS, ...SHARED_KEYS }`.
+    - `'rebinds the keys as the phases change, and unbinds on dispose'`: on a generated round spec where `flatSpot` finds ground from the start (the test picks one from lane 5a's fixtures first, and asserts it did), drive it through `world.landing.land()`, `out()`, `board()`. Use `vi.useFakeTimers({ toFake: ['performance'] })` to move the landing's clock.
+    - `'never sends a landed ship back up'`: `land()`, then `'down'`, `out()`, `board()` and `takeoff()`, stepping all the way. No `toast` says `'Too low: back up you go.'`, and the ship's height never jumps by 200 m. A turret's `respawn` called while `'down'` changes nothing.
+    - `'anchors the origin and streams the ground round the walker'`: in `'walk'`, after `world.landing.walker.teleport` 300 m off, `anchor()` is the walker's `at`, and the next leaves the ground asks for (`rt.asked`) are round the walker's cell, not the ship's.
+  - `view.test.js`, a new marked block (`// planet flight: begin` … `end`):
+    - `'sends a generated planet’s flight back to it in orbit'`: `universePathFor('/fly/e:1,0:0:1')` is `'/universe/E:1,0:0:1'`, and `'/fly/E:2,-3,1:0:0:1'` gives `'/universe/E:2,-3,1:0:0:1'`.
+    - `'keeps the other flights’ way out as it was'`: `'/fly'`, `'/fly/hoth'` and `'/fly/e:junk'` each give `'/universe/starwars'`, as they do today.
+    - The file's existing cases are untouched, outside the block.
 - [ ] **Step 2: Run them to see them fail.**
 Run: `npx vitest run src/components/expanse/flight src/lib/view.test.js`
 Expected: FAIL.
-- [ ] **Step 3: Implement and wire.** `module.js` stays under 800 lines: the phases are `landing.js`'s and the drawing is `walker.js`'s.
+- [ ] **Step 3: Implement and wire.** `module.js` stays under 800 lines: the phases are `landing.js`'s, the keys `keys.js`'s and the drawing `walker.js`'s. Run `node scripts/health.mjs --only cycles,boundary-breaks`: both as before the task.
 - [ ] **Step 4: Run the tests and the island.**
 Run: `npm test && node scripts/flight-island.mjs --check`
-Expected: PASS, then `ok`.
-- [ ] **Step 5: Add the endless check's steps.**
+Expected: PASS, then `ok` with 5 more files on the island (`keys.js`, `landing.js` and its test, `walker.js` and its test) and 4 more marked rows (`view.js`'s import row and two blocks, and `view.test.js`'s block). `pages.js`'s new rows are inside its existing block.
+- [ ] **Step 5: Add the endless check's steps**, inside Task 11's marked block.
   - **`ground`:**
     1. Continue from `dive`.
-    2. `__FLIGHT__.landing.land()`, then wait until its `phase` is `'down'`. The ship's x, z is within `LAND.reach` m of the arrival's start (the spot you dove at), and its height is the ground's plus `LAND.rest`.
-    3. Shoot `down.jpg`.
-    4. `out()`, then wait for `'walk'`.
-    5. Press `W` for long enough that the walker's `at` moves 2 m, waiting on that condition. Its height is the field's within 0.05 m.
-    6. Shoot `walk.jpg`, and the same at 390 × 844 (`walk-phone.jpg`) with the HUD's prompts in the frame.
-    7. `teleport` the walker 6 m from the ship, `board()`, and wait for `'down'`.
+    2. As soon as `__FLIGHT__.groundUnder()` is finite, `const from = __FLIGHT__.landing.land()`. If it answers null (no flat ground in reach: the toast says so), ask again as the ship flies on, waiting on the condition that it answers, up to 60 s.
+    3. Wait until `phase` is `'down'`. The ship's x, z is within `LAND.reach + 1` m of `from`, the point it was pressed at, and its height is `walker.under()`'s ground there plus `LAND.rest`, within 0.5 m. (The arrival's own spot is the `dive` step's to check: the ship flies on between, a few metres a frame.)
+    4. Shoot `down.jpg`.
+    5. `out()`, then wait for `'walk'`.
+    6. Hold `W` until the walker's `at` has moved 2 m, waiting on that condition, then let go. Its height is `walker.under()` within 0.01 m.
+    7. Shoot `walk.jpg`, and the same at 390 × 844 (`walk-phone.jpg`) with the HUD's prompt in the frame.
+    8. **A long way off.** Read `d0 = walker.depth()` by the ship, where the ground has long been in. `teleport` the walker 300 m along its heading, and wait until `walker.depth()` is `d0` again, up to 120 s: the finest leaves have followed. Its height is `walker.under()` within 0.01 m.
+    9. `teleport` the walker 6 m from the ship, `board()`, and wait for `'down'`.
   - **`back`:**
     1. `takeoff()`.
-    2. Wait until `location.hash` is `#/universe/E:…`, the same place as the planet dived at.
+    2. Wait until `location.hash` is `#/universe/E:…`, the same place (`sameSpaceId`) as the planet dived at.
     3. Wait until `__universe().place` (lane 3) is that id and the ship is within the planet's park distance plus 1 of it, facing it (`dot > 0.99`).
     4. Shoot `orbit.jpg`.
 - [ ] **Step 6: Check it in the browser.**
@@ -1197,13 +1301,14 @@ Expected: PASS, then `ok`.
 Lane 4a's hand-on: a rocky rogue planet's card says `land: true`, but its id is a thing's, `E:…:w<n>`, which lane 5a's ids refuse. Do this task once lane 4a is on the branch. If it isn't when the rest is done, leave this task for after 4a merges and say so in the hand-off notes.
 
 **Files:**
-- Modify: lane 4a's `src/components/universe/things/looks/rogue.js`. Its `buildBody(ROGUE_LOOK[traitsOf(row).type], { r: size, tier })` becomes `build(…, { r: size, tier, of: { id: row.id, row, rogue: true } })`, with `build` a dep from `createThingDrawers`. The scene passes `landing.build`.
+- Modify: lane 4a's `src/components/universe/things/looks/rogue.js`. Its `buildBody(ROGUE_LOOK[traitsOf(row).type], { r: size, tier })` becomes `build(…, { r: size, tier, of: { id: row.id, row, rogue: true, type: traitsOf(row).type } })`, with `build` a dep from `createThingDrawers`. The scene passes `landing.build`.
+  - `of.type` is what Task 11's `typeOf(of)` reads, so a gas rogue is turned back by the giants' rule with the flight there or gone. A rogue's row has no `type` of its own: it is its traits'.
 - Modify: `src/components/expanse/flight/rows.js`
   - `rogueRowOf(row) → Row`
   - `rowOfPlace` takes a `'thing'` whose row's kind is `'rogue'`
 - Modify: lane 5a's `src/lib/land/flight/expanse.js`. `canonicalId` also reads `e:…:w<n>`. `planetSpecOf` (`planetSpec.js`) builds a wonder id only from a lookup row with `rogue: true`, and gives null for any other.
 - Modify: lane 5a's `src/lib/land/flight/variety.js`. For a row with `rogue: true`, the slot's system key is the row's id and its index 0 (a rogue has no siblings).
-- Modify: `src/components/expanse/shared/flight.js`. `rowFor` takes `{ id, row, rogue: true }`.
+- Modify: `src/components/expanse/shared/flight.js`. `rowFor` takes `{ id, row, rogue: true, type }`, and `landable` reads `rogueRowOf(row).type`'s family, so a gas rogue is `false`.
 - Modify: `src/lib/view.js`. `flownBack` writes `{ wonder: p.wonder }` for a `w` id.
 - Tests: `rows.test.js`, `planetSpec.test.js`, `variety.test.js`, `flight.test.js`, `view.test.js`, lane 4a's `rogue` look test.
 
@@ -1213,6 +1318,7 @@ Lane 4a's hand-on: a rocky rogue planet's card says `land: true`, but its id is 
 
 - [ ] **Step 1: Write the failing tests:**
   - `'reads a rocky rogue as a planet to fly over, and refuses a gas one'`: over `E:1,0`'s lattice, for the first rock-typed rogue `thingRow`, `planetSpecOf(row.id.toLowerCase())` is a round spec. For the first gas-typed one, the spec is soft, and `link.landable` is false.
+  - `'turns back from a gas rogue in the universe'`, in `sceneLanding.test.js`: the gas rogue's body, built through `landing.build` with the `of` lane 4a's look now passes, is turned back with `LAND_WORDS.gas(name)` and never dives, with the real link and with `link: null`.
   - `'still refuses a wonder id that isn’t a rogue'`: lane 5a's `'e:1,0:w1'` case still holds.
   - `'gives a rogue its own colours, no sibling read'`
   - `'goes back to the rogue in orbit'`: `universePathFor('/fly/e:1,0:w123')` is `'/universe/E:1,0:w123'`.
@@ -1223,7 +1329,7 @@ Expected: FAIL.
 - [ ] **Step 3: Implement.**
 - [ ] **Step 4: Run them to see them pass.**
 Run: `npm test && node scripts/flight-island.mjs --check`
-Expected: PASS and `ok`.
+Expected: PASS, then `ok` with the same files and marked rows: the rogue's way back is inside `view.js`'s block, and its cases inside `view.test.js`'s.
 - [ ] **Step 5: Commit.** `git commit -m "A rocky rogue planet can be landed on and walked, like any rocky world"`
 
 ### Task 16: The full measure, the island, and the hand-off notes
@@ -1236,8 +1342,11 @@ Expected: PASS and `ok`.
   - `node scripts/universe-check.mjs --quality high --out lab/universe/after-5b/high`, then the same for `mid` and `low`. Three runs, since `--out` is ignored when more than one tier runs.
   - **Expected:**
     - calls and triangles at every pose in `lab/universe/baseline/<tier>.json` no higher, and the hand-made poses equal to before this lane
-    - the endless poses (lane 2's and lane 3's) re-recorded together in one run a tier into `lab/universe/endless/<tier>`, equal in calls and triangles
     - their pictures changed on purpose (orbit maps), shown side by side
+  - **The endless baselines, every pose in one run a tier.** `universe-check` writes one `<out>.json` a run holding only the poses that run measured (`scripts/universe-check.mjs:149`, `:237`, `:246`: `report.poses` is made fresh each run). A run of some of them would write over the rest. So:
+    - list the poses the file holds before this lane, `node -e "console.log(Object.keys(require('./lab/universe/before-5b/endless-<tier>.json').poses).join(','))"` (Task 5's copy): lane 2's `old-rim`, `above-core` and `expanse-system`, lane 3's `expanse-station`, lane 4a's `at-gargantuan` and `in-field`, and any later lane's
+    - run `node scripts/universe-check.mjs --quality <tier> --poses <that list> --out lab/universe/endless/<tier>`, once for each of `high`, `mid` and `low`
+    - Expected: every pose of the list in the new file, its calls and triangles equal to `before-5b`'s (a skin is a define, not a draw), and the planets in view wearing their maps
   - `QUALITY=mid node scripts/perf-probe.mjs universe` and `QUALITY=low …`. Expected: p50 no worse than 2%.
   - `FLY=hoth node scripts/perf-probe.mjs fly`. Expected: as before this lane.
   - **The new baseline: on a generated planet's ground** (spec H's new pose).
@@ -1255,9 +1364,10 @@ Expected: PASS and `ok`.
 - [ ] **Step 5: The island.**
   - `node scripts/flight-island.mjs --check`. Expected: `ok`.
   - `node scripts/flight-island.mjs --remove --dry`. Expected:
-    - `expanse/shared/flight.js` is deleted
-    - the marked rows in `sceneLanding.js`, `lib/view.js` and the endless check are dropped
+    - `expanse/shared/flight.js` and its test are deleted
+    - the marked rows in `sceneLanding.js`, `lib/view.js`, `lib/view.test.js` and the endless check are dropped; the endless check's `gas` step stays
     - nothing under `universe/` or `galaxy/` is deleted
+    - no test is left behind naming the flight: `--check`'s `ok` says every file off the island that names it is marked, tests included, and the dry run lists each marked test block it drops
   - Paste the dry run's summary into the README.
 - [ ] **Step 6: The bundle.**
   - `npm run build`. Note the universe scene's chunk and `Fly`'s chunk before (from the branch point) and after.
@@ -1272,7 +1382,7 @@ Expected: PASS and `ok`.
 - [ ] **Step 8: Run the gates and commit.**
   - Run `npm run lint`, `npm test`, `npm run build`, `node scripts/health.mjs --check --skip build` and `node scripts/flight-island.mjs --check`.
   - Expected: all green, within budget, with `glsl-sites`, `loops`, `boundary-breaks` and `cycles` unchanged.
-  - `git add lab/universe/after-5b lab/universe/endless docs/superpowers/evidence/endless-universe-lane-5b && git commit -m "Lane 5b measured at every tier and on a generated planet's ground, and its hand-off notes"`
+  - `git add lab/universe/before-5b lab/universe/after-5b lab/universe/endless docs/superpowers/evidence/endless-universe-lane-5b && git commit -m "Lane 5b measured at every tier and on a generated planet's ground, and its hand-off notes"`. `before-5b` holds Task 5's shots and the endless baselines the lane started from, so the comparison can be read again.
 
 ---
 
@@ -1280,9 +1390,9 @@ Expected: PASS and `ok`.
 
 | Name | From | Used by |
 |---|---|---|
-| `buildBody(look, { orbit: { map, clouds, atmo, glow } })`, `body.orbitIn()`, `ORBIT_SKIN`, `skinBytes`, `skinRelief` | `galaxy/bodies.js`, `bodySkin.js` | 4a (a gargantuan or rogue that wears a baked map), anyone building a generated body |
+| `buildBody(look, { orbit: { map, clouds, atmo, glow } })`, `body.orbitIn()`, `ORBIT_SKIN`, `skinBytes`, `skinRelief`, `withSkin(frag, { glow })`, `surfaceFrag(family, slots, { skin, glow })` | `galaxy/bodies.js`, `bodySkin.js`, `bodyShaders.js` | 4a (a gargantuan or rogue that wears a baked map), anyone building a generated body |
 | `createFlightLink({ workers, tier })`: `rowFor`, `landable`, `orbit`, `cover`, `route` | `expanse/shared/flight.js` (on the island) | only `sceneLanding.js` (marked) |
-| `createSceneLanding(deps)`: `build`, `bodies`, `pending`, `air`, `ride`, `diving`, `cancel`, `debug` (`diveAt`, `nearest`, `state`, `pending`) | `universe/landing/sceneLanding.js` | 4a (its drawers' bodies through `build`), 4c (`diving()`, so the arrival waits), the endless check |
+| `createSceneLanding(deps)`: `build`, `bodies`, `pending`, `air`, `ride`, `diving`, `cancel`, `forget`, `debug` (`diveAt`, `nearest`, `state` with `to`, `pending`); a build's `of = { id, row, system?, planet?, rogue?, type? }`, `type` overriding `row.type` | `universe/landing/sceneLanding.js` | 4a (its drawers' bodies through `build`, a rogue's `of.type`), 4c (`diving()`, so the arrival waits), the endless check |
 | `{ type: 'land', what: 'hand' \| 'turned', id, why?, to?, state?, colour? }` | the scene's `emit` | 6b (a landing in progress), 4c |
 | `DIVE`, `diveFx`, `divePath`, `diveSpot`, `turnBack`; `landPlan` | `universe/entry.js`; `universe/flight.js` | 4b (an event that throws you into a planet's air) |
 | `LAND_WORDS`, `FOOT_WORDS`, `SHIP_NAMES` | `universe/words.js` | 6b, 4c |
@@ -1292,14 +1402,17 @@ Expected: PASS and `ok`.
 | `BIOME_TINT`, `biomeTints`, `tintAt`, `planetField(spec).tintAt` | `lib/land/flight/biomeTint.js`, `field.js` | anyone colouring a generated planet |
 | `spotQuery`, `readSpot`, `windowPoint`, `landingOf`, `ARRIVE`, `arrivalShip` | `lib/land/flight/arrival.js` | 4c (a link that lands you), the endless check |
 | `LAND`, `LIFT`, `LEAVE`, `canLand`, `flatSpot`, `landPath`, `liftPath`, `leaving` | `lib/land/flight/touchdown.js` | the flight |
+| `KEYS`, `AXES`, `inputOf`, `SHARED_KEYS` (moved; `module.js` and `shared.js` re-export them) | `expanse/flight/keys.js` | the flight |
+| `LEAVE_FADE`, `flyKeys`, `DOWN_KEYS`, `WALK_KEYS`, `WALK_AXES`, `pressed`, `walkInput`, `createFlightLanding` | `expanse/flight/landing.js` | the flight |
+| `createWalker`; `depthUnder(x, z)` | `expanse/flight/walker.js`; `groundCore.js`, `ground.js` | the flight, the checks |
 | `weatherOf`, `skyOf`, `FALL`, `FALLS`, `createPlanetWeather` | `expanse/flight/weather.js` | the flight's events |
-| `__FLIGHT__.landing` (`phase`, `land`, `out`, `board`, `takeoff`, `spot`, `walker`) | `expanse/flight/module.js` | the checks |
+| `__FLIGHT__.landing` (`phase`, `land() → [x, z] \| null`, `out`, `board`, `takeoff`, `spot`, `first`, `walker`: `at`, `teleport`, `depth`, `under`) | `expanse/flight/module.js` | the checks |
 | `universePathFor('/fly/e:…') → '/universe/E:…'` | `lib/view.js` | every way out of the flight (`wayOut`, `ViewSwitch`) |
-| the `dive`, `ground`, `back` and `gas` steps | `scripts/universe-endless-check.mjs` | every later lane |
+| the `dive`, `ground` and `back` steps (in the marked block) and the `gas` step (outside it) | `scripts/universe-endless-check.mjs` | every later lane |
 
 ## Assumptions about unmerged work
 
-Each of these can be checked once the lane named has merged. Lane 5a had committed nothing on `eu/lane-5a` at the time of writing. Lane 2 had PR 2.3 on `eu/lane-2` (`8630fda8`); 2.4 and 2.5 weren't there yet.
+Each of these can be checked once the lane named has merged. At this revision (2026-10-24) lane 5a had committed nothing past `cc5e2eaf` in `/home/user/wt/lane5a`. Lane 2 had PR 2.3 (`8630fda8`), the budget table (`439f22b8`, with `planetMap` pinned by literal in `budget.test.js`) and the levels of detail (`57436f12`) on `eu/lane-2`; the rest of 2.4 and 2.5 weren't there yet.
 
 1. **Lane 5a** is as its plan's Interfaces give it:
    - `planetSpecOf(id, { expanse })`, where `expanse` is a function or an array of rows
@@ -1314,15 +1427,17 @@ Each of these can be checked once the lane named has merged. Lane 5a had committ
    If `rowOf` stayed private or was renamed, Task 1 exports it from `rows.js` under that name.
 2. **Lane 2's `near.js`** builds planets with `build(TYPE_LOOK[p.type] ?? TYPE_LOOK.rock, { r: p.radius, tier })` and moons with `build(..., { r, small: true })`, under a group whose parents carry no rotation or scale beyond `map`'s. Task 11 holds even if they do, since it converts through the group's world transform. `createNear` takes `build`, and `createExpanse` makes `createNear`. Each body's `dispose` is called when its system is let go.
 3. **Lane 2's `placeOf(universe, id)`** answers `{ kind: 'planet' | 'moon' | …, row, sector }` with `sector.systems`, and keeps eight sectors. `fullSector(…).legacy.systems` is the appended part's start.
-4. **Lane 2's `BUDGET[tier].planetMap`** equals lane 5a's `ORBIT_MAP_SIZE` (Task 2 pins it). `expanse.update({ ship })` keeps a system built while the camera is near it, even with `ship: null`. Task 11 passes the ship during a generated dive regardless.
-5. **Lane 2's `scripts/universe-endless-check.mjs`** has a `system` step that ends inside a generated system with its bodies built, `--only`, `teleport`, and a per-step recorder.
+4. **Lane 2's `BUDGET[tier].planetMap`** is `[256, 128]` on `low` and `mid` and `[512, 256]` on `high` and `ultra`, pinned by literal in lane 2's `budget.test.js` (as `439f22b8` has it), and lane 5a's `ORBIT_MAP_SIZE` is pinned to the same literal in its `orbitMap.test.js`. `expanse.update({ ship })` keeps a system built while the camera is near it, even with `ship: null`. Task 11 passes the ship during a generated dive regardless.
+5. **Lane 2's `scripts/universe-endless-check.mjs`** has a `system` step that ends inside a generated system with its bodies built, `teleport`, and a per-step recorder (lane 2's Task 22). It has no `// planet flight` block: Task 11 adds one. `--only` is lane 3's (its Task 10, Step 5).
 6. **Lane 3's `/universe/<E: id>`** starts the ship parked at that place (`parkPlace`, `reach + 4`, facing it) with its card, and `__universe().place` is that id once arrived (its Task 14 and finding 5). `scene.js`'s `createExpanse` call stays at `:772`, and lane 3's `createScenePlaces` comes after it.
-7. **Lane 4a's `traitsOf(row)`, `ROGUE_LOOK` and `things/looks/rogue.js`** (for Task 15 only) are as its plan gives them, and `createThingDrawers` can take a `build` dep.
-8. **Lane 4b's `events.clear()`** is in `scene.js` if 4b has merged (Task 11's `begin`).
-9. **The scene's lines.**
+7. **Lane 4a's `traitsOf(row)`, `ROGUE_LOOK` and `things/looks/rogue.js`** (for Task 15 only) are as its plan gives them, and `createThingDrawers` can take a `build` dep. `ROGUE_LOOK`'s types are `rock`, `ice`, `desert` and `gas`.
+8. **The endless baselines** in `lab/universe/endless/<tier>.json`, when this lane starts, hold lane 2's `old-rim`, `above-core` and `expanse-system`, lane 3's `expanse-station` and lane 4a's `at-gargantuan` and `in-field`, each re-recorded by the last lane in one run a tier. Task 16 reads the list from the file rather than from this line.
+9. **Lane 4b's `events.clear()`** is in `scene.js` if 4b has merged (Task 11's `begin`).
+10. **The scene's lines.**
    - `fly()`'s air block, `render()`'s four `state.dive` guards and `diveAt` read as quoted, whatever their line numbers after lanes 2, 3, 4a and 4b.
    - `flyInto`, `landingOpen(removed, …)`, `placeName`, `entrySound`, `quietRoar`, `warm`, `powers`, `unique`, `hunters` and `dropAuto` keep their names.
-10. **`footScene.js`'s `view`** walk branch and party motion read as quoted at `:3041-3074` and `:2835-2845`, so Task 13 moves them verbatim.
+11. **`footScene.js`'s `view`** walk branch and party motion read as quoted at `:3041-3074` and `:2835-2845`, so Task 13 moves them verbatim.
+12. **The flight's own code on `main`** stays where this plan cites it until this lane: `module.js`'s keys (`:32-44`), `inputOf` (`:120-130`), binding (`:203`), the shared world's `respawn` (`:211`) and the step's crash rule (`:242-276`); `shared.js`'s `SHARED_KEYS` (`:37`); `groundCore.js`'s `heightUnder` (`:172`). No wave-1 lane moves them. Lane 5a's Task 12 changes `shared.js` (`:58-73`, `:131-137`, `:219-222`: read-only when `spec.buildable === false`) but not `SHARED_KEYS`, so its prompt may answer `build: false` on a generated planet, which Task 14's one prompt reads as it is.
 
 ## Findings for the coordinator (spec against code)
 
@@ -1340,13 +1455,13 @@ Each of these can be checked once the lane named has merged. Lane 5a had committ
 3. **The flight's ship isn't the universe's.**
    - The flight flies its code-built wedge (`expanse/flight/scene.js:50-79`), so the Falcon you dove in lands as a wedge, and its crew step out of it.
    - Bringing the hero ships (`shipModels.js`) into the flight is a change to the flight's look, for the owner to call.
-4. **A typed `/fly` link still makes a sector on the page's main thread.** A dive's route carries the row in `history.state`, so the common path makes none. A typed, shared or reloaded-in-a-new-tab link makes one through `placeOf` (45–130 ms), as `/fly/e:…` already does with `makeSector` today. Spec A's "never on the main thread" is kept for the universe, not the flight's page load.
+4. **A typed `/fly` link still makes a sector on the page's main thread.** A dive's route carries the row in `history.state`, and `planets.js` keeps it for `expanseRow` (Task 10), so the spec, its life, finds and events make none. A typed, shared or reloaded-in-a-new-tab link makes one through `placeOf` (45–130 ms), as `/fly/e:…` already does with `makeSector` today. Spec A's "never on the main thread" is kept for the universe, not the flight's page load.
 5. **Bake time.**
    - A 256 × 128 bake samples every texel's height five times (lane 5a's `sample`).
    - If Task 2's median is over a second, a built system of twenty bodies takes tens of seconds to wear its maps.
    - Each body fades in when its map lands and stays procedural until then. The nearest system is built first.
 6. **Weather costs a draw.** A generated planet's standing weather is one `Points` or `LineSegments` draw on `/fly/<id>`, as the flight's weather events already are. "Draw calls no higher" holds at `/fly/hoth` and the fifty, not at a generated planet with weather.
-7. **Lava under the skin path lost its glow** (`bodySkin.js:84`: `s.emit *= 1.0 - k`). This lane adds `SKIN_GLOW` for orbit maps only. The galaxy's painted skins are unchanged.
+7. **Lava under the skin path lost its glow** (`bodySkin.js:84`: `s.emit *= 1.0 - k`). This lane lets an orbit map's lava glow through `withSkin(frag, { glow })`, which splices a different line only when asked. `SKIN_FRAG` itself is untouched, so the galaxy's painted skins compile byte for byte as before (Task 3's fixture).
 8. **Gas giants turn you back at their air, not their cloud tops' solid.**
    - Lane 2 makes generated giants solid at their radius. The turn-back acts at `AIR = 1.2` radii, the same air a rocky planet's dive starts in, so a ship at landing speed never reaches the solid.
    - A boosting ship (`'hot'`) still crashes into it, as at a fandom planet.
@@ -1354,6 +1469,16 @@ Each of these can be checked once the lane named has merged. Lane 5a had committ
 10. **Lane 2's finding 4 is taken here.** `planets.test.js`'s `'e:1,0:99:0'` null case moves past the sector's count (Task 1).
 11. **The 13 seeded planets land on their plane, at the window point** of lane 5a's plane bake. Their orbit map is that window, so the spot you dove at is the ground under you, with the edge mismatch the spec accepts.
 12. **`footScene.js` is over the ceiling** and stays so. This lane takes about 25 lines out of it and adds one export.
+13. **The orbit relief's sign was the slope's; the skin reads a normal's** (review). `bodySkin.js:88-90` decodes `g = −(east·n.x + north·n.y)`, and `bodyShaders.js:666` and `:703-704` take `s.grad` as `+∇h`. The bake now stores `128 − 127·clamp(g·GAIN)` (Task 2), and an island test checks a baked ridge decodes uphill, its copy of the decode pinned to `SKIN_FRAG` (Task 3).
+14. **Generated planets on painted base looks would have worn two skins** (review). Lane 2 builds forest, ocean and ringed planets with `'endor'`, `'kamino'` and `'bespin'` (`sectors.js:29-37`), all painted. With `orbit`, `buildBody` turns the painted path off (Task 3).
+15. **The island reads tests too** (review). `repoTree` is `git ls-files`, so a test off the island that names the flight is `unmarked`, and one on the island that imports a component is `crossWorld`. The face's test goes on the island, `view.test.js` is marked and listed, the scene landing's fakes use `'/to/'`, and the crew-import check moved to the flight's own `walker.test.js`. Each task's island step now names the files and rows it expects.
+16. **One table pinned twice, not compared** (review finding 1, half taken). The fix asked for a literal pin of `BUDGET[t].planetMap` in `budget.test.js`; lane 2's `'holds the plan’s rows'` already pins it (`439f22b8`). Task 2 only drops the cross-import and names the twin in a comment.
+17. **`/fly/hoth`'s way out is `/universe/starwars` today, not `/universe`.** `universes.js:127` lists `/fly` among the Star Wars gate's pages, so `placeFor` finds it. The plan's earlier `view.js` block returned `/universe` for any `/fly` path it couldn't read; it now falls through to today's rule, and its test says `/universe/starwars` for `/fly`, `/fly/hoth` and `/fly/e:junk` (Task 14).
+18. **The dive's white-out peaked after the hand-off** (review). At `DIVE.quick = 1.3`, `fxAt`'s peak at 2.852 s lands at 2.19 s, after `DIVE.hand` (2.1). `quick` is now 1.4: the peak is at 2.04 s and the white at the hand-off 0.79.
+19. **The flight's crash rule and its turrets would have thrown a parked ship back up** (review). `LAND.rest` (2.5 m) is under `SHIP.clearance` (3 m, `flightRules.js:13`), and a turret's bolt through the shield calls `respawn` (`module.js:211`). Both act in `'fly'` alone now (Task 14).
+20. **Landing is for generated planets only, and climbing out for flights that came from the universe.** The fifty named worlds bind exactly the keys they do today (`module.test.js:41` unchanged) and show no new prompt. A flight reached from the Menu or a link keeps today's open sky and leaves by the Menu's Take off (review). Once down, Shift, R or the `+` button lifts off and flies on over the planet, so landing never ends the flight against your will.
+21. **The walker stands on the ground that's drawn, not the field's exact height.** The spec says "the height from the flight's field". The drawn leaf is the field sampled at its vertices, and a feet-from-field walker floats over or sinks into it by up to the leaf's error. So the footing uses the flight's own `groundAt` (the finest leaf in, else the field), as the ship's crash does, and the ground streams round the walker (Task 14). Say if the owner reads the spec more strictly.
+22. **A gas rogue's type rides in its build's `of`** (review). A rogue's row has no `type`; it is `traitsOf(row).type` (lane 4a). Lane 4a's look passes it as `of.type` (Task 15), and the scene's landing reads `of.type ?? of.row.type`, so it imports nothing of lane 4a's and holds with the flight gone.
 
 ## Spec coverage
 
@@ -1367,7 +1492,7 @@ Each of these can be checked once the lane named has merged. Lane 5a had committ
 | E, Landing 3, Hand-off: behind the cloud, `/fly/e:…` carrying the spot | 4 (`route`, `spotQuery`), 11 |
 | E, Landing 4, Arrival: low over the spot, descending | 10 |
 | E, Landing 5, Touchdown on ground flat enough, and walking with the universe's walker, camera and HUD, the height from the flight's field | 12, 13, 14 |
-| E, Landing 6, Take-off: climb out or press Take off; `/universe/e:…` parked in orbit facing it | 12, 14 (with lane 3's start) |
+| E, Landing 6, Take-off: climb out or press Take off; `/universe/e:…` parked in orbit facing it | 12, 14 (T, the Menu's Take off, and the climb for a flight that came from the universe; with lane 3's start) |
 | E, "What doesn't land": gas giants turn you back with a line; fandom planets keep their own; pockets need not | 9, 11 |
 | E, "Moons land too" | 1, 4, 5, 11 |
 | E, "The planet flight becomes a kept part", the remover learns the new links | 4, 5, 11, 14, 16 |
