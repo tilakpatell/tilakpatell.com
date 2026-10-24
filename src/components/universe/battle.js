@@ -95,10 +95,12 @@
 // `you`: { x, y, z, alive } (the ship, as the scene has it), or null.
 // update(dt) steps the battle BATTLE.step at a time, whatever the frame
 // rate, so the same seed fights the same battle on any screen; `ahead` is
-// how far the frame's past the last step, and each fighter's and runner's
-// `seen` is where it is by then (drawn there, locked on to there).
+// how far the frame's past the last step (`behind`, what's left of it), and
+// each fighter's and runner's `seen`, `look` and `lookBank` are where it is
+// and how it's turned that far between its last two steps (drawn there,
+// locked on to there); each bolt's `age` is how long it has flown.
 // Events: { type: 'down', team, kind, role, at, mine, ace? }, { type: 'hurt', damage,
-// kind }, { type: 'sub', sub, kind, phase, at, mine }, { type: 'phase',
+// kind }, { type: 'sub', sub, kind, phase, at, mine, cap }, { type: 'phase',
 // phase }, { type: 'shield', down: true }, { type: 'capital', id, kind,
 // team, at }, { type: 'arrive', team, kind, at }, { type: 'impact', at,
 // size, shield }, { type: 'over', winner, why }, { type: 'turret', id, cap,
@@ -113,13 +115,14 @@ import { basisOf, capitalPose } from '../../lib/combat/pose';
 import { NAMES } from './wars';
 import { BATTLE, UP, ZERO, copy, cross, dist2, len, norm, set, turnToward, v3 } from './battleKit';
 import { flyFighter, muster, spawn } from './battleAi';
-import { ageCapitals, fireBatteries, holdCapitals, hullHit, layCapitals, placeCapitals } from './battleCapitals';
+import { ageCapitals, fireBatteries, holdCapitals, hullHit, layCapitals, listCapitals, placeCapitals } from './battleCapitals';
 import { createRunners } from './battleRunners';
 import { createStages } from './battleStages';
 import { createTactics } from './battleTactics';
 import { createFleet } from './battleFleet';
 import { homeFor } from './battleHome';
 import { pressureOf } from './battleDifficulty';
+import { drawnAt, keepTurn } from './battleDrawn';
 
 export { BATTLE, WIDTH, inSights, perSide, turnToward } from './battleKit';
 
@@ -137,7 +140,7 @@ export function createBattle({ war, attacker = 0, at = [0, 0, 0], axis = [1, 0],
     teams: war.sides.map((side) => ({ side, tickets: BATTLE.tickets })),
     capitals: [],
     fighters: [],
-    bolts: Array.from({ length: 320 }, () => ({ on: false, team: 0, kind: 'laser', x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, life: 0, damage: 0, target: null })),
+    bolts: Array.from({ length: 320 }, () => ({ on: false, team: 0, kind: 'laser', x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, life: 0, age: 0, damage: 0, target: null })),
     phase: 1,
     clock: elapsed,
     length: clock,
@@ -158,24 +161,25 @@ export function createBattle({ war, attacker = 0, at = [0, 0, 0], axis = [1, 0],
   const capPose = (cap) => capitalPose(cap, b.drawn.t, b.drawn.reduced);
   const A0 = [0, 0, 0];
   const A1 = [0, 0, 0];
-  // a fighter's or a runner's pose over a step: from `a0` to `a1`, turned as it's drawn
-  const shipPose = (o, a0, a1) => {
+  // a fighter's or a runner's pose over a step: from `a0` to `a1`, turned as
+  // it's flown (or, `drawn`, as the frame draws it: your shots)
+  const shipPose = (o, a0, a1, drawn = false) => {
     A0[0] = a0.x;
     A0[1] = a0.y;
     A0[2] = a0.z;
     A1[0] = a1.x;
     A1[1] = a1.y;
     A1[2] = a1.z;
-    return { at0: A0, at1: A1, basis: basisOf(o.fwd, UP, o.bank ?? 0), scale: o.size };
+    return { at0: A0, at1: A1, basis: drawn ? basisOf(o.look ?? o.fwd, UP, o.lookBank ?? o.bank ?? 0) : basisOf(o.fwd, UP, o.bank ?? 0), scale: o.size };
   };
   // how far along p0→p1 a bolt meets the ship (its sphere of `r` as the
   // broad phase, then its hull where it has one): { k, hit } or null
-  const shipHit = (o, p0, p1, a0, a1, r) => {
+  const shipHit = (o, p0, p1, a0, a1, r, drawn = false) => {
     const hull = hullOf(o.kind);
     const k = sweptHit(p0, p1, a0, a1, hull ? Math.max(r, hull.radius * o.size) : r);
     if (k === null) return null;
     if (!hull) return { k, hit: null };
-    const h = segmentHit(hull, shipPose(o, a0, a1), p0, p1);
+    const h = segmentHit(hull, shipPose(o, a0, a1, drawn), p0, p1);
     return h ? { k: h.t, hit: h } : null;
   };
   // what a hull's hit adds to a hit object
@@ -223,7 +227,8 @@ export function createBattle({ war, attacker = 0, at = [0, 0, 0], axis = [1, 0],
   };
   const subDown = (s, mine) => {
     s.alive = false;
-    return { type: 'sub', sub: s.id, kind: s.kind, phase: s.phase, at: copy(v3(), s.pos), mine };
+    if (s.kind === 'bridge') s.cap.listed ??= 0; // (out of control from now: listCapitals)
+    return { type: 'sub', sub: s.id, kind: s.kind, phase: s.phase, at: copy(v3(), s.pos), mine, cap: s.cap?.id ?? null };
   };
   // (with the galaxy's director it's the director that decides the battle:
   // the battle never ends itself, and the AI's fire sinks no capital ship)
@@ -268,6 +273,7 @@ export function createBattle({ war, attacker = 0, at = [0, 0, 0], axis = [1, 0],
     o.vy = (dir.y / l) * spec.speed;
     o.vz = (dir.z / l) * spec.speed;
     o.life = spec.life;
+    o.age = 0;
     o.damage = spec.damage;
     o.target = target;
     return o;
@@ -300,25 +306,41 @@ export function createBattle({ war, attacker = 0, at = [0, 0, 0], axis = [1, 0],
     for (const cap of b.capitals) {
       if (cap.team === team || !cap.alive) continue;
       if (dist2(cap.pos, p1) > (cap.reach + 30) ** 2 && dist2(cap.pos, p0) > (cap.reach + 30) ** 2) continue;
+      let own = null; // (this ship's: what the bolt meets first on it)
       for (const s of cap.subs) {
         if (!s.alive || s.hidden) continue;
         const k = sweptHit(p0, p1, s.pos, s.pos, s.r);
-        if (k !== null && (!best || k < best.k)) best = { cap, sub: s, k };
+        if (k !== null && (!own || k < own.k)) own = { cap, sub: s, k };
       }
       const hull = hullOf(cap.kind);
       if (hull) {
         // (its own shapes, turned and bobbed as it's drawn: a bolt at a wing's edge meets the wing)
         const h = segmentHit(hull, capPose(cap), p0, p1);
-        if (h && (!best || h.t < best.k)) best = { cap, sub: null, k: h.t, part: h.part, property: h.property };
-        continue;
+        if (h && (!own || h.t < own.k)) own = { cap, sub: null, k: h.t, part: h.part, property: h.property };
+      } else if (!own) {
+        // (till its hull's here, its spheres; fatter than the ship, so a bolt
+        // on its way to an objective on the hull inside one flies on to it)
+        let k = null;
+        let wide = 0;
+        for (const sp of cap.spheres) {
+          const kk = sweptHit(p0, p1, sp.c, sp.c, sp.r);
+          if (kk !== null && (k === null || kk < k)) [k, wide] = [kk, sp.r];
+        }
+        if (k !== null && !onToSub(cap, p0, p1, wide)) own = { cap, sub: null, k };
       }
-      for (const sp of cap.spheres) {
-        const k = sweptHit(p0, p1, sp.c, sp.c, sp.r);
-        if (k !== null && (!best || k < best.k)) best = { cap, sub: null, k };
-      }
+      if (own && (!best || own.k < best.k)) best = own;
     }
     if (best) best.at = v3(p0.x + (p1.x - p0.x) * best.k, p0.y + (p1.y - p0.y) * best.k, p0.z + (p1.z - p0.z) * best.k);
     return best;
+  };
+  // whether a bolt from p0 through p1, flown on across a sphere `wide` in
+  // radius, meets one of the ship's objectives or batteries (on its hull)
+  const ahead = v3();
+  const onToSub = (cap, p0, p1, wide) => {
+    const l = Math.sqrt(dist2(p0, p1)) || 1;
+    const k = 1 + (2 * wide) / l;
+    set(ahead, p0.x + (p1.x - p0.x) * k, p0.y + (p1.y - p0.y) * k, p0.z + (p1.z - p0.z) * k);
+    return cap.subs.some((s) => s.alive && !s.hidden && sweptHit(p0, ahead, s.pos, s.pos, s.r) !== null) || cap.turrets.some((t) => t.alive && sweptHit(p0, ahead, t.at, t.at, t.r) !== null);
   };
   // a hit on an objective: only those of the phase, and only once the shield's down for the rest
   // (its hp: what it started with, less what's been dealt it here and what other pilots did: shared)
@@ -372,6 +394,7 @@ export function createBattle({ war, attacker = 0, at = [0, 0, 0], axis = [1, 0],
     for (const o of b.bolts) {
       if (!o.on) continue;
       o.life -= dt;
+      o.age += dt;
       if (o.life <= 0) {
         o.on = false;
         continue;
@@ -534,10 +557,13 @@ export function createBattle({ war, attacker = 0, at = [0, 0, 0], axis = [1, 0],
       step(BATTLE.step, out);
     }
     if (you) copy(b.you.pos, youTo);
-    // where each fighter and runner is drawn (and locked on to): on from its last step by the time owed
+    // where each fighter and runner is drawn (and locked on to): between its
+    // last two steps, by how far the frame is into the next (battleDrawn.js)
     b.ahead = owed;
-    for (const f of b.fighters) if (f.alive) set(f.seen, f.pos.x + f.vel.x * owed, f.pos.y + f.vel.y * owed, f.pos.z + f.vel.z * owed);
-    for (const r of b.runners) if (r.alive) set(r.seen, r.pos.x + r.vel.x * owed, r.pos.y + r.vel.y * owed, r.pos.z + r.vel.z * owed);
+    b.behind = BATTLE.step - owed;
+    const a = Math.min(1, owed / BATTLE.step);
+    for (const f of b.fighters) if (f.alive) drawnAt(f, a);
+    for (const r of b.runners) if (r.alive) drawnAt(r, a);
     return out;
   };
 
@@ -545,6 +571,8 @@ export function createBattle({ war, attacker = 0, at = [0, 0, 0], axis = [1, 0],
   const step = (dt, out) => {
     if (!b.over) b.clock += dt;
     else b.since += dt;
+    for (const f of b.fighters) keepTurn(f);
+    for (const r of b.runners) keepTurn(r);
     for (const f of b.fighters) {
       if (f.alive) {
         flyFighter(k, f, dt);
@@ -574,6 +602,7 @@ export function createBattle({ war, attacker = 0, at = [0, 0, 0], axis = [1, 0],
       checkPhase(out);
     }
     ageCapitals(k, dt, out);
+    listCapitals(k, dt);
     if (!b.over && decides) {
       const t = b.teams[attacker];
       if (tickets && t.tickets <= 0 && !b.fighters.some((f) => f.alive && f.team === attacker)) finish(defender, 'tickets', out);
@@ -607,7 +636,7 @@ export function createBattle({ war, attacker = 0, at = [0, 0, 0], axis = [1, 0],
     let first = Infinity;
     for (const f of b.fighters) {
       if (!f.alive || f.team === b.you.team) continue;
-      const h = shipHit(f, from, to, drawnBack(f), f.seen, Math.max(0.35, f.size * 0.9));
+      const h = shipHit(f, from, to, drawnBack(f), f.seen, Math.max(0.35, f.size * 0.9), true);
       if (h && h.k < first) {
         first = h.k;
         hitF = f;
@@ -618,7 +647,7 @@ export function createBattle({ war, attacker = 0, at = [0, 0, 0], axis = [1, 0],
     let hitR = null;
     for (const r of b.runners) {
       if (!r.alive || r.team === b.you.team) continue;
-      const h = shipHit(r, from, to, drawnBack(r), r.seen, Math.max(0.5, r.size * 0.5));
+      const h = shipHit(r, from, to, drawnBack(r), r.seen, Math.max(0.5, r.size * 0.5), true);
       if (h && h.k < first) {
         first = h.k;
         hitR = r;

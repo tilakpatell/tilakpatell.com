@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { packHull, packShapes } from '../physics/shapesBin.js';
 import { basisOf } from './pose.js';
-import { hullOf, hullFromTriangles, probeSphere, segmentHit, hullContact } from './hulls.js';
+import { halfTurn, hullOf, hullFromTriangles, probeSphere, segmentHit, hullContact } from './hulls.js';
 
 const I = new Float32Array([1, 0, 0, 0, 1, 0, 0, 0, 1]);
 const pose = (at0, at1 = at0, basis = I, scale = 1) => ({ at0, at1, basis, scale });
@@ -492,5 +492,38 @@ describe('probeSphere', () => {
     expect(c.depth).toBeCloseTo(0.15 + 0.02 + 0.004, 4); // (the leading probe, 0.15 ahead, back to the near face at −0.02, and SKIN × 4 past it)
     // and short of it, nothing
     expect(hullContact(ball, pose([0, 0, -1], [0, 0, -0.5]), plate, pose([0, 0, 0], [0, 0, 0], I, 4))).toBeNull();
+  });
+});
+
+describe('halfTurn', () => {
+  // an off-centre block: its own shapes on the +x, +z side
+  const offBin = () =>
+    packHull({
+      radius: 1,
+      parts: [{ name: 'tower', property: 9 }],
+      shapes: [
+        { kind: 'hull', part: 0, material: 0, root: 0, points: boxMesh(0.1, 0.1, 0.1).points.map((v, i) => v + [0.3, 0, 0.2][i % 3]) },
+        { kind: 'mesh', part: 0, material: 0, root: 1, ...boxMesh(0.1, 0.1, 0.1), points: boxMesh(0.1, 0.1, 0.1).points.map((v, i) => v + [0.3, 0, 0.2][i % 3]) },
+      ],
+    });
+
+  it('meets a bolt where the ship now is, half round from where it was', () => {
+    const was = hullOf(offBin());
+    const now = halfTurn(was);
+    // (along x through z 0.2: the block, before; along x through z −0.2: the block, after)
+    expect(segmentHit(was, pose([0, 0, 0]), [5, 0, 0.2], [-5, 0, 0.2])).not.toBeNull();
+    expect(segmentHit(now, pose([0, 0, 0]), [5, 0, 0.2], [-5, 0, 0.2])).toBeNull();
+    const hit = segmentHit(now, pose([0, 0, 0]), [-5, 0, -0.2], [5, 0, -0.2]);
+    expect(hit).not.toBeNull();
+    expect(hit.point[0]).toBeCloseTo(-0.4, 5);
+    expect(hit.property).toBe(9);
+    expect(was.rays.tris[0]).toBe(hullOf(offBin()).rays.tris[0]); // (the hull it was given is left as it was)
+  });
+
+  it('keeps a ship out of it where it now is', () => {
+    const now = halfTurn(hullOf(offBin()));
+    const probe = hullOf(solidBin(0.01));
+    expect(hullContact(probe, pose([-0.3, 0, -0.5], [-0.3, 0, -0.2]), now, pose([0, 0, 0]))).not.toBeNull();
+    expect(hullContact(probe, pose([0.3, 0, 0.5], [0.3, 0, 0.2]), now, pose([0, 0, 0]))).toBeNull();
   });
 });

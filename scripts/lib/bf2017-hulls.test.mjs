@@ -447,7 +447,7 @@ describe('the ships the game never had', () => {
   it('hq/nebulon sits on the HQ model: its box within 2 %, and point by point the way it is drawn', async () => {
     expect(HULLS['hq/nebulon'].from).toBe('/models/galaxy/hq/nebulon.glb');
     const hq = await readGlb('models/galaxy/hq/nebulon.glb');
-    const frame = frameOf(hq, 0, 'nebulon');
+    const frame = frameOf(hq, Math.PI, 'nebulon'); // (drawn turned half round, nose first: models.js's HQ row)
     const shapes = readHull(hullBin('hq/nebulon')).shapes.filter((s) => s.root === 1);
     expect(offBy(boxOf(shapes), frame).off).toBeLessThan(0.02);
     const way = facing(Float32Array.from(shapes.flatMap((s) => [...s.points])), drawnPoints(hq, frame));

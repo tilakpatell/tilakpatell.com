@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
-import { createBattle } from './battle';
+import { BATTLE, createBattle } from './battle';
 import { createBattleScene } from './battleScene';
 import { createDirector } from './battleDirector';
 import { WARS } from './wars';
@@ -38,7 +38,7 @@ describe('createBattleScene', () => {
     const events = battle.update(1 / 30, null);
     draw.update(1 / 30, 1, cam, new THREE.Vector3(), events, 0);
     const f = battle.fighters[0];
-    const slot = models.slots.find((s) => s.kind === f.kind && s.holder.position.distanceTo(new THREE.Vector3(f.pos.x, f.pos.y, f.pos.z)) < 1e-6);
+    const slot = models.slots.find((s) => s.kind === f.kind && s.holder.position.distanceTo(new THREE.Vector3(f.seen.x, f.seen.y, f.seen.z)) < 1e-6);
     expect(slot).toBeTruthy();
     draw.hide();
     expect(models.slots).toHaveLength(0);
@@ -69,9 +69,10 @@ describe('createBattleScene', () => {
   });
 
   // (the battle steps 1/30 s at a time: drawn where it was at the last step, a
-  // fighter would stutter on a faster screen, so it's carried on along its way
-  // by the time the step still owes, as the guns' lock has it)
-  it('draws a fighter on along its way by the time the battle’s step still owes', () => {
+  // fighter would stutter on a faster screen; carried on along its way, it
+  // left its line and snapped its nose round at every step, so it's drawn
+  // between its last two steps, its nose turned as far, battleDrawn.js)
+  it('draws a fighter between its last two steps, turned as far, by how far the frame is into the next', () => {
     const parent = new THREE.Group();
     const models = stubModels();
     const draw = createBattleScene(parent, { models, small: true });
@@ -81,8 +82,13 @@ describe('createBattleScene', () => {
     expect(battle.ahead).toBeGreaterThan(0);
     draw.update(0.05, 1, new THREE.PerspectiveCamera(), new THREE.Vector3(), events, 0);
     const f = battle.fighters[0];
-    const want = new THREE.Vector3(f.pos.x + f.vel.x * battle.ahead, f.pos.y + f.vel.y * battle.ahead, f.pos.z + f.vel.z * battle.ahead);
-    expect(models.slots.some((s) => s.kind === f.kind && s.holder.position.distanceTo(want) < 1e-6)).toBe(true);
+    const a = battle.ahead / BATTLE.step;
+    const want = new THREE.Vector3(f.prev.x + (f.pos.x - f.prev.x) * a, f.prev.y + (f.pos.y - f.prev.y) * a, f.prev.z + (f.pos.z - f.prev.z) * a);
+    const slot = models.slots.find((s) => s.kind === f.kind && s.holder.position.distanceTo(want) < 1e-6);
+    expect(slot).toBeTruthy();
+    // (its nose: the drawn one, `look`, along the holder's +z)
+    const nose = new THREE.Vector3(0, 0, 1).applyQuaternion(slot.holder.quaternion);
+    expect(nose.distanceTo(new THREE.Vector3(f.look.x, f.look.y, f.look.z))).toBeLessThan(1e-5);
     draw.dispose();
   });
 

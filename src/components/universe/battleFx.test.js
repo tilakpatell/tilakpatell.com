@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
-import { GLOW, MARK, createBoltDraw, fitPx, glowAt, luminance } from './battleFx';
+import { GLOW, MARK, createBoltDraw, createMarkers, fitPx, glowAt, luminance } from './battleFx';
 import { WARS } from './wars';
 
 describe('the bolts', () => {
@@ -20,9 +20,78 @@ describe('the bolts', () => {
     expect(at() - still).toBeCloseTo(0.6, 6);
     draw.dispose();
   });
+
+  it('are drawn a step behind with the fighters, but never before they were fired: at the gun', () => {
+    const parent = new THREE.Group();
+    const draw = createBoltDraw(parent, { count: 4 });
+    const at = () => {
+      const m = new THREE.Matrix4();
+      parent.children.find((o) => o.isInstancedMesh).getMatrixAt(0, m);
+      return new THREE.Vector3().setFromMatrixPosition(m).x;
+    };
+    const old = { on: true, team: 0, kind: 'laser', x: 10, y: 0, z: 0, vx: 60, vy: 0, vz: 0, age: 1 };
+    draw.sync([old], () => [1, 1, 1]);
+    const still = at();
+    draw.sync([old], () => [1, 1, 1], null, -0.02);
+    expect(at() - still).toBeCloseTo(-1.2, 6);
+    // (fired 0.005 s ago: drawn back that far, not the whole 0.02)
+    draw.sync([{ ...old, age: 0.005 }], () => [1, 1, 1], null, -0.02);
+    expect(at() - still).toBeCloseTo(-0.3, 6);
+    draw.dispose();
+  });
+});
+
+describe('a bolt’s look', () => {
+  it('is a hot core near white and a wider, dimmer halo of its colour round it', () => {
+    const parent = new THREE.Group();
+    const draw = createBoltDraw(parent, { count: 2 });
+    draw.sync([{ on: true, team: 0, kind: 'laser', x: 0, y: 0, z: 0, vx: 60, vy: 0, vz: 0, age: 1 }], () => [3, 0.4, 0.3]);
+    const [core, halo] = parent.children.filter((o) => o.isInstancedMesh);
+    expect(core.count).toBe(1);
+    expect(halo.count).toBe(1);
+    const scale = (mesh) => {
+      const m = new THREE.Matrix4();
+      mesh.getMatrixAt(0, m);
+      return new THREE.Vector3().setFromMatrixScale(m);
+    };
+    expect(scale(halo).x).toBeGreaterThan(scale(core).x * 3);
+    const colour = (mesh) => {
+      const c = new THREE.Color();
+      mesh.getColorAt(0, c);
+      return c;
+    };
+    // (the core's whiter than the colour it was given: its green and blue nearer its red)
+    expect(colour(core).g / colour(core).r).toBeGreaterThan(0.4 / 3);
+    expect(colour(halo).r).toBeLessThan(colour(core).r);
+    draw.dispose();
+    expect(parent.children).toHaveLength(0);
+  });
 });
 
 describe('the objective markers', () => {
+  it('paint a new distance at most four times a second, and anything else they say at once', () => {
+    let paints = 0;
+    const ctx = new Proxy({}, { get: (o, k) => (k in o ? o[k] : k === 'measureText' ? () => ({ width: 100 }) : k === 'fillText' ? () => (paints += 1) : () => {}), set: (o, k, v) => ((o[k] = v), true) });
+    const was = globalThis.document;
+    globalThis.document = { createElement: () => ({ width: 0, height: 0, getContext: () => ctx }) };
+    try {
+      const marks = createMarkers(new THREE.Group());
+      const one = (sub, hp = 1) => [{ key: 'a', pos: { x: 0, y: 0, z: 0 }, title: 'Destroy: Bridge', sub, hp, colour: '#ffb347' }];
+      const painted = () => paints / 2; // (a title and a distance a paint)
+      marks.sync(one('100 m'), 0);
+      expect(painted()).toBe(1);
+      marks.sync(one('90 m'), 0.1);
+      expect(painted()).toBe(1);
+      marks.sync(one('80 m'), 0.3);
+      expect(painted()).toBe(2);
+      marks.sync(one('80 m', 0.5), 0.31);
+      expect(painted()).toBe(3);
+      marks.dispose();
+    } finally {
+      globalThis.document = was;
+    }
+  });
+
   it('shrink a name to fit the card, never past the smallest that reads', () => {
     expect(fitPx(200, 244)).toBe(20); // (fits as it is)
     expect(fitPx(300, 244)).toBe(16); // ('Destroy: Shield generator' at 20px is about 300 wide)

@@ -6,8 +6,8 @@
 // createBoltDraw(parent, { count }) → { sync(bolts, colourOf, eye, ahead), dispose() }
 // createGlows(parent, { count }) → { begin(), add(pos, colour, size), end(), dispose() }
 // createShield(parent) → { show(cap, colour), hit(point), drop(), hide(), update(dt, t), dispose() }
-// createMarkers(parent) → { sync(list), hide(), dispose() }; list: [{ key, pos, title, sub, hp, colour, under }]
-// createFires(parent) → { add(pos, size), update(dt, t), clear(), dispose() }
+// createMarkers(parent) → { sync(list, now), hide(), dispose() }; list: [{ key, pos, title, sub, hp, colour, under }]
+// createFires(parent) → { add(pos, size, { follow, life }), update(dt, t), unfollow(follow), count, clear(), dispose() }
 // Everything is in `parent`'s space (the map's).
 
 import * as THREE from 'three';
@@ -37,15 +37,28 @@ const BOLT_LOOK = {
   turbo: { length: 3.2, width: 0.06, bright: 1 },
   torpedo: { length: 0.22, width: 0.09, bright: 1.6 },
 };
+// a bolt's core, a share of its look's width, its colour this far toward
+// white at this much its brightness; and its halo round it
+const CORE = { width: 0.5, white: 0.6, bright: 1.3 };
+const HALO = { width: 1.9, length: 1.05, bright: 0.2 };
 export function createBoltDraw(parent, { count = 320 } = {}) {
+  // (two draws: a bolt's hot core, near white, and the glow of its colour
+  // round it, wider and dimmer, as the films draw them; one draw was a
+  // tube of flat colour)
   const geo = new THREE.CylinderGeometry(1, 1, 1, 6, 1).rotateX(Math.PI / 2);
-  const mat = new THREE.MeshBasicMaterial({ color: '#ffffff', toneMapped: false, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false });
-  const mesh = new THREE.InstancedMesh(geo, mat, count);
-  mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
-  mesh.setColorAt(0, new THREE.Color(1, 1, 1)); // (made now: the shader's built with instance colours or without)
-  mesh.frustumCulled = false;
-  mesh.count = 0;
-  parent.add(mesh);
+  const layer = () => {
+    const mat = new THREE.MeshBasicMaterial({ color: '#ffffff', toneMapped: false, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false });
+    const mesh = new THREE.InstancedMesh(geo, mat, count);
+    mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    mesh.setColorAt(0, new THREE.Color(1, 1, 1)); // (made now: the shader's built with instance colours or without)
+    mesh.instanceColor.needsUpdate = true;
+    mesh.frustumCulled = false;
+    mesh.count = 0;
+    parent.add(mesh);
+    return mesh;
+  };
+  const mesh = layer();
+  const halo = layer();
   const m = new THREE.Matrix4();
   const q = new THREE.Quaternion();
   const p = new THREE.Vector3();
@@ -57,38 +70,52 @@ export function createBoltDraw(parent, { count = 320 } = {}) {
     // the parent's space (a bolt right by it is dimmed: one passing a few
     // metres off shouldn't fill the screen with its glow); ahead: seconds
     // past the battle's last step (each bolt's carried on that far, so a
-    // bolt doesn't stutter along at the battle's 30 steps a second)
+    // bolt doesn't stutter along at the battle's 30 steps a second), or,
+    // less than nothing, before it: the fighters' time, a step behind
+    // (battle.js's `behind`)
     sync(bolts, colourOf, eye = null, ahead = 0) {
       let n = 0;
       for (const b of bolts) {
         if (!b.on || n >= count) continue;
         const look = BOLT_LOOK[b.kind] ?? BOLT_LOOK.laser;
-        const x = b.x + b.vx * ahead;
-        const y = b.y + b.vy * ahead;
-        const z = b.z + b.vz * ahead;
+        // (drawn behind its step, with the fighters, a bolt is never drawn before it was fired: at its gun)
+        const by = ahead >= 0 ? ahead : -Math.min(-ahead, b.age ?? 0);
+        const x = b.x + b.vx * by;
+        const y = b.y + b.vy * by;
+        const z = b.z + b.vz * by;
         const near = eye ? Math.min(1, Math.max(0.12, (Math.hypot(x - eye.x, y - eye.y, z - eye.z) - look.length) / (look.length * 4 + 2))) : 1;
         d.set(b.vx, b.vy, b.vz).normalize();
         q.setFromUnitVectors(Z, d);
         // (drawn a little behind its point, so it trails from where it is)
         p.set(x - d.x * look.length * 0.5, y - d.y * look.length * 0.5, z - d.z * look.length * 0.5);
-        s.set(look.width, look.width, look.length);
+        s.set(look.width * CORE.width, look.width * CORE.width, look.length);
         mesh.setMatrixAt(n, m.compose(p, q, s));
+        s.set(look.width * HALO.width, look.width * HALO.width, look.length * HALO.length);
+        halo.setMatrixAt(n, m.compose(p, q, s));
         const rgb = colourOf(b);
         const k = look.bright * near;
-        mesh.setColorAt(n, c.setRGB(rgb[0] * k, rgb[1] * k, rgb[2] * k));
+        // (the core: the colour toward white at the same brightness; the halo: the colour, dim)
+        const w = luminance(rgb) * CORE.white;
+        mesh.setColorAt(n, c.setRGB((rgb[0] * (1 - CORE.white) + w) * k * CORE.bright, (rgb[1] * (1 - CORE.white) + w) * k * CORE.bright, (rgb[2] * (1 - CORE.white) + w) * k * CORE.bright));
+        halo.setColorAt(n, c.setRGB(rgb[0] * k * HALO.bright, rgb[1] * k * HALO.bright, rgb[2] * k * HALO.bright));
         n += 1;
       }
       mesh.count = n;
+      halo.count = n;
       if (n) {
-        mesh.instanceMatrix.needsUpdate = true;
-        mesh.instanceColor.needsUpdate = true;
+        for (const o of [mesh, halo]) {
+          o.instanceMatrix.needsUpdate = true;
+          o.instanceColor.needsUpdate = true;
+        }
       }
     },
     dispose() {
-      mesh.removeFromParent();
+      for (const o of [mesh, halo]) {
+        o.removeFromParent();
+        o.material.dispose();
+        o.dispose();
+      }
       geo.dispose();
-      mat.dispose();
-      mesh.dispose();
     },
   };
 }
@@ -258,7 +285,7 @@ export function createShield(parent) {
 // ── the objective markers: a diamond, a name, how much is left and how far ──
 // (the card wide enough for 'Destroy: Shield generator' at its full size;
 // a longer name is drawn smaller to fit, not cut off at the card's edges)
-export const MARK = { w: 320, h: 72, pad: 8 };
+export const MARK = { w: 320, h: 72, pad: 8, every: 0.25 };
 const MW = MARK.w;
 const MH = MARK.h;
 // the font size that fits a name `room` wide, from its width at `px`
@@ -315,7 +342,9 @@ export function createMarkers(parent) {
     mk.tex.needsUpdate = true;
   };
   return {
-    sync(list) {
+    // now: seconds, the scene's clock (the distance's repaint is held to
+    // MARK.every; without it, every change is painted)
+    sync(list, now = null) {
       const seen = new Set();
       for (const o of list) {
         seen.add(o.key);
@@ -323,14 +352,20 @@ export function createMarkers(parent) {
         if (!mk) {
           mk = pool.pop() ?? make();
           mk.sig = '';
+          mk.at = -Infinity;
           used.set(o.key, mk);
           parent.add(mk.sprite);
         }
         mk.sprite.position.set(o.pos.x, o.pos.y, o.pos.z);
         mk.sprite.center.set(0.5, o.under ? 1.05 : 0.18);
-        const sig = `${o.title}|${o.sub}|${Math.round(o.hp * 50)}|${o.colour}`;
-        if (sig !== mk.sig) {
+        // (painted again when what it says changes; only its distance, which
+        // moves with every frame you fly, at most four times a second: each
+        // paint is a canvas drawn and sent to the graphics card)
+        const sig = `${o.title}|${Math.round(o.hp * 50)}|${o.colour}`;
+        if (sig !== mk.sig || (o.sub !== mk.sub && (now === null || now - mk.at >= MARK.every))) {
           mk.sig = sig;
+          mk.sub = o.sub;
+          mk.at = now;
           paint(mk, o);
         }
       }
@@ -373,31 +408,62 @@ export function createFires(parent) {
   const fireMat = new THREE.SpriteMaterial({ map: tex, color: new THREE.Color(3.2, 1.3, 0.35), blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, toneMapped: false });
   const smokeMat = new THREE.SpriteMaterial({ map: tex, color: new THREE.Color(0.08, 0.07, 0.07), depthWrite: false, transparent: true, opacity: 0.55 });
   const fires = [];
+  let made = 0;
+  const drop = (f) => {
+    f.fire.removeFromParent();
+    for (const s of f.smoke) s.removeFromParent();
+  };
   return {
-    add(pos, size = 1) {
+    // `follow`: something in `parent` it burns on (a ship's holder, a piece
+    // flung off), `pos` in that thing's own frame, so it goes where it goes;
+    // `life`: seconds it burns, dying down over its last two
+    add(pos, size = 1, { follow = null, life = Infinity } = {}) {
       const fire = new THREE.Sprite(fireMat);
       const smoke = [0, 1, 2].map(() => new THREE.Sprite(smokeMat));
       fire.position.set(pos.x, pos.y, pos.z);
       parent.add(fire, ...smoke);
-      fires.push({ fire, smoke, at: new THREE.Vector3(pos.x, pos.y, pos.z), size, seed: fires.length * 1.7 });
+      const f = { fire, smoke, at: new THREE.Vector3(pos.x, pos.y, pos.z), local: follow ? new THREE.Vector3(pos.x, pos.y, pos.z) : null, follow, size, life, seed: made++ * 1.7 };
+      fires.push(f);
+      return f;
     },
     update(dt, t) {
-      for (const f of fires) {
+      for (let n = fires.length - 1; n >= 0; n--) {
+        const f = fires[n];
+        f.life -= dt;
+        if (f.life <= 0) {
+          drop(f);
+          fires.splice(n, 1);
+          continue;
+        }
+        if (f.follow) {
+          f.follow.updateMatrix();
+          f.at.copy(f.local).applyMatrix4(f.follow.matrix);
+          f.fire.position.copy(f.at);
+        }
+        const fade = Math.min(1, f.life / 2);
         const flick = 0.8 + 0.2 * Math.sin(t * 17 + f.seed) * Math.sin(t * 7.3 + f.seed * 2);
-        f.fire.scale.setScalar(f.size * 1.4 * flick);
+        f.fire.scale.setScalar(f.size * 1.4 * flick * fade);
         f.smoke.forEach((s, i) => {
           // each puff rising off it and swelling, then round again
           const k = (t * 0.25 + i / 3 + f.seed) % 1;
           s.position.set(f.at.x + Math.sin(f.seed + i) * f.size * 0.3, f.at.y + k * f.size * 4, f.at.z + Math.cos(f.seed + i) * f.size * 0.3);
-          s.scale.setScalar(f.size * (1 + k * 3));
+          s.scale.setScalar(f.size * (1 + k * 3) * fade);
         });
       }
     },
+    // the fires burning on `follow` (a ship gone: they go with it)
+    unfollow(follow) {
+      for (let n = fires.length - 1; n >= 0; n--)
+        if (fires[n].follow === follow) {
+          drop(fires[n]);
+          fires.splice(n, 1);
+        }
+    },
+    get count() {
+      return fires.length;
+    },
     clear() {
-      for (const f of fires) {
-        f.fire.removeFromParent();
-        for (const s of f.smoke) s.removeFromParent();
-      }
+      for (const f of fires) drop(f);
       fires.length = 0;
     },
     dispose() {
