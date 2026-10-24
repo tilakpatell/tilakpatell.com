@@ -71,13 +71,21 @@ const saturation = (c) => {
   const hi = Math.max(c.r, c.g, c.b);
   return hi > 0 ? (hi - Math.min(c.r, c.g, c.b)) / hi : 0;
 };
+// (a map that says where the metal is keeps a little of it: a model's own
+// greebles a touch brighter, not a whole hull of dark chrome, the
+// Interdictor's generated model's, its metal map near white all over)
+const MAPPED_METAL = 0.2;
 const painted = (m) => {
   // (down to paint, never up: a material the model made plain stays plain)
-  m.metalness = Math.min(m.metalness, m.metalnessMap ? 0.5 : PAINT.metalness);
+  m.metalness = Math.min(m.metalness, m.metalnessMap ? MAPPED_METAL : PAINT.metalness);
   if (!m.roughnessMap) m.roughness = PAINT.roughness;
   return m;
 };
 const MARKING = '#8e2b22'; // (the Republic's red)
+// a kind whose own map is painted darker than its side's grey: brought up to
+// it (the Interdictor's generated model, its map's mean 0.17 linear, where
+// the game's Star Destroyer atlas, the same Imperial grey, is 0.40)
+const LIFT = { interdictor: 2.2 };
 
 // ── the engines: lit where they face aft ──
 const AFT_VERT = `
@@ -329,6 +337,7 @@ export function dressCapital(holder, kind, { plating = true, size = 2048, lite =
       // metal tune() took for a lamp by its name, the Arquitens'
       // `ImperialLightCruiser_Hatch`, put out first)
       const d = painted(m.clone());
+      if (LIFT[kind]) d.color.multiplyScalar(LIFT[kind]);
       if (d.emissiveIntensity === 3.2) {
         d.emissive.setRGB(0, 0, 0);
         d.emissiveIntensity = 1;

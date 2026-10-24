@@ -54,6 +54,15 @@ describe('capitalLook', () => {
     // (the export's whole metal brought down to paint, a dielectric as the game's; a material made plain left plain)
     expect(engine.material.metalness).toBe(0);
     expect(hull.material.metalness).toBe(0);
+    // (a map of where the metal is keeps a little of it, never a chrome hull)
+    const chrome = new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshStandardMaterial({ name: 'Material_0', map: new THREE.Texture(), metalnessMap: new THREE.Texture(), metalness: 1 }));
+    const generated = new THREE.Group();
+    generated.add(chrome);
+    dressCapital(generated, 'interdictor');
+    expect(chrome.material.metalness).toBeGreaterThan(0);
+    expect(chrome.material.metalness).toBeLessThanOrEqual(0.2);
+    // (and its map, painted darker than the Imperial grey, brought up to it)
+    expect(chrome.material.color.r).toBeGreaterThan(1.5);
     // (and the nozzles' glows, one mesh)
     expect(done.nozzles).toHaveLength(2);
     expect(holder.children.filter((o) => o.userData.glows)).toHaveLength(1);
