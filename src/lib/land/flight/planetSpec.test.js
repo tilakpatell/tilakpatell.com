@@ -4,7 +4,9 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { TERRAIN_VERSION, TYPE_BIOMES, planetSpecOf as specWith } from './planetSpec';
 import { WORLDS } from './planetTables';
-import { EXPANSE, PLANETS, planetSpecOf } from './fixtures/expanse.js';
+import { planetField } from './field';
+import { clutterKitOf } from './landmarkTables';
+import { EXPANSE, PLANETS, lifeFor, planetSpecOf } from './fixtures/expanse.js';
 
 const ROOT = fileURLToPath(new URL('../../../..', import.meta.url));
 const GALAXY = 'tatooine hoth endor yavin bespin dagobah mustafar coruscant naboo kashyyyk kamino geonosis scarif nevarro mandalore lothal sorgan'.split(' ');
@@ -156,5 +158,29 @@ describe('TERRAIN_VERSION', () => {
   it('is bumped whenever a planet’s ground changes', () => {
     expect(Number.isInteger(TERRAIN_VERSION) && TERRAIN_VERSION >= 1).toBe(true);
     expect(groundHash(), `the ground changed: bump TERRAIN_VERSION and add GROUND[${TERRAIN_VERSION + 1}]`).toBe(GROUND[TERRAIN_VERSION]);
+  });
+});
+
+// The fifty as the endless universe found them (its spec, section E: “The 50
+// roster planets keep their plane ground exactly as it is”): every field the
+// flight read then, the ground under five points, their life and clutter kits.
+// New fields go beside these, never into them, so this never moves.
+const ROSTER_LOCK = '707fb49f';
+const ROSTER_KEYS = ['id', 'name', 'seed', 'type', 'climate', 'biomes', 'pois', 'pits', 'palette', 'clutter', 'step', 'soft', 'ground', 'water', 'fog', 'landmarks', 'hero'];
+const ROSTER_POINTS = [[0, 0], [1234.5, -987.25], [-15000, 8000], [30000, 30000], [-4321, -27000]];
+function rosterHash() {
+  const text = JSON.stringify(PLANETS.map(({ id }) => {
+    const s = planetSpecOf(id);
+    const f = planetField(s);
+    return [ROSTER_KEYS.map((k) => s[k] ?? null), ROSTER_POINTS.map(([x, z]) => f.heightAt(x, z).toFixed(4)), lifeFor(s), clutterKitOf(s)];
+  }));
+  let h = 0x811c9dc5;
+  for (let i = 0; i < text.length; i++) h = Math.imul(h ^ text.charCodeAt(i), 0x01000193);
+  return (h >>> 0).toString(16).padStart(8, '0');
+}
+
+describe('the roster', () => {
+  it('is as it was: the fifty’s fields, ground, life and kits', () => {
+    expect(rosterHash()).toBe(ROSTER_LOCK);
   });
 });
