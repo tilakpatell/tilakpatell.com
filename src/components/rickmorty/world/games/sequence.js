@@ -1,12 +1,12 @@
 // The sequence kind (the spec's "spots in order, against a clock"): the
-// cable studio's game, and later Gear World's cogs. A running order of the
-// place's sets is dealt; each set used in its turn is switched on, and the
-// last one on is the win. A wrong set turns every set dark again, back to
+// cable studio's game, Gear World's cogs and Heist-Con's job. A running order
+// of the place's sets is dealt; each set used in its turn is switched on, and
+// the last one on is the win. A wrong set turns every set dark again, back to
 // the first, while the clock runs on; one already on, used again, costs
 // nothing. The clock runs from the place's start spot (the control booth's
-// countdown), or from the first set used where there's none; out of time and
-// it's lost, as caught is (and, held for the place, from its say-so: Heist-Con's
-// crew). Pure and import-free, stepped by the place's stage
+// countdown), once the place says so where it holds it (Heist-Con's crew), or
+// from the first set used where there's no start spot; out of time and it's
+// lost, as caught is. Pure and import-free, stepped by the place's stage
 // (../dimensions/stage.js) inside its own update, its presses at no time and
 // then the clock; tested in Node.
 //
