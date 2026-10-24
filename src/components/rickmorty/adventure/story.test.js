@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { EPISODES } from './episodes';
-import { coordinates, current, dialOpen, feed, fresh, lockNote, objective, valid } from './story';
+import { CITADEL_PAGE, coordinates, current, dialOpen, feed, fresh, lockNote, objective, stepPage, valid } from './story';
 import { newsOf } from './hud';
 
 // a small book: two episodes, the first `task a` then `all [task b, win w]`
@@ -139,6 +139,19 @@ describe('the adventure’s story', () => {
     // an area of C-137's isn't a page
     const room = [{ ...BOOK[0], steps: [{ type: 'enter', area: 'garage', text: 'Go to the garage.' }] }];
     expect(objective(fresh(), { episodes: room, ready: 1 }).to).toBe(null);
+  });
+
+  it('points the Citadel’s steps at its page', () => {
+    const book = [{ ...BOOK[0], steps: [{ type: 'citadel', id: 'out', text: 'Get out of the Citadel.' }] }];
+    expect(objective(fresh(), { episodes: book, ready: 1 })).toEqual({ text: 'Get out of the Citadel.', to: '/c-137/citadel' });
+    expect(CITADEL_PAGE).toBe('/c-137/citadel');
+    expect(CITADEL_PAGE).toBe(EPISODES[9].steps[0].area.slice('page:'.length));
+    expect(stepPage({ type: 'citadel', id: 'out' })).toBe(CITADEL_PAGE);
+    expect(stepPage({ type: 'enter', area: 'page:/x' })).toBe('/x');
+    // C-137's own: an area, a task, an `all`
+    expect(stepPage({ type: 'enter', area: 'garage' })).toBe(null);
+    expect(stepPage({ type: 'task', id: 'diner' })).toBe(null);
+    expect(stepPage({ type: 'all', steps: [{ type: 'citadel', id: 'out' }] })).toBe(null);
   });
 
   it('hears talks, uses and the Citadel’s steps, and catches up on the Citadel', () => {
