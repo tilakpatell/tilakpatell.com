@@ -32,7 +32,8 @@ import RmEarnNote from '../RmEarnNote';
 import { useAdventure } from '../adventure/useAdventure';
 import { EPISODES } from '../adventure/episodes';
 import EpisodeCard from '../adventure/EpisodeCard';
-import { asksCard, storyLead } from './storyline';
+import { newsOf } from '../adventure/hud';
+import { ENTER, asksCard, atDoor, storyLead } from './storyline';
 import { useRmEarn } from '../useRmEarn';
 import { seedsOf } from '../earn';
 import GuideCue from '../../guide/GuideCue';
@@ -118,12 +119,24 @@ export default function CitadelWorld({ onLeave, leaveLabel = 'Back to C-137', fr
   const { unlock } = useAchievements();
   // (a quest done pays into the one wallet, once: useRmEarn's ledger knows what the save had)
   const { earn, note: earned } = useRmEarn(() => seedsOf('citadel', done));
-  // the Rick and Morty adventure (../adventure/) told it's here, and each step
-  // the Citadel takes (outside the updater, which React may run twice)
-  const { feed } = useAdventure();
+  // the Rick and Morty adventure (../adventure/) told it's here (again if the
+  // story comes to its door while it's open: a tab, a jump), and each step the
+  // Citadel takes (outside the updater, which React may run twice); what it says
+  // back waits, added to (StrictMode feeds twice, the second to nothing)
+  const { feed, state: storyAt } = useAdventure();
+  const [news, setNews] = useState([]);
+  const tell = useCallback(
+    (e) => {
+      const out = feed(e);
+      if (out.length) setNews((n) => [...n, ...out]);
+    },
+    [feed],
+  );
+  const heardNews = useCallback((k) => setNews((n) => n.slice(k)), []);
+  const door = atDoor(storyAt);
   useEffect(() => {
-    feed({ type: 'enter', area: 'page:/c-137/citadel' });
-  }, [feed]);
+    tell(ENTER);
+  }, [tell, door]);
   const complete = useCallback(
     (id) => {
       const taken = !doneRef.current.includes(id) && citadelProgress([...doneRef.current, id]).done.includes(id);
@@ -135,15 +148,15 @@ export default function CitadelWorld({ onLeave, leaveLabel = 'Back to C-137', fr
       });
       earn('citadel', id);
       if (SEAL[id]) unlock(SEAL[id]);
-      if (taken) feed({ type: 'citadel', id });
+      if (taken) tell({ type: 'citadel', id });
     },
-    [unlock, earn, feed],
+    [unlock, earn, tell],
   );
   const world = three.on && gl !== 'failed' && gl !== 'lost';
   return (
     <section className="shire-world citadel-world" aria-labelledby="citadel-title" data-mode={world ? '3d' : 'cards'}>
       <RmEarnNote note={earned} />
-      {world ? <World prog={prog} done={done} complete={complete} gl={gl} setGl={setGl} onLeave={onLeave} leaveLabel={leaveLabel} frozen={frozen} onHangar={onHangar} /> : <Cards prog={prog} three={three} gl={gl} retry={() => setGl('loading')} />}
+      {world ? <World prog={prog} done={done} complete={complete} gl={gl} setGl={setGl} onLeave={onLeave} leaveLabel={leaveLabel} frozen={frozen} onHangar={onHangar} news={news} heardNews={heardNews} /> : <Cards prog={prog} three={three} gl={gl} retry={() => setGl('loading')} />}
     </section>
   );
 }
@@ -151,7 +164,7 @@ export default function CitadelWorld({ onLeave, leaveLabel = 'Back to C-137', fr
 // others online on the concourse (middleearth/towns/useTravellers), as Ricks from other dimensions
 const ROOM = { bound: 160, motion: true };
 
-function World({ prog, done, complete, gl, setGl, onLeave, leaveLabel, frozen, onHangar }) {
+function World({ prog, done, complete, gl, setGl, onLeave, leaveLabel, frozen, onHangar, news, heardNews }) {
   const touch = useMediaQuery('(hover: none) and (pointer: coarse)');
   const trav = useTravellers('citadel', gl === 'on', ROOM);
   const [box, inView] = useInView({ rootMargin: '0px', threshold: 0.3 });
@@ -210,7 +223,7 @@ function World({ prog, done, complete, gl, setGl, onLeave, leaveLabel, frozen, o
   }, []);
   useEffect(() => {
     if (!toast) return undefined;
-    const t = setTimeout(() => setToast(null), 4600);
+    const t = setTimeout(() => setToast(null), toast.name ? 5600 : 4600); // (a story line stays up as long as C-137 keeps one)
     return () => clearTimeout(t);
   }, [toast]);
 
@@ -240,7 +253,7 @@ function World({ prog, done, complete, gl, setGl, onLeave, leaveLabel, frozen, o
     a.tune?.(); // (behind ?debug: the shake's numbers)
     a.setLooks?.(looksRef.current); // (a look picked while it loaded)
     // (cue: something for the people to react to, as the world would say it: { type: 'seen', id } …)
-    if (import.meta.env.DEV) window.__CITADEL__ = { api: a, sim: sim.current, complete, down: () => liftRef.current?.down(true), up: () => liftRef.current?.up(), cue: (c) => sim.current?.cues.push(c), emote: (id) => sim.current && (sim.current.emote = { id, at: sim.current.t }) }; // for the QA scripts
+    if (import.meta.env.DEV) window.__CITADEL__ = { api: a, sim: sim.current, complete, enter: (id) => enterRef.current?.(id), down: () => liftRef.current?.down(true), up: () => liftRef.current?.up(), cue: (c) => sim.current?.cues.push(c), emote: (id) => sim.current && (sim.current.emote = { id, at: sim.current.t }) }; // for the QA scripts
     setGl('on');
     // left in Mortytown last time: back down the lift
     if (sim.current.autoDown) {
@@ -264,6 +277,7 @@ function World({ prog, done, complete, gl, setGl, onLeave, leaveLabel, frozen, o
       s.air?.stop();
       s.siren?.stop();
       api.current = null;
+      if (import.meta.env.DEV && window.__CITADEL__?.sim === s) delete window.__CITADEL__; // (gone with its page)
     };
   }, []);
 
@@ -272,10 +286,9 @@ function World({ prog, done, complete, gl, setGl, onLeave, leaveLabel, frozen, o
   const live = gl === 'on' && inView && showing && !frozen;
   const hasHangar = Boolean(onHangar);
 
-  // the story (../adventure/): the visit's episode card, asked for once the
-  // world's live (so it's seen, not timed out in a hidden tab) and only in an
-  // episode with a step here (asking takes it: ./storyline.js); the world
-  // holds while it's up
+  // the story (../adventure/): the visit's episode card, asked for once the world's
+  // live (seen, not timed out in a hidden tab) and only in an episode with a step
+  // here (asking takes it: ./storyline.js); the world holds while it's up
   const story = useAdventure();
   const { intro } = story;
   const [card, setCard] = useState(null);
@@ -288,6 +301,17 @@ function World({ prog, done, complete, gl, setGl, onLeave, leaveLabel, frozen, o
     const n = intro();
     if (n != null) setCard(n);
   }, [live, asks, intro]);
+  // what the story said back, once the world's live and the toast before it
+  // has gone (the scene's own ending first): an episode's closing line, named
+  // and kept up as long as C-137 keeps one, and the next one's card
+  useEffect(() => {
+    if (!news.length || !live || toast) return;
+    const said = newsOf(news);
+    heardNews(news.length);
+    const line = said.say.at(-1);
+    if (line) setToast({ text: line.text, name: line.who, at: Date.now() });
+    if (said.card != null) setCard(said.card);
+  }, [news, live, toast, heardNews]);
 
   // the concourse's hum, while it's on screen
   useEffect(() => {
@@ -349,6 +373,7 @@ function World({ prog, done, complete, gl, setGl, onLeave, leaveLabel, frozen, o
   // ── the lift down to Mortytown, and back up ──
   // (Mortytown is built the first time: the lift waits for it)
   const liftRef = useRef(null);
+  const enterRef = useRef(null); // (for the QA scripts' hook: E at a spot)
   const [townLoading, setTownLoading] = useState(false);
   const goDown = useCallback(
     async () => {
@@ -468,6 +493,7 @@ function World({ prog, done, complete, gl, setGl, onLeave, leaveLabel, frozen, o
     },
     [onLeave, say, later, complete, outside, goDown, goUp],
   );
+  enterRef.current = enter;
 
   // a reply picked, or on to the next line
   const talkOnward = useCallback(
@@ -1148,8 +1174,8 @@ function World({ prog, done, complete, gl, setGl, onLeave, leaveLabel, frozen, o
       {!walking && <h1 id="citadel-title" className="sr-only">The Citadel of Ricks</h1>}
 
       {toast && (
-        <p className="shire-toast" data-bad={toast.bad || undefined} role="status" key={toast.at}>
-          {toast.text}
+        <p className="shire-toast" data-bad={toast.bad || undefined} data-story={toast.name ? '' : undefined} role="status" key={toast.at}>
+          {toast.name && <b>{toast.name}</b>} {toast.text}
         </p>
       )}
 

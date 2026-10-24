@@ -21,7 +21,8 @@
 .citadel-stage .shire-title,
 .citadel-stage .shire-door-name,
 .citadel-stage .shire-panel-title,
-.citadel-stage .shire-bubble b { font-family: 'Orbitron', var(--font-sans); letter-spacing: 0.02em; }
+.citadel-stage .shire-bubble b,
+.citadel-stage .shire-toast b { font-family: 'Orbitron', var(--font-sans); letter-spacing: 0.02em; }
 .citadel-stage .shire-title { font-weight: 800; font-size: clamp(1.35rem, 0.9rem + 1.8vw, 2.4rem); text-shadow: 0 2px 18px rgba(8, 14, 30, 0.7), 0 0 2px rgba(8, 14, 30, 0.6); }
 .citadel-stage .shire-meter-bar span { background: linear-gradient(90deg, #f3d84b, #6ff3ff); }
 .citadel-stage[data-mood='red'] { --shire-gold: #ff5a68; --shire-line: rgba(255, 90, 104, 0.45); --shire-glass: rgba(40, 14, 22, 0.78); --shire-glass-hi: rgba(48, 16, 26, 0.92); }
@@ -35,6 +36,11 @@
 /* an episode's card (../adventure/EpisodeCard.jsx) on the Citadel's glass:
    its cyan (red on red alert) for C-137's lime, and its panels' edge */
 .citadel-stage .rm-episode { --rm-ink: #070a14; --rm-glass: var(--shire-glass-hi); --rm-lime: var(--shire-gold); border: 1px solid var(--shire-line); border-radius: 12px; box-shadow: 0 14px 40px rgba(0, 0, 0, 0.35); }
+
+/* the story's closing line on the toast (./CitadelWorld.jsx): who says it, in
+   the Citadel's cyan, and up as long as C-137 keeps one */
+.citadel-stage .shire-toast b { color: var(--shire-gold); }
+.citadel-stage .shire-toast[data-story] { animation-duration: 5.2s; }
 
 .citadel-voters { cursor: default; }
 .citadel-wanted { cursor: default; border-color: rgba(255, 90, 104, 0.7); color: #ffd6da; animation: citadel-wanted 1.2s ease-in-out infinite; }
