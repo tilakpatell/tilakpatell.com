@@ -1,10 +1,10 @@
-// The browser check's scenarios for episodes 5 to 9 (../rm-story-check.mjs):
+// The browser check's scenarios for episodes 5 to 10 (../rm-story-check.mjs):
 // the cruiser's chase and the Gromflomite base, Needful Things and the vat,
 // the Jerryboree and St. Gloopy Noops, the cable studio and Get Schwifty,
-// Fantasy World's climb and Froopyland.
+// Fantasy World's climb and Froopyland, and the Citadel.
 /* global window, document */
 import { COURSE, chaseStart, newChase } from '../../src/components/rickmorty/world/games/chase.js';
-import { BASE, OUT, N, check, done, built, goto, use, story, reads, WIPED, SMALL, HEAT, DEALS, JERRY, throughPortal, toast, inArea, cardFor, at, opens, warpUse, caught, before, chasing, playTo, game, homeOf, spotAt, wayInOf, place, PRIME, FAIRY, CITADEL, standOn, later, PLACES } from './helpers.mjs';
+import { BASE, OUT, N, check, done, built, goto, use, story, reads, WIPED, SMALL, HEAT, DEALS, JERRY, throughPortal, toast, inArea, cardFor, at, opens, warpUse, caught, before, chasing, playTo, game, homeOf, spotAt, wayInOf, place, PRIME, FAIRY, CITADEL, CITADEL_LINE, citadelUp, citadelReads, citadelToast, standOn, later, PLACES } from './helpers.mjs';
 
 export const LATE = {
   // a new visitor plays episode 5: the cruiser's chase (taking off ticks
@@ -472,5 +472,59 @@ export const LATE = {
     // (the step's on the Citadel's page: the line's a link there)
     const to = await page.evaluate(() => document.querySelector('.rm-hud .rm-objective-link')?.getAttribute('href') ?? null);
     check(to?.endsWith('#/c-137/citadel'), `episode 10's line doesn't link to the Citadel (${to})`);
+  },
+  // a new visitor plays episode 10: through the garage portal to the Citadel
+  // (its card was C-137's, so none here), the story's step over the
+  // Citadel's own line through its scenes; home mid-chain, where the line
+  // links back, and back by it (no card again); the vote and red alert; the
+  // real escape in the cruiser, its own line first and then Morty's closing
+  // line; every place open; and home, the checklist's next
+  async 'episode-10'(page) {
+    const three = ['daycare', 'wafers', 'council'];
+    await playTo(page, 9, ['cabinet', 'chase']);
+    await at(page, 9, 0, 'at episode 10');
+    await reads(page, CITADEL.steps[0].text);
+    check((await page.evaluate(() => window.__C137__.dial('citadel'))) === 'citadel', 'the dial wouldn’t take the Citadel');
+    await throughPortal(page);
+    await page.waitForFunction(() => window.location.hash.startsWith('#/c-137/citadel'), null, { timeout: 20000 }).catch(() => {
+      throw new Error('the portal didn’t open on the Citadel');
+    });
+    await citadelUp(page);
+    await page.waitForTimeout(1500);
+    check((await page.locator('.rm-episode').count()) === 0, 'episode 10’s card showed again at the Citadel');
+    await at(page, 9, 1, 'once at the Citadel');
+    await citadelReads(page, CITADEL.steps[1].text, CITADEL_LINE([]));
+    if (OUT) await page.screenshot({ path: `${OUT}/episode-10-line.png` });
+    for (const id of three) await page.evaluate((id) => window.__CITADEL__.complete(id), id);
+    await citadelReads(page, CITADEL.steps[1].text, CITADEL_LINE(three));
+    // home mid-chain: C-137's line links back, and following it shows no card
+    await page.getByRole('link', { name: 'Back to Dimension C-137' }).click();
+    await inArea(page, 'garage');
+    check(!(await page.evaluate(() => Boolean(window.__CITADEL__))), 'the Citadel’s dev hook outlived its page');
+    await reads(page, CITADEL.steps[1].text);
+    await page.locator('.rm-hud .rm-objective-link').click();
+    await citadelUp(page);
+    await page.waitForTimeout(1500);
+    check((await page.locator('.rm-episode').count()) === 0, 'a card showed coming back to the Citadel');
+    await citadelReads(page, CITADEL.steps[1].text, CITADEL_LINE(three));
+    // the vote: red alert, then the real escape (E at the hangar)
+    await page.evaluate(() => window.__CITADEL__.complete('votemorty'));
+    await page.locator('.citadel-stage[data-mood="red"]').waitFor({ timeout: 10000 });
+    await citadelReads(page, CITADEL.steps[1].text, CITADEL_LINE([...three, 'votemorty']));
+    await page.evaluate(() => window.__CITADEL__.enter('hangar'));
+    await citadelToast(page, 'The cruiser’s away');
+    // (the escape's own line isn't cut short by the episode's)
+    await page.waitForTimeout(3000);
+    check((await page.locator('.citadel-stage .shire-toast', { hasText: 'The cruiser’s away' }).count()) === 1, 'the episode’s closing line cut the escape’s short');
+    await citadelToast(page, CITADEL.outro[0][1], CITADEL.outro[0][0]);
+    if (OUT) await page.screenshot({ path: `${OUT}/episode-10-outro.png` });
+    await at(page, 10, 0, 'after the escape');
+    await opens(page, [...CITADEL.unlocks, 'evilrick'], true, 'after episode 10');
+    check((await page.locator('.rm-episode').count()) === 0, 'a card showed for an episode that isn’t built');
+    await citadelReads(page, null, CITADEL_LINE([...three, 'votemorty', 'citadelout']));
+    // home: past the last built episode, the objective is the checklist's next
+    await page.getByRole('link', { name: 'Back to Dimension C-137' }).click();
+    await inArea(page, 'garage');
+    await reads(page, 'Go into the Smith house and put interdimensional cable on the TV.');
   },
 };
