@@ -201,7 +201,8 @@ export const SECTOR_CHECKS = {
       await page.locator('.rm-episode', { hasText: 'Episode 12' }).waitFor({ timeout: 5000 }).catch(() => {
         throw new Error('no card for episode 12 on Squanch’s own page');
       });
-      check((await page.locator('.rm-episode').count()) === 1, 'more than one card on Squanch’s own page');
+      const card = await page.locator('.rm-episode').textContent();
+      check(card.includes(SCORE.title) && card.includes(SCORE.intro[0][1]), `episode 12’s card on Squanch’s own page says “${card}”`);
       await page.waitForFunction(() => !document.querySelector('.rm-clock'), null, { timeout: 1500, polling: 50 }).catch(() => {
         throw new Error('the escape’s clock ran on under Morty’s line');
       });
@@ -215,6 +216,7 @@ export const SECTOR_CHECKS = {
       await openOnCard(page, '#/c-137', 11);
       await reads(page, SCORE.steps[0].text);
       await page.waitForTimeout(2000);
+      check((await page.locator('.rm-episode').count()) === 0, 'episode 12’s card came back in C-137');
       check((await page.locator('.rm-toast', { hasText: SECTOR.outro[0][1] }).count()) === 0, 'Morty’s line was said again in C-137');
     },
     { seed: { 'tp-rm-story': { v: 1, data: { episode: 10, step: 0, got: [], wins: ['cabinet', 'chase'], freeRoam: false } }, 'tp-c137-done': ['birdworld', 'gearworld', 'pluto'] } },
