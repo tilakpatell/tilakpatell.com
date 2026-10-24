@@ -100,13 +100,15 @@ async function theEnd(page) {
   await use(page, 'dial');
   await toast(page, EVIL.outro[0][1]);
   check((await page.locator('.rm-dial-box').count()) === 0, 'the dial opened over Rick’s last line');
+  // (nothing over it while it's up)
+  const top = await page.evaluate((text) => {
+    const t = [...document.querySelectorAll('.rm-toast')].find((o) => o.textContent.includes(text));
+    const r = t?.getBoundingClientRect();
+    return Boolean(r && document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2)?.closest('.rm-toast') === t);
+  }, EVIL.outro[0][1]);
+  check(top, 'something lay over Rick’s last line');
   await later(page, 1.5);
   check((await page.locator('.rm-dial-box').count()) === 0, 'the dial opened over Rick’s last line');
-  const top = await page.evaluate(() => {
-    const r = document.querySelector('.rm-toast').getBoundingClientRect();
-    return Boolean(document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2)?.closest('.rm-toast'));
-  });
-  check(top, 'something lay over Rick’s last line');
   await at(page, 13, 0, 'at the end');
   await reads(page, CABLE);
   await noLink(page, 'at the end');
