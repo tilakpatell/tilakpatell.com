@@ -168,6 +168,19 @@ describe('a duel’s hunter (Hemorrhage, Evil Rick: ./dimensions/duel.js)', () =
     expect(N.hunting).toBe(false);
     expect(events.filter(([name]) => name === 'bark').length).toBeGreaterThanOrEqual(1);
   });
+
+  it('once he’s down, says nothing more: no bark from the ground, his hands still', () => {
+    const N = createNpcs({ id: 'evilrick', area: AREA });
+    const c = figure();
+    const n = N.add(c, { x: 0, z: -2, face: 0, ai: { ...duel, bark: { r: 9, every: 14, lines: ['Another Morty.'] } }, id: 'evilrick' });
+    N.hunt(true);
+    run(N, [n], 0.1, () => ({ x: 0, z: 4 }));
+    for (let i = 0; i < 5; i++) N.hit('evilrick');
+    const says = reacts(c, 'say').length;
+    const { events } = run(N, [n], 30, () => ({ x: 0, z: 4 }), { t0: 1 });
+    expect(events.filter(([name]) => name === 'bark')).toEqual([]);
+    expect(reacts(c, 'say').length).toBe(says);
+  });
 });
 
 describe('a local’s body', () => {
