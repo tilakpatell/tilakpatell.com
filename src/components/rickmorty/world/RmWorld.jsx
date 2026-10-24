@@ -381,7 +381,7 @@ export default function RmWorld({ start = null, onLeave = null, frozen = false, 
   // back: an episode's closing line, and the next one's card (a new
   // visitor's first, once C-137's world is on). While something's open over
   // the page what it says waits, and is said as that closes.
-  const { feed, intro } = useAdventure();
+  const { feed, intro, takeUnsaid } = useAdventure();
   const [card, setCard] = useState(null);
   const closeCard = useCallback(() => setCard(null), []);
   const held = useRef([]);
@@ -405,7 +405,8 @@ export default function RmWorld({ start = null, onLeave = null, frozen = false, 
     if (gl !== 'on' || planet) return;
     const n = intro();
     if (n != null) setCard(n);
-  }, [gl, planet, intro]);
+    show(takeUnsaid()); // (what the Citadel left before it could say it)
+  }, [gl, planet, intro, show, takeUnsaid]);
   const tellDone = useCallback((ids) => {
     const names = ids.map((id) => TASKS.find((t) => t.id === id)?.name).filter(Boolean);
     const p = progress(doneRef.current);

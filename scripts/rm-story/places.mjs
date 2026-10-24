@@ -9,7 +9,8 @@
 //   wayIn(d) → z                             where a catch puts him back
 //   home(d) → [x, z, face]                   in front of the portal home, facing it
 //   ledgeOf(d, id) → [x, z, top]             a ledge Morty stands on (a climb's: src/components/rickmorty/world/games/climb.js)
-//   loadPlaces(root) → { dest(id), spot(area, id), ledge(area, id) }   the data, read through Vite
+//   loadPlaces(root) → { dest(id), spot(area, id), ledge(area, id), citadel(done) }   the data, read through Vite
+//                                            (citadel: the Citadel's own line for the scenes made, ../../src/components/rickmorty/citadel/story.js)
 
 export const N = Math.PI / 2;
 
@@ -32,8 +33,10 @@ export async function loadPlaces(root) {
   const { createServer } = await import('vite');
   const vite = await createServer({ root, cacheDir: 'node_modules/.vite-rm-story', optimizeDeps: { noDiscovery: true, include: [] }, server: { middlewareMode: true, hmr: false, ws: false, watch: null }, appType: 'custom', logLevel: 'error' });
   let destinationById;
+  let citadelProgress;
   try {
     ({ destinationById } = await vite.ssrLoadModule('/src/components/rickmorty/world/dimensions/destinations.js'));
+    ({ citadelProgress } = await vite.ssrLoadModule('/src/components/rickmorty/citadel/story.js'));
   } finally {
     await vite.close();
   }
@@ -47,5 +50,5 @@ export async function loadPlaces(root) {
     if (!h) throw new Error(`${area} has no spot ${id} in the data`);
     return h;
   };
-  return { dest, spot, ledge: (area, id) => ledgeOf(dest(area), id) };
+  return { dest, spot, ledge: (area, id) => ledgeOf(dest(area), id), citadel: (done) => citadelProgress(done).objective };
 }

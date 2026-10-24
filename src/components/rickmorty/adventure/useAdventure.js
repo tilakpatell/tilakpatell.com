@@ -18,10 +18,10 @@ function adventure() {
   return store;
 }
 
-// { started, intro, state, objective, feed, dialOpen, coordinates, lockNote, setFreeRoam }
+// { started, intro, state, objective, feed, dialOpen, coordinates, lockNote, setFreeRoam, keepUnsaid, takeUnsaid }
 export function useAdventure() {
   const a = adventure();
   // (the server's snapshot is the same: the tests render with renderToStaticMarkup)
   const state = useSyncExternalStore(a.on, a.get, a.get);
-  return { started: a.started, intro: a.intro, state, objective: a.objective(), feed: a.feed, dialOpen: a.dialOpen, coordinates: a.coordinates, lockNote: a.lockNote, setFreeRoam: a.setFreeRoam };
+  return { started: a.started, intro: a.intro, state, objective: a.objective(), feed: a.feed, dialOpen: a.dialOpen, coordinates: a.coordinates, lockNote: a.lockNote, setFreeRoam: a.setFreeRoam, keepUnsaid: a.keepUnsaid, takeUnsaid: a.takeUnsaid };
 }

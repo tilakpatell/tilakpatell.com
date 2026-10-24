@@ -88,12 +88,18 @@ export function feed(state, event, opts = {}) {
   return { state: s, out };
 }
 
+// where a step is played when that's a page of its own (the objective's link
+// from C-137): an enter-a-page step's page, and the Citadel's steps, its page
+export const CITADEL_PAGE = '/c-137/citadel';
+export function stepPage(step) {
+  if (step.type === 'enter' && step.area.startsWith('page:')) return step.area.slice('page:'.length);
+  return step.type === 'citadel' ? CITADEL_PAGE : null;
+}
+
 // the objective line, and the page it's on when it's on another
 export function objective(state, opts) {
   const at = current(state, opts);
-  if (!at) return null;
-  const { area } = at.step;
-  return { text: at.step.text, to: at.step.type === 'enter' && area.startsWith('page:') ? area.slice('page:'.length) : null };
+  return at ? { text: at.step.text, to: stepPage(at.step) } : null;
 }
 
 // the dial places the story has opened: the start, each finished episode's,

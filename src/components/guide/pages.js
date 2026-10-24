@@ -630,6 +630,7 @@ export const PAGES = {
       ['The Council', 'Answer the way C-137 would. Grovelling gets you held in contempt.'],
       ['Election day', 'Once the first three are done: hear out three voters, then vote at Candidate Morty’s booth.'],
       ['Red alert', 'The Cop Ricks see in a cone and hear you running. The core, the kiosks and the planters hide you; the benches don’t. Get to the hangar.'],
+      ['The story', 'The Citadel is episode 10 of the story: its step heads the line at the top, and getting away in the cruiser ends it.'],
     ],
   },
   '/dot-matrix': {

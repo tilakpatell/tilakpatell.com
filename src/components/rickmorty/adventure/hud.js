@@ -1,6 +1,6 @@
 // What the HUD shows of the story, worked out apart from the drawing so
-// RmWorld only calls it: the objective line, what an event's out says, the
-// task the map's marker points at, and the dial's locks. Pure.
+// RmWorld and the Citadel only call it: the objective line, what an event's
+// out says, the task the map's marker points at, and the dial's locks. Pure.
 
 import { EPISODES } from './episodes';
 import { coordinates, current, dialOpen, lockNote } from './story';

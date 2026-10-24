@@ -7,8 +7,9 @@
 // played to an episode's start, a catch seen through, Morty stood on a
 // ledge, time waited out on the game's own clock; and where a place
 // through the portal has its way in, its portal home and its spots, read
-// from its data (./places.mjs). Kept apart from the scenarios so no file
-// passes 800 lines.
+// from its data (./places.mjs); and at the Citadel (window.__CITADEL__), its
+// page up, its line read (the story's step over its own) and its toast
+// waited for. Kept apart from the scenarios so no file passes 800 lines.
 import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { EPISODES } from '../../src/components/rickmorty/adventure/episodes.js';
@@ -75,6 +76,11 @@ export async function reads(page, text) {
     throw new Error(`the objective reads “${await page.locator('.rm-hud .rm-objective').first().textContent()}”, not “${text}”`);
   });
 }
+// the objective line is a link, to `hash`
+export async function linksTo(page, hash) {
+  const to = await page.evaluate(() => document.querySelector('.rm-hud .rm-objective-link')?.getAttribute('href') ?? null);
+  check(to?.endsWith(hash), `the objective line doesn’t link to ${hash} (${to})`);
+}
 export const WIPED = EPISODES[0];
 export const ARCADE = EPISODES[1];
 export const GUESTS = EPISODES[2];
@@ -84,6 +90,7 @@ export const DEALS = EPISODES[5];
 export const JERRY = EPISODES[6];
 export const PRIME = EPISODES[7];
 export const FAIRY = EPISODES[8];
+export const CITADEL = EPISODES[9];
 // Morty by the garage portal, stepped through it, and stood where it took him
 export async function throughPortal(page) {
   await goto(page, 'garage', -302.3, 101.4, Math.PI);
@@ -190,3 +197,50 @@ export async function later(page, s) {
   await page.waitForFunction((t) => window.__C137__.sim.t >= t, t0 + s, { timeout: 120000, polling: 16 });
 }
 export const rickallOn = (page) => page.waitForFunction(() => window.__C137__.sim.rickall?.phase === 'on', null, { timeout: 300000, polling: 250 });
+
+// the Citadel's own line for the scenes made (its next scene's, or the one for when it's all done), as its data has it
+export const CITADEL_LINE = PLACES.citadel;
+// the Citadel's page up: its 3D world built, scrolled into view (it's only live in view) and drawing frames
+export async function citadelUp(page) {
+  await page.waitForFunction(() => window.__CITADEL__?.api || document.querySelector('.citadel-world')?.dataset.mode === 'cards', null, { timeout: 600000, polling: 1000 });
+  check(await page.evaluate(() => Boolean(window.__CITADEL__?.api)), 'the Citadel’s 3D world didn’t start');
+  await page.evaluate(() => document.querySelector('.citadel-world')?.scrollIntoView({ block: 'start' }));
+  const f0 = await page.evaluate(() => window.__CITADEL__.sim.frame);
+  await page.waitForFunction((f) => window.__CITADEL__?.sim.frame > f + 2, f0, { timeout: 120000, polling: 100 }).catch(() => {
+    throw new Error('the Citadel isn’t drawing');
+  });
+}
+// the Citadel's line: the story's step over it (or null), its own words, and whether it links anywhere
+export const citadelLine = (page) =>
+  page.evaluate(() => {
+    const o = document.querySelector('.citadel-stage .shire-objective');
+    if (!o) return null;
+    const lead = o.querySelector('.citadel-objective-story');
+    const own = o.cloneNode(true);
+    own.querySelector('.citadel-objective-story')?.remove();
+    return { story: lead?.textContent.trim() ?? null, text: own.textContent.replace('◆', '').trim(), link: Boolean(o.querySelector('a')) };
+  });
+export async function citadelReads(page, story, text) {
+  await page.waitForFunction(
+    ([story, text]) => {
+      const o = document.querySelector('.citadel-stage .shire-objective');
+      if (!o || o.querySelector('a')) return false;
+      const lead = o.querySelector('.citadel-objective-story')?.textContent.trim() ?? null;
+      const own = o.cloneNode(true);
+      own.querySelector('.citadel-objective-story')?.remove();
+      return lead === story && own.textContent.replace('◆', '').trim() === text;
+    },
+    [story, text],
+    { timeout: 10000 },
+  ).catch(async () => {
+    throw new Error(`the Citadel’s line reads ${JSON.stringify(await citadelLine(page))}, not ${JSON.stringify({ story, text, link: false })}`);
+  });
+}
+// the Citadel's toast saying `text`, and who says it when that's named
+export async function citadelToast(page, text, name = null) {
+  const t = page.locator('.citadel-stage .shire-toast', { hasText: text });
+  await t.waitFor({ timeout: 15000 }).catch(() => {
+    throw new Error(`no toast at the Citadel saying “${text}”`);
+  });
+  if (name) check((await t.locator('b').first().textContent().catch(() => null))?.trim() === name, `the toast “${text}” isn’t ${name}’s`);
+}

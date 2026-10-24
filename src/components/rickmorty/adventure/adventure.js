@@ -33,6 +33,7 @@ export function createAdventure({ saves, read, episodes, ready }) {
   saves.set(STORY_KEY, state);
 
   let asked = false;
+  let unsaid = []; // (what a page left before it could say it: the next to show the story says it)
   const listeners = new Set();
   const tell = () => {
     for (const fn of listeners) fn();
@@ -62,6 +63,16 @@ export function createAdventure({ saves, read, episodes, ready }) {
       return !state.freeRoam && current(state, book) && (!begun(state) || !begun(opened)) ? state.episode : null;
     },
     get: () => state,
+    // what the story said back that a page left before it could say (the
+    // Citadel left mid-toast), kept for the next page to say, and taken once
+    keepUnsaid(out) {
+      unsaid = [...unsaid, ...out];
+    },
+    takeUnsaid() {
+      const out = unsaid;
+      unsaid = [];
+      return out;
+    },
     feed(event) {
       const r = feed(state, event, { ...book, known: known() });
       put(r.state);

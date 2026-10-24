@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { edges, readPad } from './pad';
+import { edges, readPad, stirs } from './pad';
 
 const pad = (o) => ({ connected: true, mapping: 'standard', axes: [0, 0, 0, 0], buttons: [], ...o });
 const pads = (list) => vi.stubGlobal('navigator', { getGamepads: () => list });
@@ -36,5 +36,17 @@ describe('the pad read each frame', () => {
     const b = readPad();
     expect(b).not.toBe(a);
     expect(edges(b, a)).toEqual({});
+  });
+});
+
+describe('a pad’s first move', () => {
+  const rest = { lx: 0, ly: 0, rx: 0, ry: 0, a: false, b: false, x: false, y: false };
+  it('is a press or a push, and not a hold', () => {
+    expect(stirs(null, {})).toBe(false);
+    expect(stirs(rest, rest)).toBe(false);
+    expect(stirs({ ...rest, x: true }, rest)).toBe(true);
+    expect(stirs({ ...rest, a: true }, { ...rest, a: true })).toBe(false);
+    expect(stirs({ ...rest, lx: 0.4 }, rest)).toBe(true);
+    expect(stirs({ ...rest, ry: -0.3 }, rest)).toBe(true);
   });
 });
