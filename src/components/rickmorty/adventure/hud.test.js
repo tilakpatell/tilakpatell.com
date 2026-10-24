@@ -29,12 +29,47 @@ describe('what the HUD shows of the story', () => {
     expect(objectiveLine(wiped, own, { planet: { id: 'birdworld' }, state: fresh() })).toEqual({ text: 'Knock at Birdperson’s door.', to: null });
     // in C-137 it's the story's
     expect(objectiveLine(wiped, own, { state: fresh() })).toEqual(wiped);
-    // the sector's `all`: on a planet whose part is still to do, the story's line; once that part's done, the planet's own
+    // the sector's `all`: on a planet whose part is still to do, that part's line; once that part's done, the planet's own
     const sector = EPISODES.findIndex((e) => e.id === 'sector');
     const at = { ...fresh(), episode: sector, got: [] };
     const line = { text: EPISODES[sector].steps[0].text, to: null };
-    expect(objectiveLine(line, own, { planet: { id: 'birdworld' }, state: at, ready: 13 })).toEqual(line);
+    expect(objectiveLine(line, own, { planet: { id: 'birdworld' }, state: at, ready: 13 })).toEqual({ text: EPISODES[sector].steps[0].steps[0].text, to: null });
     expect(objectiveLine(line, own, { planet: { id: 'birdworld' }, state: { ...at, got: [0] }, ready: 13 }).text).toBe('Knock at Birdperson’s door.');
+  });
+
+  it('reads the sector part of the planet Morty’s on, dialled or landed on, and the episode’s line elsewhere', () => {
+    const sector = EPISODES.findIndex((e) => e.id === 'sector');
+    const own = { next: null, count: 0, total: 54, objective: 'Everything here’s done.' };
+    const at = { ...fresh(), episode: sector, got: [] };
+    const line = { text: 'Four sets are out on the sector’s planets. Dial each one.', to: null };
+    expect(EPISODES[sector].steps[0].text).toBe(line.text);
+    // (dialled from C-137: where he is says which)
+    expect(objectiveLine(line, own, { here: 'garage', state: at, ready: 13 })).toEqual(line);
+    expect(['birdworld', 'gearworld', 'pluto', 'squanch'].map((here) => objectiveLine(line, own, { here, state: at, ready: 13 }))).toEqual([
+      { text: 'Bird World: pick up the crystals in the grass and on the clay towers’ tops.', to: null },
+      { text: 'Gear World: wind the city’s cogs in order while the gear police hunt you.', to: null },
+      { text: 'Pluto: tell the king what he wants to hear, and only the true parts.', to: null },
+      { text: 'Planet Squanch: raise a glass at the wedding, then get back to the portal in time.', to: null },
+    ]);
+    // (a dialled planet whose part is done: the episode's line again)
+    expect(objectiveLine(line, own, { here: 'pluto', state: { ...at, got: [2] }, ready: 13 })).toEqual(line);
+    // (landed on from the map: the planet's page says which, wherever `here` is)
+    expect(objectiveLine(line, own, { planet: { id: 'squanch' }, here: 'squanch', state: at, ready: 13 }).text).toBe('Planet Squanch: raise a glass at the wedding, then get back to the portal in time.');
+    // (with no story, the checklist's line, as ever)
+    expect(objectiveLine(null, own, { here: 'pluto', state: at, ready: 13 })).toEqual({ text: own.objective, to: '/universe' });
+  });
+
+  it('points the marker at the sector part of the planet Morty’s on, else the first part still to do', () => {
+    const sector = EPISODES.findIndex((e) => e.id === 'sector');
+    const at = { ...fresh(), episode: sector, got: [] };
+    const next = progress([]).next;
+    expect(markedTask(at, next, { ready: 13 })).toEqual({ id: 'birdworld' });
+    expect(markedTask(at, next, { here: 'garage', ready: 13 })).toEqual({ id: 'birdworld' });
+    expect(markedTask(at, next, { here: 'pluto', ready: 13 })).toEqual({ id: 'pluto' });
+    expect(markedTask({ ...at, got: [0] }, next, { here: 'squanch', ready: 13 })).toEqual({ id: 'squanch' });
+    // (its part done: the first still to do, whose way from here is the planet's portal)
+    expect(markedTask({ ...at, got: [2] }, next, { here: 'pluto', ready: 13 })).toEqual({ id: 'birdworld' });
+    expect(markedTask({ ...at, got: [0, 2] }, next, { here: 'pluto', ready: 13 })).toEqual({ id: 'gearworld' });
   });
 
   it('raises an episode’s closing line as a toast, and the next built episode’s card', () => {

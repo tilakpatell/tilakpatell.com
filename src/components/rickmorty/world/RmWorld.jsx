@@ -232,8 +232,9 @@ const WHEEL_R = 110;
 // Where the next thing to do is, for the map's marker: the area and the spot
 // in it, and from anywhere else, the way towards it.
 const GOAL = { cable: ['house', 'spot:cable'], butter: ['house', 'spot:butter'], meeseeks: ['garage', 'spot:meeseeks'], plumbus: ['garage', 'spot:plumbus'], portalpanic: ['garage', 'spot:portalpanic'], quiz: ['school', 'spot:quiz'], fly: ['street', 'cruiser'], portal: ['garage', 'link:garage-portal'], basement: ['garage', 'link:garage-hatch'], roy: ['arcade', 'spot:roy'], roy55: ['arcade', 'spot:roy'], president: ['street', 'spot:president'], oval: ['garage', 'link:garage-oval'], diner: ['street', 'link:diner-door'], mindblowers: ['mindblowers', 'spot:chair'], rickall: ['house', 'spot:egg'], wong: ['wong', 'spot:therapy'], ...Object.fromEntries(DESTINATIONS.flatMap((d) => d.tasks.map((t) => [t.id, [d.id, `spot:${Object.keys(d.done).find((k) => d.done[k] === t.id) ?? d.escape?.after ?? d.escape?.spot ?? d.goal}`]]))), sewer: ['agency', 'spot:sewer'], cabinet: ['arcade', 'spot:cabinet2'], chase: ['street', 'cruiser'], pond: ['street', 'spot:pond'], posters: ['street', 'spot:poster1'] };
-// (every destination but the planets is through the garage's portal: they're landed on from the universe map)
-const toDest = (via) => Object.fromEntries(DESTINATIONS.filter((d) => !isPlanet(d.id)).map((d) => [d.id, via]));
+// (every destination on the dial is through the garage's portal; the other planets are landed on from the universe map)
+const DIALLED = new Set(DIAL.map((d) => d.id));
+const toDest = (via) => Object.fromEntries(DESTINATIONS.filter((d) => !isPlanet(d.id) || DIALLED.has(d.id)).map((d) => [d.id, via]));
 const WAY = {
   street: { house: 'house-door', upstairs: 'house-door', garage: 'garage-door', basement: 'garage-door', mindblowers: 'garage-door', oval: 'garage-door', school: 'school-door', diner: 'diner-door', wong: 'wong-door', annex: 'garage-door', arcade: 'garage-door', ...toDest('garage-door') },
   house: { street: 'front', upstairs: 'stairs-up', garage: 'kitchen-garage', basement: 'kitchen-garage', mindblowers: 'kitchen-garage', oval: 'kitchen-garage', school: 'front', diner: 'front', wong: 'front', annex: 'kitchen-garage', arcade: 'kitchen-garage', ...toDest('kitchen-garage') },
@@ -252,7 +253,7 @@ function goalOf(next, s, planet = null, act = null, done = []) {
   if (s.escape?.area === s.area && PROMPT[`link:${s.area}-portal`]) return PROMPT[`link:${s.area}-portal`].link;
   if (!GOAL[next.id]) return null; // (a game the map has no spot for)
   const [to, key] = GOAL[next.id];
-  if (isPlanet(to) && to !== s.area) return null;
+  if (isPlanet(to) && to !== s.area && !DIALLED.has(to)) return null;
   if (to === s.area) {
     if (key === 'cruiser') return { x: s.c.x, z: s.c.z };
     // (the posters: the nearest one not yet read)
@@ -578,14 +579,15 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
   // the story's objective first, and its task for the map's marker (C-137's; a planet keeps its own)
   const story = useAdventure();
   const { dialOpen, lockNote } = story;
-  const objective = objectiveLine(story.objective, prog, { planet, state: story.state });
-  const markRef = useRef(null);
-  markRef.current = planet ? prog.next : markedTask(story.state, prog.next);
   // (the same list while the story stands still, so the dial keeps its place in it)
   const dialList = useMemo(() => dialItems(DIAL, story.state), [story.state]);
   const doneRef = useRef(done);
   doneRef.current = done;
   const [hud, setHud] = useState({ area: (planet ?? home ?? START).area, room: null, flying: false, landing: false, near: null, moved: false, alt: 0, kmh: 0 });
+  // (on a sector planet, dialled or landed on, its part of the story's `all`)
+  const objective = objectiveLine(story.objective, prog, { planet, here: hud.area, state: story.state });
+  const markRef = useRef(null);
+  markRef.current = planet ? prog.next : markedTask(story.state, prog.next, { here: hud.area });
   const hudKey = useRef('');
   // the emote wheel (B, held; on a touch screen its button): what it shows
   const wheel = useRef(null);
@@ -1851,7 +1853,9 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
     if (++s.frame % 3 === 0) {
       // the place's people, for the map (stage.js's NPC layer says where they are)
       s.npcs = api.current?.act(s.area, 'npcs') ?? null;
-      drawMap(map.current, s, goalOf(markRef.current, s, planet, (area, name) => api.current?.act(area, name), doneRef.current) ?? (s.flying && !planet ? chaseGoal(s.chase) : null), s.t);
+      // (kept on the sim, where the checks read it)
+      s.goal = goalOf(markRef.current, s, planet, (area, name) => api.current?.act(area, name), doneRef.current) ?? (s.flying && !planet ? chaseGoal(s.chase) : null);
+      drawMap(map.current, s, s.goal, s.t);
       // (and a place's game, its meter: ./dimensions/stage.js's `meter`)
       const charge = api.current?.act(s.area, 'meter') ?? METER_OFF;
       chargeMeter.place(chargeRef.current, { on: charge.on, vitals: charge.vitals, arms: null });
