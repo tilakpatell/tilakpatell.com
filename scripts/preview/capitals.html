@@ -83,6 +83,22 @@
       const t2 = performance.now();
       while (performance.now() - t2 < 20000 && !(detailMap().value?.image?.width > 1)) await wait(250);
       scene.add(slot.holder);
+      // (?with=xwing: a fighter at its own length hovering over the deck, its shadow on the hull)
+      const withKind = q.get('with');
+      let fighter = null;
+      if (withKind) {
+        const len = LENGTH[kind] ?? 1000;
+        const f = models.slot(withKind, Number(q.get('withSize') ?? 12.5) / len);
+        const t3 = performance.now();
+        while (performance.now() - t3 < 60000 && MODELS[withKind] && !f.real) await wait(250);
+        const ray = new THREE.Raycaster(new THREE.Vector3(0.06, 2, 0.18), new THREE.Vector3(0, -1, 0));
+        slot.holder.updateMatrixWorld(true);
+        const y = ray.intersectObject(slot.holder, true)[0]?.point.y ?? 0;
+        f.holder.position.set(0.06, y + 30 / len, 0.18);
+        scene.add(f.holder);
+        house.adopt(f.holder);
+        fighter = f;
+      }
       house.adopt(slot.holder);
       house.follow?.();
       // (the LOD's levels by distance: these shots are all close, so the full model)
@@ -111,7 +127,20 @@
       const close = q.get('views') === 'close';
       // (?views=deck: down on the deck from a fighter's height, at 20, 60, 200 and 800 m, to tune the plating by)
       const deck = q.get('views') === 'deck';
-      const views = deck
+      const near = fighter
+        ? (() => {
+            const len = LENGTH[kind] ?? 1000;
+            const p = new THREE.Vector3();
+            fighter.holder.getWorldPosition(p);
+            return [
+              { at: [p.x + 90 / len, p.y + 60 / len, p.z + 120 / len], look: [p.x, p.y - 30 / len, p.z], fov: 50 },
+              { at: [p.x - 40 / len, p.y + 160 / len, p.z - 20 / len], look: [p.x, p.y - 30 / len, p.z], fov: 50 },
+            ];
+          })()
+        : null;
+      const views = near
+        ? [...near, ...near]
+        : deck
         ? (() => {
             // (the hull under a point a little to port of the keel, two fifths forward: the deck there)
             const ray = new THREE.Raycaster(new THREE.Vector3(0.05, 2, 0.2), new THREE.Vector3(0, -1, 0));
@@ -151,13 +180,13 @@
         const y = (1 - Math.floor(i / 2)) * H;
         renderer.setViewport(x, y, W, H);
         renderer.setScissor(x, y, W, H);
-        shadows?.place(cam, [slot]);
+        shadows?.place(cam, [slot, ...(fighter ? [fighter] : [])]);
         renderer.render(scene, cam);
         shadows?.home();
       });
       window.__slot = slot; // (for a check to look into)
       window.__renderer = renderer;
-      document.title = JSON.stringify({ kind, url: MODELS[kind]?.url ?? null, real: slot.real, parts: parts?.ids ?? [] });
+      document.title = JSON.stringify({ kind, url: MODELS[kind]?.url ?? null, real: slot.real, parts: parts?.ids ?? [], with: fighter ? { kind: withKind, real: fighter.real } : null });
       window.__done = true;
     </script>
   </body>

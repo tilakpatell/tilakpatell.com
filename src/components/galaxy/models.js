@@ -36,7 +36,7 @@ import { GALAXY_KINDS, buildGalaxyShip } from './fleet';
 import { createHulls } from './hulls';
 import { cutting, disposeLooks, partsOf, partSpecs } from './capitalParts';
 import { dressCapital } from './capitalLook';
-import { shadowed } from './capitalShadow';
+import { casting, shadowed } from './capitalShadow';
 import { dressGameHull, dressGameMaps } from './capitalHull';
 
 // which way each loaded model's nose points as it comes (turned to +z): the
@@ -472,8 +472,10 @@ export function createModels({ prepare = null, load: fetchModel = loadGLTF, hull
         if (dead) return;
         const n = normalise(root, def.nose, kind);
         // (a capital's hull plated, its windows lit, its engines burning aft:
-        // capitalLook.js; and the sun's shadow on it, cast and taken: capitalShadow.js)
+        // capitalLook.js; and the sun's shadow on it, cast and taken, or a
+        // fighter's cast on a capital: capitalShadow.js)
         if (dressCapital(n.holder, kind, { plating: device().detail !== 'low', size: device().phone ? 1024 : 2048, lite: device().phone })) shadowed(n.holder);
+        else casting(n.holder);
         // (a skinned one's copies need bones of their own: SkeletonUtils)
         root.traverse((o) => o.isSkinnedMesh && (n.skinned = true));
         if (prepare) await prepare(n.holder);

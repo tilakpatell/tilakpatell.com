@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
-import { createCapitalShadows, fitShadow, focusOf, shadowSize, shadowed } from './capitalShadow';
+import { casting, createCapitalShadows, fitShadow, focusOf, shadowSize, shadowed } from './capitalShadow';
 
 // a capital's slot as models.js hands it over: its holder out in the scene,
 // `size` long
@@ -81,6 +81,10 @@ describe('capitalShadow', () => {
     expect([hull.castShadow, hull.receiveShadow]).toEqual([true, true]);
     expect([glass.castShadow, glass.receiveShadow]).toEqual([false, false]);
     expect([glows.castShadow, glows.receiveShadow]).toEqual([false, false]);
+    // (a fighter's: cast, never taken)
+    const fighter = new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshStandardMaterial());
+    casting(new THREE.Group().add(fighter));
+    expect([fighter.castShadow, fighter.receiveShadow]).toEqual([true, false]);
   });
 
   it('moves the sun onto the ship for the frame, its way kept, and back after; off the map with none', () => {

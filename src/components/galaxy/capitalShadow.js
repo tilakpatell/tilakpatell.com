@@ -5,9 +5,10 @@
 // over its distance; held until another fills 1.3 times as much, so it
 // doesn't flick between two side by side), and drawn again each frame
 // there's one: the box centred on that ship, never snapped to a grid, so
-// the texels ride with it and its shadows hold still as it flies. Only the
-// capitals cast and take it (shadowed(), on a capital as it loads): the
-// fighters and the rest neither, so the map holds what it's for.
+// the texels ride with it and its shadows hold still as it flies. The
+// capitals cast and take it (shadowed(), on a capital as it loads), and the
+// other loaded ships cast it (casting(): a fighter's shadow crossing a Star
+// Destroyer's deck, as in the films), their far copies not.
 //
 // It's on for the whole flight, wherever a device has shadows: a computer at
 // mid and up (lib/device's budget().shadows, its map 1,024 at mid, 2,048 at
@@ -91,6 +92,13 @@ export function focusOf(camera, slots, held = null) {
   }
   const kept = held && held !== best ? share(held, camera, sphere) : 0;
   return kept >= LEAST && kept * HOLD > most ? held : best;
+}
+
+// a fighter's meshes cast it on a capital, and take none (its far copy
+// casts nothing: only the fighters near the eye are drawn into the map)
+export function casting(root) {
+  shadowed(root).traverse((o) => o.isMesh && (o.receiveShadow = false));
+  return root;
 }
 
 export function shadowed(root) {
