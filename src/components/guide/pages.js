@@ -617,6 +617,7 @@ export const PAGES = {
       ['Run', 'Some of the people here come for you. Caught, you’re back where you came in.'],
       ['Rides', 'Where the cruiser set down there’s something to ride: the rock sled on Gazorpazorp. E at it gets on; a hover rides over water as well as sand.'],
       ['A minute', 'On Planet Squanch and the Purge Planet, once it goes wrong, get back through the portal inside a minute.'],
+      ['The games', 'Bird World, Gear World and Pluto each have a game, with its meter in the corner: the crystals, the city’s cogs, the king’s ear. Lose and you’re back at the portal to try again.'],
       ['The list', 'On a planet you walked into, what you do counts on Dimension C-137’s list of things to do too.'],
     ],
   },
