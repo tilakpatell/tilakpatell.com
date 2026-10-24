@@ -12,8 +12,8 @@
 // flat map (3D off) and Home's teaser; `far` puts the ship two sectors out
 // and shoots the map. Screenshots go to $OUT. Headless Chrome draws in
 // software, slowly: clicks go through the DOM, and the waits are long.
-import { writeFileSync } from 'node:fs';
 import { chromium } from 'playwright-core';
+import { keepShot } from './lib/shot-file.mjs';
 
 const out = process.env.OUT ?? '.';
 const only = process.argv[2];
@@ -22,6 +22,9 @@ if (only && !MODES.includes(only)) throw new Error(`no mode ${only}: ${MODES.joi
 const run = (m) => !only || only === m;
 const base = process.env.BASE ?? 'http://localhost:5173';
 const URL = `${base}/?quality=low#/universe`;
+// a page's first load: a cold dev server optimises its dependencies first,
+// past Playwright's 30 s
+const GOTO = 120000;
 // (WebGL through ANGLE's SwiftShader: today's Chromium has none at all under --use-gl=swiftshader)
 const browser = await chromium.launch({ executablePath: process.env.CHROME ?? '/opt/google/chrome/chrome', args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--enable-webgl', '--ignore-gpu-blocklist'] });
 const errors = [];
@@ -46,7 +49,7 @@ async function open(viewport, ship) {
   }, ship);
   const page = await ctx.newPage();
   listen(page);
-  await page.goto(URL, { waitUntil: 'domcontentloaded' });
+  await page.goto(URL, { waitUntil: 'domcontentloaded', timeout: GOTO });
   await page.waitForFunction(() => typeof window.__universe === 'function' && window.__universe().ship, null, { timeout: 120000 });
   await page.waitForSelector('.universe-navmap-btn', { timeout: 400000 }); // (once the shaders are in: minutes in software GL)
   await page.waitForTimeout(2000);
@@ -64,12 +67,12 @@ const click = (page, sel, nth = 0) =>
 // a frame drawn since the page last changed: software GL takes seconds over
 // one, and a shot sooner can show the page as it was before
 const painted = (page) => page.evaluate(() => new Promise((done) => window.requestAnimationFrame(() => window.requestAnimationFrame(done))));
-// a PNG, or a JPEG if that's over 1 MB (RULES.md: no committed picture is)
+// a PNG, or a JPEG if that's 1 MB or more (lib/shot-file.mjs: the folder
+// made if need be, and no stale shot of the other kind left beside it)
 const shot = async (page, name) => {
   await painted(page);
   const png = await page.screenshot({ timeout: 120000 });
-  if (png.length < 1 << 20) writeFileSync(`${out}/${name}.png`, png);
-  else await page.screenshot({ path: `${out}/${name}.jpg`, type: 'jpeg', quality: 80, timeout: 120000 });
+  await keepShot({ out, name, png, jpeg: () => page.screenshot({ type: 'jpeg', quality: 80, timeout: 120000 }) });
 };
 const state = (page) => page.evaluate(() => ({ ...window.__universe(), hash: window.location.hash }));
 const navOpen = (page) => page.waitForSelector('.navmap', { timeout: 60000 });
@@ -266,13 +269,13 @@ if (run('minimap')) {
   });
   const page = await ctx.newPage();
   listen(page);
-  await page.goto(URL, { waitUntil: 'domcontentloaded' });
+  await page.goto(URL, { waitUntil: 'domcontentloaded', timeout: GOTO });
   const flat = await page.waitForSelector('.universe-flat .minimap', { timeout: 120000 });
   await painted(page);
   await flat.screenshot({ path: `${out}/11-minimap-flat.png`, timeout: 120000 });
   // Home's teaser, at the foot of the page: its section mounts only as it
   // nears the screen, so scroll down a screen at a time till it's there
-  await page.goto(`${base}/#/home`, { waitUntil: 'domcontentloaded' });
+  await page.goto(`${base}/#/home`, { waitUntil: 'domcontentloaded', timeout: GOTO });
   await page.waitForFunction(
     () => {
       const teaser = document.querySelector('.minimap-teaser');
@@ -306,7 +309,8 @@ if (run('far')) {
   await page.context().close();
 }
 
-console.log(errors.length ? `page errors: ${JSON.stringify(errors.slice(0, 8))}` : 'no page errors');
+// (how many, and each different one: a page load repeats its own, and a cap could hide another)
+console.log(errors.length ? `page errors: ${errors.length}, ${JSON.stringify([...new Set(errors)])}` : 'no page errors');
 console.log(problems.length ? `${problems.length} FAILED` : 'all ok');
 await browser.close();
 process.exit(problems.length ? 1 : 0);
