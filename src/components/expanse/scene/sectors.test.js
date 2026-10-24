@@ -1,17 +1,22 @@
 import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
 import { LOOKS } from '../../galaxy/bodies';
+import { createFarStars } from '../../universe/shared/far';
 import { SECTOR } from '../gen/grid';
 import { makeSector } from '../gen/sector';
 import { UNIVERSE } from '../gen/seed';
+import { addBodies } from '../gen/systems';
 import { PLANET_TYPES } from '../gen/tables';
-import { PLANET_NEAR, TYPE_LOOK, createSector } from './sectors';
+import { realAt } from './levels';
+import { TYPE_LOOK, WONDER, WONDER_SPECK, createSector, slotOf } from './sectors';
 
 const named = (group, prefix) => {
   const out = [];
   group.traverse((o) => o.name.startsWith(prefix) && out.push(o));
   return out;
 };
+// a hex colour's bytes
+const bytes = (hex) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
 const camAt = (p) => {
   const cam = new THREE.PerspectiveCamera(60, 1, 1, 100000);
   cam.position.set(...p);
@@ -59,16 +64,42 @@ describe('a generated sector, drawn', () => {
     for (const id of Object.values(TYPE_LOOK)) expect(LOOKS[id], id).toBeTruthy();
   });
 
-  it('adds a star per system and one Points for its specks', () => {
+  it('draws its wonders and nothing else: its stars are the far layer’s, its systems near.js’s', () => {
     const sector = makeSector(UNIVERSE, 2, -1);
     const s = createSector(sector);
     expect(s.group.name).toBe('sector:E:2,-1');
     expect(s.sector).toBe(sector);
-    expect(named(s.group, 'star:')).toHaveLength(sector.systems.length);
-    expect(named(s.group, 'far-stars')).toHaveLength(1);
     expect(named(s.group, 'wonder:')).toHaveLength(sector.wonders.length);
-    expect(s.count()).toBeGreaterThan(sector.systems.length);
+    for (const prefix of ['star:', 'planet:', 'far-stars']) expect(named(s.group, prefix), prefix).toHaveLength(0);
+    expect(s.count()).toBe(sector.wonders.length);
     s.dispose();
+  });
+
+  it('hands its stars and wonders to a slot of the far layer, from its middle', () => {
+    const sector = addBodies(makeSector(UNIVERSE, 2, -1));
+    const slot = slotOf(sector);
+    const n = sector.systems.length + sector.wonders.length;
+    expect(slot.key).toBe(sector.id);
+    expect(slot.centre).toEqual(sector.origin);
+    expect(slot.count).toBe(n);
+    expect(slot.at).toBeInstanceOf(Float32Array);
+    expect(slot.color).toBeInstanceOf(Uint8Array);
+    expect(slot.r).toBeInstanceOf(Float32Array);
+    expect([slot.at.length, slot.color.length, slot.r.length]).toEqual([3 * n, 3 * n, n]);
+    const each = [
+      ...sector.systems.map((sys) => [sys.at, sys.star.color, sys.star.size]),
+      ...sector.wonders.map((w) => [w.at, WONDER[w.kind].color, w.size * WONDER_SPECK]),
+    ];
+    each.forEach(([at, color, r], i) => {
+      for (let k = 0; k < 3; k++) expect(slot.at[i * 3 + k]).toBeCloseTo(at[k] - sector.origin[k], 2);
+      expect([...slot.color.subarray(i * 3, i * 3 + 3)]).toEqual(bytes(color));
+      expect(slot.r[i]).toBe(Math.fround(r));
+    });
+    // and the far layer takes it as it is
+    const far = createFarStars(new THREE.Group(), { places: [], skyFar: 24000, slots: [400] });
+    far.setSlot(0, slot);
+    expect([...far.points.geometry.attributes.aSize.array.subarray(0, n)]).toEqual([...slot.r]);
+    far.dispose();
   });
 
   it('keeps everything in the sector’s own frame, small numbers', () => {
@@ -95,45 +126,24 @@ describe('a generated sector, drawn', () => {
     s.dispose();
   });
 
-  it('builds a system’s planets when the camera comes near, and lets them go when it leaves', () => {
+  it('shows a wonder only within where it’s real, as its speck has it', () => {
     const s = createSector(HAND);
     const root = new THREE.Group();
     root.add(s.group);
-    s.update(0, 1 / 60, camAt([400000, 0, -60000]));
-    expect(named(s.group, 'planet:')).toHaveLength(0);
-
-    s.update(1, 1 / 60, camAt([390000, 0, 3000]));
-    expect(named(s.group, 'planet:').map((p) => p.name)).toEqual(['planet:E:5,0:0:0', 'planet:E:5,0:0:1']);
-    const p = s.group.getObjectByName('planet:E:5,0:0:0');
-    expect(p.position.toArray()).toEqual([-9600, 0, 0]);
-
-    // (just past PLANET_NEAR: kept, the hysteresis)
-    s.update(2, 1 / 60, camAt([390000, 0, -PLANET_NEAR * 1.1]));
-    expect(named(s.group, 'planet:')).toHaveLength(2);
-    s.update(3, 1 / 60, camAt([390000, 0, -PLANET_NEAR * 1.5]));
-    expect(named(s.group, 'planet:')).toHaveLength(0);
-
-    // the other system's, near it
-    s.update(4, 1 / 60, camAt([425000, 0, 22000]));
-    expect(named(s.group, 'planet:').map((o) => o.name)).toEqual(['planet:E:5,0:1:0']);
+    for (const w of HAND.wonders) {
+      const real = realAt({ r: w.size * WONDER_SPECK });
+      const obj = s.group.getObjectByName(`wonder:${w.id}`);
+      s.update(0, 1 / 60, camAt([w.at[0], w.at[1] + 0.95 * real, w.at[2]]));
+      expect(obj.visible, w.kind).toBe(true);
+      s.update(0, 1 / 60, camAt([w.at[0], w.at[1] + 1.05 * real, w.at[2]]));
+      expect(obj.visible, w.kind).toBe(false);
+    }
+    // (moved with the group: where it is, not where the numbers in it are)
+    const w = HAND.wonders[1];
+    s.reanchor([390000, 0, 0]);
+    s.update(0, 1 / 60, camAt([w.at[0] - 390000, w.at[1] + 10, w.at[2]]));
+    expect(s.group.getObjectByName(`wonder:${w.id}`).visible).toBe(true);
     s.dispose();
-  });
-
-  it('takes the body builder it is given', () => {
-    const made = [];
-    const build = (look, opts) => {
-      const group = new THREE.Group();
-      const b = { group, look, opts, suns: null, disposed: false, update() {}, setSuns(s) { b.suns = s; }, dispose() { b.disposed = true; } };
-      made.push(b);
-      return b;
-    };
-    const s = createSector(HAND, { build });
-    s.update(0, 1 / 60, camAt([390000, 0, 3000]));
-    expect(made.map((b) => b.look)).toEqual([TYPE_LOOK.rock, TYPE_LOOK.gas]);
-    expect(made[0].opts.r).toBe(30);
-    expect(made[0].suns[0].dir.toArray().map((x) => Math.round(x * 1000) / 1000)).toEqual([-1, 0, 0]);
-    s.dispose();
-    expect(made.every((b) => b.disposed)).toBe(true);
   });
 
   it('disposes down to an empty group, out of its parent', () => {

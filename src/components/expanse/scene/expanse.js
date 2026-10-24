@@ -8,32 +8,58 @@
 // authored sector (0,0) is never built, it's the map. Back inside RIM.inner
 // it all goes.
 //
+// Each loaded sector is drawn in levels.js's levels: its wonders as
+// sectors.js draws them; its stars and wonders as a slot of specks in the
+// far layer (sectors.js's slotOf, faded in over SLOT_IN), past the far
+// plane; its stars, planets, moons and wonders as discs within it
+// (discs.js), fed every frame; and the nearest systems built whole
+// (near.js), its discs giving way to them. Planets and moons go round on the
+// shared clock (orbits.js's spaceTime of the wall time it's given).
+//
 // The floating origin (runtime/origin.js): out in the Expanse the ship's
 // position is checked against it each frame, and when it moves (by whole
 // cells, ORIGIN_CELL) everything here is re-anchored in that same frame:
 // the root sits at the origin and each sector's group at its middle less
 // the origin, so the sum, where it's drawn, never changes (nothing jumps)
 // while the numbers inside each sector stay small however far out. Home
-// again, the origin goes back to the middle.
+// again, the origin goes back to the middle. (What's built and the far
+// layer keep the map's own numbers: they're drawn round the camera.)
 //
 // Nothing generated is kept: a sector is made from its seed each time it's
 // needed (and a few are remembered while the ship's near them).
 //
-// createExpanse(parent, { universe, origin, make, makeStarfield,
-//   tier, reduced, onSector, onShift }) → { root, update({ ship, camera, t,
-//   dt }), loaded(), sector(), active(), dispose() }
+// createExpanse(parent, { universe, origin, make, makeStarfield, makeNear,
+//   far, tier, budget, prepare, reduced, onSector, onShift }) → { root,
+//   update({ ship, camera, t, dt, now }), loaded(), sector(), active(),
+//   dispose() }
+//   far: the far layer to draw in (universe/farStars.js's, in the parent's
+//   space, made with at least budget.nearSlots slots of budget.slotSize and
+//   room for budget.discs discs, and updated before this each frame); none,
+//   and it makes its own under the parent the first time it wakes
+//   budget: universe/budget.js's row (the tier's, unless it's given);
+//   prepare(o): the scene's warm(), for what near.js builds
+//   update: `t` the scene's clock, `now` the wall time in ms (0 holds the
+//   orbits where they start)
 // activeAt(ship, was) → whether it's awake for a ship at (x, z), given whether it was
 
 import * as THREE from 'three';
 import { createChunkGrid } from '../../../runtime/chunkGrid';
 import { RIM, inExpanse, sectorOf } from '../../universe/layout';
+import { SKY_FAR, createFarStars, universeBudget } from '../../universe/shared/far';
+import { spaceTime } from '../gen/orbits';
 import { SECTOR, makeSector } from '../gen/sector';
 import { UNIVERSE } from '../gen/seed';
+import { addBodies } from '../gen/systems';
 import { sectorAt, sectorId } from '../gen/grid';
-import { createSector } from './sectors';
+import { createDiscs } from './discs';
+import { createNear } from './near';
+import { createSector, slotOf } from './sectors';
 import { createStarfield } from './starfield';
 
 const KEEP = 32; // sectors remembered, made
+const SLOT_IN = 1; // a sector's specks fade in over this many seconds
+const DISC_ROOM = 1.5; // its own far layer's room for discs, of the budget's (an edge easing in draws more)
+const NONE = [];
 
 export function activeAt(ship, was) {
   if (!ship) return false;
@@ -46,10 +72,28 @@ export function activeAt(ship, was) {
 
 const parseKey = (key) => key.split(',').map(Number);
 
-export function createExpanse(parent, { universe = UNIVERSE, origin, make = createSector, makeStarfield = createStarfield, tier = 'mid', reduced = false, onSector = null, onShift = null } = {}) {
+export function createExpanse(parent, { universe = UNIVERSE, origin, make = createSector, makeStarfield = createStarfield, makeNear = createNear, far = null, tier = 'mid', budget = universeBudget({ tier }), prepare = null, reduced = false, onSector = null, onShift = null } = {}) {
   const root = new THREE.Group();
   root.name = 'expanse';
   parent.add(root);
+  // what's built, in the map's space: under the root, less where it is
+  const nearRoot = new THREE.Group();
+  nearRoot.name = 'expanse-near';
+  root.add(nearRoot);
+  const near = makeNear(nearRoot, { budget, tier, prepare });
+  // the far layer and its discs, made the first time it wakes; and its slots
+  let layer = null;
+  const layerOf = () => {
+    if (!layer) {
+      const own = far ? null : createFarStars(parent, { places: [], skyFar: SKY_FAR, slots: Array(budget.nearSlots).fill(budget.slotSize), discs: Math.ceil(budget.discs * DISC_ROOM) });
+      const into = far ?? own;
+      layer = { far: into, own, discs: createDiscs(into, { budget, built: near.built }), free: Array.from({ length: budget.nearSlots }, (_, i) => budget.nearSlots - 1 - i) };
+    }
+    return layer;
+  };
+  const slots = new Map(); // key → its slot
+  const camAt = new THREE.Vector3();
+  const cam = [0, 0, 0];
   const grid = createChunkGrid({ size: SECTOR, radius: 1, inFlight: 1 });
   // (the grid's cells are corner-based; the sectors are centred on theirs:
   // asked for by the sector's middle, so a cell is a sector)
@@ -60,11 +104,17 @@ export function createExpanse(parent, { universe = UNIVERSE, origin, make = crea
     let s = made.get(id);
     if (!s) {
       if (made.size >= KEEP) made.delete(made.keys().next().value);
-      made.set(id, (s = makeSector(universe, sx, sz)));
+      made.set(id, (s = addBodies(makeSector(universe, sx, sz))));
     }
     return s;
   };
   const drawn = new Map(); // key 'sx,sz' → drawn sector (or null: the authored one)
+  let sectors = []; // what's drawn: the sectors, and their systems
+  let systems = [];
+  const relist = () => {
+    sectors = [...drawn.values()].filter(Boolean).map((d) => d.sector);
+    systems = sectors.flatMap((x) => x.systems);
+  };
   let field = null;
   let awake = false;
   let here = null; // the sector the ship's in, 'sx,sz'
@@ -73,6 +123,7 @@ export function createExpanse(parent, { universe = UNIVERSE, origin, make = crea
   const anchor = () => {
     at = origin ? origin.at : [0, 0, 0];
     root.position.set(at[0], at[1], at[2]);
+    nearRoot.position.set(-at[0], -at[1], -at[2]);
     for (const d of drawn.values()) d?.reanchor(at);
     field?.reanchor(at);
   };
@@ -82,9 +133,22 @@ export function createExpanse(parent, { universe = UNIVERSE, origin, make = crea
     drawn.get(key)?.dispose();
     drawn.delete(key);
     grid.unload(key);
+    const i = slots.get(key);
+    if (i !== undefined) {
+      layer.far.hideSlots([i]);
+      layer.free.push(i);
+      slots.delete(key);
+    }
+    relist();
   };
   const sleep = () => {
     for (const key of [...drawn.keys()]) drop(key);
+    near.update(NONE, cam);
+    if (layer) {
+      layer.far.discs.begin();
+      layer.far.discs.end();
+      if (layer.own) layer.own.points.visible = false;
+    }
     grid.reset();
     field?.dispose();
     field = null;
@@ -100,7 +164,7 @@ export function createExpanse(parent, { universe = UNIVERSE, origin, make = crea
 
   const api = {
     root,
-    update({ ship, camera, t = 0, dt = 1 / 60 }) {
+    update({ ship, camera, t = 0, dt = 1 / 60, now = 0 }) {
       const want = activeAt(ship, awake);
       if (!want) {
         if (awake || drawn.size) sleep();
@@ -139,17 +203,43 @@ export function createExpanse(parent, { universe = UNIVERSE, origin, make = crea
           root.add(d.group);
           d.reanchor(at);
         }
-        if (grid.done(next, gen)) drawn.set(next, d);
-        else d?.dispose();
+        if (grid.done(next, gen)) {
+          drawn.set(next, d);
+          relist();
+          // (its stars and wonders as specks, faded in)
+          const L = layerOf();
+          const i = d ? L.free.pop() : undefined;
+          if (i !== undefined) {
+            L.far.setSlot(i, slotOf(d.sector));
+            L.far.fadeSlot(i, SLOT_IN);
+            slots.set(next, i);
+          }
+        } else d?.dispose();
       }
       for (const d of drawn.values()) d?.update(t, dt, camera);
       field?.update(camera, dt);
+      // the nearest systems built, and the rest within the far plane as discs
+      const L = layerOf();
+      if (L.own) {
+        L.own.points.visible = true;
+        L.own.update(camera, dt);
+      }
+      parent.updateWorldMatrix(true, false);
+      parent.worldToLocal(camera.getWorldPosition(camAt));
+      cam[0] = camAt.x;
+      cam[1] = camAt.y;
+      cam[2] = camAt.z;
+      const ts = spaceTime(now);
+      near.update(systems, cam, ts, camera, t);
+      L.discs.feed(sectors, cam, ts);
     },
     loaded: () => [...drawn.entries()].filter(([, d]) => d).map(([, d]) => d.sector.id),
     sector: () => (here ? sectorId(...parseKey(here)) : null),
     active: () => awake,
     dispose() {
       sleep();
+      near.dispose();
+      layer?.own?.dispose();
       root.removeFromParent();
     },
   };

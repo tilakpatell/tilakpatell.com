@@ -7,6 +7,7 @@ import * as wallet from './wallet';
 import * as powerBar from './powerBar';
 import * as fit from './fit';
 import * as space from './space';
+import * as far from './far';
 
 // The universe's face: exactly these names and nothing else
 const FACE = [
@@ -18,6 +19,7 @@ const FACE = [
   [powerBar, ['PowerBar']],
   [fit, ['statsOf', 'useShipyardPage']],
   [space, ['PLACES', 'SECTORS', 'SECTOR_RADIUS', 'sectorOf']],
+  [far, ['SKY_FAR', 'createFarStars', 'universeBudget']],
 ];
 
 describe('universe/shared', () => {

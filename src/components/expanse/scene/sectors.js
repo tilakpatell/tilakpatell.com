@@ -1,33 +1,30 @@
-// One loaded sector of the expanse (gen/sector.js's), drawn. Everything in
-// it sits in the sector's own frame, its centre at nought, so the numbers
-// in its buffers stay small however far out it is; the group is moved to
-// where the sector is relative to the floating origin (reanchor). Each
-// star is a small bright sphere in its own colour; from further off than
-// where farStars.js has it real, it's a star on the sky instead, every star and
-// wonder of the sector in one Points, one draw. A system's planets are
-// built (galaxy/bodies.js, a look for each type) only when the camera comes
-// within PLANET_NEAR of it, the nearest system's alone, and let go again
-// past PLANET_NEAR × 1.3. The wonders are cheap: a nebula a cloud of soft
-// additive puffs, a pulsar a small bright sphere, a derelict or a rogue
-// world a small dark one. No textures.
+// One loaded sector of the expanse (gen/sector.js's), drawn: its wonders.
+// Everything in it sits in the sector's own frame, its centre at nought, so
+// the numbers in its buffers stay small however far out it is; the group is
+// moved to where the sector is relative to the floating origin (reanchor).
+// The wonders are cheap: a nebula a cloud of soft additive puffs, a pulsar a
+// small bright sphere, a derelict or a rogue world a small dark one, each
+// shown within where it's real (levels.js's realAt, of its speck) and a
+// disc (discs.js) or a speck past that. No textures.
 //
-// PLANET_NEAR, TYPE_LOOK: { [planet type]: LOOKS id }, MOON_LOOK: { [moon
-//   type]: LOOKS id }, lookColour(id) → a look's colour as a whole ('#rrggbb')
+// Its stars are the far layer's (universe/farStars.js): slotOf gives the
+// sector's stars and wonders as a slot of specks, for past the far plane;
+// within it they're discs (discs.js), and within a system's reach the
+// system's built whole (near.js), in the looks below, which all three share.
+//
+// TYPE_LOOK: { [planet type]: LOOKS id }, MOON_LOOK: { [moon type]: LOOKS
+//   id }, lookColour(id) → a look's colour as a whole ('#rrggbb')
 // WONDER: { [kind]: how it looks }; WONDER_SPECK: a wonder's speck's radius,
 //   a share of its size (where it's real goes by it: levels.js's realAt)
-// createSector(sector, { tier = 'mid', skyFar = SKY_FAR, build = buildBody })
-//   → { group, sector, update(t, dt, camera), reanchor(at), dispose(), count() }
+// slotOf(sector) → { centre, at, color, r, count, key }: farStars' setSlot's,
+//   its stars and then its wonders, from the sector's middle
+// createSector(sector) → { group, sector, update(t, dt, camera), reanchor(at), dispose(), count() }
 //   The caller puts the group under a root at `at` and calls reanchor(at) whenever `at` moves.
 
 import * as THREE from 'three';
-import { LOOKS, buildBody } from '../../galaxy/bodies';
-import { SKY_FAR } from '../../universe/deepspace';
-import { createFarStars } from '../../universe/farStars';
+import { LOOKS } from '../../galaxy/bodies';
 import { rngOf } from '../gen/seed';
-
-export const PLANET_NEAR = 9000; // a system's planets are built inside this
-const LET_GO = 1.3; // and let go past this many times it
-const SWITCH = 1000; // how much nearer another system must be to take over
+import { realAt } from './levels';
 
 export const TYPE_LOOK = {
   rock: 'moon-dust',
@@ -118,7 +115,33 @@ function nebula(w, made) {
   return points;
 }
 
-export function createSector(sector, { tier = 'mid', skyFar = SKY_FAR, build = buildBody } = {}) {
+// a hex colour's bytes, into `out` at `i`
+const bytesInto = (hex, out, i) => {
+  const n = parseInt(hex.slice(1), 16);
+  out[i] = (n >> 16) & 255;
+  out[i + 1] = (n >> 8) & 255;
+  out[i + 2] = n & 255;
+};
+
+export function slotOf(sector) {
+  const o = sector.origin;
+  const n = sector.systems.length + sector.wonders.length;
+  const at = new Float32Array(n * 3);
+  const color = new Uint8Array(n * 3);
+  const r = new Float32Array(n);
+  const put = (i, p, hex, size) => {
+    at[i * 3] = p[0] - o[0];
+    at[i * 3 + 1] = p[1] - o[1];
+    at[i * 3 + 2] = p[2] - o[2];
+    bytesInto(hex, color, i * 3);
+    r[i] = size;
+  };
+  sector.systems.forEach((s, i) => put(i, s.at, s.star.color, s.star.size));
+  sector.wonders.forEach((w, j) => put(sector.systems.length + j, w.at, (WONDER[w.kind] ?? WONDER.rogue).color, w.size * WONDER_SPECK));
+  return { centre: [...o], at, color, r, count: n, key: sector.id };
+}
+
+export function createSector(sector) {
   const o = sector.origin;
   const local = (p) => [p[0] - o[0], p[1] - o[1], p[2] - o[2]];
   const group = new THREE.Group();
@@ -141,17 +164,7 @@ export function createSector(sector, { tier = 'mid', skyFar = SKY_FAR, build = b
     return m;
   };
 
-  // the stars
-  const stars = sector.systems.map((s) => {
-    const g = new THREE.Group();
-    g.name = `star:${s.id}`;
-    g.position.set(...local(s.at));
-    g.add(ball('star-core', [0, 0, 0], s.star.size, s.star.color));
-    group.add(g);
-    return g;
-  });
-
-  // the wonders
+  // the wonders, each shown within where it's real
   const wonders = sector.wonders.map((w) => {
     const look = WONDER[w.kind] ?? WONDER.rogue;
     let obj;
@@ -163,41 +176,7 @@ export function createSector(sector, { tier = 'mid', skyFar = SKY_FAR, build = b
     group.add(obj);
     return obj;
   });
-
-  // every star and wonder as a speck, from far off
-  const far = createFarStars(group, {
-    places: [
-      ...sector.systems.map((s, i) => ({ id: s.id, at: local(s.at), r: s.star.size, color: s.star.color, group: stars[i] })),
-      ...sector.wonders.map((w, i) => ({ id: w.id, at: local(w.at), r: w.size * WONDER_SPECK, color: (WONDER[w.kind] ?? WONDER.rogue).color, group: wonders[i] })),
-    ],
-    skyFar,
-  });
-
-  // the planets of the system the camera's nearest, while it's near
-  let near = null; // { i, bodies }
-  const letGo = () => {
-    for (const b of near?.bodies ?? []) {
-      b.group.removeFromParent();
-      b.dispose();
-    }
-    near = null;
-  };
-  const buildPlanets = (i) => {
-    const s = sector.systems[i];
-    const star = new THREE.Vector3(...local(s.at));
-    const color = new THREE.Color(s.star.color);
-    near = {
-      i,
-      bodies: s.planets.map((p) => {
-        const b = build(TYPE_LOOK[p.type] ?? TYPE_LOOK.rock, { r: p.radius, tier });
-        b.group.name = `planet:${p.id}`;
-        b.group.position.set(...local(p.at));
-        b.setSuns([{ dir: star.clone().sub(b.group.position).normalize(), color }]);
-        group.add(b.group);
-        return b;
-      }),
-    };
-  };
+  const real = sector.wonders.map((w) => realAt({ r: w.size * WONDER_SPECK }));
 
   const cam = new THREE.Vector3();
   const api = {
@@ -206,27 +185,14 @@ export function createSector(sector, { tier = 'mid', skyFar = SKY_FAR, build = b
     update(t, dt, camera) {
       group.updateWorldMatrix(true, false);
       group.worldToLocal(camera.getWorldPosition(cam));
-      let best = -1;
-      let bestD = Infinity;
-      stars.forEach((g, i) => {
-        const d = g.position.distanceTo(cam);
-        if (d < bestD) (best = i), (bestD = d);
+      wonders.forEach((obj, i) => {
+        obj.visible = obj.position.distanceTo(cam) < real[i];
       });
-      const heldD = near ? stars[near.i].position.distanceTo(cam) : Infinity;
-      if (near && heldD > PLANET_NEAR * LET_GO) letGo();
-      if (best >= 0 && bestD <= PLANET_NEAR && best !== near?.i && (!near || bestD < heldD - SWITCH)) {
-        letGo();
-        buildPlanets(best);
-      }
-      for (const b of near?.bodies ?? []) b.update(t, camera);
-      far.update(camera, dt);
     },
     reanchor(at) {
       group.position.set(o[0] - at[0], o[1] - at[1], o[2] - at[2]);
     },
     dispose() {
-      letGo();
-      far.dispose();
       group.clear();
       for (const m of made) m.dispose();
       group.removeFromParent();
