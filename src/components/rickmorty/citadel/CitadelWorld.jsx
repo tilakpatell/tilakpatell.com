@@ -4,7 +4,8 @@ import { audioContext } from '../../../lib/audio';
 import { use3D } from '../../../lib/gpu';
 import { local, useInView, useMediaQuery, usePageVisible } from '../../../lib/hooks';
 import { WorldHost, useWorld } from '../../../runtime';
-import { readPad, typing } from '../../games/pad';
+import { Objective } from '../../../runtime/hud';
+import { readPad, stirs, typing } from '../../games/pad';
 import { Bubble, Convo, QuestList, Stick } from '../../middleearth/towns/TownHud';
 import { keyDown, keyUp, moveOf } from '../../middleearth/towns/keys';
 import { drawMap } from '../../middleearth/towns/map';
@@ -29,6 +30,9 @@ import { useLooks } from '../wardrobe/useLooks';
 import './citadel.css';
 import RmEarnNote from '../RmEarnNote';
 import { useAdventure } from '../adventure/useAdventure';
+import { EPISODES } from '../adventure/episodes';
+import EpisodeCard from '../adventure/EpisodeCard';
+import { asksCard, storyLead } from './storyline';
 import { useRmEarn } from '../useRmEarn';
 import { seedsOf } from '../earn';
 import GuideCue from '../../guide/GuideCue';
@@ -41,7 +45,8 @@ import citadelModule from './module';
 // the Council, Vote Morty, and getting to the cruiser). The concourse is
 // in ./layout.js, the story in ./story.js, the drawing in ./scene.js;
 // this is the walking, the HUD, the talk, the herd, the line and the Cop
-// Ricks. Without 3D, the scenes are listed as cards.
+// Ricks, and the story's step over the line and an episode's card
+// (../adventure/, ./storyline.js). Without 3D, the scenes are listed as cards.
 
 const DONE = 'tp-citadel-done';
 const AT = 'tp-citadel-at';
@@ -266,6 +271,23 @@ function World({ prog, done, complete, gl, setGl, onLeave, leaveLabel, frozen, o
   const showing = usePageVisible();
   const live = gl === 'on' && inView && showing && !frozen;
   const hasHangar = Boolean(onHangar);
+
+  // the story (../adventure/): the visit's episode card, asked for once the
+  // world's live (so it's seen, not timed out in a hidden tab) and only in an
+  // episode with a step here (asking takes it: ./storyline.js); the world
+  // holds while it's up
+  const story = useAdventure();
+  const { intro } = story;
+  const [card, setCard] = useState(null);
+  const closeCard = useCallback(() => setCard(null), []);
+  const cardRef = useRef(card);
+  cardRef.current = card;
+  const asks = asksCard(story.state);
+  useEffect(() => {
+    if (!live || !asks) return;
+    const n = intro();
+    if (n != null) setCard(n);
+  }, [live, asks, intro]);
 
   // the concourse's hum, while it's on screen
   useEffect(() => {
@@ -694,13 +716,15 @@ function World({ prog, done, complete, gl, setGl, onLeave, leaveLabel, frozen, o
     const s = sim.current;
     const p = progRef.current;
     const fast = import.meta.env.DEV ? (s.speedup ?? 1) : 1;
-    const dt = Math.min(0.05, ms / 1000) * fast;
+    const still = cardRef.current != null; // (an episode's card is up: drawn, but no clock, herd, line, Cop Rick or Loco moves on, nor does he)
+    const dt = still ? 0 : Math.min(0.05, ms / 1000) * fast;
     s.t += dt;
     const k = s.keys;
     const held = (name) => k.has(name);
     const raw = readPad();
     const before = s.padBefore ?? {};
     s.padBefore = raw ?? {};
+    if (still && stirs(raw, before)) closeCard(); // (a pad's press or push is the first move too)
     const pad = wardrobeRef.current ? null : raw; // (the wardrobe's open over him: the pad's for it)
     const pressed = (b) => pad?.[b] && !before[b];
     const red = p.mood === 'red';
@@ -778,7 +802,7 @@ function World({ prog, done, complete, gl, setGl, onLeave, leaveLabel, frozen, o
     // the Cop Ricks, on red alert
     s.chased = false;
     if (red) {
-      const ev = stepWatchers(s.watchers, s.h, dt, COPS, { colliders: COLLIDERS, walls: WALLS, ring: false, push: pushCop, active: s.mode === 'walk' });
+      const ev = stepWatchers(s.watchers, s.h, dt, COPS, { colliders: COLLIDERS, walls: WALLS, ring: false, push: pushCop, active: s.mode === 'walk' && !still });
       for (const e of ev) {
         if (e.type === 'seen') {
           a.fx('seen');
@@ -799,7 +823,7 @@ function World({ prog, done, complete, gl, setGl, onLeave, leaveLabel, frozen, o
     if (s.escapeT != null) s.escapeT += dt;
 
     // the Locos, down in Mortytown
-    if (s.where === 'mortytown' && s.mode === 'walk' && huntOpen(p)) {
+    if (s.where === 'mortytown' && s.mode === 'walk' && huntOpen(p) && !still) {
       const pushLoco = (x, z, r) => townWalker.push(x, z, r);
       for (const e of stepHunt(s.hunt, s.h, dt, { push: pushLoco })) {
         if (e.type === 'found') {
@@ -1055,6 +1079,7 @@ function World({ prog, done, complete, gl, setGl, onLeave, leaveLabel, frozen, o
   const locosNow = huntOpen(prog);
   const townObjective = !locosNow ? (done.includes('locos') ? 'Mortytown’s quiet, for tonight. The lift up is at the west end.' : 'Mortytown. Cop Morty will have a job for you once the day care’s sorted. The lift up is at the west end.') : hud.following ? 'Walk them to Cop Morty, outside Morty Mart. At a walk: run, and they’ll slink off.' : 'Find the Locos. They hide where a Morty hides: down an alley, behind a bin.';
   const objective = inTown ? townObjective : red && hud.chased ? 'Run! Get out of his sight: round the core, behind a kiosk or a planter.' : herding ? 'Herd the Mortys back through the gate, into the pen: come at them from the far side.' : prog.objective;
+  const lead = storyLead(story.state, { town: inTown }); // (the story's step over the line, while it's one played here)
   return (
     <div ref={box} className="shire-stage citadel-stage" data-touch={touch || undefined} data-mode={mode} data-mood={prog.mood} data-room={inside ? hud.room : undefined}>
       <WorldHost world={view} className="shire-canvas citadel-canvas" data-on={gl === 'on' || undefined} onPointerDown={onPointer} onPointerMove={onPointer} onPointerUp={onPointer} onPointerCancel={onPointer} onContextMenu={(e) => e.preventDefault()} />
@@ -1067,9 +1092,16 @@ function World({ prog, done, complete, gl, setGl, onLeave, leaveLabel, frozen, o
             <h1 id="citadel-title" className="shire-title">
               {inTown ? 'Mortytown' : 'The Citadel of Ricks'}
             </h1>
-            <p className="shire-objective" aria-live="polite">
-              <span aria-hidden="true">◆</span> {objective}
-            </p>
+            <Objective
+              className="shire-objective"
+              glyph="◆"
+              text={
+                <>
+                  {lead && <b className="citadel-objective-story">{lead}</b>}
+                  {objective}
+                </>
+              }
+            />
           </div>
           <div className="shire-side">
             <canvas ref={map} className="shire-map" width="150" height="150" aria-hidden="true" />
@@ -1120,6 +1152,8 @@ function World({ prog, done, complete, gl, setGl, onLeave, leaveLabel, frozen, o
           {toast.text}
         </p>
       )}
+
+      {card != null && <EpisodeCard episode={EPISODES[card]} n={card + 1} onDone={closeCard} />}
 
       {bubble && walking && <Bubble ref={bubbleRef} name={bubble.name} line={bubble.line} />}
 
