@@ -160,3 +160,19 @@ describe('the sequence kind: the sets on in the running order, against the clock
     }
   });
 });
+
+describe('a running order with no start spot', () => {
+  const g = () => newSequence({ items: ['a', 'b', 'c'], order: ['b', 'c'], s: 30, start: false });
+  it('shows its meter from the first: the whole clock, and the first to wind', () => {
+    expect(sequenceReadout(g(), { b: 'The bee' })).toEqual({ on: true, vitals: { value: 100, max: 100, low: false }, line: WORDS.next('The bee', 0, 2) });
+    // (with a start spot, nothing till the countdown's started, as before)
+    expect(sequenceReadout(newSequence({ items: ['a', 'b'], order: ['b'], s: 30, start: true })).on).toBe(false);
+  });
+
+  it('says it in the place’s own words', () => {
+    const words = { next: (l, on, n) => `${on}/${n} wound: ${l}`, dark: (l) => `jammed: ${l}`, again: (l) => `again: ${l}` };
+    expect(sequenceReadout(g(), { b: 'The bee' }, words).line).toBe('0/2 wound: The bee');
+    const dark = stepSequence(stepSequence(g(), { use: 'b' }), { use: 'a' });
+    expect(sequenceReadout(dark, { b: 'The bee' }, words).line).toBe('jammed: The bee');
+  });
+});

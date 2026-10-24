@@ -95,8 +95,9 @@ export function sequenceNews(g, { done, fading }) {
   return null;
 }
 
+// (on while it runs; and, with no start spot, from the first, naming the first to go)
 export function sequenceReadout(g, labels = {}, words = WORDS) {
-  if (!g || g.phase !== 'run') return { on: false, vitals: null, line: '' };
+  if (!g || !(g.phase === 'run' || (g.phase === 'idle' && !g.start))) return { on: false, vitals: null, line: '' };
   const share = g.left / g.len;
   const name = (id) => labels[id] ?? id;
   const line = g.last === 'dark' ? words.dark(name(g.order[0])) : g.last === 'again' ? words.again(name(g.order[g.on])) : words.next(name(g.order[g.on]), g.on, g.order.length);
