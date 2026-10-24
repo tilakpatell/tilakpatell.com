@@ -47,5 +47,6 @@ export const C137 = {
     ['Bird World', 'Five crystals to pick up round Birdperson’s house: three in the grass, and one on top of each clay tower. Go up a tower’s drums a hop at a time; the cracked ones crumble by turns, so get off one while it’s cracking. On one when it crumbles and you’re back at the portal, every crystal back where it grew.'],
     ['Gear World', 'The first cog you wind starts the city’s clock and sets the gear police on you. Wind four of the city’s cogs in the order the meter gives: a wrong one jams them all, and caught or out of time, you’re back at the portal.'],
     ['Pluto', 'Four claims on the king’s banners, and two of them are lies. Weigh one up and the meter says whether it’s true, two checks at most; once more tells the king. Tell him both true ones; tell him a lie and Scroopy calls it out, back to the portal.'],
+    ['Heist-Con', 'Miles Knightly won’t start the job without a crew: take a badge at the table by the door, then recruit a muscle and a cat burglar. Start the job at Heistotron’s plan by the stage and lift from the four booths in the order the meter gives; at a wrong booth the Zigerions take it all back. Heistotron never plays it straight, so watch your crew: caught or out of time, you’re back at the door to find a crew again.'],
   ],
 };

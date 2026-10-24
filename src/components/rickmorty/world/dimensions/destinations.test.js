@@ -316,7 +316,7 @@ describe('a place that runs on a freeze', () => {
 describe('a place that runs on a sequence', () => {
   it('has its sets as spots of their own, the countdown at a spot apart or none, and only the game ticks its task', () => {
     const running = DESTINATIONS.filter((d) => d.sequence);
-    expect(running.map((d) => d.id)).toEqual(['gearworld', 'cablestudio']);
+    expect(running.map((d) => d.id)).toEqual(['gearworld', 'heistcon', 'cablestudio']);
     for (const d of running) {
       const sq = d.sequence;
       const spots = d.hotspots.map((h) => h.id);
@@ -337,20 +337,33 @@ describe('a place that runs on a sequence', () => {
         // (a set used before the countdown says to start it, one sentence)
         expect(sq.early).toMatch(/^[A-Z][^!]*\.$/);
         expect(sq.early.split(/[.?]\s/)).toHaveLength(1);
+        // (a countdown held for a crew: exactly where a collect that ticks nothing shares the task, and no escape ticks it)
+        expect(Boolean(sq.before), d.id).toBe(Boolean(d.collect?.start));
+        if (sq.before) {
+          expect(sq.before).toMatch(/^[A-Z][^!]*\.$/);
+          expect(sq.before.split(/[.?]\s/)).toHaveLength(1);
+          expect(d.collect, d.id).toMatchObject({ task: sq.task, start: true });
+          expect(d.collect.escape, d.id).toBe(undefined);
+        }
       } else {
-        // (or the first set used starts the clock: no countdown spot, nothing early, the map at one of the sets)
+        // (or the first set used starts the clock: no countdown spot, nothing early, nothing held, the map at one of the sets)
         expect(Object.values(d.acts), d.id).not.toContain('sequence-start');
         expect(sq.early, d.id).toBe(undefined);
+        expect(sq.before, d.id).toBe(undefined);
+        expect(Boolean(d.collect?.start), d.id).toBe(false);
         expect(sq.items, d.id).toContain(d.goal);
-        // (its hunters start only with the clock, and never once the game's won)
-        for (const p of d.people.filter((o) => o.ai?.hunt)) {
-          expect(p.ai.hunt.near, p.id).toBe(undefined);
-          expect(p.ai.hunt.until, p.id).toBe(sq.task);
-        }
+      }
+      // (its hunters, people or crowd, start only with the clock and never once the game's won; and `hunt` has someone to send)
+      const hunters = [...d.people, ...d.extras].filter((o) => o.ai?.hunt);
+      expect(hunters.length > 0, d.id).toBe(Boolean(sq.hunt));
+      for (const p of hunters) {
+        expect(p.ai.hunt.near, p.id ?? p.kind).toBe(undefined);
+        expect(p.ai.hunt.until, p.id ?? p.kind).toBe(sq.task);
       }
       expect(sq.need).toBeLessThanOrEqual(sq.items.length);
       expect(d.tasks.map((t) => t.id)).toContain(sq.task);
-      expect(d.collect?.task, `${d.id}: a collect ticks the task`).not.toBe(sq.task);
+      // (a collect shares the task only when it ticks nothing: `start`, its crew, pinned above)
+      if (!d.collect?.start) expect(d.collect?.task, `${d.id}: a collect ticks the task`).not.toBe(sq.task);
       expect(Object.values(d.done), `${d.id}: a talk ticks the task`).not.toContain(sq.task);
       expect(Object.values(d.unlock), `${d.id}: a talk gives the achievement`).not.toContain(sq.unlock);
       expect(sq.lost).not.toMatch(/!/);
@@ -430,6 +443,71 @@ describe('a place that runs on a sequence', () => {
       const longest = (from, left, n) => (n === 0 ? 0 : Math.max(...left.map((id) => Math.hypot(at(id).x - from.x, at(id).z - from.z) + longest(at(id), left.filter((o) => o !== id), n - 1))));
       const far = longest(sq.start ? at(sq.start) : d.arrive, sq.items, sq.need);
       expect(far, `${d.id}: ${far.toFixed(1)} m`).toBeLessThanOrEqual(0.6 * sq.s * MORTY.run);
+    }
+  });
+});
+
+describe('Heist-Con', () => {
+  const h = destinationById('heistcon');
+  const BOOTHS = ['heistbooth', 'heisthire', 'heistskull', 'heistcars'];
+  const spot = (id) => h.hotspots.find((o) => o.id === id);
+  it('is Miles Knightly’s job: his crew first, then Heistotron’s plan, four booths lifted in an order dealt each run, forty-five seconds, the crew after him', () => {
+    expect(h.collect).toEqual({ task: 'heistcon', spots: ['heistbadge', 'heister-b1', 'heister-a1'], start: true });
+    expect(h.sequence).toMatchObject({ task: 'heistcon', start: 'heistplan', items: BOOTHS, need: 4, s: 45, hunt: true, who: null, unlock: 'heistcon' });
+    expect(h.sequence.order).toBe(undefined);
+    expect([h.sequence.before, h.sequence.early, h.sequence.spotted, h.sequence.lost, h.caught]).toEqual([
+      'Miles won’t start the job without his crew: take a badge, then recruit a muscle and a cat burglar.',
+      'The job hasn’t started yet: start it at Heistotron’s plan by the stage.',
+      'Heistotron’s plan was a double-cross: it’s hypnotised your crew, and they’re coming for you.',
+      'The keynote ends and the lights come up before the job’s done: back to the door, and get Miles a crew again.',
+      'Glassy-eyed, the recruit you signed up for Miles marches you back to the door and tears up your badge.',
+    ]);
+    const w = h.sequence.words;
+    expect([w.next('The gadget booth', 1, 4), w.dark('The skull booth'), w.again('The hiring booth')]).toEqual(['1 of 4 lifted: next, the gadget booth', 'Wrong booth, and the Zigerions take it all back: start again with the skull booth', 'That one’s lifted already: next, the hiring booth']);
+    expect(h.sequence.meter).toEqual({ title: 'The job', label: 'Time', icon: 'safe' });
+    expect([h.goal, h.done, h.unlock, h.spotted]).toEqual(['heistplan', {}, {}, null]);
+    expect(h.tasks).toEqual([{ id: 'heistcon', name: 'Run the job at Heist-Con', hint: 'Dial Heist-Con on the portal gun, take a badge and recruit a muscle and a cat burglar for Miles Knightly, then start the job at Heistotron’s plan and lift from the four booths in the order the meter gives before the keynote ends, with your own crew after you.' }]);
+    expect(['heistplan', ...BOOTHS].map((id) => [spot(id).label, spot(id).verb, spot(id).dx, spot(id).dz, spot(id).r])).toEqual([
+      ['Heistotron’s plan', 'Start the job', 6, -10.6, 1.8],
+      ['The gadget booth', 'Lift', 14, 10, 1.8],
+      ['The hiring booth', 'Lift', -14, 10, 1.8],
+      ['The skull booth', 'Lift', 14.6, -10, 1.8],
+      ['The getaway booth', 'Lift', -14.6, -10, 1.8],
+    ]);
+    expect(['heistplan', 'heisthire', 'heistskull', 'heistcars'].map((id) => h.say[id])).toEqual([
+      { who: null, text: 'Heistotron’s plan for the hall, taped to the edge of the stage: four booths circled in red, in an order of its own.' },
+      { who: null, text: 'A board of crews for hire, and Miles Knightly’s name is scrawled across every card on it.' },
+      { who: null, text: 'A crystal skull in a glass case, and the Zigerion minding it keeps a spare under the counter.' },
+      { who: null, text: 'Getaway cars sold from a brochure, and somebody has left a set of keys on the counter.' },
+    ]);
+    // (every line said there before, word for word)
+    expect(['miles', 'heister-a1', 'heister-b1', 'heistotron', 'heistbooth', 'heistbadge'].map((id) => h.say[id])).toEqual([
+      { who: 'Miles Knightly', text: '“Kid. You in?” He doesn’t wait. “Get me a muscle and a cat burglar and we’ve got the start of something. Then we double-cross everyone. That’s the job.”' },
+      { who: 'A heister', text: '“Muscle? Sure. I lift things. Sometimes they’re safes.” He hands you a card. It just says MUSCLE.' },
+      { who: 'A cat burglar', text: '“Lasers, vents, roofs. I’m in if Knightly’s in. Tell him I want a bigger cut than last time.”' },
+      { who: null, text: 'Heistotron. A robot built to plan heists. Rick built it to beat Miles, then it heisted Rick’s plan to heist it. It’s giving the keynote.' },
+      { who: null, text: 'A booth selling grappling hooks, glass cutters and a book called “Your Crew And You”. Everything is stolen as you watch.' },
+      { who: null, text: 'A badge: HELLO MY NAME IS and a blank. You write MORTY, and somebody steals the pen.' },
+    ]);
+    expect(h.people.find((p) => p.id === 'miles').ai.bark.lines).toEqual(['You look like a kid who could be a crew member. Everybody’s somebody’s crew member.', 'The heist of the century, and it’s this: the heist is the con. The con is the heist.']);
+    expect(h.kinds).toEqual(['miles', 'heister-a', 'heister-b', 'heistotron']);
+  });
+  it('sets Miles’s crew on him once the job’s on: the two recruits, kept by their spots, clear of the plan and every booth', () => {
+    const hunters = [...h.people, ...h.extras].filter((o) => o.ai?.hunt);
+    expect(hunters.map((p) => [p.id, p.who, p.ai.hunt])).toEqual([
+      ['heister-a1', 'heister-a', { speed: 2.6, catchR: 1.2, until: 'heistcon' }],
+      ['heister-b1', 'heister-b', { speed: 2.8, catchR: 1.2, until: 'heistcon' }],
+    ]);
+    // (named as the job asks for them: a muscle and a cat burglar)
+    expect(hunters.map((p) => spot(p.id).label)).toEqual(['A muscle', 'A cat burglar']);
+    for (const p of hunters) {
+      expect(spot(p.id).verb, p.id).toBe('Recruit');
+      expect(h.say[p.id]?.who, p.id).toBeTruthy();
+      const home = spot(p.id);
+      for (const [x, z] of p.ai.wander) {
+        expect(Math.hypot(x - home.x, z - home.z), `${p.id} strays`).toBeLessThanOrEqual(2.1);
+        for (const id of ['heistplan', ...BOOTHS]) expect(Math.hypot(x - spot(id).x, z - spot(id).z), `${p.id} by ${id}`).toBeGreaterThanOrEqual(7.4);
+      }
     }
   });
 });

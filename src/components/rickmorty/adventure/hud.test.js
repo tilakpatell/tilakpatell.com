@@ -99,7 +99,9 @@ describe('what the HUD shows of the story', () => {
     expect(markedTask(fresh(), next)).toEqual({ id: 'diner' });
     expect(markedTask({ ...fresh(), step: 3 }, next)).toEqual({ id: 'customs' });
     // past the last ready episode: the checklist's
-    expect(markedTask({ ...fresh(), episode: 11 }, next)).toBe(next);
+    expect(markedTask({ ...fresh(), episode: 12 }, next)).toBe(next);
+    // episode 12: Heist-Con, then the Vindicators
+    ['heistcon', 'vindicators'].forEach((id, step) => expect(markedTask({ ...fresh(), episode: 11, step }, next)).toEqual({ id }));
     // episode 11: the sector's first planet still to do
     expect(markedTask({ ...fresh(), episode: 10 }, next)).toEqual({ id: 'birdworld' });
     // episode 10: both steps the Citadel's page (the line's a link there): nothing to point at
@@ -136,7 +138,7 @@ describe('what the HUD shows of the story', () => {
     expect(items.filter((d) => !d.locked).map((d) => d.id)).toEqual(['customs']);
     // free roam, or past the last built episode: nothing locked
     expect(dialItems(DIAL, { ...fresh(), freeRoam: true }).every((d) => d.locked === null)).toBe(true);
-    expect(dialItems(DIAL, { ...fresh(), episode: 11 }).every((d) => d.locked === null)).toBe(true);
+    expect(dialItems(DIAL, { ...fresh(), episode: 12 }).every((d) => d.locked === null)).toBe(true);
     // after episode 1, its places, and the next episode's still shut
     const one = dialItems(DIAL, { ...fresh(), episode: 1 });
     expect(one.filter((d) => !d.locked).map((d) => d.id)).toEqual(['annex', 'customs', 'meeseeksgolf']);
@@ -182,6 +184,12 @@ describe('what the HUD shows of the story', () => {
     expect(ten.filter((d) => !d.locked).map((d) => d.id)).toEqual(DIAL.map((d) => d.id).filter((id) => sector.has(id)));
     for (const id of ['heistcon', 'vindicators']) expect(ten.find((d) => d.id === id).locked).toBe('Opens after episode 11, “The sector”.');
     for (const id of ['blooddome', 'evilrick']) expect(ten.find((d) => d.id === id).locked).toBe('Opens after episode 12, “Big score”.');
+    // after episode 11: those, Heist-Con and the Vindicators; the last two still wait on episode 12
+    const eleven = dialItems(DIAL, { ...fresh(), episode: 11 });
+    const big = new Set([...sector, 'heistcon', 'vindicators']);
+    expect(big.size).toBe(30);
+    expect(eleven.filter((d) => !d.locked).map((d) => d.id)).toEqual(DIAL.map((d) => d.id).filter((id) => big.has(id)));
+    for (const id of ['blooddome', 'evilrick']) expect(eleven.find((d) => d.id === id).locked).toBe('Opens after episode 12, “Big score”.');
   });
 
   it('counts the coordinates home on the dial', () => {
@@ -196,7 +204,8 @@ describe('what the HUD shows of the story', () => {
     expect(dialLead({ ...fresh(), episode: 8 }, DIAL.length)).toBe('Coordinates home: 22 of 32');
     expect(dialLead({ ...fresh(), episode: 9 }, DIAL.length)).toBe('Coordinates home: 24 of 32');
     expect(dialLead({ ...fresh(), episode: 10 }, DIAL.length)).toBe('Coordinates home: 28 of 32');
-    expect(dialLead({ ...fresh(), episode: 11 }, DIAL.length)).toBe('Coordinates home: 32 of 32');
+    expect(dialLead({ ...fresh(), episode: 11 }, DIAL.length)).toBe('Coordinates home: 30 of 32');
+    expect(dialLead({ ...fresh(), episode: 12 }, DIAL.length)).toBe('Coordinates home: 32 of 32');
     // (free roam opens the dial, but brings no coordinates home)
     expect(dialLead({ ...fresh(), freeRoam: true }, DIAL.length)).toBe('Coordinates home: 1 of 32');
   });

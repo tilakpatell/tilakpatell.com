@@ -9,11 +9,16 @@
 // through the portal has its way in, its portal home and its spots, read
 // from its data (./places.mjs); and at the Citadel (window.__CITADEL__), its
 // page up, its line read (the story's step over its own) and its toast
-// waited for. Kept apart from the scenarios so no file passes 800 lines.
+// waited for; a place dialled from the garage and home through its own
+// portal, a task not done after a while, the Story tab's ticks; and Rick's
+// rooms on the Vindicators' ship, as their rules have them. Kept apart from
+// the scenarios so no file passes 800 lines.
 import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { EPISODES } from '../../src/components/rickmorty/adventure/episodes.js';
-import { home, loadPlaces, stand, wayIn } from './places.mjs';
+import { home as homeAt, loadPlaces, stand, wayIn } from './places.mjs';
+
+export { ROOMS } from '../../src/components/rickmorty/world/dimensions/vindicatorsRules.js';
 
 export const BASE = process.env.BASE ?? 'http://127.0.0.1:5197';
 export const OUT = process.env.OUT ?? null;
@@ -29,7 +34,7 @@ export const arriveOf = (area) => {
   return [a.x, a.z, a.face];
 };
 export const wayInOf = (area) => wayIn(PLACES.dest(area));
-export const homeOf = (area) => home(PLACES.dest(area));
+export const homeOf = (area) => homeAt(PLACES.dest(area));
 
 export const exe = [
   process.env.CHROME,
@@ -92,6 +97,11 @@ export const PRIME = EPISODES[7];
 export const FAIRY = EPISODES[8];
 export const CITADEL = EPISODES[9];
 export const SECTOR = EPISODES[10];
+export const SCORE = EPISODES[11];
+// the checklist's next once the built episodes are over
+export const CABLE = 'Go into the Smith house and put interdimensional cable on the TV.';
+// (a label in the middle of a line, as a place's words have it)
+export const low = (l) => l[0].toLowerCase() + l.slice(1);
 // Morty by the garage portal, stepped through it, and stood where it took him
 export async function throughPortal(page) {
   await goto(page, 'garage', -302.3, 101.4, Math.PI);
@@ -120,6 +130,15 @@ export async function cardFor(page, i) {
   check(said.includes(`Episode ${i + 1}`) && said.includes(EPISODES[i].title) && said.includes(EPISODES[i].intro[0][1]), `episode ${i + 1}’s card says “${said}”`);
   await page.keyboard.press('Shift');
   await card.waitFor({ state: 'detached', timeout: 5000 });
+}
+// a page of the site opened afresh at `hash` on episode i's card (a story
+// not begun), the card checked and passed, and the world built behind it
+export async function openOnCard(page, hash, i) {
+  await page.goto(`${BASE}/${hash}`, { waitUntil: 'domcontentloaded' });
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await page.locator('.rm-episode').waitFor({ timeout: 600000 });
+  await cardFor(page, i);
+  await built(page);
 }
 // the story at episode e's step s
 export async function at(page, e, s, when) {
@@ -196,6 +215,32 @@ export async function playTo(page, e, wins = []) {
     await toast(page, EPISODES[i].outro[0][1]);
     await cardFor(page, i + 1);
   }
+}
+// dialled from the garage, and through its portal
+export async function dial(page, id) {
+  check((await page.evaluate((id) => window.__C137__.dial(id), id)) === id, `the dial wouldn’t take ${id}`);
+  await throughPortal(page);
+  await inArea(page, id);
+}
+// home through the place's own portal
+export const home = async (page, id) => {
+  await warpUse(page, id, `${id}-portal`, ...homeOf(id));
+  await inArea(page, 'garage');
+};
+// a task not done after a few seconds of the game's own time
+export const notDone = async (page, id, what) => {
+  await later(page, 3.5);
+  check(!(await done(page)).includes(id), what);
+};
+// the Story tab: a step, or an `all`'s part, ticked
+export async function ticked(page, text) {
+  await page.keyboard.press('m');
+  const list = page.locator('#rm-list');
+  await list.waitFor({ timeout: 10000 });
+  const n = await list.locator('li[data-done]', { hasText: text }).count();
+  await page.keyboard.press('m');
+  await list.waitFor({ state: 'detached', timeout: 5000 });
+  return n > 0;
 }
 // a place's game, as its stage has it (Needful Things' deal, the vat's freeze, the Jerryboree's find)
 export const game = (page, area, what) => page.evaluate(([a, w]) => window.__C137__.api.act(a, w), [area, what]);

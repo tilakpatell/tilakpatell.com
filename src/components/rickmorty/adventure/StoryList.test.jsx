@@ -126,9 +126,20 @@ describe('the Story tab', () => {
     expect(html).not.toContain('More of the story soon.');
   });
 
+  it('ticks the Vindicators done before Heist-Con comes up', () => {
+    const at = { episode: 11, step: 0, got: [], wins: [], freeRoam: false };
+    const ticked = (html, text) => new RegExp(`data-done="true"[^>]*>(?:(?!</li>).)*${text}`).test(html);
+    const html = renderToStaticMarkup(<StoryList state={at} tasks={['vindicators']} />);
+    // episodes 1 to 11 done, and the Vindicators' step, done already; Heist-Con still to do
+    expect(done(html)).toBe(12);
+    expect(ticked(html, 'Dial the Vindicators')).toBe(true);
+    expect(ticked(html, 'Dial Heist-Con')).toBe(false);
+    expect(done(renderToStaticMarkup(<StoryList state={at} />))).toBe(11);
+  });
+
   it('ticks every built episode once they’re all done', () => {
-    const html = renderToStaticMarkup(<StoryList state={{ episode: 11, step: 0, got: [], wins: [], freeRoam: false }} />);
-    expect(done(html)).toBe(11);
+    const html = renderToStaticMarkup(<StoryList state={{ episode: 12, step: 0, got: [], wins: [], freeRoam: false }} />);
+    expect(done(html)).toBe(12);
     expect(html).toContain('More of the story soon.');
   });
 });

@@ -32,6 +32,21 @@ describe('the map’s marker inside a game', () => {
     expect(gameGoal({ ...d, sequence: { ...d.sequence, start: null } }, { sequence: { phase: 'idle', order, on: 0 } })).toBe('set-sneezy');
   });
 
+  it('walks him round Heist-Con’s crew first, then to Heistotron’s plan, then booth by booth; round the crew again after a catch', () => {
+    const d = destinationById('heistcon');
+    const order = ['heistskull', 'heistbooth', 'heistcars', 'heisthire'];
+    const crew = ['heistbadge', 'heister-b1', 'heister-a1'];
+    expect(gameGoal(d, { used: new Set(), sequence: { phase: 'idle', order, on: 0 } })).toBe('heistbadge');
+    expect(gameGoal(d, { used: new Set(crew.slice(0, 1)), sequence: { phase: 'idle', order, on: 0 } })).toBe('heister-b1');
+    expect(gameGoal(d, { used: new Set(crew.slice(0, 2)), sequence: { phase: 'idle', order, on: 0 } })).toBe('heister-a1');
+    expect(gameGoal(d, { used: new Set(crew), sequence: { phase: 'idle', order, on: 0 } })).toBe('heistplan');
+    expect(gameGoal(d, { used: new Set(crew), sequence: { phase: 'run', order, on: 2 } })).toBe('heistcars');
+    // (caught: the crew's spots forgotten, and the badge first again)
+    expect(gameGoal(d, { used: new Set(), sequence: { phase: 'idle', order, on: 0 } })).toBe('heistbadge');
+    expect(gameGoal(d, { used: new Set(crew), sequence: { phase: 'lost', order, on: 1 } })).toBe(null);
+    expect(gameGoal(d, { used: new Set(), done: ['heistcon'], sequence: { phase: 'idle', order, on: 0 } })).toBe(null);
+  });
+
   it('walks him round the Jerrys he’s not heard, never straight to ours', () => {
     const d = destinationById('jerryboree');
     const [a, b] = d.find.items;

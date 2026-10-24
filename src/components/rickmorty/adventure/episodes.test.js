@@ -9,9 +9,9 @@ const stepsOf = (e) => e.steps.flatMap((s) => (s.type === 'all' ? [s, ...s.steps
 const allSteps = () => EPISODES.flatMap(stepsOf);
 
 describe('the adventure’s episodes', () => {
-  it('has thirteen episodes, the first eleven ready', () => {
+  it('has thirteen episodes, the first twelve ready', () => {
     expect(EPISODES).toHaveLength(13);
-    expect(READY).toBe(11);
+    expect(READY).toBe(12);
     expect(new Set(EPISODES.map((e) => e.id)).size).toBe(13);
   });
 
@@ -168,5 +168,14 @@ describe('the adventure’s episodes', () => {
       ['task', 'squanch', 'squanch'],
     ]);
     expect(sector.unlocks).toEqual(['heistcon', 'vindicators']);
+  });
+
+  it('goes on with Big score: Heist-Con, then the Vindicators', () => {
+    const big = EPISODES[11];
+    expect(big.title).toBe('Big score');
+    expect(big.steps.map((s) => s.id)).toEqual(['heistcon', 'vindicators']);
+    expect(big.steps[0]).toMatchObject({ type: 'task', id: 'heistcon', place: 'heistcon' });
+    expect(big.steps[1]).toMatchObject({ type: 'task', id: 'vindicators', place: 'vindicators' });
+    expect(big.unlocks).toEqual(['blooddome', 'evilrick']);
   });
 });

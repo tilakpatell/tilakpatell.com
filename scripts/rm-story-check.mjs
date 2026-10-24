@@ -7,7 +7,8 @@
 // street's fight (sim.chase is the cruiser's chase), Needful Things' deal
 // and the vat's freeze (the places' actions deal, setDeal, freeze, setFreeze),
 // the Jerryboree's find (find, setFind), the cable studio's running order
-// (sequence, setSequence, sequence-start), Fantasy World's climb (climb,
+// and Gear World's and Heist-Con's (sequence, its order, on and ready;
+// setSequence, sequence-start), Fantasy World's climb (climb,
 // setClimb; sim.m and sim.t: Morty stood on a ledge, and the game's own
 // time), and Total Rickall's rickall,
 // lookAt, shoot, stopRickall; window.__RMSTORY__: get, feed, dialOpen, jump,
@@ -25,7 +26,7 @@
 // server (default http://127.0.0.1:5197), CHROME the browser, OUT a folder for
 // a shot of each scenario's end. Headless browsers draw in software, slowly:
 // the first world takes a while to build. The scenarios are ./rm-story/'s
-// (basics.mjs, early.mjs, late.mjs, citadel.mjs, sector.mjs), the steps they share its helpers.mjs, and
+// (basics.mjs, early.mjs, late.mjs, citadel.mjs, sector.mjs, score.mjs), the steps they share its helpers.mjs, and
 // where they stand Morty in a place through the portal its places.mjs, read
 // from the places' own data.
 import { chromium } from 'playwright-core';
@@ -36,8 +37,9 @@ import { EARLY } from './rm-story/early.mjs';
 import { LATE } from './rm-story/late.mjs';
 import { AT_THE_CITADEL } from './rm-story/citadel.mjs';
 import { SECTOR_CHECKS } from './rm-story/sector.mjs';
+import { SCORE_CHECKS } from './rm-story/score.mjs';
 
-const SCENARIOS = { ...BASICS, ...EARLY, ...LATE, ...AT_THE_CITADEL, ...SECTOR_CHECKS };
+const SCENARIOS = { ...BASICS, ...EARLY, ...LATE, ...AT_THE_CITADEL, ...SECTOR_CHECKS, ...SCORE_CHECKS };
 
 const only = process.argv.slice(2);
 for (const n of only) if (!SCENARIOS[n]) throw new Error(`no scenario ${n} (there are ${Object.keys(SCENARIOS).join(', ')})`);

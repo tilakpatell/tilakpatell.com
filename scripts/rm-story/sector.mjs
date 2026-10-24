@@ -2,48 +2,18 @@
 // (../rm-story-check.mjs): its four planets dialled from the garage and each
 // game played, with a loss and a retry where there's one to lose; and a
 // returner whose old ticks pass their parts, whose games rest, and whose
-// last escape on Planet Squanch's own page holds for Morty's line.
+// last escape on Planet Squanch's own page holds for Morty's line. Either way
+// the sector ends on episode 12's card.
 /* global window, document */
-import { OUT, check, done, use, reads, story, at, opens, toast, inArea, throughPortal, playTo, game, standOn, later, warpUse, caught, spotAt, wayInOf, homeOf, goalIs, noLink, meter, meterSays, warp, hunting, open, PLACES, CITADEL, SECTOR } from './helpers.mjs';
+import { OUT, check, use, inArea, reads, story, at, opens, toast, playTo, game, standOn, later, warpUse, caught, spotAt, wayInOf, homeOf, goalIs, noLink, meter, meterSays, warp, hunting, open, openOnCard, cardFor, dial, home, notDone, ticked, low, PLACES, CITADEL, SECTOR, SCORE } from './helpers.mjs';
 
 const [BIRD, GEAR, PLUTO, SQUANCH] = SECTOR.steps[0].steps;
 const COGS = PLACES.dest('gearworld').sequence.items;
-const CABLE = 'Go into the Smith house and put interdimensional cable on the TV.';
-// (a label in the middle of a line, as Gear World's words have it)
-const low = (l) => l[0].toLowerCase() + l.slice(1);
-
-// a task not done after a few seconds of the game's own time
-const notDone = async (page, id, what) => {
-  await later(page, 3.5);
-  check(!(await done(page)).includes(id), what);
-};
 // Bird World's crystals drawn now (its builder's own count), in pick order
 const drawnAre = (page, ids, where) =>
   page.waitForFunction((ids) => JSON.stringify(window.__C137__.api.act('birdworld', 'crystals')) === JSON.stringify(ids), ids, { timeout: 10000, polling: 100 }).catch(async () => {
     throw new Error(`${where} the crystals drawn are ${JSON.stringify(await page.evaluate(() => window.__C137__.api.act('birdworld', 'crystals')))}`);
   });
-// the Story tab: one of the sector's parts ticked
-async function ticked(page, text) {
-  await page.keyboard.press('m');
-  const list = page.locator('#rm-list');
-  await list.waitFor({ timeout: 10000 });
-  const n = await list.locator('li[data-done]', { hasText: text }).count();
-  await page.keyboard.press('m');
-  await list.waitFor({ state: 'detached', timeout: 5000 });
-  return n > 0;
-}
-// dialled from the garage, and through its portal
-async function dial(page, id) {
-  check((await page.evaluate((id) => window.__C137__.dial(id), id)) === id, `the dial wouldn’t take ${id}`);
-  await throughPortal(page);
-  await inArea(page, id);
-}
-// home through the place's own portal
-const home = async (page, id) => {
-  await warpUse(page, id, `${id}-portal`, ...homeOf(id));
-  await inArea(page, 'garage');
-};
-
 export const SECTOR_CHECKS = {
   // a new visitor plays episode 11: each planet dialled from the garage, its
   // part the line there and its game the marker; Bird World's crystals (a
@@ -195,17 +165,20 @@ export const SECTOR_CHECKS = {
     });
     await home(page, 'squanch');
     await toast(page, SECTOR.outro[0][1]);
-    await page.waitForTimeout(1500);
-    check((await page.locator('.rm-episode').count()) === 0, 'a card showed for an episode that isn’t built');
+    await cardFor(page, 11);
     await at(page, 11, 0, 'after the sector');
-    await opens(page, PLACES.dial, true, 'after episode 11');
-    await reads(page, CABLE);
+    await opens(page, SECTOR.unlocks, true, 'after episode 11');
+    await opens(page, SCORE.unlocks, false, 'after episode 11');
+    await reads(page, SCORE.steps[0].text);
+    await noLink(page, 'after episode 11');
+    await goalIs(page, 'garage-portal', 'in the garage after episode 11');
   },
 
   // a returner who'd done three of the sector's planets before episode 11
   // was built: their parts passed at once, their games at rest; then Planet
   // Squanch on its own page, whose escape ends the episode and holds the
-  // page for Morty's line before it leaves
+  // page for Morty's line, episode 12's card over it, before it leaves; and
+  // the card again in C-137, the episode not begun
   'sector-page': Object.assign(
     async (page) => {
       await open(page, '#/c-137/gearworld');
@@ -224,6 +197,12 @@ export const SECTOR_CHECKS = {
       await warpUse(page, 'squanch', 'squanch-portal', ...homeOf('squanch'));
       await toast(page, SECTOR.outro[0][1]);
       check((await page.locator('.rm-fade[data-on]').count()) === 0, 'the portal’s fade covered Morty’s line');
+      // (episode 12's card, there on the planet's own page with no key pressed)
+      await page.locator('.rm-episode', { hasText: 'Episode 12' }).waitFor({ timeout: 5000 }).catch(() => {
+        throw new Error('no card for episode 12 on Squanch’s own page');
+      });
+      const card = await page.locator('.rm-episode').textContent();
+      check(card.includes(SCORE.title) && card.includes(SCORE.intro[0][1]), `episode 12’s card on Squanch’s own page says “${card}”`);
       await page.waitForFunction(() => !document.querySelector('.rm-clock'), null, { timeout: 1500, polling: 50 }).catch(() => {
         throw new Error('the escape’s clock ran on under Morty’s line');
       });
@@ -233,11 +212,11 @@ export const SECTOR_CHECKS = {
         throw new Error(`the page never left for the universe (${new URL(page.url()).hash})`);
       });
       await at(page, 11, 0, 'after the escape');
-      // and C-137: no card, the checklist's line, and Morty's line not said again
-      await open(page, '#/c-137');
-      await reads(page, CABLE);
+      // and C-137: episode 12's card again (it's not begun), Heist-Con's line, and Morty's line not said again
+      await openOnCard(page, '#/c-137', 11);
+      await reads(page, SCORE.steps[0].text);
       await page.waitForTimeout(2000);
-      check((await page.locator('.rm-episode').count()) === 0, 'a card showed after the last built episode');
+      check((await page.locator('.rm-episode').count()) === 0, 'episode 12’s card came back in C-137');
       check((await page.locator('.rm-toast', { hasText: SECTOR.outro[0][1] }).count()) === 0, 'Morty’s line was said again in C-137');
     },
     { seed: { 'tp-rm-story': { v: 1, data: { episode: 10, step: 0, got: [], wins: ['cabinet', 'chase'], freeRoam: false } }, 'tp-c137-done': ['birdworld', 'gearworld', 'pluto'] } },
