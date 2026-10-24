@@ -132,7 +132,10 @@ export const SECTOR_CHECKS = {
     await toast(page, 'The gear police heard the city turn, and they’re coming for you.');
     const run = await game(page, 'gearworld', 'sequence');
     check(run.phase === 'run' && run.on === 0, `a wrong first cog left the city ${run.phase} with ${run.on} on`);
-    check((await hunting(page, 'gearworld')).length === 2, 'the gear police didn’t both come after him');
+    // (the stage sets them on the frame after the cog's press, and each turns on its own next step)
+    await page.waitForFunction(() => window.__C137__.api.act('gearworld', 'npcs').filter((n) => n.hunting).length === 2, null, { timeout: 5000, polling: 50 }).catch(() => {
+      throw new Error('the gear police didn’t both come after him');
+    });
     // beside a gear cop: caught, the police home, the city still
     const cop = await page.evaluate(() => window.__C137__.api.act('gearworld', 'npcs').find((n) => n.id === 'gpolice-a'));
     await warp(page, 'gearworld', cop.x + 0.6, cop.z);
