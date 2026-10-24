@@ -3,11 +3,13 @@
 //
 // The names go down greedily, the highest priority first (a tie goes by id,
 // so the same places thin the same way every time). Each takes the first of
-// its sides that stays inside the frame and meets no name already down and no
-// other place's dot. One with no such side gets null: its dot alone, no name.
-// A firm label (the picked place's) that no side fits for the dots takes the
-// first that fits without them, so a pick in a crowd is still named: it may
-// cover another's dot, never the frame's edge or a name already down.
+// its sides that stays inside the frame and meets no name already down, no
+// other place's dot and no hard point (the ship). One with no such side gets
+// null: its dot alone, no name. A firm label (the picked place's) that no side
+// fits for the dots takes the first that fits without the places' dots, so a
+// pick in a crowd is still named: it may cover another place's dot, never the
+// frame's edge, a name already down or a hard point. The ship is on the chart
+// wherever it is, so a pick it blocks on every side goes unnamed.
 //
 // The galaxy's labelPlace.js is the model. It is not imported: worlds are
 // islands, and the universe hides a name where the galaxy moves it. The nav
@@ -17,7 +19,7 @@
 //
 // SIDES: right, left and under the dot
 // boxOf(side, { x, y, w, h }) → { x0, y0, x1, y1 }
-// declutter(labels, { bounds, sides, dots }) → Map of id → side or null
+// declutter(labels, { bounds, sides, dots, hard }) → Map of id → side or null
 // firstInside(label, { bounds, sides }) → the first side inside the frame, or
 //   null: where a name left off shows over the rest, on a hover or a focus
 //
@@ -26,7 +28,8 @@
 // past its middle (navmap.css's 16 px dot). bounds is the frame's box, or
 // its circle { cx, cy, r } (the nav map's, which cuts off the rest), and a
 // name's box keeps every corner inside it.
-// dots are the { x, y } middles of the dots drawn: a name keeps off each
+// dots are the { x, y } middles of the places' dots drawn, and hard the same
+// for the marks no name may ever cover (the ship's): a name keeps off each
 // one's 16 px box, but never off one within 8 px of its own point, which is
 // its own dot or one drawn on top of it.
 
@@ -53,16 +56,20 @@ function byPriority(a, b) {
   return a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
 }
 
-export function declutter(labels, { bounds, sides = SIDES, dots = [] }) {
+// the 16 px boxes of the dots a label must keep off: not its own, nor one drawn on it
+const blocksFor = (l, points) => points.filter((d) => !(Math.hypot(d.x - l.x, d.y - l.y) <= DOT)).map((d) => ({ x0: d.x - DOT, y0: d.y - DOT, x1: d.x + DOT, y1: d.y + DOT }));
+
+export function declutter(labels, { bounds, sides = SIDES, dots = [], hard = [] }) {
   const out = new Map(labels.map((l) => [l.id, null]));
   const kept = [];
   for (const l of [...labels].sort(byPriority)) {
-    const blocks = dots.filter((d) => !(Math.hypot(d.x - l.x, d.y - l.y) <= DOT)).map((d) => ({ x0: d.x - DOT, y0: d.y - DOT, x1: d.x + DOT, y1: d.y + DOT }));
+    const hardBlocks = blocksFor(l, hard);
+    const blocks = [...blocksFor(l, dots), ...hardBlocks];
     const fits = (side, off) => {
       const box = boxOf(side, l);
       return within(box, bounds) && !kept.some((k) => meet(box, k)) && !off.some((d) => meet(box, d));
     };
-    const side = sides.find((s) => fits(s, blocks)) ?? (l.firm ? sides.find((s) => fits(s, [])) : undefined);
+    const side = sides.find((s) => fits(s, blocks)) ?? (l.firm ? sides.find((s) => fits(s, hardBlocks)) : undefined);
     if (side === undefined) continue;
     kept.push(boxOf(side, l));
     out.set(l.id, side);

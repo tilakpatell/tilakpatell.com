@@ -65,6 +65,16 @@ describe('declutter', () => {
     const s = declutter([L('b', 500, 500, 2), firm(L('a', 501, 500, 1))], { bounds });
     expect([s.get('b'), s.get('a')]).toEqual(['right', null]);
   });
+  it('keeps every name off a hard point (the ship), a firm one’s too, where it lets a place’s dot go', () => {
+    const firm = (l) => ({ ...l, firm: true });
+    const crowd = { bounds, dots: [{ x: 360, y: 500 }, { x: 400, y: 530 }], hard: [{ x: 440, y: 500 }] };
+    expect(declutter([firm(L('pick', 400, 500, 1, 86))], crowd).get('pick')).toBe('left');
+    expect(declutter([L('a', 500, 500, 1)], { bounds, hard: [{ x: 560, y: 500 }] }).get('a')).toBe('left');
+    // a ship hard by the pick blocks every side: the pick goes unnamed rather than hide it
+    expect(declutter([firm(L('pick', 400, 500, 1))], { bounds, hard: [{ x: 400, y: 510 }] }).get('pick')).toBeNull();
+    // and one drawn on the pick's own dot blocks nothing
+    expect(declutter([firm(L('pick', 400, 500, 1))], { bounds, hard: [{ x: 404, y: 504 }] }).get('pick')).toBe('right');
+  });
   it('finds the first side inside the frame, for a name left off to show on', () => {
     expect(firstInside(L('a', 500, 500, 1), { bounds })).toBe('right');
     expect(firstInside(L('a', 950, 500, 1), { bounds })).toBe('left');

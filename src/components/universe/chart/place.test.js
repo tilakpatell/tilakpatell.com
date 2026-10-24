@@ -31,6 +31,11 @@ describe('placing marks', () => {
     expect([picked.side, picked.spare]).toEqual(['right', null]);
     expect(placeMarks(view, ring, FRAMES.nav)[1].spare).toBeNull(); // (no name, nothing to show)
   });
+  it('never names the pick over the ship, though it may cover another place’s dot', () => {
+    const crowd = [M('pick', drawnAt(400, 500), { name: 'Abcdefghij' }), ...[[360, 500], [400, 530]].map(([x, y], i) => M(`dot${i}`, drawnAt(x, y), { name: '' }))];
+    const [pick] = placeMarks(view, crowd, FRAMES.nav, { keep: ['pick'], avoid: [{ x: 440, y: 500 }] });
+    expect(pick.side).toBe('left');
+  });
   it('stands a pick past the rim on its stem: the dot slides down it to the rim, and the foot stays put', () => {
     const close = createView({ range: 7200 });
     const below = M('below', [0, -120000, 0]);
@@ -47,6 +52,22 @@ describe('placing marks', () => {
     // the mini-map's box holds it at its padded edge, under its foot
     const [mini] = placeMarks(close, [below], FRAMES.mini, { keep: ['below'] });
     expect(mini).toMatchObject({ edge: true, x: 300, y: 292, footX: 300, footY: 142 });
+    // far out sideways, its foot is off the box too: it is held at the edge with no stem
+    const [aside] = placeMarks(close, [M('aside', [1e7, -3e6, 0])], FRAMES.mini, { keep: ['aside'] });
+    expect(aside).toMatchObject({ edge: true, x: 592, y: 292, footX: 592, footY: 292 });
+  });
+  it('stands a place in range that its stem takes past the rim the same way, so nothing is drawn off the chart', () => {
+    // looking straight down, the stem is drawn at stemFloor of the height, which can stretch past the rim
+    const [low] = placeMarks(view, [M('low', [0, -48000, 107000])], FRAMES.nav);
+    const p = project(view, [0, -48000, 107000]);
+    expect(p.inside).toBe(true);
+    expect(low).toMatchObject({ edge: true, x: 500, footX: 500 });
+    expect(low.footY).toBeCloseTo(500 + p.foot[1] * 470, 9);
+    expect(low.y).toBeCloseTo(500 + 0.97 * 470, 9);
+    // the mini-map's box holds a high one at its padded top, over its foot
+    const shown = [M('a', [0, 40000, 0]), M('b', [30000, 0, 0])];
+    const [high] = placeMarks(miniView(shown), shown, FRAMES.mini);
+    expect(high).toMatchObject({ edge: true, x: 300, y: 8, footX: 300, footY: 142 });
   });
   it('stands a place above the ship on a stem going up the frame', () => {
     const high = placeMarks(view, marks, FRAMES.nav).find((p) => p.id === 'high');
@@ -72,6 +93,12 @@ describe('placing marks', () => {
     expect(levelOf(shown.range)).toBe('system');
     expect(shown).toMatchObject({ focus: [300, 0, 0], follow: false });
     expect(reveal(away, M('n', [41000, 0, 0]))).toBe(away);
+    // straight over the focus, past 0.9 of the range: there is nowhere to move to, so the ship is not let go
+    const followed = createView({ range: 120000, follow: true });
+    expect(reveal(followed, M('over', [0, 115000, 0]))).toBe(followed);
+    const over = reveal(createView({ range: 9000, follow: true }), M('over', [0, 7000, 0], { levels: ['system'] }));
+    expect(over).toMatchObject({ focus: [0, 0, 0], follow: true });
+    expect(over.range).toBeCloseTo(7200, 6);
   });
   it('fits the mini-map’s range round what it shows, at its old tilt', () => {
     expect(fitRange([0, 0, 0], marks.slice(0, 2))).toBeCloseTo(2100);

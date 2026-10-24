@@ -15,8 +15,9 @@
 // labelSize(name, fontPx) → [w, h] in px, the dot and its name together
 // placeMarks(view, marks, frame, opts) → Placed[], in the marks' order (the tab order)
 //   opts = { level, keep, fontPx, scale, sides, avoid, levels }: avoid is the
-//   { x, y } points, in frame units, whose dots no name may cover besides the
-//   marks' own (placeShip's result, null with no ship, which is let go)
+//   { x, y } points, in frame units, whose dots no name may cover, not even
+//   the pick's, which may cover another place's (placeShip's result, null
+//   with no ship, which is let go)
 //   Placed = { id, mark, x, y, footX, footY, size, side, spare, edge, depth }, in frame units:
 //   side is where its name goes, or null to leave it off; spare is where a
 //   name left off shows over the rest, on a hover or a focus (the first side
@@ -30,11 +31,13 @@
 // A mark the view's level doesn't show, or past the range, is left off,
 // unless it is kept (the picked place). A kept mark is always on, and its name
 // goes down first and is never left off for another place's dot, only for the
-// frame's edge or another kept name. Off the chart, it is pinned to the rim:
-// it slides down its own stem to it, so the stem stays upright and still says
-// how far above or below the ship it is. One whose foot is off the chart too
-// is pinned on its way out, with no stem. A mark with no number for its place
-// is never drawn.
+// frame's edge, an avoid point or another kept name. A mark drawn past the
+// rim, kept or in range, is pinned to the rim (looking down, a high one's
+// stem is drawn at stemFloor of its height, which can take it past): it
+// slides down its own stem to it, so the stem stays upright and still says
+// how far above or below the ship it is. One whose foot is at the rim or past
+// it is pinned on its way out, with no stem. A mark with no number for its
+// place is never drawn.
 
 import { SECTOR, sectorAt, sectorCentre, sectorKey } from '../../../lib/space/address';
 import { declutter, firstInside } from './declutter';
@@ -62,13 +65,13 @@ function boundsOf(frame, scale) {
   return { x0: 0, y0: 0, x1: w * scale, y1: h * scale };
 }
 
-// a mark and its stem's foot on the frame: a pinned one past the rim slides
-// down its stem to the rim (the box's clamp does that already), unless its
-// foot is past it too
-function stand(frame, p, pinned) {
-  const at = toFrame(frame, [p.u, p.v], { pin: pinned });
+// a mark and its stem's foot on the frame: one past the rim slides down its
+// stem to the rim (the box's clamp does that already), unless its foot is at
+// the rim or past it
+function stand(frame, p) {
+  const at = toFrame(frame, [p.u, p.v], { pin: true });
   const foot = toFrame(frame, p.foot);
-  if (!pinned || !at.edge) return { at, foot };
+  if (!at.edge) return { at, foot };
   if (frame.shape !== 'circle') return { at, foot: foot.edge ? at : foot };
   if (Math.hypot(p.foot[0], p.foot[1]) > PIN) return { at, foot: at };
   return { at: { ...toFrame(frame, [p.u, Math.sign(p.v) * Math.sqrt(PIN ** 2 - p.u ** 2)]), edge: true }, foot };
@@ -80,10 +83,9 @@ export function placeMarks(view, marks, frame, opts = {}) {
   const placed = [];
   for (const mark of marks) {
     if (!finiteAt(mark.at)) continue;
-    const pinned = kept.has(mark.id);
     const p = project(view, mark.at);
-    if (!pinned && ((levels && !mark.levels?.includes(level)) || !p.inside)) continue;
-    const { at, foot } = stand(frame, p, pinned);
+    if (!kept.has(mark.id) && ((levels && !mark.levels?.includes(level)) || !p.inside)) continue;
+    const { at, foot } = stand(frame, p);
     const size = reachOn(view, mark.at, mark.reach ?? 0) * frame.r;
     placed.push({ id: mark.id, mark, x: at.x, y: at.y, footX: foot.x, footY: foot.y, size, side: null, spare: null, edge: at.edge, depth: p.depth });
   }
@@ -94,9 +96,11 @@ export function placeMarks(view, marks, frame, opts = {}) {
       const firm = kept.has(p.id);
       return { id: p.id, x: p.x * scale, y: p.y * scale, w, h, priority: firm ? Infinity : p.mark.priority, firm };
     });
-  const dots = [...placed, ...avoid.filter((d) => d && finite(d.x) && finite(d.y))].map((d) => ({ x: d.x * scale, y: d.y * scale }));
+  const px = (d) => ({ x: d.x * scale, y: d.y * scale });
+  const dots = placed.map(px);
+  const hard = avoid.filter((d) => d && finite(d.x) && finite(d.y)).map(px);
   const bounds = boundsOf(frame, scale);
-  const side = declutter(labels, { bounds, sides, dots });
+  const side = declutter(labels, { bounds, sides, dots, hard });
   const spare = new Map(labels.filter((l) => side.get(l.id) === null).map((l) => [l.id, firstInside(l, { bounds, sides })]));
   for (const p of placed) {
     p.side = side.get(p.id) ?? null;
@@ -174,7 +178,8 @@ function rangeInto(i, from) {
 
 // Shows a mark: a level that doesn't show it gives way to the nearest one
 // that does (the least zoom), then a mark past 0.9 of the range brings the
-// focus to it and lets go of the ship.
+// focus to it and lets go of the ship. The same view comes back when nothing
+// changes, and one straight over or under the focus moves nothing.
 export function reveal(view, mark) {
   if (!mark || !finiteAt(mark.at)) return view;
   let { range } = view;
@@ -184,6 +189,8 @@ export function reveal(view, mark) {
     const zoom = (r) => Math.abs(Math.log(r / view.range));
     range = allowed.map((i) => rangeInto(i, from)).reduce((best, r) => (zoom(r) < zoom(best) ? r : best));
   }
-  if (dist(mark.at, view.focus) <= 0.9 * range) return range === view.range ? view : { ...view, range };
-  return { ...view, range, focus: [mark.at[0], view.focus[1], mark.at[2]], follow: false };
+  const [fx, fy, fz] = view.focus;
+  const moves = mark.at[0] !== fx || mark.at[2] !== fz; // (one straight over the focus has nowhere to move it)
+  if (!moves || dist(mark.at, view.focus) <= 0.9 * range) return range === view.range ? view : { ...view, range };
+  return { ...view, range, focus: [mark.at[0], fy, mark.at[2]], follow: false };
 }
