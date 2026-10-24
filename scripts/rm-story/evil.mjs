@@ -60,11 +60,15 @@ async function win(page, area) {
 // lost: stood a metre off him till the fade, his line, back at the way in, the fight over
 async function lose(page, area) {
   await fightOn(page, area);
+  // (listened for from the start: a slow frame can outlast the toast)
+  const beaten = page.locator('.rm-toast', { hasText: huntOf(area).line }).waitFor({ timeout: 180000 });
   for (let i = 0; i < 60 && !(await page.evaluate(() => window.__C137__.sim.fading)); i++) {
     await warp(page, area, ...standOff(area, await him(page, area), 1));
     await later(page, 0.3);
   }
-  await toast(page, huntOf(area).line);
+  await beaten.catch(() => {
+    throw new Error(`no toast saying “${huntOf(area).line}”`);
+  });
   await caught(page, wayInOf(area));
   await later(page, 0.5);
   await noFight(page, 'after a loss,');
