@@ -277,7 +277,7 @@ export const ROWS = [
     ],
     spots: [
       { id: 'miles', dx: -8, dz: -6.4, label: 'Miles Knightly', verb: 'Talk' },
-      { id: 'heister-a1', dx: 6, dz: 2, label: 'A heister', verb: 'Recruit', r: 1.6 },
+      { id: 'heister-a1', dx: 6, dz: 2, label: 'A muscle', verb: 'Recruit', r: 1.6 },
       { id: 'heister-b1', dx: -7, dz: 3, label: 'A cat burglar', verb: 'Recruit', r: 1.6 },
       { id: 'heistotron', dx: 0, dz: -9, label: 'Heistotron', verb: 'Look', r: 2 },
       { id: 'heistbooth', dx: 14, dz: 10, label: 'The gadget booth', verb: 'Lift', r: 1.8 },

@@ -498,6 +498,8 @@ describe('Heist-Con', () => {
       ['heister-a1', 'heister-a', { speed: 2.6, catchR: 1.2, until: 'heistcon' }],
       ['heister-b1', 'heister-b', { speed: 2.8, catchR: 1.2, until: 'heistcon' }],
     ]);
+    // (named as the job asks for them: a muscle and a cat burglar)
+    expect(hunters.map((p) => spot(p.id).label)).toEqual(['A muscle', 'A cat burglar']);
     for (const p of hunters) {
       expect(spot(p.id).verb, p.id).toBe('Recruit');
       expect(h.say[p.id]?.who, p.id).toBeTruthy();
