@@ -33,6 +33,7 @@
    over them (./storyline.js) in the Citadel's cyan, red on red alert */
 .citadel-stage .shire-objective .hud-objective-text { color: var(--shire-ink); }
 .citadel-objective-story { display: block; margin-bottom: 0.15rem; color: var(--shire-gold); font: 600 max(0.72rem, 0.86em)/1.3 var(--font-sans); }
+.citadel-stage[data-mood='red'] .citadel-objective-story { color: #ff9aa4; } /* (the accent's red is 3.5:1 on the red glass: too low for text this small, as the Wanted chip's own text knows) */
 /* an episode's card (../adventure/EpisodeCard.jsx) on the Citadel's glass:
    its cyan (red on red alert) for C-137's lime, and its panels' edge */
 .citadel-stage .rm-episode { --rm-ink: #070a14; --rm-glass: var(--shire-glass-hi); --rm-lime: var(--shire-gold); border: 1px solid var(--shire-line); border-radius: 12px; box-shadow: 0 14px 40px rgba(0, 0, 0, 0.35); }
@@ -58,6 +59,9 @@
 
 @media (max-width: 639px) {
   .citadel-line, .citadel-floor { left: 0.7rem; transform: none; width: calc(100% - 5.4rem); }
+  /* under the top row, measured (./CitadelWorld.jsx: the title and its line, or
+     the map and its chips, whichever is taller), however tall they run */
+  .citadel-stage[data-mode='walk'] .shire-toast { top: calc(var(--citadel-under, 11.5rem) + 0.5rem); }
 }
 
 /* no chapter bar over the top here, as Middle-earth has */

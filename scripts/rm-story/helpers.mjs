@@ -76,6 +76,11 @@ export async function reads(page, text) {
     throw new Error(`the objective reads “${await page.locator('.rm-hud .rm-objective').first().textContent()}”, not “${text}”`);
   });
 }
+// the objective line is a link, to `hash`
+export async function linksTo(page, hash) {
+  const to = await page.evaluate(() => document.querySelector('.rm-hud .rm-objective-link')?.getAttribute('href') ?? null);
+  check(to?.endsWith(hash), `the objective line doesn’t link to ${hash} (${to})`);
+}
 export const WIPED = EPISODES[0];
 export const ARCADE = EPISODES[1];
 export const GUESTS = EPISODES[2];

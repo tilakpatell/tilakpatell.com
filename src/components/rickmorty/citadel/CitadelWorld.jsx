@@ -34,6 +34,7 @@ import { EPISODES } from '../adventure/episodes';
 import EpisodeCard from '../adventure/EpisodeCard';
 import { newsOf } from '../adventure/hud';
 import { ENTER, asksCard, atDoor, storyLead } from './storyline';
+import { useUnder } from './useUnder';
 import { useRmEarn } from '../useRmEarn';
 import { seedsOf } from '../earn';
 import GuideCue from '../../guide/GuideCue';
@@ -123,8 +124,10 @@ export default function CitadelWorld({ onLeave, leaveLabel = 'Back to C-137', fr
   // story comes to its door while it's open: a tab, a jump), and each step the
   // Citadel takes (outside the updater, which React may run twice); what it says
   // back waits, added to (StrictMode feeds twice, the second to nothing)
-  const { feed, state: storyAt } = useAdventure();
+  const { feed, state: storyAt, keepUnsaid } = useAdventure();
   const [news, setNews] = useState([]);
+  const newsRef = useRef(news);
+  newsRef.current = news;
   const tell = useCallback(
     (e) => {
       const out = feed(e);
@@ -137,6 +140,8 @@ export default function CitadelWorld({ onLeave, leaveLabel = 'Back to C-137', fr
   useEffect(() => {
     tell(ENTER);
   }, [tell, door]);
+  // (left before it was said: Rick out by the way home under his feet; C-137 says it)
+  useEffect(() => () => newsRef.current.length && keepUnsaid(newsRef.current), [keepUnsaid]);
   const complete = useCallback(
     (id) => {
       const taken = !doneRef.current.includes(id) && citadelProgress([...doneRef.current, id]).done.includes(id);
@@ -285,6 +290,9 @@ function World({ prog, done, complete, gl, setGl, onLeave, leaveLabel, frozen, o
   const showing = usePageVisible();
   const live = gl === 'on' && inView && showing && !frozen;
   const hasHangar = Boolean(onHangar);
+  // where the top row ends, for the toast on a phone: under it however tall the line runs (./citadel.css)
+  const topRow = useRef(null);
+  useUnder(topRow, '--citadel-under', hud.mode === 'walk');
 
   // the story (../adventure/): the visit's episode card, asked for once the world's
   // live (seen, not timed out in a hidden tab) and only in an episode with a step
@@ -1113,21 +1121,12 @@ function World({ prog, done, complete, gl, setGl, onLeave, leaveLabel, frozen, o
       {townLoading && <p className="shire-loading">Taking the lift down to Mortytown…</p>}
 
       {walking && (
-        <div className="shire-hud shire-hud-top">
+        <div ref={topRow} className="shire-hud shire-hud-top">
           <div className="shire-brand">
             <h1 id="citadel-title" className="shire-title">
               {inTown ? 'Mortytown' : 'The Citadel of Ricks'}
             </h1>
-            <Objective
-              className="shire-objective"
-              glyph="◆"
-              text={
-                <>
-                  {lead && <b className="citadel-objective-story">{lead}</b>}
-                  {objective}
-                </>
-              }
-            />
+            <Objective className="shire-objective" glyph="◆" text={<>{lead && <b className="citadel-objective-story">{lead}</b>}{objective}</>} />
           </div>
           <div className="shire-side">
             <canvas ref={map} className="shire-map" width="150" height="150" aria-hidden="true" />

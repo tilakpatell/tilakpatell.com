@@ -163,6 +163,20 @@ describe('the adventure’s store', () => {
     expect(a.get()).toEqual(fresh());
   });
 
+  it('keeps what a page left before it could say it, for the next to say once', () => {
+    // (the Citadel left mid-toast, its episode's closing line still to say: C-137 says it)
+    const a = createAdventure({ saves, read: none });
+    expect(a.takeUnsaid()).toEqual([]);
+    a.keepUnsaid([{ type: 'done', episode: 9 }]);
+    a.keepUnsaid([]);
+    a.keepUnsaid([{ type: 'episode', episode: 10 }]);
+    expect(a.takeUnsaid()).toEqual([
+      { type: 'done', episode: 9 },
+      { type: 'episode', episode: 10 },
+    ]);
+    expect(a.takeUnsaid()).toEqual([]);
+  });
+
   it('opens a visit with the card of the episode it starts on, once', () => {
     const a = createAdventure({ saves, read: none });
     expect(a.intro()).toBe(0);
