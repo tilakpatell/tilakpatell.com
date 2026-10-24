@@ -4,7 +4,7 @@
 // returner whose old ticks pass their parts, whose games rest, and whose
 // last escape on Planet Squanch's own page holds for Morty's line.
 /* global window, document */
-import { BASE, N, OUT, check, done, built, use, reads, story, at, opens, toast, inArea, throughPortal, playTo, game, standOn, later, warpUse, caught, spotAt, wayInOf, homeOf, PLACES, CITADEL, SECTOR } from './helpers.mjs';
+import { OUT, check, done, use, reads, story, at, opens, toast, inArea, throughPortal, playTo, game, standOn, later, warpUse, caught, spotAt, wayInOf, homeOf, goalIs, noLink, meter, meterSays, warp, hunting, open, PLACES, CITADEL, SECTOR } from './helpers.mjs';
 
 const [BIRD, GEAR, PLUTO, SQUANCH] = SECTOR.steps[0].steps;
 const COGS = PLACES.dest('gearworld').sequence.items;
@@ -12,35 +12,16 @@ const CABLE = 'Go into the Smith house and put interdimensional cable on the TV.
 // (a label in the middle of a line, as Gear World's words have it)
 const low = (l) => l[0].toLowerCase() + l.slice(1);
 
-// the marker's point (the sim's `goal`): a link's or a spot's id
-const goalIs = (page, id, where) =>
-  page.waitForFunction((id) => window.__C137__.sim.goal?.id === id, id, { timeout: 15000, polling: 100 }).catch(async () => {
-    throw new Error(`${where} the marker’s on ${await page.evaluate(() => window.__C137__.sim.goal?.id ?? null)}, not ${id}`);
-  });
-// the objective line isn't a link
-const noLink = async (page, where) => check((await page.locator('.rm-hud .rm-objective-link').count()) === 0, `${where} the line is a link`);
 // a task not done after a few seconds of the game's own time
 const notDone = async (page, id, what) => {
   await later(page, 3.5);
   check(!(await done(page)).includes(id), what);
 };
-// the place's meter, by its title, and its line
-const meter = (page, title) => page.locator(`.rm-cluster[aria-label="${title}"][data-on]`);
-const meterSays = (page, title, text) =>
-  page.waitForFunction(([t, s]) => document.querySelector(`.rm-cluster[aria-label="${t}"][data-on]`)?.textContent.includes(s), [title, text], { timeout: 15000, polling: 100 }).catch(async () => {
-    throw new Error(`the meter reads “${await meter(page, title).first().textContent().catch(() => '(none)')}”, not “${text}”`);
+// Bird World's crystals drawn now (its builder's own count), in pick order
+const drawnAre = (page, ids, where) =>
+  page.waitForFunction((ids) => JSON.stringify(window.__C137__.api.act('birdworld', 'crystals')) === JSON.stringify(ids), ids, { timeout: 10000, polling: 100 }).catch(async () => {
+    throw new Error(`${where} the crystals drawn are ${JSON.stringify(await page.evaluate(() => window.__C137__.api.act('birdworld', 'crystals')))}`);
   });
-// Morty moved within the place (its game going on) and stood there a moment
-const warp = (page, area, x, z, face = N) => page.evaluate(([a, x, z, f]) => window.__C137__.warp(a, x, z, f), [area, x, z, face]);
-// a page of the site opened afresh at `hash` (a hash change alone keeps the
-// last page's world tearing down under the next one's dev hook)
-async function open(page, hash) {
-  await page.goto(`${BASE}/${hash}`, { waitUntil: 'domcontentloaded' });
-  await page.reload({ waitUntil: 'domcontentloaded' });
-  await built(page);
-}
-// the place's hunters after him now
-const hunting = (page, area) => page.evaluate((a) => window.__C137__.api.act(a, 'npcs').filter((n) => n.hunting).map((n) => n.id), area);
 // the Story tab: one of the sector's parts ticked
 async function ticked(page, text) {
   await page.keyboard.press('m');
@@ -80,6 +61,11 @@ export const SECTOR_CHECKS = {
     await page.evaluate(() => window.__C137__.goto('garage', -302.3, 101.4, Math.PI));
     await inArea(page, 'garage');
     await goalIs(page, 'garage-portal', 'in the garage');
+    // Pluto dialled first, Bird World's part still to do: the marker's on Pluto's game, not its way out
+    await dial(page, 'pluto');
+    await reads(page, PLUTO.text);
+    await goalIs(page, 'claim-growing', 'on Pluto, dialled first');
+    await home(page, 'pluto');
 
     // Bird World: its part, its meter; the knock ticks nothing
     await dial(page, 'birdworld');
@@ -95,6 +81,8 @@ export const SECTOR_CHECKS = {
       throw new Error('the path’s crystal wasn’t picked up');
     });
     await meterSays(page, 'Bird World’s crystals', '1 of 5 crystals found');
+    const FIVE = PLACES.dest('birdworld').climb.picks;
+    await drawnAre(page, FIVE.slice(1), 'with the path’s crystal picked up,');
     const path = PLACES.spot('birdworld', 'bcrystal-path');
     await warp(page, 'birdworld', path.x, path.z);
     await later(page, 0.5);
@@ -104,6 +92,7 @@ export const SECTOR_CHECKS = {
     await standOn(page, 'birdworld', 'tower-a-4');
     await caught(page, wayInOf('birdworld'));
     check((await game(page, 'birdworld', 'climb')).picked.length === 0, 'the crystals picked up stayed picked after a crumble');
+    await drawnAre(page, FIVE, 'after a crumble,');
     await warp(page, 'birdworld', ...spotAt('birdworld', 'bcrystal-path'));
     await page.waitForFunction(() => window.__C137__.sim.near?.id === 'bcrystal-path', null, { timeout: 10000, polling: 100 }).catch(() => {
       throw new Error('the path’s crystal didn’t come back after a crumble');
@@ -123,6 +112,7 @@ export const SECTOR_CHECKS = {
     await page.waitForFunction(() => JSON.parse(window.localStorage.getItem('tp-c137-done') ?? '[]').includes('birdworld'), null, { timeout: 30000, polling: 100 }).catch(() => {
       throw new Error('the five crystals didn’t win Bird World');
     });
+    await drawnAre(page, [], 'with Bird World won,');
     check(await ticked(page, BIRD.text), 'the Story tab doesn’t tick Bird World');
     await reads(page, SECTOR.steps[0].text);
     await goalIs(page, 'birdworld-portal', 'on Bird World, done');
@@ -215,8 +205,7 @@ export const SECTOR_CHECKS = {
   // page for Morty's line before it leaves
   'sector-page': Object.assign(
     async (page) => {
-      await page.goto(`${BASE}/#/c-137/gearworld`, { waitUntil: 'domcontentloaded' });
-      await built(page);
+      await open(page, '#/c-137/gearworld');
       check(JSON.stringify((await story(page)).got) === '[0,1,2]', `the old ticks passed parts ${JSON.stringify((await story(page)).got)}`);
       await reads(page, PLACES.allDone);
       await later(page, 1);
@@ -232,6 +221,9 @@ export const SECTOR_CHECKS = {
       await warpUse(page, 'squanch', 'squanch-portal', ...homeOf('squanch'));
       await toast(page, SECTOR.outro[0][1]);
       check((await page.locator('.rm-fade[data-on]').count()) === 0, 'the portal’s fade covered Morty’s line');
+      await page.waitForFunction(() => !document.querySelector('.rm-clock'), null, { timeout: 1500, polling: 50 }).catch(() => {
+        throw new Error('the escape’s clock ran on under Morty’s line');
+      });
       await page.waitForTimeout(2000);
       check(new URL(page.url()).hash === '#/c-137/squanch', `the page left before Morty’s line was read (${new URL(page.url()).hash})`);
       await page.waitForFunction(() => window.location.hash === '#/universe/squanch', null, { timeout: 20000, polling: 100 }).catch(() => {

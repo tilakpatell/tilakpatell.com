@@ -164,7 +164,7 @@ export async function buildBirdworld(kit) {
   }
 
   S.people();
-  return S.done(LIGHT, (t, dt, state) => {
+  const area = S.done(LIGHT, (t, dt, state) => {
     const done = (state?.done ?? []).includes('birdworld');
     const picked = S.picked();
     for (const [id, m] of picks) {
@@ -172,4 +172,7 @@ export async function buildBirdworld(kit) {
       m.rotation.y = 0.6 * t;
     }
   });
+  // (the crystals drawn now, for the checks)
+  area.actions.crystals = () => picks.filter(([, m]) => m.visible).map(([id]) => id);
+  return area;
 }
