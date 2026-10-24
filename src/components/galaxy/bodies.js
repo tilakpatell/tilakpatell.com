@@ -307,6 +307,7 @@ export const nearOctaves = ({ tier, pxTall: px }) => ((tier === 'high' || tier =
 export const pxTall = ({ r, dist, fov, height }) => (dist <= r ? Infinity : ((2 * Math.asin(r / dist)) / ((fov * Math.PI) / 180)) * height);
 const bufferSize = new THREE.Vector2();
 const bodyAt = new THREE.Vector3();
+const skinAt = new THREE.Vector3();
 const SHIELD_R = 1.12;
 const DUNE_DIR = new THREE.Vector3(0.62, 0.32, 0.72).normalize();
 
@@ -448,18 +449,27 @@ export function buildBody(look, { r = 40, small = false, tier = typeof document 
   const geo = new THREE.SphereGeometry(r, ws, hs);
   const mat = new THREE.ShaderMaterial({ vertexShader: SURFACE_VERT, fragmentShader: surfaceFrag(L.family, FAMILIES[L.family].slots, { skin: painted }), uniforms, defines });
   const surface = new THREE.Mesh(geo, mat);
-  // (how tall it is on the screen, as it's drawn: the near octaves eased
+  // Where its middle is and how it's turned, set as it's drawn: the shaders
+  // read them against cameraPosition, and the universe draws round the
+  // camera (universe/relative.js), the map moved for the draw alone, so
+  // anything set before the draw is off by the camera's place. (The galaxy
+  // never moves its map: the same either way.) The ground and the air each
+  // set them, for the air is drawn when the ground is out of view
+  const placed = () => {
+    shared.uCenter.value.setFromMatrixPosition(group.matrixWorld);
+    shared.uRot.value.setFromMatrix4(group.matrixWorld);
+  };
+  // (and how tall it is on the screen, as it's drawn: the near octaves eased
   // toward what that asks for, a frame at a time)
-  if (!small) {
-    surface.onBeforeRender = (renderer, scene, camera) => {
-      if (!camera?.isPerspectiveCamera) return;
-      renderer.getDrawingBufferSize(bufferSize);
-      surface.getWorldPosition(bodyAt);
-      const want = nearOctaves({ tier, pxTall: pxTall({ r, dist: camera.position.distanceTo(bodyAt), fov: camera.fov, height: bufferSize.y }) });
-      const n = uniforms.uNearOct;
-      n.value += Math.max(-NEAR_EASE, Math.min(NEAR_EASE, want - n.value));
-    };
-  }
+  surface.onBeforeRender = (renderer, scene, camera) => {
+    placed();
+    if (small || !camera?.isPerspectiveCamera) return;
+    renderer.getDrawingBufferSize(bufferSize);
+    surface.getWorldPosition(bodyAt);
+    const want = nearOctaves({ tier, pxTall: pxTall({ r, dist: camera.position.distanceTo(bodyAt), fov: camera.fov, height: bufferSize.y }) });
+    const n = uniforms.uNearOct;
+    n.value += Math.max(-NEAR_EASE, Math.min(NEAR_EASE, want - n.value));
+  };
   group.add(surface);
   made.push(geo, mat);
 
@@ -468,6 +478,7 @@ export function buildBody(look, { r = 40, small = false, tier = typeof document 
     // (lib/three's shell, the universe map's planets' too, reading this
     // body's own sun and air: its uniforms are the surface's)
     const shell = createAtmosphere({ radius: r, top: atmo.top, segments: moon || small ? [48, 32] : [96, 64], steps: tier === 'ultra' ? stepsFor('ultra', 7) : 7, inner: Math.cos(Math.PI / hs), uniforms: shared });
+    shell.mesh.onBeforeRender = placed;
     group.add(shell.mesh);
     made.push(shell);
     reach = r * atmo.top;
@@ -520,11 +531,11 @@ export function buildBody(look, { r = 40, small = false, tier = typeof document 
       lastT = t;
       shared.uTime.value = t;
       if (shield && shield.material.uniforms.uHit.value > 0) shield.material.uniforms.uHit.value = Math.max(0, shield.material.uniforms.uHit.value - dt * 1.1); // (a bump's flash dies away in about a second)
-      group.updateWorldMatrix(true, false);
-      shared.uCenter.value.setFromMatrixPosition(group.matrixWorld);
-      shared.uRot.value.setFromMatrix4(group.matrixWorld);
       if (painted && camera?.position) {
-        const k = skinOn * skinMixAt(camera.position.distanceTo(shared.uCenter.value) / r, atmo?.top ?? 1.05);
+        // (how far out the camera is, both where they are now: uCenter is
+        // the last draw's, which may have been round the camera)
+        group.updateWorldMatrix(true, false);
+        const k = skinOn * skinMixAt(camera.position.distanceTo(skinAt.setFromMatrixPosition(group.matrixWorld)) / r, atmo?.top ?? 1.05);
         uniforms.uSkinMix.value = k;
         if (atmoSkin) {
           shared.uAtmo.value.lerpColors(atmoBase.color, atmoSkin.color, k);
