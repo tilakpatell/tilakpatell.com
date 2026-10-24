@@ -51,6 +51,27 @@ describe('capitalLook', () => {
     expect(holder.children.filter((o) => o.userData.glows)).toHaveLength(1);
   });
 
+  it('greys a bare hull without plating it where the detail is lowest', () => {
+    const { holder, hull } = ship();
+    dressCapital(holder, 'destroyer', { plating: false });
+    expect(hull.material.userData.plated).toBeUndefined();
+    expect(hull.material.color.getHex()).toBe(new THREE.Color(plateTint('destroyer')).getHex());
+  });
+
+  it('lights a kind’s own lights-and-engines material, and plates a kind whose maps are next to flat colour', () => {
+    const { holder } = ship();
+    const lights = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.1, 0.1), new THREE.MeshStandardMaterial({ name: 'M_FrigateNebulonB_01_Emissive', color: 0x6b6f76 }));
+    holder.add(lights);
+    dressCapital(holder, 'nebulon');
+    expect(lights.material.emissiveIntensity).toBeGreaterThan(0.5);
+    expect(lights.material.userData.plated).toBeUndefined();
+    const flat = ship();
+    const painted = new THREE.Mesh(new THREE.BoxGeometry(1, 0.1, 1), new THREE.MeshStandardMaterial({ name: 'Mat_1', map: new THREE.Texture() }));
+    flat.holder.add(painted);
+    dressCapital(flat.holder, 'acclamator');
+    expect(painted.material.userData.plated).toBe(true);
+  });
+
   it('leaves a ship that isn’t a capital as it was', () => {
     const { holder, hull } = ship();
     expect(dressCapital(holder, 'xwing')).toBeNull();

@@ -100,7 +100,7 @@
 // and how it's turned that far between its last two steps (drawn there,
 // locked on to there); each bolt's `age` is how long it has flown.
 // Events: { type: 'down', team, kind, role, at, mine, ace? }, { type: 'hurt', damage,
-// kind }, { type: 'sub', sub, kind, phase, at, mine }, { type: 'phase',
+// kind }, { type: 'sub', sub, kind, phase, at, mine, cap }, { type: 'phase',
 // phase }, { type: 'shield', down: true }, { type: 'capital', id, kind,
 // team, at }, { type: 'arrive', team, kind, at }, { type: 'impact', at,
 // size, shield }, { type: 'over', winner, why }, { type: 'turret', id, cap,
@@ -115,7 +115,7 @@ import { basisOf, capitalPose } from '../../lib/combat/pose';
 import { NAMES } from './wars';
 import { BATTLE, UP, ZERO, copy, cross, dist2, len, norm, set, turnToward, v3 } from './battleKit';
 import { flyFighter, muster, spawn } from './battleAi';
-import { ageCapitals, fireBatteries, holdCapitals, hullHit, layCapitals, placeCapitals } from './battleCapitals';
+import { ageCapitals, fireBatteries, holdCapitals, hullHit, layCapitals, listCapitals, placeCapitals } from './battleCapitals';
 import { createRunners } from './battleRunners';
 import { createStages } from './battleStages';
 import { createTactics } from './battleTactics';
@@ -227,7 +227,8 @@ export function createBattle({ war, attacker = 0, at = [0, 0, 0], axis = [1, 0],
   };
   const subDown = (s, mine) => {
     s.alive = false;
-    return { type: 'sub', sub: s.id, kind: s.kind, phase: s.phase, at: copy(v3(), s.pos), mine };
+    if (s.kind === 'bridge') s.cap.listed ??= 0; // (out of control from now: listCapitals)
+    return { type: 'sub', sub: s.id, kind: s.kind, phase: s.phase, at: copy(v3(), s.pos), mine, cap: s.cap?.id ?? null };
   };
   // (with the galaxy's director it's the director that decides the battle:
   // the battle never ends itself, and the AI's fire sinks no capital ship)
@@ -601,6 +602,7 @@ export function createBattle({ war, attacker = 0, at = [0, 0, 0], axis = [1, 0],
       checkPhase(out);
     }
     ageCapitals(k, dt, out);
+    listCapitals(k, dt);
     if (!b.over && decides) {
       const t = b.teams[attacker];
       if (tickets && t.tickets <= 0 && !b.fighters.some((f) => f.alive && f.team === attacker)) finish(defender, 'tickets', out);

@@ -455,7 +455,7 @@ export function createModels({ prepare = null, load: fetchModel = loadGLTF, hull
         tune(root);
         const n = normalise(root, def.nose, kind);
         // (a capital's hull plated, its windows lit, its engines burning aft: capitalLook.js)
-        dressCapital(n.holder, kind);
+        dressCapital(n.holder, kind, { plating: device().detail !== 'low' });
         // (a skinned one's copies need bones of their own: SkeletonUtils)
         root.traverse((o) => o.isSkinnedMesh && (n.skinned = true));
         if (prepare) await prepare(n.holder);

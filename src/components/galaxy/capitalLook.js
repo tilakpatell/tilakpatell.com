@@ -21,7 +21,7 @@
 //   nozzle has a soft glow drawn
 //   over it (one draw a ship: `glows`), so the stern burns as it does on screen.
 //
-// dressCapital(holder, kind) after models.js has fitted the model (its
+// dressCapital(holder, kind, { plating }) after models.js has fitted the model (its
 // holder: the unit frame, nose +z, 1 long); patched materials are copies
 // (one per mesh that needs its own frame), the template's to keep.
 // isCapital(kind); plateTint(kind) and LENGTH (metres a ship is long, so the
@@ -46,6 +46,9 @@ const HULL = /hull|paneltile|tiling|plate/i;
 const WINDOW = /window/i;
 const ENGINE_NAME = /engine|thruster/i;
 const RED = /^red$/i;
+const LIT = /emissive/i;
+// (the kinds whose own maps are next to flat colour, a few KB each: plated over them)
+const PLATE_ALL = new Set(['acclamator']);
 const LAMP = /glow|lamp|bluelight|redlight|beacon/i;
 const MARKING = '#8e2b22'; // (the Republic's red)
 
@@ -296,7 +299,9 @@ function glowsOf(nozzles, colour, k) {
   return glow;
 }
 
-export function dressCapital(holder, kind) {
+// (`plating`: off on the lowest detail, where a phone's every fragment counts;
+// the windows and the engines are lit whatever the detail)
+export function dressCapital(holder, kind, { plating = true } = {}) {
   if (!isCapital(kind)) return null;
   holder.updateMatrixWorld(true);
   const k = holder.scale.x;
@@ -310,6 +315,22 @@ export function dressCapital(holder, kind) {
     const unit = mesh.matrixWorld.clone();
     const one = (m) => {
       if (!m?.isMeshStandardMaterial) return m;
+      // the game's lights and engine glow in one material of their own (the
+      // Nebulon-B's `Emissive`, bare as it came: tune() greyed it): alight
+      if (LIT.test(m.name) && !m.map) {
+        const l = m.clone();
+        l.color.setRGB(0.12, 0.13, 0.15);
+        l.emissive.setRGB(...colour);
+        l.emissiveIntensity = 0.9;
+        engines.push(mesh);
+        return l;
+      }
+      // a kind whose own maps are next to flat colour: plated over them
+      if (PLATE_ALL.has(kind) && m.map && !m.transparent && !ENGINE_NAME.test(m.name)) {
+        const p = m.clone();
+        if (plating) plate(p, unit, length);
+        return p;
+      }
       // the hull's great plates: no colour map of their own (the Venator's
       // red markings came as a bare material named for their colour)
       if (!m.map && !m.transparent && (HULL.test(m.name) || RED.test(m.name) || m.color.getHex() === 0x6b6f76 || m.color.getHex() === 0xffffff)) {
@@ -317,7 +338,7 @@ export function dressCapital(holder, kind) {
         p.color.set(RED.test(m.name) ? MARKING : tint);
         p.metalness = 0.35;
         p.roughness = 0.62;
-        plate(p, unit, length);
+        if (plating) plate(p, unit, length);
         return p;
       }
       // the windows' glass, lit

@@ -325,7 +325,7 @@ export function createBattleScene(parent, { models, small = false, reduced = fal
         if (!s || !s.holder.visible || cap.gone || cap.jumped) continue;
         const bob = bobOf(cap, t, reduced);
         s.holder.position.set(cap.pos.x, cap.pos.y + bob, cap.pos.z);
-        if (cap.moved) orient(s.holder, cap.fwd, cap.up); // (turned by a set piece, the Scarif ram, the Executor's dive, or the fleet's push)
+        if (cap.moved) orient(s.holder, cap.fwd, cap.up); // (turned by a set piece, the Scarif ram, the Executor's dive, the fleet's push, or listing with its bridge gone)
         if (cap.dying > 0 && chain <= 0) flashes.at(onHull(cap, pt), { size: 1.5 + Math.random() * cap.size * 0.08, life: 0.9 + Math.random() * 0.6 });
         if (cap.tracked) damage.worn(cap, s);
       }
