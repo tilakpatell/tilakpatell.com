@@ -124,7 +124,7 @@
   width: min(100%, calc(100cqh - 3.25rem)); /* (the bar under the circle: a 44 px tool and the gap) */
 }
 @supports not (width: 1cqh) {
-  .navmap-stage { width: min(100%, 64vh); }
+  .navmap-stage { width: min(100%, calc(64vh - 3.25rem)); }
 }
 .navmap-chart {
   position: relative;
@@ -199,14 +199,14 @@
   height: 28px;
   border-radius: 50%;
   color: #e8f2ff;
-  font-size: 0.7rem; /* (NavChart.jsx measures the names at it) */
+  font-size: 0.7rem; /* (NavChart.jsx's NAME_REM: it measures the names at it) */
 }
 @media (pointer: coarse) {
   .navmap-place::before { content: ''; position: absolute; z-index: -1; inset: -8px; border-radius: 50%; } /* (44 px to a finger) */
 }
 .navmap-name {
   position: absolute;
-  left: calc(50% + 10px); /* (past the 16 px dot and a 2 px gap: chart/declutter.js's box for the name) */
+  left: calc(50% + 14px); /* (past the 16 px dot and a 6 px gap: chart/declutter.js's box for the name, place.js's DOT_GAP) */
   top: 50%;
   translate: 0 -50%;
   height: 18px;
@@ -216,7 +216,7 @@
   white-space: nowrap;
   text-shadow: 0 0 6px #000, 0 0 2px #000;
 }
-.navmap-places > li[data-side='left'] .navmap-name { left: auto; right: calc(50% + 10px); }
+.navmap-places > li[data-side='left'] .navmap-name { left: auto; right: calc(50% + 14px); }
 .navmap-places > li[data-side='under'] .navmap-name { left: 50%; top: calc(50% + 9px); translate: -50% 0; }
 .navmap-places > li[data-quiet] .navmap-name { display: none; }
 .navmap-places > li:is(:hover, :focus-within, [data-hover], [data-pick]) .navmap-name { display: block; background: rgb(3 6 16 / 0.85); }
@@ -238,11 +238,11 @@
 .navmap-homebtn .navmap-name {
   color: var(--c);
   font-family: var(--font-mono);
-  font-size: 0.6rem; /* (NavChart.jsx's REGION_SIZE measures it so) */
+  font-size: 0.6rem; /* (NavChart.jsx's REGION_REM) */
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
-.navmap-homebtn:hover .navmap-name { background: rgb(255 200 120 / 0.12); }
+.navmap-places > li:hover .navmap-homebtn .navmap-name { background: linear-gradient(rgb(255 200 120 / 0.12) 0 0), rgb(3 6 16 / 0.85); } /* (its amber over the hover's glass, a rule this outranks) */
 .navmap-out {
   position: absolute;
   left: 50%;

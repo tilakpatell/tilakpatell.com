@@ -99,6 +99,10 @@ describe('placing marks', () => {
     const over = reveal(createView({ range: 9000, follow: true }), M('over', [0, 7000, 0], { levels: ['system'] }));
     expect(over).toMatchObject({ focus: [0, 0, 0], follow: true });
     expect(over.range).toBeCloseTo(7200, 6);
+    // high above but near across, it is on the chart already (its stem says how high): the ship is not let go
+    const high = M('high', [20000, 300000, 0]);
+    expect(project(followed, high.at).inside).toBe(true);
+    expect(reveal(followed, high)).toBe(followed);
   });
   it('fits the mini-map’s range round what it shows, at its old tilt', () => {
     expect(fitRange([0, 0, 0], marks.slice(0, 2))).toBeCloseTo(2100);
@@ -144,6 +148,17 @@ describe('placing marks', () => {
     expect(placeMarks(view, pair, FRAMES.nav).map((p) => p.side)).toEqual(['right', 'right']);
     expect(placeMarks(view, pair, FRAMES.nav, { scale: 0.5 }).map((p) => p.side)).toEqual(['left', 'right']);
     expect(placeMarks(view, pair, FRAMES.nav, { sides: ['under'] }).map((p) => p.side)).toEqual(['under', 'under']);
+  });
+  it('keeps names off a box to avoid, in frame units (a button over the chart), the pick’s too', () => {
+    const low = [M('low', drawnAt(430, 884), { name: 'Under the way out' })];
+    const button = { x0: 405, y0: 878, x1: 595, y1: 910 };
+    expect(placeMarks(view, low, FRAMES.nav)[0].side).toBe('right');
+    expect(placeMarks(view, low, FRAMES.nav, { avoid: [button] })[0].side).toBeNull();
+    expect(placeMarks(view, low, FRAMES.nav, { avoid: [button], keep: ['low'] })[0].side).toBeNull();
+    // at half the size, the same box in frame units is the same part of the chart
+    expect(placeMarks(view, low, FRAMES.nav, { avoid: [button], scale: 0.5 })[0].side).toBeNull();
+    // a box with no number for a corner is let go, as a point is
+    expect(placeMarks(view, low, FRAMES.nav, { avoid: [{ ...button, x1: NaN }] })[0].side).toBe('right');
   });
   it('sizes a name with the map’s own ruler when it has one, and by the estimate without', () => {
     const one = [M('near', drawnAt(400, 500), { name: 'Near' }), M('wide', drawnAt(400, 560), { name: 'Wide' })];

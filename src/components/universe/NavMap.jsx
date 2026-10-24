@@ -209,10 +209,49 @@ export default function NavMap({ where, drive, onDrive, selected = null, live = 
       ))}
     </div>
   );
-  // the list, a group a kind (headed when there's more than one)
-  const groups = KINDS.filter((g) => g.id !== 'all')
-    .map((g) => ({ ...g, places: list.filter((d) => d.kind === g.id) }))
-    .filter((g) => g.places.length);
+  // the list, a group a kind (headed when there's more than one), drawn again
+  // when the list, the ship or where it is change, not on every move of the
+  // chart (a drag or a pinch moves it many times a second)
+  const rows = useMemo(() => {
+    const groups = KINDS.filter((g) => g.id !== 'all')
+      .map((g) => ({ ...g, places: list.filter((d) => d.kind === g.id) }))
+      .filter((g) => g.places.length);
+    const isAt = (id) => goalOf(id) === atId;
+    return groups.map((g) => (
+      <section key={g.id} className="navmap-group" aria-label={groups.length > 1 ? g.name : undefined}>
+        {groups.length > 1 && (
+          <h3 className="navmap-group-name">
+            {g.name} <span>{g.places.length}</span>
+          </h3>
+        )}
+        <ul className="navmap-list">
+          {g.places.map((d) => (
+            <li key={d.id}>
+              <button
+                type="button"
+                onClick={() => {
+                  setPick(d.id);
+                  setHover(null);
+                  show(markById(d.via ?? d.id));
+                }}
+                onPointerEnter={() => setHover(d.id)}
+                onPointerLeave={() => setHover(null)}
+                style={{ '--c': d.color }}
+                aria-current={isAt(d.id) ? 'location' : undefined}
+              >
+                <span className="navmap-dot" aria-hidden="true" />
+                <span className="navmap-list-name">
+                  {d.name}
+                  {ship && <span className="navmap-list-type">{d.type}</span>}
+                </span>
+                <span className="navmap-list-meta">{isAt(d.id) ? 'Here' : ship ? formatDistance(distanceTo(ship, d.id)) : d.type}</span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      </section>
+    ));
+  }, [list, ship, atId, show]);
 
   return createPortal(
     <div className="navmap dark-scope" role="dialog" aria-modal="true" aria-labelledby="navmap-title" data-mode={mode} style={{ '--pick': picked?.color ?? '#9fd8ff' }}>
@@ -384,40 +423,7 @@ export default function NavMap({ where, drive, onDrive, selected = null, live = 
                 <p className="navmap-tap">{NAV.tap}</p>
                 {list.length !== DESTINATIONS.length && <p className="navmap-kicker">{`${list.length} ${list.length === 1 ? 'place' : 'places'}`}</p>}
                 {list.length ? (
-                  groups.map((g) => (
-                    <section key={g.id} className="navmap-group" aria-label={groups.length > 1 ? g.name : undefined}>
-                      {groups.length > 1 && (
-                        <h3 className="navmap-group-name">
-                          {g.name} <span>{g.places.length}</span>
-                        </h3>
-                      )}
-                      <ul className="navmap-list">
-                        {g.places.map((d) => (
-                          <li key={d.id}>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setPick(d.id);
-                                setHover(null);
-                                show(markById(d.via ?? d.id));
-                              }}
-                              onPointerEnter={() => setHover(d.id)}
-                              onPointerLeave={() => setHover(null)}
-                              style={{ '--c': d.color }}
-                              aria-current={at(d.id) ? 'location' : undefined}
-                            >
-                              <span className="navmap-dot" aria-hidden="true" />
-                              <span className="navmap-list-name">
-                                {d.name}
-                                {flying && <span className="navmap-list-type">{d.type}</span>}
-                              </span>
-                              <span className="navmap-list-meta">{at(d.id) ? 'Here' : flying ? formatDistance(distanceTo(now.ship, d.id)) : d.type}</span>
-                            </button>
-                          </li>
-                        ))}
-                      </ul>
-                    </section>
-                  ))
+                  rows
                 ) : (
                   <p className="navmap-meta">Nothing by that name. Try a world (Marvel), a page (Projects) or a kind of thing (nebula).</p>
                 )}

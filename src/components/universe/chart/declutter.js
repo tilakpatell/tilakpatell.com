@@ -4,17 +4,18 @@
 // The names go down greedily, the highest priority first (a tie goes by id,
 // so the same places thin the same way every time). Each takes the first of
 // its sides that stays inside the frame and meets no name already down, no
-// other place's dot and no hard point (the ship). One with no such side gets
-// null: its dot alone, no name. A firm label (the picked place's) that no side
-// fits for the dots takes the first that fits without the places' dots, so a
-// pick in a crowd is still named: it may cover another place's dot, never the
-// frame's edge, a name already down or a hard point. The ship is on the chart
+// other place's dot and nothing hard (the ship, a button over the chart). One
+// with no such side gets null: its dot alone, no name. A firm label (the
+// picked place's) that no side fits for the dots takes the first that fits
+// without the places' dots, so a pick in a crowd is still named: it may cover
+// another place's dot, never the frame's edge, a name already down or
+// anything hard. The ship is on the chart
 // wherever it is, so a pick it blocks on every side goes unnamed.
 //
 // The galaxy's labelPlace.js is the model. It is not imported: worlds are
 // islands, and the universe hides a name where the galaxy moves it. The nav
-// map's names today come from chartLabels.js, eight sides round a dot inside
-// one fixed circle; this takes any frame's box or circle and its own sides, so
+// map's names came from chartLabels.js, eight sides round a dot inside one
+// fixed circle; this takes any frame's box or circle and its own sides, so
 // the nav map and the mini-map thin their names the one way.
 //
 // SIDES: right, left and under the dot
@@ -31,7 +32,9 @@
 // dots are the { x, y } middles of the places' dots drawn, and hard the same
 // for the marks no name may ever cover (the ship's): a name keeps off each
 // one's 16 px box, but never off one within 8 px of its own point, which is
-// its own dot or one drawn on top of it.
+// its own dot or one drawn on top of it. A hard one may be a box instead,
+// { x0, y0, x1, y1 } (a button over the chart): no name meets it, whatever
+// is under it.
 
 export const SIDES = Object.freeze(['right', 'left', 'under']);
 
@@ -56,8 +59,9 @@ function byPriority(a, b) {
   return a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
 }
 
-// the 16 px boxes of the dots a label must keep off: not its own, nor one drawn on it
-const blocksFor = (l, points) => points.filter((d) => !(Math.hypot(d.x - l.x, d.y - l.y) <= DOT)).map((d) => ({ x0: d.x - DOT, y0: d.y - DOT, x1: d.x + DOT, y1: d.y + DOT }));
+// the boxes a label must keep off: each dot's 16 px, not its own nor one drawn on it, and each box
+const isBox = (d) => 'x0' in d;
+const blocksFor = (l, points) => points.filter((d) => isBox(d) || !(Math.hypot(d.x - l.x, d.y - l.y) <= DOT)).map((d) => (isBox(d) ? d : { x0: d.x - DOT, y0: d.y - DOT, x1: d.x + DOT, y1: d.y + DOT }));
 
 export function declutter(labels, { bounds, sides = SIDES, dots = [], hard = [] }) {
   const out = new Map(labels.map((l) => [l.id, null]));

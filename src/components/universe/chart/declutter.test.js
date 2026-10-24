@@ -75,6 +75,15 @@ describe('declutter', () => {
     // and one drawn on the pick's own dot blocks nothing
     expect(declutter([firm(L('pick', 400, 500, 1))], { bounds, hard: [{ x: 404, y: 504 }] }).get('pick')).toBe('right');
   });
+  it('keeps every name off a hard box (a button over the chart), a firm one’s too, even one round its own dot', () => {
+    const firm = (l) => ({ ...l, firm: true });
+    const button = { x0: 405, y0: 878, x1: 595, y1: 910 };
+    expect(declutter([L('a', 430, 884, 1)], { bounds }).get('a')).toBe('right');
+    expect(declutter([L('a', 430, 884, 1)], { bounds, hard: [button] }).get('a')).toBeNull();
+    expect(declutter([firm(L('a', 430, 884, 1))], { bounds, hard: [button] }).get('a')).toBeNull();
+    expect(declutter([L('a', 380, 884, 1, 60)], { bounds, hard: [button] }).get('a')).toBe('left');
+    expect(declutter([firm(L('a', 500, 894, 1))], { bounds, hard: [button] }).get('a')).toBeNull(); // (its dot under the button)
+  });
   it('finds the first side inside the frame, for a name left off to show on', () => {
     expect(firstInside(L('a', 500, 500, 1), { bounds })).toBe('right');
     expect(firstInside(L('a', 950, 500, 1), { bounds })).toBe('left');

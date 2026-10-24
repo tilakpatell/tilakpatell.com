@@ -1,8 +1,11 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
-import NavChart from './NavChart';
-import { FRAMES, createView, orbitBy, project, toFrame } from './projection';
-import { HAND_MARKS, markById } from './marks';
+import NavChart, { NAME_REM, REGION_REM, WAY_OUT } from './NavChart';
+import { FRAMES, createView, orbitBy, project, toFrame, unproject } from './projection';
+import { HAND_MARKS, markById, presetView } from './marks';
+import { boxOf } from './declutter';
+import { labelSize } from './place';
 import { CHART_WORDS as W } from '../words';
 
 const view = createView({ range: 120000 });
@@ -13,6 +16,18 @@ const at = (html, id) => {
 };
 const tags = (html, cls) => html.match(new RegExp(`<[a-z]+[^>]*class="${cls}"[^>]*>`, 'g')) ?? [];
 const draw = (props) => renderToStaticMarkup(<NavChart view={view} marks={HAND_MARKS} {...props} />);
+const meet = (a, b) => a.x0 < b.x1 && b.x0 < a.x1 && a.y0 < b.y1 && b.y0 < a.y1;
+// a name's box as the server lays it out (1 px a unit, the names at 11 px), or null for one not shown
+function nameBox(html, mark) {
+  const tag = li(html, mark.id);
+  if (!tag || tag.includes('data-quiet')) return null;
+  const [x, y] = at(html, mark.id).map((n) => n * 10);
+  const [w, h] = labelSize(mark.name, 11);
+  return boxOf(/data-side="(\w+)"/.exec(tag)[1], { x, y, w, h });
+}
+// the way out's box there: centred, its foot WAY_OUT.foot down the chart
+const root = 11 / NAME_REM;
+const outBox = { x0: 500 - (WAY_OUT.w * root) / 2, y0: 1000 * WAY_OUT.foot - WAY_OUT.h * root, x1: 500 + (WAY_OUT.w * root) / 2, y1: 1000 * WAY_OUT.foot };
 
 describe('the nav map’s chart', () => {
   it('puts each place where the projection says', () => {
@@ -76,6 +91,17 @@ describe('the nav map’s chart', () => {
     expect(html).toContain('Out to the universe');
     expect(draw({}).includes('navmap-out')).toBe(false);
   });
+  it('keeps every name clear of the way out, the pick’s too', () => {
+    const low = { id: 'low', kind: 'world', name: 'Under the way out', at: unproject(view, [(430 - 500) / 470, (884 - 500) / 470]), priority: 1, color: '#fff', levels: ['neighbourhood'], pickable: true };
+    const out = { label: 'Back through the portal', onClick: () => {} };
+    expect(meet(nameBox(renderToStaticMarkup(<NavChart view={view} marks={[low]} />), low), outBox)).toBe(true); // (with no way out, its name runs where the button goes)
+    for (const pick of [null, 'low']) expect(li(renderToStaticMarkup(<NavChart view={view} marks={[low]} out={out} pick={pick} />), 'low')).toContain('data-quiet');
+    // and in the Curve, where the way out is up every time the map opens
+    const html = renderToStaticMarkup(<NavChart view={presetView('rickmorty', { y: 0 })} marks={HAND_MARKS} out={out} />);
+    const boxes = HAND_MARKS.map((m) => nameBox(html, m)).filter(Boolean);
+    expect(boxes.length).toBeGreaterThan(3);
+    for (const b of boxes) expect(meet(b, outBox)).toBe(false);
+  });
   it('names Home system and the Curve as buttons at their zoom, and keeps the sun and the pilots off the list', () => {
     const near = draw({});
     expect(li(near, 'chart:home')).toContain('data-kind="region"');
@@ -104,5 +130,46 @@ describe('the nav map’s chart', () => {
     const x2 = Number(/x2="([-\d.]+)"/.exec(line)[1]);
     expect(Math.hypot(x2 - 500, Number(/y2="([-\d.]+)"/.exec(line)[1]) - 500)).toBeLessThanOrEqual(470);
     expect(draw({ ship: null, course: { to: [100, 0, 0], drive: 'plot' } })).not.toContain('navmap-course');
+  });
+});
+
+describe('navmap.css, against the chart’s numbers', () => {
+  const css = readFileSync(new URL('../navmap.css', import.meta.url), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+  const rules = [...css.matchAll(/([^{}]+)\{([^{}]*)\}/g)].map(([, sel, body]) => ({ sel: sel.trim(), body: body.trim() }));
+  const rule = (sel) => rules.find((r) => r.sel === sel)?.body ?? '';
+  // a selector's specificity, [ids, classes, types], an :is() counting as its most specific argument
+  const order = (a, b) => a[0] - b[0] || a[1] - b[1] || a[2] - b[2];
+  function specificity(sel) {
+    let is = [0, 0, 0];
+    const rest = sel.replace(/:is\(([^()]*)\)/g, (_, args) => {
+      const top = args.split(',').map((a) => specificity(a.trim())).sort(order).at(-1);
+      is = is.map((n, i) => n + top[i]);
+      return '';
+    });
+    const count = (re) => rest.match(re)?.length ?? 0;
+    return [is[0] + count(/#[\w-]+/g), is[1] + count(/\.[\w-]+|\[[^\]]*\]|:[\w-]+/g), is[2] + count(/(?:^|[\s>+~])[a-z][\w-]*/g)];
+  }
+
+  it('measures the names at the sizes it draws them', () => {
+    expect(rule('.navmap-place')).toContain(`font-size: ${NAME_REM}rem`);
+    expect(rule('.navmap-homebtn .navmap-name')).toContain(`font-size: ${REGION_REM}rem`);
+  });
+  it('puts a name where declutter’s box has it, past the dot and the gap labelSize allows', () => {
+    const start = labelSize('', 11)[0] + boxOf('right', { x: 0, y: 0, w: 0, h: 0 }).x0; // (from the dot's middle)
+    expect(rule('.navmap-name')).toContain(`left: calc(50% + ${start}px)`);
+    expect(rule(".navmap-places > li[data-side='left'] .navmap-name")).toContain(`right: calc(50% + ${start}px)`);
+  });
+  it('tints Home system’s and the Curve’s names on a hover, over the hover’s own glass', () => {
+    const tint = rules.find((r) => r.body.includes('rgb(255 200 120 / 0.12)'));
+    const glass = rules.find((r) => r.body.includes('rgb(3 6 16 / 0.85)') && r.sel.endsWith('.navmap-name'));
+    expect(tint.sel).toMatch(/:hover.*\.navmap-homebtn|\.navmap-homebtn.*:hover/);
+    expect(tint.sel.endsWith('.navmap-name')).toBe(true);
+    const won = order(specificity(tint.sel), specificity(glass.sel));
+    expect(won > 0 || (won === 0 && rules.indexOf(tint) > rules.indexOf(glass))).toBe(true);
+  });
+  it('takes the bar off the stage’s height at every size, with container units or without', () => {
+    const widths = rules.filter((r) => r.sel === '.navmap-stage').map((r) => /(?:^|;\s*)width:\s*([^;]+)/.exec(r.body)?.[1]).filter(Boolean);
+    expect(widths).toHaveLength(3);
+    for (const w of widths) expect(w).toMatch(/calc\([^)]*- 3\.25rem\)/);
   });
 });

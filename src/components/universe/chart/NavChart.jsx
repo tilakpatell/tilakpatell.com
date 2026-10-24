@@ -37,10 +37,11 @@ import { FRAMES, levelOf, project, reachOn, ringsFor, toFrame, warp } from './pr
 //   the circle; tools are ChartTools' props; readout is the bar's words, or
 //   null with no ship.
 //
-// It measures its width and its names' font on a resize, and the names with
-// a canvas in that font (and again once the page's fonts are in), so a name's
-// box is what the page draws. Server-side it lays them out at 1,000 px with
-// place.js's estimate.
+// It measures its width on a resize, and the names with a canvas in their
+// font, NAME_REM of the root's (and again once the page's fonts are in), so a
+// name's box is what the page draws. No name goes under the way out: its box
+// (WAY_OUT) is one place.js avoids. Server-side it lays them out at 1,000 px
+// with place.js's estimate.
 
 const F = FRAMES.nav;
 const ALL = ['system', 'neighbourhood', 'universe'];
@@ -51,7 +52,9 @@ const GRID = { neighbourhood: 1, universe: 2 }; // the sectors outlined round th
 const STEM = 1.5; // shorter than this (SVG units), a place is level with the ship and has none
 const FRONT = { colour: '#ffb347', priority: 47 }; // (navmap.css's front; its name after the wonders', as before)
 const NAME_PAD = 8; // (.navmap-name's padding, both sides)
-const REGION_SIZE = 0.6 / 0.7; // (.navmap-homebtn's name against the rest: 0.6rem to 0.7rem, mono, in capitals, 0.08em apart)
+export const NAME_REM = 0.7; // (.navmap-place's font-size: a name's)
+export const REGION_REM = 0.6; // (.navmap-homebtn's name: mono, in capitals, 0.08em apart)
+export const WAY_OUT = Object.freeze({ w: 12, h: 2, foot: 0.91 }); // (.navmap-out's box in rem, centred, its foot 9% up the chart)
 const finite = (n) => typeof n === 'number' && Number.isFinite(n);
 const r2 = (n) => Math.round(n * 100) / 100;
 const pc = (n, of) => `${(n / of) * 100}%`;
@@ -117,6 +120,13 @@ function glyph(p, dimmed) {
 // the front's place on the chart, named as before, after the wonders
 const frontMark = (front) => (front && Array.isArray(front.at) ? { id: 'front', kind: 'front', name: `The front · ${front.name}`, at: front.at, priority: FRONT.priority, color: FRONT.colour, levels: ALL } : null);
 
+// the way out's box on the frame, from its size in rem (the root's: the names' size over NAME_REM)
+function wayOut(fontPx, scale) {
+  const [w, h] = [WAY_OUT.w, WAY_OUT.h].map((n) => (n * fontPx) / NAME_REM / scale);
+  const foot = F.h * WAY_OUT.foot;
+  return { x0: F.w / 2 - w / 2, y0: foot - h, x1: F.w / 2 + w / 2, y1: foot };
+}
+
 // what the page draws a name at: its size, its families, and a canvas to measure them on
 function useNameRuler(box) {
   const [ruler, setRuler] = useState({ scale: 1, fontPx: 11, measure: null, fonts: 0 });
@@ -128,9 +138,7 @@ function useNameRuler(box) {
       const w = el.clientWidth;
       if (!w) return; // (hidden: a phone's list. It's measured again when it shows)
       const css = getComputedStyle(el);
-      const name = el.querySelector('.navmap-name');
-      const root = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
-      const fontPx = (name && parseFloat(getComputedStyle(name).fontSize)) || 0.7 * root;
+      const fontPx = NAME_REM * (parseFloat(getComputedStyle(document.documentElement).fontSize) || 16);
       const sans = css.fontFamily;
       const mono = css.getPropertyValue('--font-mono').trim() || 'monospace';
       canvas.current ??= document.createElement('canvas').getContext('2d');
@@ -141,7 +149,7 @@ function useNameRuler(box) {
               g.font = `${fontPx}px ${sans}`;
               return Math.ceil(g.measureText(mark.name).width) + NAME_PAD;
             }
-            const px = fontPx * REGION_SIZE;
+            const px = (fontPx * REGION_REM) / NAME_REM;
             g.font = `${px}px ${mono}`;
             return Math.ceil(g.measureText(mark.name.toUpperCase()).width + 0.08 * px * mark.name.length) + NAME_PAD;
           }
@@ -197,7 +205,7 @@ export default function NavChart({ view, marks, ship = null, course = null, fron
     view,
     all.map((m) => (dimmed(m.id) && m.name ? { ...m, name: '' } : m)),
     F,
-    { keep: pick ? [pick] : [], fontPx, scale, avoid: [shipAt], measure },
+    { keep: pick ? [pick] : [], fontPx, scale, avoid: [shipAt, out && wayOut(fontPx, scale)], measure },
   );
   const listed = placed.filter((p) => p.mark.pickable || LISTED.has(p.mark.kind));
   const war = front && Array.isArray(front.sectors) ? front.sectors.filter((s) => Array.isArray(s?.at) && s.at.every(finite)) : [];
