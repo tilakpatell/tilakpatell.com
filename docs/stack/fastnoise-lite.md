@@ -13,6 +13,7 @@ The census row is in [README.md](README.md): one file imports it, `src/lib/land/
 - `biomes.js` beside it: the two climate fields the biome weights come from.
 - `field.js` beside it: a planet's height.
 - `characters.js` beside it: a generated planet's terrain character (continents, craters and the rest), in 3D, of the direction on its sphere.
+- `sphereField.js` beside it: a generated planet's climate, hills and detail, in 3D, over that character.
 
 ## How the site uses it
 

@@ -18,6 +18,9 @@
 //
 //   WORLDS → worlds, in the roster's order (galaxy, sector, fandom)
 //   TYPE_BIOMES[type] → an Expanse planet's biomes; TYPE_LOOK[type] → { palette, clutter, soft }
+//   ROUND_ROUGH[family][biome id] → its hills' multiplier on a round planet
+//   roundBiomes(family) → [{ id, at, reach, base, rough, relief: [] }]: a
+//     round planet's biomes, the template's with no scatter
 //   expand(biomes, seed) → biomes with each scatter made island layers
 
 import { seeded } from '../../seeded.js';
@@ -615,6 +618,25 @@ export const TYPE_LOOK = {
   ringed: look('bespin'),
   rock: look('geonosis', { clutter: clutter(['rock', 60], ['debris', 15]) }),
 };
+
+// ── a round planet's biomes (sphereField.js): the template's places on the climate square, no layer stacks ──
+// The terrain character makes the land's shape, so a biome adds only its
+// base and how rough its hills are: a multiplier on the round field's one
+// hills noise. Keyed by family, then the template's biome id (an ice
+// planet's plains are rougher than a rock one's).
+export const ROUND_ROUGH = {
+  ice: { plains: 0.7, shelf: 0.3, range: 2.2, glacier: 0.8, valley: 0.6 },
+  desert: { jundland: 1.2, dunesea: 0.8, plateau: 0.6, chott: 0.25, wastes: 0.9 },
+  forest: { redwoods: 1, savannah: 0.6, range: 2.2, lakes: 0.4, desert: 0.7 },
+  lava: { fields: 1, volcanoes: 2, ash: 0.6, glass: 0.3 },
+  ocean: { islands: 1, volcano: 1.6, reef: 0.3, deep: 0.5 },
+  rock: { plains: 0.6, mesas: 1.2, badlands: 1.6, craters: 1 },
+};
+
+// fresh objects each call, so no two specs share an array; a biome the
+// table doesn't name (a gas giant's deck, never round) is rough 1
+export const roundBiomes = (family) =>
+  TYPE_BIOMES[family].map((x) => ({ id: x.id, at: [...x.at], reach: x.reach, base: x.base ?? 0, rough: ROUND_ROUGH[family]?.[x.id] ?? 1, relief: [] }));
 
 const between = (rnd, [a, b]) => a + rnd() * (b - a);
 
