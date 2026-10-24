@@ -34,7 +34,13 @@ The index plan is `docs/superpowers/plans/2026-10-18-endless-universe.md`. Its G
 **Depends on (merged before this lane starts):**
 - lane 2, all five PRs: `fullSector` and the sector shape, `systemReach`, `THING_KINDS`, `SECTOR_EXTRAS`, `createExpanse(…).sectors()`, `stars()`, `solids()`, `universeBudget` (its `traffic` and `events` fields are this lane's), `OPEN_SPACE`, the endless check and `__universeDebug.teleport`
 - lane 3, both groups: `expanse/shared/space.js` (the generator's face), `fullSector(…).stations`, `places` (`scenePlaces.js`: `park`, `docked`, `here`), `trips.js` (`outOfJump`, `state.arrived`), `places/ids.js` (`isPlaceId`), `state.spaceT` (the shared clock), `travel` on `E:` ids
-- lane 4a: its rows in `THING_KINDS` and `SECTOR_EXTRAS` (derelicts, black holes, beacons, rigs, shipyards and fleets). Where a kind this lane reads isn't there, the seam is named in the task, and the event still plays (a stand-in) or says why it can't.
+- lane 4a: its rows in `THING_KINDS` and `SECTOR_EXTRAS` (derelicts, black holes, beacons, rigs, shipyards and fleets). Where a kind this lane reads isn't there, the seam is named in the task, and the event still plays (a stand-in) or says why it can't. And its seams with this lane, each used rather than made twice:
+  - `createThings`' deps in `scene.js` (4a's Task 24): `happen: (id) => happen(id, state.ship)` (a trapped derelict's lead), `soon: (id) => director?.soon(id)` (a beacon's lead), `throwTo: (park, opts) => throwTo(park, opts)`, and an optional `follow(row, lead)` this lane passes (Task 14). Task 10 takes `happen` and `director` away, so it rewires the first two.
+  - `throwTo(park, opts)`: 4a splits `riftThrough`'s body after `const park = …` into it (`:4210-4237`), so the rift's `dropEscort(); dropEclipse();` pair is there.
+  - `wormholeExit({ seed, sector }, universe) → { sector, key, at, heading, side }` on the face: the one rule for a one-way throw (Task 15).
+  - `things.setCameFrom({ id, name, at, key })`: the one `where().cameFrom` (Task 15).
+  - `LEADS`, `leadEvent` (`things/rules.js`) and two assertions of `things/rules.test.js` that this lane's rows flip (Task 3).
+  - `solidOf`, `gargantuanKeeps` and each sector's `extras.gargantuan` (Task 16's waylay clears them).
 
 Line numbers are from `main` at `cc5e2eaf`. Lanes 2, 3 and 4a move them, so find the code again by the quoted text.
 
@@ -43,7 +49,8 @@ Line numbers are from `main` at `cc5e2eaf`. Lanes 2, 3 and 4a move them, so find
 **Process (HANDOFF-universe's owner's rules and the index's Global Constraints, all of them):**
 - Nothing a visitor can do is lost. Every key, save, route, dev hook and test works after as before, and no test is loosened.
   - `director.test.js`, `sides.test.js`, `crews.test.js`, `lanes.test.js`, `hunterRules.test.js`, `skirmish.test.js`, `farFights.test.js` and `nav.test.js` keep every existing `it`. New tests go in new `describe`s.
-  - One existing assertion describes a bound the spec removes: `protocol.test.js:455-466`'s `x: 90000` (hunters clamped to the authored map). Task 8 replaces it with a test of what replaces it and says so in its commit. No other test changes.
+  - One existing assertion describes a bound the spec removes: `protocol.test.js:455-466`'s `x: 90000` (hunters clamped to the authored map). Task 8 replaces it with a test of what replaces it and says so in its commit.
+  - Two of lane 4a's assertions describe a bound this lane removes: `things/rules.test.js`'s `leadEvent('trap', EVENTS)` is `'hunt'` ("lane 4b's 'derelict' isn't there yet") and `leadEvent('treasure', EVENTS)` is null. Task 3 adds both rows, so it replaces them with `'derelict'` and `'treasure'` and says so in its commit (and the same in `things/index.test.js`'s trap test, if it reads the real `EVENTS`). No other test changes.
 - Pure first. `events/{holder,zones,life,fightsOut,signals,fights,sweeps,herds,lines}.js`, `director.js` and `lanes.js` import no React, no DOM and no three.js. Each has its Node test before its drawing half.
 - A changed picture is on purpose. The before shots come first (Task 9), at `--quality mid`.
 - Draw calls and triangles are no higher at any pose in `lab/universe/baseline/<tier>.json`, nor at the endless poses lane 3 left in `lab/universe/endless/<tier>.json`. Every event's mesh is invisible at rest, so a held pose draws none. Say the numbers.
@@ -52,11 +59,11 @@ Line numbers are from `main` at `cc5e2eaf`. Lanes 2, 3 and 4a move them, so find
 - The hand-off goes in `docs/superpowers/evidence/endless-universe-lane-4b/HANDOFF-NOTES.md`, not in `HANDOFF-universe.md`, which the coordinator folds. Evidence goes in the same folder, each picture under 1 MB (element shots, or JPEG at 80).
 
 **Code shape and the repo's budgets** (`docs/health/budgets.json`, measured at `cc5e2eaf`):
-- `src/components/universe/scene.js` doesn't grow. Task 9 moves about 175 lines out and Task 13 about 60; Task 10 nets about −8, and Tasks 14–20 add at most 10 between them (4 as planned: Task 15's `cameFrom`, Task 17's two hit chains, Task 18's tide). Each task says the lines it moves out and adds, by `wc -l` before and after.
+- `src/components/universe/scene.js` doesn't grow. Task 9 moves about 175 lines out and Task 13 about 60; Task 10 nets about −7, Task 11 adds 1 (`riftThrough` asks the events first), and Tasks 14–20 add at most 10 between them (3 as planned: Task 17's two hit chains, Task 18's tide). Each task says the lines it moves out and adds, by `wc -l` before and after.
 - New files stay under 800 lines. `hunterRules.js` is 1,406 lines: its edits here are net +40 at most, so it never crosses 1,500 (`big-files`, 22 of 30).
 - `glsl-sites` is 613 of 619, shared with lanes 1 and 2. This lane adds no `ShaderMaterial`, `RawShaderMaterial` or `onBeforeCompile`. Its looks are `MeshBasicMaterial`, `MeshStandardMaterial`, `SpriteMaterial` and `InstancedMesh`es, with textures painted by `kit.js`'s `paint` and glows by `canvasTexture.js`'s `hot`; the wormhole is the rift's own mesh and the comet the set piece's.
 - `loops` is 58 of 58: no `requestAnimationFrame`. Everything runs in the scene's frame.
-- `boundary-breaks` is 484 of 489 and `cycles` 5 of 5: the universe reaches the generator only through lane 3's face, `src/components/expanse/shared/space.js`. The face lends none of `rngOf`, `hash64`, `clearOfKeepOuts` and `keepOutsNear`, which this lane needs, so Task 4 adds the four to it (re-exports, and their names in `shared.test.js`'s list). `director.js` imports nothing from `events/`.
+- `boundary-breaks` is 484 of 489 and `cycles` 5 of 5: the universe reaches the generator only through lane 3's face, `src/components/expanse/shared/space.js`. The face lends none of `rngOf`, `hash64` and `clearOfKeepOuts`, which this lane needs (Tasks 7, 15 and 16), so Task 4 adds the three to it (re-exports, and their names in `shared.test.js`'s list). `director.js` imports nothing from `events/`, and `lanes.js` nothing from `events/` (`life.js` imports `lanes.js`: the other way would be a sixth cycle).
 - No new dependency and no new asset. `WORLD_MB['/universe']` is unchanged.
 - Generated content is never stored: no `localStorage`, `rt.saves` or `rt.store` row in this lane. Far fights are a pure function of a system's seed and the shared clock.
 
@@ -86,8 +93,8 @@ Line numbers are from `main` at `cc5e2eaf`. Lanes 2, 3 and 4a move them, so find
 
 **Boundaries:**
 - **This lane owns:** `director.js`, its event files (`setpieces.js`, `leviathans.js`, `meteors.js`, `lanes.js`, `minefield.js`, `mines.js`, `escort.js`, `eclipse.js`, `supernova.js`), `traffic.js`, `hunters.js`, `hunterRules.js`, `farFights.js`, `skirmish.js`, `skirmishes.js` and the new `universe/events/`. It also makes the two fixes lane 2 handed on: `online/protocol.js`'s `readPack` and `online/client.js`'s pack read.
-- **Small edits elsewhere, each named in its task:** `sides.js` (`sideAt`, `crewAt`, `lawAt`), `nav.js` (`riftSpot`'s solids), `crews.js` (`linesFor` reads `EVENT_LINES`), `words.js` (`EVENT`), `src/lib/words.test.js` (scans `events/`), lane 2's `universe/budget.js` (`events` joins the stepped fields, Task 10), lane 3's face `expanse/shared/space.js` and `shared.test.js` (four re-exports, Task 4), `scripts/universe-endless-check.mjs`.
-- **Not touched:** `NavMap.jsx`, `MiniMap.jsx`, `chart/*` (6a and 6b); `places/*` and `trips.js` (lane 3: read only); `expanse/*` but the face (lane 2: read only); `universe/things/` and `universe/gargantuans/` (4a: read only); `law.js` and `wanted.js` (their tests gain a `describe`; the code reads a new side through the `side` thunk it already takes); `entry.js`, `footScene.js`, `lib/land/*`, `expanse/flight/*` (5b); `ship.js`'s `startAt` (4c).
+- **Small edits elsewhere, each named in its task:** `sides.js` (`sideAt`, `crewAt`, `lawAt`), `nav.js` (`riftSpot`'s solids), `crews.js` (`linesFor` reads `EVENT_LINES`), `words.js` (`EVENT`), `src/lib/words.test.js` (scans `events/`), lane 2's `universe/budget.js` (`events` joins the stepped fields, Task 10), lane 3's face `expanse/shared/space.js` and `shared.test.js` (three re-exports, Task 4), lane 3's `places/scenePlaces.js` (one getter, `sector(key)`, Task 16), lane 4a's `things/rules.test.js` (two assertions, Task 3), `scripts/universe-endless-check.mjs`.
+- **Not touched:** `NavMap.jsx`, `MiniMap.jsx`, `chart/*` (6a and 6b); `places/*` but that getter, and `trips.js` (lane 3: read only); `expanse/*` but the face (lane 2: read only); `universe/things/` and `universe/gargantuans/` (4a: read only, but the two assertions); `law.js` and `wanted.js` (their tests gain a `describe`; the code reads a new side through the `side` thunk it already takes); `entry.js`, `footScene.js`, `lib/land/*`, `expanse/flight/*` (5b); `ship.js`'s `startAt` (4c).
 
 **Words and UI (`docs/health/RULES.md`, "UI"):**
 - Every new on-screen word goes into `src/components/universe/words.js` first, as `EVENT`. The crews' lines go in `events/lines.js`.
@@ -108,8 +115,8 @@ Player = {
   drop(id),                                   // let go of that one running event and hide its looks (Task 10)
   clear(), dispose(),                         // clear: let go of everything running, hide every look
 }
-Running = { id: '<kind>:<n>', kind, name, at: [x, y, z], big, from: [x, y, z] }   // from: the ship where it started
-ctx = { side, here: { system, holder }, zones, solids, force, rand, budget }
+Running = { id: '<kind>:<n>', kind, name, at: [x, y, z], big, from: [x, y, z] }   // name: EVENT.name[kind] (Task 3); from: the ship where it started
+ctx = { side, here: { system, holder }, zones, solids, force, rand, budget, at }   // at: where to play it when the caller says (a beacon's place, Task 14), else null
 ```
 
 `update`'s `moving` is what `adventure`'s `busy` is today (`scene.js:3880-3953`: true while something animates, so the frame loop keeps drawing), as the escort's and the eclipse's `busy = true` are. It is not the director's `busy`, which is the getter.
@@ -118,15 +125,17 @@ ctx = { side, here: { system, holder }, zones, solids, force, rand, budget }
 - Headless Chromium draws in software here at a frame or two a second, and `universe-check` takes 2 to 4 minutes a pose and tier. A task's browser check runs at `--quality mid` only, on the steps or poses it changes. Task 20 runs the full all-tier measure once.
 - Every browser command runs with `CHROME=/opt/pw-browsers/chromium CHROMIUM=/opt/pw-browsers/chromium` in front of it, as lane 3's plan found (`navmap-check` and `links-check` default to a Chrome this container lacks; `universe-check` and `autopilot-check` look for a Chromium path it doesn't have).
 - `universe-check`, `universe-endless-check`, `autopilot-check` and `perf-probe` start their own server. `events-check.mjs` doesn't: start `npx vite --port 5173 --strictPort` in the background, wait until `curl --noproxy '*' -sf -o /dev/null http://localhost:5173/` succeeds in an until-loop (giving up after 60 s), run it, then stop the server.
-- Every wait is on a condition, never a sleep. A wait for game time reads the scene's own clock (`__universeDebug.state.clock`), never the wall's.
+- Every wait is on a condition, never a sleep. A wait for game time reads the scene's own clock (`__universeDebug.state.clock`), never the wall's. The scene's clock moves at most `MAX_DT` (0.05 s, `src/runtime/runtime.js:62`) a frame, so at a frame or two a second each wait for a forced event is capped at 30 s of the scene's clock and 120 s of the wall's, whichever comes first.
+- The endless check's `events` step takes its kinds from a flag of its own, `--events a,b,c`, because lane 3's `--only a,b` splits on commas into step names. So `--only events --events flare,meteors` runs the one step for those two kinds, and `--only events` alone (or a run with no `--only`) forces every kind `events.debug.kinds()` lists.
+- What a check reads: `__universe()` (`scene.js:5923-5963`) has no far fights and no interdiction (lane 3 adds `place` and `docked`). Those are on `__universeDebug.state` (`fights`, `interdicted`, `arrived`).
 
 ## Review Focus
 
-1. **A waylaid jump.** A jump cut short by pirates must never set you down inside a solid, never on a jump to a pilot, a portal leg, the gate or a tour leg, never in the arrival's first minute, and never say you got there. The jump's own way out runs right after lane 3's `outOfJump(j)` (`scene.js:4352-4366` on `main`): `arriveAt(park); hunters?.clear(); … state.interdicted = false; …` and then `emit({ type: 'jumped', id: j.id })`, which the page reads as a finished trip (`pages/Universe.jsx:375-390`: on through the gate to `/galaxy`, the tour's next leg, `grandtour` on the last). So `events.outOfJump` only shortens the park and arms the waylay; the pirates are packed by `events.afterJump`, which takes the place of the block's `emit` after every clear and returns `{ type: 'arrived', id, done: false }` for a waylaid jump; lane 3's `state.arrived` goes null there, so no dock opens; and only a jump to a generated place (an `E:` id) is ever waylaid. Pinned in Task 16 (`waylayPark` clear of solids, null for a short jump; a fake block that clears between the two calls still ends with the pirates packed; the event is `arrived` and not done; a pilot, a portal leg and a hand-made id are never marked) and its endless-check run (the page is still on `/universe`, nothing docked).
+1. **A waylaid jump.** A jump can go any distance, and the bodies near where it's cut short (stars, planets, stations, 4a's things and its gargantuans, 20 to 200 planets across) aren't in the frame's `solidsNow` until their sectors load. So the waylay sets you down only 1,500 to 6,000 short of the park, inside the destination's own sector, clear of that sector's bodies read from its pure rows (lane 3 has the sector at hand for any jump to an `E:` id) and of the keep-outs. It must never set you down inside a solid, never on a jump to a pilot, a portal leg, the gate or a tour leg, never in the arrival's first minute, and never say you got there. The jump's own way out runs right after lane 3's `outOfJump(j)` (`scene.js:4352-4366` on `main`): `arriveAt(park); hunters?.clear(); … state.interdicted = false; …` and then `emit({ type: 'jumped', id: j.id })`, which the page reads as a finished trip (`pages/Universe.jsx:375-390`: on through the gate to `/galaxy`, the tour's next leg, `grandtour` on the last). So `events.outOfJump` only shortens the park and arms the waylay; the pirates are packed by `events.afterJump`, which takes the place of the block's `emit` after every clear and returns `{ type: 'arrived', id, done: false }` for a waylaid jump; lane 3's `state.arrived` goes null there, so no dock opens; and only a jump to a generated place (an `E:` id) is ever waylaid. Pinned in Task 16 (`waylayPark` 1,500 to 6,000 short on a 100,000 jump, clear of a gargantuan row on the jump line or null, in the destination's sector, null for a short jump; no waylay when the destination's sector isn't at hand; a fake block that clears between the two calls still ends with the pirates packed; the event is `arrived` and not done; a pilot, a portal leg and a hand-made id are never marked) and its endless-check run (the page is still on `/universe`, nothing docked).
 2. **The line between two holders.** Sitting on the edge of an Empire system next to a Federation one must not flicker whose space it is. Wanted stars must not reset every frame, traffic already flying must not vanish (a pop), and hunters already on you must stay. Pinned in Task 1 (hysteresis, 200 updates on the line, no flip), Task 12 (a group spawned under one side flies on under the next) and Task 13 (the law's side changes twice over a crossing out and back, not every step).
 3. **An event forced where its thing isn't.** `happen('derelict')` in the void, `happen('trader')` with no station near, `happen('tidal')` far from any black hole, or any event with no ship. Each plays a stand-in where one makes sense (a derelict hulk, a beacon) or returns false with a note saying why, and never throws or leaves half an event registered. Pinned in Tasks 14–19 (each play's `start` with `force` and no zone) and Task 20 (the sweep, every kind).
-4. **A phone.** On `low`, `budget.events` is 1: never two events running at once, no event left registered after you've gone (one beacon left behind would hold the director for five minutes), no event mesh visible at rest (no draw call at a held pose), three different events in ten minutes all the same, and the quality steps lower the traffic cap and the events cap with the rest. Pinned in Task 4 (the ten-minute flight at `BUDGET.low.events`), Task 10 (`running().length ≤ budget.events` over a scripted run; `events.clear()` at a jump and the 30,000 let-go; `setStep` through lane 2's `budget.js`, which Task 10 teaches to step `events`), Task 12 (traffic cap by tier and step) and Task 20 (the low-tier measure).
-5. **A pocket universe and the Rick and Morty pocket.** In `/universe?seed=word` the zones are the pocket's own sectors, and far fights are seeded from the pocket's systems. Inside the Rick and Morty pocket its own side wins over any holder, and its law stays the crew's, as today. Pinned in Task 1 (`sideAt`'s order, `lawAt` with no holder), Task 2 (zones from a pocket's `fullSector`) and Task 7 (fights from a pocket's systems differ from the shared one's).
+4. **A phone.** On `low`, `budget.events` is 1: never two events running at once (the director's picks and the law's bounty both wait; only a check's force and a thing's trap start over one, Findings 18), no event left registered after you've gone (one beacon left behind would hold the director for five minutes), no event mesh visible at rest (no draw call at a held pose), three different events in ten minutes all the same, and the quality steps lower the traffic cap and the events cap with the rest. Pinned in Task 4 (the ten-minute flight at `BUDGET.low.events`), Task 10 (`running().length ≤ budget.events` over a scripted run; `events.clear()` at a jump and the 30,000 let-go; `setStep` through lane 2's `budget.js`, which Task 10 teaches to step `events`), Task 12 (traffic cap by tier and step) and Task 20 (the low-tier measure).
+5. **A pocket universe and the Rick and Morty pocket.** In `/universe?seed=word` the zones are the pocket's own sectors, and far fights are seeded from the pocket's systems. Inside the Rick and Morty pocket its own side wins over any holder, and its law stays the crew's, as today. `regionAt` knows only the main sector's places (`regions.js:39`), and the pocket's keep-out is only its radius plus 4,000 (`keepOuts.js:30-32`), so generated systems sit just outside its wall: without care, the last system's holder would follow you in. So the scene's `core` is `Boolean(regionAt(...at)) || mapSectorOf(...at) === 'rickmorty'` wherever it's passed (`createHere`, `trafficHere`, the pacing flight). Pinned in Task 1 (`sideAt`'s order, `lawAt` with no holder), Task 2 (zones from a pocket's `fullSector`), Task 7 (fights from a pocket's systems differ from the shared one's) and Task 10 (a ship carried from an Empire system into the pocket has holder null, `life()` null and the crew's own law).
 
 ## Files
 
@@ -138,10 +147,11 @@ ctx = { side, here: { system, holder }, zones, solids, force, rand, budget }
 | `src/components/universe/director.js` | `zoneOf` reads generated systems; the table's columns and thirteen rows; arrival, big, hazard | 2, 3 |
 | `src/components/universe/events/lines.js` (new) | the crews' lines for the new events | 3 |
 | `src/components/universe/crews.js` | `linesFor` reads `EVENT_LINES` | 3 |
-| `src/components/universe/words.js` | `EVENT` | 3 |
+| `src/components/universe/words.js` | `EVENT` (with `EVENT.name`, every kind's name for the registry) | 3 |
+| `src/components/universe/things/rules.test.js` (lane 4a's) | its two "not there yet" assertions become `'derelict'` and `'treasure'` | 3 |
 | `src/components/universe/events/pacing.test.js` (new) | ten minutes from 100 seeded starts, on a phone's budget | 4 |
-| `src/components/expanse/shared/space.js`, `shared.test.js` (lane 3's face) | lends `rngOf`, `hash64`, `clearOfKeepOuts`, `keepOutsNear` too | 4 |
-| `src/components/universe/lanes.js` | `noseFrame`; every lane along the 3D nose and clear of what's passed; `portLane` | 5, 6 |
+| `src/components/expanse/shared/space.js`, `shared.test.js` (lane 3's face) | lends `rngOf`, `hash64`, `clearOfKeepOuts` too | 4 |
+| `src/components/universe/lanes.js` | `noseFrame`; every lane along the 3D nose (a pitched ship) and clear of what's passed; `portLane`, `PORT_NEAR` | 5, 6 |
 | `src/components/universe/nav.js` | `riftSpot` takes solids and the 3D nose | 5 |
 | `src/components/universe/hunterRules.js` | `entryPoint` along the 3D nose; the stale ceiling comment | 5 |
 | `src/components/universe/events/life.js` (new) | the traffic a system keeps | 6 |
@@ -152,15 +162,17 @@ ctx = { side, here: { system, holder }, zones, solids, force, rand, budget }
 | `src/components/universe/events/sceneEvents.js` (new) | the scene's events: zones, holder, director, players, registry, debug | 10–19 |
 | `src/components/universe/budget.js`, `budget.test.js` (lane 2's) | `events` stepped with `traffic`, never below 1 | 10 |
 | `src/components/universe/traffic.js`, `traffic.test.js` (it exists: new `describe`s) | traffic reads the nearest system; the convoy's own column | 11, 12 |
+| `src/components/universe/__fixtures__/traffic-core.json` (new) | today's traffic with `here` null, written once from unchanged code | 12 |
 | `src/components/universe/law.test.js` | a new `describe`: whose law it is | 13 |
 | `src/components/universe/setpieces.js`, `meteors.js`, `mines.js`, `leviathans.js` | spots and lanes clear of what's there; the rift's life and size; ice | 11, 15, 18 |
 | `src/components/universe/events/playFar.js` (new) | skirmishes, far fights out, the battle | 13, 17 |
-| `src/components/universe/events/signals.js`, `playSignals.js` (new) | stranded, treasure, wormhole, trader | 14, 15 |
-| `src/components/universe/events/fights.js`, `playFights.js` (new) | waylay, smuggler, derelict, battle's rules | 16, 17 |
+| `src/components/universe/events/signals.js`, `playSignals.js` (new) | stranded, treasure (and a beacon followed), wormhole (on 4a's `wormholeExit`), trader | 14, 15 |
+| `src/components/universe/events/fights.js`, `playFights.js` (new) | waylay (and the bodies round where it sets you down), smuggler, derelict, battle's rules | 16, 17 |
+| `src/components/universe/places/scenePlaces.js` (lane 3's) | `sector(key)`: a loaded or fetched sector, for the waylay | 16 |
 | `src/components/universe/events/sweeps.js`, `playSweeps.js` (new) | ion storm front, comet fly-by, tidal pull | 18 |
 | `src/components/universe/events/herds.js`, `playHerds.js` (new) | leviathan migration, bloom | 19 |
 | `src/components/universe/leviathans.js` | `purrgilBody()`: a purrgil merged to two geometries | 19 |
-| `src/components/universe/scene.js` | wiring only, smaller after | 9–20 |
+| `src/components/universe/scene.js` | wiring only, smaller after (with 4a's `createThings` deps rewired, Tasks 10 and 14) | 9–20 |
 | `scripts/universe-endless-check.mjs` | the `life`, `fights`, `events` and `arrival` steps | 11–20 |
 
 ---
@@ -184,7 +196,7 @@ ctx = { side, here: { system, holder }, zones, solids, force, rand, budget }
     - `null` or `undefined`: `null`
   - **`HERE = { in: LINK, out: 2 * LINK }`** (`LINK = 2600`, `regions.js`)
   - **`createHere() → { update(systems, at, { core = false } = {}) → { system, holder }, system, holder, reset() }`**. `systems` are Task 2's zones with `what: 'system'` (`at`, `reach`, `faction`).
-    - **Core.** With `core` (the scene passes `Boolean(regionAt(...at))`: a hand-made region), it gives `{ system: null, holder: null }` and forgets the last holder.
+    - **Core.** With `core` (the scene passes `Boolean(regionAt(...at)) || mapSectorOf(...at) === 'rickmorty'`: a hand-made region, or inside the Rick and Morty pocket, which `regionAt` doesn't know), it gives `{ system: null, holder: null }` and forgets the last holder.
     - **Staying.** The current system stays while `|at − system.at| ≤ system.reach + HERE.out`.
     - **Taking over.** Otherwise the nearest system with `|at − system.at| ≤ system.reach + HERE.in` takes over, else `system` is null.
     - **The holder** is the current system's `holderOf(faction)`. With no system it is the last one's: deep space between systems keeps the law of the last system you were in. It is the same object while the system is the same, so `===` tells a change.
@@ -364,6 +376,7 @@ describe('what is round the ship', () => {
 - Modify: `src/components/universe/director.js:57-189` (the doc comment, `EVENTS`, `canHave`, `withWhere`, `createDirector`), `src/components/universe/director.test.js` (new `describe`s)
 - Create: `src/components/universe/events/lines.js`, `src/components/universe/events/lines.test.js`
 - Modify: `src/components/universe/crews.js:3167-3170` (`linesFor`'s `'event'` branch: `crew.events?.[id] ?? EVENT_LINES[crew.id]?.[id]`, and its import), `src/components/universe/words.js` (`EVENT`), `src/lib/words.test.js:16-28` (its `FILES` gains `...list('components/universe/events/', /\.js$/)`, which adds files to the scan and loosens nothing)
+- Modify: lane 4a's `src/components/universe/things/rules.test.js` (the two assertions this task's rows flip, below), and `things/index.test.js`'s trap test if it reads the real `EVENTS`
 
 **Interfaces:**
 - Consumes: `SIDES` (`sides.js`); Task 2's `whereFor` (in the tests).
@@ -442,8 +455,19 @@ describe('what is round the ship', () => {
       tidal: 'Caught in the pull: throttle up',
       migration: 'A migration: give them room',
       bloom: 'Something’s glowing out there',
+      name: {
+        hunt: 'Hunters', destroyer: 'A capital ship', council: 'The Council of Ricks', roadblock: 'A DEA roadblock',
+        distress: 'Someone in trouble', convoy: 'A convoy', comet: 'A comet', supernova: 'A supernova', flare: 'A solar flare',
+        rift: 'A rift', leviathan: 'Leviathans', meteors: 'A meteor stream', bounty: 'A bounty hunter', remover: 'The Planet Remover',
+        minefield: 'A minefield', escort: 'An escort', eclipse: 'An eclipse', waylay: 'Pirates', stranded: 'A distress beacon',
+        battle: 'A battle', derelict: 'A derelict', wormhole: 'A wormhole', cometpass: 'A comet, close', stormfront: 'An ion storm front',
+        bloom: 'A bloom', trader: 'A trader', migration: 'A migration', tidal: 'A black hole’s pull', treasure: 'A signal', smuggler: 'A smuggler',
+      },
     };
     ```
+
+    `EVENT.name[kind]` is every `Running`'s `name` (the registry's, for lane 6b's map), one for each of the thirty ids.
+  - **Lane 4a's leads move on.** With `derelict` and `treasure` in `EVENTS`, `leadEvent('trap', EVENTS)` is `'derelict'` and `leadEvent('treasure', EVENTS)` is `'treasure'`, as 4a's `LEADS` meant once they existed. 4a's `LEADS` is unchanged: `LEADS.distress` still leads to `'distress'`, and a beacon's distress call becomes a stranded ship through Task 14's `follow`, so `LEADS.distress[0]` stays `'distress'` and its assertion stands.
 
   - **`EVENT_LINES`** in `events/lines.js`: `{ cruiser, xwing, falcon, rv }`, each with one exchange `[[speaker, text], …]` for each of the thirteen new ids and for `'saved'`, `'thrown'` and `'picked'`, spoken by that crew's own speakers (`crews.js`'s `speakers`) or `'comms'`.
 
@@ -538,28 +562,35 @@ describe('the arrival’s first minute', () => {
 });
 ```
 
-  `lines.test.js`: for every crew of `CREWS` and every id of the thirteen and `'saved'`, `'thrown'`, `'picked'`, `linesFor(crew, 'event', id)` is a non-empty exchange whose speakers are `'comms'` or one of `crew.speakers`, each text over two characters; and `crews.js`'s own `events` rows still win over `EVENT_LINES` (`linesFor(crew, 'event', 'convoy')` is today's).
-- [ ] **Step 2: Run them and see them fail.** Run `npx vitest run src/components/universe/director.test.js src/components/universe/events/lines.test.js src/components/universe/crews.test.js src/lib/words.test.js`. Expected: the new `describe`s and `lines.test.js` FAIL; every existing test passes.
+  `lines.test.js`: for every crew of `CREWS` and every id of the thirteen and `'saved'`, `'thrown'`, `'picked'`, `linesFor(crew, 'event', id)` is a non-empty exchange whose speakers are `'comms'` or one of `crew.speakers`, each text over two characters; and `crews.js`'s own `events` rows still win over `EVENT_LINES` (`linesFor(crew, 'event', 'convoy')` is today's). And `Object.keys(EVENT.name)` is exactly `Object.keys(EVENTS)`.
+
+  **Lane 4a's two assertions.** In `src/components/universe/things/rules.test.js`'s "lets a trapped derelict wake into an event the director has":
+  - `expect(leadEvent('trap', EVENTS)).toBe('hunt'); // (lane 4b's 'derelict' isn't there yet)` becomes `expect(leadEvent('trap', EVENTS)).toBe('derelict');`
+  - `expect(leadEvent('treasure', EVENTS)).toBeNull();` becomes `expect(leadEvent('treasure', EVENTS)).toBe('treasure');`
+  - the other two lines of that `it` stay as they are.
+
+  Then run `grep -n "'hunt'\|derelict" src/components/universe/things/index.test.js`: if its trap test hands `createThings` the real `EVENTS` and expects `happen('hunt')`, it now expects `happen('derelict')`; with a fake `events`, it's unchanged.
+- [ ] **Step 2: Run them and see them fail.** Run `npx vitest run src/components/universe/director.test.js src/components/universe/events/lines.test.js src/components/universe/crews.test.js src/lib/words.test.js src/components/universe/things`. Expected: the new `describe`s, `lines.test.js` and the two replaced assertions FAIL; every other test passes.
 - [ ] **Step 3: Implement** the columns, the rows, the rules, `EVENT` and the lines. Write the lines in each crew's voice from its existing `events` rows, with no new character speaking.
-- [ ] **Step 4: Run them and see them pass.** Same command. Expected: PASS, every existing director, crews and words test unchanged.
-- [ ] **Step 5: Commit.** `git commit -m "The director's thirty events: how big each is, a gentle first minute, never two big ones at once"`
+- [ ] **Step 4: Run them and see them pass.** Same command. Expected: PASS, every existing director, crews, words and things test unchanged but the two replaced assertions.
+- [ ] **Step 5: Commit.** `git commit -m "The director's thirty events: how big each is, a gentle first minute, never two big ones at once"`. The body says lane 4a's two "not there yet" assertions now name `'derelict'` and `'treasure'`, the events they were waiting for.
 
 ### Task 4: Ten minutes of free flight from 100 seeded starts, on a phone's budget
 
 **Files:**
 - Create: `src/components/universe/events/pacing.test.js`
-- Modify: lane 3's face `src/components/expanse/shared/space.js` (re-export `rngOf` and `hash64` from `../gen/seed` and `clearOfKeepOuts` and `keepOutsNear` from `../gen/keepOuts`), `src/components/expanse/shared/shared.test.js` (the four names join its list of what the face lends)
+- Modify: lane 3's face `src/components/expanse/shared/space.js` (re-export `rngOf` and `hash64` from `../gen/seed` and `clearOfKeepOuts` from `../gen/keepOuts`), `src/components/expanse/shared/shared.test.js` (the three names join its list of what the face lends)
 
 **Interfaces:**
 - Consumes: Task 1's `createHere`, `sideAt`; Task 2's `ZONE`, `zonesAround`, `systemAt`, `whereFor`; Task 3's director (`refused` among it), `EVENTS`, `withWhere`; `zoneOf`, `regionAt`, `mapSectorOf` (`layout.js`), `nearestStar` (`deep.js`); lane 2's `BUDGET` (`universe/budget.js`); lane 3's face (`UNIVERSE`, `fullSector`, and from this task `rngOf`, `hash64`); `SECTOR`.
-- Produces: the face lends `rngOf`, `hash64`, `clearOfKeepOuts` and `keepOutsNear` (Tasks 7 and 15 take them from it). Otherwise nothing new: it is the spec's pure pacing test. If it fails, tune `lasts`, the new rows' weights, `PACE` or `RETRY`, never the test, and say which constant moved and why in the commit.
+- Produces: the face lends `rngOf`, `hash64` and `clearOfKeepOuts` (Task 7 takes `rngOf` and `hash64`, Task 15 `hash64`, Task 16 `clearOfKeepOuts`, with its own default list, all of `KEEP_OUTS`). `keepOutsNear` isn't lent: with 4a's `wormholeExit` there's no exit rule of this lane's to clear, and the waylay checks every keep-out. Otherwise nothing new: it is the spec's pure pacing test. If it fails, tune `lasts`, the new rows' weights, `PACE` or `RETRY`, never the test, and say which constant moved and why in the commit.
 
 The flight plays events as the scene does on the strictest tier:
 - **Running.** Each event the director gives runs for a draw from its own `lasts`. The director is `busy` while one that `holds` runs, or while `BUDGET.low.events` (1) run at all, as Task 10's step is on a phone. `big` is whether a big one runs.
 - **Refused.** A pick the scene would refuse for want of something there (`refuses`, below, mirroring Tasks 10 and 11's `start`) goes back with `director.refused(id)` and isn't counted.
 - **In built space.** The 27 sectors round home are built once. A flight turns back at their faces (`fold`, a triangle wave), so it never leaves them for empty void; half the flights go at the pulse drive's 300 and cross the 27 more than once.
 
-- [ ] **Step 1: Lend the four names.** Add the re-exports to the face and the names to `shared.test.js`'s list. Run `npx vitest run src/components/expanse/shared`. Expected: PASS.
+- [ ] **Step 1: Lend the three names.** Add the re-exports to the face and the names to `shared.test.js`'s list. Run `npx vitest run src/components/expanse/shared`. Expected: PASS.
 - [ ] **Step 2: Write the test.**
 
 ```js
@@ -619,7 +650,7 @@ function flight(n) {
     const ship = { x: p[0], y: p[1], z: p[2], speed };
     if (t % 30 === 0) {
       zones = zonesAround(sectors, p);
-      room = here.update(zones.filter((z) => z.what === 'system'), p, { core: Boolean(regionAt(...p)) });
+      room = here.update(zones.filter((z) => z.what === 'system'), p, { core: Boolean(regionAt(...p)) || mapSectorOf(...p) === 'rickmorty' });
     }
     running = running.filter((r) => r.until > t);
     const side = sideAt(crew, mapSectorOf(...p), room.holder);
@@ -670,13 +701,14 @@ describe('the pace of things, in ten minutes of free flight on a phone', () => {
 - Modify: `src/components/universe/nav.js:264-279` (`riftSpot`), `src/components/universe/minefield.js:49` (`minefieldLane`'s nose), `src/components/universe/hunterRules.js:310-335` (`entryPoint`) and `:238-241` (the stale "lift near the ceiling" comment: the ship's `vy` holds only the parking nudge now), `src/components/universe/hunterRules.test.js`, `src/components/universe/nav.test.js`
 
 **Interfaces:**
-- Consumes: `noseOf`, `forward`, `SOLIDS` (`ship.js`); `normalize` (`orient.js`).
+- Consumes: `noseOf`, `forward`, `SOLIDS` (`ship.js`). Not `orient.js`'s `normalize`, which is a quaternion's (four components, `orient.js:21-24`: on a 3-vector it gives NaN), nor `lib/ai/vec.js`'s `unit`, which takes `{ x, y, z }`: `lanes.js` gets a local `norm3(v) → [x, y, z]` and `cross3(a, b)`.
 - Produces:
   - **`noseFrame(ship) → { f, r, u }`** (not `frameOf`: lane 3's `places/carry.js` already exports a `frameOf(rows, { here, going })`):
-    - **Level** (`!ship.pitch`): `[fx, fz] = forward(ship.heading)`, and `f = [fx, 0, fz]`, `r = [-fz, 0, fx]`, `u = [0, 1, 0]`, written from those two numbers directly, never through `noseOf` or `normalize`. `noseOf` rounds differently from `forward` in the last bits: for 9 of the fixture's 12 headings (`k × 0.52`) its `x` or `z` differs (at `k = 2`, `-0.5062202572327783` against `forward`'s `-0.5062202572327784`), and the fixture is exact.
-    - **Pitched:** `f = noseOf(ship)`, `r = normalize(f × [0, 1, 0])`, `u = r × f`. When the nose is within 0.01 of straight up or down (`|f[1]| > 0.99`), `r` is `[-fz, 0, fx]` from `forward(heading)`.
-  - Every lane maker takes a last argument `solids = SOLIDS` and builds its points in `noseFrame(ship)` (`ahead` along `f`, `side` along `r`, a rise along `u`) wherever it read `forward(heading)` and `ship.y`. `riftSpot(ship, rand, solids = SOLIDS)` and `minefieldLane(ship, rand, solids)` the same.
-  - **`entryPoint`** places `ahead`, `behind` and `portal` points along `noseFrame(ship)`; `at` and `from` are unchanged.
+    - **Level** (`!ship.pitch`): `[fx, fz] = forward(ship.heading)`, and `f = [fx, 0, fz]`, `r = [-fz, 0, fx]`, `u = [0, 1, 0]`, written from those two numbers directly, never through `noseOf` or `norm3`. `noseOf` rounds differently from `forward` in the last bits: for 9 of the fixture's 12 headings (`k × 0.52`) its `x` or `z` differs (at `k = 2`, `-0.5062202572327783` against `forward`'s `-0.5062202572327784`), and the fixture is exact.
+    - **Pitched:** `f = noseOf(ship)`, `r = norm3(cross3(f, [0, 1, 0]))`, `u = cross3(r, f)`. When the nose is within 0.01 of straight up or down (`|f[1]| > 0.99`), `r` is `[-fz, 0, fx]` from `forward(heading)`.
+  - Every lane maker takes a last argument `solids = SOLIDS`. `riftSpot(ship, rand, solids = SOLIDS)` and `minefieldLane(ship, rand, solids)` the same.
+  - **Two paths, so the level one is today's to the last bit.** For a level ship (`!ship.pitch`) every maker keeps today's expressions exactly as they are, including `entryPoint`'s own `-Math.sin(ship.heading)` and its portal points' `a = ship.heading + (i − (n − 1) / 2) × 0.32` with `-Math.sin(a)`, `-Math.cos(a)` (`hunterRules.js:310-335`). Building those from `f` and `r` is the same in exact arithmetic but not in floating point, and the fixture is `toEqual`. Only a pitched ship goes through `noseFrame` (`ahead` along `f`, `side` along `r`, a rise along `u`; the portal's angle offset as a turn of `f` toward `r` by that angle). Each maker's branch is `if (!ship.pitch)` around today's lines.
+  - **`entryPoint`**, pitched, places `ahead`, `behind` and `portal` points along `noseFrame(ship)`; `at` and `from` are unchanged.
   - For a level ship, every one of these gives exactly today's points for the same `rand`: the fixture pins it.
 
 - [ ] **Step 1: Write the fixture, then the failing tests.** First, on unchanged code, add a `lanes-level` writer to the test (as lane 2's fingerprint does: written once when `LANES_WRITE` is set and the file is missing). It records, for 12 seeded level ships (heading `k × 0.52`, y `k × 40 − 200`) and a seeded `rand` each, the output of `laneNear`, `convoyLane`, `meteorLane`, `flybyLane` (both `cross` values), `riftSpot`, `minefieldLane` and `entryPoint` (`ahead`, behind, `portal`, i = 0..3 of 4). Run `LANES_WRITE=1 npx vitest run src/components/universe/lanes.test.js` once, then without it.
@@ -688,23 +720,24 @@ describe('the pace of things, in ten minutes of free flight on a phone', () => {
   - with a solid `{ id: 'E:1,0:0:0', at: <today's lane middle>, r: 30 }` in `solids`, each maker's result clears it by its own margin, or is null
   - in `hunterRules.test.js`, `describe('anywhere, at any height')`: a pack sent after a ship circling 50,000 above home, and one after a ship at `[1e8, 2e7, -3e7]`, fights for 30 s of `update(1 / 30, ship)`: every hunter stays within 400 of the ship, none falls more than 1,000 below it, and lasers come (`'laser'` events), as at home
 - [ ] **Step 2: Run them and see them fail.** Run `npx vitest run src/components/universe/lanes.test.js src/components/universe/hunterRules.test.js src/components/universe/nav.test.js`. Expected: the pitched and solids tests FAIL; the level fixture passes; the anywhere test may already pass. If it does, lane 2's finding (`hunterRules.js:240`) was the comment alone: say so in the commit.
-- [ ] **Step 3: Implement.** Keep `hunterRules.js`'s net growth under 40 lines.
-- [ ] **Step 4: Run them and see them pass.** Run `npx vitest run src/components/universe`. Expected: PASS, every existing lanes, nav, minefield, hunterRules, skirmish, leviathans and meteors test unchanged.
+- [ ] **Step 3: Implement.** Keep `hunterRules.js`'s net growth under 40 lines. Leave every level expression as it is (the `if (!ship.pitch)` branch) and write the pitched branch beside it.
+- [ ] **Step 4: Run them and see them pass.** Run `npx vitest run src/components/universe`. Expected: PASS, every existing lanes, nav, minefield, hunterRules, skirmish, leviathans and meteors test unchanged, and the fixture reproduced exactly.
 - [ ] **Step 5: Commit.** `git commit -m "Lanes, spots and packs come along the ship's own nose in three dimensions, clear of what's there"`
 
 ### Task 6: The traffic a system keeps
 
 **Files:**
 - Create: `src/components/universe/events/life.js`, `src/components/universe/events/life.test.js`
-- Modify: `src/components/universe/lanes.js` (append `portLane`), `src/components/universe/lanes.test.js`
+- Modify: `src/components/universe/lanes.js` (append `PORT_NEAR` and `portLane`), `src/components/universe/lanes.test.js`
 
 **Interfaces:**
 - Consumes: Task 1's `holderOf`, `sideAt`, `lawAt`; Task 2's zones, `ZONE`, `nearestOf`; Task 5's `noseFrame`; `lanes.js`'s `clearance`; lane 2's `BUDGET` rows (`traffic`); `orbitAt` (the face).
 - Produces:
-  - **`LIFE = { gap: [1, 3], least: 0.15, portShare: 0.5, near: [60, 300], ports: 8 }`**
+  - **`LIFE = { gap: [1, 3], least: 0.15, portShare: 0.5, ports: 8 }`**
+  - **`PORT_NEAR = [60, 300]`** in `lanes.js`, not in `LIFE`: `life.js` imports `lanes.js` (`clearance`, `noseFrame`, `portLane`), so `lanes.js` reading `LIFE` would be a cycle, and `cycles` is at its budget (5 of 5).
   - **`PORTS = ['station', 'port']`**: the zones traffic flies between
   - **`trafficHere({ zones, at, core = false, holder = null, crew, budget, t }) → Here | null`**. The spec's "the nearest system's density and faction": systems are about 19,000 apart (276 to a 120,000 sector), so most free flight is between them, and the traffic there is the nearest one's, not today's crew-side traffic.
-    - **Null** in the hand-made core (`core`: the scene passes `Boolean(regionAt(...at))`; today's traffic, untouched) and when no system zone's `gap` from `at` is within `ZONE.near` (30,000).
+    - **Null** in the hand-made core and the Rick and Morty pocket (`core`: the scene passes `Boolean(regionAt(...at)) || mapSectorOf(...at) === 'rickmorty'`; today's traffic, untouched, which flies the pocket's own side there), and when no system zone's `gap` from `at` is within `ZONE.near` (30,000). Its `sideAt(crew, 'main', …)` below is only ever reached outside the pocket.
     - `system`: `nearestOf(zones, 'system', at)`, its `gap` measured from `at` (not from where the zones were gathered)
     - `side`: `sideAt(crew, 'main', holderOf(system.faction))`: the nearest system's own, so between two systems the nearer one's ships fly
     - `density`: `system.traffic × max(LIFE.least, 1 − gap / ZONE.near)`: the whole of it within the system's reach, thinning to `LIFE.least` of it 30,000 out
@@ -712,7 +745,7 @@ describe('the pace of things, in ten minutes of free flight on a phone', () => {
     - `cap`: `budget.traffic`, the groups the system's own lanes keep up at once
     - `ports`: the system's stations, then its `'port'` zones within its reach, then its planets at `orbitAt(p, t)` (`{ id, at, reach: 1.9 × radius }`), at most `LIFE.ports`
     - `law`: `lawAt(crew, holder)?.law ?? null`, from the law in force (Task 1's `createHere` holder, with its hysteresis, which the scene passes): null in an independent system's hold, so a patrol reports only where its side is the law
-  - **`portLane(a, b, ship, rand, solids = SOLIDS) → { pts: [p0, p1, p2], k0 } | null`** (`lanes.js`): from beside `a` (`a.reach + 6…16`) to beside `b`, bowed out a little, clear of `solids` by 1. `k0` is where along it a group starts so you see it: the point nearest the ship that is at least `LIFE.near[0]` from it, or null if no point is within `LIFE.near[1]`.
+  - **`portLane(a, b, ship, rand, solids = SOLIDS) → { pts: [p0, p1, p2], k0 } | null`** (`lanes.js`): from beside `a` (`a.reach + 6…16`) to beside `b`, bowed out a little, clear of `solids` by 1. `k0` is where along it a group starts so you see it: the point nearest the ship that is at least `PORT_NEAR[0]` from it, or null if no point is within `PORT_NEAR[1]`.
 
 - [ ] **Step 1: Write the failing tests.** `life.test.js`, with fake system zones `A` (`{ id: 'A', what: 'system', at: [0, 0, 0], reach: 1000, faction: { id: 'empire' }, traffic: 1 }`) and `B` (the same at `[20000, 0, 0]`, `{ id: 'federation' }`, `traffic: 0.6`), and `E:1,0`'s real zones where it says:
   - **Inside a system.** At `A.at`: `gap: [1, 3]`; with `A.traffic` 0.05, `gap` is `[1 / 0.15, 3 / 0.15]`.
@@ -725,7 +758,7 @@ describe('the pace of things, in ten minutes of free flight on a phone', () => {
   `lanes.test.js`, a new `describe('between ports')`: `portLane` between two of that system's ports starts beside one and ends beside the other (within their `reach + 16`), clears every solid passed by 1, and for a ship 120 off its middle has `k0` within 300 of the ship and at least 60 from it; a ship 5,000 away has `k0` null.
 - [ ] **Step 2: Run them and see them fail.** Run `npx vitest run src/components/universe/events/life.test.js src/components/universe/lanes.test.js`. Expected: FAIL.
 - [ ] **Step 3: Implement.**
-- [ ] **Step 4: Run them and see them pass.** Same command. Expected: PASS.
+- [ ] **Step 4: Run them and see them pass.** Same command, then `node scripts/health.mjs --only cycles`. Expected: PASS, and `cycles` still 5 (no new cycle through `lanes.js` and `life.js`).
 - [ ] **Step 5: Commit.** `git commit -m "Traffic takes the nearest generated system's density and whose it is, thinning between systems, and flies between its ports"`
 
 ### Task 7: Far fights out in every direction
@@ -739,7 +772,7 @@ describe('the pace of things, in ten minutes of free flight on a phone', () => {
 - Produces:
   - **`FIGHTS_OUT = { every: 900, on: 240, share: { pirates: 0.45, storm: 0.12, minefield: 0.12, none: 0.06 }, lift: 600, size: [6, 14] }`**
   - **`fightOf(system, t) → Fight | null`**, from `rngOf(hash64(system.seed, 'fight'))` alone: whether the system fights at all (by `share[hazard ?? 'none']`), its phase in `every`, its size and heat. On while `((t / every + phase) mod 1) < on / every`. `Fight = { id: 'fight:<system id>', at: [x, y + reach + lift, z], size, hot, system: system.id, name: system.name }`.
-  - **`fightsAround(systems, cam, t, { max = 3, far }) → Fight[]`**: the nearest `max` fights further than `far` from `cam`. `far` has no default (Task 13 passes `farFights.js`'s `FAR`). `cam` is a point in the map's own frame, as `farFights.update` takes it (`camLocal`, `scene.js:3912`), never `camera.position`: the map is turned by `state.yaw`, so a world point picks the wrong fights far from home. `t` is the shared clock in seconds (lane 3's `state.spaceT`), so every pilot sees the same fights on; never the scene's own `t`.
+  - **`fightsAround(systems, cam, t, { max = 3, far }) → Fight[]`**: the nearest `max` fights further than `far` from `cam`. `far` has no default (Task 13 passes `farFights.js`'s `FAR`). `cam` is a point in the map's own frame: the scene's `camLocal` (`scene.js:547`, set each frame at `:5331`, as the front's `update` takes it at `:3912`; `farFights.update` works out the same point from the camera itself, `farFights.js:203-204`), never `camera.position`: the map is turned by `state.yaw`, so a world point picks the wrong fights far from home. `t` is the shared clock in seconds (lane 3's `state.spaceT`), so every pilot sees the same fights on; never the scene's own `t`.
   - **`fightNode(system) → { id: 'node:<system id>', kind: 'beacon', at, region: null, name }`**, a node `pickFightNode` takes
   - **`fightLabel(at, near = null)`**: `near` names a generated system: `` `Fighting near ${near}` ``, the words `fightLabel` already writes; without it, today's.
 
@@ -819,10 +852,10 @@ describe('the pace of things, in ten minutes of free flight on a phone', () => {
 - [ ] **Step 3: Run them and see them fail.** Run `npx vitest run src/components/universe/events/playExisting.test.js`. Expected: FAIL (module not found).
 - [ ] **Step 4: Move the code.** Make `createExistingPlay` from the moved lines, with no change in behaviour, and wire `scene.js`:
   - after `const mines = createMines(...)` (`:1099`): `const play = createExistingPlay({ … })` (+1, its deps on the same line)
-  - `const happen = (id, ship) => play.start(id, ship);` where `happen` was (+1); `law`'s bounty (`:1019`) and the dev hook keep calling `happen`
+  - `const happen = (id, ship) => play.start(id, ship);` where `happen` was (+1); `law`'s bounty (`:1019`), the dev hook and lane 4a's `createThings` dep `happen: (id) => happen(id, state.ship)` (a trapped derelict) keep calling `happen`
   - in `adventure`: `if (play.update(dt, t, live)) busy = true;` where the two steps were (+1): `update` returns `moving`, the frame loop's flag
   - the director's `busy:` expression (`:3989`) reads `play.busy` in place of `Boolean(escort) || Boolean(eclipse)` (0)
-  - the reads of `escort`, `eclipse`, `eclipseK`, `later` and `hunts` become `play.…` in place (0 each), and the six `dropEscort(); dropEclipse();` pairs (the ship change `:2143`, the Maw's swallow `:3097`, the crash `:3140`, `riftThrough` `:4221`, the jump's way out `:4358`, `holdPose` `:5872`) become `play.dropEscort(); play.dropEclipse();` (0 each; Task 10 makes each `events.clear();`)
+  - the reads of `escort`, `eclipse`, `eclipseK`, `later` and `hunts` become `play.…` in place (0 each), and the six `dropEscort(); dropEclipse();` pairs (the ship change `:2143`, the Maw's swallow `:3097`, the crash `:3140`, the rift's in lane 4a's `throwTo` (its split of `riftThrough`'s body, `:4221` on `main`), the jump's way out `:4358`, `holdPose` `:5872`) become `play.dropEscort(); play.dropEclipse();` (0 each; Task 10 makes each `events.clear();`)
 
   Count `scene.js`'s lines before and after.
 - [ ] **Step 5: Run them and see them pass.** Run `npm test`. Expected: PASS.
@@ -835,59 +868,103 @@ describe('the pace of things, in ten minutes of free flight on a phone', () => {
 - Create: `src/components/universe/events/sceneEvents.js`, `src/components/universe/events/sceneEvents.test.js`
 - Modify: lane 2's `src/components/universe/budget.js` (`events` joins the fields the quality steps lower) and `budget.test.js` (a new `describe`)
 - Modify `scene.js`:
-  - `const director = createDirector();` (`:1079`) goes; its reads (`:2514`, `:3707`, `:5911`, `:5963`) become `events.director` (−1)
-  - Task 9's `const happen = (id, ship) => play.start(id, ship);` goes (−1). Its last caller, the law's bounty (`:1019`), becomes `events.happen('bounty', ship, { force: true });` (0): the law sends its bounty hunter whatever the director would bring, as it does today. Without `force` the director would refuse it at any place (`bounty` is `zones: VOID`), with shields under 50 (its `heat` is 0.8), in the arrival's minute, and while a big event runs.
+  - `const director = createDirector();` (`:1079`) goes (−1). Every read of it moves, in place (0 each):
+    - the siege's `director?.soon?.('council')` (`:2514`): `events.director.soon('council')`
+    - the characters' `director.foretell(side)` (`:3707`): `events.director.foretell(side)`
+    - `__universeDebug`'s `director` (`:5911`): `events.debug.director` (below: a check's `soon` starts at once)
+    - `__universe()`'s `soon: (id) => director.soon(id)` (`:5963`): `soon: (id) => events.debug.soon(id)`
+    - lane 4a's `createThings` dep `soon: (id) => director?.soon(id)` (a beacon's lead, 4a's Task 24): `soon: (id) => events.director.soon(id)`
+  - Task 9's `const happen = (id, ship) => play.start(id, ship);` goes (−1). Every caller moves, in place (0 each):
+    - the law's bounty (`:1019`): `events.happen('bounty', ship, { force: true, hold: true })`. The law sends its bounty hunter whatever the director would bring, as it does today: without `force` the director would refuse it at any place (`bounty` is `zones: VOID`) and with shields under 50 (its `heat` is 0.8). With `hold` it still waits out the arrival's minute, a big event running (it is big itself) and a full budget, so it never lands on another big one (spec C) and never makes two at once on a phone. The law already calls it only while `!hunters.active` (`law.js:106`).
+    - lane 4a's `createThings` dep `happen: (id) => happen(id, state.ship)` (a trapped derelict's lead): `happen: (id) => events.happen(id, state.ship, { force: true })`. A trap is the player's own doing and springs at once; unforced it would be refused in the void, since `hunt` is `zones: PLACE`, and with no word said. (The exception this makes to "never two big ones" is Findings 18.)
+    - `__universeDebug`'s `happen: (id) => happen(id, state.ship)` (`:5911`): `happen: (id, o) => events.happen(id, state.ship, { force: true, ...o })`, and the same line gains `events: events.debug`
   - Task 9's `if (play.update(dt, t, live)) busy = true;` becomes `if (events.update(dt, t, live)) busy = true;` (0): `events.update` updates every player and returns whether any is `moving` (the frame loop's flag)
   - the director's block in `adventure`, `// (where you are: a sun lighting you` (`:3985`) through `if (id) happen(id, live);` (`:3991`), all but `state.hurtNow = 0;`, becomes `events.step(dt, live);` (−5). It moves out of the `if (hunters)` around it, inside `if (live)`, so the zones and the holder refresh with reduced motion too. The interdiction's release (`:3992-3993`) stays where it is.
   - `sideHere` (`:968`) reads a holder: `let holderNow = null;` above it (+1), and `sideAt(state.kind, mapSectorOf(…), holderNow)` (0)
   - the paced step: in `paceTo` (`:5053`), beside lane 2's `expanse.setStep` and lane 3's `places.setStep`, `events.setStep(at.step, at.floor);` (+1)
   - a new pilot's spawn: in the `if (!state.ship)` block (`:2211-2220`), after `state.yaw = -state.ship.heading;`, `if (!props.startAt) events.arrive();` (+1). Lane 4c's arrival keeps this line or calls `events.arrive()` itself.
-  - **Every place that ends what's going on lets go of every event too.** Task 9's six `play.dropEscort(); play.dropEclipse();` pairs (the ship change `:2143`, the Maw's swallow `:3097`, the crash `:3140`, `riftThrough` `:4221`, the jump's way out `:4358`, `holdPose` `:5872`) each become `events.clear();` (−1 each, −6). `portalThrough` (`:4246-4255`), which today drops the hunters, meteors, wingmen, skirmishes, npcs and traffic but not the escort or the eclipse, gains `events.clear();` after its `npcs?.clear();` (+1). (Through a portal the escort's freighter is gone with the traffic already, and today its block then says it was lost; now it's dropped quietly, as at a jump.)
+  - **Every place that ends what's going on lets go of every event too.** Task 9's six `play.dropEscort(); play.dropEclipse();` pairs (the ship change `:2143`, the Maw's swallow `:3097`, the crash `:3140`, 4a's `throwTo` (the rift's, and 4a's wormhole thing's), the jump's way out `:4358`, `holdPose` `:5872`) each become `events.clear();` (−1 each, −6). `portalThrough` (`:4246-4255`), which today drops the hunters, meteors, wingmen, skirmishes, npcs and traffic but not the escort or the eclipse, gains `events.clear();` after its `npcs?.clear();` (+1). (Through a portal the escort's freighter is gone with the traffic already, and today its block then says it was lost; now it's dropped quietly, as at a jump.)
   - `where()` (`:6277`): `events: events.running().map((r) => ({ id: r.id, kind: r.kind, name: r.name, x: r.at[0], y: r.at[1], z: r.at[2], big: r.big })), holder: holderNow && { id: holderNow.id, name: holderNow.name, side: holderNow.side },` (+1)
-  - the dev hooks: `__universeDebug`'s `happen` becomes `(id, o) => events.happen(id, state.ship, { force: true, ...o })` (0), and it gains `events: events.debug` on its existing line (0)
+  - `const events = createSceneEvents({ … });` goes on the line after Task 9's `const play = createExistingPlay(…)` (+1, its deps on the one line). Everything above it that reads `events` (the law's `bounty`, `sideHere`'s callers, 4a's deps) does so inside a function, so nothing reads it before it's made.
 
-  That is −8 in all.
+  That is −7 in all.
 
 **Interfaces:**
-- Consumes: Tasks 1–3, 6 and 9; lane 2's `expanse.sectors()`, `expanse.stars()`, `universeBudget`, `BUDGET`; lane 3's `places.docked()`, `state.spaceT`; `regionAt`.
+- Consumes: Tasks 1–3, 6 and 9; lane 2's `expanse.sectors()`, `expanse.stars()`, `universeBudget`, `BUDGET`; lane 3's `places.docked()`, `state.spaceT`; `regionAt`, `mapSectorOf`.
 - Produces:
   - **In `budget.js`:** `events` is stepped with `discs`, `thingsNear` and `traffic` (`× [1, 0.75, 0.5, 0.35]` by step, `× 0.25` at the floor), rounded and never below 1, as lane 3 adds `tags`. So mid at step 2 runs 1 event at once, high at step 1 runs 2, and no step takes any tier under 1.
-  - **`createSceneEvents(deps) → { update(dt, t, live) → moving, step(dt, live), happen(id, ship, { force }) → boolean, arrive(), running(), busy, director, holder(), here(), zones(), life(), pull(ship), targets, hit(from, to, punch), outOfJump(j, park) → park, afterJump(j, park) → event, follow(zone), setStep(step, floor), clear(), debug, dispose() }`** (`outOfJump` and `afterJump` pass through to Task 16's player; until then `outOfJump` gives `park` back and `afterJump` gives `{ type: 'jumped', id: j.id }`)
-  - **`deps`.** Today's collaborators (as Task 9's), plus: `play` (Task 9's player), `players` (the new events' players, added by Tasks 13–19; `[]` here), `expanse` and `places` (values: declared at `:772` and by lane 3 above `:1099`), `device` (`{ tier, detail }`, as lane 2 hands `universeBudget`), and thunks: `busyElse(live)` (today's director `busy` expression from `:3989`, less the escort and eclipse: `law.busy`, `hunters.active`, `pieces.destroyerHere`, `remover`, `leviathans.holds(live)`, `meteors.count`, `mines.count`, the map view, `charting`, `held`, `front.near`), `setHolder(h)` (sets `holderNow`), `jumping` (`() => state.jump`), `atStation` (`() => Boolean(state.at && byId(state.at)?.kind === 'core')`), `inGate` (`() => state.at === 'starwars'`), `hurtNow` (`() => state.hurtNow ?? 0`), `spaceT` (`() => state.spaceT`, lane 3's shared clock), `diff`, `standing`, `pick(id)`, `note(text)`. The sun lighting you is worked out from `litKey()` as `:3986` does today, moved in.
-  - **Zones.** `step` refreshes `zonesAround(expanse.sectors(), at)` once a second of the scene's clock, or after 2,000 units, and `createHere().update(...)` with `core: Boolean(regionAt(...at))`. A changed holder calls `setHolder`. With them it works out `life()`: Task 6's `trafficHere({ zones, at, core, holder, crew: state.kind, budget, t: spaceT() })`.
+  - **`createSceneEvents(deps) → SceneEvents`**, every method a later task calls listed here (a later task fills in the ones marked with its number; until then each gives what's said):
+    ```
+    SceneEvents = {
+      update(dt, t, live) → moving,
+      step(dt, live),
+      happen(id, ship, { force = false, hold = false, at = null } = {}) → boolean,
+      arrive(),
+      running() → Running[], busy, director,
+      holder() → Holder | null, here() → { system, holder }, zones() → Zone[], life() → Here | null,
+      pull(ship) → { v, k } | null,                          // Task 18; null until then
+      targets, hit(from, to, punch) → hit | null,            // Tasks 17's; [] and null until then
+      riftExit(ship) → { park, exit } | null,                // Task 11 (a generated system), Task 15 (the wormhole); null until then
+      spot(ship) → { x, y, z } | null,                       // Task 13 (the skirmish's spot); null until then
+      fights() → Fight[],                                    // Task 13 (what state.fights holds); [] until then
+      stations(base) → base | rows,                          // Task 15 (the trader's station joins); base until then
+      follow(row, lead) → boolean,                           // Task 14 (a beacon's lead); false until then
+      outOfJump(j, park) → park, afterJump(j, park) → event, // Task 16; park, and { type: 'jumped', id: j.id }, until then
+      setStep(step, floor), clear(), debug, dispose(),
+    }
+    ```
+  - **`deps`.** Today's collaborators (as Task 9's), plus: `play` (Task 9's player), `players` (the new events' players, added by Tasks 13–19; `[]` here), `expanse` and `places` (values: declared at `:772` and by lane 3 above `:1099`), `device` (`{ tier, detail }`, as lane 2 hands `universeBudget`), and thunks:
+    - `busyElse(live)`: today's director `busy` expression from `:3989`, less the escort and eclipse (`law.busy`, `hunters.active`, `pieces.destroyerHere`, `remover`, `leviathans.holds(live)`, `meteors.count`, `mines.count`, the map view, `charting`, `held`, `front.near`)
+    - `setHolder(h)`: `(h) => { holderNow = h; stockUp(); }`. `stockUp` (`:2233`) reads the holder-aware `sideHere()` and makes that side's hunters ahead, once a side, as `portalThrough` does at `:4261` when the side changes: so the first hunt in an Empire system out there doesn't build its models inside the frame.
+    - `jumping` (`() => state.jump`), `atStation` (`() => Boolean(state.at && byId(state.at)?.kind === 'core')`), `inGate` (`() => state.at === 'starwars'`), `hurtNow` (`() => state.hurtNow ?? 0`), `spaceT` (`() => state.spaceT`, lane 3's shared clock), `diff`, `standing`, `pick(id)`, `note(text)`. The sun lighting you is worked out from `litKey()` as `:3986` does today, moved in.
+  - **Core.** `core = Boolean(regionAt(...at)) || mapSectorOf(...at) === 'rickmorty'`, worked out once per refresh and passed to both `createHere().update` and `trafficHere`: the Rick and Morty pocket is nobody's, its traffic and law the crew's and the pocket's own, as today (Review Focus 5).
+  - **Zones.** `step` refreshes `zonesAround(expanse.sectors(), at)` once a second of the scene's clock, or after 2,000 units, and `createHere().update(systems, at, { core })`. A changed holder calls `setHolder`. With them it works out `life()`: Task 6's `trafficHere({ zones, at, core, holder, crew: state.kind, budget, t: spaceT() })`.
   - **`busy`** (the director's) is `busyElse(live) || any player's busy || running().length >= budget.events`.
   - **The director's step** runs only while `hunters` exists, so reduced motion has no events, as today. It is today's, with `zone: zoneOf(live, { regionAt, systemAt })`, `side: withWhere(sideHere(), whereFor({ zones, ship, side, sun, station, gate, docked: Boolean(places.docked()), jumping: Boolean(jumping()) }))`, `busy` as above, `big: running().some((r) => r.big)` and `hazard: here.system?.hazard ?? null`. A pick it gives is started on its player; one whose `start` returns false goes back with `director.refused(id)`.
-  - **`happen(id, ship, { force })`** finds the player whose `kinds` hold `id` and starts it with `ctx`. Forced, it starts whether or not the director would allow it (the dev hook, the law's bounty). Not forced, it refuses (false, nothing started) while `busy`, and unless `director.allows(id, { side, zone, calm: shield < 50, big })`.
+  - **`happen(id, ship, { force, hold, at })`** finds the player whose `kinds` hold `id` and starts it with `ctx` (its `at` the one given):
+    - **Not forced**, it refuses (false, nothing started) while `busy`, and unless `director.allows(id, { side, zone, calm: shield < 50, big })`.
+    - **Forced**, it starts at once whether or not the director would allow it: the dev hook, a check's `soon`, a thing's trap.
+    - **Forced and held** (the law's bounty): it passes the zone and the calm, but while the director is `arriving`, while a big event runs (for a big `id`), or while `running().length >= budget.events`, it's kept (one at most; a newer replaces it) and started on the first `step` none of those holds. It returns true when kept. `clear()` and the 30,000 let-go drop it.
   - **`running()`**, `busy`, `targets` and `hit` gather every player's.
   - **Letting go.** `update` lets go of any running event whose `from` (the ship where it started) is more than `ZONE.near` (30,000) from the ship now, by its player's `drop(id)`: a beacon left behind by a reduced-motion trip, a teleport or the far side of a long flight never holds the director. So the contract gains **`drop(id)`**: let go of that one event and hide its looks (`clear()` is every one). Task 9's player gets it too: `drop` of the escort or the eclipse is `dropEscort()` or `dropEclipse()`; of anything else, it only leaves the registry.
-  - **`clear()`** clears every player. Task 16's waylay mark is not an event and survives it (the jump's own block clears between `outOfJump` and `afterJump`).
+  - **`clear()`** clears every player and drops a held event. Task 16's waylay mark is not an event and survives it (the jump's own block clears between `outOfJump` and `afterJump`).
   - **`setStep(step, floor)`**: `budget = universeBudget(device, step, floor)`.
-  - **`debug`**: `{ kinds() → string[] (every id a player plays: 30 once Task 19 is in), running(), here(), life(), zones(), director, clear(), spotFor(kind) → { x, y, z, heading } | null }`. `spotFor` is where a kind can be forced: the Maw's edge for `'tidal'` with no black hole near, a station's park (lane 3's `places.park`) for `'trader'`, else the ship's own place.
+  - **`debug`**: `{ kinds() → string[] (every id a player plays: 30 once Task 19 is in), running(), here(), life(), zones(), director, soon(id), clear(), spotFor(kind) → { x, y, z, heading } | null }`:
+    - `spotFor` is where a kind can be forced: the Maw's edge for `'tidal'` with no black hole near, a station's park (lane 3's `places.park`) for `'trader'`, else the ship's own place.
+    - **`soon(id)`**, a check's force: on the next `step` with a live ship, `happen(id, live, { force: true })`. It never waits for the arrival's minute, the budget or the director's own `busy`. `scripts/events-check.mjs` and `scripts/flare-check.mjs` load `#/universe` with no start link, so after this task every visit starts with the gentle minute, and a `soon('rift')` through the director would wait 60 s of the scene's clock (ten minutes of wall in software GL, against the checks' 30 to 90 s waits), and on `?quality=low` `soon('meteors')` would wait behind the flare's registry entry too.
+    - **`director`**: what `__universeDebug.director` now is, `{ soon: (id) => debug.soon(id), get intensity() { return director.intensity; }, foretell: (...a) => director.foretell(...a) }`, so `events-check.mjs:38-92`'s `director.soon(…)`, `flare-check.mjs:38`'s and `universe-npc-check.mjs:82,114`'s `director.intensity` work as before.
 
 - [ ] **Step 1: Write the failing tests.** `sceneEvents.test.js`, over a fake expanse holding `E:1,0` and fake collaborators (a fake player whose `start` returns what the test says and whose `running()` lists what it started):
   - **Zones and whose space.** A ship inside an Empire-held system of `E:1,0` gets `holder().side === 'starwars'` and `setHolder` called once; it stays through 300 steps on that system's edge. `life()` there has the Star Wars side; at `[0, 0, 0]` (the core) it is null.
+  - **The Rick and Morty pocket.** A fake sector in the expanse holding one Empire system (`reach` 1,000) just outside the pocket's keep-out (its `at` `SECTOR_RADIUS.rickmorty + 4000 + 1000 + 10` from `SECTORS.rickmorty.origin`). A ship stepped inside that system's reach has `holder().side === 'starwars'`; carried in steps of 500 to the pocket's middle, it has `holder()` null, `life()` null, and `lawAt(crew, holder())` is `sideFor(crew)` for each crew. (Before this task's `core`, the last system's holder followed the ship in, and `lawAt` gave the Empire's.)
   - **The director's inputs.** With a spy director, `update` gets `zone: 'place'` inside a generated system and `'void'` far between; `hazard` is the system's; `side.has('station')` is true near a station and false 40,000 from any.
   - **Never more than the budget.** A scripted run of 600 s of steps with every new kind forced through `happen` as soon as it can: with `device: { tier: 'low' }`, `running().length` is never over 1 for an unforced start; with `'high'`, never over 3.
   - **Never two big ones from the director.** In the same run, no director-started big event begins while another big one is running.
   - **The arrival.** After `arrive()`, the director's first pick in 60 s is gentle (spy on `director.update`'s result).
   - **Forcing and refusing.** `happen('convoy', ship, { force: true })` starts it whatever the director says. Unforced, `happen('convoy', ship)` returns false and starts nothing while `busyElse` is true, while a fake player's `busy` is true, and while `running().length` is at `budget.events`.
-  - **The law's bounty.** In a generated system's reach (`zone: 'place'`), with shields at 40 and a big event running, `happen('bounty', ship, { force: true })` starts it and registers it; `happen('bounty', ship)` there is refused.
+  - **A thing's trap.** With the ship in the void (`zone: 'void'`), `happen('hunt', ship, { force: true })` (lane 4a's trap dep) starts the hunt at once and registers it, with the director arriving and a big fake event running; `happen('hunt', ship)` there is refused (`hunt` is `zones: PLACE`).
+  - **The law's bounty.** In a generated system's reach (`zone: 'place'`) with shields at 40, `happen('bounty', ship, { force: true, hold: true })` starts it at once and registers it; unforced it's refused. With a big fake event running, it's kept, not started; the step after that event ends, it starts. After `arrive()`, it's kept until the minute is out. On `'low'` with a flare running, it waits for the flare. `clear()` while it's kept drops it.
+  - **A check's force.** After `arrive()`, `debug.soon('rift')` starts the rift on the next `step`, with `director.arriving` still true. On `'low'` with a flare registered, `debug.soon('meteors')` starts on the next `step`. `debug.director.soon` is the same call, and `debug.director.intensity` is the director's.
   - **A refused pick.** A spy director that gives `'flare'` where the player's `start` returns false gets `refused('flare')` once.
   - **Gone with the place.** An event started, then `clear()` (what the jump's way out, the rift, a portal, the ship change, the Maw, a crash and a held pose call): `running()` is empty and the director's next `busy` is false. An event started, then the ship moved 30,001 from where it started with no clear: the next `update` calls the player's `drop` with its id once, and the director isn't busy for it.
   - **Reduced motion.** With `hunters: null`, `step` never calls the director.
   - **`setStep`.** On `'mid'`, `setStep(2, false)` gives an events cap of 1; on `'high'`, `setStep(1, false)` gives 2.
+  - **The interface.** Every method of `SceneEvents` above exists with no player in, and gives its "until then" answer.
 
   `budget.test.js`, a new `describe('events at once, stepped')`: `universeBudget({ tier: 'mid' }, 2).events` is 1, `({ tier: 'high' }, 1)` is 2, `({ tier: 'high', detail: 'ultra' }, 0)` is 3, `({ tier: 'low' }, 3, true)` is 1; no step or floor raises `events` or takes it under 1 on any tier.
 - [ ] **Step 2: Run them and see them fail.** Run `npx vitest run src/components/universe/events/sceneEvents.test.js src/components/universe/budget.test.js`. Expected: FAIL (`sceneEvents.js` not found; `events` not stepped).
-- [ ] **Step 3: Implement and wire.** Count `scene.js`'s lines.
-- [ ] **Step 4: Run them and see them pass.** Run `npm test`. Expected: PASS, every existing `budget.test.js` test unchanged.
-- [ ] **Step 5: Commit.** `git commit -m "The scene's events know what's round the ship and whose space it is, let go of what you've left, and never run more than the tier allows"`. The body has `scene.js`'s count (about −8).
+- [ ] **Step 3: Implement and wire.** Count `scene.js`'s lines. Run `grep -n "happen(\|director" src/components/universe/scene.js` after: no `happen(` but `events.happen(` and `play.start` is left, and no bare `director` but `events.director` and `events.debug.director` (lint's `no-undef` would catch one, but at a thunk only when it runs).
+- [ ] **Step 4: Run them and see them pass.** Run `npm test` and `npm run lint`. Expected: PASS, every existing `budget.test.js` and `things` test unchanged.
+- [ ] **Step 5: The checks that force events.** Start the dev server (Global Constraints) and run `CHROME=/opt/pw-browsers/chromium OUT=docs/superpowers/evidence/endless-universe-lane-4b/after-10 node scripts/events-check.mjs rv` and `CHROME=/opt/pw-browsers/chromium OUT=docs/superpowers/evidence/endless-universe-lane-4b/after-10 node scripts/flare-check.mjs xwing`, then stop it. Expected: as before Task 9 (the rift opens and takes the ship, the flare goes, the leviathans pass, a bounty hunter comes; the meteor stream and the shot through a rock time out in software GL as on `main`).
+- [ ] **Step 6: Commit.** `git commit -m "The scene's events know what's round the ship and whose space it is, let go of what you've left, and never run more than the tier allows"`. The body has `scene.js`'s count (about −7), and says lane 4a's trap and beacon deps now go through `events`.
 
 ### Task 11: The existing events, out there
 
 **Files:**
 - Modify: `src/components/universe/events/playExisting.js`, `playExisting.test.js`, `src/components/universe/traffic.js:529-540` (`convoy`), `src/components/universe/setpieces.js:409-422` (`rift(ship, solids)`), `src/components/universe/meteors.js:99` (`storm(ship, rand, solids)`), `src/components/universe/mines.js:127` (`lay(ship, rand, solids)`), `src/components/universe/leviathans.js:191` (`pass(ship, who, rand, solids)`), `scripts/universe-endless-check.mjs` (the `events` step)
-- Modify `scene.js`: `riftThrough` (`:4210-4237`) takes its exit from `events.riftExit(s)` (0); `createSetPieces(map, { small, fleet })` (`:1080`) gains `solids: () => solidsNow` (0)
+- Modify `scene.js`:
+  - `riftThrough` (`:4210`; lane 4a has split its body after `const park = …` into `throwTo(park, opts)`) asks the events first: `const ours = events.riftExit(s);` above its first line (+1), then `const exit = ours ? ours.exit : riftExit(state.at, Math.random, mapSectorOf(s.x, s.y, s.z), state.saw);` and `const park = ours ? ours.park : parkFor(exit, [s.x, s.z]);` in place (0 each). 4a's `throwTo(park, …)` after them is unchanged.
+  - `createSetPieces(map, { small, fleet })` (`:1080`) gains `solids: () => solidsNow` (0)
 
 **Interfaces:**
 - Consumes: Task 2's zones; Task 5's solids arguments; lane 2's `expanse.stars()`; lane 3's `places.park(id, from)`.
@@ -895,7 +972,7 @@ describe('the pace of things, in ten minutes of free flight on a phone', () => {
   - **The flare** flares the nearest of `deep.js`'s `STARS` and the zones' systems (a system's star at its `at`, `r: star.size`), when one is within 30,000; else it returns false.
   - **The eclipse** finds the star lighting you by `litKey().id` among `expanse.stars()` (lane 2's, which hold lighting's `STARS` too), not `LIT_STARS` alone, so a generated sun can be eclipsed. `where.sun` is worked out the same way (`scene.js:3986` moves into Task 10's step).
   - **The supernova** goes off at the nearest of `SUPERNOVA_SITES` past 1,100, or out in generated space at a generated system's star 6,000 to 40,000 off (inside the far plane, so it's drawn); its shell spreads over the better part of a minute as `supernova.js` draws it.
-  - **The rift** opens clear of every solid in `solidsNow`; out past the core it throws you to a generated system in the zones you haven't seen (`state.saw`), parked by `places.park(id, from)`, else to `riftExit`'s hand-made place as today. `events.riftExit(ship) → park | null`.
+  - **The rift** opens clear of every solid in `solidsNow`; out past the core it throws you to a generated system in the zones you haven't seen (`state.saw`), parked by `places.park(id, from)`, else to `riftExit`'s hand-made place as today. **`events.riftExit(ship) → { park, exit } | null`**: `exit` is the place's id (what `'rifted'` emits and `isPlace` reads); null in the core, so `riftThrough` keeps today's `riftExit` and `parkFor` there. Task 15 adds the wormhole's, `exit` null.
   - **The escort** heads for the next port ahead among `events.life()`'s `ports` (Task 6), the hand-made `PLACES` in the core as today; out of the core with no system within 30,000 it returns false (and the director's pick goes back: Task 10's `refused`).
   - **The convoy gets a column of its own** (HANDOFF-universe's "Left"): `traffic.convoy(ship, side, { ports, solids })` flies a column with its escort on Task 6's `portLane` between two of the system's ports, starting where you see it, and it always has a slot (past `MAX`), so it never spawns nothing. Where there are no two ports, `convoyLane` as today, then `laneNear`. It registers as running, with its lead's `at`, so the map shows it.
   - **The meteor stream, the minefield, the leviathans and the capital ship** take `solidsNow`, so none is laid through a generated planet or station.
@@ -906,25 +983,26 @@ describe('the pace of things, in ten minutes of free flight on a phone', () => {
   - a flare in a generated system launches at that system's star; 40,000 from any star, it returns false
   - with `litKey()` a generated star's id and `expanse.stars()` holding it, the eclipse plans against that star
   - the supernova's site is a generated star 6,000 to 40,000 off when no hand-made site is within 40,000
-  - the rift's exit from generated space is a zone system not in `saw`, parked by `places.park`
+  - `riftExit` from generated space gives `{ park, exit }`, `exit` a zone system not in `saw` and `park` from `places.park`; in the core it gives null
   - the escort's `to` is a port of the system
   - `traffic.convoy` gets the system's ports and the frame's solids, and a convoy run registers as running
 
   `traffic.test.js` already exists (Node, its own `fakeFleet()` and a seeded `Math.random`): it gains a `describe('a convoy between ports')`, in which a convoy with two ports flies a column on a port lane, and spawns even with `MAX` groups already flying. Its existing `describe('a convoy')` is unchanged.
 - [ ] **Step 2: Run them and see them fail.** Run `npx vitest run src/components/universe/events/playExisting.test.js src/components/universe/traffic.test.js`. Expected: FAIL.
-- [ ] **Step 3: Implement**, then add the endless check's `events` step: for each kind given (`--only events:flare,rift,…`, or all of `events.debug.kinds()`):
+- [ ] **Step 3: Implement**, then add the endless check's `events` step. Its kinds come from its own flag, `--events a,b,c` (comma-split; lane 3's `--only` splits on commas into step names, so the kinds can't ride on it), or with no `--events`, all of `__universeDebug.events.kinds()`. For each kind:
   1. teleport to `events.debug.spotFor(kind)` (lane 2's `__universeDebug.teleport`), then to a generated system's reach for the out-there run
   2. `__universeDebug.happen(kind)`
-  3. wait until `events.debug.running()` holds that kind (or its own sign: `pieces.riftAt`, `leviathans.busy`, `meteors.count > 0`, `mines.count > 0`, the escort, the eclipse), up to 600 s of the scene's clock
+  3. wait until `events.debug.running()` holds that kind (or its own sign: `pieces.riftAt`, `leviathans.busy`, `meteors.count > 0`, `mines.count > 0`, the escort, the eclipse), giving up after 30 s of the scene's clock or 120 s of the wall's, whichever first. A forced start registers on the frame it's forced, so most pass at once; the cap only bounds a kind that never comes.
   4. shoot it, `events-<kind>.jpg`, into the evidence folder
-  5. `events.debug.clear()`, and wait until `running()` is empty
-- [ ] **Step 4: Run them and see them pass.** Run `npm test`, then `node scripts/universe-endless-check.mjs --quality mid --only events:flare,meteors,leviathan,minefield,escort,eclipse,rift,convoy,bounty`. Expected: PASS, exit 0, nine shots, no console errors.
-- [ ] **Step 5: Commit.** `git commit -m "The flare, the rift, the eclipse, the escort and the rest play out in generated space, and the convoy has a column of its own"`
+  5. `events.debug.clear()`, and wait until `running()` is empty (the same caps)
+- [ ] **Step 4: Run them and see them pass.** Run `npm test`, then `node scripts/universe-endless-check.mjs --quality mid --only events --events flare,meteors,leviathan,minefield,escort,eclipse,rift,convoy,bounty`. Expected: PASS, exit 0, nine shots, no console errors.
+- [ ] **Step 5: Commit.** `git commit -m "The flare, the rift, the eclipse, the escort and the rest play out in generated space, and the convoy has a column of its own"`. The body has `scene.js`'s count (+1).
 
 ### Task 12: Traffic from the nearest system
 
 **Files:**
 - Modify: `src/components/universe/traffic.js:357-429` (`update`'s spawn and spotting), `src/components/universe/traffic.test.js`, `scripts/universe-endless-check.mjs` (the `life` step)
+- Create: `src/components/universe/__fixtures__/traffic-core.json` (written once from unchanged code)
 - Modify `scene.js`: the traffic call (`:5252`) passes `here: events.life()` in its options object (0)
 
 **Interfaces:**
@@ -937,14 +1015,16 @@ describe('the pace of things, in ten minutes of free flight on a phone', () => {
   - **The law.** A patrol reports a wanted pilot only for `here.law` (none in an independent system), in place of `side.law`.
   - The flyby (`:388-395`) is unchanged.
 
-- [ ] **Step 1: Write the failing tests.** In `traffic.test.js`, new `describe`s:
+- [ ] **Step 1: Write the fixture, then the failing tests.** First, on unchanged code, add a `traffic-core` writer to `traffic.test.js`, as Task 5's `lanes-level` is: written once when `TRAFFIC_WRITE` is set and the file is missing. For seeds 11, 23 and 37 of the file's own `seeded` (`traffic.test.js:18`) put in for `Math.random`, a `createTraffic` with its `fakeFleet()` and the RV's crew, and a ship flying level at 12 from home, it records 600 s of `update(1 / 30, t, ship, { fight: false, feared: false, wanted: false })` as every 30th frame's `groups.map((g) => ({ id: g.id, kind: g.kind, t: g.t, lead: g.lead }))` (the `groups` getter's own fields, `traffic.js:589-591`). Run `TRAFFIC_WRITE=1 npx vitest run src/components/universe/traffic.test.js` once, then without it, and commit the fixture with this task.
+
+  Then, in `traffic.test.js`, new `describe`s:
   - with `here.side` the Star Wars side while the crew is the RV, every new group's kind is one of `kindsFor(SIDES.starwars)`
   - a group spawned under one `here` is still flying, at the same place, the frame after `here` changes to another side's
   - at `here.gap = [10, 30]`, 600 s of updates spawn about a tenth as many everyday groups as at `[1, 3]` (between 0.05 and 0.2 of them)
   - port-lane groups never exceed `here.cap`, and each starts at least 60 from the ship
   - with `here.law: null` and a wanted pilot, no `'spotted'` event comes; with `'empire'`, a TIE patrol passing within `SPOT` reports
-  - with `here` null, a run under the file's own seeded `Math.random` gives the same groups as before this task
-- [ ] **Step 2: Run them and see them fail.** Run `npx vitest run src/components/universe/traffic.test.js`. Expected: the new tests FAIL.
+  - with `here` null (and with no `here` passed), the same three runs reproduce `traffic-core.json` exactly (`toEqual`)
+- [ ] **Step 2: Run them and see them fail.** Run `npx vitest run src/components/universe/traffic.test.js`. Expected: the new tests FAIL but the fixture's, which passes on unchanged code.
 - [ ] **Step 3: Implement and wire**, then add the endless check's `life` step. At five places (a generated system held by a known faction; deep space between systems; 50,000 above the core; `[1e7, 0, 0]`, a far sector; home):
   1. teleport there, level, on the boost
   2. wait until something moves near the ship (`traffic.groups.length > 0`, or `hunters.active`, `skirmishes.active`, `leviathans.busy` or `events.debug.running().length`), reading the scene's clock from the teleport
@@ -957,7 +1037,7 @@ describe('the pace of things, in ten minutes of free flight on a phone', () => {
 
 **Files:**
 - Create: `src/components/universe/events/playFar.js`, `src/components/universe/events/playFar.test.js`
-- Modify `scene.js`, moving out the far fights (find by quote): `const SKIRMISH_EVERY` (`:3758`) through `fightsNow`'s end (`:3814`), and `if (skirmishes) farFight(dt, t, live);` with the `state.fights` refresh (`:3876-3877`), which become `events`' (about −60). In place (0 each):
+- Modify `scene.js`, moving out the far fights (find by quote): `const SKIRMISH_EVERY` (`:3758`) through `fightsNow`'s end (`:3814`), and `if (skirmishes) farFight(dt, t, live);` with the `state.fights` refresh (`:3876-3877`), which become the far play's, run by `events.update` each frame of `adventure`, `live` or not, as `:3876` runs today (about −60). `farFights.update(dt, state.fights, camera);` (`:3878`) stays and draws what the far play writes to `state.fights`. In place (0 each):
   - `createHunters(…, { …, solids: SOLIDS, … })` (`:972`), `createWingmen` (`:974`) and `createSkirmishes` (`:975`): `solids: () => solidsNow`
   - `npcWorld` (`:3686`): `solids: SOLIDS` becomes `get solids() { return solidsNow; }`
   - `createLaw`'s `side: () => sideFor(state.kind)` (`:1016`): `side: () => lawAt(state.kind, holderNow)`
@@ -968,10 +1048,11 @@ describe('the pace of things, in ten minutes of free flight on a phone', () => {
 - Modify: `scripts/universe-endless-check.mjs` (the `fights` step)
 
 **Interfaces:**
-- Consumes: Task 7's `fightOf`, `fightsAround`, `fightNode`, `fightLabel`; Task 10's zones, holder and `spaceT`; `FAR` (`farFights.js`); the scene's `camLocal` (a value, `:547`, set in place each frame); `pickFightNode`, `NODES`, `placeAt`.
+- Consumes: Task 7's `fightOf`, `fightsAround`, `fightNode`, `fightLabel`; Task 10's zones, holder and `spaceT`; `FAR`, `pickFightNode` (`farFights.js`), `NODES`, `placeAt` (`skirmish.js`), `destinationById` (`nav.js`), `regionAt` (`regions.js`) and `ZONE as FRONT_ZONE` (`front.js`), imported by `playFar.js` itself as `scene.js` imports them (`:129`, `:138`, `:158-160`), not passed.
+- **`createFarPlay(deps)`'s deps**, in Task 9's form. It's made on the line before `createSceneEvents(…)` (Task 10's, after `:1099`) and handed to it in `players`; its deps go on its own line (+1, counted below). Values, each declared above that line and never reassigned: `skirmishes` (`:975`), `hunters` (`:972`), `pieces` (`:1080`), `leviathans` (`:1097`), `meteors` (`:1098`), `pops` (`:859`), `burn` (`:887`), `crashFx` (`:832`), `deed` (`:1001`), `camLocal` (`:547`, set in place each frame at `:5331`), `side` (`sideHere`, `:968`: a function, passed as itself), `later` (Task 9's `play.later`, the queue moved into `play`). Thunks, each declared below the line or reassigned: `state` (`:1174`), `emit` (`:1719`), `front` (`() => front`: `let front`, `:1053`, is reassigned by `frontFor`), `solids` (`() => solidsNow`: reassigned each frame, `:906`), `spaceT` (`() => state.spaceT`), `holder` (`() => holderNow`). `popDir` (`:2544`, below) isn't passed: `playFar.js` keeps a `THREE.Vector3` of its own for it.
 - Produces: **`createFarPlay(deps) → Player`** with `kinds: []` (Task 17 adds `'battle'`), `fights()` (what `farFights.update` draws and `where().farFights` lists, each with `y`, and `label: fightLabel(at, near)`), and `spot(ship)` (today's `skirmishSpot`, clear of `solidsNow`):
   - **Today's skirmish, out ahead,** every `SKIRMISH_EVERY`, at `pickFightNode({ ship, headedFor, nodes })`, where `nodes` is `NODES` plus `fightNode` of every system in the zones (so out past the core one is near, not 100,000 off at a hand-made beacon)
-  - **The far fights out.** `fightsAround(zone systems, camLocal, spaceT(), { far: FAR })` joins `fights()` with the skirmish and the front, drawn by `farFights` (its pool of four). `camLocal` is the camera in the map's frame, the one `farFights.update` already takes (`scene.js:3912`), passed as a dep; `spaceT` is lane 3's shared clock (Task 10's dep), so two pilots see the same fights on.
+  - **The far fights out.** `fightsAround(zone systems, camLocal, spaceT(), { far: FAR })` joins `fights()` with the skirmish and the front, drawn by `farFights` (its pool of four). `camLocal` is the camera in the map's frame (`scene.js:547`, set in place each frame), passed as a dep; `spaceT` is lane 3's shared clock (Task 10's dep), so two pilots see the same fights on.
   - **Coming up on one.** Within `FAR` of a far fight that's on and not yet fought this window, the skirmish starts there (`placeAt(node, solidsNow)`), its hunters the holder's side's `skirmish.faction` (the crew's with no holder), and its impostor gives way to the real one
 - **Hunters, wingmen, skirmishes and the characters** fly round what's there now: the generated planets, moons, stations and things (lane 2's `expanse.solids()` and lane 3's `places.solids()` are in `solidsNow`).
 - **The law and your standing** are the holder's (`lawAt`). Crossing into an independent system, `wanted.side(null)` drops the stars (nobody's law there) and keeps each side's bounty in storage, as `wanted.js:108-117` does.
@@ -984,28 +1065,29 @@ describe('the pace of things, in ten minutes of free flight on a phone', () => {
 
   `law.test.js`, a new `describe('whose law it is')`, with a real `createWanted` and the file's `fakes()`, the law's `side` thunk switching from `SIDES.starwars` to null and back over 30 steps each: `wanted`'s side changes exactly twice (a wrapper round `wanted.side` counts the calls whose id differs from the one before: `law.step` calls it every step through `sync()`, `law.js:84`, and it returns at once when nothing changed, `wanted.js:108-109`); the stars are 0 while it's null; and the Empire's bounty is back after. It passes on today's `law.js` and `wanted.js`, which this lane doesn't change: it pins what the scene's new `side: () => lawAt(state.kind, holderNow)` relies on.
 - [ ] **Step 2: Run them and see them fail.** Run `npx vitest run src/components/universe/events/playFar.test.js src/components/universe/law.test.js`. Expected: `playFar.test.js` FAILS (module not found); the new `law.test.js` `describe` passes already.
-- [ ] **Step 3: Implement and wire**, then add the endless check's `fights` step:
+- [ ] **Step 3: Implement and wire**, then add the endless check's `fights` step (`__universe()` has no far fights: they're on `__universeDebug.state.fights`, each `{ id, at: [x, y, z], size, hot, label }`):
   1. teleport into a generated sector's middle
-  2. wait until `__universe().farFights` (from `where()`) holds a fight labelled `Fighting near …`, its `y` set
-  3. teleport 1,500 from it, and wait until `skirmishes.active`
+  2. wait until `__universeDebug.state.fights` holds one whose `label` starts `Fighting near ` and whose `at[1]` is set, up to 30 s of the scene's clock and 120 s of the wall's
+  3. teleport 1,500 from it, and wait until `__universeDebug.skirmishes.active` (the same caps)
   4. shoot it, `fights.jpg`
 - [ ] **Step 4: Run them and see them pass.** Run `npm test`, then `node scripts/universe-endless-check.mjs --quality mid --only fights,life`. Expected: PASS.
 - [ ] **Step 5: Run PR 4b.2's checks.** Start the dev server and run `CHROME=/opt/pw-browsers/chromium node scripts/navmap-check.mjs` and `CHROME=/opt/pw-browsers/chromium node scripts/flyto-check.mjs --fake`, then stop it; run `CHROMIUM=/opt/pw-browsers/chromium node scripts/universe-check.mjs --quality mid --out lab/universe/after-4b2/mid`. Expected: as before Task 9; calls and triangles at every pose no higher than `before-4b`.
-- [ ] **Step 6: Commit.** `git commit -m "Hunters, the law and far fights read whose space it is, and fly round what's there"`. The body has `scene.js`'s count (about −60).
+- [ ] **Step 6: Commit.** `git commit -m "Hunters, the law and far fights read whose space it is, and fly round what's there"`. The body has `scene.js`'s count (about −59: −60 moved out, +1 for `createFarPlay`'s line).
 
 ---
 
 ## PR 4b.3: Thirteen new events
 
-Each task below adds a player to Task 10's `players` list (+0 in `scene.js`: the list is one argument on `createSceneEvents`'s line), a pure rules file with its test, the player's Node test with fakes, and the endless check's `events:<kinds>` run at mid.
+Each task below adds a player to Task 10's `players` list (+0 in `scene.js`: the list is one argument on `createSceneEvents`'s line), a pure rules file with its test, the player's Node test with fakes, and the endless check's `--only events --events <kinds>` run at mid.
 
 ### Task 14: Signals: a distress call, and a treasure signal
 
 **Files:**
 - Create: `src/components/universe/events/signals.js`, `signals.test.js`, `src/components/universe/events/playSignals.js`, `playSignals.test.js`
+- Modify: `src/components/universe/events/sceneEvents.js` and its test (`follow`), `scene.js`'s `createThings(…)` deps line (0)
 
 **Interfaces:**
-- Consumes: Task 5's `noseFrame`; Task 10's `ctx`; `hunters.pack`, `traffic.escort` (the stranded ship, held nearly still), `deed`, `pay`, `note`, `EVENT`; `kit.js`'s `paint(draw, w, h)` (a canvas painted and made an sRGB `CanvasTexture`; it needs no renderer, so the player's deps don't grow) and `parts(list)`; `hot(hex, k)` (`lib/three/canvasTexture.js`).
+- Consumes: Task 5's `noseFrame`; Task 10's `ctx` and `happen(id, ship, { force, at })`; lane 4a's `follow(row, lead)` dep on `createThings` (a beacon row: `{ id, kind: 'beacon', at, size, … }`); `hunters.pack`, `traffic.escort` (the stranded ship, held nearly still), `deed`, `pay`, `note`, `EVENT`; `kit.js`'s `paint(draw, w, h)` (a canvas painted and made an sRGB `CanvasTexture`; it needs no renderer, so the player's deps don't grow) and `parts(list)`; `hot(hex, k)` (`lib/three/canvasTexture.js`).
 - Produces, in `signals.js`:
   - **`SIGNAL = { near: [600, 1500], cone: 0.7, reach: 40, clear: 120, life: 300 }`**
   - **`signalSpot(ship, rand, solids = []) → [x, y, z] | null`**: 600 to 1,500 along the 3D nose, at most `acos(0.7)` off it, clear of every solid by `r + SIGNAL.clear`, from eight tries
@@ -1015,11 +1097,14 @@ Each task below adds a player to Task 10's `players` list (+0 in `scene.js`: the
     - `'defend'`: `'wave'` (n 1) at once, then `'wave'` (n 2) `STRANDED.gap` after the first is cleared; its hull loses `on × bite × dt`; at 0, `'lost'`; both waves cleared, `'saved'`
   - **`TREASURE = { reach: 25, pay: 5, guarded: 0.3, life: 300 }`**
   - **`createTreasure({ at, rand }) → { at, guarded, phase, step(dt, { you }) → events }`**: `'reached'` (and `'guards'` when guarded), then `'opened'` with `{ pay: TREASURE.pay }`; past `life`, `'gone'`
-  - **`followOf(id) → 'stranded' | 'treasure'`**: what a beacon thing leads to, three in five stranded, from its id's hash
+  - **`FOLLOW = { distress: 'stranded', escort: 'stranded', treasure: 'treasure' }`**: what a beacon's lead plays. Lane 4a's beacon `act()` works out the lead by its one rule, `leadEvent(traitsOf(row).leads, events)` over its `LEADS` (`things/rules.js`), and hands it with the row to its `follow(row, lead)` dep. A beacon's distress call is a ship stranded at the beacon (the spec's distress call), so `'distress'` and `'escort'` play `'stranded'`. There's no second rule of which beacon leads where.
+  - **`besideBeacon(row, ship, solids = []) → [x, y, z] | null`**: `row.at` moved toward the ship by `2 × row.size`, clear of every solid by `r + SIGNAL.clear`; null when that point isn't clear
 - Produces: **`createSignalsPlay(deps) → Player`** with `kinds: ['stranded', 'treasure']` (Task 15 adds two). One look, made when first wanted: a beacon (a `Sprite` of a radial gradient painted by `paint`, `sizeAttenuation: false`, its colour `hot()` so the bloom takes it, blinking by scale) and a cache (a small crate from `kit.js`'s `parts`, `MeshStandardMaterial` in `PALETTE.grey.hex`). Both invisible at rest.
   - **Stranded:** the beacon at `signalSpot`; a note (`EVENT.stranded`); reached, a stranded ship (a `traffic.escort` group on a 3-unit path at 0.01, so it holds nearly still past `SIGNAL.life`) and the waves (`hunters.pack(pick(side, 'pirates'), you, { prey, size: 2, ace: false })`); saved, `deed('rescued')` and `EVENT.saved`; lost, a burst.
   - **Treasure:** the beacon; reached, the cache (and a pirate pack if guarded); opened, `pay('found', 5)` and `EVENT.cache`.
-  - **`follow(zone)`** (Task 10's): starts `followOf(zone.id)` at that zone's `at`. **The seam:** lane 4a's beacons ("Follow: leads to an event"). If 4a's beacon action hands its row to a callback or emits an event, this task passes it to `events.follow`. If 4a left no hook, the beacons stay 4a's to wire, and `HANDOFF-NOTES.md` says so.
+  - **`follow(row, lead) → boolean`**, in `sceneEvents.js` (Task 10's `events.follow`, filled here): with `FOLLOW[lead]` a kind some player plays, its own `happen(FOLLOW[lead], ship, { force: true, at: besideBeacon(row, ship, solids) })`, so the stranded ship or the cache is at the beacon you're parked by, not 600 ahead along the nose. It returns what `happen` returns. For any other lead, or with `besideBeacon` null, it returns false and starts nothing, and 4a's beacon falls back to `soon(lead)`, the director's own event.
+  - **The seam, wired:** `scene.js`'s `createThings(…)` deps line gains `follow: (row, lead) => events.follow(row, lead)` (0, on the line). 4a's `act()` calls it for every beacon and skips its `soon` when it returns true (4a's Task 24). `HANDOFF-NOTES.md` records it, under "Landed".
+  - `start(id, ship, ctx)` with `ctx.at` puts the beacon (stranded) or the cache (treasure) there and skips `signalSpot`.
   - Forced with no room ahead, `start` puts the beacon at 600 straight ahead, or returns false with nothing registered if that is inside a solid.
 
 - [ ] **Step 1: Write the failing tests.** `signals.test.js`:
@@ -1028,44 +1113,59 @@ Each task below adds a player to Task 10's `players` list (+0 in `scene.js`: the
   - with three pirates on it, the hull is gone in `1 / (3 × 0.012)` seconds, to 0.1 s, and `'lost'` comes once
   - unreached for 300 s, `'gone'`
   - a treasure reached emits `'opened'` with `pay: 5`; 30 % of 1,000 seeded ones are guarded (±4 %)
-  - `followOf` is the same for an id every time, and about three in five of 1,000 ids are `'stranded'`
+  - `FOLLOW` has a row for each of 4a's `LEADS` lists' event ids that a beacon can lead to (`'distress'`, `'escort'`, `'treasure'`), each one of this player's kinds
+  - `besideBeacon` for a beacon of size 30 lies 60 from it toward the ship, and is null when a solid covers that point
+
+  `sceneEvents.test.js`, a new `describe('a beacon followed')`, with this player in: `follow({ id: 'E:1,0:w9', kind: 'beacon', at, size: 30 }, 'distress')` returns true and registers a `'stranded'` whose `at` is within 61 of the beacon (not 600 ahead along the nose), even with the director arriving; `follow(row, 'treasure')` registers a `'treasure'` there; `follow(row, 'hunt')` returns false and registers nothing.
 
   `playSignals.test.js`, with fakes, and `document` stubbed in `beforeAll` as `crashNodes.test.js:9-14` does (a canvas whose context takes `createRadialGradient` and `fillRect`), so `paint` runs in Node: a started stranded call registers `{ kind: 'stranded', big: true }`, packs pirates after the stranded ship on reaching it, and calls `deed('rescued')` once when saved; a treasure opened calls `pay('found', 5)` once; `clear()` hides the beacon and the cache and empties `running()`; the meshes are invisible before any start.
-- [ ] **Step 2: Run them and see them fail.** Run `npx vitest run src/components/universe/events/signals.test.js src/components/universe/events/playSignals.test.js`. Expected: FAIL.
-- [ ] **Step 3: Implement**, add the player to `players`, and give `prepare` (`warm`) each mesh when it's made.
-- [ ] **Step 4: Run them and see them pass.** Run `npm test`, then `node scripts/universe-endless-check.mjs --quality mid --only events:stranded,treasure`. Expected: PASS, two shots.
+- [ ] **Step 2: Run them and see them fail.** Run `npx vitest run src/components/universe/events/signals.test.js src/components/universe/events/playSignals.test.js src/components/universe/events/sceneEvents.test.js`. Expected: FAIL.
+- [ ] **Step 3: Implement**, add the player to `players`, give `prepare` (`warm`) each mesh when it's made, and pass `follow` to `createThings`.
+- [ ] **Step 4: Run them and see them pass.** Run `npm test`, then `node scripts/universe-endless-check.mjs --quality mid --only events --events stranded,treasure`. Expected: PASS, two shots.
 - [ ] **Step 5: Commit.** `git commit -m "A distress beacon to answer and a signal to follow, each with something at the end of it"`
 
 ### Task 15: A wormhole opens, and a trader hails you
 
 **Files:**
-- Modify: `src/components/universe/events/signals.js`, `signals.test.js`, `playSignals.js`, `playSignals.test.js`, `src/components/universe/setpieces.js:409-432` (`rift(ship, { solids, life, r, exit })`, defaults today's)
-- Modify `scene.js`: `riftThrough` (`:4210`) asks `events.riftExit(s)` first, which gives the wormhole's far exit while one is the open rift (0)
+- Modify: `src/components/universe/events/signals.js`, `signals.test.js`, `playSignals.js`, `playSignals.test.js`, `src/components/universe/events/sceneEvents.js` and its test (`riftExit`'s wormhole, `stations`), `src/components/universe/setpieces.js:409-432` (`rift(ship, { solids, life, r })`, defaults today's)
+- Modify `scene.js`, in place (0 each):
+  - `npcWorld` (`:3686`, whose `solids` Task 13 made a getter): `stations: STATIONS` becomes `get stations() { return events.stations(STATIONS); }`
+  - `createSceneEvents(…)`'s deps gain `universe` (lane 3's `const universe`, above `createExpanse` at `:772`) and `setCameFrom: (x) => things.setCameFrom(x)` (4a's), on its line
+  - nothing in `riftThrough`: Task 11's `events.riftExit(s)` already comes first, and 4a's `throwTo(park, …)` after it throws you
 
 **Interfaces:**
-- Consumes: lane 2's `clearOfKeepOuts`, `keepOutsNear` (through lane 3's face, which lends them from Task 4); `sectorCentre`, `sectorKey` (`lib/space/address.js`); lane 3's `places`; `NPCS`, `visitorsOf` (`npcs/index.js`); `npcs.add`; `npcWorld.stations`.
+- Consumes: lane 4a's **`wormholeExit({ seed, sector }, universe) → { sector, key, at, heading, side }`** (on the face: the one rule for a one-way throw, 30 to 80 sectors on, 150 past one of that sector's beacons), its **`things.setCameFrom({ id, name, at, key })`** (the scene's one `where().cameFrom`) and its **`throwTo(park, opts)`** (`riftThrough`'s body, split out); `hash64` (the face, from Task 4); `sectorAt`, `sectorKey` (`lib/space/address.js`); lane 3's `places`; `NPCS`, `visitorsOf` (`npcs/index.js`); `npcs.add`; `EVENT.name.wormhole` (Task 3).
 - Produces, in `signals.js`:
-  - **`WORMHOLE = { life: 60, r: 12, ahead: [120, 220], far: [8, 40] }`**
-  - **`wormholeExit(from, rand) → { sector: [sx, sy, sz], at: [x, y, z] }`**: a direction in 3D, 8 to 40 sectors on, at that sector's centre plus up to 20,000 aside, clear of its keep-outs
+  - **`WORMHOLE = { life: 60, r: 12, ahead: [120, 220] }`**. No exit rule of its own: the throw is 4a's `wormholeExit`.
+  - **`wormholeFrom(universe, ship, n) → { seed, sector: [sx, sy, sz] }`**: `seed = hash64(universe, 'wormhole', sectorKey(...sector), n)`, `sector = sectorAt(ship.x, ship.y, ship.z)`: what 4a's `wormholeExit` takes, the same for the same visit's nth wormhole in a sector
   - **`TRADER = { near: 30000, beside: 14 }`**
   - **`traderPlan({ side, zones, ship }) → { npc, station, at } | null`**: the side's merchant visitor (`'merchant'` brain), the nearest station zone within `TRADER.near`, and a spot `beside` you to one side; null with no merchant or no station
+  - **`stationRow(zone) → { id, at: { x, y, z }, r }`**: a lane 3 station (`at: [x, y, z]`, `size`) in the shape `npcWorld.stations` holds (`scene.js:3685`: `{ id, at: { x, y, z }, r }`, which `npcs/brains/merchant.js:23` reads with `nearest`), `r` its `size`
 - Produces, in `playSignals.js`, `kinds` gains `'wormhole'` and `'trader'`:
-  - **Wormhole:** `pieces.rift(ship, { solids, life: 60, r: WORMHOLE.r, exit: wormholeExit(...) })`, the rift's own mesh larger and open a minute. Flown into, it throws you one way to the exit: `arriveAt` there (the hunters left behind, as the rift does), `EVENT.thrown(sectorKey(...))`, and `cameFrom = { at, sector }` kept for the map (`where().cameFrom`, +1 in `scene.js`'s `where()`, for lane 6b). `cameFrom` is set in `riftExit`, before `riftThrough`'s `events.clear()` (Task 10), and `clear()` leaves it: it marks the throw, not an event. Not flown into, it closes.
-  - **Trader:** `npcs.add(NPCS[npc], at)` (the merchant comes alongside and says its existing `offer` line), the station added to `npcWorld.stations` so the merchant heads there, the station picked (`pick(station.id)`, so J goes there) and `EVENT.trader(name, station.name)`. Arriving by the trip docks you there (lane 3), which opens the Hangar's shop (lane 3's `'dock'` event with `open: true`). With no station near, forced: a note, false, nothing left.
+  - **Wormhole:** `pieces.rift(ship, { solids, life: WORMHOLE.life, r: WORMHOLE.r })`, the rift's own mesh larger and open a minute; it keeps `from = wormholeFrom(universe, ship, n)` and where it opened. Not flown into, it closes.
+  - **Flown into** (the scene's `riftThrough`, while `pieces.riftAt` is this wormhole): `events.riftExit(s)` asks this player first, which:
+    - works out `exit = wormholeExit(from, universe)` and gives `{ park: { x: exit.at[0], y: exit.at[1], z: exit.at[2], heading: exit.heading }, exit: null }`
+    - records where you came in through `setCameFrom({ id: 'wormhole:<n>', name: EVENT.name.wormhole, at: <where it opened>, key: sectorKey(...from.sector) })`, the same four fields 4a's wormhole things give `cameFrom()`, so `where().cameFrom` keeps one shape for lane 6b
+    - notes `EVENT.thrown(exit.key)`
+    
+    Then `riftThrough` calls 4a's `throwTo(park, …)` as for any rift: `arriveAt` there, the hunters left behind, and Task 10's `events.clear()` inside it. `cameFrom` lives in 4a's `things`, so the clear leaves it.
+  - **Trader:** `npcs.add(NPCS[npc], at)` (the merchant comes alongside and says its existing `offer` line), the station picked (`pick(station.id)`, so J goes there) and `EVENT.trader(name, station.name)`. The station's row joins **`events.stations(base)`**: `base` itself (the same array, nothing made) while no trader runs, else one kept array of `base` and each running trader's `stationRow`, rebuilt only when that list changes. The merchant's brain reads `npcWorld.stations` through the getter, so it heads there; `STATIONS` itself is never changed. The trader's `drop` and `clear()` take its row out again. Arriving by the trip docks you there (lane 3), which opens the Hangar's shop (lane 3's `'dock'` event with `open: true`). With no station near, forced: a note, false, nothing left.
 
 - [ ] **Step 1: Write the failing tests.**
-  - `signals.test.js`: `wormholeExit` from 20 seeded points is 8 to 40 sectors off by Chebyshev distance, in every octant over 200 tries, and clear of its keep-outs; `traderPlan` gives Lando for Star Wars near `E:1,0`'s first station, Saul for Breaking Bad, null for Rick and Morty (no merchant) and null 40,000 from any station.
-  - `playSignals.test.js`: a wormhole calls `pieces.rift` with `life: 60`; flying into it calls `arriveAt` at the exit and sets `cameFrom`; a trader calls `npcs.add` with the merchant, `pick` with the station's id, and adds the station to the world's stations; forced with no station, it returns false and registers nothing.
+  - `signals.test.js`: `wormholeFrom` gives the same `{ seed, sector }` for the same universe, sector and `n`, and a different seed for another `n` or another universe; and its answer is one 4a's `wormholeExit` takes (`wormholeExit(wormholeFrom(UNIVERSE, ship, 1), UNIVERSE).key` is 30 to 80 sectors from the ship's, as 4a pins). `traderPlan` gives Lando for Star Wars near `E:1,0`'s first station, Saul for Breaking Bad, null for Rick and Morty (no merchant) and null 40,000 from any station. `stationRow` of `E:1,0`'s first station is `{ id, at: { x, y, z }, r: size }`.
+  - `playSignals.test.js`: a wormhole calls `pieces.rift` with `life: 60`; its `riftExit` gives a park at `wormholeExit(from, universe).at` with its heading and `exit: null`, and calls the fake `setCameFrom` once with `{ id: 'wormhole:1', name: EVENT.name.wormhole, at, key }`, `key` the sector it opened in; with no wormhole open, `riftExit` gives null. A trader calls `npcs.add` with the merchant and `pick` with the station's id; forced with no station, it returns false and registers nothing.
+  - `sceneEvents.test.js`: with no trader, `stations(base)` is `base` (`toBe`); with one, it holds `base`'s rows and the station's `stationRow`, and `base` is unchanged; after the trader's `drop`, or `clear()`, it's `base` again. A wormhole's `cameFrom` call happens before `clear()` would be called (the order `riftThrough` keeps).
   - `setpieces.test.js` (if absent, in `playSignals.test.js` against the real set pieces in Node): `rift(ship)` keeps today's life and size; `rift(ship, { life: 60, r: 12 })` holds open 60 s.
 - [ ] **Step 2: Run them and see them fail.** Run `npx vitest run src/components/universe/events`. Expected: the new tests FAIL.
 - [ ] **Step 3: Implement and wire.**
-- [ ] **Step 4: Run them and see them pass.** Run `npm test`, then `node scripts/universe-endless-check.mjs --quality mid --only events:wormhole,trader`. Expected: PASS. The trader's run travels to the station and waits until lane 3's `__universe().docked` is the station's id.
-- [ ] **Step 5: Commit.** `git commit -m "A wormhole that stays open a minute and throws you far, and a trader who hails you to a station's shop"`
+- [ ] **Step 4: Run them and see them pass.** Run `npm test`, then `node scripts/universe-endless-check.mjs --quality mid --only events --events wormhole,trader`. Expected: PASS. The wormhole's run flies into it and waits until 4a's `cameFrom()` (read the way 4a's own `wormhole` step reads it) has an `id` starting `wormhole:` and the ship's sector is the exit's. The trader's run travels to the station and waits until lane 3's `__universe().docked` is the station's id. Both with the events step's caps.
+- [ ] **Step 5: Commit.** `git commit -m "A wormhole that stays open a minute and throws you far by the one rule there is, and a trader who hails you to a station's shop"`
 
 ### Task 16: Pulled out of a jump, and a smuggler chase
 
 **Files:**
 - Create: `src/components/universe/events/fights.js`, `fights.test.js`, `src/components/universe/events/playFights.js`, `playFights.test.js`
+- Modify: lane 3's `src/components/universe/places/scenePlaces.js` and its test: one getter, **`sector(key) → Sector | null`**, the loaded sector of that key (`expanse.sectors().get(key)`) or the fetched one (its last four, which `resolve` already reads), else null. It makes nothing and asks for nothing.
 - Modify `scene.js`, in the jump's way out (`:4341-4367` on `main`, as lane 3 leaves it), two lines in place (0 each):
   - lane 3's `const park = outOfJump(j);` becomes `const park = events.outOfJump(j, outOfJump(j));`
   - the block's last line, `emit({ type: 'jumped', id: j.id });`, becomes `emit(events.afterJump(j, park));`
@@ -1073,44 +1173,60 @@ Each task below adds a player to Task 10's `players` list (+0 in `scene.js`: the
   Between the two the block runs as it does today: `arriveAt(park); hunters?.clear(); meteors.clear(); mines.clear(); events.clear(); wingmen?.clear(); skirmishes?.clear(); npcs?.clear(); state.interdicted = false; state.safeUntil = …; crashFx.arrive(…)`. Anything packed or interdicted in `outOfJump` would be undone by it, so the pirates come in `afterJump`, after every clear.
 
 **Interfaces:**
-- Consumes: Task 5's `noseFrame`, `laneNear`; Task 3's `director.allows`, `noted`, `arriving`; Task 10's `events.clear()` (which leaves the waylay's mark); lane 3's `isPlaceId` (`places/ids.js`) and `state.arrived`; `hunters.pack` (its `'hunted'` event with `interdict` sets `state.interdicted`, `scene.js:3371-3379`, as every ambush's does); `traffic` (a runner); `side.police`, `pick(side, 'pirates')`.
+- Consumes: Task 5's `noseFrame`, `laneNear`; Task 3's `director.allows`, `noted`, `arriving`; Task 10's `events.clear()` (which leaves the waylay's mark); lane 3's `isPlaceId` (`places/ids.js`), `parseSpaceId` (Task 0's), `state.arrived` and `places.sector(key)` (above); through the face, `bodiesAt`, `thingRow`, `THING_KINDS`, `clearOfKeepOuts` (lanes 2 and 3, the last lent from Task 4), and 4a's `solidOf` and `gargantuanKeeps`; `sectorAt`, `sectorKey` (`lib/space/address.js`); `hunters.pack` (its `'hunted'` event with `interdict` sets `state.interdicted`, `scene.js:3371-3379`, as every ambush's does); `traffic` (a runner); `side.police`, `pick(side, 'pirates')`.
 - Produces, in `fights.js`:
-  - **`WAYLAY = { short: [0.25, 0.6], least: 1500, base: 0.08, pirates: 0.3 }`**
+  - **`WAYLAY = { short: [1500, 6000], most: 0.6, clear: 40, near: 8000, tries: 8, base: 0.08, pirates: 0.3 }`**
   - **`waylayChance({ hazard, heat, arriving, calm }) → number`**: `base` (or `pirates` in a pirate system), times `1 + min(heat, 6) / 6`; 0 while arriving or calm
-  - **`waylayPark(from, park, rand, solids = []) → { x, y, z, heading } | null`**: on the line from `from` to the park, short of it by `short` of the way and at least `least` from it, heading on toward it, clear of every solid by 40; null for a jump shorter than `3 × least`
+  - **`waylayPark(from, park, rand, { bodies = [], outs, key = null } = {}) → { x, y, z, heading } | null`**:
+    - on the line from `from` to the park, short of it by a distance in `WAYLAY.short` (1,500 to 6,000), never more than `WAYLAY.most` of the whole way, whatever the jump's length: so it's always near the destination, never out in the unbuilt sectors a long jump crosses
+    - heading on toward the park
+    - clear of every body (`{ at, r }`) by `r + WAYLAY.clear`, and of every keep-out (`clearOfKeepOuts(p, WAYLAY.clear, outs)`, `outs` left out for its default, all of `KEEP_OUTS`: never inside a hand-made region's, the Rick and Morty pocket's wall among them; the tests pass their own)
+    - in the sector `key` when one is given (`sectorKey(...sectorAt(...p)) === key`), so every body it could be inside is one of that sector's rows
+    - from `WAYLAY.tries` draws of the distance; null if none is clear, and null for a jump shorter than `3 × short[0]`
+  - **`bodiesOf(sector, t, at, near = WAYLAY.near) → [{ at, r }]`**: the solid bodies of a sector whose spheres come within `near` of `at`, read from its pure rows, never from what's drawn:
+    - every system's `bodiesAt(system, t)` (its star by size, its planets at `orbitAt`, its moons), skipping a system whose reach doesn't come within `near`
+    - every station (`r: size`)
+    - every extras row's `solidOf(row)`, and every gargantuan's `gargantuanKeeps(row)` (4a's: a hole's body, an arc's band, a hulk's spine, a giant, a swarm's core)
+    - every lattice thing within `near` with a non-null `solidOf(thingRow(sector, i))`, swept from the typed arrays with no row made for one out of range
   - **`canWaylay(j, { then, arriving }) → boolean`**: only a jump to a generated place (`isPlaceId(j.id)`), and never with `then` set (a portal leg) or while `arriving`. That leaves out a pilot's id (`pilot:<id>`), the gate (`'starwars'`, whose arrival the page sends on to `/galaxy`), every tour leg (the tour goes only to hand-made places: `tourFrom`) and every hand-made place.
   - **`SMUGGLER = { ahead: [70, 120], speed: 1.8, police: [2, 3], away: 900 }`**
   - **`smugglerLane(ship, rand, solids) → pts | null`**: `laneNear`'s shape four times as long, so the runner crosses well ahead and keeps going
   - **`smugglerEnd({ runner, police }) → 'caught' | 'escaped' | null`**: `runner` is `'alive' | 'down' | 'away'`, `police` how many are left. Down: caught. Away (past `SMUGGLER.away` from its start) or no police left: escaped.
 - Produces: **`createFightsPlay(deps) → Player`** with `kinds: ['waylay', 'smuggler']` (Task 17 adds `'derelict'`), **`outOfJump(j, park) → park`** and **`afterJump(j, park) → event`** (Task 10's `events.outOfJump` and `events.afterJump` call them), and `events.debug.markJump() → boolean`, which marks the next jump for the check (false, and nothing marked, when the next jump can't be waylaid):
   - **Marking.** At the spool (Task 10's `step` sees `state.jump.phase === 'spool'`), it rolls `waylayChance` once per jump, and marks the jump if the roll hits, `canWaylay(j, …)` and `director.allows('waylay', …)`. The director's own pick of `'waylay'` while a jump spools marks it the same way; with no jump going, unforced, `start` returns false.
-  - **`outOfJump(j, park)`**, of a marked jump, gives `waylayPark(...)` and arms `waylaid = { id: j.id }`; when `waylayPark` is null, the park unchanged and nothing armed. It packs nothing and sets nothing else.
+  - **`outOfJump(j, park)`**, of a marked jump: `key = parseSpaceId(j.id).key`, `sector = places.sector(key)`. With no sector at hand, the park unchanged and nothing armed (lane 3 only jumps to an `E:` id once its sector is at hand, so this is a guard, not a path). Else it gives `waylayPark(ship, park, rand, { bodies: [...bodiesOf(sector, spaceT(), park), ...solidsNow], key })` and arms `waylaid = { id: j.id }`; when that is null, the park unchanged and nothing armed. It packs nothing and sets nothing else.
   - **`afterJump(j, park)`**, with `waylaid` armed for `j.id`: sets lane 3's `state.arrived` to null (so no dock opens: lane 3's dock reads it in `render()`, after this frame's `adventure`); packs the side's pirates ahead, interdicting (`hunters.pack(pick(side, 'pirates'), ship, { ahead: true, interdict: true, size: 3..4 })`); notes `EVENT.waylaid`; calls `director.noted('waylay')`; registers `'waylay'` (big); disarms; and returns **`{ type: 'arrived', id: j.id, done: false }`**, so the page treats it as a trip cut short (`pages/Universe.jsx:375-390`: no going on through a gate, a tour stops as a dropped trip stops it today, no `grandtour`). Otherwise it returns `{ type: 'jumped', id: j.id }`, today's.
   - **`clear()`** lets go of the waylay and the smuggler as running events, and leaves `waylaid` armed: the jump's own block calls `events.clear()` between `outOfJump` and `afterJump`.
   - **Forced** with no jump going: the jump's flash where you are (`crashFx.arrive`), the pirates ahead, interdicting.
   - **The smuggler:** a runner (the side's `civil` kind, flown by `traffic.escort` on `smugglerLane` at `SMUGGLER.speed` × its speed) and the police after it (`hunters.pack(side.police.faction, ship, { prey: runner, size: 2..3, ace: false })`). The runner shot down by you: `deed('killPirate')`. The police you shoot are crimes as any are (the law's own handling). It ends at `smugglerEnd`. `EVENT.smuggler` as it starts.
 
 - [ ] **Step 1: Write the failing tests.** `fights.test.js`:
-  - `waylayPark` for a 10,000 jump lands 2,500 to 6,000 short (and at least 1,500), on the line, heading toward the park; for a 4,000 jump, null; with a solid on the line where it would land, it moves along the line clear of it or is null
+  - `waylayPark` over 200 seeded draws: for a 10,000 jump it lands 1,500 to 6,000 short, on the line, heading toward the park; for a 100,000 jump and a 2,000,000 one, still 1,500 to 6,000 short (never far back along a long jump); for a 4,000 jump, null
+  - **a gargantuan on the jump line** (a 100,000 jump): with `bodies = gargantuanKeeps(g)` for a `giant` row of size 2,000 whose middle is on the line 5,500 short of the park (one sphere of 2,100, covering 3,400 to 7,600 short), every answer is 1,500 to 3,360 short and at least 2,140 from its middle; with the same row of size 4,000 at 3,500 short (covering the whole band), null; with a `hulk` row whose spine crosses the line inside the band, every answer clears each spine sphere by 40, or is null
+  - with `outs` holding a keep-out across the band, every answer is outside it or null; with `key` a sector the band leaves, it's null
+  - `bodiesOf` of `E:1,0` at a planet of its first system holds that system's star, planets and moons at `t` (`bodiesAt`'s), its stations, and, for a fake sector whose `extras.gargantuan` holds a row, that row's `gargantuanKeeps`; nothing whose sphere is further than `near`
   - `waylayChance` is 0 while arriving or calm, 0.3 in a pirate system with no heat, and rises with heat to twice that at 6
   - `canWaylay` is true for `{ id: 'E:1,0:0:0' }`, and false for `'pilot:abc'`, `'starwars'`, a hand-made station's id, an `E:` id with `then` set, and an `E:` id while arriving
   - `smugglerLane` lies ahead along the 3D nose and clears a solid passed
   - `smugglerEnd` for each case
 
   `playFights.test.js`, with fakes (`hunters` a list of packs whose `clear()` empties it, a `state` with `arrived` and `interdicted`), playing the jump's block in its order: `const park = play.outOfJump(j, j.park)`, then `hunters.clear()`, `play.clear()` and `state.interdicted = false` as the block does, then `const e = play.afterJump(j, park)`:
-  - for a marked jump to `'E:1,0:0:0'`: `outOfJump` alone packs nothing and returns a park short of the original; after the block's clears, `afterJump` leaves one pirate pack with `interdict: true`, `state.arrived` null and `noted('waylay')` called once, and returns `{ type: 'arrived', id: 'E:1,0:0:0', done: false }`
+  - for a marked jump to `'E:1,0:0:0'`, with the fake `places.sector('E:1,0')` the real `fullSector(UNIVERSE, 1, 0, 0)`: `outOfJump` alone packs nothing and returns a park 1,500 to 6,000 short of the original and clear of `bodiesOf` that sector; after the block's clears, `afterJump` leaves one pirate pack with `interdict: true`, `state.arrived` null and `noted('waylay')` called once, and returns `{ type: 'arrived', id: 'E:1,0:0:0', done: false }`
   - an unmarked jump: `outOfJump` returns the park it was given, and `afterJump` returns `{ type: 'jumped', id }` and packs nothing
+  - a marked jump whose sector `places.sector` doesn't have: the park unchanged, nothing armed, and `afterJump` returns `{ type: 'jumped', id }`
   - a jump to `'pilot:abc'`, to `'starwars'`, with `state.then` set, or with `director.arriving`, is never marked, and `markJump()` before it returns false
   - a smuggler start packs the police with the runner as prey
-- [ ] **Step 2: Run them and see them fail.** Run `npx vitest run src/components/universe/events/fights.test.js src/components/universe/events/playFights.test.js`. Expected: FAIL.
+
+  `scenePlaces.test.js` (lane 3's), one new `it`: `sector(key)` is the loaded sector for a loaded key, the fetched one for a fetched key, and null for any other, with no request made.
+- [ ] **Step 2: Run them and see them fail.** Run `npx vitest run src/components/universe/events/fights.test.js src/components/universe/events/playFights.test.js src/components/universe/places/scenePlaces.test.js`. Expected: FAIL.
 - [ ] **Step 3: Implement and wire.**
-- [ ] **Step 4: Run them and see them pass.** Run `npm test`, then `node scripts/universe-endless-check.mjs --quality mid --only events:waylay,smuggler`. Expected: PASS. The waylay run:
+- [ ] **Step 4: Run them and see them pass.** Run `npm test`, then `node scripts/universe-endless-check.mjs --quality mid --only events --events waylay,smuggler`. Expected: PASS. The waylay run (`__universe()` has no interdiction: it's `__universeDebug.state.interdicted`):
   1. teleports into a generated sector and marks the next jump (`events.debug.markJump()` is true)
   2. starts a jump to a generated planet 20,000 or more off (`__universeDebug.travel(id, 'hyper')`)
-  3. waits until `__universe().interdicted` and the ship is short of the park
-  4. checks `location.pathname` is still `/universe`, `__universe().docked` is null, and `state.arrived` is null, after 2 more seconds of the scene's clock
+  3. waits until `__universeDebug.state.interdicted` and the ship is 1,500 to 6,000 short of the park, with the events step's caps
+  4. checks `location.pathname` is still `/universe`, `__universe().docked` is null and `__universeDebug.state.arrived` is null, once 2 more seconds of the scene's clock have passed
   5. shoots it, `events-waylay.jpg`
-- [ ] **Step 5: Commit.** `git commit -m "Pirates pull you out of a jump to a generated place, after the jump's own clean-up, and the trip is cut short; and the law chases a runner you can help or stop"`
+- [ ] **Step 5: Commit.** `git commit -m "Pirates pull you out of a jump a little short of a generated place, clear of what's there and after the jump's own clean-up, and the trip is cut short; and the law chases a runner you can help or stop"`
 
 ### Task 17: A battle you can join, and a derelict wakes
 
@@ -1138,7 +1254,7 @@ Each task below adds a player to Task 10's `players` list (+0 in `scene.js`: the
   - `playFights.test.js`: a derelict start with a derelict zone 2,000 off wakes that one; with none, a stand-in 900 ahead; your hit downs it after 30, with `deed('killPirate')` once.
 - [ ] **Step 2: Run them and see them fail.** Run `npx vitest run src/components/universe/events`. Expected: the new tests FAIL.
 - [ ] **Step 3: Implement and wire.**
-- [ ] **Step 4: Run them and see them pass.** Run `npm test`, then `node scripts/universe-endless-check.mjs --quality mid --only events:battle,derelict`. Expected: PASS, two shots.
+- [ ] **Step 4: Run them and see them pass.** Run `npm test`, then `node scripts/universe-endless-check.mjs --quality mid --only events --events battle,derelict`. Expected: PASS, two shots.
 - [ ] **Step 5: Commit.** `git commit -m "Two sides fight and you pick one, and a derelict wakes and turns its guns on you"`
 
 ### Task 18: An ion storm front, a comet's close pass, and a tidal pull
@@ -1178,7 +1294,7 @@ Each task below adds a player to Task 10's `players` list (+0 in `scene.js`: the
   `playSweeps.test.js`, with fakes and `document` stubbed as in Task 14: inside the storm's slab for 1 s, `hurt` gets about 6; a comet pass calls `pieces.comet` with a `pass` and `meteors.storm` with `look: 'ice'`; a tidal start at the Maw gives a `pull` with `k` in 0..1 for a ship 3 reaches off and null for one inside `MAW.reach`, and a forced one 100,000 away returns false with nothing registered. The storm's mesh is invisible before a start.
 - [ ] **Step 2: Run them and see them fail.** Run `npx vitest run src/components/universe/events/sweeps.test.js src/components/universe/events/playSweeps.test.js`. Expected: FAIL.
 - [ ] **Step 3: Implement and wire.**
-- [ ] **Step 4: Run them and see them pass.** Run `npm test`, then `node scripts/universe-endless-check.mjs --quality mid --only events:stormfront,cometpass,tidal`. Expected: PASS, three shots.
+- [ ] **Step 4: Run them and see them pass.** Run `npm test`, then `node scripts/universe-endless-check.mjs --quality mid --only events --events stormfront,cometpass,tidal`. Expected: PASS, three shots.
 - [ ] **Step 5: Commit.** `git commit -m "An ion storm front sweeps across your path, a comet passes close in a shower of ice, and a black hole's pull takes what's near"`
 
 ### Task 19: A leviathan migration, and a bloom of glowing things
@@ -1206,13 +1322,13 @@ Each task below adds a player to Task 10's `players` list (+0 in `scene.js`: the
 - [ ] **Step 1: Write the failing tests.** `herds.test.js`: a migration path's nearest point to a level ship is 2,500 to 6,000 off; every member stays within `5 × scale` of the lead's line; `herdPast` holds once the lead is beyond the far end; a bloom's jellies stay within `spread` of its middle for 60 s and never inside a solid passed. `playHerds.test.js`: a migration makes exactly two meshes, both `InstancedMesh`es on `purrgilBody()`'s two geometries, each showing `n` instances, then none and invisible once past; `small` halves the bloom's count; nothing is visible before a start; `clear()` hides both.
 - [ ] **Step 2: Run them and see them fail.** Run `npx vitest run src/components/universe/events/herds.test.js src/components/universe/events/playHerds.test.js src/components/universe/leviathans.test.js`. Expected: the new tests FAIL; `leviathans.test.js`'s existing tests pass. Its new `it`: `purrgilBody()` gives two geometries whose merged bounds match the pod purrgil's meshes less its eyes, and a pod purrgil from `createLeviathans` still has eleven meshes in three materials.
 - [ ] **Step 3: Implement and wire.**
-- [ ] **Step 4: Run them and see them pass.** Run `npm test`, then `node scripts/universe-endless-check.mjs --quality mid --only events:migration,bloom`. Expected: PASS, two shots.
+- [ ] **Step 4: Run them and see them pass.** Run `npm test`, then `node scripts/universe-endless-check.mjs --quality mid --only events --events migration,bloom`. Expected: PASS, two shots.
 - [ ] **Step 5: Commit.** `git commit -m "A herd of leviathans migrates across the sky, and a bloom of glowing things drifts by"`
 
 ### Task 20: Every event forced, the gentle minute, the full measure, and the hand-off notes
 
 **Files:**
-- Modify: `scripts/universe-endless-check.mjs` (the `arrival` step; `events` with no list runs every kind), `docs/superpowers/evidence/endless-universe-lane-4b/README.md`
+- Modify: `scripts/universe-endless-check.mjs` (the `arrival` step; the `events` step with no `--events` runs every kind), `docs/superpowers/evidence/endless-universe-lane-4b/README.md`
 - Create: `docs/superpowers/evidence/endless-universe-lane-4b/HANDOFF-NOTES.md`
 
 **Interfaces:**
@@ -1231,14 +1347,14 @@ Each task below adds a player to Task 10's `players` list (+0 in `scene.js`: the
   - **Draw calls and triangles:** at every pose in `lab/universe/baseline/<tier>.json` and lane 3's endless baselines, no higher. No event draws at a held pose (`events.clear()` in `holdPose`). If `expanse-system` or `expanse-station` rises, it's traffic flying the system's ports where today's crossed the open: name the number, and hold port-lane groups to the poses' old count if it's over.
   - **Frame time:** p50 no worse than 2 %.
   - **Pixels:** `scripts/pixel-measure.mjs` against `before-4b/mid` gives identical shots at the hand-made poses.
-- [ ] **Step 5: The repo's checks.** Start the dev server, then run `CHROME=/opt/pw-browsers/chromium node scripts/events-check.mjs rv` and `… falcon`, `navmap-check.mjs`, `flyto-check.mjs --fake` and `links-check.mjs`; stop the server; run `CHROMIUM=/opt/pw-browsers/chromium node scripts/autopilot-check.mjs --only smoke --skip lint,test,build --routes /universe`. Expected: each as before Task 9 (events-check's two software-GL timeouts are `main`'s).
+- [ ] **Step 5: The repo's checks.** Start the dev server, then run `CHROME=/opt/pw-browsers/chromium node scripts/events-check.mjs rv` and `… falcon`, `flare-check.mjs xwing`, `universe-npc-check.mjs`, `navmap-check.mjs`, `flyto-check.mjs --fake` and `links-check.mjs`; stop the server; run `CHROMIUM=/opt/pw-browsers/chromium node scripts/autopilot-check.mjs --only smoke --skip lint,test,build --routes /universe`. Expected: each as before Task 9 (events-check's two software-GL timeouts are `main`'s). The checks that call `__universeDebug.director.soon(…)` reach Task 10's `debug.soon`, which starts the event on the next frame whatever the arrival's minute and the budget say, and `director.intensity` still reads the director's.
 - [ ] **Step 6: Write the README and the hand-off notes.**
   - **README:** before and after side by side; calls and triangles per pose and tier; frame times; the life step's five times to something moving; `scene.js`'s count at each task; `glsl-sites`, `big-files`, `boundary-breaks` and `cycles` before and after.
-  - **`HANDOFF-NOTES.md`, "Landed":** every module above by path with its interface in a line; the 30 events and which player plays each; the `life`, `fights`, `events` and `arrival` steps.
+  - **`HANDOFF-NOTES.md`, "Landed":** every module above by path with its interface in a line; the 30 events and which player plays each; the `life`, `fights`, `events` (and its `--events` flag) and `arrival` steps. And lane 4a's seams, each used once: 4a's beacons go through `events.follow(row, lead)` (Task 14: a distress lead plays a stranded ship at the beacon, a treasure lead the cache); a trapped derelict's lead is `events.happen(id, ship, { force: true })` (Task 10) and leads to `'derelict'` now that it exists; the wormhole event throws by 4a's `wormholeExit` and `throwTo` and marks `where().cameFrom` through `things.setCameFrom` (Task 15).
   - **`HANDOFF-NOTES.md`, "Left":**
     - Lane 4c calls `events.arrive()` from its arrival (and may drop Task 10's spawn line).
-    - Lane 6b draws `where().events`, `where().farFights`' heights, `where().holder` and `where().cameFrom`.
-    - 4a's beacons and `events.follow`, as Task 14 found them.
+    - Lane 6b draws `where().events`, `where().farFights`' heights, `where().holder`, and 4a's `where().cameFrom`, which the wormhole event sets too, in 4a's shape.
+    - Forced starts that pass "never two big ones together" on purpose: the dev hook and a check's `soon`, and a thing's trap (Findings 18).
     - The remover at generated planets (finding 4).
     - Any finding from the measure.
 - [ ] **Step 7: Run the gates and commit.** Run `npm run lint`, `npm test`, `npm run build` and `node scripts/health.mjs --check --skip build`. Expected: all green, within budget. Then `git add -A lab/universe/after-4b lab/universe/endless docs/superpowers/evidence/endless-universe-lane-4b scripts/universe-endless-check.mjs src/components/universe/events && git commit -m "Lane 4b measured at every tier, every event forced and shot, and its hand-off notes"`
@@ -1252,18 +1368,21 @@ Each task below adds a player to Task 10's `players` list (+0 in `scene.js`: the
 | `events.arrive()` (the director's `arrive(seconds = 60)`), `ARRIVAL`, `director.arriving`, the `gentle` column | `events/sceneEvents.js`, `director.js` | 4c (the arrival's gentle minute) |
 | `director.refused(id)`, `RETRY`, `director.noted(id)`, `director.allows(id, …)` | `director.js` | any later caller that starts an event the director picked |
 | `budget.events` stepped with `traffic` (never below 1) | lane 2's `universe/budget.js` | anyone reading the events cap by step |
-| `where().events` (`[{ id, kind, name, x, y, z, big }]`), `where().holder` (`{ id, name, side }`), `where().cameFrom` (`{ at, sector }`), `where().farFights` with `y` and `Fighting near <system>` | `scene.js`'s `where()` | 6b (events in progress, whose space, the wormhole's mark, fights in 3D) |
+| `where().events` (`[{ id, kind, name, x, y, z, big }]`, `name` from `EVENT.name`), `where().holder` (`{ id, name, side }`), `where().farFights` with `y` and `Fighting near <system>`; and 4a's `where().cameFrom` (`{ id, name, at, key }`), which the wormhole event sets through `things.setCameFrom` | `scene.js`'s `where()` | 6b (events in progress, whose space, the wormhole's mark, fights in 3D) |
 | `holderOf`, `createHere`, `HOLDERS`, `HERE`; `sideAt(crew, sector, holder)`, `crewAt(…, holder)`, `lawAt(crew, holder)` | `events/holder.js`, `sides.js` | 4c (whose space the arrival is in), 6b (the chart's holder) |
 | `zonesAround`, `systemAt`, `nearestOf`, `whereFor`, `WHAT_OF`, `EXTRA_WHAT`, `Zone` | `events/zones.js` | 4a (a new kind gets a `WHAT_OF` row), 6b |
-| `trafficHere`, `LIFE`, `PORTS`; `portLane`, `noseFrame` | `events/life.js`, `lanes.js` | 4c (traffic crossing the arrival), 4a (a new port kind) |
+| `trafficHere`, `LIFE`, `PORTS`; `portLane`, `PORT_NEAR`, `noseFrame` | `events/life.js`, `lanes.js` | 4c (traffic crossing the arrival), 4a (a new port kind) |
 | `fightOf`, `fightsAround`, `fightNode`, `FIGHTS_OUT`; `fightLabel(at, near)` | `events/fightsOut.js`, `farFights.js` | 6b |
-| `events.follow(zone)`, `followOf(id)` | `sceneEvents.js`, `signals.js` | 4a (a beacon's "Follow") |
-| `wormholeExit(from, rand)` | `signals.js` | 4a (a wormhole thing's one-way throw, if it wants the same rule) |
-| `events.debug` (`kinds`, `running`, `here`, `life`, `zones`, `spotFor`, `clear`, `markJump`), `__universeDebug.happen(kind, { … })` | `sceneEvents.js` | every later lane's checks |
+| `events.follow(row, lead) → boolean`, `FOLLOW`, `besideBeacon` (4a's `follow` dep on `createThings`) | `sceneEvents.js`, `signals.js` | 4a's beacons, already wired (Task 14) |
+| `events.happen(id, ship, { force, hold, at })` (forced: at once; forced and held: past the zone and the calm, but after the arrival, a big one and a full budget), `events.riftExit(ship) → { park, exit } \| null`, `events.stations(base)`, `events.spot(ship)`, `events.fights()` | `sceneEvents.js` | 4c (an arrival's own events), 5b, 6b, any later caller that starts an event |
+| `wormholeFrom(universe, ship, n)` (what 4a's `wormholeExit` takes for an event's wormhole), `stationRow(zone)` | `signals.js` | anything else that opens a wormhole, or hands a lane 3 station to a character |
+| `waylayPark(from, park, rand, { bodies, outs, key })`, `bodiesOf(sector, t, at, near)`, `WAYLAY` | `events/fights.js` | 4c and 5b (setting a ship down near a generated place without building a sector) |
+| `places.sector(key)` (the loaded or fetched sector, nothing made) | lane 3's `places/scenePlaces.js` | 5b, 6b |
+| `events.debug` (`kinds`, `running`, `here`, `life`, `zones`, `spotFor`, `clear`, `markJump`, `soon`, `director`), `__universeDebug.happen(kind, { … })`, `__universeDebug.director.soon(kind)` and `__universe().soon(kind)` (both start it on the next frame) | `sceneEvents.js` | every later lane's checks |
 | the `Player` contract (with `update → moving`, `drop(id)`), and `events.clear()` at every place that ends what's going on | Global Constraints, Task 10 | any later event; any later code that moves the ship away at once (5b's landing, 4c's arrival) calls `events.clear()` beside its `hunters?.clear()` |
 | `PURRGIL`, `purrgilBody({ small })` | `leviathans.js` | 4a (a leviathan-migration gargantuan, if it draws purrgil) |
 | `readPack(data, from)`, `PACK_NEAR` | `online/protocol.js` | 6b (other pilots' hunters on the chart) |
-| the `life`, `fights`, `events[:kinds]` and `arrival` steps | `scripts/universe-endless-check.mjs` | every later lane |
+| the `life`, `fights`, `events` (with `--events a,b`) and `arrival` steps | `scripts/universe-endless-check.mjs` | every later lane |
 
 ## Assumptions about unmerged work
 
@@ -1273,16 +1392,19 @@ Each of these can be checked once lanes 2, 3 and 4a have merged.
 2. Lane 2's `universeBudget({ tier, detail }, step, floor)` has `traffic` (2, 4, 6, 8) and `events` (1, 2, 3, 3), and `discs`, `thingsNear` and `traffic` are the fields the steps multiply (its Task 12), with lane 3's `tags` beside them. `events` isn't stepped there; Task 10 adds it to that list. On `eu/lane-2` today (`058a3d17`, PR 2.3) `budget.js` doesn't exist yet.
 3. Lane 2's `expanse.stars()` holds lighting's `STARS` and the built stars, each `{ id, at, r, colour, strength, reach }`, and `scene.js` passes it to `lightAt` (its Task 17), so `litBy.key.id` can name a generated star.
 4. Lane 2's `__universeDebug.teleport(x, y, z, heading, pitch)` and the endless check's recorder and `--only` exist (its Task 22; lane 3 adds `--only`).
-5. Lane 3's face `expanse/shared/space.js` lends exactly the names its plan's Task 1 lists (`UNIVERSE`, `universeOf`, `fullSector`, `orbitAt`, `systemReach`, `THING_KINDS`, `SECTOR_EXTRAS`, `stationsOf` and the rest), and `shared.test.js` pins that list. It lends none of `rngOf`, `hash64` (`gen/seed.js`), `clearOfKeepOuts` or `keepOutsNear` (`gen/keepOuts.js`); Task 4 adds the four, re-exports and list together. `sectorCentre` and `sectorKey` come from `lib/space/address.js`, not the face.
+5. Lane 3's face `expanse/shared/space.js` lends exactly the names its plan's Task 1 lists (`UNIVERSE`, `universeOf`, `fullSector`, `orbitAt`, `systemReach`, `THING_KINDS`, `SECTOR_EXTRAS`, `stationsOf` and the rest), and `shared.test.js` pins that list. It lends none of `rngOf`, `hash64` (`gen/seed.js`) or `clearOfKeepOuts` (`gen/keepOuts.js`); Task 4 adds the three, re-exports and list together. `sectorCentre` and `sectorKey` come from `lib/space/address.js`, not the face.
 6. Lane 3's `fullSector(…).stations` rows are `{ id, i, system, at, size, name }` (its Task 1), `places.docked()`, `places.park(id, from)` and `places.solids()` exist (its Task 12), and `solidsNow` includes `places.solids()` and `expanse.solids()`.
 7. Lane 3's `trips.outOfJump(j) → park` sets `state.arrived = { id: j.id }`, and the scene's jump arrival reads `const park = outOfJump(j);` in place of the six pilot lines only (its Task 11), so the rest of the block stays as on `main` (`:4357-4366`): `arriveAt(park)`, the clears, `state.interdicted = false`, `crashFx.arrive(…)` and `emit({ type: 'jumped', id: j.id })` last. Lane 3's dock reads `state.arrived` in `render()` (`places.update({ …, arrived: state.arrived })`), after the frame's `adventure`, so `afterJump` nulling it in the same frame keeps the dock shut. Task 16 wraps the first call and replaces the `emit`.
 7a. Lane 3's `places/ids.js` exports `isPlaceId(id)`, true for a generated place's id in any spelling (its Task 3). Task 16's `canWaylay` uses it.
 8. Lane 3's dock opens the Hangar on its shipyard tab when an `arrived` object names the station (its Tasks 12 and 14). The trader relies on it.
 9. Lane 4a's things that this lane reads (derelicts, black-hole gargantuans, beacons, rigs, shipyards, fleets) are rows of `THING_KINDS` or `SECTOR_EXTRAS` with a `kind` name, as lane 2's hook says. If 4a draws a kind through `drawers` only, with no row, Task 2's test can't see it, and that's a finding for the coordinator.
-10. Neither lane 2 nor lane 3 nor 4a changes `director.js`, `traffic.js`, `hunters.js` or `farFights.js` (lane 2's and lane 3's plans both list them as not touched).
+10. Neither lane 2 nor lane 3 nor 4a changes `director.js`, `traffic.js`, `hunters.js` or `farFights.js` (lane 2's and lane 3's plans both list them as not touched; 4a's lists them as 4b's). But 4a does call into what this lane rewires: its `createThings` deps in `scene.js` are `happen: (id) => happen(id, state.ship)` and `soon: (id) => director?.soon(id)` (its Task 24), both names Task 10 removes, so Task 10 rewires them to `events.happen(id, state.ship, { force: true })` and `events.director.soon(id)`. And its `things/rules.test.js` pins `leadEvent('trap', EVENTS)` as `'hunt'` and `leadEvent('treasure', EVENTS)` as null until this lane's rows exist (Task 3 replaces both).
 11. Lane 2's PR 2.2 is on `main`: `readPose` clamps heights to `±SEC_FAR`, and nothing else in `online/` clamps a hunter's height but `readPack` (`:335`). Checked at `cc5e2eaf`.
-12. `scene.js`'s blocks this lane moves (`happen` at `:3427-3561`, the escort and eclipse at `:1100-1119` and `:3933-3979`, the director at `:3984-3994`, the far fights at `:3754-3814`) aren't moved by lanes 2, 3 or 4a. Lane 3 moves the travel block (`:1769-1905`) and nothing of these. The six `dropEscort(); dropEclipse();` pairs (`:2143`, `:3097`, `:3140`, `:4221`, `:4358`, `:5872`) are where they are on `main`; lane 3 edits lines beside some (`state.auto = state.arrived = state.pending = null;`) but not the pairs.
+12. `scene.js`'s blocks this lane moves (`happen` at `:3427-3561`, the escort and eclipse at `:1100-1119` and `:3933-3979`, the director at `:3984-3994`, the far fights at `:3754-3814`) aren't moved by lanes 2, 3 or 4a. Lane 3 moves the travel block (`:1769-1905`) and nothing of these. Five of the six `dropEscort(); dropEclipse();` pairs (`:2143`, `:3097`, `:3140`, `:4358`, `:5872`) are where they are on `main`; lane 3 edits lines beside some (`state.auto = state.arrived = state.pending = null;`) but not the pairs. The sixth, the rift's (`:4221`), is in 4a's `throwTo(park, opts)`, its split of `riftThrough`'s body after `const park = …` (its Task 24), which its wormhole things call too; `riftThrough`'s first lines (`const s`, `const exit`, `const park`) stay in `riftThrough`, where Task 11 edits them. 4a's `createThings(…)` line carries the `happen`, `soon` and (from Task 14) `follow` deps Tasks 10 and 14 edit.
 13. Lane 3's `state.spaceT` is the shared clock in seconds (lane 2's `spaceTime(ms) = ms / 1000`), 0 while held or with reduced motion. Far fights read it, so a held pose's fights are those at `t = 0`.
+14. Lane 4a's seams are as its plan gives them (Tasks 9, 23 and 24): `wormholeExit({ seed, sector }, universe) → { sector, key, at, heading, side }` on the face; `things.setCameFrom({ id, name, at, key })` and `things.cameFrom()`, the one `where().cameFrom`; an optional `follow(row, lead)` dep on `createThings` that its beacon `act()` calls with the row and `leadEvent(traitsOf(row).leads, events)`, skipping `soon` when it returns true; `throwTo(park, opts)` in `scene.js`; `LEADS = { trap: ['derelict', 'hunt'], distress: ['distress', 'escort'], treasure: ['treasure'] }`; `solidOf`, `gargantuanKeeps` and `thingRow` on the face; each sector's `extras.gargantuan`.
+15. Lane 3 only sets off on a jump to an `E:` id once its sector is at hand (loaded, or among the last four fetched: its Task 12's `fetch`, `missing` and `resolve`), and keeps a fetched sector after the jump begins. Task 16 adds `places.sector(key)` to read it; a jump whose sector isn't there is never waylaid.
+16. `__universeDebug.director` is read by `events-check.mjs` and `flare-check.mjs` (`.soon`) and `universe-npc-check.mjs` (`.intensity`), and by nothing else in `scripts/` (checked at `cc5e2eaf` with `grep -rn "director\." scripts`). Task 10's `debug.director` keeps both.
 
 ## Findings for the coordinator (spec against code)
 
@@ -1296,11 +1418,18 @@ Each of these can be checked once lanes 2, 3 and 4a have merged.
 8. **The budget's `events` field isn't stepped** in lane 2's plan (`discs`, `thingsNear` and `traffic` are), though spec H says the quality steps lower "events at once" with the rest. Task 10 adds `events` to the stepped fields, rounded and never below 1, as lane 3 adds `tags`.
 9. **`glsl-sites` has six left** (613 of 619) for lanes 1, 2, 4a and 4b together. This lane uses none: its looks are plain materials, the rift's mesh and the comet's.
 10. **A waylaid jump and the jump's own way out.** On `main` (`scene.js:4352-4366`) the block that sets you down after a jump clears the hunters and the interdiction after the park is chosen, and ends by emitting `'jumped'`, which the page reads as a finished trip (`pages/Universe.jsx:375-390`: on through the Star Wars gate to `/galaxy`, the tour's next leg, `grandtour` on the last). A waylay packed where the park is chosen would be cleared at once, and a waylaid jump would still count as there. Task 16 packs the pirates after the clears, in place of the block's `emit`, returns `{ type: 'arrived', id, done: false }` for a waylaid jump, nulls lane 3's `state.arrived` (or a station's dock would open the Hangar), and only ever waylays a jump to a generated place, which leaves out pilots, portal legs, the gate and every tour leg.
-11. **The law's bounty goes through `happen`** (`scene.js:1019`), and `bounty` is `zones: VOID`, `heat: 0.8` and big. With the director's rules between them it would be refused at any place, with shields under 50, in the arrival's minute and during any big event, where today it always comes. Task 10 forces it.
+11. **The law's bounty goes through `happen`** (`scene.js:1019`), and `bounty` is `zones: VOID`, `heat: 0.8` and big. With the director's rules between them it would be refused at any place and with shields under 50, where today it always comes. Forced outright, it could land on a running destroyer, stormfront, battle or derelict (the law sends it only while `!hunters.active`, `law.js:106`, which covers the hunts but not those), against spec C's "two big events never land on top of each other". So Task 10 forces it past the zone and the calm but holds it (`{ force: true, hold: true }`) through the arrival's minute, a running big event and a full budget, and starts it the first frame none of those holds.
 12. **Nothing registered may outlive the place it was in.** Today every place that ends what's going on (the jump's way out, the rift, the ship change, the Maw, a crash, a held pose) drops the escort and the eclipse by hand, and `portalThrough` neither. The new events would stay registered after a jump 100,000 away, and on `low` (`budget.events` 1) one beacon left behind would hold the director for up to five minutes. Task 10 puts `events.clear()` at all seven and lets go of anything started more than 30,000 from where the ship now is.
 13. **`noseOf` isn't `forward` to the last bit.** `rotate(fromAngles(h, 0, 0), NOSE)` differs from `forward(h)` in the last bits for 9 of the 12 headings `k × 0.52` (checked at `cc5e2eaf`). Task 5's level frame is written from `forward` alone, so today's lanes are reproduced exactly.
 14. **`adventure`'s `busy` is the frame loop's, not the director's.** `let busy = pieces.update(…)` (`scene.js:3880`) and the escort's and the eclipse's `busy = true` keep frames coming; the director's hold is a separate expression (`:3989`). The `Player` contract keeps them apart: `update → moving` for the one, the `busy` getter for the other.
 15. **Systems are about 19,000 apart** (276 to a 120,000 sector at `cc5e2eaf`), so most free flight is outside any system's reach + 5,200. "The nearest system's density and faction" is read literally there (Task 6), while whose law holds you keeps Task 1's hysteresis; so between an Empire system you've left and a Federation one ahead, Federation ships fly and the Empire's law still holds, and a Federation patrol reports nobody.
+16. **The Rick and Morty pocket is no region.** `regionAt` is built from the main sector's places only (`regions.js:39`), so it's null inside the pocket, and the pocket's keep-out is its radius plus 4,000 (`keepOuts.js:30-32`), so generated systems sit just outside its wall. With `core: Boolean(regionAt(...))` alone, the last system's holder would follow you in and its law (the Empire's, say) would hold inside the Central Finite Curve, and `trafficHere` (which reads sector `'main'`) would fly that system's side there. Every `core` in this lane is `Boolean(regionAt(...at)) || mapSectorOf(...at) === 'rickmorty'` (Tasks 1, 4, 6 and 10).
+17. **The browser checks force events through the director.** `events-check.mjs:38-92` and `flare-check.mjs:38` call `__universeDebug.director.soon(…)` on a visit with no start link. With Task 10's `events.arrive()` at every new pilot's spawn and Task 3's rule that a forced id waits out the arrival, each would wait 60 s of the scene's clock (about ten minutes of wall in software GL, past the checks' 30 to 90 s), and on `?quality=low` `soon('meteors')` would wait behind the flare's registry entry too. Task 10's `debug.soon` starts a check's event on the next frame through `happen(…, { force: true })`, and `__universeDebug.director` keeps `soon` and `intensity` for the three scripts that read it. The director's own `soon` (the siege's council, 4a's beacon fallback) keeps the arrival's rule.
+18. **Three forced starts pass "never two big ones together" on purpose.** The dev hook (`__universeDebug.happen`), a check's `soon`, and a thing's trap (4a's trapped derelict, `events.happen(id, ship, { force: true })`) start at once even over a running big event. The first two are checks (spec C's "every event can be forced"); the third is the player's own act, which would make no sense springing a minute later. The director never does it, and the law's bounty waits (finding 11).
+19. **Lane 4a's plan pins two assertions this lane's rows flip.** `things/rules.test.js` asserts `leadEvent('trap', EVENTS)` is `'hunt'` ("lane 4b's 'derelict' isn't there yet") and `leadEvent('treasure', EVENTS)` is null. Task 3 adds `derelict` and `treasure`, so it replaces them with `'derelict'` and `'treasure'`: a bound this lane removes, as Task 8's `x: 90000` is. 4a's `LEADS.distress` stays `['distress', 'escort']`; Task 14's `follow` turns a beacon's distress lead into a stranded ship at the beacon, so no second beacon rule exists.
+20. **The waylay can't trust `solidsNow` far from the ship.** A jump can go any distance, and `solidsNow` holds only what's loaded round the ship before it arrives. Cut short by a share of the way (this plan's first rule), a long jump's waylay would land in unbuilt sectors, perhaps inside a star or one of 4a's gargantuans. Task 16 sets you down 1,500 to 6,000 short of the park, in the destination's own sector, clear of that sector's bodies read from its pure rows (`bodiesAt`, stations, `solidOf`, `gargantuanKeeps`) through a new `places.sector(key)` on lane 3's side, and of the keep-outs. Lane 3 has no getter for a loaded or fetched sector today; it's one line.
+21. **`Running.name` had no source.** The registry's entries (and `where().events`, for lane 6b) carry a `name`, but no table gave one. Task 3 adds `EVENT.name`, one for each of the thirty ids, and its test pins that the two key sets match.
+22. **The review's findings, checked.** Each was verified against the spec, `main` and 4a's plan. Two needed a small change of fix: `lib/ai/vec.js`'s `unit` takes `{ x, y, z }`, not arrays, so Task 5's `noseFrame` uses a local `norm3`; and 4a already offers both the `cameFrom` setter (`things.setCameFrom`) and the beacon hook (a `follow(row, lead)` dep), so Tasks 14 and 15 use those rather than a `cameFrom` fallback or a `happen(…, { at })` from 4a's side. `farFights.update` takes the camera, not `camLocal` (`farFights.js:200-207`); Task 7's citation is corrected (the front's update is the one that takes `camLocal`, `:3912`).
 
 ## Spec coverage
 
@@ -1310,17 +1439,17 @@ Each of these can be checked once lanes 2, 3 and 4a have merged.
   - the new ones: Tasks 14–19 (finding 1 for the three that existed and the swap)
 - **Section C, "Event pacing":**
   - three different events in 10 minutes, from 100 seeded starts: Task 4, on `low`'s one event at a time, counting only what would really start where the flight is
-  - two big events never together: Tasks 3, 4 and 10
+  - two big events never together: Tasks 3, 4 and 10 (the director's picks, and the law's bounty held behind a running big one); the dev hook, a check's force and a thing's trap are the named exceptions (Findings 18)
   - the arrival's first minute gentle: Task 3 (the rule), Task 10 (wired at a new pilot's spawn), Task 20 (in the browser); lane 4c calls it from its arrival
-  - every event forced with `__universeDebug.happen(kind)`: Tasks 10 and 20 (all 30 forced and shot)
+  - every event forced with `__universeDebug.happen(kind)`: Tasks 10 and 20 (all 30 forced and shot); the existing checks' `__universeDebug.director.soon(kind)` keeps working through the arrival's minute (Task 10's `debug.soon`)
 - **Section B, "Places with life":**
   - traffic from the nearest system's density and faction, between its stations, rigs, shipyards and fleets: Tasks 6 and 12, between systems too (the nearer one's side, its density thinned by distance)
-  - hunters and the law read the faction: Tasks 1 and 13
+  - hunters and the law read the faction: Tasks 1, 10 (the holder, and nobody's inside the Rick and Morty pocket) and 13
   - far fights in generated sectors, in every direction: Tasks 7 and 13
 - **Done item 2, "Something moves within 20 seconds of flying anywhere":** Task 12's `life` step.
 - **Done item 3, events:** at least 15 kinds (30, Task 3); three different in 10 minutes (Task 4); every event forced by a dev hook (Task 20). The 20 kinds of thing are lane 4a's.
 - **Done item 8, "a gentle event"** in the first minute: Task 3's rule and Task 10's hook; the arrival itself is lane 4c's.
-- **Done item 9, "Nothing is lost":** every existing test untouched but the one bound Task 8 replaces; Task 9 pins `happen` before moving it; Task 5 pins every level lane; Task 20 reruns the repo's checks.
+- **Done item 9, "Nothing is lost":** every existing test untouched but the one bound Task 8 replaces and lane 4a's two "not there yet" assertions Task 3 replaces; every dev hook works as before (Task 10's `debug.director`, re-run by `events-check` and `flare-check` in Tasks 10 and 20); Task 9 pins `happen` before moving it; Task 5 pins every level lane; Task 20 reruns the repo's checks.
 - **Section H, "events at once" lowered by the quality steps:** Task 10 (lane 2's `budget.js` steps `events`).
 - **Done item 10, "Phones still fly":** the events cap by tier and step (Task 10), nothing left registered after a jump (Task 10), the pacing on `low` (Task 4), the traffic cap by tier and step (Task 12), every event mesh made when first wanted and invisible at rest, no new shader, and the low-tier measure (Task 20).
 - **Lane 2's hand-on:** hunters' heights (Task 5, finding 3) and `readPack`'s ±90,000 (Task 8).
