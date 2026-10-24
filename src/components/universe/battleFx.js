@@ -37,15 +37,28 @@ const BOLT_LOOK = {
   turbo: { length: 3.2, width: 0.06, bright: 1 },
   torpedo: { length: 0.22, width: 0.09, bright: 1.6 },
 };
+// a bolt's core, a share of its look's width, its colour this far toward
+// white at this much its brightness; and its halo round it
+const CORE = { width: 0.5, white: 0.6, bright: 1.3 };
+const HALO = { width: 1.9, length: 1.05, bright: 0.2 };
 export function createBoltDraw(parent, { count = 320 } = {}) {
+  // (two draws: a bolt's hot core, near white, and the glow of its colour
+  // round it, wider and dimmer, as the films draw them; one draw was a
+  // tube of flat colour)
   const geo = new THREE.CylinderGeometry(1, 1, 1, 6, 1).rotateX(Math.PI / 2);
-  const mat = new THREE.MeshBasicMaterial({ color: '#ffffff', toneMapped: false, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false });
-  const mesh = new THREE.InstancedMesh(geo, mat, count);
-  mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
-  mesh.setColorAt(0, new THREE.Color(1, 1, 1)); // (made now: the shader's built with instance colours or without)
-  mesh.frustumCulled = false;
-  mesh.count = 0;
-  parent.add(mesh);
+  const layer = () => {
+    const mat = new THREE.MeshBasicMaterial({ color: '#ffffff', toneMapped: false, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false });
+    const mesh = new THREE.InstancedMesh(geo, mat, count);
+    mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    mesh.setColorAt(0, new THREE.Color(1, 1, 1)); // (made now: the shader's built with instance colours or without)
+    mesh.instanceColor.needsUpdate = true;
+    mesh.frustumCulled = false;
+    mesh.count = 0;
+    parent.add(mesh);
+    return mesh;
+  };
+  const mesh = layer();
+  const halo = layer();
   const m = new THREE.Matrix4();
   const q = new THREE.Quaternion();
   const p = new THREE.Vector3();
@@ -75,24 +88,34 @@ export function createBoltDraw(parent, { count = 320 } = {}) {
         q.setFromUnitVectors(Z, d);
         // (drawn a little behind its point, so it trails from where it is)
         p.set(x - d.x * look.length * 0.5, y - d.y * look.length * 0.5, z - d.z * look.length * 0.5);
-        s.set(look.width, look.width, look.length);
+        s.set(look.width * CORE.width, look.width * CORE.width, look.length);
         mesh.setMatrixAt(n, m.compose(p, q, s));
+        s.set(look.width * HALO.width, look.width * HALO.width, look.length * HALO.length);
+        halo.setMatrixAt(n, m.compose(p, q, s));
         const rgb = colourOf(b);
         const k = look.bright * near;
-        mesh.setColorAt(n, c.setRGB(rgb[0] * k, rgb[1] * k, rgb[2] * k));
+        // (the core: the colour toward white at the same brightness; the halo: the colour, dim)
+        const w = luminance(rgb) * CORE.white;
+        mesh.setColorAt(n, c.setRGB((rgb[0] * (1 - CORE.white) + w) * k * CORE.bright, (rgb[1] * (1 - CORE.white) + w) * k * CORE.bright, (rgb[2] * (1 - CORE.white) + w) * k * CORE.bright));
+        halo.setColorAt(n, c.setRGB(rgb[0] * k * HALO.bright, rgb[1] * k * HALO.bright, rgb[2] * k * HALO.bright));
         n += 1;
       }
       mesh.count = n;
+      halo.count = n;
       if (n) {
-        mesh.instanceMatrix.needsUpdate = true;
-        mesh.instanceColor.needsUpdate = true;
+        for (const o of [mesh, halo]) {
+          o.instanceMatrix.needsUpdate = true;
+          o.instanceColor.needsUpdate = true;
+        }
       }
     },
     dispose() {
-      mesh.removeFromParent();
+      for (const o of [mesh, halo]) {
+        o.removeFromParent();
+        o.material.dispose();
+        o.dispose();
+      }
       geo.dispose();
-      mat.dispose();
-      mesh.dispose();
     },
   };
 }

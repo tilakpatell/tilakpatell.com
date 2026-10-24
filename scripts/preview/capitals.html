@@ -23,11 +23,14 @@
          astern (or, ?views=nose, its side and top with an arrow along +z, the
          way it flies; ?views=close, a fighter's eye on its plating and its
          engines). ?kind=destroyer&quality=high&w=640&h=360&break=gen-port,bridge
-         (`break`: those parts knocked off first, galaxy/capitalParts.js) -->
+         (`break`: those parts torn off first, galaxy/capitalParts.js; `split`:
+         it broken up and that many seconds on) -->
     <script type="module">
       import * as THREE from 'three';
       import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
       import { MODELS, createModels } from '/src/components/galaxy/models.js';
+      import { createDamage } from '/src/components/universe/battleDamage.js';
+      import { createDebris } from '/src/components/universe/battleDebris.js';
 
       const q = new URLSearchParams(location.search);
       const kind = q.get('kind') ?? 'destroyer';
@@ -61,7 +64,21 @@
       // (the LOD's levels by distance: these shots are all close, so the full model)
       slot.holder.updateMatrixWorld(true);
       const parts = slot.parts ?? null;
-      for (const id of breaks) for (const m of parts?.knock(id) ?? []) m.visible = false;
+      // (?split=12: the ship broken up by the battle's own damage, battleDamage.js,
+      // and this many seconds of its sections drifting; ?break=…: those parts torn
+      // off it the same way first)
+      const split = Number(q.get('split') ?? 0);
+      const debris = createDebris(scene, { count: 160 });
+      const fires = { add: () => ({}), unfollow() {} };
+      const damage = createDamage(scene, { fires, flashes: { at() {} }, debris, models });
+      const cap = { id: 1, pos: { x: 0, y: 0, z: 0 }, fwd: { x: 0, y: 0, z: 1 }, up: { x: 0, y: 1, z: 0 }, size: 1, hull: 1, hullMax: 1, spheres: [{ c: { x: 0, y: 0, z: 0 }, r: 0.2 }] };
+      slot.holder.updateMatrixWorld(true);
+      for (const id of breaks) damage.sub(cap, slot, id, { x: 0, y: 0.1, z: -0.3 }, 0.02);
+      if (split) {
+        damage.breakUp(cap, slot);
+        for (let t = 0; t < split; t += 0.25) debris.update(0.25);
+      } else if (breaks.length) for (let t = 0; t < 6; t += 0.25) debris.update(0.25);
+      // (the shards' sparks are the scene's glows; here, only the shards)
 
       // (?views=nose: the side and the top, an arrow along the way it flies, +z, to check its nose)
       const nose = q.get('views') === 'nose';

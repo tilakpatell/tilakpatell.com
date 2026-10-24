@@ -18,7 +18,8 @@
 // (scripts/capital-parts.mjs measures them), the same the battle hits, so
 // what's hit is what's seen and what goes is what was hit.
 //
-// cutParts(holder, kind) → { holder, ids }: a copy of a loaded model's holder
+// cutParts(holder, kind) → { holder, ids } (cutting(…), the same a step at a
+//   time, a generator whose return is that): a copy of a loaded model's holder
 //   (galaxy/models.js's, centred, nose +z, 1 long) with its parts and its
 //   three sections apart, each a mesh of its own sharing the model's
 //   geometry's attributes and materials (`userData.part`, `userData.section`).
@@ -70,9 +71,25 @@ export function componentsOf(index, position, count) {
     b = find(b);
     if (a !== b) up[a] = b;
   };
+  // (a corner's place as one whole number: its box in 2^17 steps a side, so
+  // the three fit in a double exactly, no string made a corner)
+  const lo = [Infinity, Infinity, Infinity];
+  const hi = [-Infinity, -Infinity, -Infinity];
+  for (let i = 0; i < n; i++) {
+    const p = [position.getX(i), position.getY(i), position.getZ(i)];
+    for (let a = 0; a < 3; a++) {
+      lo[a] = Math.min(lo[a], p[a]);
+      hi[a] = Math.max(hi[a], p[a]);
+    }
+  }
+  const STEPS = 131072;
+  const per = [0, 1, 2].map((a) => STEPS / Math.max(hi[a] - lo[a], 1e-9));
   const at = new Map();
   for (let i = 0; i < n; i++) {
-    const key = `${Math.round(position.getX(i) * 1e4)},${Math.round(position.getY(i) * 1e4)},${Math.round(position.getZ(i) * 1e4)}`;
+    const qx = Math.round((position.getX(i) - lo[0]) * per[0]);
+    const qy = Math.round((position.getY(i) - lo[1]) * per[1]);
+    const qz = Math.round((position.getZ(i) - lo[2]) * per[2]);
+    const key = (qx * (STEPS + 1) + qy) * (STEPS + 1) + qz;
     const j = at.get(key);
     if (j === undefined) at.set(key, i);
     else join(i, j);
@@ -112,21 +129,29 @@ function runsOf(geometry) {
 // `low`, where it has one: the tower a bridge stands on stays): [{ mesh, tris }]
 export function piecesOf(meshes, { at, reach, low = -Infinity }) {
   const out = [];
-  const centre = new THREE.Vector3(...at);
-  const box = new THREE.Box3();
-  const mid = new THREE.Vector3();
-  const size = new THREE.Vector3();
   for (const mesh of meshes) {
-    const tris = [];
-    for (const run of runsOf(mesh.geometry)) {
-      box.copy(run.box).applyMatrix4(mesh.matrixWorld);
-      box.getCenter(mid);
-      box.getSize(size);
-      if (mid.distanceTo(centre) <= reach && size.length() / 2 <= reach && mid.y >= low) tris.push(...run.tris);
-    }
+    const tris = taking(placedRuns(mesh), at, reach, low);
     if (tris.length) out.push({ mesh, tris: Uint32Array.from(tris) });
   }
   return out;
+}
+// a mesh's pieces in the ship's frame: each one's middle and half its box's diagonal
+function placedRuns(mesh) {
+  const box = new THREE.Box3();
+  const size = new THREE.Vector3();
+  return runsOf(mesh.geometry).map((run) => {
+    box.copy(run.box).applyMatrix4(mesh.matrixWorld);
+    return { mid: box.getCenter(new THREE.Vector3()), half: box.getSize(size).length() / 2, tris: run.tris };
+  });
+}
+// the triangles of the placed pieces a part at `at` reaching `reach` takes
+function taking(runs, at, reach, low) {
+  const tris = [];
+  for (const run of runs) {
+    const { mid } = run;
+    if (run.half <= reach && mid.y >= low && Math.hypot(mid.x - at[0], mid.y - at[1], mid.z - at[2]) <= reach) for (const t of run.tris) tris.push(t);
+  }
+  return tris;
 }
 
 // ── cutting a model ──
@@ -212,7 +237,19 @@ function build(spec, kind, k) {
   return g;
 }
 
+// (the cut all at once: a test's, the script's)
 export function cutParts(template, kind, specs = partSpecs(kind)) {
+  const run = cutting(template, kind, specs);
+  for (;;) {
+    const r = run.next();
+    if (r.done) return r.value;
+  }
+}
+
+// The cut a step at a time (a generator: each next() a mesh's worth of it,
+// a few milliseconds), for spare time between frames: a Star Destroyer's
+// whole cut is 60 to 100 ms on a desktop, a hitch if it were one.
+export function* cutting(template, kind, specs = partSpecs(kind)) {
   const holder = template.clone(true);
   holder.position.set(0, 0, 0);
   holder.quaternion.identity();
@@ -221,12 +258,24 @@ export function cutParts(template, kind, specs = partSpecs(kind)) {
   const meshes = [];
   // (not a nozzles' glow, and not one drawn in several materials by its groups)
   holder.traverse((o) => o.isMesh && !o.userData.glows && !(Array.isArray(o.material) && o.geometry.groups?.length) && meshes.push(o));
+  // (each mesh's pieces found and placed first, one a step: the costly part)
+  const placed = new Map();
+  for (const mesh of meshes) {
+    placed.set(mesh, placedRuns(mesh));
+    yield;
+  }
   // each piece to the nearest part that takes it
   const taken = new Map(); // a mesh → Map(triangle → part id)
   const counts = new Map(specs.map((s) => [s.id, 0]));
   for (const spec of specs) {
     if (spec.build) continue; // (a built part takes nothing of the model's)
-    for (const { mesh, tris } of piecesOf(meshes, { at: spec.at, reach: reachOf(spec), low: spec.low })) {
+    const pieces = [];
+    for (const mesh of meshes) {
+      const tris = taking(placed.get(mesh), spec.at, reachOf(spec), spec.low ?? -Infinity);
+      if (tris.length) pieces.push({ mesh, tris });
+    }
+    yield;
+    for (const { mesh, tris } of pieces) {
       if (!taken.has(mesh)) taken.set(mesh, new Map());
       const own = taken.get(mesh);
       for (const t of tris) {
@@ -274,6 +323,7 @@ export function cutParts(template, kind, specs = partSpecs(kind)) {
     }
     bySection.forEach((tris, i) => tris.length && beside(mesh, drawing(mesh.geometry, tris), { section: i }));
     mesh.removeFromParent();
+    yield;
   }
   return { holder, ids };
 }

@@ -4,7 +4,7 @@
 // with VITE_ASSET_BASE set so a desktop's cuts come from the bucket). For a
 // change to the capitals' look or their parts: shoot before, shoot after.
 //
-//   node scripts/capitals-shot.mjs <out.png> --kind destroyer [--quality high] [--break gen-port,bridge] [--views nose]
+//   node scripts/capitals-shot.mjs <out.png> --kind destroyer [--quality high] [--break gen-port,bridge] [--split 12] [--views nose]
 //
 // It prints the file the kind drew, whether it loaded, and the parts it has
 // (galaxy/capitalParts.js), and saves the four views as one picture.
@@ -27,7 +27,7 @@ const page = await browser.newPage({ viewport: { width: W * 2, height: H * 2 } }
 const errors = [];
 page.on('pageerror', (e) => errors.push(String(e)));
 page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
-const q = new URLSearchParams({ kind: String(args.kind ?? 'destroyer'), quality: String(args.quality ?? 'high'), w: String(W), h: String(H), break: String(args.break ?? ''), views: String(args.views ?? '') });
+const q = new URLSearchParams({ kind: String(args.kind ?? 'destroyer'), quality: String(args.quality ?? 'high'), w: String(W), h: String(H), break: String(args.break ?? ''), views: String(args.views ?? ''), split: String(args.split ?? 0) });
 await page.goto(`${base}/scripts/preview/capitals.html?${q}`);
 await page.waitForFunction(() => window.__done, null, { timeout: 600000 });
 const said = JSON.parse(await page.title());

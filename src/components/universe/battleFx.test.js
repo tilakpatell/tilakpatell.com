@@ -41,6 +41,33 @@ describe('the bolts', () => {
   });
 });
 
+describe('a bolt’s look', () => {
+  it('is a hot core near white and a wider, dimmer halo of its colour round it', () => {
+    const parent = new THREE.Group();
+    const draw = createBoltDraw(parent, { count: 2 });
+    draw.sync([{ on: true, team: 0, kind: 'laser', x: 0, y: 0, z: 0, vx: 60, vy: 0, vz: 0, age: 1 }], () => [3, 0.4, 0.3]);
+    const [core, halo] = parent.children.filter((o) => o.isInstancedMesh);
+    expect(core.count).toBe(1);
+    expect(halo.count).toBe(1);
+    const scale = (mesh) => {
+      const m = new THREE.Matrix4();
+      mesh.getMatrixAt(0, m);
+      return new THREE.Vector3().setFromMatrixScale(m);
+    };
+    expect(scale(halo).x).toBeGreaterThan(scale(core).x * 3);
+    const colour = (mesh) => {
+      const c = new THREE.Color();
+      mesh.getColorAt(0, c);
+      return c;
+    };
+    // (the core's whiter than the colour it was given: its green and blue nearer its red)
+    expect(colour(core).g / colour(core).r).toBeGreaterThan(0.4 / 3);
+    expect(colour(halo).r).toBeLessThan(colour(core).r);
+    draw.dispose();
+    expect(parent.children).toHaveLength(0);
+  });
+});
+
 describe('the objective markers', () => {
   it('paint a new distance at most four times a second, and anything else they say at once', () => {
     let paints = 0;

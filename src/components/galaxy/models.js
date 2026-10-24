@@ -34,7 +34,7 @@ import { fitScale } from '../universe/shipFit';
 import { BUILT_KINDS } from '../universe/trafficModels';
 import { GALAXY_KINDS, buildGalaxyShip } from './fleet';
 import { createHulls } from './hulls';
-import { cutParts, disposeLooks, partsOf, partSpecs } from './capitalParts';
+import { cutting, disposeLooks, partsOf, partSpecs } from './capitalParts';
 import { dressCapital } from './capitalLook';
 
 // which way each loaded model's nose points as it comes (turned to +z): the
@@ -508,15 +508,24 @@ export function createModels({ prepare = null, load: fetchModel = loadGLTF, hull
   // that breaks up), made in spare time once its model's here and warmed
   // before a slot draws it; a slot that asked for its parts swaps over to it then
   const cutLater = (kind, n) => {
-    if (!partSpecs(kind).length) return;
-    idle(async () => {
-      if (dead || n.cut) return;
-      const cut = cutParts(n.holder, kind);
+    if (!partSpecs(kind).length || n.cutting) return;
+    const run = cutting(n.holder, kind);
+    n.cutting = true;
+    // (a step at a time while the page has time to spare: a few milliseconds a slice)
+    const step = async (deadline) => {
+      if (dead) return;
+      const until = performance.now() + Math.max(2, Math.min(8, deadline?.timeRemaining?.() ?? 6));
+      let r;
+      do r = run.next();
+      while (!r.done && performance.now() < until);
+      if (!r.done) return idle(step);
+      const cut = r.value;
       if (prepare) await prepare(cut.holder);
       if (dead) return;
       n.cut = cut;
       for (const s of slots) if (s.kind === kind && s.wantsParts) fill(s);
-    });
+    };
+    idle(step);
   };
 
   const template = (kind) => {
