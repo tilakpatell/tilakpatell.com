@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { destinationById } from '../../src/components/rickmorty/world/dimensions/destinations';
 import { home, ledgeOf, stand, wayIn } from './places.mjs';
+import { ROOMS } from '../../src/components/rickmorty/world/dimensions/vindicatorsRules.js';
 
 const N = Math.PI / 2;
 const near = (got, want) => want.forEach((v, i) => expect(got[i]).toBeCloseTo(v, 6));
@@ -59,5 +60,12 @@ describe('where the browser check stands Morty', () => {
       const spots = destinationById(area).hotspots.map((h) => h.id);
       for (const id of ids) expect(spots, `${area} has no ${id}`).toContain(id);
     }
+  });
+});
+
+describe('Rick’s rooms, as the check plays them', () => {
+  // (the check picks each room's right answer by its flag, so the flags are pinned here, room by room)
+  it('has the acid lever, footsteps and Noob-Noob as the answers', () => {
+    expect(ROOMS.map((r) => r.choices.find((c) => c.right).id)).toEqual(['acid', 'footsteps', 'noobnoob']);
   });
 });
