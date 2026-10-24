@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { SIDES, boxOf, declutter } from './declutter';
+import { SIDES, boxOf, declutter, firstInside } from './declutter';
 
 const bounds = { x0: 0, y0: 0, x1: 1000, y1: 1000 };
 const L = (id, x, y, priority, w = 120, h = 24) => ({ id, x, y, w, h, priority });
@@ -54,5 +54,23 @@ describe('declutter', () => {
   it('gives no side to a name that can’t fit the frame, or has no number for its place', () => {
     const s = declutter([L('wide', 500, 500, 1, 2000), L('lost', NaN, 500, 2), L('fine', 200, 200, 0)], { bounds });
     expect([s.get('wide'), s.get('lost'), s.get('fine')]).toEqual([null, null, 'right']);
+  });
+  it('names a firm label (the pick’s) even ringed by dots, but off them where it can, inside the frame and off names already down', () => {
+    const firm = (l) => ({ ...l, firm: true });
+    const ringed = { bounds, dots: [{ x: 540, y: 500 }, { x: 460, y: 500 }, { x: 500, y: 530 }] };
+    expect(declutter([L('a', 500, 500, 1)], ringed).get('a')).toBeNull();
+    expect(declutter([firm(L('a', 500, 500, 1))], ringed).get('a')).toBe('right');
+    expect(declutter([firm(L('a', 500, 500, 1))], { bounds, dots: [{ x: 560, y: 500 }] }).get('a')).toBe('left');
+    expect(declutter([firm(L('a', 950, 500, 1))], { bounds, sides: ['right'] }).get('a')).toBeNull();
+    const s = declutter([L('b', 500, 500, 2), firm(L('a', 501, 500, 1))], { bounds });
+    expect([s.get('b'), s.get('a')]).toEqual(['right', null]);
+  });
+  it('finds the first side inside the frame, for a name left off to show on', () => {
+    expect(firstInside(L('a', 500, 500, 1), { bounds })).toBe('right');
+    expect(firstInside(L('a', 950, 500, 1), { bounds })).toBe('left');
+    expect(firstInside(L('a', 500, 500, 1), { bounds, sides: ['under'] })).toBe('under');
+    expect(firstInside(L('a', 822, 178, 1, 86), { bounds: { cx: 500, cy: 500, r: 470 } })).toBe('left');
+    expect(firstInside(L('wide', 500, 500, 1, 2000), { bounds })).toBeNull();
+    expect(firstInside(L('lost', NaN, 500, 1), { bounds })).toBeNull();
   });
 });

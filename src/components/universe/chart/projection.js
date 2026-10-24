@@ -23,7 +23,8 @@
 // levelOf(range) → 'system' | 'neighbourhood' | 'universe'
 // reachOn(view, at, reach) → chart units
 // ringsFor(range) → the powers of ten from range / 100 up to the range
-// toFrame(frame, [u, v], { pin }) → { x, y, edge }
+// toFrame(frame, [u, v], { pin }) → { x, y, edge }; PIN, the fraction of a
+//   round frame's radius a pinned point sits at
 //
 // A move that changes nothing gives back the same view, and a bad number
 // (not finite, a zoom of 0 or less) or a missing ship changes nothing.
@@ -50,7 +51,7 @@ export const FRAMES = Object.freeze({
   mini: Object.freeze({ w: 600, h: 300, cx: 300, cy: 142, r: 266, shape: 'box', pad: 8 }),
 });
 
-const PIN = 0.97; // a pinned point sits just inside the round rim, so its dot is whole
+export const PIN = 0.97; // a pinned point sits just inside the round rim, so its dot is whole
 const TURN = 2 * Math.PI;
 const finite = (n) => typeof n === 'number' && Number.isFinite(n);
 const clamp = (x, lo, hi) => Math.min(hi, Math.max(lo, x));

@@ -5,6 +5,9 @@
 // so the same places thin the same way every time). Each takes the first of
 // its sides that stays inside the frame and meets no name already down and no
 // other place's dot. One with no such side gets null: its dot alone, no name.
+// A firm label (the picked place's) that no side fits for the dots takes the
+// first that fits without them, so a pick in a crowd is still named: it may
+// cover another's dot, never the frame's edge or a name already down.
 //
 // The galaxy's labelPlace.js is the model. It is not imported: worlds are
 // islands, and the universe hides a name where the galaxy moves it. The nav
@@ -15,8 +18,10 @@
 // SIDES: right, left and under the dot
 // boxOf(side, { x, y, w, h }) → { x0, y0, x1, y1 }
 // declutter(labels, { bounds, sides, dots }) → Map of id → side or null
+// firstInside(label, { bounds, sides }) → the first side inside the frame, or
+//   null: where a name left off shows over the rest, on a hover or a focus
 //
-// A label is { id, x, y, w, h, priority }: x and y its dot's middle, w and h
+// A label is { id, x, y, w, h, priority, firm? }: x and y its dot's middle, w and h
 // its dot and name together, so a box's near end is the dot's far edge, 8 px
 // past its middle (navmap.css's 16 px dot). bounds is the frame's box, or
 // its circle { cx, cy, r } (the nav map's, which cuts off the rest), and a
@@ -53,13 +58,16 @@ export function declutter(labels, { bounds, sides = SIDES, dots = [] }) {
   const kept = [];
   for (const l of [...labels].sort(byPriority)) {
     const blocks = dots.filter((d) => !(Math.hypot(d.x - l.x, d.y - l.y) <= DOT)).map((d) => ({ x0: d.x - DOT, y0: d.y - DOT, x1: d.x + DOT, y1: d.y + DOT }));
-    for (const side of sides) {
+    const fits = (side, off) => {
       const box = boxOf(side, l);
-      if (!within(box, bounds) || kept.some((k) => meet(box, k)) || blocks.some((d) => meet(box, d))) continue;
-      kept.push(box);
-      out.set(l.id, side);
-      break;
-    }
+      return within(box, bounds) && !kept.some((k) => meet(box, k)) && !off.some((d) => meet(box, d));
+    };
+    const side = sides.find((s) => fits(s, blocks)) ?? (l.firm ? sides.find((s) => fits(s, [])) : undefined);
+    if (side === undefined) continue;
+    kept.push(boxOf(side, l));
+    out.set(l.id, side);
   }
   return out;
 }
+
+export const firstInside = (label, { bounds, sides = SIDES }) => sides.find((s) => within(boxOf(s, label), bounds)) ?? null;

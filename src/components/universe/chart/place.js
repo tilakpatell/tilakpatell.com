@@ -14,7 +14,13 @@
 //
 // labelSize(name, fontPx) → [w, h] in px, the dot and its name together
 // placeMarks(view, marks, frame, opts) → Placed[], in the marks' order (the tab order)
-//   Placed = { id, mark, x, y, footX, footY, size, side, edge, depth }, in frame units
+//   opts = { level, keep, fontPx, scale, sides, avoid, levels }: avoid is the
+//   { x, y } points, in frame units, whose dots no name may cover besides the
+//   marks' own (placeShip's result, null with no ship, which is let go)
+//   Placed = { id, mark, x, y, footX, footY, size, side, spare, edge, depth }, in frame units:
+//   side is where its name goes, or null to leave it off; spare is where a
+//   name left off shows over the rest, on a hover or a focus (the first side
+//   inside the frame), and null for one with a side or none that fits
 // placeShip(view, ship, frame) → { x, y, angle, edge }, or null with no ship
 // sectorGrid(view, n) → [{ key, points }]; ringOn(view, centre, radius, n) → points
 //   (closed outlines, in chart units, for the drawing to put through toFrame)
@@ -22,14 +28,17 @@
 // reveal(view, mark) → View, zoomed and moved till the mark is on the chart
 //
 // A mark the view's level doesn't show, or past the range, is left off,
-// unless it is kept (the picked place): a kept mark is always on, pinned to
-// the rim when it is off the chart, and its name goes down first. A pinned
-// mark has no stem, since its foot is off the chart too. A mark with no number
-// for its place is never drawn.
+// unless it is kept (the picked place). A kept mark is always on, and its name
+// goes down first and is never left off for another place's dot, only for the
+// frame's edge or another kept name. Off the chart, it is pinned to the rim:
+// it slides down its own stem to it, so the stem stays upright and still says
+// how far above or below the ship it is. One whose foot is off the chart too
+// is pinned on its way out, with no stem. A mark with no number for its place
+// is never drawn.
 
 import { SECTOR, sectorAt, sectorCentre, sectorKey } from '../../../lib/space/address';
-import { declutter } from './declutter';
-import { CHART, createView, levelOf, project, reachOn, toFrame } from './projection';
+import { declutter, firstInside } from './declutter';
+import { CHART, PIN, createView, levelOf, project, reachOn, toFrame } from './projection';
 
 const finite = (n) => typeof n === 'number' && Number.isFinite(n);
 const finiteAt = (at) => Array.isArray(at) && finite(at[0]) && finite(at[1]) && finite(at[2]);
@@ -53,6 +62,18 @@ function boundsOf(frame, scale) {
   return { x0: 0, y0: 0, x1: w * scale, y1: h * scale };
 }
 
+// a mark and its stem's foot on the frame: a pinned one past the rim slides
+// down its stem to the rim (the box's clamp does that already), unless its
+// foot is past it too
+function stand(frame, p, pinned) {
+  const at = toFrame(frame, [p.u, p.v], { pin: pinned });
+  const foot = toFrame(frame, p.foot);
+  if (!pinned || !at.edge) return { at, foot };
+  if (frame.shape !== 'circle') return { at, foot: foot.edge ? at : foot };
+  if (Math.hypot(p.foot[0], p.foot[1]) > PIN) return { at, foot: at };
+  return { at: { ...toFrame(frame, [p.u, Math.sign(p.v) * Math.sqrt(PIN ** 2 - p.u ** 2)]), edge: true }, foot };
+}
+
 export function placeMarks(view, marks, frame, opts = {}) {
   const { level = levelOf(view.range), keep = [], fontPx = 11, scale = 1, sides, avoid = [], levels = true } = opts;
   const kept = new Set(keep);
@@ -62,20 +83,25 @@ export function placeMarks(view, marks, frame, opts = {}) {
     const pinned = kept.has(mark.id);
     const p = project(view, mark.at);
     if (!pinned && ((levels && !mark.levels?.includes(level)) || !p.inside)) continue;
-    const { x, y, edge } = toFrame(frame, [p.u, p.v], { pin: pinned });
-    const foot = pinned && edge ? { x, y } : toFrame(frame, p.foot);
+    const { at, foot } = stand(frame, p, pinned);
     const size = reachOn(view, mark.at, mark.reach ?? 0) * frame.r;
-    placed.push({ id: mark.id, mark, x, y, footX: foot.x, footY: foot.y, size, side: null, edge, depth: p.depth });
+    placed.push({ id: mark.id, mark, x: at.x, y: at.y, footX: foot.x, footY: foot.y, size, side: null, spare: null, edge: at.edge, depth: p.depth });
   }
   const labels = placed
     .filter((p) => p.mark.name)
     .map((p) => {
       const [w, h] = labelSize(p.mark.name, fontPx);
-      return { id: p.id, x: p.x * scale, y: p.y * scale, w, h, priority: kept.has(p.id) ? Infinity : p.mark.priority };
+      const firm = kept.has(p.id);
+      return { id: p.id, x: p.x * scale, y: p.y * scale, w, h, priority: firm ? Infinity : p.mark.priority, firm };
     });
-  const dots = [...placed, ...avoid].map((d) => ({ x: d.x * scale, y: d.y * scale }));
-  const side = declutter(labels, { bounds: boundsOf(frame, scale), sides, dots });
-  for (const p of placed) p.side = side.get(p.id) ?? null;
+  const dots = [...placed, ...avoid.filter((d) => d && finite(d.x) && finite(d.y))].map((d) => ({ x: d.x * scale, y: d.y * scale }));
+  const bounds = boundsOf(frame, scale);
+  const side = declutter(labels, { bounds, sides, dots });
+  const spare = new Map(labels.filter((l) => side.get(l.id) === null).map((l) => [l.id, firstInside(l, { bounds, sides })]));
+  for (const p of placed) {
+    p.side = side.get(p.id) ?? null;
+    p.spare = spare.get(p.id) ?? null;
+  }
   return placed;
 }
 
@@ -119,11 +145,14 @@ export function sectorGrid(view, n) {
   return grid;
 }
 
-// a closed ring round a centre, level with it
+// a closed ring round a centre, level with it, of at least three sides (none
+// round a centre or of a radius with no number)
 export function ringOn(view, centre, radius, n = 64) {
+  if (!finiteAt(centre) || !finite(radius)) return [];
+  const k = finite(n) ? Math.max(3, Math.floor(n)) : 64;
   const points = [];
-  for (let i = 0; i <= n; i++) {
-    const t = ((i % n) / n) * 2 * Math.PI;
+  for (let i = 0; i <= k; i++) {
+    const t = ((i % k) / k) * 2 * Math.PI;
     points.push(uv(view, [centre[0] + radius * Math.cos(t), centre[1], centre[2] + radius * Math.sin(t)]));
   }
   return points;

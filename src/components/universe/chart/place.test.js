@@ -13,6 +13,7 @@ describe('placing marks', () => {
   it('shows what the level shows and the range holds', () => {
     const ids = placeMarks(view, marks, FRAMES.nav).map((p) => p.id);
     expect(ids).toEqual(['near', 'high']);
+    expect(placeMarks(view, marks, FRAMES.nav, { level: 'system' }).map((p) => p.id)).toEqual(['near', 'station', 'high']);
   });
   it('keeps the picked place on, pinned to the rim and named', () => {
     const placed = placeMarks(view, marks, FRAMES.nav, { keep: ['far', 'station'] });
@@ -21,6 +22,31 @@ describe('placing marks', () => {
     expect(far.side).not.toBeNull();
     expect(Math.hypot(far.x - 500, far.y - 500)).toBeLessThanOrEqual(470);
     expect(placed.some((p) => p.id === 'station')).toBe(true);
+  });
+  it('names the pick even ringed by other places’ dots, and gives a name left off a side to show on', () => {
+    const ring = [M('pick', [0, 0, 0]), ...[[540, 500], [460, 500], [500, 530]].map(([x, y], i) => M(`dot${i}`, drawnAt(x, y), { name: '' }))];
+    const loose = placeMarks(view, ring, FRAMES.nav)[0];
+    expect([loose.side, loose.spare]).toEqual([null, 'right']);
+    const picked = placeMarks(view, ring, FRAMES.nav, { keep: ['pick'] })[0];
+    expect([picked.side, picked.spare]).toEqual(['right', null]);
+    expect(placeMarks(view, ring, FRAMES.nav)[1].spare).toBeNull(); // (no name, nothing to show)
+  });
+  it('stands a pick past the rim on its stem: the dot slides down it to the rim, and the foot stays put', () => {
+    const close = createView({ range: 7200 });
+    const below = M('below', [0, -120000, 0]);
+    const [down] = placeMarks(close, [below], FRAMES.nav, { keep: ['below'] });
+    expect(down).toMatchObject({ edge: true, x: 500, footX: 500, footY: 500 });
+    expect(down.y).toBeCloseTo(500 + 0.97 * 470, 9);
+    // off to one side and high above: the stem stays upright, the dot on the rim
+    const [up] = placeMarks(view, [M('up', [60000, 1.2e6, 0])], FRAMES.nav, { keep: ['up'] });
+    expect(up).toMatchObject({ edge: true, footY: 500 });
+    expect(up.x).toBe(up.footX);
+    expect(up.footX).toBeGreaterThan(500);
+    expect(up.y).toBeLessThan(up.footY);
+    expect(Math.hypot(up.x - 500, up.y - 500)).toBeCloseTo(0.97 * 470, 9);
+    // the mini-map's box holds it at its padded edge, under its foot
+    const [mini] = placeMarks(close, [below], FRAMES.mini, { keep: ['below'] });
+    expect(mini).toMatchObject({ edge: true, x: 300, y: 292, footX: 300, footY: 142 });
   });
   it('stands a place above the ship on a stem going up the frame', () => {
     const high = placeMarks(view, marks, FRAMES.nav).find((p) => p.id === 'high');
@@ -103,7 +129,7 @@ describe('placing marks', () => {
     expect(placeShip(tilted, { x: 0, y: 0, z: 0, heading: -Math.PI / 4 }, FRAMES.nav).angle).toBeCloseTo((Math.atan2(-Math.cos(1), 1) * 180) / Math.PI, 9);
   });
   it('draws nothing NaN: a place with no number is dropped even when picked, and a missing ship is placed nowhere', () => {
-    const placed = placeMarks(view, [M('lost', [NaN, 0, 0]), M('here', [0, 0, 0], { reach: 500, name: '' })], FRAMES.nav, { keep: ['lost', 'here'] });
+    const placed = placeMarks(view, [M('lost', [NaN, 0, 0]), M('here', [0, 0, 0], { reach: 500, name: '' })], FRAMES.nav, { keep: ['lost', 'here'], avoid: [null, placeShip(view, null, FRAMES.nav), { x: NaN, y: 500 }] });
     expect(placed.map((p) => p.id)).toEqual(['here']);
     expect(placed[0]).toMatchObject({ x: 500, y: 500, footX: 500, footY: 500, side: null, edge: false });
     expect(Number.isFinite(placed[0].size)).toBe(true);
@@ -113,5 +139,10 @@ describe('placing marks', () => {
     expect(still.angle).toBeCloseTo(-90);
     expect([fitRange([0, 0, 0], []), fitRange([0, 0, 0], [M('x', [1e12, 0, 0]), M('y', [NaN, 0, 0])])]).toEqual([CHART.range.min, CHART.range.max]);
     expect(reveal(view, null)).toBe(view);
+    expect(ringOn(view, [0, 0, 0], 5000, 0)).toHaveLength(4); // (a ring has at least three sides)
+    expect(ringOn(view, [0, 0, 0], 5000, 7.6)).toHaveLength(8);
+    expect(ringOn(view, [0, 0, 0], 5000, NaN)).toHaveLength(65);
+    for (const ring of [ringOn(view, [0, 0, 0], 5000, 0), ringOn(view, [0, 0, 0], 5000, Infinity)]) for (const pt of ring) expect(pt.every(Number.isFinite)).toBe(true);
+    expect([ringOn(view, [0, 0, 0], NaN), ringOn(view, [NaN, 0, 0], 5000), ringOn(view, null, 5000)]).toEqual([[], [], []]);
   });
 });
