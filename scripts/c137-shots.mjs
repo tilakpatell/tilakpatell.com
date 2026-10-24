@@ -125,6 +125,8 @@ export const VIEWS = {
   arcade: { area: 'arcade', at: [-295.5, 300, 0], cam: [0, 0.25] },
   // the agency, west of the hole in its floor and facing it: the sewer run's way in
   agencyhole: { area: 'agency', at: [-417.6, 4011.4, -1.02], cam: [0, 0.3] },
+  // Heist-Con from Heistotron's plan, looking south over the booths, their alarms and the crew
+  heistplan: { area: 'heistcon', at: [-394, 2790.2, -N], cam: [0, 0.35] },
 };
 
 const names = process.argv.slice(2);
