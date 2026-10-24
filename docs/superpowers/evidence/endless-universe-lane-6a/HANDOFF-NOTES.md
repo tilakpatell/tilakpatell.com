@@ -192,3 +192,63 @@ What `scripts/navmap-check.mjs` and the new `scripts/lib/navmap.mjs` check now, 
 - Home's “Find me online” asks GitHub's API, which refused this container (403, rate limit) in two runs: a page error that's the network's.
 - Checks that wait a fixed time for something software GL does slowly, on `main` as on the lane: `links-check` clicks the map button 2 s after the scene starts (it comes once the shaders are in); `universe-war-check` reads the front 2.5 s after the scene starts (twice it hadn't loaded) and the battle's phase 3 s after the generators are hit; `sector-check`'s flights through the portal. `wonders-check` and `links-check` ask for `--use-gl=swiftshader`. `universe-war-check`'s front button step reads `state.auto` where the jump sets `state.jump` (Task 8's note). `wonders-check`'s The Maw parks at the edge of its pull, past the check's reach and 80.
 - `scripts/lib/guest-clips.test.mjs`'s Rick test failed once in a run of all of `scripts/lib` while a browser check ran beside it, and passed alone (43 of 43).
+
+## Task 11: the gates, the hand-off and the PR
+
+The lane's last task. The coordinator merges every lane into one branch and opens one pull request, so this task brings no `main` in and opens no PR. It runs the gates on the lane, writes below what `HANDOFF-universe.md` should say, and sets down what the PR's body needs.
+
+### For `HANDOFF-universe.md`, “Landed”
+
+In **The nav map and the drives**, two sentences change: the chips are the chart's presets now, and `chartLabels.js` no longer lays out the chart's names.
+
+- “Two charts plus the sector’s, filter chips, search, …” becomes “The chart’s three presets (Universe, Home system, the Curve), filter chips, search, …”.
+- “The chart’s names are laid out by `chartLabels.js` (pure, tested): each on the first clear side of its dot, inside the circle, or left off till it’s hovered, picked or lit from the list.” becomes “The chart is the shared one, below.”
+
+A new bullet after it:
+
+- **The chart.** One pure projection, drawn by the nav map and the 3D-off map alike, in `src/components/universe/chart/`. `projection.js` centres it on a focus, the ship by default, on the 0.375-power scale re-centred there. It zooms from a system (a range of 300) out to the universe (3,000,000), pans, and tilts and turns into 3D, every mark on a stem from the plane at the focus’s height. Its levels go by range: a system under 8,000, the neighbourhood under 250,000, the universe past it. `declutter.js` thins the names by priority, none over another name or a dot. `place.js` puts the marks on a frame: a pick always named, the ship always on it, pinned to the rim when it’s off. `marks.js` reads the marks from `nav.js`’s places and `where()`’s pilots and far fights, and folds the Curve into one mark where it’s small. `input.js` turns the keys, the wheel, a drag, a Shift-drag and two fingers into changes of view; `useChartView.js` holds the view; `NavChart.jsx` and `ChartTools.jsx` draw it. The bar under the chart says the ship’s sector and height (“Sector 2, 0, 0 · 3,800 ship-lengths above the disc”), beside Zoom in, Zoom out, Back to the ship and Look straight down. `NavMap.jsx` keeps its header, filters and side panel and draws its chart through `NavChart` (442 lines, from 667). `FlatMap.jsx` (the 3D-off map) and `MiniMap.jsx` (it and Home’s teaser) draw on the same marks, projection and placing, with the wonders and the moons and no orbit rings. The gesture reader is `src/lib/gesture.js`, shared with the galaxy map’s `useMapView.js`. `scripts/navmap-check.mjs` jumps to a wonder it picks by name, and checks the zoom, the pan, the tilt, the far ship and the phone; `scripts/lib/navmap.mjs`’s `shipOnChart(page)` is the ship’s-marker step for any other check. The evidence is `evidence/endless-universe-6a-map/`.
+
+### For `HANDOFF-universe.md`, “Left”
+
+Out:
+
+- In **The checks that fail on `main`**, its last sentence: “`scripts/navmap-check.mjs` still jumps to the Citadel at its old place (1755, −4660); pick a main-sector wonder by name and read its position from `__universeDebug.wonders`.” The check picks Ember, or Halcyon, by name now, and the Citadel's five failing steps pass.
+- The phone layout, “tightened in CSS and never seen in a browser”, the plan's other item, isn't in today's “Left”: it went with `ae0a9ecd2` (“a phone opens on the list”). It has been seen now, at 390 × 844 and turned sideways (the evidence README's “The phone layout”), so there's nothing to take out for it.
+
+In, a new bullet:
+
+- **The map, its second half** (lane 6b’s, and lane 4c’s for the mini-map’s ship).
+  - `nav.js`’s `chartAt`, `chartRadius`, `chartHeading`, `onChart` and `viewFor` are used by no component now: only `nav.js`, `nav.test.js` and `chartLabels.test.js` use them. `chartLabels.js` has its test alone. Lane 6b, which owns `nav.js`, can retire them with their tests.
+  - `where()`’s pilots and far fights carry no height, so they sit level with the ship (`marks.js`’s `liveMarks`). Lane 6b adds `y`.
+  - The System level’s traffic, and the Neighbourhood and Universe levels’ generated places, events and visited systems, are lane 6b’s, fed in as `Mark`s through `marks.js`. The projection doesn’t change.
+  - The mini-map’s `ship` prop waits for lane 4c’s saved position: with 3D off there is none today. When it comes, `FlatMap.jsx` gives it to `useChartView` too, so the stems are measured from the ship and `0` re-centres on it.
+  - `scripts/universe-endless-check.mjs` (lane 2’s) isn’t on `main` (at `0e7a77f6`) or on lane 2’s branch yet. Its ship’s-marker step is left for it: after each of its steps, `shipOnChart(page)` from `scripts/lib/navmap.mjs`, asserting `drawn && inside`.
+  - From 7 of `ship.js`’s 32 starts the cruise to Avengers HQ is past `tripTime`’s 150 s, so `navmap-check`’s “a trip time for every drive” reads “—” and fails, on `main` too. Lane 6b’s formula for long trips mends it.
+  - The phone’s chart names few places at its opening zoom (5 to 8 of 27 in the runs, against 17 on `main`’s with Earth picked), and the 3D-off map on a phone names four. Each name keeps off every other place’s dot in a 24 px box. More names on a phone is the owner’s call (`labelSize`’s box).
+  - A pinch turns and tilts by however far the fingers drift, with no dead zone, and a drag right turns the chart clockwise. Both want the owner’s hand on a real phone.
+  - Checks that read the nav map and wait a fixed time for software GL fail on `main` as on the lane: `links-check`’s map button, `universe-war-check`’s front and its phase 2, `sector-check`’s flights through the portal. `wonders-check` and `links-check` ask for `--use-gl=swiftshader`, which today’s Chromium doesn’t have. `universe-war-check`’s front button step reads `state.auto`, where the jump sets `state.jump`.
+
+The tasks' own “Left” lists above have the finer points.
+
+### For the PR
+
+- **Before and after:** the table in `docs/superpowers/evidence/endless-universe-6a-map/README.md` (“Before and after”): 15 shots, 11 of them from `main` at `cc5e2eaf`, 4 new.
+- **The gates**, run on the lane at `eb946d0f` (Task 10's commit: this task adds only these notes):
+
+  | Gate | Result |
+  | --- | --- |
+  | `npm run lint` | clean |
+  | `npm test` | 1,963 files passed and 1 skipped; 21,404 tests passed and 8 skipped |
+  | `npm run build` | built. Its `prebuild` had the profile and the repositories refused by GitHub's API (401) and kept them from the last snapshot; the fresh contributions it wrote to `public/github.json` were put back, not being the lane's |
+  | `node scripts/health.mjs --check --skip build` | within budget, every metric as on `main`: `big-files` 22 (none of the lane's; `NavMap.jsx` 442 lines, the biggest new file `NavChart.jsx` 348), `kbd-styles` 68 |
+  | `node scripts/autopilot-check.mjs --only smoke --skip lint,test,build --routes /universe` | everything green: the nine core pages and `/universe` |
+  | `navmap-check.mjs`, all four modes (Task 10's run, at `b5c1feb5`) | 50 of 51, no page errors; the one is the trip time from the start (above), on `main` too |
+
+- **Home’s lazy section (`Interests`)**, built on Task 8’s commit (`5c76fb0b`, the mini-map as on `main`) and on the lane: the `Interests` chunk 7.41 kB (gzip 2.90 kB) both times; the `MiniMap` chunk 2.62 kB (gzip 1.30 kB) to 4.24 kB (gzip 2.16 kB); the whole section 24.70 kB (gzip 10.71 kB, 4 files) to 48.54 kB (gzip 21.73 kB, 7 files). The mini-map now reads `nav.js`, the marks, the projection and the placing; the teaser loads none of the hands, keys or tools.
+- **The gesture reader:** `src/components/galaxy/gesture.js` moved to `src/lib/gesture.js` with its test (`git mv`). The galaxy map’s `useMapView.js` changed its import (and its comment) alone. It passes no modifier, so a drag there says `pan` as before, and its `apply` reads a pinch’s `zoom`, `u` and `w` and not the new `turn` and `tilt`.
+  - `galaxy-map-check` can't say “all ok” in this container, on `main` or on the lane. Its `settle` is a fixed 550 ms after a key, a wheel or a press, and in software GL a zoom's easing takes longer, so it reads the zoom before. Two wheel notches land at 1.00, 1.50 or 2.26, run to run and size to size, and the names' checks after them pass or fail with where the zoom stopped.
+  - Run alone, the lane first and then `main` (`cc5e2eaf`, from its own checkout, on the same server config), each made all its 456 checks. The lane: 406 ok, 50 FAIL. `main`: 400 ok, 56 FAIL. 45 of the FAILs are on both.
+  - Each FAIL on one side alone is a zoom read straight after a key or the wheel (`-` zooms out a step, `0` shows the whole galaxy, two wheel notches, `+` twice in the 3D map), a name's place read after such a zoom, or Escape in the 3D map at 768 × 1024. The lane's five are of these kinds, and the zoom ones passed on the lane in another run.
+  - The phone's whole-map names fail on both, in every run that reached them: Bespin's name meets Mustafar's and lies 5.5 to 6.1 px into Hoth's dot (the check allows 5), at 390, 375 and 360 wide.
+  - The steps the gesture reader drives pass on both at every size, 25 ok on each: a drag from a system's dot pans and picks nothing, a long drag released over a system picks neither, and a double click's second press picks the system it lands on and starts no jump.
+- **The scene:** `scene.js`, `ship.js`, `nav.js` and the generator are as on `main`, so the draw calls and triangles are as before.
