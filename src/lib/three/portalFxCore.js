@@ -80,15 +80,32 @@ export function createPortalFx({ parent, portalMat }) {
     mesh.frustumCulled = false;
     parent.add(mesh);
 
-    // the plane it cuts at: fixed in the world while it's open, then the
-    // body's own once it's shut (the materials clip in world space)
+    // the plane it cuts at: the portal's, in `parent`, while it's open,
+    // then the body's own once it's shut. The materials clip in world space,
+    // read against the camera as each pass draws (the colour's and the
+    // shadows'), and a world may draw round its camera, its map moved for
+    // the draw alone (universe/relative.js), so it's put in the world then,
+    // from where its frame is as it's drawn
     parent.updateWorldMatrix(true, false);
-    const planeP = new THREE.Plane().setFromNormalAndCoplanarPoint(_v.copy(P).negate(), C); // (keeps the side toward the shooter)
-    const plane = planeP.clone().applyMatrix4(parent.matrixWorld);
-    let planeLocal = null;
+    let local = new THREE.Plane().setFromNormalAndCoplanarPoint(_v.copy(P).negate(), C); // (keeps the side toward the shooter)
+    let frame = parent;
+    const plane = new THREE.Plane();
+    const placed = () => plane.copy(local).applyMatrix4(frame.matrixWorld);
+    placed();
     const swapped = new Map();
+    const hooks = new Map(); // a figure's mesh → its own hooks, given back after
     root.traverse((o) => {
       if (!o.isMesh || !o.material) return;
+      const was = { render: o.onBeforeRender, shadow: o.onBeforeShadow };
+      hooks.set(o, was);
+      o.onBeforeRender = function (...a) {
+        placed();
+        return was.render.apply(this, a);
+      };
+      o.onBeforeShadow = function (...a) {
+        placed();
+        return was.shadow.apply(this, a);
+      };
       const own = (m) => {
         if (!swapped.has(m)) {
           const c = m.clone();
@@ -149,7 +166,8 @@ export function createPortalFx({ parent, portalMat }) {
             this.cut = true;
             on?.('cut');
             root.updateWorldMatrix(true, false);
-            planeLocal = plane.clone().applyMatrix4(_m.copy(root.matrixWorld).invert());
+            local = placed().clone().applyMatrix4(_m.copy(root.matrixWorld).invert());
+            frame = root;
             this.landed = { from: root.position.clone(), q: root.quaternion.clone() };
             const lie = underfoot(root.position);
             this.landed.at = lie.addScaledVector(U, tall * 0.13);
@@ -168,8 +186,7 @@ export function createPortalFx({ parent, portalMat }) {
           const drop = f * f;
           root.position.lerpVectors(this.landed.from, this.landed.at, drop);
           root.quaternion.slerpQuaternions(this.landed.q, this.landed.lie, easeOut(f));
-          root.updateWorldMatrix(true, false);
-          plane.copy(planeLocal).applyMatrix4(root.matrixWorld);
+          root.updateWorldMatrix(true, false); // (its cut's put in the world as it's drawn)
           if (f >= 1) this.done = true;
         }
         for (const s of sprites) {
@@ -203,6 +220,11 @@ export function createPortalFx({ parent, portalMat }) {
             delete o.userData.portalMat;
           }
         });
+        for (const [o, was] of hooks) {
+          o.onBeforeRender = was.render;
+          o.onBeforeShadow = was.shadow;
+        }
+        hooks.clear();
         for (const m of swapped.values()) m.dispose();
         swapped.clear();
       },

@@ -11,6 +11,9 @@
 // and then it breaks in two: two copies of its model, each cut by a
 // clipping plane through its middle (the renderer's localClippingEnabled),
 // drifting apart and rolling away from each other, burning along the break.
+// The renderer reads a plane in the world as it draws, and the universe
+// draws round the camera (relative.js: the map moved for the draw alone),
+// so each half sets its cut as it's drawn, from where it is then.
 //
 // A galaxy battle's plan lays more out (battleStages.js): what's out in the
 // open is drawn by battleProps.js (satellites, platforms, beacons, relays,
@@ -67,6 +70,8 @@ export function createBattleScene(parent, { models, small = false, reduced = fal
   const vz = new THREE.Vector3();
   const tmp = new THREE.Vector3();
   const pt = new THREE.Vector3();
+  const cutN = new THREE.Vector3(); // (the draw's own, for a half's cut)
+  const cutP = new THREE.Vector3();
 
   // a slot turned to fly along `fwd`, its top toward `up`, banked by `bank`
   // (combat/pose.js's axes: the hull tests turn a ship the same way)
@@ -139,7 +144,17 @@ export function createBattleScene(parent, { models, small = false, reduced = fal
       });
       parent.add(g);
       const axis = new THREE.Vector3().crossVectors(fwd, new THREE.Vector3(0, 1, 0)).normalize();
-      halves.push({ g, plane, sign, owned, vel: fwd.clone().multiplyScalar(0.5 * sign).add(new THREE.Vector3(0, -0.12 * sign, 0)), axis, spin: 0.035 * sign, cut: new THREE.Vector3(cap.pos.x, cap.pos.y, cap.pos.z), size: cap.size });
+      const h = { g, plane, sign, owned, vel: fwd.clone().multiplyScalar(0.5 * sign).add(new THREE.Vector3(0, -0.12 * sign, 0)), axis, spin: 0.035 * sign, cut: new THREE.Vector3(cap.pos.x, cap.pos.y, cap.pos.z), size: cap.size };
+      // the plane in the world as it's drawn, through the half's own cut
+      // (kept in the map), keeping its own side
+      const placed = () => {
+        cutN.set(0, 0, 1).transformDirection(g.matrixWorld).multiplyScalar(sign);
+        plane.setFromNormalAndCoplanarPoint(cutN, parent.localToWorld(cutP.copy(h.cut)));
+      };
+      g.traverse((o) => {
+        if (o.isMesh) o.onBeforeRender = placed;
+      });
+      halves.push(h);
     }
     slot.holder.visible = false;
     // fire along the break
@@ -150,12 +165,7 @@ export function createBattleScene(parent, { models, small = false, reduced = fal
     for (const h of halves) {
       h.g.position.addScaledVector(h.vel, dt);
       h.g.rotateOnWorldAxis(h.axis, h.spin * dt);
-      h.cut.addScaledVector(h.vel, dt);
-      // the plane in the world, through the half's own cut, keeping its own side
-      h.g.updateMatrixWorld(true);
-      vz.set(0, 0, 1).transformDirection(h.g.matrixWorld).multiplyScalar(h.sign);
-      parent.localToWorld(pt.copy(h.cut));
-      h.plane.setFromNormalAndCoplanarPoint(vz, pt);
+      h.cut.addScaledVector(h.vel, dt); // (its plane's set as it's drawn)
     }
   };
 

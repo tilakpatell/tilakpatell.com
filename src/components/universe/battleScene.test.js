@@ -198,4 +198,47 @@ describe('createBattleScene', () => {
     expect(draw.halves).toBe(2);
     draw.dispose();
   });
+
+  // (the universe draws round the camera, relative.js: for the draw alone the
+  // map is moved by minus the camera and the camera put at nought, and the
+  // renderer reads a cut against the camera as it's drawn; a front's battle
+  // is near home, 572 out at beacon:home-e)
+  it('cuts each half through the break, carried with it, where it is as it’s drawn: round the camera too', () => {
+    const scene = new THREE.Scene();
+    const map = new THREE.Group();
+    scene.add(map);
+    const models = stubModels();
+    const draw = createBattleScene(map, { models, small: true });
+    const battle = createBattle({ war: WARS.starwars, attacker: 0, at: [572, 0, 0], axis: [1, 0], perSide: 4 });
+    draw.show(battle, WARS.starwars);
+    const flag = battle.capitals.find((c) => c.team === 1 && c.role === 'flagship');
+    const broke = new THREE.Vector3(flag.pos.x, flag.pos.y, flag.pos.z);
+    const holder = models.slots.find((s) => s.kind === flag.kind && s.holder.position.distanceTo(broke) < 1e-9).holder;
+    const camera = new THREE.PerspectiveCamera();
+    camera.position.set(600, 25, 90);
+    scene.add(camera);
+    draw.update(0.1, 0, camera, camera.position, [{ type: 'capital', id: flag.id, kind: flag.kind, team: 1, at: { ...flag.pos } }], 0);
+    draw.update(0.5, 0.1, camera, camera.position, [], 0);
+    const cut = [];
+    map.traverse((o) => o.isMesh && o.material.clippingPlanes?.length && cut.push(o));
+    expect(cut).toHaveLength(2);
+    // the break, where each half has carried it (in the map), and the half's own z
+    const check = (frame) => {
+      scene.updateMatrixWorld(); // (as the renderer does, before any onBeforeRender)
+      for (const m of cut) {
+        m.onBeforeRender(null, scene, camera, m.geometry, m.material, null);
+        const plane = m.material.clippingPlanes[0];
+        const at = map.localToWorld(broke.clone().add(m.parent.position).sub(holder.position));
+        const z = new THREE.Vector3(0, 0, 1).transformDirection(m.parent.matrixWorld);
+        expect(Math.abs(plane.distanceToPoint(at)), frame).toBeLessThan(1e-6);
+        expect(Math.abs(plane.normal.dot(z)), frame).toBeCloseTo(1, 9);
+      }
+    };
+    check('drawn as the map is');
+    const camAt = camera.position.clone();
+    map.position.sub(camAt);
+    camera.position.set(0, 0, 0);
+    check('drawn round the camera');
+    draw.dispose();
+  });
 });
