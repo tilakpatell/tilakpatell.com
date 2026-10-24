@@ -86,6 +86,30 @@ describe('the air round a planet', () => {
     vi.unstubAllGlobals();
   });
 
+  it('marches its air about where the planet is as it is drawn, round the camera (relative.js)', async () => {
+    stub();
+    const THREE = await import('three');
+    const { buildPlanet } = await import('./planets');
+    const { byId } = await import('./universes');
+    const p = buildPlanet(byId('middleearth'), {}, { sun: [0, 0, 1], tier: 'high' });
+    const scene = new THREE.Scene();
+    const map = new THREE.Group();
+    scene.add(map);
+    p.group.position.set(6326, -520, -14653);
+    map.add(p.group);
+    const camera = new THREE.PerspectiveCamera(34, 16 / 9, 0.08, 45000);
+    camera.position.set(6326, -520, -14000);
+    scene.updateMatrixWorld();
+    p.update(10, camera);
+    // drawn(): the map moved by minus the camera, the camera at nought
+    map.position.set(-6326, 520, 14000);
+    camera.position.set(0, 0, 0);
+    scene.updateMatrixWorld();
+    p.air.onBeforeRender({ getDrawingBufferSize: (v) => v.set(1280, 720) }, scene, camera);
+    expect(p.air.material.uniforms.uCenter.value.toArray()).toEqual([0, 0, -653]);
+    vi.unstubAllGlobals();
+  });
+
   it('a world with no air keeps its halo, whatever the tier', async () => {
     stub();
     const { buildPlanet } = await import('./planets');

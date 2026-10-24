@@ -35,7 +35,7 @@ let cached = null;
 vi.mock('../../../lib/three/gltf', () => ({ loadGltf: async (url, { fresh } = {}) => ({ scene: fresh ? kit() : (cached ??= kit()) }) }));
 
 const { createModels, foliage, pick, sizeFor, tinted } = await import('./models');
-const { canopyLevel } = await import('./canopy');
+const { canopy, canopyLevel, seeCanopy } = await import('./canopy');
 
 const bounds = (o) => {
   o.updateMatrixWorld(true);
@@ -129,12 +129,29 @@ describe('a landing’s models', () => {
     // (anything else as it was)
     const bark = new THREE.MeshStandardMaterial();
     const before = bark.onBeforeCompile;
+    const drawnBefore = bark.onBeforeRender;
     foliage(bark);
     expect(bark.onBeforeCompile).toBe(before);
+    expect(bark.onBeforeRender).toBe(drawnBefore);
     // (and a model's leaves, as loaded)
     const models = createModels();
     const tree = await models.get({ url: '/models/kit.glb', node: 'Tree_1', tall: 1 });
     expect(tree.getObjectByProperty('isMesh', true).material.userData.foliage).toBeUndefined();
+  });
+
+  it('has a leaf, as it’s drawn, open the crowns round you where the draw has you (relative.js)', () => {
+    const leaf = foliage(Object.assign(new THREE.MeshStandardMaterial(), { userData: { foliage: true } }));
+    const map = new THREE.Group();
+    const root = new THREE.Group();
+    root.position.set(100, 0, 0);
+    map.add(root);
+    map.updateMatrixWorld();
+    seeCanopy(new THREE.Vector3(0, 2, 0), root);
+    map.position.set(-90, 0, 0); // (the draw's shift)
+    map.updateMatrixWorld();
+    leaf.onBeforeRender({}, null, null, null, null, null);
+    expect(canopy().uniforms.uCanopySee.value.toArray()).toEqual([10, 2, 0, 1]);
+    seeCanopy(null);
   });
 
   it('puts a tree’s leaves in the canopy, its bark left as it was, once', async () => {

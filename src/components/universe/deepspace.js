@@ -554,9 +554,17 @@ export function buildDeepSpace({ small = false, tier = 'high' } = {}) {
   const uTime = { value: 0 };
   const homeW = { value: new THREE.Vector3() }; // the home sun, in world space
   const lightOf = new Map(); // a wonder's id → its star's world position, for its planets
+  // (where the suns are, set as a lit thing is drawn: the shaders read them
+  // against their world positions, and the map is moved round the camera
+  // for the draw alone, relative.js, so they're set from the map as it's drawn)
+  const lit = () => {
+    homeW.value.setFromMatrixPosition(group.matrixWorld);
+    for (const [id, light] of lightOf) light.value.copy(wonderGroups[id].position).applyMatrix4(group.matrixWorld);
+  };
   const mesh = (geo, mat, parent, order = 0) => {
     const m = new THREE.Mesh(own(geo), own(mat));
     m.renderOrder = order;
+    if (mat.uniforms?.uLight) m.onBeforeRender = lit;
     parent.add(m);
     return m;
   };
@@ -1444,8 +1452,6 @@ mat3 tumble(float id) {
       lastT = t;
       uTime.value = t;
       group.updateWorldMatrix(true, false);
-      homeW.value.setFromMatrixPosition(group.matrixWorld);
-      for (const [id, light] of lightOf) light.value.copy(wonderGroups[id].position).applyMatrix4(group.matrixWorld);
       for (const tick of ticks) tick(t, dt, cam);
       for (const sort of nebulae) sort(cam);
       if (cam) {

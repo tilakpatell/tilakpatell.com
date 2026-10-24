@@ -2381,7 +2381,7 @@ export function createFoot({ map, emit, reduced = false, small = false, planetOf
       tickCanopy(dt);
     }
     const chest = S.me && !S.cam.first && OUT_PHASES.includes(S.phase);
-    seeCanopy(chest ? root.localToWorld(seeAt.set(...vec.add(at(S.me, S.R), S.me.n, 1.2 * METRE))) : null);
+    seeCanopy(chest ? seeAt.set(...vec.add(at(S.me, S.R), S.me.n, 1.2 * METRE)) : null, root); // (in the root's space: put in the world as it's drawn)
     // (the landing's things, told where your head is: the people there turn to you)
     rocks?.update?.(S.clock, dt, S.me && S.phase === 'walk' ? { me: root.localToWorld(new V(...vec.add(at(S.me, S.R), S.me.n, 1.6 * METRE))) } : null);
     // (and their lights through the map's, the nearest you first: you, or the camera till you're out)
