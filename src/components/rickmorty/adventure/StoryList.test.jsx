@@ -137,6 +137,19 @@ describe('the Story tab', () => {
     expect(done(renderToStaticMarkup(<StoryList state={at} />))).toBe(11);
   });
 
+  it('closes the story with a line for the Checklist once it’s all done, and only then', () => {
+    const at = (episode, step = 0) => ({ episode, step, got: [], wins: [], freeRoam: false });
+    const end = renderToStaticMarkup(<StoryList state={at(13)} ready={13} />);
+    expect(done(end)).toBe(13);
+    expect(end).toContain('That’s the whole story: the Checklist tab has the rest.');
+    expect(end).not.toContain('More of the story soon.');
+    expect(renderToStaticMarkup(<StoryList state={at(12, 1)} ready={13} />)).not.toContain('That’s the whole story');
+    // (while the story isn't all built, only the line saying more's coming)
+    const built = renderToStaticMarkup(<StoryList state={at(13)} ready={12} />);
+    expect(built).toContain('More of the story soon.');
+    expect(built).not.toContain('That’s the whole story');
+  });
+
   it('ticks every built episode once they’re all done', () => {
     const html = renderToStaticMarkup(<StoryList state={{ episode: 12, step: 0, got: [], wins: [], freeRoam: false }} />);
     expect(done(html)).toBe(12);
