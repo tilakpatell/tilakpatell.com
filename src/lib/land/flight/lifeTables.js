@@ -20,14 +20,16 @@
 // 'hostile' is only made where a biome, or a place, is hostile.
 //
 // Pure: plain data and a lookup, no three.js. The Expanse's rule reads a
-// planet's system from the rows it is given, as planetSpec.js is given them.
+// planet's or a moon's system from the rows it is given, as planetSpec.js is
+// given them.
 //
 //   KINDS; DENSITY[tier]; LIFE[planetId] → { kinds, air: [row], ground: [row] }
+//   systemOf(id, { expanse }) → the row's { faction, traffic, hazard } | null
 //   lifeFor(spec, { expanse }) → life (a named world's row, or the Expanse's rule
 //     from its system's faction, traffic and hazard; nothing for an unknown id)
 //   kindAt(life, biomeId) → the kind of that biome
 
-import { expanseLookup } from './expanse.js';
+import { canonicalId, expanseLookup } from './expanse.js';
 
 export const KINDS = ['wild', 'settled', 'city', 'hostile', 'dead'];
 export const DENSITY = { low: 0.5, mid: 1, high: 1, ultra: 1.2 };
@@ -393,17 +395,17 @@ export function expanseLife(type, biomes, system) {
   return out;
 }
 
-const EXPANSE_ID = /^e:(-?\d+),(-?\d+):(\d+):(\d+)$/i;
-
-// the system an Expanse planet id names (its faction, traffic and hazard), or
-// null: on its row, given as planetSpecOf is given it
-export const systemOf = (planetId, { expanse = null } = {}) =>
-  EXPANSE_ID.test(String(planetId)) ? (expanseLookup(expanse)(String(planetId).toLowerCase())?.system ?? null) : null;
+// the system an Expanse planet's or moon's id names (its faction, traffic and
+// hazard), or null: on its row, given as planetSpecOf is given it
+export function systemOf(planetId, { expanse = null } = {}) {
+  const id = canonicalId(planetId);
+  return id ? (expanseLookup(expanse)(id)?.system ?? null) : null;
+}
 
 export function lifeFor(spec, { expanse = null } = {}) {
   if (!spec?.id) return NONE;
   const named = LIFE[spec.id];
-  const life = named ?? (EXPANSE_ID.test(spec.id) ? expanseLife(spec.type, spec.biomes ?? [], systemOf(spec.id, { expanse })) : NONE);
+  const life = named ?? (canonicalId(spec.id) ? expanseLife(spec.type, spec.biomes ?? [], systemOf(spec.id, { expanse })) : NONE);
   return { kinds: life.kinds, air: life.air, ground: life.ground };
 }
 

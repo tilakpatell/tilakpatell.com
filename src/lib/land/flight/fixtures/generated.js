@@ -9,6 +9,9 @@
 //     sea at 0 on an ocean or forest planet, one POI (Ruins) 5° north and 10°
 //     east of it; sea and peaks the middle of the character's ranges when
 //     left out
+//   MOONS → two moon rows of one planet, 'e:3,-2:1:0': moon 0 rocky, moon 1
+//     icy, as expanse/flight/planets.js's moonRowOf makes them from the
+//     generator's moons (the second with no radius, which a row may leave out)
 import { seeded } from '../../../seeded.js';
 import { TERRAIN } from '../characters.js';
 import { roundBiomes } from '../planetTables.js';
@@ -40,3 +43,9 @@ export function roundSpec({ type = 'rock', kind = 'craters', seed = 7, radius = 
     pois: [{ id: 'poi-0', name: 'Ruins', kind: 'ruins', dir: dirOfLatLon(5, 10), at: [0, 0], r: 120, edge: 100 }],
   };
 }
+
+const MOON_SYSTEM = () => ({ faction: null, traffic: 0.2, hazard: null });
+export const MOONS = [
+  { id: 'e:3,-2:1:0:0', name: 'Ostra I', type: 'rocky', seed: '11400714819323198485', radius: 9.5, system: MOON_SYSTEM(), parent: 'e:3,-2:1:0' },
+  { id: 'e:3,-2:1:0:1', name: 'Ostra II', type: 'icy', seed: '7046029254386353131', system: MOON_SYSTEM(), parent: 'e:3,-2:1:0' },
+];

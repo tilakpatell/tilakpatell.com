@@ -2,11 +2,13 @@ import { describe, expect, it } from 'vitest';
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { TERRAIN_VERSION, TYPE_BIOMES, planetSpecOf as specWith } from './planetSpec';
-import { WORLDS } from './planetTables';
+import { ROSTER_EXTRA, TERRAIN_VERSION, TYPE_BIOMES, planetSpecOf as specWith } from './planetSpec';
+import { SEEDED_EXPANSE, WORLDS } from './planetTables';
+import { canonicalId } from './expanse';
 import { planetField } from './field';
 import { clutterKitOf } from './landmarkTables';
 import { EXPANSE, PLANETS, lifeFor, planetSpecOf } from './fixtures/expanse.js';
+import { MOONS } from './fixtures/generated';
 
 const ROOT = fileURLToPath(new URL('../../../..', import.meta.url));
 const GALAXY = 'tatooine hoth endor yavin bespin dagobah mustafar coruscant naboo kashyyyk kamino geonosis scarif nevarro mandalore lothal sorgan'.split(' ');
@@ -125,6 +127,48 @@ describe('planetSpecOf', () => {
   it('gives the cartoon worlds rounder hills or warped, ping-pong plateaus', () => {
     for (const id of ['squanch', 'gearworld']) expect(planetSpecOf(id).biomes.some((x) => x.relief.some((l) => l.type === 'fnl' && l.noise.fractal === 'pingpong' && l.noise.warp === 600)), id).toBe(true);
     expect(planetSpecOf('birdworld').biomes[0].relief[0]).toMatchObject({ type: 'hills', gain: 0.4, octaves: 3 });
+  });
+});
+
+describe('ids, moons and the build flag', () => {
+  it('reads an Expanse id in either case and with its height written, to one canonical id', () => {
+    const s = planetSpecOf('e:1,0:0:1');
+    expect(planetSpecOf('E:1,0:0:1')).toEqual(s);
+    expect(planetSpecOf('e:1,0,0:0:1')).toEqual(s);
+    expect(s.id).toBe('e:1,0:0:1');
+  });
+
+  it('refuses what isn’t a planet or a moon, and never throws', () => {
+    for (const id of ['e:1,0', 'e:1,0:0', 'e:1,0:w1', 'e:1,0:0:1:', 'e:1,0:0:1x', ' e:1,0:0:1', 'e:1,0:0:-1', 'e:1,0:0:1:9', null, 42]) expect(planetSpecOf(id), String(id)).toBeNull();
+  });
+
+  it('writes one id for every spelling of a planet or a moon, and none for anything else', () => {
+    expect(canonicalId('E:1,0:3:2')).toBe('e:1,0:3:2');
+    expect(canonicalId('e:1,0,0:3:2')).toBe('e:1,0:3:2');
+    expect(canonicalId('E:-0,07:3:2')).toBe('e:0,7:3:2');
+    expect(canonicalId('E:1,0,4:3:2:1')).toBe('e:1,0,4:3:2:1');
+    expect(canonicalId('e:1,0,1:3:2')).not.toBe(canonicalId('e:1,0:3:2'));
+    for (const id of ['e:1,0', 'e:1,0:3', 'E:-2,5:w7', 'e:1,0:3:2:1:0', 'beacon:E:1,0:n', `e:1${'0'.repeat(400)},0:0:1`, 'e:1,0:0:99999999999999999999', '', null, undefined, 42, {}]) expect(canonicalId(id), String(id)).toBeNull();
+  });
+
+  it('lists the thirteen seeded Expanse planets as the roster’s last thirteen', () => {
+    expect(SEEDED_EXPANSE).toEqual(EXPANSE.map((r) => [r.id, r.type]));
+  });
+
+  it('lets the fifty be built on, and gives them nothing new', () => {
+    for (const p of PLANETS) expect(Object.fromEntries(Object.keys(ROSTER_EXTRA).map((k) => [k, planetSpecOf(p.id)[k]])), p.id).toEqual(ROSTER_EXTRA);
+  });
+
+  it('lands a moon from its row: rocky as rock, icy as ice, its planet named, not to be built on', () => {
+    const [rocky, icy] = MOONS;
+    expect(specWith(rocky.id, { expanse: MOONS })).toMatchObject({ id: rocky.id, kind: 'moon', parent: rocky.parent, type: 'rock', buildable: false });
+    expect(specWith(icy.id.toUpperCase(), { expanse: MOONS })).toMatchObject({ id: icy.id, type: 'ice' });
+  });
+
+  it('takes any other planet the lookup has as its type’s, a planet not to be built on', () => {
+    const row = { ...EXPANSE[1], id: 'e:3,-2:1:0' };
+    expect(specWith('E:3,-2,0:1:0', { expanse: [row] })).toMatchObject({ id: row.id, kind: 'planet', parent: null, type: row.type, buildable: false });
+    expect(specWith('e:3,-2:1:0', { expanse: [{ ...row, type: 'plasma' }] })).toBeNull();
   });
 });
 

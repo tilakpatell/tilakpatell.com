@@ -17,7 +17,10 @@
 // the same ground; the note's other layers for that biome follow them.
 //
 //   WORLDS → worlds, in the roster's order (galaxy, sector, fandom)
+//   PLANE_CLIMATE → the climate noise a plane planet's biomes are placed by
 //   TYPE_BIOMES[type] → an Expanse planet's biomes; TYPE_LOOK[type] → { palette, clutter, soft }
+//   SEEDED_EXPANSE → the roster's thirteen Expanse planets, [id, type], in its order
+//   MOON_FAMILY[moon type] → the planet type a moon is made as; familyOf(type) → a body's family
 //   ROUND_ROUGH[family][biome id] → its hills' multiplier on a round planet
 //   roundBiomes(family) → [{ id, at, reach, base, rough, relief: [] }]: a
 //     round planet's biomes, the template's with no scatter
@@ -593,6 +596,9 @@ const FANDOM = [
 
 export const WORLDS = [...GALAXY, ...SECTOR, ...FANDOM];
 
+// the noise a plane planet's climate square is read from (biomes.js)
+export const PLANE_CLIMATE = { frequency: 0.00025, warp: 400 };
+
 // ── the Expanse's generated planets, by type: the galaxy's worlds as templates, the names stripped ──
 const template = (id) => GALAXY.find((w) => w.id === id);
 const look = (id, more = {}) => ({ palette: template(id).palette, clutter: template(id).clutter, soft: Boolean(template(id).soft), ground: template(id).ground, water: template(id).water ?? null, ...more });
@@ -618,6 +624,21 @@ export const TYPE_LOOK = {
   ringed: look('bespin'),
   rock: look('geonosis', { clutter: clutter(['rock', 60], ['debris', 15]) }),
 };
+
+// The thirteen Expanse planets of the roster (fixtures/expanse.json, the
+// first thirteen of sector (1, 0)'s systems): the ones anything is built on,
+// so they keep their template ground for good. planetSpec.test.js holds this
+// to the generator's rows.
+export const SEEDED_EXPANSE = [
+  ['e:1,0:0:0', 'gas'], ['e:1,0:0:1', 'forest'], ['e:1,0:0:2', 'lava'], ['e:1,0:0:3', 'ice'],
+  ['e:1,0:0:4', 'rock'], ['e:1,0:0:5', 'ice'], ['e:1,0:0:6', 'desert'],
+  ['e:1,0:1:0', 'desert'], ['e:1,0:1:1', 'ocean'], ['e:1,0:1:2', 'rock'],
+  ['e:1,0:2:0', 'gas'], ['e:1,0:2:1', 'ocean'], ['e:1,0:2:2', 'rock'],
+];
+
+// a moon is rocky or icy (the generator's moonsOf), and is made as a rock or an ice planet
+export const MOON_FAMILY = { rocky: 'rock', icy: 'ice' };
+export const familyOf = (type) => (Object.hasOwn(MOON_FAMILY, type) ? MOON_FAMILY[type] : type);
 
 // ── a round planet's biomes (sphereField.js): the template's places on the climate square, no layer stacks ──
 // The terrain character makes the land's shape, so a biome adds only its

@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { PLANETS, lifeFor, planetSpecOf } from './fixtures/expanse.js';
-import { DENSITY, KINDS, LIFE, expanseLife, isDead, kindAt } from './lifeTables';
+import { DENSITY, KINDS, LIFE, expanseLife, isDead, kindAt, lifeFor as lifeWith, systemOf } from './lifeTables';
+import { planetSpecOf as specWith } from './planetSpec';
+import { MOONS } from './fixtures/generated';
 
 const BODIES = ['beast', 'person', 'flyer', 'walker', 'speeder', 'drone', 'craft'];
 // the roster's named worlds (docs/research/2026-10-09-planet-geographies.md, “The roster”)
@@ -89,6 +91,17 @@ describe('lifeTables', () => {
     expect(quiet.air.some((r) => r.route === 'lane')).toBe(false);
     expect(isDead(expanseLife('lava', biomes, { faction: { id: 'independent' }, traffic: 0.2, hazard: null }))).toBe(true);
     expect(isDead(expanseLife('lava', biomes, { faction: { id: 'empire' }, traffic: 0.2, hazard: null }))).toBe(false);
+  });
+
+  it('finds a moon’s system on its row', () => {
+    const [rocky, icy] = MOONS;
+    expect(systemOf(rocky.id, { expanse: MOONS })).toEqual(rocky.system);
+    expect(systemOf(rocky.id.toUpperCase(), { expanse: MOONS })).toEqual(rocky.system);
+    const life = lifeWith(specWith(rocky.id, { expanse: MOONS }), { expanse: MOONS });
+    expect(Array.isArray(life.air) && Array.isArray(life.ground)).toBe(true);
+    // (an icy moon is ice's: its herds graze it)
+    expect(lifeWith(specWith(icy.id, { expanse: MOONS }), { expanse: MOONS }).ground.some((r) => r.model === 'tauntaun')).toBe(true);
+    expect(systemOf('e:3,-2:1:0', { expanse: MOONS })).toBeNull();
   });
 
   it('names nothing from the sequel films', () => {
