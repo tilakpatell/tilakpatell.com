@@ -47,6 +47,15 @@ describe('the chart’s projection', () => {
       expect(above.foot).toEqual(below.foot);
     }
   });
+  it('counts a place in range by how far across it is, never by its height: its stem says that', () => {
+    // the home system's chart (a range of 381) with the ship 600 below the disc: the stations are on it
+    const home = createView({ focus: [0, -600, 0], range: 381 });
+    expect(project(home, [0, 0, 140]).inside).toBe(true);
+    expect(project(home, [0, 0, 140]).v).toBeLessThan(project(home, [0, 0, 140]).foot[1]);
+    expect(project(home, [0, 1e9, 380]).inside).toBe(true);
+    expect(project(home, [0, -600, 382]).inside).toBe(false);
+    expect(project(home, [300, 0, 300]).inside).toBe(false);
+  });
   it('tilts and turns, and comes back the same way or with one flatten', () => {
     const view = createView({ focus: [200, 0, -100], range: 70000 });
     for (const back of [orbitBy(orbitBy(view, [0.7, 0.5]), [-0.7, -0.5]), flatten(orbitBy(view, [2.1, 1.0]))]) {

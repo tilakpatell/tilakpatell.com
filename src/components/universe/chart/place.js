@@ -7,17 +7,20 @@
 //   { id, kind, name, at: [x, y, z], priority, color,
 //     levels: ['system' | 'neighbourhood' | 'universe', …],
 //     shape?: 'dot' | 'cloud' | 'hole' | 'star' | 'portal' | 'sun' | 'pilot' | 'fight',
-//     reach?, pickable? }
-// An empty name means no label, and an id is unique on its chart. Lane 6b adds
-// the generated places, events and pilots as more marks with their own levels,
-// through no other door: nothing here changes for them.
+//     reach?, pickable?, type? }
+// type is what it is in words (nav.js's: "Star", "Station"), for its button's
+// label. An empty name means no label, and an id is unique on its chart.
+// Lane 6b adds the generated places, events and pilots as more marks with
+// their own levels, through no other door: nothing here changes for them.
 //
 // labelSize(name, fontPx) → [w, h] in px, the dot and its name together
 // placeMarks(view, marks, frame, opts) → Placed[], in the marks' order (the tab order)
-//   opts = { level, keep, fontPx, scale, sides, avoid, levels }: avoid is the
-//   { x, y } points, in frame units, whose dots no name may cover, not even
-//   the pick's, which may cover another place's (placeShip's result, null
-//   with no ship, which is let go)
+//   opts = { level, keep, fontPx, scale, sides, avoid, levels, measure }: avoid
+//   is the { x, y } points, in frame units, whose dots no name may cover, not
+//   even the pick's, which may cover another place's (placeShip's result, null
+//   with no ship, which is let go); measure(mark) is a name's own width in px,
+//   the map's ruler on its own font (labelSize's estimate without one), to
+//   which the dot and its gap are added
 //   Placed = { id, mark, x, y, footX, footY, size, side, spare, edge, depth }, in frame units:
 //   side is where its name goes, or null to leave it off; spare is where a
 //   name left off shows over the rest, on a hover or a focus (the first side
@@ -55,7 +58,8 @@ const uv = (view, at) => {
 const EDGE = 12; // points along a sector's edge, its corners among them: the scale bends straight lines
 
 // px: a name's letters at about 0.58 of the font's size, then the 16 px dot and its gap
-export const labelSize = (name, fontPx) => [name.length * 0.58 * fontPx + 22, Math.max(24, 1.6 * fontPx)];
+const DOT_GAP = 22;
+export const labelSize = (name, fontPx) => [name.length * 0.58 * fontPx + DOT_GAP, Math.max(24, 1.6 * fontPx)];
 
 // the box the names must stay in, in px: a round frame is cut to the biggest
 // circle round its middle (the nav map's chart clips the rest)
@@ -78,7 +82,7 @@ function stand(frame, p) {
 }
 
 export function placeMarks(view, marks, frame, opts = {}) {
-  const { level = levelOf(view.range), keep = [], fontPx = 11, scale = 1, sides, avoid = [], levels = true } = opts;
+  const { level = levelOf(view.range), keep = [], fontPx = 11, scale = 1, sides, avoid = [], levels = true, measure = null } = opts;
   const kept = new Set(keep);
   const placed = [];
   for (const mark of marks) {
@@ -92,7 +96,8 @@ export function placeMarks(view, marks, frame, opts = {}) {
   const labels = placed
     .filter((p) => p.mark.name)
     .map((p) => {
-      const [w, h] = labelSize(p.mark.name, fontPx);
+      const [guess, h] = labelSize(p.mark.name, fontPx);
+      const w = measure ? measure(p.mark) + DOT_GAP : guess;
       const firm = kept.has(p.id);
       return { id: p.id, x: p.x * scale, y: p.y * scale, w, h, priority: firm ? Infinity : p.mark.priority, firm };
     });

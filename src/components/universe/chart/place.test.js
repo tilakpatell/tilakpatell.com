@@ -145,6 +145,14 @@ describe('placing marks', () => {
     expect(placeMarks(view, pair, FRAMES.nav, { scale: 0.5 }).map((p) => p.side)).toEqual(['left', 'right']);
     expect(placeMarks(view, pair, FRAMES.nav, { sides: ['under'] }).map((p) => p.side)).toEqual(['under', 'under']);
   });
+  it('sizes a name with the map’s own ruler when it has one, and by the estimate without', () => {
+    const one = [M('near', drawnAt(400, 500), { name: 'Near' }), M('wide', drawnAt(400, 560), { name: 'Wide' })];
+    expect(placeMarks(view, one, FRAMES.nav).map((p) => p.side)).toEqual(['right', 'right']);
+    const seen = [];
+    const ruler = (mark) => (seen.push(mark.id), mark.id === 'wide' ? 5000 : 10);
+    expect(placeMarks(view, one, FRAMES.nav, { measure: ruler }).map((p) => p.side)).toEqual(['right', null]);
+    expect(seen.sort()).toEqual(['near', 'wide']);
+  });
   it('reveals a place at the nearest level that shows it, by the least zoom', () => {
     const both = M('both', [1000, 0, 0], { levels: ['system', 'universe'] });
     expect(reveal(createView({ range: 9000 }), both).range).toBeCloseTo(7200, 6);

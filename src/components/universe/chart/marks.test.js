@@ -13,6 +13,11 @@ describe('the chart’s marks', () => {
     for (const d of places) expect(markById(d.id), d.id).toMatchObject({ name: d.name, at: d.at, color: d.color, pickable: true });
     expect(HAND_MARKS.filter((m) => m.pickable)).toHaveLength(places.length);
   });
+  it('says what each place is in nav.js’s words, for its button on the chart', () => {
+    for (const d of places) expect(markById(d.id).type, d.id).toBe(d.type);
+    expect(markById('ember').type).toBe('Star');
+    expect(markById('chart:sun').type).toBeUndefined();
+  });
   it('knows the moons, the stations and the wonders’ shapes, and its own three', () => {
     for (const m of MOONS) expect(markById(m.id).kind).toBe('moon');
     expect(markById('experience')).toMatchObject({ kind: 'station', levels: ['system'] });

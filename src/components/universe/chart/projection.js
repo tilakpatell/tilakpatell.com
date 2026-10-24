@@ -16,7 +16,9 @@
 // View = { focus: [x, y, z], range, yaw, pitch, follow }: yaw in [−π, π), pitch in [0, pitchMax]
 // createView(partial) → View
 // warp(d, range) → [wx, wy, wz]
-// project(view, at) → { u, v, foot: [u, vFoot], depth, inside }: depth bigger is nearer
+// project(view, at) → { u, v, foot: [u, vFoot], depth, inside }: depth bigger
+//   is nearer; inside is within the range across, whatever its height (the
+//   home system's chart, the ship far below the disc, still has its stations)
 // unproject(view, [u, v]) → [x, y, z], on the plane y = focus[1]
 // zoomBy(view, factor), panBy(view, [du, dv]), orbitBy(view, [dyaw, dpitch]), flatten(view) → View
 // recentre(view, ship), track(view, ship) → View
@@ -94,7 +96,7 @@ export function project(view, at) {
     v: vFoot - wy * Math.max(Math.sin(pitch), CHART.stemFloor),
     foot: [a, vFoot],
     depth: b * Math.sin(pitch) + wy * Math.cos(pitch),
-    inside: Math.hypot(d[0], d[1], d[2]) <= range,
+    inside: Math.hypot(d[0], d[2]) <= range, // (across: a height never takes a place off, its stem says it)
   };
 }
 

@@ -4,7 +4,8 @@
 //
 // HAND_MARKS: Mark[], frozen and built once: a mark for each of nav.js's
 //   DESTINATIONS but the galaxy's systems (they all sit at the gate, and the
-//   list has them), each with its name, place, colour and reach, pickable;
+//   list has them), each with its name, what it is (its type), place, colour
+//   and reach, pickable;
 //   then the chart's own three, never picked: the sun (unnamed), the home
 //   system and the Curve (their ids start chart:, as home is a station's)
 // markById(id) → Mark | null
@@ -48,6 +49,7 @@ function placeMark(d) {
     id: d.id,
     kind,
     name: d.name,
+    type: d.type,
     at: d.at,
     priority: shape === 'portal' ? PORTAL : PRIORITY[kind],
     color: d.color,
