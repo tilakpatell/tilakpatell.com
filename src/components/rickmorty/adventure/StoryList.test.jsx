@@ -111,8 +111,8 @@ describe('the Story tab', () => {
   });
 
   it('ticks every built episode once they’re all done', () => {
-    const html = renderToStaticMarkup(<StoryList state={{ episode: 9, step: 0, got: [], wins: [], freeRoam: false }} />);
-    expect(done(html)).toBe(9);
+    const html = renderToStaticMarkup(<StoryList state={{ episode: 10, step: 0, got: [], wins: [], freeRoam: false }} />);
+    expect(done(html)).toBe(10);
     expect(html).toContain('More of the story soon.');
   });
 });

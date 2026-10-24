@@ -84,6 +84,7 @@ export const DEALS = EPISODES[5];
 export const JERRY = EPISODES[6];
 export const PRIME = EPISODES[7];
 export const FAIRY = EPISODES[8];
+export const CITADEL = EPISODES[9];
 // Morty by the garage portal, stepped through it, and stood where it took him
 export async function throughPortal(page) {
   await goto(page, 'garage', -302.3, 101.4, Math.PI);

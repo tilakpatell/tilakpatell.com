@@ -4,7 +4,7 @@
 // Fantasy World's climb and Froopyland.
 /* global window, document */
 import { COURSE, chaseStart, newChase } from '../../src/components/rickmorty/world/games/chase.js';
-import { BASE, OUT, N, check, done, built, goto, use, story, reads, WIPED, SMALL, HEAT, DEALS, JERRY, throughPortal, toast, inArea, cardFor, at, opens, warpUse, caught, before, chasing, playTo, game, homeOf, spotAt, wayInOf, place, PRIME, FAIRY, standOn, later, PLACES } from './helpers.mjs';
+import { BASE, OUT, N, check, done, built, goto, use, story, reads, WIPED, SMALL, HEAT, DEALS, JERRY, throughPortal, toast, inArea, cardFor, at, opens, warpUse, caught, before, chasing, playTo, game, homeOf, spotAt, wayInOf, place, PRIME, FAIRY, CITADEL, standOn, later, PLACES } from './helpers.mjs';
 
 export const LATE = {
   // a new visitor plays episode 5: the cruiser's chase (taking off ticks
@@ -464,11 +464,13 @@ export const LATE = {
     await page.waitForFunction(() => JSON.parse(localStorage.getItem('tp-achievements') ?? '[]').includes('froopyland'), null, { timeout: 30000, polling: 250 }).catch(() => {
       throw new Error('Tommy’s achievement wasn’t earned');
     });
+    await cardFor(page, 9);
     await at(page, 9, 0, 'after Froopyland');
-    await opens(page, [...FAIRY.unlocks, 'squanch', 'evilrick'], true, 'after episode 9');
-    await page.waitForTimeout(1500);
-    check((await page.locator('.rm-episode').count()) === 0, 'a card showed for an episode that isn’t built');
-    // (past the last built episode, the objective is the checklist's next)
-    await reads(page, 'Go into the Smith house and put interdimensional cable on the TV.');
+    await opens(page, FAIRY.unlocks, true, 'after episode 9');
+    await opens(page, [...CITADEL.unlocks, 'evilrick'], false, 'after episode 9');
+    await reads(page, CITADEL.steps[0].text);
+    // (the step's on the Citadel's page: the line's a link there)
+    const to = await page.evaluate(() => document.querySelector('.rm-hud .rm-objective-link')?.getAttribute('href') ?? null);
+    check(to?.endsWith('#/c-137/citadel'), `episode 10's line doesn't link to the Citadel (${to})`);
   },
 };

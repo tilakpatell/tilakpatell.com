@@ -9,9 +9,9 @@ const stepsOf = (e) => e.steps.flatMap((s) => (s.type === 'all' ? [s, ...s.steps
 const allSteps = () => EPISODES.flatMap(stepsOf);
 
 describe('the adventure’s episodes', () => {
-  it('has thirteen episodes, the first nine ready', () => {
+  it('has thirteen episodes, the first ten ready', () => {
     expect(EPISODES).toHaveLength(13);
-    expect(READY).toBe(9);
+    expect(READY).toBe(10);
     expect(new Set(EPISODES.map((e) => e.id)).size).toBe(13);
   });
 
@@ -145,5 +145,14 @@ describe('the adventure’s episodes', () => {
     expect(fairy.steps[0]).toMatchObject({ type: 'task', id: 'fantasy', place: 'fantasy' });
     expect(fairy.steps[1]).toMatchObject({ type: 'task', id: 'froopyland', place: 'froopyland' });
     expect(fairy.unlocks).toEqual(['citadel', 'frundles']);
+  });
+
+  it('goes on with The Citadel: dial it, then out past the Cop Ricks', () => {
+    const citadel = EPISODES[9];
+    expect(citadel.title).toBe('The Citadel');
+    expect(citadel.steps.map((s) => s.type)).toEqual(['enter', 'citadel']);
+    expect(citadel.steps[0]).toMatchObject({ type: 'enter', area: 'page:/c-137/citadel', place: 'citadel' });
+    expect(citadel.steps[1]).toMatchObject({ type: 'citadel', id: 'citadelout' });
+    expect(citadel.unlocks).toEqual(['birdworld', 'gearworld', 'pluto', 'squanch']);
   });
 });
