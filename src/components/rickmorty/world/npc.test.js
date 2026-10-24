@@ -31,13 +31,13 @@ function figure({ calls = true } = {}) {
 
 const AREA = { x0: -60, x1: 60, z0: -60, z1: 60 };
 // `s` seconds of frames, Morty wherever `at(t)` puts him; what was emitted
-function run(N, list, s, at, { t0 = 0, talk = null, dt = 1 / 60 } = {}) {
+function run(N, list, s, at, { t0 = 0, talk = null, dt = 1 / 60, fading = false } = {}) {
   const events = [];
   let t = t0;
   for (let i = 0; i < Math.round(s / dt); i++) {
     t += dt;
     const m = at(t);
-    const state = { morty: { face: 0, speed: 0, ...m }, done: [], emit: (name, e) => events.push([name, e]), talk: typeof talk === 'function' ? talk(t) : talk };
+    const state = { morty: { face: 0, speed: 0, ...m }, done: [], fading, emit: (name, e) => events.push([name, e]), talk: typeof talk === 'function' ? talk(t) : talk };
     for (const n of list) N.step(n, t, dt, state);
   }
   return { events, t };
@@ -90,6 +90,83 @@ describe('a hunter’s body', () => {
     expect(reacts(c, 'alert').length).toBe(1);
     expect(reacts(c, 'caught').length).toBeGreaterThan(0);
     expect(reacts(c, 'greet').length).toBe(0); // (a hunter doesn't wave)
+  });
+});
+
+describe('a duel’s hunter (Hemorrhage, Evil Rick: ./dimensions/duel.js)', () => {
+  const duel = { hunt: { speed: 2.3, catchR: 1.7, line: 'Not a man yet.', duel: { hp: 5, mortyHp: 3, task: 'blooddome', unlock: 'blooddome', won: { who: 'Hemorrhage', text: 'Down.' } } } };
+  const strikes = (events) => events.filter(([name]) => name === 'strike');
+  // (as `run`, with when each was told)
+  const timed = (N, list, s, at) => {
+    const told = [];
+    for (let i = 1; i <= Math.round(s * 60); i++) {
+      const t = i / 60;
+      const state = { morty: { face: 0, speed: 0, ...at(t) }, done: [], fading: false, emit: (name, e) => told.push([name, e, t]) };
+      for (const n of list) N.step(n, t, 1 / 60, state);
+    }
+    return told;
+  };
+
+  it('says the fight’s on once, and strikes on its beat from the first moment Morty’s in reach, the third beating him with its line', () => {
+    const N = createNpcs({ id: 'blooddome', area: AREA });
+    const n = N.add(figure(), { x: 0, z: 0, face: 0, ai: duel, id: 'hemorrhage' });
+    N.hunt(true);
+    const events = timed(N, [n], 3, () => ({ x: 1, z: 0 }));
+    expect(events.filter(([name]) => name === 'duel').map(([, e]) => e)).toEqual([{ area: 'blooddome', who: 'hemorrhage', name: null, hp: 5, max: 5, mortyHp: 3, mortyMax: 3 }]);
+    expect(events.some(([name]) => name === 'spotted')).toBe(false);
+    const hits = strikes(events).slice(0, 3);
+    expect(hits[0][2]).toBeLessThan(0.05);
+    expect(hits[1][2] - hits[0][2]).toBeCloseTo(1.3, 1);
+    expect(hits[2][2] - hits[1][2]).toBeCloseTo(1.3, 1);
+    expect(hits.map(([, e]) => [e.mortyHp, e.beaten])).toEqual([
+      [2, false],
+      [1, false],
+      [0, true],
+    ]);
+    expect(hits[2][1].text).toBe('Not a man yet.');
+  });
+
+  it('strikes nobody while the screen fades', () => {
+    const N = createNpcs({ id: 'blooddome', area: AREA });
+    const n = N.add(figure(), { x: 0, z: 0, face: 0, ai: duel, id: 'hemorrhage' });
+    N.hunt(true);
+    expect(strikes(run(N, [n], 3, () => ({ x: 1, z: 0 }), { fading: true }).events)).toEqual([]);
+  });
+
+  it('goes down at nought and stays down through a calm, where one still up goes home with his health back', () => {
+    const N = createNpcs({ id: 'blooddome', area: AREA });
+    const n = N.add(figure(), { x: 0, z: -6, face: 0, ai: duel, id: 'hemorrhage' });
+    N.hunt(true);
+    run(N, [n], 0.1, () => ({ x: 0, z: 6 }));
+    expect([N.hit('hemorrhage').hp, N.hit('hemorrhage').hp]).toEqual([4, 3]);
+    N.calm();
+    expect(N.list()[0]).toMatchObject({ hp: null, dead: false });
+    N.hunt(true);
+    run(N, [n], 0.1, () => ({ x: 0, z: 6 }), { t0: 1 });
+    const blows = Array.from({ length: 5 }, () => N.hit('hemorrhage'));
+    expect(blows.at(-1)).toMatchObject({ down: true, hp: 0, task: 'blooddome', won: { who: 'Hemorrhage', text: 'Down.' } });
+    expect(N.hit('hemorrhage')).toBe(null);
+    N.calm();
+    expect(N.list()[0]).toMatchObject({ hp: 0, dead: true });
+    expect(N.fire({ x: 0, z: 6, face: -Math.PI / 2 })?.at ?? null).toBe(null);
+    expect(N.bodies()).toEqual([]);
+  });
+
+  it('once he’s down, isn’t set on Morty again, nor is his place: its barks come back', () => {
+    const N = createNpcs({ id: 'blooddome', area: AREA });
+    const h = N.add(figure(), { x: 0, z: -8, face: 0, ai: duel, id: 'hemorrhage' });
+    const c = figure();
+    c.group.position.set(-10, 0, -4);
+    const s = N.add(c, { x: -10, z: -4, face: 0, ai: { watch: 8, bark: { r: 5, every: 15, lines: ['Who wants to be a man?'] } }, id: 'bsummer' });
+    N.hunt(true);
+    run(N, [h, s], 0.1, () => ({ x: 0, z: 0 }));
+    for (let i = 0; i < 5; i++) N.hit('hemorrhage');
+    // (E at the ring after the win)
+    N.hunt(true);
+    const { events } = run(N, [h, s], 20, () => ({ x: -9, z: -4 }), { t0: 1 });
+    expect(N.list().find((o) => o.id === 'hemorrhage')).toMatchObject({ hunting: false, dead: true });
+    expect(N.hunting).toBe(false);
+    expect(events.filter(([name]) => name === 'bark').length).toBeGreaterThanOrEqual(1);
   });
 });
 
