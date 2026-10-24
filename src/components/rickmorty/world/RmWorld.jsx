@@ -912,6 +912,7 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
         s.keys.clear();
         const e = s.escape;
         const made = Boolean(e && e.area === planet.id && s.t - e.at <= e.s);
+        s.escape = null; // (through the portal: its clock stops, under any line it holds for)
         const out = made ? complete(e.task) : null;
         if (made) unlock(e.task);
         const leave = () => {
