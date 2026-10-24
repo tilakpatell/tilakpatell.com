@@ -92,4 +92,12 @@ describe('the episode card', () => {
     expect(html).toContain('<b>Rick</b>');
     expect(html).toContain(EPISODES[10].intro[0][1]);
   });
+
+  it('names episode 12 too', () => {
+    const html = renderToStaticMarkup(<EpisodeCard episode={EPISODES[11]} n={12} onDone={() => {}} />);
+    expect(html).toContain('Episode 12');
+    expect(html).toContain('Big score');
+    expect(html).toContain('<b>Rick</b>');
+    expect(html).toContain(EPISODES[11].intro[0][1]);
+  });
 });

@@ -181,6 +181,7 @@ describe('the adventure’s story', () => {
     expect(lockNote('citadel')).toBe('Opens after episode 9, “Fairy tales”.');
     for (const id of ['birdworld', 'gearworld', 'pluto', 'squanch']) expect(lockNote(id), id).toBe('Opens after episode 10, “The Citadel”.');
     for (const id of ['heistcon', 'vindicators']) expect(lockNote(id), id).toBe('Opens after episode 11, “The sector”.');
+    for (const id of ['blooddome', 'evilrick']) expect(lockNote(id), id).toBe('Opens after episode 12, “Big score”.');
     expect(lockNote('annex')).toBe('Opens after episode 1, “Wiped”.');
     expect(lockNote('customs')).toBe(null);
     expect(lockNote('nope')).toBe(null);
@@ -224,7 +225,7 @@ describe('the real story', () => {
     expect(out.at(-1)).toEqual({ type: 'end' });
   });
 
-  it('opens episode 3’s places after episode 2, episode 4’s after episode 3, episode 5’s after episode 4, episode 6’s after episode 5, episode 7’s after episode 6, episode 8’s after episode 7, episode 9’s after episode 8, episode 10’s after episode 9, episode 11’s after episode 10, and every place once episode 11, the last built, is done', () => {
+  it('opens episode 3’s places after episode 2, episode 4’s after episode 3, episode 5’s after episode 4, episode 6’s after episode 5, episode 7’s after episode 6, episode 8’s after episode 7, episode 9’s after episode 8, episode 10’s after episode 9, episode 11’s after episode 10, episode 12’s after episode 11, and every place once episode 12, the last built, is done', () => {
     let s = fresh();
     let out = [];
     for (const id of ['diner', 'basement', 'mindblowers', 'customs']) ({ state: s, out } = feed(s, { type: 'task', id }));
@@ -313,8 +314,16 @@ describe('the real story', () => {
       expect(objective(s), id).toEqual({ text: EPISODES[10].steps[0].text, to: null });
     }
     ({ state: s, out } = feed(s, { type: 'task', id: 'gearworld' }));
-    expect(out).toEqual([{ type: 'done', episode: 10 }]); // (no card: episode 12 isn't built)
-    for (const id of ['heistcon', 'vindicators', 'evilrick']) expect(dialOpen(s, id), id).toBe(true);
+    expect(out).toEqual([{ type: 'done', episode: 10 }, { type: 'episode', episode: 11 }]);
+    for (const id of ['heistcon', 'vindicators']) expect(dialOpen(s, id), id).toBe(true);
+    for (const id of ['blooddome', 'evilrick']) expect(dialOpen(s, id), id).toBe(false);
+    expect(objective(s)).toEqual({ text: EPISODES[11].steps[0].text, to: null });
+    ({ state: s, out } = feed(s, { type: 'task', id: 'heistcon' }));
+    expect(out).toEqual([{ type: 'step', episode: 11, step: 1 }]);
+    expect(objective(s)).toEqual({ text: EPISODES[11].steps[1].text, to: null });
+    ({ state: s, out } = feed(s, { type: 'task', id: 'vindicators' }));
+    expect(out).toEqual([{ type: 'done', episode: 11 }]); // (no card: episode 13 isn't built)
+    for (const id of ['blooddome', 'evilrick']) expect(dialOpen(s, id), id).toBe(true);
     expect(objective(s)).toBe(null);
   });
 
@@ -454,5 +463,22 @@ describe('the real story', () => {
     expect(out).toEqual([{ type: 'step', episode: 9, step: 1 }, { type: 'done', episode: 9 }, { type: 'episode', episode: 10 }]);
     // Morty's line, and episode 11's card
     expect(newsOf(out)).toEqual({ say: [{ kind: 'say', who: EPISODES[9].outro[0][0], text: EPISODES[9].outro[0][1] }], card: 10 });
+  });
+
+  it('counts Heist-Con done early, and opens episode 12 at the Vindicators', () => {
+    // (its old crew assembled before episode 12 came up: it's in tp-c137-done)
+    const s = { ...fresh(), episode: 10, step: 0, got: [0, 1, 2] };
+    const { state, out } = feed(s, { type: 'task', id: 'squanch' }, { known: { tasks: ['heistcon'], citadel: [] } });
+    expect(state).toMatchObject({ episode: 11, step: 1 });
+    expect(out).toEqual([{ type: 'done', episode: 10 }, { type: 'episode', episode: 11 }, { type: 'step', episode: 11, step: 1 }]);
+    // (episode 12 begun and not over in the same out: Morty's line, and its card)
+    expect(newsOf(out)).toEqual({ say: [{ kind: 'say', who: EPISODES[10].outro[0][0], text: EPISODES[10].outro[0][1] }], card: 11 });
+    // the Vindicators known, Heist-Con not: it waits at Heist-Con
+    expect(feed(s, { type: 'task', id: 'squanch' }, { known: { tasks: ['vindicators'], citadel: [] } }).state).toMatchObject({ episode: 11, step: 0 });
+    // both: episode 12 over in the same out, Rick's line and no card (episode 13 isn't built)
+    const both = feed(s, { type: 'task', id: 'squanch' }, { known: { tasks: ['heistcon', 'vindicators'], citadel: [] } });
+    expect(both.state).toMatchObject({ episode: 12, step: 0 });
+    expect(both.out.map((o) => o.type)).toEqual(['done', 'episode', 'step', 'done']);
+    expect(newsOf(both.out)).toEqual({ say: [{ kind: 'say', who: EPISODES[11].outro[0][0], text: EPISODES[11].outro[0][1] }], card: null });
   });
 });
