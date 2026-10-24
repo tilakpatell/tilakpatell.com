@@ -9,7 +9,7 @@
 // The galaxy's labelPlace.js is the model. It is not imported: worlds are
 // islands, and the universe hides a name where the galaxy moves it. The nav
 // map's names today come from chartLabels.js, eight sides round a dot inside
-// one fixed circle; this takes any frame's box and its own list of sides, so
+// one fixed circle; this takes any frame's box or circle and its own sides, so
 // the nav map and the mini-map thin their names the one way.
 //
 // SIDES: right, left and under the dot
@@ -18,7 +18,9 @@
 //
 // A label is { id, x, y, w, h, priority }: x and y its dot's middle, w and h
 // its dot and name together, so a box's near end is the dot's far edge, 8 px
-// past its middle (navmap.css's 16 px dot). bounds is the frame's box.
+// past its middle (navmap.css's 16 px dot). bounds is the frame's box, or
+// its circle { cx, cy, r } (the nav map's, which cuts off the rest), and a
+// name's box keeps every corner inside it.
 // dots are the { x, y } middles of the dots drawn: a name keeps off each
 // one's 16 px box, but never off one within 8 px of its own point, which is
 // its own dot or one drawn on top of it.
@@ -34,8 +36,10 @@ export function boxOf(side, { x, y, w, h }) {
 }
 
 const meet = (a, b) => a.x0 < b.x1 && b.x0 < a.x1 && a.y0 < b.y1 && b.y0 < a.y1;
-// (a box with a NaN in it is inside nothing, so a place with no number gets no name)
-const within = (b, f) => b.x0 >= f.x0 && b.y0 >= f.y0 && b.x1 <= f.x1 && b.y1 <= f.y1;
+// inside a box, or every corner inside a circle (a box with a NaN in it is
+// inside nothing, so a place with no number gets no name)
+const inCircle = (b, f) => [b.x0, b.x1].every((x) => [b.y0, b.y1].every((y) => Math.hypot(x - f.cx, y - f.cy) <= f.r));
+const within = (b, f) => ('r' in f ? inCircle(b, f) : b.x0 >= f.x0 && b.y0 >= f.y0 && b.x1 <= f.x1 && b.y1 <= f.y1);
 const rank = (l) => (typeof l.priority === 'number' && !Number.isNaN(l.priority) ? l.priority : -Infinity);
 // highest first, and a tie (two kept places, both Infinity) by id
 function byPriority(a, b) {

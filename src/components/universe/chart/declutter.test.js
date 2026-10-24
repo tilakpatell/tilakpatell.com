@@ -44,6 +44,13 @@ describe('declutter', () => {
       }
     }
   });
+  it('keeps a name inside a round frame, as the nav map’s circle cuts off the rest', () => {
+    const circle = { cx: 500, cy: 500, r: 470 };
+    const rim = L('rim', 822, 178, 1, 86); // (just inside the rim, up and to the right)
+    expect(declutter([rim], { bounds }).get('rim')).toBe('right');
+    expect(declutter([rim], { bounds: circle }).get('rim')).toBe('left');
+    expect(declutter([L('lost', NaN, 500, 1)], { bounds: circle }).get('lost')).toBeNull();
+  });
   it('gives no side to a name that can’t fit the frame, or has no number for its place', () => {
     const s = declutter([L('wide', 500, 500, 1, 2000), L('lost', NaN, 500, 2), L('fine', 200, 200, 0)], { bounds });
     expect([s.get('wide'), s.get('lost'), s.get('fine')]).toEqual([null, null, 'right']);
