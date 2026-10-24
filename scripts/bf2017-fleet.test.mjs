@@ -60,7 +60,7 @@ describe('the fleets on the game’s ships', () => {
   it('writes the close-up Nebulon-B from the game’s own frigate at its first LOD, with its engine and lights, over Daniel Andersson’s', () => {
     const row = FLEET.find((r) => r[0] === 'hq/nebulon');
     expect(row[3]).toMatchObject({ cut: 0, parts: '*_engine_01_mesh,*_emissive_01_mesh' });
-    expect(HQ).toEqual({ nebulon: { url: '/models/galaxy/hq/nebulon.glb', nose: 0 } }); // (the Star Destroyer's close-up cut is the kit's ultra cut since)
+    expect(HQ).toEqual({ nebulon: { url: '/models/galaxy/hq/nebulon.glb', nose: Math.PI } }); // (the Star Destroyer's close-up cut is the kit's ultra cut since; written engines to +z, the frigate is turned half round to fly bow first)
     const credits = JSON.parse(readFileSync(new URL('../src/data/modelCredits.json', import.meta.url), 'utf8'));
     expect(credits['galaxy-nebulonhq'].author).toBe('EA DICE');
     expect(credits['galaxy-destroyerhq']).toBeUndefined();

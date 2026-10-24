@@ -224,7 +224,7 @@ describe('the side you swore to', () => {
   };
   const downOne = (k, team, role) => {
     const f = k.front.battle.fighters.find((x) => x.alive && x.team === team && (!role || x.role === role));
-    for (let i = 0; i < 40 && f.alive; i++) shoot(k.front, f.pos, 5);
+    for (let i = 0; i < 40 && f.alive; i++) shoot(k.front, f.seen ?? f.pos, 5); // (where it's drawn, as your guns see it)
     k.front.update(1 / 30, 0, camera, null);
     return f;
   };

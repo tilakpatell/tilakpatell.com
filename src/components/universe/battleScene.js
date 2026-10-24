@@ -31,6 +31,8 @@ import * as THREE from 'three';
 import { createFlashes } from '../galaxy/fx';
 import { GLOW, createBoltDraw, createFires, createGlows, createMarkers, createShield, glowAt } from './battleFx';
 import { createProps } from './battleProps';
+import { createDebris } from './battleDebris';
+import { createDamage } from './battleDamage';
 import { titleOf } from './battleObjectives';
 import { basisOf, bobOf } from '../../lib/combat/pose';
 
@@ -49,11 +51,13 @@ const clockOf = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padSt
 export function createBattleScene(parent, { models, small = false, reduced = false, metres = METRES } = {}) {
   const flashes = createFlashes(parent, { count: small ? 40 : 96 });
   const bolts = createBoltDraw(parent, { count: 320 });
-  const glows = createGlows(parent, { count: 96 });
+  const glows = createGlows(parent, { count: 160 });
   const shield = createShield(parent);
   const markers = createMarkers(parent);
   const fires = createFires(parent);
   const props = createProps(parent);
+  const debris = createDebris(parent, { count: small ? 80 : 160 });
+  const damage = createDamage(parent, { fires, flashes, debris, models });
   const slots = new Map(); // a ship (battle.js's fighter or capital) → its slot
   const halves = []; // the broken flagship's two halves
   let battle = null;
@@ -79,10 +83,10 @@ export function createBattleScene(parent, { models, small = false, reduced = fal
     holder.quaternion.setFromRotationMatrix(basis);
   };
 
-  const slotFor = (ship, kind, size) => {
+  const slotFor = (ship, kind, size, opts) => {
     let s = slots.get(ship);
     if (!s) {
-      s = models.slot(kind, size);
+      s = models.slot(kind, size, opts);
       parent.add(s.holder);
       slots.set(ship, s);
     }
@@ -159,11 +163,35 @@ export function createBattleScene(parent, { models, small = false, reduced = fal
     }
   };
 
+  // an objective down that's a piece of a ship: torn off it (battleDamage.js)
+  const shotOff = (e) => {
+    for (const cap of battle.capitals) {
+      const slot = slots.get(cap);
+      if (!slot) continue;
+      const sub = cap.subs.find((x) => x.key === e.sub || x.id === e.sub);
+      if (sub) {
+        damage.sub(cap, slot, sub.id, sub.pos, sub.r);
+        return true;
+      }
+      const i = cap.turrets.findIndex((t) => t.key === e.sub);
+      if (i >= 0) {
+        damage.battery(cap, slot, i, cap.turrets[i].at);
+        return true;
+      }
+    }
+    return false;
+  };
   const onEvent = (e) => {
-    if (e.type === 'down') flashes.at(pt.set(e.at.x, e.at.y, e.at.z), { size: 1.5, life: 0.9 });
-    else if (e.type === 'turret') {
+    if (e.type === 'down') {
+      flashes.at(pt.set(e.at.x, e.at.y, e.at.z), { size: 1.5, life: 0.9 });
+      damage.burst(e.at, 0.45, 7);
+    } else if (e.type === 'turret') {
       flashes.at(pt.set(e.at.x, e.at.y, e.at.z), { size: 2.2, life: 1, color: [2.8, 1.5, 0.5] });
-      fires.add(e.at, 0.4);
+      const cap = battle.capitals.find((c) => c.id === e.cap);
+      const slot = cap && slots.get(cap);
+      const i = cap ? cap.turrets.findIndex((t) => t.num === e.id) : -1;
+      if (slot && i >= 0) damage.battery(cap, slot, i, e.at);
+      else fires.add(e.at, 0.4);
     } else if (e.type === 'disabled') {
       // an ion cannon's hit: a blue crackle over the ship
       for (let i = 0; i < 4; i++) flashes.at(pt.set(e.at.x + (Math.random() - 0.5) * e.size * 0.6, e.at.y + (Math.random() - 0.2) * e.size * 0.15, e.at.z + (Math.random() - 0.5) * e.size * 0.6), { size: e.size * 0.18, life: 1.2, color: [0.6, 1.4, 3.4] });
@@ -178,10 +206,18 @@ export function createBattleScene(parent, { models, small = false, reduced = fal
     else if (e.type === 'impact') {
       flashes.at(pt.set(e.at.x, e.at.y, e.at.z), { size: e.size * (e.shield ? 0.8 : 1.2), life: e.shield ? 0.5 : 0.8, color: e.shield ? [0.5, 1.2, 2.6] : [2.6, 1.3, 0.4] });
       if (e.shield) shield.hit(e.at);
+      else if (e.size >= 1) {
+        // (a heavy hit on a capital's hull: scorched, burning a while)
+        const cap = battle.capitals.find((c) => c.alive && e.size < c.size * 0.2 && (c.pos.x - e.at.x) ** 2 + (c.pos.y - e.at.y) ** 2 + (c.pos.z - e.at.z) ** 2 < (c.size * 0.6) ** 2);
+        const slot = cap && slots.get(cap);
+        if (slot?.holder.visible) damage.hit(cap, slot, e.at, e.size);
+      }
     } else if (e.type === 'shield') shield.drop();
     else if (e.type === 'sub') {
       flashes.at(pt.set(e.at.x, e.at.y, e.at.z), { size: 6, life: 1.6, bright: 1.3 });
-      fires.add(e.at, 1.2);
+      // (the piece of the ship it was, torn off it: a subsystem, or a battery
+      // the plan made an objective; else, out in the open, a fire where it was)
+      if (!shotOff(e)) fires.add(e.at, 1.2);
     } else if (e.type === 'jumped') {
       // gone to hyperspace: a white-blue streak of light where it was (none for one gone before you came)
       const cap = battle.capitals.find((c) => c.id === e.id);
@@ -195,6 +231,7 @@ export function createBattleScene(parent, { models, small = false, reduced = fal
       const cap = battle.capitals.find((c) => c.id === e.id);
       const slot = cap && slots.get(cap);
       if (!cap || !slot) return;
+      if (damage.breakUp(cap, slot)) return;
       if (cap.role === 'flagship' && cap.team === battle.defender) breakUp(cap, slot);
       else {
         flashes.at(pt.set(cap.pos.x, cap.pos.y, cap.pos.z), { size: Math.min(cap.size * 0.45, 24), life: 2 });
@@ -210,7 +247,8 @@ export function createBattleScene(parent, { models, small = false, reduced = fal
       war = w;
       models.want([...new Set([...b.capitals.map((c) => c.kind), ...b.fighters.map((f) => f.kind)])]);
       for (const cap of b.capitals) {
-        const s = slotFor(cap, cap.kind, cap.size);
+        // (the ship the objectives are on drawn as its cut: its parts to shoot off, capitalParts.js)
+        const s = slotFor(cap, cap.kind, cap.size, cap.objective ? { parts: true } : undefined);
         s.holder.position.set(cap.pos.x, cap.pos.y, cap.pos.z);
         orient(s.holder, cap.fwd, cap.up);
       }
@@ -237,6 +275,8 @@ export function createBattleScene(parent, { models, small = false, reduced = fal
       markers.hide();
       props.hide();
       fires.clear();
+      debris.clear();
+      damage.clear();
       bolts.sync([], colourOf);
       glows.begin();
       glows.end();
@@ -287,10 +327,11 @@ export function createBattleScene(parent, { models, small = false, reduced = fal
         s.holder.position.set(cap.pos.x, cap.pos.y + bob, cap.pos.z);
         if (cap.moved) orient(s.holder, cap.fwd, cap.up); // (turned by a set piece, the Scarif ram, the Executor's dive, or the fleet's push)
         if (cap.dying > 0 && chain <= 0) flashes.at(onHull(cap, pt), { size: 1.5 + Math.random() * cap.size * 0.08, life: 0.9 + Math.random() * 0.6 });
+        if (cap.tracked) damage.worn(cap, s);
       }
       if (chain <= 0) chain = 0.12;
-      // the fighters, and their engines (where the battle has them by now: its
-      // step's 1/30 s, so each is carried on from its last step, `seen`)
+      // the fighters, and their engines (where the battle draws them: between
+      // its last two 1/30 s steps, `seen`, turned as far, `look`)
       glows.begin();
       for (const f of battle.fighters) {
         const s = slots.get(f);
@@ -298,9 +339,10 @@ export function createBattleScene(parent, { models, small = false, reduced = fal
         s.holder.visible = f.alive;
         if (!f.alive) continue;
         const p = f.seen ?? f.pos;
+        const nose = f.look ?? f.fwd;
         s.holder.position.set(p.x, p.y, p.z);
-        orient(s.holder, f.fwd, { x: 0, y: 1, z: 0 }, f.bank);
-        glows.add({ x: p.x - f.fwd.x * f.size * 0.55, y: p.y - f.fwd.y * f.size * 0.55, z: p.z - f.fwd.z * f.size * 0.55 }, hotOf(war.sides[f.team]).engine, f.size * 0.4);
+        orient(s.holder, nose, { x: 0, y: 1, z: 0 }, f.lookBank ?? f.bank);
+        glows.add({ x: p.x - nose.x * f.size * 0.55, y: p.y - nose.y * f.size * 0.55, z: p.z - nose.z * f.size * 0.55 }, hotOf(war.sides[f.team]).engine, f.size * 0.4);
       }
       for (const r of battle.runners) {
         const s = slots.get(r);
@@ -308,14 +350,19 @@ export function createBattleScene(parent, { models, small = false, reduced = fal
         s.holder.visible = r.alive;
         if (!r.alive) continue;
         const p = r.seen ?? r.pos;
+        const nose = r.look ?? r.fwd;
         s.holder.position.set(p.x, p.y, p.z);
-        orient(s.holder, r.fwd, { x: 0, y: 1, z: 0 });
-        glows.add({ x: p.x - r.fwd.x * r.size * 0.5, y: p.y - r.fwd.y * r.size * 0.5, z: p.z - r.fwd.z * r.size * 0.5 }, [1.6, 2.2, 3.4], r.size * 0.35);
+        orient(s.holder, nose, { x: 0, y: 1, z: 0 });
+        glows.add({ x: p.x - nose.x * r.size * 0.5, y: p.y - nose.y * r.size * 0.5, z: p.z - nose.z * r.size * 0.5 }, [1.6, 2.2, 3.4], r.size * 0.35);
       }
+      // the shrapnel's hot sparks, and the pieces flung off
+      debris.update(dt);
+      damage.update(dt);
+      debris.sparks((p, c, size) => glows.add(p, c, size));
       // (a glow's size in map units: the canvas's height over the view's height a unit off)
       const high = typeof window !== 'undefined' ? window.innerHeight : 800;
       glows.end(camera?.isPerspectiveCamera ? high / (2 * Math.tan((camera.fov * Math.PI) / 360)) : 600);
-      bolts.sync(battle.bolts, colourOf, camLocal, battle.ahead ?? 0);
+      bolts.sync(battle.bolts, colourOf, camLocal, battle.behind !== undefined ? -battle.behind : (battle.ahead ?? 0));
       flashes.update(dt, camera);
       shield.update(dt, t);
       fires.update(dt, t);
@@ -359,7 +406,7 @@ export function createBattleScene(parent, { models, small = false, reduced = fal
         });
       }
       if (extra) for (const m of extra) list.push({ ...m, sub: m.sub ?? far(m.pos, camLocal, metres) });
-      markers.sync(list);
+      markers.sync(list, t);
       models.update?.(t);
       return true;
     },
@@ -373,6 +420,7 @@ export function createBattleScene(parent, { models, small = false, reduced = fal
       markers.dispose();
       fires.dispose();
       props.dispose();
+      debris.dispose();
     },
   };
 }

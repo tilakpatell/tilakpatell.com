@@ -14,7 +14,14 @@
 
 import HULLS from '../../data/galaxyHulls.json';
 import { loadBytes } from '../../lib/assetLoad';
-import { hullOf } from '../../lib/combat/hulls';
+import { halfTurn, hullOf } from '../../lib/combat/hulls';
+
+// the game's hulls fitted to a model drawn tail first, the model turned nose
+// first since (models.js's MODELS: the MC80 and the Nebulon-B, whose hulls
+// are the bucket's): each turned half round with its model. (The site's own
+// hulls of the Lucrehulk, the Arquitens and the close-up Nebulon-B are
+// committed turned.)
+export const TURNED = new Set(['moncal', 'nebulon']);
 
 export function createHulls({ load = loadBytes, models = {} } = {}) {
   const keyOf = (kind) => (models[kind]?.hq ? `hq/${kind}` : kind);
@@ -32,7 +39,8 @@ export function createHulls({ load = loadBytes, models = {} } = {}) {
       p = Promise.reject(e);
     }
     p.then((bin) => {
-      const hull = hullOf(bin); // (throws on a malformed hull)
+      const read = hullOf(bin); // (throws on a malformed hull)
+      const hull = TURNED.has(key) ? halfTurn(read) : read;
       if (!ctrl.signal.aborted) made.set(key, hull);
     }).catch((e) => {
       if (e?.name === 'AbortError' || ctrl.signal.aborted) return;

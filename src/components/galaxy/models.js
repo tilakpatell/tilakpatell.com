@@ -14,11 +14,13 @@
 // flies as its built stand-in until it's here (its own, or STAND_IN's where
 // it has none), and a slot swaps over the moment it is.
 //
-// createModels({ prepare(object) → Promise }) → { slot(kind, size, { tint }) → slot,
-//   want(kinds), prebuild(kinds), hulls, builtCount, update(t), dispose() }
+// createModels({ prepare(object) → Promise }) → { slot(kind, size, { tint, parts }) → slot,
+//   want(kinds), prebuild(kinds), withParts(slot), hulls, builtCount, update(t), dispose() }
 // hulls: the kinds’ hit shapes, loaded with their models (hulls.js); `hulls.get(kind)`
 // is a Hull or null until it has loaded
-// slot: { holder (place it, turn it), kind, size, ready }; every model sits in
+// slot: { holder (place it, turn it), kind, size, ready, parts (a flagship's
+// asked for with `parts`: capitalParts.js's partsOf, once its cut's here;
+// `gone`, the ids it has lost) }; every model sits in
 // its holder centred, nose along +z, +y up, `size` long nose to tail (a
 // station, or a ship that flies upright, `size` at its biggest side:
 // universe/shipFit.js).
@@ -32,6 +34,8 @@ import { fitScale } from '../universe/shipFit';
 import { BUILT_KINDS } from '../universe/trafficModels';
 import { GALAXY_KINDS, buildGalaxyShip } from './fleet';
 import { createHulls } from './hulls';
+import { cutParts, disposeLooks, partsOf, partSpecs } from './capitalParts';
+import { dressCapital } from './capitalLook';
 
 // which way each loaded model's nose points as it comes (turned to +z): the
 // game's wherever Battlefront II (2017) has the ship, and the galaxy's own
@@ -43,9 +47,13 @@ export const MODELS = {
   // the war's capitals from the game's space levels, each its kit at the
   // fleet's cut, written bow to +z (scripts/bf2017-fleet.mjs's `space` rows;
   // the universe map keeps its own Star Destroyer and Venator)
+  // (the MC80 was written stern to +z: its engines' modules and skirts sit
+  // at that end, so it flew into every battle tail first; turned half round
+  // since, its hull with it: hulls.js's TURNED, scripts/capitals-shot.mjs
+  // --views nose shows which way each one flies)
   destroyer: { url: '/models/galaxy/destroyer.glb', nose: 0 },
   venator: { url: '/models/galaxy/venator.glb', nose: 0 },
-  moncal: { url: '/models/galaxy/moncal.glb', nose: 0 },
+  moncal: { url: '/models/galaxy/moncal.glb', nose: Math.PI },
   // the game's fighters as lane V imported them, native (surface/: facing +z);
   // Slave I stands as it lands, the way it flies here (shipFit.js's BY_SPAN)
   xwing: { url: '/models/galaxy/surface/xwing.glb', nose: 0 },
@@ -84,14 +92,14 @@ export const MODELS = {
   // Lucrehulk (scripts/bf2017-fleet.mjs), and the galaxy's own from Sketchfab
   // where the game has no model (the head's list)
   deathstar: { url: '/models/universe/death-star.glb', nose: 0 },
-  nebulon: { url: '/models/galaxy/nebulon.glb', nose: 0 },
+  nebulon: { url: '/models/galaxy/nebulon.glb', nose: Math.PI }, // (written engines to +z, as the MC80 was: turned half round, its hull too)
   bwing: { url: '/models/galaxy/bwing.glb', nose: 0 },
   ghost: { url: '/models/galaxy/ghost.glb', nose: 0 },
   executor: { url: '/models/galaxy/executor.glb', nose: 0 },
   shuttle: { url: '/models/galaxy/shuttle.glb', nose: 0 },
-  lightcruiser: { url: '/models/galaxy/lightcruiser.glb', nose: -Math.PI / 2 },
+  lightcruiser: { url: '/models/galaxy/lightcruiser.glb', nose: Math.PI / 2 }, // (−π/2 flew it engines first: its bridge and engines are at the stern this way round, its hull turned with it)
   gozanti: { url: '/models/galaxy/gozanti.glb', nose: 0 },
-  lucrehulk: { url: '/models/galaxy/lucrehulk.glb', nose: 0 },
+  lucrehulk: { url: '/models/galaxy/lucrehulk.glb', nose: Math.PI }, // (its engines were at +z and the ring's mouth astern: turned half round, its hull too)
   coreship: { url: '/models/galaxy/coreship.glb', nose: 0 },
   munificent: { url: '/models/galaxy/munificent.glb', nose: 0 },
   acclamator: { url: '/models/galaxy/acclamator.glb', nose: 0 },
@@ -198,7 +206,7 @@ export const HIGH_CUTS = Object.fromEntries(
 // on either cut. nose: as each comes. (The Star Destroyer's close-up cut was
 // Daniel Andersson's too; it is the kit's ultra cut below since, lane S1.)
 export const HQ = {
-  nebulon: { url: '/models/galaxy/hq/nebulon.glb', nose: 0 },
+  nebulon: { url: '/models/galaxy/hq/nebulon.glb', nose: Math.PI },
 };
 // The kits' ultra cuts (lane S1: scripts/bf2017-space.mjs --fleet --ultra,
 // bf2017-fleet.mjs's `ultra` rows): each capital at its own cap by its length
@@ -446,12 +454,15 @@ export function createModels({ prepare = null, load: fetchModel = loadGLTF, hull
         if (!root) return;
         tune(root);
         const n = normalise(root, def.nose, kind);
+        // (a capital's hull plated, its windows lit, its engines burning aft: capitalLook.js)
+        dressCapital(n.holder, kind);
         // (a skinned one's copies need bones of their own: SkeletonUtils)
         root.traverse((o) => o.isSkinnedMesh && (n.skinned = true));
         if (prepare) await prepare(n.holder);
         if (dead) return;
         loaded.set(kind, n);
         for (const s of slots) if (s.kind === kind && !s.real) fill(s);
+        cutLater(kind, n);
         fitLod(kind);
       })
       .catch(() => {});
@@ -492,6 +503,22 @@ export function createModels({ prepare = null, load: fetchModel = loadGLTF, hull
     for (const s of slots) if (s.kind === kind && s.real && !s.lod && !s.tint) fill(s);
   };
 
+  // a capital's cut (capitalParts.js: its subsystems, batteries and three
+  // sections apart: drawn for the ship whose objectives they are, and for any
+  // that breaks up), made in spare time once its model's here and warmed
+  // before a slot draws it; a slot that asked for its parts swaps over to it then
+  const cutLater = (kind, n) => {
+    if (!partSpecs(kind).length) return;
+    idle(async () => {
+      if (dead || n.cut) return;
+      const cut = cutParts(n.holder, kind);
+      if (prepare) await prepare(cut.holder);
+      if (dead) return;
+      n.cut = cut;
+      for (const s of slots) if (s.kind === kind && s.wantsParts) fill(s);
+    });
+  };
+
   const template = (kind) => {
     if (built.has(kind)) return built.get(kind);
     if (!BUILT.has(kind)) return null;
@@ -528,7 +555,8 @@ export function createModels({ prepare = null, load: fetchModel = loadGLTF, hull
   // built stand-in (the kind's own built version, or STAND_IN's; else nothing yet)
   function fill(s) {
     const real = loaded.get(s.kind);
-    const src = real ?? template(s.kind) ?? template(STAND_IN[s.kind]);
+    const cut = s.wantsParts ? real?.cut : null;
+    const src = cut ?? real ?? template(s.kind) ?? template(STAND_IN[s.kind]);
     if (!src) return;
     if (s.model) s.inner.remove(s.model);
     let copy = src.skinned ? cloneSkinned(src.holder) : src.holder.clone(true);
@@ -544,6 +572,9 @@ export function createModels({ prepare = null, load: fetchModel = loadGLTF, hull
       copy = lod;
     }
     s.model = copy;
+    // (its parts, where it's the cut: those shot off already stay gone)
+    s.parts = cut ? partsOf(copy) : null;
+    if (s.parts) for (const id of s.gone) for (const m of s.parts.knock(id) ?? []) m.visible = false;
     s.real = Boolean(real);
     s.lod = Boolean(far);
     s.ready = true;
@@ -556,12 +587,13 @@ export function createModels({ prepare = null, load: fetchModel = loadGLTF, hull
 
   return {
     // a ship of `kind`, `size` long (a station `size` at its biggest side), in a holder to place
-    slot(kind, size, { tint = null } = {}) {
+    // (`parts`: the ship whose objectives are on it, drawn as its cut, capitalParts.js)
+    slot(kind, size, { tint = null, parts = false } = {}) {
       const holder = new THREE.Group();
       const inner = new THREE.Group();
       inner.scale.setScalar(size);
       holder.add(inner);
-      const s = { kind, size, holder, inner, model: null, real: false, lod: false, ready: false, tint };
+      const s = { kind, size, holder, inner, model: null, real: false, lod: false, ready: false, tint, wantsParts: parts, parts: null, gone: new Set() };
       slots.push(s);
       if (MODELS[kind]) load(kind);
       // (and its hull, so a ship placed without a want before it still gets one)
@@ -592,6 +624,13 @@ export function createModels({ prepare = null, load: fetchModel = loadGLTF, hull
       return built.size;
     },
     loaded: (kind) => loaded.has(kind),
+    // a slot drawn as its kind's cut from now (a capital about to break up):
+    // whether its parts are there to break
+    withParts(s) {
+      s.wantsParts = true;
+      if (!s.parts && loaded.get(s.kind)?.cut) fill(s);
+      return Boolean(s.parts);
+    },
     // let a slot go (its holder off the scene; the shared parts stay)
     drop(s) {
       s.holder.removeFromParent();
@@ -619,6 +658,8 @@ export function createModels({ prepare = null, load: fetchModel = loadGLTF, hull
       // (a loaded model's geometry and textures are the page's cached ones, shared with
       // the fleets: freed with this scene, uploaded again if something draws them later)
       for (const l of loaded.values()) {
+        // (a cut's own drawings: its parts' and sections' indices over the model's attributes)
+        l.cut?.holder.traverse((o) => o.isMesh && (o.userData.part || o.userData.section !== undefined) && o.geometry.dispose());
         l.holder.traverse((o) => {
           if (!o.isMesh) return;
           o.geometry.dispose();
@@ -633,6 +674,7 @@ export function createModels({ prepare = null, load: fetchModel = loadGLTF, hull
       lods.clear();
       lodReady.clear();
       lodMaterial.dispose();
+      disposeLooks();
       for (const m of owned) m.dispose();
     },
   };

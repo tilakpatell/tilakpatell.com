@@ -329,94 +329,120 @@ export const NAMES = {
 };
 
 // a flagship's objectives: two shield generators, the bridge, the reactor
-// (hp: what each takes, in damage as battle.js counts it)
+// (hp: what each takes, in damage as battle.js counts it; r: its hit's
+// radius, a share of the length)
 const flagship = (gens, bridge, reactor) => [
   { id: 'gen-port', kind: 'shieldgen', phase: 1, at: gens[0], r: 0.03, hp: 120 },
   { id: 'gen-star', kind: 'shieldgen', phase: 1, at: gens[1], r: 0.03, hp: 120 },
   { id: 'bridge', kind: 'bridge', phase: 2, at: bridge, r: 0.035, hp: 200 },
   { id: 'reactor', kind: 'reactor', phase: 3, at: reactor, r: 0.045, hp: 260 },
 ];
+// The Star Wars flagships' objectives are pieces of the ship, each on its
+// hull where the model has it (scripts/capital-parts.mjs measured every
+// place: they had floated as much as an eighth of the ship's length clear of
+// it, so a shield generator was a sphere of empty space over the bridge
+// tower). Each says what's shot off when it goes (galaxy/capitalParts.js):
+// `part: 'model'`, the model's own piece there, reaching `reach` round it;
+// `'built'`, one built on the hull (a dome, the bridge's block, the
+// reactor's bulb), its hit's sphere round it; `low`, the lowest a model's
+// piece's middle may be (the bridge's tower stands). [x, y, z, r] each.
+const pieces = (gens, bridge, reactor, part) => [
+  { id: 'gen-port', kind: 'shieldgen', phase: 1, at: gens[0].slice(0, 3), r: gens[0][3], hp: 120, ...part.gens },
+  { id: 'gen-star', kind: 'shieldgen', phase: 1, at: gens[1].slice(0, 3), r: gens[1][3], hp: 120, ...part.gens },
+  { id: 'bridge', kind: 'bridge', phase: 2, at: bridge.slice(0, 3), r: bridge[3], hp: 200, ...part.bridge },
+  { id: 'reactor', kind: 'reactor', phase: 3, at: reactor.slice(0, 3), r: reactor[3], hp: 260, ...part.reactor },
+];
+const BUILT = { part: 'built' };
 export const SUBSYSTEMS = {
-  // the Star Destroyer: the two domes on the bridge tower, the bridge in its
-  // face, the reactor's bulb under the hull
-  destroyer: flagship(
+  // the Star Destroyer: the two domes on the bridge tower, its command
+  // bridge (the whole crossbar goes, as the Executor's did), and the solar
+  // ionisation reactor's bulb under the hull: all the model's own
+  destroyer: pieces(
     [
-      [-0.05, 0.21, -0.36],
-      [0.05, 0.21, -0.36],
+      [-0.076, 0.125, -0.334, 0.017],
+      [0.076, 0.125, -0.334, 0.017],
     ],
-    [0, 0.17, -0.31],
-    [0, -0.12, -0.16],
+    [0, 0.093, -0.33, 0.03],
+    [0, -0.125, -0.19, 0.04],
+    { gens: { part: 'model', reach: 0.027 }, bridge: { part: 'model', reach: 0.11, low: 0.065 }, reactor: { part: 'model', reach: 0.065 } },
   ),
   // the Mon Calamari cruiser: projectors on its back toward the stern, the
-  // bridge up front, the reactor among the engines
-  moncal: flagship(
+  // bridge up front, the reactor under the stern among the engines
+  moncal: pieces(
     [
-      [-0.06, 0.13, -0.24],
-      [0.06, 0.13, -0.24],
+      [-0.06, 0.031, -0.25, 0.022],
+      [0.06, 0.031, -0.25, 0.022],
     ],
-    [0, 0.09, 0.36],
-    [0, 0.02, -0.44],
+    [0, 0.041, 0.35, 0.024],
+    [0, -0.066, -0.36, 0.04],
+    { gens: BUILT, bridge: BUILT, reactor: BUILT },
   ),
-  // the Executor: the domes on its bridge tower, at the stern, the bridge in
-  // the tower's face, the reactor under the middle of its hull
-  executor: flagship(
+  // the Executor: domes either side of its bridge on the tower, the bridge
+  // the model's own block, the reactor under the middle of its hull
+  executor: pieces(
     [
-      [-0.018, 0.075, -0.415],
-      [0.018, 0.075, -0.415],
+      [-0.02, 0.028, -0.235, 0.01],
+      [0.02, 0.028, -0.235, 0.01],
     ],
-    [0, 0.06, -0.395],
-    [0, -0.035, -0.12],
+    [0, 0.03, -0.21, 0.013],
+    [0, -0.037, -0.12, 0.016],
+    { gens: BUILT, bridge: { part: 'model', reach: 0.022 }, reactor: BUILT },
   ),
   // the Interdictor: its shield generators the two gravity-well domes on its
-  // back nearest the bridge tower, the bridge in the tower's face, the
-  // reactor's bulb under the hull (an interdiction's objectives: battles.js)
-  interdictor: flagship(
+  // back nearest the bridge tower, the bridge on the tower, the reactor's
+  // bulb under the hull (an interdiction's objectives: battles.js)
+  interdictor: pieces(
     [
-      [-0.12, 0.11, -0.12],
-      [0.12, 0.11, -0.12],
+      [-0.11, 0.02, -0.32, 0.04],
+      [0.11, 0.02, -0.32, 0.04],
     ],
-    [0, 0.17, -0.31],
-    [0, -0.12, -0.16],
+    [0, 0.1, -0.375, 0.022],
+    [0, -0.121, -0.2, 0.035],
+    { gens: BUILT, bridge: BUILT, reactor: BUILT },
   ),
-  // the Venator: the domes on its two bridge towers, the bridge in the
-  // starboard tower's face, the reactor under its hull amidships
-  venator: flagship(
+  // the Venator: the arrays at the back of its two towers, the bridge at the
+  // front of the starboard one (the model's own), the reactor under its hull
+  venator: pieces(
     [
-      [-0.07, 0.15, -0.34],
-      [0.07, 0.15, -0.34],
+      [-0.025, 0.11, -0.247, 0.02],
+      [0.025, 0.11, -0.247, 0.02],
     ],
-    [0.06, 0.13, -0.27],
-    [0, -0.11, -0.1],
+    [0.025, 0.1, -0.163, 0.02],
+    [0, -0.122, -0.1, 0.03],
+    { gens: { part: 'model', reach: 0.03 }, bridge: { part: 'model', reach: 0.03 }, reactor: BUILT },
   ),
-  // the Providence (the Invisible Hand): its sensor domes either side of the
-  // bridge tower aft, the bridge at the tower's face, the reactor astern
-  providence: flagship(
+  // the Providence (the Invisible Hand): sensor domes either side of the
+  // bridge tower aft, the bridge on the tower's top, the reactor under it
+  providence: pieces(
     [
-      [-0.06, 0.13, -0.3],
-      [0.06, 0.13, -0.3],
+      [-0.035, 0.012, -0.3, 0.028],
+      [0.035, 0.012, -0.3, 0.028],
     ],
-    [0, 0.12, -0.22],
-    [0, -0.1, -0.3],
+    [0, 0.16, -0.38, 0.02],
+    [0, -0.123, -0.15, 0.03],
+    { gens: BUILT, bridge: BUILT, reactor: BUILT },
   ),
   // the Lucrehulk: its shield generators out on the ring either side, the
   // bridge atop the core sphere, the reactor under it
-  lucrehulk: flagship(
+  lucrehulk: pieces(
     [
-      [-0.33, 0.04, 0],
-      [0.33, 0.04, 0],
+      [-0.3, 0.012, 0.25, 0.03],
+      [0.3, 0.014, 0.25, 0.03],
     ],
-    [0, 0.25, 0.04],
-    [0, -0.25, 0],
+    [0, 0.124, -0.05, 0.025],
+    [0, -0.168, 0, 0.04],
+    { gens: BUILT, bridge: BUILT, reactor: BUILT },
   ),
   // a Hutt kajidic's Gozanti: its shield projectors aft either side, the
   // bridge in the nose, the reactor under the engines
-  gozanti: flagship(
+  gozanti: pieces(
     [
-      [-0.15, 0.11, -0.26],
-      [0.15, 0.11, -0.26],
+      [-0.15, 0.021, -0.26, 0.025],
+      [0.15, 0.021, -0.26, 0.025],
     ],
-    [0, 0.1, 0.43],
-    [0, -0.15, -0.36],
+    [0, 0.066, 0.42, 0.022],
+    [0, -0.057, -0.33, 0.03],
+    { gens: BUILT, bridge: BUILT, reactor: BUILT },
   ),
   // the Council's dreadnought (scripts/meshy-war.mjs, in the Citadel's look):
   // its two teal shield domes either side of the spire, the glass dome bridge
@@ -466,34 +492,38 @@ export const SUBSYSTEMS = {
   ),
 };
 
-// batteries down the flanks and along the top, as shares of the length
+// batteries on the hull, as shares of the length: each a place down the
+// flanks or along the top, put on the hull there by scripts/capital-parts.mjs
+// --snap (they had floated over it and inside it alike, where a battery's
+// hit was a sphere nobody could see; a kind with no model on the site keeps
+// its rough places, down the flanks and along the top)
 const flanks = (w, h, zs) => zs.flatMap((z) => [[-w, h, z], [w, h, z]]);
 export const TURRETS = {
-  destroyer: [...flanks(0.17, 0.05, [-0.3, -0.18, -0.06, 0.06, 0.18]), [0, 0.12, -0.2], [0, 0.08, 0]],
-  moncal: [...flanks(0.09, 0.04, [-0.3, -0.1, 0.1, 0.28])],
-  executor: [...flanks(0.07, 0.02, [-0.36, -0.24, -0.12, 0, 0.12, 0.24, 0.36]), [0, 0.04, -0.3], [0, 0.03, 0]],
-  interdictor: [...flanks(0.17, 0.05, [-0.25, 0, 0.2])],
-  hammerhead: [...flanks(0.08, 0.05, [-0.2, 0.2])],
-  transport: [[0, 0.1, 0.2]],
-  nebulon: [...flanks(0.06, 0.03, [-0.3, 0.3])],
-  corvette: [...flanks(0.08, 0.05, [-0.2, 0.2])],
-  lightcruiser: [...flanks(0.1, 0.05, [-0.2, 0.1])],
-  gozanti: [...flanks(0.1, 0.06, [-0.15, 0.15])],
-  venator: [...flanks(0.16, 0.05, [-0.3, -0.12, 0.06, 0.22]), [0, 0.1, -0.2]],
-  acclamator: [...flanks(0.2, 0.06, [-0.2, 0.05])],
-  munificent: [...flanks(0.06, 0.1, [-0.25, 0.25])],
-  providence: [...flanks(0.09, 0.06, [-0.25, 0, 0.25])],
-  lucrehulk: [...flanks(0.4, 0.05, [-0.2, 0.2]), [0, 0.06, 0.42], [0, 0.06, -0.42]],
-  councildread: [...flanks(0.1, -0.08, [-0.25, -0.05, 0.15])],
-  fedbattleship: [...flanks(0.28, 0.12, [-0.2, 0.05]), [0, 0.28, -0.15]],
+  destroyer: [[-0.17, -0.037, -0.3], [0.17, -0.037, -0.3], [-0.17, -0.048, -0.18], [0.17, -0.048, -0.18], [-0.17, -0.057, -0.06], [0.17, -0.057, -0.06], [-0.136, -0.058, 0.06], [0.136, -0.058, 0.06], [-0.085, -0.055, 0.18], [0.085, -0.055, 0.18], [0, 0.043, -0.2], [0, -0.019, 0]],
+  moncal: [[-0.076, 0.008, -0.3], [0.072, 0.01, -0.3], [-0.09, 0.02, -0.1], [0.09, 0.02, -0.1], [-0.09, 0.009, 0.1], [0.09, 0.008, 0.1], [-0.063, 0.006, 0.28], [0.063, 0.005, 0.28]],
+  executor: [[-0.059, 0.016, -0.36], [0.059, 0.016, -0.36], [-0.07, 0.014, -0.24], [0.07, 0.014, -0.24], [-0.07, 0.011, -0.12], [0.07, 0.011, -0.12], [-0.07, 0.008, 0], [0.07, 0.008, 0], [-0.063, 0.003, 0.12], [0.063, 0.003, 0.12], [-0.045, 0.003, 0.24], [0.045, 0.003, 0.24], [-0.024, 0.003, 0.36], [0.024, 0.003, 0.36], [0, 0.03, -0.3], [0, 0.026, 0]],
+  interdictor: [[-0.17, -0.012, -0.25], [0.17, -0.012, -0.25], [-0.136, -0.02, 0], [0.136, -0.021, 0], [-0.085, -0.02, 0.2], [0.085, -0.02, 0.2]],
+  hammerhead: [[-0.08, 0.072, -0.2], [0.08, 0.073, -0.2], [-0.08, 0.001, 0.2], [0.08, 0, 0.2]],
+  transport: [[0, 0.065, 0.2]],
+  nebulon: [[-0.039, 0.084, -0.3], [0.045, 0.084, -0.3], [-0.057, 0.08, 0.3], [0.06, 0.08, 0.3]],
+  corvette: [[-0.06, 0.034, -0.2], [0.06, 0.034, -0.2], [-0.08, 0.002, 0.2], [0.08, 0.002, 0.2]],
+  lightcruiser: [[-0.1, -0.021, -0.2], [0.1, -0.021, -0.2], [-0.1, -0.003, 0.1], [0.1, -0.003, 0.1]],
+  gozanti: [[-0.1, -0.01, -0.15], [0.1, -0.01, -0.15], [-0.1, -0.01, 0.15], [0.1, -0.01, 0.15]],
+  venator: [[-0.16, -0.033, -0.3], [0.16, -0.033, -0.3], [-0.112, -0.028, -0.12], [0.112, -0.028, -0.12], [-0.136, -0.047, 0.06], [0.136, -0.047, 0.06], [-0.104, -0.05, 0.22], [0.104, -0.05, 0.22], [0, 0.056, -0.2]],
+  acclamator: [[-0.2, -0.007, -0.2], [0.2, -0.008, -0.2], [-0.19, -0.006, 0.05], [0.2, -0.006, 0.05]],
+  munificent: [[-0.06, 0.002, -0.25], [0.06, 0.001, -0.25], [-0.06, 0.024, 0.25], [0.06, 0.024, 0.25]],
+  providence: [[-0.085, -0.019, -0.25], [0.085, -0.019, -0.25], [-0.058, -0.052, 0], [0.058, -0.052, 0], [-0.067, -0.057, 0.25], [0.067, -0.057, 0.25]],
+  lucrehulk: [[-0.12, 0.019, -0.2], [0.14, 0.023, -0.2], [-0.4, -0.022, 0.2], [0.28, 0.017, 0.2], [0, 0.06, 0.42], [0, 0.017, -0.42]],
+  councildread: [[-0.1, -0.13, -0.25], [0.1, -0.13, -0.25], [-0.095, -0.114, -0.05], [0.095, -0.115, -0.05], [-0.065, -0.116, 0.15], [0.065, -0.116, 0.15]],
+  fedbattleship: [[-0.252, 0.05, -0.2], [0.238, 0.104, -0.2], [-0.28, 0.057, 0.05], [0.28, 0.047, 0.05], [0, 0.305, -0.15]],
   gearship: [...flanks(0.12, 0.05, [-0.15, 0.15])],
   saucer: [...flanks(0.2, 0.05, [0])],
   federation: [...flanks(0.12, 0.05, [-0.15, 0.15])],
   hauler: [...flanks(0.12, 0.05, [-0.1, 0.1])],
-  superlab: [...flanks(0.125, 0.035, [-0.2, 0.02, 0.24]), [0, 0.095, 0]],
+  superlab: [[-0.125, 0.01, -0.2], [0.125, 0.01, -0.2], [-0.125, 0.01, 0.02], [0.125, 0.01, 0.02], [-0.125, 0.01, 0.24], [0.125, 0.01, 0.24], [0, 0.092, 0]],
   madrigal: [...flanks(0.12, 0.05, [-0.15, 0.15])],
   pestvan: [...flanks(0.12, 0.05, [-0.1, 0.1])],
-  hacienda: [...flanks(0.43, 0.33, [-0.33, 0.33]), ...flanks(0.38, 0.3, [0])],
+  hacienda: [[-0.43, 0.43, -0.33], [0.43, 0.43, -0.33], [-0.43, 0.432, 0.33], [0.43, 0.432, 0.33], [-0.38, 0.398, 0], [0.38, 0.397, 0]],
   pollostruck: [...flanks(0.12, 0.05, [-0.1, 0.1])],
   pickup: [...flanks(0.12, 0.05, [-0.1, 0.1])],
 };

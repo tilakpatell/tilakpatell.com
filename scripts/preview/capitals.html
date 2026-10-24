@@ -1,0 +1,106 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Capitals</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        background: #05070b;
+      }
+      canvas {
+        display: block;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- A capital ship close, as the battles draw it, for scripts/capitals-shot.mjs
+         (through the dev server): galaxy/models.js's own slot (its file for
+         this tier, ?quality=, its tune and its fit), under a sun and a planet's
+         bounce light like a system's, from four places a pilot flies past it:
+         ahead and above, the flank, under the hull, and the bridge tower from
+         astern (or, ?views=nose, its side and top with an arrow along +z, the
+         way it flies; ?views=close, a fighter's eye on its plating and its
+         engines). ?kind=destroyer&quality=high&w=640&h=360&break=gen-port,bridge
+         (`break`: those parts knocked off first, galaxy/capitalParts.js) -->
+    <script type="module">
+      import * as THREE from 'three';
+      import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
+      import { MODELS, createModels } from '/src/components/galaxy/models.js';
+
+      const q = new URLSearchParams(location.search);
+      const kind = q.get('kind') ?? 'destroyer';
+      const W = Number(q.get('w') ?? 640);
+      const H = Number(q.get('h') ?? 360);
+      const breaks = (q.get('break') ?? '').split(',').filter(Boolean);
+      const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+      renderer.setSize(W * 2, H * 2);
+      renderer.setScissorTest(true);
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.outputColorSpace = THREE.SRGBColorSpace;
+      document.body.appendChild(renderer.domElement);
+      const scene = new THREE.Scene();
+      scene.background = new THREE.Color('#03050a');
+      const pm = new THREE.PMREMGenerator(renderer);
+      scene.environment = pm.fromScene(new RoomEnvironment(), 0.04).texture;
+      scene.environmentIntensity = 0.35;
+      const sun = new THREE.DirectionalLight('#fff1dc', 3.2);
+      sun.position.set(2, 3, 1.5);
+      scene.add(sun, new THREE.HemisphereLight('#a9c4ff', '#2a2218', 0.35));
+
+      const models = createModels();
+      const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+      const slot = models.slot(kind, 1, { parts: true });
+      const t0 = performance.now();
+      while (performance.now() - t0 < 180000 && MODELS[kind] && !slot.real) await wait(250);
+      // (and its cut, where it has parts: made in spare time once it's here)
+      const t1 = performance.now();
+      while (performance.now() - t1 < 20000 && !slot.parts) await wait(250);
+      scene.add(slot.holder);
+      // (the LOD's levels by distance: these shots are all close, so the full model)
+      slot.holder.updateMatrixWorld(true);
+      const parts = slot.parts ?? null;
+      for (const id of breaks) for (const m of parts?.knock(id) ?? []) m.visible = false;
+
+      // (?views=nose: the side and the top, an arrow along the way it flies, +z, to check its nose)
+      const nose = q.get('views') === 'nose';
+      if (nose) scene.add(new THREE.ArrowHelper(new THREE.Vector3(0, 0, 1), new THREE.Vector3(0, 0.32, -0.2), 0.55, 0xff3030, 0.1, 0.05));
+      // (?views=close: a fighter's eye, along the deck and by the tower, the plating close)
+      const close = q.get('views') === 'close';
+      const views = close
+        ? [
+            { at: [0.16, 0.035, 0.12], look: [0.02, 0.0, -0.1], fov: 60 },
+            { at: [-0.2, 0.06, -0.12], look: [0.0, 0.05, -0.3], fov: 55 },
+            { at: [0.1, -0.12, 0.05], look: [0.0, -0.08, -0.15], fov: 60 },
+            { at: [0.12, 0.02, -0.62], look: [0.0, 0.0, -0.45], fov: 55 },
+          ]
+        : nose
+        ? [
+            { at: [-1.1, 0.02, 0], look: [0, 0.05, 0], fov: 50 },
+            { at: [0, 1.2, 0.001], look: [0, 0, 0], fov: 50 },
+            { at: [-0.7, 0.2, 0.8], look: [0, 0, 0], fov: 45 },
+            { at: [0.5, 0.25, -0.9], look: [0, 0, 0], fov: 45 },
+          ]
+        : [
+            { at: [-0.55, 0.32, 0.7], look: [0, 0, 0.05], fov: 40 },
+            { at: [-0.75, 0.04, -0.05], look: [0, 0, -0.05], fov: 40 },
+            { at: [0.35, -0.38, 0.45], look: [0, -0.05, 0], fov: 40 },
+            { at: [0.32, 0.3, -0.75], look: [0, 0.12, -0.3], fov: 34 },
+          ];
+      views.forEach((v, i) => {
+        const cam = new THREE.PerspectiveCamera(v.fov, W / H, 0.005, 20);
+        cam.position.set(...v.at);
+        cam.lookAt(...v.look);
+        cam.updateMatrixWorld(true);
+        const x = (i % 2) * W;
+        const y = (1 - Math.floor(i / 2)) * H;
+        renderer.setViewport(x, y, W, H);
+        renderer.setScissor(x, y, W, H);
+        renderer.render(scene, cam);
+      });
+      document.title = JSON.stringify({ kind, url: MODELS[kind]?.url ?? null, real: slot.real, parts: parts?.ids ?? [] });
+      window.__done = true;
+    </script>
+  </body>
+</html>

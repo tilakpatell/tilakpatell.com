@@ -8,6 +8,7 @@ import { SHIP_MODELS } from '../universe/shipModels';
 import { BUILT_KINDS } from '../universe/trafficModels';
 import { GALAXY_KINDS, buildGalaxyShip } from './fleet';
 import { KINDS } from './hunted';
+import { plateTint } from './capitalLook';
 import { ARRIVAL, HD_MAPS, HIGH_CUTS, HQ, HULL, HUNTER_GLB, LIGHT_CUTS, LOD_FAR, LOD_NEAR, MADE, MODELS, STAND_IN, ULTRA, createModels, lodLevels, lodUrl, modelsAt, withHq } from './models';
 import { SYSTEMS, kindsIn } from './systems';
 
@@ -83,9 +84,12 @@ describe('the galaxy’s models', () => {
     const HIGH = modelsAt('high');
     const MID = modelsAt('mid');
 
-    it('draws the war’s capitals from the space levels’ kits at the fleet’s cut, bow to +z, and the Lucrehulk and the Arquitens as before', () => {
-      for (const kind of ['destroyer', 'moncal', 'venator', 'corvette', 'providence', 'lucrehulk']) expect(MID[kind], kind).toEqual({ url: `/models/galaxy/${kind}.glb`, nose: 0 });
-      expect(MID.lightcruiser).toEqual({ url: '/models/galaxy/lightcruiser.glb', nose: -Math.PI / 2 });
+    it('draws the war’s capitals from the space levels’ kits at the fleet’s cut, each turned to fly bow first', () => {
+      for (const kind of ['destroyer', 'venator', 'corvette', 'providence']) expect(MID[kind], kind).toEqual({ url: `/models/galaxy/${kind}.glb`, nose: 0 });
+      // (the MC80 and the Lucrehulk were written stern to +z, and the Arquitens
+      // turned the wrong way a quarter: each flew engines first, scripts/capitals-shot.mjs --views nose)
+      for (const kind of ['moncal', 'lucrehulk']) expect(MID[kind], kind).toEqual({ url: `/models/galaxy/${kind}.glb`, nose: Math.PI });
+      expect(MID.lightcruiser).toEqual({ url: '/models/galaxy/lightcruiser.glb', nose: Math.PI / 2 });
       // (the universe map keeps its own Star Destroyer and Venator: the galaxy's rows are the game's)
       for (const detail of ['low', 'mid', 'high', 'ultra']) {
         expect(modelsAt(detail).destroyer.url, detail).not.toBe('/models/universe/star-destroyer.glb');
@@ -144,7 +148,7 @@ describe('the galaxy’s models', () => {
   });
 
   it('has the ten ships brought in (from Sketchfab; the Munificent since made again with Meshy, the Providence the game’s), each turned to fly nose first, and the Razor Crest that walks the surfaces', () => {
-    const noses = { tie: 0, tiebomber: 0, tieadvanced: 0, shuttle: 0, lightcruiser: -Math.PI / 2, gozanti: 0, munificent: 0, providence: 0, nubian: 0, ghost: 0 };
+    const noses = { tie: 0, tiebomber: 0, tieadvanced: 0, shuttle: 0, lightcruiser: Math.PI / 2, gozanti: 0, munificent: 0, providence: 0, nubian: 0, ghost: 0 };
     for (const [kind, nose] of Object.entries(noses)) {
       expect(modelsAt('mid')[kind], kind).toEqual({ url: `/models/galaxy/${kind}.glb`, nose }); // (a laptop's rows: a desktop's TIEs are the game's plain cuts, its Providence the kit's ultra cut)
       expect(onSite(MODELS[kind].url), kind).toBe(true);
@@ -500,7 +504,7 @@ describe('the galaxy’s models', () => {
     afterEach(() => vi.unstubAllGlobals());
 
     // (the MC80's main hull: its maps are bound in its shader graph, which the drop's GLB does not name)
-    it('is drawn the game’s hull grey, as the space levels draw theirs, where the export gave it no colour map', async () => {
+    it('is plated in a capital’s own grey (capitalLook.js), and drawn the game’s hull grey on any other ship, where the export gave it no colour map', async () => {
       const load = async () => {
         const scene = new THREE.Group();
         scene.add(new THREE.Mesh(new THREE.BoxGeometry(1, 1, 4), new THREE.MeshStandardMaterial({ name: 'MC_80_Met', color: 0xffffff, metalness: 0, roughness: 1 })));
@@ -513,11 +517,19 @@ describe('the galaxy’s models', () => {
       for (let i = 0; i < 5; i++) await settle();
       const byName = {};
       slot.inner.traverse((o) => o.isMesh && (byName[o.material.name] = o.material));
-      expect(byName.MC_80_Met.color.getHex()).toBe(HULL.getHex());
-      expect(byName.MC_80_Met.metalness).toBeGreaterThanOrEqual(0.45);
-      expect(byName.MC_80_Met.roughness).toBeLessThanOrEqual(0.6);
+      expect(byName.MC_80_Met.color.getHex()).toBe(new THREE.Color(plateTint('moncal')).getHex());
+      expect(byName.MC_80_Met.userData.plated).toBe(true);
       expect(byName.M_MC80_Engine.color.getHex()).toBe(0xffffff); // (a mapped one as it comes)
+      expect(byName.M_MC80_Engine.userData.burning).toBe(true); // (alight where it faces aft)
       expect(byName.tinted.color.getHex()).toBe(0xa62a1f); // (a coloured one too)
+      // (a ship that's no capital: the game's hull grey, a little metal)
+      const fighter = models.slot('tie', 1);
+      for (let i = 0; i < 5; i++) await settle();
+      const its = {};
+      fighter.inner.traverse((o) => o.isMesh && (its[o.material.name] = o.material));
+      expect(its.MC_80_Met.color.getHex()).toBe(HULL.getHex());
+      expect(its.MC_80_Met.metalness).toBeGreaterThanOrEqual(0.45);
+      expect(its.MC_80_Met.roughness).toBeLessThanOrEqual(0.6);
       models.dispose();
     });
   });
