@@ -52,8 +52,9 @@ describe('the nav map’s chart', () => {
   it('stands places on stems up and down', () => {
     const marks = [{ id: 'up', kind: 'world', name: 'Up', at: [3000, 2500, 0], priority: 1, color: '#fff', levels: ['neighbourhood'], pickable: true }, { id: 'down', kind: 'world', name: 'Down', at: [-3000, -2500, 0], priority: 1, color: '#fff', levels: ['neighbourhood'], pickable: true }];
     const stems = tags(renderToStaticMarkup(<NavChart view={view} marks={marks} />), 'navmap-stem');
-    expect(stems.some((t) => t.includes('data-dir="up"'))).toBe(true);
-    expect(stems.some((t) => t.includes('data-dir="down"'))).toBe(true);
+    expect(stems).toHaveLength(2);
+    // each its own mark's: the one above the ship is east of the middle, the one below west
+    for (const t of stems) expect(/data-dir="(\w+)"/.exec(t)[1]).toBe(Number(/x2="([-\d.]+)"/.exec(t)[1]) > 500 ? 'up' : 'down');
   });
   it('hides colliding names but never the picked one’s, and shows the readout', () => {
     const pile = Array.from({ length: 6 }, (_, i) => ({ id: `p${i}`, kind: 'world', name: `Place ${i}`, at: [5000 + i, 0, 0], priority: 10 - i, color: '#fff', levels: ['neighbourhood'], pickable: true }));
@@ -177,6 +178,7 @@ describe('the nav map’s chart', () => {
 
 describe('navmap.css, against the chart’s numbers', () => {
   const css = readFileSync(new URL('../navmap.css', import.meta.url), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+  const site = readFileSync(new URL('../../../index.css', import.meta.url), 'utf8'); // (the site's sizes: --fs-xs)
   const rules = [...css.matchAll(/([^{}]+)\{([^{}]*)\}/g)].map(([, sel, body]) => ({ sel: sel.trim(), body: body.trim() }));
   const rule = (sel) => rules.find((r) => r.sel === sel)?.body ?? '';
   // a selector's specificity, [ids, classes, types], an :is() counting as its most specific argument
@@ -200,6 +202,11 @@ describe('navmap.css, against the chart’s numbers', () => {
     const start = labelSize('', 11)[0] + boxOf('right', { x: 0, y: 0, w: 0, h: 0 }).x0; // (from the dot's middle)
     expect(rule('.navmap-name')).toContain(`left: calc(50% + ${start}px)`);
     expect(rule(".navmap-places > li[data-side='left'] .navmap-name")).toContain(`right: calc(50% + ${start}px)`);
+    // under: inside its box, below the dot's foot
+    const top = Number(/top: calc\(50% \+ (\d+)px\)/.exec(rule(".navmap-places > li[data-side='under'] .navmap-name"))[1]);
+    const height = Number(/(?:^|;\s*)height: (\d+)px/.exec(rule('.navmap-name'))[1]);
+    expect(top).toBeGreaterThan(boxOf('under', { x: 0, y: 0, w: 0, h: 0 }).y1);
+    expect(top + height).toBeLessThanOrEqual(boxOf('under', { x: 0, y: 0, w: 0, h: labelSize('', 11)[1] }).y1);
   });
   it('tints Home system’s and the Curve’s names on a hover, over the hover’s own glass', () => {
     const tint = rules.find((r) => r.body.includes('rgb(255 200 120 / 0.12)'));
@@ -209,9 +216,31 @@ describe('navmap.css, against the chart’s numbers', () => {
     const won = order(specificity(tint.sel), specificity(glass.sel));
     expect(won > 0 || (won === 0 && rules.indexOf(tint) > rules.indexOf(glass))).toBe(true);
   });
-  it('takes the bar off the stage’s height at every size, with container units or without', () => {
-    const widths = rules.filter((r) => r.sel === '.navmap-stage').map((r) => /(?:^|;\s*)width:\s*([^;]+)/.exec(r.body)?.[1]).filter(Boolean);
-    expect(widths).toHaveLength(3);
-    for (const w of widths) expect(w).toMatch(/calc\([^)]*- 3\.25rem\)/);
+  it('takes the bar off the circle’s height at every size, with container units or without', () => {
+    const sizes = rules.filter((r) => r.sel === '.navmap-stage').map((r) => /(?:^|;\s*)--chart:\s*([^;]+)/.exec(r.body)?.[1]).filter(Boolean);
+    expect(sizes).toHaveLength(3);
+    for (const s of sizes) expect(s).toMatch(/calc\([^)]*- 3\.25rem\)/);
+    expect(rule('.navmap-chart')).toMatch(/(?:^|;\s*)width: var\(--chart\)/);
+  });
+  it('keeps the bar to the height the circle leaves it, and never narrower than its tools', () => {
+    const rem = (v) => Number(/([\d.]+)rem/.exec(v)[1]);
+    const left = 3.25 - rem(/(?:^|;\s*)gap:\s*([^;]+)/.exec(rule('.navmap-stage'))[1]); // (what --chart takes off, less the gap over the bar)
+    // one row, as wide as its words and tools want, from the circle's width up to the stage's
+    const bar = rule('.navmap-bar');
+    expect(bar).not.toMatch(/flex-wrap:\s*wrap/);
+    expect(bar).toMatch(/(?:^|;\s*)width: max-content/);
+    expect(bar).toContain('min-width: var(--chart)');
+    expect(bar).toContain('max-width: 100%');
+    expect(rule('.navmap-stage')).toMatch(/(?:^|;\s*)min-width: 0/); // (so its words never widen a phone's one column: 1fr's minimum is its content's)
+    // the readout two lines at most beside the tools: with its padding, as tall as a touch screen's tool at most
+    const readout = rule('.navmap-readout');
+    expect(readout).toContain('-webkit-line-clamp: 2');
+    const fs = rem(/--fs-xs:\s*([^;]+)/.exec(site)[1]);
+    expect(2 * fs * Number(/line-height:\s*([\d.]+)/.exec(readout)[1]) + 2 * rem(/padding:\s*([^;\s]+)/.exec(readout)[1])).toBeLessThanOrEqual(left);
+    const tools = rules.filter((r) => r.sel === '.navmap-tools .navmap-tool').map((r) => Number(/(?:^|;\s*)height:\s*(\d+)px/.exec(r.body)?.[1] ?? 0));
+    expect(Math.max(...tools)).toBe(44);
+    expect(44 / 16).toBeLessThanOrEqual(left);
+    // (on a phone the panel under the chart gives way, so there it shows every word)
+    expect(rules.some((r) => r.sel === '.navmap-readout' && r.body.includes('-webkit-line-clamp: none'))).toBe(true);
   });
 });
