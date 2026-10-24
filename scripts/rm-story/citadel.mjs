@@ -4,7 +4,7 @@
 // closing it, the story come to its door again), an escape made before the
 // story sent him, and the Citadel with no 3D.
 /* global window */
-import { BASE, OUT, check, built, reads, story, at, cardFor, inArea, WIPED, CITADEL, CITADEL_LINE, citadelUp, citadelReads, citadelToast } from './helpers.mjs';
+import { BASE, check, built, reads, story, at, cardFor, inArea, WIPED, CITADEL, CITADEL_LINE, citadelUp, citadelReads, citadelToast } from './helpers.mjs';
 
 const ALL = ['daycare', 'wafers', 'council', 'votemorty', 'citadelout', 'locos'];
 const AT_DOOR = { v: 1, data: { episode: 9, step: 0, got: [], wins: ['cabinet', 'chase'], freeRoam: false } };
@@ -37,6 +37,12 @@ export const AT_THE_CITADEL = {
   // while the page is open is told it's there; home, no second card
   'citadel-door': Object.assign(
     async (page) => {
+      // a pad plugged in, at rest (a pad at rest is no move: the card stays)
+      await page.addInitScript(() => {
+        const pad = { connected: true, mapping: 'standard', axes: [0, 0, 0, 0], buttons: Array.from({ length: 17 }, () => ({ pressed: false, value: 0 })) };
+        window.__pad = pad;
+        Object.defineProperty(navigator, 'getGamepads', { value: () => [pad], configurable: true });
+      });
       await page.goto(`${BASE}/#/c-137/citadel`, { waitUntil: 'domcontentloaded' });
       await citadelUp(page);
       await page.locator('.citadel-stage[data-mood="red"] .rm-episode').waitFor({ timeout: 20000 }).catch(() => {
@@ -49,20 +55,7 @@ export const AT_THE_CITADEL = {
       await page.waitForTimeout(1000);
       check((await page.evaluate(() => window.__CITADEL__.sim.t)) === t0, 'the Citadel ran on under the card');
       check((await page.locator('.citadel-wanted').textContent()).includes('Wanted: Rick C-137'), 'a Cop Rick saw him under the card');
-      if (OUT) {
-        await page.screenshot({ path: `${OUT}/citadel-door-1280.png` });
-        await page.setViewportSize({ width: 390, height: 844 });
-        await page.waitForTimeout(800);
-        await page.screenshot({ path: `${OUT}/citadel-door-390.png` });
-        await page.setViewportSize({ width: 1280, height: 720 });
-      }
-      // a pad: at rest it's no move; X (nothing at the Citadel) is
-      await page.evaluate(() => {
-        const pad = { connected: true, mapping: 'standard', axes: [0, 0, 0, 0], buttons: Array.from({ length: 17 }, () => ({ pressed: false, value: 0 })) };
-        window.__pad = pad;
-        Object.defineProperty(navigator, 'getGamepads', { value: () => [pad], configurable: true });
-      });
-      await page.waitForTimeout(600);
+      // (well inside the card's own seven seconds: the pad at rest left it up; X, nothing at the Citadel, closes it)
       check((await page.locator('.rm-episode').count()) === 1, 'a pad at rest closed the card');
       await page.evaluate(() => {
         window.__pad.buttons[2].pressed = true;
