@@ -197,8 +197,8 @@ const TALK_UNLOCK = { therapy: 'wong', ...Object.assign({}, ...DESTINATIONS.map(
 // the hotspot that starts the clock: the Purge Planet's siren, Customs'
 // scanner, the wedding's toast
 const FREEZE_SPOTS = new Set(DESTINATIONS.filter((d) => d.freeze).map((d) => d.freeze.spot));
-// (a climb's things to pick up: gone from reach once picked up on this visit)
-const PICKS = new Set(DESTINATIONS.flatMap((d) => d.climb?.picks ?? []));
+// (a climb's things to pick up, and what starts a duel (the Blood Dome's ring, the lair's pods): gone from reach once used on this visit)
+const PICKS = new Set(DESTINATIONS.flatMap((d) => [...(d.climb?.picks ?? []), ...(d.people.some((p) => p.ai?.hunt?.duel) ? [...Object.keys(d.acts).filter((k) => d.acts[k] === 'fight'), ...(d.collect?.spots ?? [])] : [])]));
 const ESCAPES = Object.fromEntries(DESTINATIONS.filter((d) => d.escape).map((d) => [d.escape.spot, { ...d.escape, area: d.id }]));
 // and what using a hotspot tells its place's builder
 const ACTS = Object.assign({}, ...DESTINATIONS.map((d) => Object.fromEntries(Object.entries(d.acts).map(([spot, name]) => [spot, [d.id, name]]))));
@@ -983,8 +983,10 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
           unlock(e.task);
         }
         if (e?.area === l.area) s.escape = null;
-        // (what he's used is for this visit, and the place he's left settles)
+        // (what he's used is for this visit, the place he's left settles, and a fight he walked out of is over)
         s.used = new Set();
+        s.duel = null;
+        setDuel(null);
         api.current?.act(l.area, 'calm');
         setFade(null);
       }, climb ? CLIMB_MS : FADE_MS);
@@ -1079,8 +1081,7 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
         playMemory(0);
       }
     } else if (n.id === 'dial') {
-      openDial();
-      tell({ type: 'use', id: 'dial' });
+      if (!tell({ type: 'use', id: 'dial' }).some((o) => o.type === 'end')) openDial(); // (the press that ends the story puts the gun back: Rick's last line read in the clear, not under the dial)
     } else if (n.id === 'pond') {
       // a stone picked up, or thrown (the street's: ./town/skip.js)
       api.current?.act('street', 'skip');
@@ -1111,8 +1112,8 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
         s.escape = { ...e, at: s.t };
         sound('siren');
       }
-      // (done once they've had their say: the President gets in his car then)
-      if (TALK_DONE[n.id]) later(() => complete(TALK_DONE[n.id]), TALK_MS);
+      // (done once they've had their say, a long one read first: the President gets in his car then)
+      if (TALK_DONE[n.id]) later(() => complete(TALK_DONE[n.id]), Math.max(TALK_MS, lineHold(line?.text) * 1000));
       // a missing-cat poster read: kept, and the last of them is the thing done
       if (POSTER_IDS.has(n.id) && !postersRead().includes(n.id)) {
         const read = [...postersRead(), n.id];
