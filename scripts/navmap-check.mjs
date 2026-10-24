@@ -33,9 +33,12 @@ const check = (ok, what) => {
   console.log(ok ? 'ok  ' : 'FAIL', what);
   if (!ok) problems.push(what);
 };
+// (a console error with where it came from: a failed load's text is the same
+// for every file, "Failed to load resource: … 403 (Forbidden)", and only its
+// URL tells a font from a chunk)
 const listen = (page) => {
   page.on('pageerror', (e) => errors.push(String(e)));
-  page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
+  page.on('console', (m) => m.type() === 'error' && errors.push(`${m.text()} ${m.location().url}`.trim()));
 };
 
 async function open(viewport, ship) {
@@ -65,14 +68,25 @@ const click = (page, sel, nth = 0) =>
     [sel, nth],
   );
 // a frame drawn since the page last changed: software GL takes seconds over
-// one, and a shot sooner can show the page as it was before
-const painted = (page) => page.evaluate(() => new Promise((done) => window.requestAnimationFrame(() => window.requestAnimationFrame(done))));
+// one, and a shot sooner can show the page as it was before. Two minutes at
+// most: a hidden or throttled page draws none, and the check would wait on it
+// for ever (the wait looks every 100 ms, not on a frame of the page's own)
+const painted = async (page) => {
+  await page.evaluate(() => {
+    window.__painted = false;
+    window.requestAnimationFrame(() => window.requestAnimationFrame(() => (window.__painted = true)));
+  });
+  await page.waitForFunction(() => window.__painted, null, { polling: 100, timeout: 120000 }).catch((e) => {
+    throw new Error(`no frame drawn in two minutes: is the page hidden or throttled? (${e.message.split('\n')[0]})`);
+  });
+};
 // a PNG, or a JPEG if that's 1 MB or more (lib/shot-file.mjs: the folder
-// made if need be, and no stale shot of the other kind left beside it)
-const shot = async (page, name) => {
+// made if need be, and no stale shot of the other kind left beside it), of
+// the page or of one element on it
+const shot = async (page, name, el = page) => {
   await painted(page);
-  const png = await page.screenshot({ timeout: 120000 });
-  await keepShot({ out, name, png, jpeg: () => page.screenshot({ type: 'jpeg', quality: 80, timeout: 120000 }) });
+  const png = await el.screenshot({ timeout: 120000 });
+  await keepShot({ out, name, png, jpeg: () => el.screenshot({ type: 'jpeg', quality: 80, timeout: 120000 }) });
 };
 const state = (page) => page.evaluate(() => ({ ...window.__universe(), hash: window.location.hash }));
 const navOpen = (page) => page.waitForSelector('.navmap', { timeout: 60000 });
@@ -271,8 +285,7 @@ if (run('minimap')) {
   listen(page);
   await page.goto(URL, { waitUntil: 'domcontentloaded', timeout: GOTO });
   const flat = await page.waitForSelector('.universe-flat .minimap', { timeout: 120000 });
-  await painted(page);
-  await flat.screenshot({ path: `${out}/11-minimap-flat.png`, timeout: 120000 });
+  await shot(page, '11-minimap-flat', flat);
   // Home's teaser, at the foot of the page: its section mounts only as it
   // nears the screen, so scroll down a screen at a time till it's there
   await page.goto(`${base}/#/home`, { waitUntil: 'domcontentloaded', timeout: GOTO });
@@ -287,8 +300,7 @@ if (run('minimap')) {
     { polling: 300, timeout: 120000 },
   );
   const teaser = await page.waitForSelector('.minimap-teaser .minimap-hit', { timeout: 60000 }).then(() => page.$('.minimap-teaser'));
-  await painted(page);
-  await teaser.screenshot({ path: `${out}/12-minimap-teaser.png`, timeout: 120000 });
+  await shot(page, '12-minimap-teaser', teaser);
   await ctx.close();
 }
 
