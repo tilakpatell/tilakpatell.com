@@ -180,6 +180,7 @@ describe('the adventure’s story', () => {
     expect(lockNote('fantasy')).toBe('Opens after episode 8, “Prime time”.');
     expect(lockNote('citadel')).toBe('Opens after episode 9, “Fairy tales”.');
     for (const id of ['birdworld', 'gearworld', 'pluto', 'squanch']) expect(lockNote(id), id).toBe('Opens after episode 10, “The Citadel”.');
+    for (const id of ['heistcon', 'vindicators']) expect(lockNote(id), id).toBe('Opens after episode 11, “The sector”.');
     expect(lockNote('annex')).toBe('Opens after episode 1, “Wiped”.');
     expect(lockNote('customs')).toBe(null);
     expect(lockNote('nope')).toBe(null);
@@ -223,7 +224,7 @@ describe('the real story', () => {
     expect(out.at(-1)).toEqual({ type: 'end' });
   });
 
-  it('opens episode 3’s places after episode 2, episode 4’s after episode 3, episode 5’s after episode 4, episode 6’s after episode 5, episode 7’s after episode 6, episode 8’s after episode 7, episode 9’s after episode 8, episode 10’s after episode 9, and every place once episode 10, the last built, is done', () => {
+  it('opens episode 3’s places after episode 2, episode 4’s after episode 3, episode 5’s after episode 4, episode 6’s after episode 5, episode 7’s after episode 6, episode 8’s after episode 7, episode 9’s after episode 8, episode 10’s after episode 9, episode 11’s after episode 10, and every place once episode 11, the last built, is done', () => {
     let s = fresh();
     let out = [];
     for (const id of ['diner', 'basement', 'mindblowers', 'customs']) ({ state: s, out } = feed(s, { type: 'task', id }));
@@ -301,8 +302,19 @@ describe('the real story', () => {
     expect(out).toEqual([{ type: 'step', episode: 9, step: 1 }]);
     expect(objective(s)).toEqual({ text: EPISODES[9].steps[1].text, to: '/c-137/citadel' });
     ({ state: s, out } = feed(s, { type: 'citadel', id: 'citadelout' }));
-    expect(out).toEqual([{ type: 'done', episode: 9 }]); // (no card: episode 11 isn't built)
-    for (const id of ['birdworld', 'gearworld', 'pluto', 'squanch', 'evilrick']) expect(dialOpen(s, id), id).toBe(true);
+    expect(out).toEqual([{ type: 'done', episode: 9 }, { type: 'episode', episode: 10 }]);
+    for (const id of ['birdworld', 'gearworld', 'pluto', 'squanch']) expect(dialOpen(s, id), id).toBe(true);
+    for (const id of ['heistcon', 'vindicators', 'evilrick']) expect(dialOpen(s, id), id).toBe(false);
+    expect(objective(s)).toEqual({ text: EPISODES[10].steps[0].text, to: null });
+    // (the sector's four in any order: nothing to say till the last, which ends episode 11)
+    for (const id of ['pluto', 'squanch', 'birdworld']) {
+      ({ state: s, out } = feed(s, { type: 'task', id }));
+      expect(out, id).toEqual([]);
+      expect(objective(s), id).toEqual({ text: EPISODES[10].steps[0].text, to: null });
+    }
+    ({ state: s, out } = feed(s, { type: 'task', id: 'gearworld' }));
+    expect(out).toEqual([{ type: 'done', episode: 10 }]); // (no card: episode 12 isn't built)
+    for (const id of ['heistcon', 'vindicators', 'evilrick']) expect(dialOpen(s, id), id).toBe(true);
     expect(objective(s)).toBe(null);
   });
 
@@ -439,8 +451,8 @@ describe('the real story', () => {
     expect(feed(s, { type: 'none' }, { known }).state).toMatchObject({ episode: 9, step: 0 });
     const { state, out } = feed(s, { type: 'enter', area: 'page:/c-137/citadel' }, { known });
     expect(state).toMatchObject({ episode: 10, step: 0 });
-    expect(out).toEqual([{ type: 'step', episode: 9, step: 1 }, { type: 'done', episode: 9 }]);
-    // Morty's line, and no card (episode 11 isn't built)
-    expect(newsOf(out)).toEqual({ say: [{ kind: 'say', who: EPISODES[9].outro[0][0], text: EPISODES[9].outro[0][1] }], card: null });
+    expect(out).toEqual([{ type: 'step', episode: 9, step: 1 }, { type: 'done', episode: 9 }, { type: 'episode', episode: 10 }]);
+    // Morty's line, and episode 11's card
+    expect(newsOf(out)).toEqual({ say: [{ kind: 'say', who: EPISODES[9].outro[0][0], text: EPISODES[9].outro[0][1] }], card: 10 });
   });
 });

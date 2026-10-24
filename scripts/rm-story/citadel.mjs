@@ -98,7 +98,7 @@ export const AT_THE_CITADEL = {
     { seed: { 'tp-rm-story': AT_DOOR, 'tp-citadel-done': ['daycare', 'wafers', 'council', 'votemorty'] } },
   ),
   // the escape made before the story sent him: the Story tab ticks it, and
-  // walking in ends the episode with Morty's line, said once, and no card
+  // walking in ends the episode with Morty's line, said once, and episode 11's card
   'citadel-early': Object.assign(
     async (page) => {
       await page.goto(`${BASE}/#/c-137`, { waitUntil: 'domcontentloaded' });
@@ -116,8 +116,8 @@ export const AT_THE_CITADEL = {
       await page.locator('.rm-hud .rm-objective-link').click();
       await citadelUp(page);
       await citadelToast(page, CITADEL.outro[0][1], CITADEL.outro[0][0]);
+      await cardFor(page, 10);
       await at(page, 10, 0, 'walked in with the escape made');
-      await noCard(page, 1000, 'a card showed for an episode that isn’t built');
       // said once
       await page.locator('.citadel-stage .shire-toast', { hasText: CITADEL.outro[0][1] }).waitFor({ state: 'detached', timeout: 15000 });
       await page.waitForTimeout(5000);
@@ -128,7 +128,7 @@ export const AT_THE_CITADEL = {
   ),
   // the escape made, and Rick out by the hangar's way home (under his feet
   // once everything's done) before the escape's own line has gone: Morty's
-  // closing line, still to say, is said in C-137
+  // closing line, still to say, is said in C-137, with episode 11's card
   'citadel-leave': Object.assign(
     async (page) => {
       await page.goto(`${BASE}/#/c-137/citadel`, { waitUntil: 'domcontentloaded' });
@@ -143,6 +143,7 @@ export const AT_THE_CITADEL = {
       await page.evaluate(() => window.__CITADEL__.enter('leave'));
       await inArea(page, 'garage');
       await toast(page, CITADEL.outro[0][1]);
+      await cardFor(page, 10);
     },
     { seed: { 'tp-rm-story': { ...AT_DOOR, data: { ...AT_DOOR.data, step: 1 } }, 'tp-citadel-done': ['daycare', 'wafers', 'council', 'votemorty', 'locos'] } },
   ),
