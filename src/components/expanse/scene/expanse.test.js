@@ -1,14 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import * as THREE from 'three';
-import { createExpanse, activeAt } from './expanse';
+import { createExpanse, activeAt, farRoom } from './expanse';
 import { createOrigin } from '../../../runtime/origin';
 import { RIM, SECTORS } from '../../universe/layout';
+import { STARS } from '../../universe/shared/space';
 import { orbitAt, spaceTime } from '../gen/orbits';
 import { makeSector } from '../gen/sector';
 import { UNIVERSE } from '../gen/seed';
 import { addBodies } from '../gen/systems';
-import { createNear } from './near';
+import { createNear, strengthOf } from './near';
 import { slotOf } from './sectors';
+import { universeBudget } from '../../universe/shared/far';
 
 // fakes for the drawing: what was made, re-anchored and let go
 function fakes() {
@@ -62,6 +64,16 @@ function fakeFar() {
 // a body builder that builds nothing much
 const fakeBuild = (look, { r }) => ({ group: new THREE.Group(), radius: r, reach: r, update() {}, setSuns() {}, dispose() {} });
 const camera = new THREE.PerspectiveCamera();
+// the first system of E:1,0, and a camera 300 above its star with the ship there
+const AT = addBodies(makeSector(UNIVERSE, 1, 0));
+const SYS = AT.systems[0];
+const eye = new THREE.PerspectiveCamera();
+eye.position.set(SYS.at[0], SYS.at[1] + 300, SYS.at[2]);
+eye.updateMatrixWorld();
+const NOW = 1.7e12;
+const atSys = (ex, frames = 40, now = NOW) => {
+  for (let i = 0; i < frames; i++) ex.update({ ship: { x: SYS.at[0], y: SYS.at[1], z: SYS.at[2], heading: 0 }, camera: eye, t: i / 60, dt: 1 / 60, now });
+};
 const run = (x, opts, frames = 12, z = 0) => {
   for (let i = 0; i < frames; i++) opts.ex.update({ ship: { x, y: 0, z, heading: -Math.PI / 2 }, camera, t: i / 60, dt: 1 / 60 });
 };
@@ -204,5 +216,125 @@ describe('the Expanse on the map', () => {
     expect(own().visible).toBe(false);
     ex.dispose();
     expect(own()).toBeUndefined();
+  });
+
+  it('lends the light of the stars it builds after the map’s own, in one array kept from frame to frame', () => {
+    const f = fakes();
+    const ex = createExpanse(new THREE.Group(), { origin: createOrigin(), make: f.make, makeStarfield: f.makeStarfield, far: fakeFar(), build: fakeBuild });
+    const lit = ex.stars();
+    expect(lit).toEqual(STARS);
+    atSys(ex);
+    expect(ex.stars()).toBe(lit);
+    expect(lit).toHaveLength(STARS.length + 1);
+    STARS.forEach((s, i) => expect(lit[i]).toBe(s));
+    expect(lit.at(-1)).toEqual({ id: SYS.id, at: SYS.at, r: SYS.star.size, colour: SYS.star.color, strength: strengthOf(SYS.star.class), reach: 3 * SYS.reach });
+    atSys(ex, 2);
+    expect(ex.stars()).toBe(lit);
+    // home: the map's stars alone
+    run(0, { ex }, 2);
+    expect(ex.stars()).toBe(lit);
+    expect(lit).toEqual(STARS);
+  });
+
+  it('lends what it builds as solids, each where it is now, in one array kept from frame to frame', () => {
+    const f = fakes();
+    const ex = createExpanse(new THREE.Group(), { origin: createOrigin(), make: f.make, makeStarfield: f.makeStarfield, far: fakeFar(), build: fakeBuild });
+    expect(ex.solids()).toHaveLength(0);
+    atSys(ex);
+    const solids = ex.solids();
+    const ids = solids.map((o) => o.id);
+    expect(ids).toEqual([SYS.id, ...SYS.planets.flatMap((p) => [p.id, ...p.moonList.map((m) => m.id)])]);
+    for (const o of solids) {
+      expect(o.r).toBeGreaterThan(0);
+      expect(o.reach).toBeGreaterThanOrEqual(o.r);
+    }
+    expect(solids[0].at).toEqual(SYS.at);
+    // the planets where their orbits have them now, and a minute on, moved in place
+    const p = SYS.planets[0];
+    const one = solids.find((o) => o.id === p.id);
+    orbitAt(p, spaceTime(NOW)).forEach((x, k) => expect(one.at[k]).toBeCloseTo(x, 6));
+    atSys(ex, 1, NOW + 60000);
+    expect(ex.solids()).toBe(solids);
+    expect(solids.find((o) => o.id === p.id)).toBe(one);
+    orbitAt(p, spaceTime(NOW + 60000)).forEach((x, k) => expect(one.at[k]).toBeCloseTo(x, 6));
+    expect(Math.hypot(...one.at.map((x, k) => x - orbitAt(p, spaceTime(NOW))[k]))).toBeGreaterThan(0.1);
+    // home: none
+    run(0, { ex }, 2);
+    expect(ex.solids()).toHaveLength(0);
+  });
+
+  it('builds with the body builder it is given', () => {
+    const f = fakes();
+    const looks = [];
+    const build = (look, o) => (looks.push(look), fakeBuild(look, o));
+    const parent = new THREE.Group();
+    const ex = createExpanse(parent, { origin: createOrigin(), make: f.make, makeStarfield: f.makeStarfield, far: fakeFar(), build });
+    atSys(ex);
+    expect(looks.length).toBe(SYS.planets.reduce((n, p) => n + 1 + p.moonList.length, 0));
+    expect(parent.getObjectByName(`planet:${SYS.planets[0].id}`)).toBeTruthy();
+  });
+
+  it('takes the pace’s step: fewer discs as the budget has it, and less detail in what it builds', () => {
+    const f = fakes();
+    const far = fakeFar();
+    const steps = [];
+    const makeNear = (group, o) => {
+      const n = createNear(group, { ...o, build: fakeBuild });
+      const set = n.setStep;
+      n.setStep = (step) => (steps.push(step), set(step));
+      return n;
+    };
+    const ex = createExpanse(new THREE.Group(), { origin: createOrigin(), make: f.make, makeStarfield: f.makeStarfield, far, makeNear, tier: 'low' });
+    atSys(ex, 60);
+    const whole = far.frames.at(-1).length;
+    const least = universeBudget({ tier: 'low' }, 3, true).discs;
+    expect(whole).toBeGreaterThan(least);
+    ex.setStep(3, true);
+    atSys(ex, 200);
+    expect(far.frames.at(-1).length).toBeLessThanOrEqual(least);
+    expect(far.frames.at(-1).length).toBeGreaterThan(0);
+    ex.setStep(0, false);
+    atSys(ex, 200);
+    expect(far.frames.at(-1).length).toBe(whole);
+    expect(steps).toEqual([3, 0]);
+  });
+
+  it('takes a step before it first wakes, and its discs keep to it', () => {
+    const f = fakes();
+    const far = fakeFar();
+    const ex = createExpanse(new THREE.Group(), { origin: createOrigin(), make: f.make, makeStarfield: f.makeStarfield, far, build: fakeBuild, tier: 'low' });
+    ex.setStep(3, true);
+    atSys(ex, 60);
+    expect(far.frames.at(-1).length).toBeLessThanOrEqual(universeBudget({ tier: 'low' }, 3, true).discs);
+  });
+
+  it('says what came in at once in its far layer, and nothing before it wakes', () => {
+    const f = fakes();
+    const far = { ...fakeFar(), pops: () => ({ count: 2, px: 7 }) };
+    far.discs = fakeFar().discs;
+    const ex = createExpanse(new THREE.Group(), { origin: createOrigin(), make: f.make, makeStarfield: f.makeStarfield, far, build: fakeBuild });
+    expect(ex.pops()).toEqual({ count: 0, px: 0 });
+    atSys(ex, 3);
+    expect(ex.pops()).toEqual({ count: 2, px: 7 });
+    // and its own far layer's, when it's given none
+    const own = createExpanse(new THREE.Group(), { origin: createOrigin(), make: f.make, makeStarfield: f.makeStarfield, build: fakeBuild });
+    expect(own.pops()).toEqual({ count: 0, px: 0 });
+    atSys(own, 3);
+    const p = own.pops();
+    expect(Number.isFinite(p.count) && Number.isFinite(p.px)).toBe(true);
+  });
+
+  it('sizes a far layer for a device’s level: the budget’s slots, and room for half again its discs', () => {
+    const mid = universeBudget({ tier: 'mid' });
+    expect(farRoom({ tier: 'mid' })).toEqual({ slots: Array(mid.nearSlots).fill(mid.slotSize), discs: Math.ceil(mid.discs * 1.5) });
+    expect(farRoom({ tier: 'high', detail: 'ultra' }).discs).toBe(Math.ceil(universeBudget({ detail: 'ultra' }).discs * 1.5));
+    // and its own far layer made so, for the level it's told
+    const f = fakes();
+    const parent = new THREE.Group();
+    const ex = createExpanse(parent, { origin: createOrigin(), make: f.make, makeStarfield: f.makeStarfield, build: fakeBuild, tier: 'high', detail: 'ultra' });
+    atSys(ex, 2);
+    const room = farRoom({ detail: 'ultra' });
+    const own = parent.children.find((o) => o.name === 'far-stars');
+    expect(own.geometry.getAttribute('position').count).toBe(room.slots.reduce((a, b) => a + b, 0) + room.discs);
   });
 });

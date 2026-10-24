@@ -138,4 +138,15 @@ describe('precompile', () => {
     expect(told.at(-1)).toBe(1);
     for (let i = 1; i < told.length; i++) expect(told[i]).toBeGreaterThanOrEqual(told[i - 1]);
   });
+
+  it('stops when what it makes is no longer wanted', async () => {
+    const scene = new THREE.Scene();
+    for (let i = 0; i < 6; i++) scene.add(new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshStandardMaterial({ color: i })));
+    const gone = fakeRenderer({ gl: fakeGl({ signalAfter: 1 }) });
+    await precompile(gone, scene, new THREE.PerspectiveCamera(), scene, undefined, { alive: () => false });
+    expect(gone.compiled).toHaveLength(0);
+    const wanted = fakeRenderer({ gl: fakeGl({ signalAfter: 1 }) });
+    await precompile(wanted, scene, new THREE.PerspectiveCamera(), scene, undefined, { alive: () => true });
+    expect(wanted.compiled.length).toBeGreaterThan(0);
+  });
 });

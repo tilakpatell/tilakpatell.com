@@ -28,25 +28,42 @@
 // Nothing generated is kept: a sector is made from its seed each time it's
 // needed (and a few are remembered while the ship's near them).
 //
+// What it builds is solid and lit by its own star: the ship hits its
+// stars, planets and moons (solids(), for ship.js's step, through
+// shipHits.js's solidsWith), and its stars light the map as the hand-made
+// ones do (stars(), for lighting.js's lightAt).
+//
 // createExpanse(parent, { universe, origin, make, makeStarfield, makeNear,
-//   far, tier, budget, prepare, reduced, onSector, onShift }) → { root,
-//   update({ ship, camera, t, dt, now }), loaded(), sector(), active(),
-//   dispose() }
+//   build, far, tier, detail, budget, prepare, reduced, onSector, onShift })
+//   → { root, update({ ship, camera, t, dt, now }), loaded(), sector(),
+//   active(), stars(), solids(), setStep(step, floor), pops(), dispose() }
 //   far: the far layer to draw in (universe/farStars.js's, in the parent's
-//   space, made with at least budget.nearSlots slots of budget.slotSize and
-//   room for budget.discs discs, and updated before this each frame); none,
-//   and it makes its own under the parent the first time it wakes
-//   budget: universe/budget.js's row (the tier's, unless it's given);
+//   space, made with farRoom's room and updated before this each frame);
+//   none, and it makes its own under the parent the first time it wakes
+//   tier, detail: the device's (lib/device), for the budget; budget:
+//   universe/budget.js's row (the level's, unless it's given)
+//   build: near.js's body builder (galaxy/bodies.js's buildBody, unless it's given)
 //   prepare(root, alive): the scene's warm(), for what near.js builds
 //   (near.js's: alive() says whether that system's still held)
 //   update: `t` the scene's clock, `now` the wall time in ms (0 holds the
 //   orbits where they start)
+//   stars(): lighting.js's STARS, then the light of each system built; one
+//   array, the same every frame
+//   solids(): what's built, each where it is this frame ({ id, at, r,
+//   reach }, near.js's); one array, kept while what's built stays the same
+//   setStep(step, floor): the pace's (qualityStep.js's stepAt): the discs
+//   to the level's budget at that step, and near.js's detail with it
+//   pops(): its far layer's (dev): what came in at once, since last asked
+// farRoom({ tier, detail }) → { slots, discs }: the room a far layer is made
+//   with for a level, the budget's slots and half again its discs (an edge
+//   easing in draws more than the budget)
 // activeAt(ship, was) → whether it's awake for a ship at (x, z), given whether it was
 
 import * as THREE from 'three';
 import { createChunkGrid } from '../../../runtime/chunkGrid';
 import { RIM, inExpanse, sectorOf } from '../../universe/layout';
 import { SKY_FAR, createFarStars, universeBudget } from '../../universe/shared/far';
+import { STARS } from '../../universe/shared/space';
 import { spaceTime } from '../gen/orbits';
 import { SECTOR, makeSector } from '../gen/sector';
 import { UNIVERSE } from '../gen/seed';
@@ -59,8 +76,12 @@ import { createStarfield } from './starfield';
 
 const KEEP = 32; // sectors remembered, made
 const SLOT_IN = 1; // a sector's specks fade in over this many seconds
-const DISC_ROOM = 1.5; // its own far layer's room for discs, of the budget's (an edge easing in draws more)
+const DISC_ROOM = 1.5; // a far layer's room for discs, of the budget's (an edge easing in draws more)
 const NONE = [];
+const NO_POPS = Object.freeze({ count: 0, px: 0 });
+
+const roomOf = (budget) => ({ slots: Array(budget.nearSlots).fill(budget.slotSize), discs: Math.ceil(budget.discs * DISC_ROOM) });
+export const farRoom = (level) => roomOf(universeBudget(level));
 
 export function activeAt(ship, was) {
   if (!ship) return false;
@@ -73,7 +94,7 @@ export function activeAt(ship, was) {
 
 const parseKey = (key) => key.split(',').map(Number);
 
-export function createExpanse(parent, { universe = UNIVERSE, origin, make = createSector, makeStarfield = createStarfield, makeNear = createNear, far = null, tier = 'mid', budget = universeBudget({ tier }), prepare = null, reduced = false, onSector = null, onShift = null } = {}) {
+export function createExpanse(parent, { universe = UNIVERSE, origin, make = createSector, makeStarfield = createStarfield, makeNear = createNear, build, far = null, tier = 'mid', detail, budget = universeBudget({ tier, detail }), prepare = null, reduced = false, onSector = null, onShift = null } = {}) {
   const root = new THREE.Group();
   root.name = 'expanse';
   parent.add(root);
@@ -81,17 +102,21 @@ export function createExpanse(parent, { universe = UNIVERSE, origin, make = crea
   const nearRoot = new THREE.Group();
   nearRoot.name = 'expanse-near';
   root.add(nearRoot);
-  const near = makeNear(nearRoot, { budget, tier, prepare });
-  // the far layer and its discs, made the first time it wakes; and its slots
+  const near = makeNear(nearRoot, { budget, tier, prepare, build });
+  // the far layer and its discs, made the first time it wakes (at the pace's
+  // step it was last told); and its slots
   let layer = null;
+  let stepped = budget;
   const layerOf = () => {
     if (!layer) {
-      const own = far ? null : createFarStars(parent, { places: [], skyFar: SKY_FAR, slots: Array(budget.nearSlots).fill(budget.slotSize), discs: Math.ceil(budget.discs * DISC_ROOM) });
+      const own = far ? null : createFarStars(parent, { places: [], skyFar: SKY_FAR, ...roomOf(budget) });
       const into = far ?? own;
-      layer = { far: into, own, discs: createDiscs(into, { budget, built: near.built }), free: Array.from({ length: budget.nearSlots }, (_, i) => budget.nearSlots - 1 - i) };
+      layer = { far: into, own, discs: createDiscs(into, { budget: stepped, built: near.built }), free: Array.from({ length: budget.nearSlots }, (_, i) => budget.nearSlots - 1 - i) };
     }
     return layer;
   };
+  // the light of what's built, after the map's own (one array, kept)
+  const lit = [...STARS];
   const slots = new Map(); // key → its slot
   const camAt = new THREE.Vector3();
   const cam = [0, 0, 0];
@@ -237,6 +262,19 @@ export function createExpanse(parent, { universe = UNIVERSE, origin, make = crea
     loaded: () => [...drawn.entries()].filter(([, d]) => d).map(([, d]) => d.sector.id),
     sector: () => (here ? sectorId(...parseKey(here)) : null),
     active: () => awake,
+    stars() {
+      const built = near.stars();
+      lit.length = STARS.length;
+      for (let i = 0; i < built.length; i++) lit.push(built[i]);
+      return lit;
+    },
+    solids: () => near.solids(),
+    setStep(step, floor = false) {
+      stepped = universeBudget({ tier, detail }, step, floor);
+      layer?.discs.setBudget(stepped);
+      near.setStep(step);
+    },
+    pops: () => layer?.far.pops?.() ?? NO_POPS,
     dispose() {
       sleep();
       near.dispose();
