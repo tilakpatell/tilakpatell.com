@@ -260,9 +260,9 @@ describe('a place that runs on a freeze', () => {
 });
 
 describe('a place that runs on a sequence', () => {
-  it('has its sets as spots of their own, the countdown at a spot apart, and only the game ticks its task', () => {
+  it('has its sets as spots of their own, the countdown at a spot apart or none, and only the game ticks its task', () => {
     const running = DESTINATIONS.filter((d) => d.sequence);
-    expect(running.map((d) => d.id)).toEqual(['cablestudio']);
+    expect(running.map((d) => d.id)).toEqual(['gearworld', 'cablestudio']);
     for (const d of running) {
       const sq = d.sequence;
       const spots = d.hotspots.map((h) => h.id);
@@ -270,15 +270,30 @@ describe('a place that runs on a sequence', () => {
         expect(spots, `${d.id}: ${id} has a spot`).toContain(id);
         expect(d.say[id]?.text, `${d.id}: ${id} has a line`).toBeTruthy();
         expect(d.acts[id]).toBe(`sequence-${id}`);
-        expect(d.hotspots.find((h) => h.id === id).verb).toBe('Switch on');
       }
-      expect(spots).toContain(sq.start);
-      expect(sq.items).not.toContain(sq.start);
-      expect(d.acts[sq.start]).toBe('sequence-start');
-      expect(d.goal).toBe(sq.start);
-      // (a set used before the countdown says to start it, one sentence)
-      expect(sq.early).toMatch(/^[A-Z][^!]*\.$/);
-      expect(sq.early.split(/[.?]\s/)).toHaveLength(1);
+      // (a place's sets share one verb, and it's never a Look)
+      const verbs = [...new Set(sq.items.map((id) => d.hotspots.find((h) => h.id === id).verb))];
+      expect(verbs, d.id).toHaveLength(1);
+      expect(verbs[0], d.id).not.toBe('Look');
+      if (sq.start) {
+        expect(spots).toContain(sq.start);
+        expect(sq.items).not.toContain(sq.start);
+        expect(d.acts[sq.start]).toBe('sequence-start');
+        expect(d.goal).toBe(sq.start);
+        // (a set used before the countdown says to start it, one sentence)
+        expect(sq.early).toMatch(/^[A-Z][^!]*\.$/);
+        expect(sq.early.split(/[.?]\s/)).toHaveLength(1);
+      } else {
+        // (or the first set used starts the clock: no countdown spot, nothing early, the map at one of the sets)
+        expect(Object.values(d.acts), d.id).not.toContain('sequence-start');
+        expect(sq.early, d.id).toBe(undefined);
+        expect(sq.items, d.id).toContain(d.goal);
+        // (its hunters start only with the clock, and never once the game's won)
+        for (const p of d.people.filter((o) => o.ai?.hunt)) {
+          expect(p.ai.hunt.near, p.id).toBe(undefined);
+          expect(p.ai.hunt.until, p.id).toBe(sq.task);
+        }
+      }
       expect(sq.need).toBeLessThanOrEqual(sq.items.length);
       expect(d.tasks.map((t) => t.id)).toContain(sq.task);
       expect(d.collect?.task, `${d.id}: a collect ticks the task`).not.toBe(sq.task);
@@ -295,17 +310,71 @@ describe('a place that runs on a sequence', () => {
     expect(studio.sequence.order).toBe(undefined);
     expect(studio.sequence.early).toBe('The studio isn’t counting down yet: start it at the control booth.');
     expect(studio.hotspots.find((h) => h.id === 'cablebooth').verb).toBe('Start the countdown');
+    expect(studio.sequence.items.map((id) => studio.hotspots.find((h) => h.id === id).verb)).toEqual(Array(7).fill('Switch on'));
     expect(studio.collect).toBe(null);
     expect(studio.done).toEqual({});
     expect(studio.unlock).toEqual({});
+  });
+  it('is Gear World’s five cogs, four in an order dealt each run, forty-five seconds from the first one wound, the gear police after him', () => {
+    const g = destinationById('gearworld');
+    const ITEMS = ['cogs', 'gcog-nw', 'gcog-ne', 'gcog-se', 'gcog-sw'];
+    expect(g.sequence).toMatchObject({ task: 'gearworld', items: ITEMS, need: 4, s: 45, hunt: true, who: null, unlock: null });
+    expect(g.sequence.start).toBe(undefined);
+    expect(g.sequence.order).toBe(undefined);
+    expect(g.sequence.lost).toBe('The city ran down before every cog was wound: back to the portal, and wind them again.');
+    expect(g.sequence.spotted).toBe('The gear police heard the city turn, and they’re coming for you.');
+    expect(g.caught).toBe('He clamps a hand on your shoulder and marches you back to the portal, and every cog stops.');
+    const w = g.sequence.words;
+    expect([w.next('The great wheel', 1, 4), w.dark('The north-west cogs'), w.again('The south-east cogs')]).toEqual(['1 of 4 wound: next, the great wheel', 'Wrong cog, and the city’s jammed: start again with the north-west cogs', 'That one’s turning already: next, the south-east cogs']);
+    expect(g.sequence.meter).toEqual({ title: 'The city’s cogs', label: 'Time', icon: 'cog' });
+    expect(g.goal).toBe('cogs');
+    // (Gearhead's hello no longer ticks it; the achievement stays on it)
+    expect(g.done).toEqual({});
+    expect(g.unlock).toEqual({ gearhead: 'gearworld' });
+    expect(g.tasks).toEqual([{ id: 'gearworld', name: 'Wind Gear World’s cogs', hint: 'Land on Gear World in the Rick and Morty sector, and wind the city’s cogs in the order the meter gives before the city runs down, with the gear police after you.' }]);
+    const at = (id) => g.hotspots.find((h) => h.id === id);
+    const c = g.centre;
+    expect(ITEMS.map((id) => [at(id).label, at(id).verb, at(id).x - c.x, at(id).z - c.z])).toEqual([
+      ['The great wheel', 'Wind', 9, -8],
+      ['The north-west cogs', 'Wind', -16, -9],
+      ['The north-east cogs', 'Wind', 15.5, -10],
+      ['The south-east cogs', 'Wind', 17.5, 5],
+      ['The south-west cogs', 'Wind', -17.5, 6],
+    ]);
+    expect(at('cogs').r).toBe(2.5);
+    expect(ITEMS.map((id) => g.say[id])).toEqual([
+      { who: null, text: 'The whole city turns. If one gear stops, everyone hears about it.' },
+      { who: null, text: 'A brass crank as tall as you, at the foot of a tower of gears.' },
+      { who: null, text: 'The tallest tower’s crank, worn smooth by gear people’s hands.' },
+      { who: null, text: 'It clanks round once and the whole stack wakes up.' },
+      { who: null, text: 'The shortest tower’s crank, and the stiffest in the city.' },
+    ]);
+    expect(g.say.gearhead).toEqual({ who: 'Gearhead', text: 'Morty! Rick’s my best friend. Rick’s everyone’s best friend. That’s the problem with Rick.' });
+  });
+  it('puts Gear World’s police on beats of their own, away from the cogs and the way in, named as gear cops', () => {
+    const g = destinationById('gearworld');
+    const police = g.people.filter((p) => p.ai?.hunt);
+    expect(police.map((p) => [p.id, p.who, p.ai.hunt])).toEqual([
+      ['gpolice-a', 'gromflomite', { speed: 2.6, catchR: 1.2, until: 'gearworld' }],
+      ['gpolice-b', 'gromflomite', { speed: 2.8, catchR: 1.2, until: 'gearworld' }],
+    ]);
+    expect(g.kinds).toContain('gromflomite');
+    expect(g.say['gpolice-a']).toEqual({ who: 'A gear cop', text: 'A gear cop on his beat, in Federation blue.' });
+    expect(g.say['gpolice-b']).toEqual({ who: 'A gear cop', text: 'A gear cop by the square, watching who touches the cogs.' });
+    const cogs = g.sequence.items.map((id) => g.hotspots.find((h) => h.id === id));
+    // (home, where the city's calm sends them, clear of every cog and well away from where a catch sends Morty)
+    for (const p of police) {
+      for (const h of cogs) expect(Math.hypot(p.x - h.x, p.z - h.z), `${p.id} by ${h.id}`).toBeGreaterThanOrEqual(7.4);
+      expect(Math.hypot(p.x - g.arrive.x, p.z - g.arrive.z), `${p.id} by the way in`).toBeGreaterThanOrEqual(20.8);
+    }
   });
   it('deals no running order that can’t be walked at a run in sixty per cent of the clock', () => {
     for (const d of DESTINATIONS.filter((p) => p.sequence)) {
       const sq = d.sequence;
       const at = (id) => d.hotspots.find((h) => h.id === id);
-      // (straight lines from the start spot through every ordered `need` of the sets: the longest)
+      // (straight lines from the start spot, or the way in, through every ordered `need` of the sets: the longest)
       const longest = (from, left, n) => (n === 0 ? 0 : Math.max(...left.map((id) => Math.hypot(at(id).x - from.x, at(id).z - from.z) + longest(at(id), left.filter((o) => o !== id), n - 1))));
-      const far = longest(at(sq.start), sq.items, sq.need);
+      const far = longest(sq.start ? at(sq.start) : d.arrive, sq.items, sq.need);
       expect(far, `${d.id}: ${far.toFixed(1)} m`).toBeLessThanOrEqual(0.6 * sq.s * MORTY.run);
     }
   });

@@ -19,6 +19,7 @@ const USED = {
   schwifty: ['mic'],
   fantasy: ['goblins', 'giants'],
   froopyland: ['tommy'],
+  gearworld: ['cogs', 'gcog-nw', 'gcog-ne', 'gcog-se', 'gcog-sw'],
   birdworld: ['bcrystal-path', 'bcrystal-trees', 'bcrystal-east', 'bcrystal-west', 'bcrystal-grass'],
 };
 

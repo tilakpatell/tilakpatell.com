@@ -6,6 +6,8 @@ import { CLAY_TOWERS } from './claytowers';
 
 // (Bird World's crystals up on the clay towers' tops: ./claytowers.js)
 const TOP = CLAY_TOWERS.spots;
+// (a label in the middle of a line: Gear World's cogs)
+const low = (l) => l[0].toLowerCase() + l.slice(1);
 
 export const ROWS = [
   place(0, {
@@ -567,7 +569,12 @@ export const ROWS = [
     deep: 50,
     wide: 70,
     sky: { top: 0x6a4a2a, mid: 0xc98a4a, low: 0xf2d39a, sun: 0xfff0c8, clouds: 1, moons: 0 },
-    people: [{ id: 'gearhead', dx: -7, dz: -7.2, face: S }],
+    people: [
+      { id: 'gearhead', dx: -7, dz: -7.2, face: S },
+      // the gear police, on their beats till the city turns (the sequence's `hunt`)
+      { id: 'gpolice-a', who: 'gromflomite', dx: -12, dz: 1, face: E, ai: { watch: 8, wander: [[-12, 1], [-5, -1], [-12, 4]], speed: 0.9, pause: 3, hunt: { speed: 2.6, catchR: 1.2, until: 'gearworld' } } },
+      { id: 'gpolice-b', who: 'gromflomite', dx: 12, dz: 0, face: W, ai: { watch: 8, wander: [[12, 0], [5, -2], [12, 3]], speed: 0.9, pause: 3, hunt: { speed: 2.8, catchR: 1.2, until: 'gearworld' } } },
+    ],
     extras: [
       { kind: 'gearperson-a', dx: 3, dz: -2, face: 2.4, ai: { wander: [[3, -2], [6, 3], [0, 5]], speed: 0.9, pause: 3 } },
       { kind: 'gearperson-b', dx: 12, dz: 2, face: W, ai: { wander: [[12, 2], [15, -3], [9, -4]], speed: 0.9, pause: 3 } },
@@ -576,7 +583,12 @@ export const ROWS = [
     ],
     spots: [
       { id: 'gearhead', dx: -7, dz: -7.2, label: 'Gearhead', verb: 'Talk' },
-      { id: 'cogs', dx: 9, dz: -8, label: 'The city’s gears', verb: 'Look', r: 2.5 },
+      // the cogs to wind, one by each tower of gears and the great wheel
+      { id: 'cogs', dx: 9, dz: -8, label: 'The great wheel', verb: 'Wind', r: 2.5 },
+      { id: 'gcog-nw', dx: -16, dz: -9, label: 'The north-west cogs', verb: 'Wind' },
+      { id: 'gcog-ne', dx: 15.5, dz: -10, label: 'The north-east cogs', verb: 'Wind' },
+      { id: 'gcog-se', dx: 17.5, dz: 5, label: 'The south-east cogs', verb: 'Wind' },
+      { id: 'gcog-sw', dx: -17.5, dz: 6, label: 'The south-west cogs', verb: 'Wind' },
     ],
     solids: [
       { id: 'shop', dx: -7, dz: -11.5, w: 8, d: 5 },
@@ -586,14 +598,38 @@ export const ROWS = [
       { id: 'tower-c', dx: 23, dz: 7, r: 4 },
       { id: 'tower-d', dx: -23, dz: 8, r: 4 },
     ],
-    tasks: [{ id: 'gearworld', name: 'Visit Gearhead', hint: 'Land on Gear World in the Rick and Morty sector, and say hello to Gearhead at his shop.' }],
+    tasks: [{ id: 'gearworld', name: 'Wind Gear World’s cogs', hint: 'Land on Gear World in the Rick and Morty sector, and wind the city’s cogs in the order the meter gives before the city runs down, with the gear police after you.' }],
     say: {
       gearhead: { who: 'Gearhead', text: 'Morty! Rick’s my best friend. Rick’s everyone’s best friend. That’s the problem with Rick.' },
       cogs: { who: null, text: 'The whole city turns. If one gear stops, everyone hears about it.' },
+      'gcog-nw': { who: null, text: 'A brass crank as tall as you, at the foot of a tower of gears.' },
+      'gcog-ne': { who: null, text: 'The tallest tower’s crank, worn smooth by gear people’s hands.' },
+      'gcog-se': { who: null, text: 'It clanks round once and the whole stack wakes up.' },
+      'gcog-sw': { who: null, text: 'The shortest tower’s crank, and the stiffest in the city.' },
+      // (the police's names, for a catch's word)
+      'gpolice-a': { who: 'A gear cop', text: 'A gear cop on his beat, in Federation blue.' },
+      'gpolice-b': { who: 'A gear cop', text: 'A gear cop by the square, watching who touches the cogs.' },
     },
-    done: { gearhead: 'gearworld' },
+    // the city's cogs wound in a running order dealt each run, the clock from
+    // the first one, the police after him while it runs (../games/sequence.js)
+    sequence: {
+      task: 'gearworld',
+      items: ['cogs', 'gcog-nw', 'gcog-ne', 'gcog-se', 'gcog-sw'],
+      need: 4,
+      s: 45,
+      hunt: true,
+      who: null,
+      lost: 'The city ran down before every cog was wound: back to the portal, and wind them again.',
+      spotted: 'The gear police heard the city turn, and they’re coming for you.',
+      words: { next: (l, on, n) => `${on} of ${n} wound: next, ${low(l)}`, dark: (l) => `Wrong cog, and the city’s jammed: start again with ${low(l)}`, again: (l) => `That one’s turning already: next, ${low(l)}` },
+      meter: { title: 'The city’s cogs', label: 'Time', icon: 'cog' },
+      unlock: null,
+    },
+    caught: 'He clamps a hand on your shoulder and marches you back to the portal, and every cog stops.',
+    goal: 'cogs',
+    // (the achievement stays on Gearhead's hello)
     unlock: { gearhead: 'gearworld' },
-    kinds: ['gearhead', 'gearperson-a', 'gearperson-b'],
+    kinds: ['gearhead', 'gearperson-a', 'gearperson-b', 'gromflomite'],
   }),
   place(12, {
     id: 'vindicators',
