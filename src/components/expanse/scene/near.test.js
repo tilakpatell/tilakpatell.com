@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
-import { LOOKS } from '../../galaxy/bodies';
+import { LOOKS } from '../../galaxy/shared/bodies';
 import { moonAt, orbitAt } from '../gen/orbits';
 import { addBodies } from '../gen/systems';
 import { HAND } from './fixtures/hand';
@@ -291,6 +291,31 @@ describe('the nearest systems, built', () => {
     await Promise.resolve();
     expect(group.children).toHaveLength(0);
     expect(near.built().size).toBe(0);
+  });
+
+  it('tells what readies a system whether it’s still wanted, so a system let go stops being readied', () => {
+    const alive = [];
+    const { near } = nearOf({ prepare: (o, still) => (alive.push(still), new Promise(() => {})) });
+    settle(near, SECTOR.systems, above(A, 0.5 * RA));
+    expect(alive).toHaveLength(1);
+    expect(alive[0]()).toBe(true);
+    near.update(SECTOR.systems, above(A, 1.2 * RA), 0, null); // (kept)
+    expect(alive[0]()).toBe(true);
+    near.update(SECTOR.systems, above(A, 2 * RA), 0, null); // (let go)
+    expect(alive[0]()).toBe(false);
+    // and a system held again is readied again, with its own
+    settle(near, SECTOR.systems, above(A, 0.5 * RA));
+    expect(alive).toHaveLength(2);
+    expect([alive[0](), alive[1]()]).toEqual([false, true]);
+    near.dispose();
+    expect(alive[1]()).toBe(false);
+  });
+
+  it('writes a ring in the canvas’s colour space, as the bodies beside it do', () => {
+    const { group, near } = nearOf();
+    settle(near, SECTOR.systems, above(A, 0.5 * RA));
+    // (three's last step: to the canvas's sRGB with post off, nothing into post's linear buffer)
+    expect(group.getObjectByName(`ring:${GAS.id}`).material.fragmentShader).toMatch(/#include <colorspace_fragment>\s*\}\s*$/);
   });
 
   it('lays each ring in its planet’s orbit plane, at the band’s radii, and fades it in as the system’s discs fade out', () => {

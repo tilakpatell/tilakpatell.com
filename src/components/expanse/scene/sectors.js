@@ -5,7 +5,9 @@
 // The wonders are cheap: a nebula a cloud of soft additive puffs, a pulsar a
 // small bright sphere, a derelict or a rogue world a small dark one, each
 // shown within where it's real (levels.js's realAt, of its speck) and a
-// disc (discs.js) or a speck past that. No textures.
+// disc (discs.js) or a speck past that. A nebula has no disc: its cloud
+// shows while all of it is within the far plane (FAR less its size), fading
+// over the last fifth of that as its speck comes in. No textures.
 //
 // Its stars are the far layer's (universe/farStars.js): slotOf gives the
 // sector's stars and wonders as a slot of specks, for past the far plane;
@@ -22,9 +24,9 @@
 //   The caller puts the group under a root at `at` and calls reanchor(at) whenever `at` moves.
 
 import * as THREE from 'three';
-import { LOOKS } from '../../galaxy/bodies';
+import { LOOKS } from '../../galaxy/shared/bodies';
 import { rngOf } from '../gen/seed';
-import { realAt } from './levels';
+import { FAR, levelWeights, realAt } from './levels';
 
 export const TYPE_LOOK = {
   rock: 'moon-dust',
@@ -115,6 +117,17 @@ function nebula(w, made) {
   return points;
 }
 
+// a cloud's material, faded as a whole without a change to its shader: added
+// as before (its alpha is one), times its blend's constant alpha
+function fading(mat) {
+  mat.blending = THREE.CustomBlending;
+  mat.blendEquation = THREE.AddEquation;
+  mat.blendSrc = mat.blendSrcAlpha = THREE.ConstantAlphaFactor;
+  mat.blendDst = mat.blendDstAlpha = THREE.OneFactor;
+  mat.blendAlpha = 1;
+  return mat;
+}
+
 // a hex colour's bytes, into `out` at `i`
 const bytesInto = (hex, out, i) => {
   const n = parseInt(hex.slice(1), 16);
@@ -176,9 +189,15 @@ export function createSector(sector) {
     group.add(obj);
     return obj;
   });
-  const real = sector.wonders.map((w) => realAt({ r: w.size * WONDER_SPECK }));
+  // (a nebula has no disc: its cloud stands for it while all of it is
+  // within the far plane, fading over the last fifth of that, as its speck
+  // comes in over the far plane's)
+  const real = sector.wonders.map((w) => (w.kind === 'nebula' ? FAR - w.size : realAt({ r: w.size * WONDER_SPECK })));
+  const clouds = sector.wonders.map((w, i) => (w.kind === 'nebula' ? fading(wonders[i].material) : null));
 
   const cam = new THREE.Vector3();
+  const REACH = { reach: 0 };
+  const W = { full: 0, disc: 0, speck: 0 };
   const api = {
     group,
     sector,
@@ -186,7 +205,12 @@ export function createSector(sector) {
       group.updateWorldMatrix(true, false);
       group.worldToLocal(camera.getWorldPosition(cam));
       wonders.forEach((obj, i) => {
-        obj.visible = obj.position.distanceTo(cam) < real[i];
+        const d = obj.position.distanceTo(cam);
+        obj.visible = d < real[i];
+        if (clouds[i] && obj.visible) {
+          REACH.reach = real[i];
+          clouds[i].blendAlpha = levelWeights(d, REACH, W).full;
+        }
       });
     },
     reanchor(at) {

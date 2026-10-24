@@ -6,7 +6,8 @@
 //     reach three of the system's
 //   - its planets where their orbits have them on the shared clock
 //     (orbitAt), each in its type's look (sectors.js's TYPE_LOOK, built by
-//     galaxy/bodies.js) and lit from its star
+//     galaxy/bodies.js, lent through galaxy/shared/bodies.js) and lit from
+//     its star
 //   - their moons where theirs have them (moonAt), small, in their kind's
 //     look (MOON_LOOK)
 //   - a ring for each ring band: flat in its planet's orbit plane, banded
@@ -28,10 +29,10 @@
 // A little a frame: a system's bodies are made one at a time, as many a
 // frame as the budget's expanseMs allows (one at least), the system hidden
 // till all are. Then it goes through `prepare` (the scene's warm(): its
-// shaders made) and shows when that's done. Only then does built() give it,
-// with its build reach, so its discs give way over the last fifth of that
-// with the bodies there to take over; its light and its solids are there
-// from the start.
+// shaders made), told whether it's still held, and shows when that's done
+// (if it is). Only then does built() give it, with its build reach, so its
+// discs give way over the last fifth of that with the bodies there to take
+// over; its light and its solids are there from the start.
 //
 // DISC_RADII, AHEAD, LET_GO: the numbers above
 // buildReach(system) → its build reach (the system through gen's addBodies)
@@ -42,6 +43,9 @@
 //   solids() → [{ id, at, r, reach }], setStep(step), dispose() }
 //   group: where it builds, in the map's space (the systems' and cam's)
 //   budget: universe/budget.js's row (systemsBuilt, expanseMs)
+//   prepare(root, alive) → a promise, or nothing: `alive()` says whether the
+//   system's still held, so a readying (gpuWork's compileSlices) can stop
+//   when it's let go
 //   timer: () → ms (performance.now), for the frame's time
 //   update: the loaded systems through addBodies, the camera's place, the
 //   shared clock in seconds (orbits.js's spaceTime), the camera (each body's
@@ -53,7 +57,7 @@
 //   ground is worked to fewer octaves, as the map's planets' is
 
 import * as THREE from 'three';
-import { LOOKS, buildBody } from '../../galaxy/bodies';
+import { LOOKS, buildBody } from '../../galaxy/shared/bodies';
 import { moonAt, orbitAt } from '../gen/orbits';
 import { hash64, range, rngOf } from '../gen/seed';
 import { levelWeights } from './levels';
@@ -135,6 +139,7 @@ const RING_FRAG = /* glsl */ `
     float face = 0.3 + 0.7 * sqrt(abs(uSun.z));
     float a = clamp(band, 0.0, 1.0) * edge * uFade;
     gl_FragColor = vec4(uColor * face * mix(0.12, 1.0, lit), a);
+    #include <colorspace_fragment>
   }
 `;
 
@@ -278,7 +283,7 @@ export function createNear(group, { budget, tier = 'mid', build = buildBody, pre
   };
   const finish = (h) => {
     h.made = true;
-    const p = prepare?.(h.root);
+    const p = prepare?.(h.root, () => !h.gone);
     if (p && typeof p.then === 'function') p.then(() => show(h), () => show(h));
     else show(h);
   };

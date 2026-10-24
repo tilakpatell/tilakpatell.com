@@ -6,7 +6,8 @@
 //   - its planets where their orbits have them on the shared clock
 //     (orbitAt), and their moons (moonAt), lit from their star, each in the
 //     colour of the look it's built with (sectors.js's TYPE_LOOK, MOON_LOOK)
-//   - the wonders but the nebulae (lane 1's), as their balls (WONDER)
+//   - the wonders but the nebulae, as their balls (WONDER); a nebula's
+//     cloud stands for it out to the far plane (sectors.js)
 // and pushes each with how much of it shows: levels.js's disc weight, grown
 // in from nothing over the far plane's last fifth and gone to nothing over
 // the last fifth of where the real thing takes over, which covers it.

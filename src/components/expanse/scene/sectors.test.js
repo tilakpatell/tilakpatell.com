@@ -1,13 +1,14 @@
 import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
-import { LOOKS } from '../../galaxy/bodies';
+import { LOOKS } from '../../galaxy/shared/bodies';
 import { createFarStars } from '../../universe/shared/far';
 import { SECTOR } from '../gen/grid';
 import { makeSector } from '../gen/sector';
 import { UNIVERSE } from '../gen/seed';
 import { addBodies } from '../gen/systems';
-import { PLANET_TYPES } from '../gen/tables';
-import { realAt } from './levels';
+import { PLANET_TYPES, WONDERS, WONDER_KINDS } from '../gen/tables';
+import { createDiscs } from './discs';
+import { FAR, levelWeights, realAt } from './levels';
 import { TYPE_LOOK, WONDER, WONDER_SPECK, createSector, slotOf } from './sectors';
 
 const named = (group, prefix) => {
@@ -130,7 +131,7 @@ describe('a generated sector, drawn', () => {
     const s = createSector(HAND);
     const root = new THREE.Group();
     root.add(s.group);
-    for (const w of HAND.wonders) {
+    for (const w of HAND.wonders.filter((one) => one.kind !== 'nebula')) {
       const real = realAt({ r: w.size * WONDER_SPECK });
       const obj = s.group.getObjectByName(`wonder:${w.id}`);
       s.update(0, 1 / 60, camAt([w.at[0], w.at[1] + 0.95 * real, w.at[2]]));
@@ -144,6 +145,66 @@ describe('a generated sector, drawn', () => {
     s.update(0, 1 / 60, camAt([w.at[0] - 390000, w.at[1] + 10, w.at[2]]));
     expect(s.group.getObjectByName(`wonder:${w.id}`).visible).toBe(true);
     s.dispose();
+  });
+
+  it('shows a nebula’s cloud, which has no disc, out to where all of it is within the far plane, fading over the last fifth of that', () => {
+    const s = createSector(HAND);
+    const w = HAND.wonders.find((one) => one.kind === 'nebula');
+    const cloud = s.group.getObjectByName(`wonder:${w.id}`);
+    const real = FAR - w.size;
+    const m = cloud.material;
+    // added as it was, all of it times the blend's constant alpha
+    expect([m.blending, m.blendEquation, m.blendSrc, m.blendDst]).toEqual([THREE.CustomBlending, THREE.AddEquation, THREE.ConstantAlphaFactor, THREE.OneFactor]);
+    expect([m.blendSrcAlpha, m.blendDstAlpha]).toEqual([THREE.ConstantAlphaFactor, THREE.OneFactor]);
+    for (const k of [0, 0.5, 0.8]) {
+      s.update(0, 1 / 60, camAt([w.at[0], w.at[1] + k * real, w.at[2]]));
+      expect(cloud.visible, `${k}`).toBe(true);
+      expect(m.blendAlpha, `${k}`).toBe(1);
+    }
+    for (const k of [0.85, 0.9, 0.99]) {
+      s.update(0, 1 / 60, camAt([w.at[0], w.at[1] + k * real, w.at[2]]));
+      expect(cloud.visible, `${k}`).toBe(true);
+      expect(m.blendAlpha, `${k}`).toBeCloseTo(levelWeights(k * real, { reach: real }).full, 6);
+    }
+    s.update(0, 1 / 60, camAt([w.at[0], w.at[1] + real + 1, w.at[2]]));
+    expect(cloud.visible).toBe(false);
+    s.dispose();
+  });
+
+  it('draws every wonder at every distance as its ball or cloud, its disc or its speck', () => {
+    // each kind at the least and the most the table makes it, HAND's, and a real sector's
+    const sized = WONDERS.flatMap(({ kind, size }, j) => size.map((sz, q) => ({ id: `E:5,0:s${j}${q}`, kind, name: kind, at: [400000 + j * 6000, 0, 20000 + q * 6000], size: sz, seed: BigInt(2 * j + q + 1) })));
+    const sectors = [HAND, { ...HAND, wonders: sized }, makeSector(UNIVERSE, 1, -1)];
+    // how much of a ball or cloud shows: none hidden, else its blend's
+    // constant alpha if it fades by it, or all of it
+    const shown = (o) => (!o.visible ? 0 : o.material.blending === THREE.CustomBlending ? o.material.blendAlpha : 1);
+    // the discs, into a far layer's writer that keeps a frame's rows (with
+    // no budget to speak of, their edge is the far plane's from the first)
+    const rows = [];
+    const discs = createDiscs({ discs: { begin: () => (rows.length = 0), push: (...a) => rows.push({ id: a[11], alpha: a[10] }), end() {} } }, { budget: { discs: Infinity } });
+    const camera = camAt([0, 0, 0]);
+    const kinds = new Set();
+    for (const sector of sectors) {
+      const s = createSector(sector);
+      for (const w of sector.wonders) {
+        kinds.add(w.kind);
+        const obj = s.group.getObjectByName(`wonder:${w.id}`);
+        for (let d = 0; d <= 60000; d += 100) {
+          const at = [w.at[0], w.at[1] + d, w.at[2]];
+          camera.position.set(...at);
+          camera.updateMatrixWorld();
+          s.update(0, 1 / 60, camera);
+          discs.feed([{ systems: [], wonders: [w] }], at);
+          const disc = rows.find((r) => r.id === w.id)?.alpha ?? 0;
+          // (its slot's speck, as the far layer's shader has it: in over the far plane's last fifth)
+          const speck = levelWeights(d, { reach: 0 }).speck;
+          const drawn = shown(obj) + disc + speck;
+          if (!(drawn >= 0.5)) expect.fail(`${w.id}, a ${w.kind} of size ${w.size}, at ${d}: ${drawn.toFixed(3)} of it drawn`);
+        }
+      }
+      s.dispose();
+    }
+    expect([...kinds].sort()).toEqual([...WONDER_KINDS].sort());
   });
 
   it('disposes down to an empty group, out of its parent', () => {

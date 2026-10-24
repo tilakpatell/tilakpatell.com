@@ -37,7 +37,8 @@
 //   room for budget.discs discs, and updated before this each frame); none,
 //   and it makes its own under the parent the first time it wakes
 //   budget: universe/budget.js's row (the tier's, unless it's given);
-//   prepare(o): the scene's warm(), for what near.js builds
+//   prepare(root, alive): the scene's warm(), for what near.js builds
+//   (near.js's: alive() says whether that system's still held)
 //   update: `t` the scene's clock, `now` the wall time in ms (0 holds the
 //   orbits where they start)
 // activeAt(ship, was) → whether it's awake for a ship at (x, z), given whether it was
