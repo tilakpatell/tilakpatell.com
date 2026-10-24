@@ -47,6 +47,7 @@ export const PICK_A_SHIP = 'Pick a ship to fly out to it.';
 // (a retired phrase): the chart tilts and turns, and looks straight down again.
 export const CHART_WORDS = {
   tools: 'Chart tools', // the tools' group, for a screen reader
+  places: 'Places', // the mini-map's places, a list for a screen reader (the stations, worlds, moons and wonders)
   zoomIn: 'Zoom in',
   zoomOut: 'Zoom out',
   toShip: 'Back to the ship',

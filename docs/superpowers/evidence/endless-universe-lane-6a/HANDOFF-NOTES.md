@@ -108,3 +108,35 @@ What `src/components/universe/chart/NavChart.jsx` and the rewired `NavMap.jsx` d
   - A probe of that one step (the ship 1,200 from the front, the map open, not committed) ran on both. It found the front's button drawn, enabled and under nothing on both, and its click closed the map on both. On the lane, `state.jump.id` was then `front`, with no page errors.
   - The whole check on `main` didn't get that far: under the other runs' load the war hadn't loaded when the check asked for the front.
   - Task 10's step 7 runs it again; the check's last step should read `state.jump` too. `sector-check.mjs` wasn't run here; `marks.test.js` pins the Curve's chip.
+
+## Task 9: the mini-map on the same projection and data
+
+What the rebuilt `src/components/universe/MiniMap.jsx` does now, where it differs from the lane plan.
+
+### Landed
+
+- `MiniMap({ selected, onSelect, linkTo, kind, className, interactive = false, ship = null })` draws the nav map's chart in its 600 × 300 box (`FRAMES.mini`). Its marks are `HAND_MARKS`' pickable ones and the sun, or with `kind="fandom"` (Home's teaser) the fandom worlds and the sun. Its view is `miniView` of them, through `placeMarks` and `placeShip`. Each place has an `li[data-id][data-kind][data-side][data-quiet]`, its style `left` then `top` in % of the box. A place's name is its universe's own label where it has one ("Marvel"), else `nav.js`'s, and every button or link has it as its `aria-label`, its name shown or not.
+- The whole 3D-off map now has all 44 places: the six stations, the 13 worlds, the Curve's ten moons and the 15 wonders. Its orbit rings are gone; the sun and the belt (a `ringOn` ring) stay. Each place stands on a stem from the disc (`.minimap-stem[data-dir]`, the nav map's blue, dashed down). The ship, when given one, is `g.minimap-ship[data-edge]`, pinned to the box.
+- `interactive` (only `UniverseMap.jsx`'s 3D-off map passes it) adds `useChartView(box, { open, frame: FRAMES.mini, orbit: false })`: a drag pans (a drag from a name picks nothing), the wheel and a pinch zoom, and `+`, `−` and `0` zoom or show it all again with the focus anywhere inside it. Its `ChartTools` row (zoom in, zoom out, show everything, `buttonClass="chip"`) is under the box, 36 px, 44 px on a coarse pointer. The root has `data-level` (and `data-live` when interactive).
+- The arrows step through the places on the chart with `ringStep`, so they reach the wonders and moons too.
+- `MiniMap.test.jsx` (8 tests): the plan's four, and every place's name for a screen reader with the pick named, names under or beside their dots and never meeting, stems up and down, and the tools.
+- Checked in Chromium on the lane's dev server (`lab/minimap9/check.mjs`, not committed): the 3D-off map at 1280 × 800 has all 44 places, no orbit rings and 19 names showing, none meeting; `+` zooms without picking, six reach the system level and `0` shows it all again; an arrow picks the next place and keeps the focus on it; a wonder clicked is pressed and the panel shows it, and the arrow goes on to the next wonder; a drag from a name picks nothing and moves the middle 120 px with the hand; the wheel zooms and "Show everything" puts it back; a quiet name shows on a hover. At 390 × 844 the map and its tools are on the screen. The teaser has the 13 worlds, every name showing, none meeting, each a link. No page errors.
+- Home's lazy section grows from 24.70 kB to 55.22 kB (gzip 10.71 to 24.80): the evidence README has the table.
+
+### Deviations from the plan
+
+- A name goes under its dot, or right or left of it (`sides: ['under', 'right', 'left']`), not under alone. Under alone named 7 of the 44 places in the map's 876 px box at 1280 × 800 (4 of the 13 worlds: a wonder's dot sits beside nearly every world) and 3 at the server's 600 px. With the two sides it names 19 there (12 of the 13 worlds). `universe.css` places a name beside its dot by `data-side`, past the dot's edge (`--dot`, its radius in px), and `measure` makes the box that much longer.
+- `placeMarks` is given the box's px a unit (`scale`) and its names' size (`fontPx`), measured on a resize, the names' width in the mono face (`measure`) and the ship to keep off (`avoid`). The plan's call had none, so the names would have been thinned for a 600 px box at any size.
+- The list is named `CHART_WORDS.places` ("Places"), new in the glossary, not "Universes": it has the wonders and moons now.
+- `UniverseMap.jsx` passes `selected ?? startAt`. The page's `selected` is a universe's or a moon's id only; a wonder's is `startAt` (its link's). Without it a wonder picked on the flat map was never pressed, and the arrows went on from the first place.
+- `ringStep` steps over the places on the chart (after a zoom, those in range and the pick), not every shown id, so the focus never goes to a place with no button.
+- The build was measured with `npx vite build`, not `npm run build`, whose `prebuild` fetches GitHub.
+
+### Left
+
+- On a phone (390 × 844) the whole 3D-off map names no place at its opening zoom: 44 places in a 342 px box leave no name room clear of the dots. A name shows on a tap (the pick), a hover or zoomed in. The teaser on a phone hid its names before, and still does.
+- The Curve's thirteen places sit in one clump at the top of the whole 3D-off map, about 30 px across at 1280 × 800, and a click there picks the one on top. The nav map folds them into one mark (`marks.js`'s `foldMarks`); the mini-map doesn't. Zooming in, a drag or the arrows reach each one.
+- `declutter` keeps a name off another place's dot as the nav map's 16 px dot, and the mini-map's world dots are up to 32 px across. At 1280 × 800 one name, Rick and Morty's, runs into The Lord of the Rings' dot.
+- A name under its dot crosses the dot's foot, as before.
+- Task 10's mini-map step ("`+` with the focus inside it changes its `data-level`"): from the opening range (73,202) one `+` is still the neighbourhood. It takes six. The check should press until it changes, at most six times.
+- The `ship` prop isn't given to the hook, as the plan has it, so `0` goes back to the whole map and the stems are measured from the disc. When lane 4c passes a ship, giving it to `useChartView` as well would measure the stems from the ship's height, and `0` would re-centre on it.

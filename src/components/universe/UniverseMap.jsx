@@ -498,7 +498,8 @@ export default function UniverseMap({ selected, onSelect, onOpen, handle, frozen
         </>
       ) : (
         <div className="universe-flat">
-          <MiniMap selected={selected} onSelect={onSelect} />
+          {/* (selected is a universe's or a moon's id: a wonder picked on it is startAt, its link's) */}
+          <MiniMap selected={selected ?? startAt} onSelect={onSelect} interactive />
         </div>
       )}
     </WorldHost>

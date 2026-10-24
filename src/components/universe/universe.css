@@ -3,12 +3,22 @@
 @import './thumbs.css';
 @import './desk.css';
 
-/* The flat map: Home's teaser and the 3D-off map */
-.minimap { position: relative; width: 100%; aspect-ratio: 2 / 1; }
+/* The flat map: Home's teaser and the 3D-off map (MiniMap.jsx), the nav
+   map's chart in a box: each place on its stem, its name under its dot or
+   beside it, and on the 3D-off map the chart's tools under the box */
+.minimap { position: relative; width: 100%; }
+.minimap-chart { position: relative; aspect-ratio: 2 / 1; }
+/* (a drag moves the 3D-off map, as one moves the nav map's chart) */
+.minimap[data-live] .minimap-chart { touch-action: none; cursor: grab; user-select: none; }
+.minimap[data-live] .minimap-chart:active { cursor: grabbing; }
 .minimap-svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
-.minimap-orbit { fill: none; stroke: var(--border); stroke-width: 1; vector-effect: non-scaling-stroke; }
+/* the nav map's stems and its ship (navmap.css), at a px whatever the box's size */
+.minimap-stem { stroke: rgb(159 216 255 / 0.45); stroke-width: 1; vector-effect: non-scaling-stroke; }
+.minimap-stem[data-dir='down'] { stroke-dasharray: 2 3; }
+.minimap-ship { fill: #fff; filter: drop-shadow(0 0 3px #9fd8ff); }
 .minimap-labels { position: absolute; inset: 0; margin: 0; padding: 0; list-style: none; }
 .minimap-item { position: absolute; width: 0; height: 0; }
+.minimap-item:is(:hover, :focus-within) { z-index: 1; } /* (its name over its neighbours') */
 .minimap-hit {
   position: absolute;
   left: 0;
@@ -34,6 +44,20 @@
 .minimap-hit[aria-pressed='true'] { color: var(--swatch); }
 .minimap-hit:focus-visible { outline: 2px solid var(--swatch); outline-offset: 2px; }
 .minimap-name { pointer-events: none; }
+/* a name beside its dot: the button a 44px square round the dot, the name
+   6px past the dot's edge (--dot, its radius: MiniMap.jsx), 14px out at the
+   least (chart/declutter.js's boxes: a 16px dot and the gap) */
+.minimap-item[data-side='right'] .minimap-hit { translate: -22px -50%; padding: 0 0 0 max(36px, calc(var(--dot) + 28px)); align-content: center; justify-items: start; }
+.minimap-item[data-side='left'] .minimap-hit { translate: calc(22px - 100%) -50%; padding: 0 max(36px, calc(var(--dot) + 28px)) 0 0; align-content: center; justify-items: end; }
+/* a name with no room shows on a hover or a focus, and the picked one's always, on glass */
+.minimap-item[data-quiet] .minimap-name { display: none; }
+.minimap-item[data-quiet] .minimap-hit:is(:hover, :focus-visible, [aria-pressed='true']) .minimap-name { display: block; padding: 0 0.3em; border-radius: var(--r-chip); background: rgb(3 6 16 / 0.85); }
+/* the chart's tools, under the box: the nav map's sizes (navmap.css) */
+.minimap-tools { display: flex; justify-content: flex-end; gap: 0.3rem; margin-top: 0.5rem; }
+.minimap-tools .chip { justify-content: center; width: 36px; height: 36px; padding: 0; font-size: var(--fs-base); }
+@media (pointer: coarse) {
+  .minimap-tools .chip { width: 44px; height: 44px; }
+}
 @media (max-width: 640px) {
   .minimap-hit { font-size: 0.58rem; padding-top: 24px; }
   /* on a phone the long names crowd: the teaser keeps the dots, the map keeps the selected name */
