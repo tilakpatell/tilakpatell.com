@@ -55,7 +55,7 @@ Line numbers are from `main` at `cc5e2eaf`. Lane 2's PRs 2.3 to 2.5 move them, s
 - Draw calls and triangles are no higher at any pose in `lab/universe/baseline/<tier>.json`. Say the numbers.
 - Before the lane is done: `npm run lint`, `npm test`, `npm run build`, `node scripts/health.mjs --check --skip build` and `node scripts/autopilot-check.mjs --only smoke --skip lint,test,build --routes /universe`.
 - Every commit is one plain sentence in the repo's voice. The body says why and gives the numbers, and it ends with the attribution lines the session's harness gives (`.claude/skills/autopilot/SKILL.md`, "Commit"). This plan writes the first line only, with no model names.
-- The hand-off goes in `docs/superpowers/evidence/endless-universe-3/HANDOFF-NOTES.md`, not in `HANDOFF-universe.md`, which the coordinator folds.
+- The hand-off goes in `docs/superpowers/evidence/endless-universe-lane-3/HANDOFF-NOTES.md`, not in `HANDOFF-universe.md`, which the coordinator folds.
 
 **Code shape:**
 - `src/components/universe/scene.js` doesn't grow. Task 10 moves the travel block out, about 130 lines. Tasks 11 to 13 add at most 40 lines between them, and each says how many lines it moves out and adds, by `wc -l` before and after.
@@ -74,6 +74,7 @@ Line numbers are from `main` at `cc5e2eaf`. Lane 2's PRs 2.3 to 2.5 move them, s
 - Stations use the wonder numbers above the lattice, `w<STATION_BASE + i>` for system `i`'s station. `THING_BASE + THING_CELLS³ = 8064 < 10000`, so no id that resolved before changes what it names, and `parseSpaceId` is unchanged.
 - Generated content is never stored: no `localStorage`, `rt.saves` or `rt.store` row anywhere in this lane.
 - **One clock.** A generated place's position at time `t` is `orbitAt` or `moonAt` on the shared clock. The scene's `t` is `spaceTime(state.held || reduced ? 0 : Date.now())`, the same one lane 2's `expanse.update` draws with, and it is kept in `state.spaceT`.
+- **One frame.** Every place, row, park, station, solid and ship in this lane is in the map's frame: `map` (`scene.js:503`), the group lane 2's sectors and the hand-made places sit in. The map is turned, `map.rotation.y = state.yaw` (`:5076`, `:5134`), and `state.yaw` becomes `−heading` after an arrival, a spawn or a pose (`:1843`, `:2219`, `:5879`). The three.js camera's `position` is in the scene's frame, so nothing here reads it as a place's. The scene brings it in as `camLocal = map.worldToLocal(camera.position)` (`:5331`, which `aimAt` uses at `:800-803`), and `scenePlaces` does the same with its own `group` (Task 12). `toScreen` (`:1526`) takes map-frame points.
 
 **Numbers the spec pins:**
 - About one system in three has a station.
@@ -89,7 +90,7 @@ Line numbers are from `main` at `cc5e2eaf`. Lane 2's PRs 2.3 to 2.5 move them, s
 - **Parking** (ship.js's own numbers, exported as `PARK_GAP = { near: 4, deep: 16, in: 8, out: 14 }`):
   - planets, moons and stations park `reach + 4` off
   - systems, things and wonders park `reach + 16` off, a system in a gap between its planets' bands
-  - a planet's park keeps clear of each moon's whole circle by `clearOf(moon radius)`, ship.js's `clearPark` margin. Where no way in at `reach + 4` is clear, it parks just past its furthest moon. That is 66 of 2,025 planets with moons in `E:1,0`, `E:2,0` and `E:1,1,0`.
+  - a planet's park keeps clear of each moon's whole circle by `clearOf(moon radius)`, ship.js's `clearPark` margin. Where no way in at `reach + 4` is clear, it parks just past its furthest moon. That is 66 of 2,025 planets with moons in `E:1,0`, `E:2,0` and `E:1,0,1` (cube `[1, 1, 0]`, as Task 8's fixture makes it).
   - **reach by kind:**
     - a system: 2 × its star's size
     - a planet: the greater of 1.9 × its radius and its ring band's outer edge
@@ -109,11 +110,12 @@ Line numbers are from `main` at `cc5e2eaf`. Lane 2's PRs 2.3 to 2.5 move them, s
   - `t = D / (SHIP.pulse × od) + extra + turn × angle / π`
   - `extra = { cruise: 7.1, super: 5.6 }` s and `turn = { cruise: 1.7, super: 0.5 }` s
   - the jump is `HYPER.length`
-- **Around the ship:**
-  - stars within 45,000 (the far plane) and planets within 20,000
-  - moons, the station and the exact parks once within their system's reach + 1,000
-  - lattice things within `THING_NEAR` × their size, as lane 2 draws them
-  - at most 400, refreshed four times a second
+- **Around the ship.** What's listed follows what's drawn, not what's meshed. Lane 2's far layer draws every star, planet, lattice thing, extra and non-nebula wonder within the far plane as a disc of its true size, the nearest `budget.discs` of them (its Tasks 15 and 21). A disc on screen with no row could not be picked, named or listed for the map. So the list holds:
+  - every system, planet (at `orbitAt`), lattice thing, extra and wonder within `far + its size` of the camera, `far` = 45,000 (the far plane)
+  - the nearest `budget.discs` of those by distance from the middle, the disc layer's own rule (400, 1,200, 2,500 and 4,000 by tier, lowered by the quality steps)
+  - besides those, the moons, the station and the exact parks once within their system's reach + 1,000
+  - refreshed four times a second
+  - `THING_NEAR × size` stays lane 2's rule for which things are meshes and solids, and this lane doesn't use it. Round any point there are three things within 9,000 (lane 2's density target), and each is listed, so each can be picked from 9,000 off, not only from on top of it.
 - **Aim:** a generated star is aimed at by its card's reach (2 × star size), and only from the main sector.
 - **Off the main thread:**
   - The scene never builds a sector: it reads `expanse.sectors()` and the few it fetched from the worker pool.
@@ -125,7 +127,7 @@ Line numbers are from `main` at `cc5e2eaf`. Lane 2's PRs 2.3 to 2.5 move them, s
   - Neither `Interests` nor `CommandPalette` holds any of the generator (the marker is Task 1's station name `Waystation`).
   - `Front` holds the generator already, through `Universe.jsx` → `online/Online.jsx` → `online/rosterWhere.js` → `fullSector` (finding 21), so it is held to its growth alone.
 - **Name tags:**
-  - 6 at most (3 on `low`)
+  - at most `budget.tags`, a new field of lane 2's one tier table (`universe/budget.js`, spec H): 3 on `low`, 6 on `mid`, `high` and `ultra`, lowered with `discs` by the quality steps and never below 1
   - the aimed, picked, gone-to and here places first, then those within aim.js's `NAME_CONE` of the nose, nearest first
 - **Docking:**
   - docked within `reach + 4 + 2` at under 1 unit/s
@@ -153,8 +155,18 @@ Line numbers are from `main` at `cc5e2eaf`. Lane 2's PRs 2.3 to 2.5 move them, s
 - A task's browser check runs at `--quality mid` only, on the steps or poses it changes. Task 15 runs the full all-tier measure once.
   - `autopilot-check.mjs` takes `--quality mid` in a task's check. The lane's gate above runs it as the index gives it.
   - `navmap-check.mjs`, `sector-check.mjs`, `flyto-check.mjs` and `links-check.mjs` draw no pose and take no quality flag: each loads `?quality=low` itself (`navmap-check.mjs:16`, `sector-check.mjs:26`, `flyto-check.mjs:40`, `links-check.mjs:30`). They run as they are.
+- **Chromium.** Every browser command runs with `CHROME=/opt/pw-browsers/chromium CHROMIUM=/opt/pw-browsers/chromium` in front of it (shell state doesn't carry between commands here).
+  - `navmap-check` and `links-check` default to `/opt/google/chrome/chrome`, which isn't in this container.
+  - `universe-check` and `autopilot-check` read `CHROMIUM` (or `--chromium`). Their own search wants `/opt/pw-browsers/chromium-N/chrome-linux/chrome`, but this container's is `chromium-1243/chrome-linux64/chrome`. Playwright's own fallback wants revision 1194, which isn't here either. `autopilot-check` stops with "no Chromium (set CHROMIUM=…)" without it.
+- **The dev server.** The four checks above don't start a server. Each opens `http://localhost:5173` (`navmap-check.mjs:16`, `sector-check.mjs:26`, `flyto-check.mjs:39-40` and `links-check.mjs:30`). Before them:
+  1. Start `npx vite --port 5173 --strictPort` in the background (the Bash tool's `run_in_background`).
+  2. Wait until `curl --noproxy '*' -sf -o /dev/null http://localhost:5173/` succeeds, in an until-loop on that condition, giving up after 60 s.
+  3. Run the checks.
+  4. Stop the server after.
+
+  `universe-check`, `universe-endless-check`, `autopilot-check` and `perf-probe` start their own.
 - Every wait is on a condition, never a sleep.
-- Evidence goes in `docs/superpowers/evidence/endless-universe-3/`, each picture under 1 MB (element shots, or JPEG at 80).
+- Evidence goes in `docs/superpowers/evidence/endless-universe-lane-3/`, each picture under 1 MB (element shots, or JPEG at 80).
 
 ## Review Focus
 
@@ -219,9 +231,17 @@ Line numbers are from `main` at `cc5e2eaf`. Lane 2's PRs 2.3 to 2.5 move them, s
    - a link to a wonder
    - the grand tour
 
-   The block sits at `scene.js:1769`, above `powers` (`:2338`) and `unique` (`:2340`), and `props` is reassigned on every page update (`:6120`). Passed as values, the first two throw on load and the third keeps a stale `drive` and `frozen`.
+   The block sits at `scene.js:1769`, above `powers` (`:2338`) and `unique` (`:2340`), and `props` is reassigned on every page update (`:6120`). Passed as values, the first two throw on load and the third keeps a stale `drive` and `frozen`. `front` is a `let` set later (`:1053`, `:1072`), and the block reads it three times: travel's `(id === 'front' && front)`, `frontPark`'s `front?.goal()` and `frontSpace`'s `front.goal()`. Destructured as a value it stays null, so a trip to the war front never goes.
 
-   Pinned in Task 10 (its tests written against today's behaviour before the move; made before `powers` and `unique` exist; the page's props read as they are now; then the navmap, sector, flyto and smoke checks after).
+   Pinned in Task 10 (its tests written against today's behaviour before the move; made before `powers` and `unique` exist; the page's props read as they are now; a trip to the front parks inside the fight; then the navmap, sector, flyto and smoke checks after).
+9. **A turned map.** After any arrival, spawn or pose, `state.yaw` is `−heading` and the map is turned by it (Global Constraints, "One frame"). A place 10^5 units out, measured from the scene-frame camera, is thousands of units from where it is. These must all hold with the map turned:
+   - what's near
+   - the stations drawn and docked at
+   - where you're at
+   - the aim at a generated star
+
+   Pinned in Task 12: `scenePlaces` takes the map-frame camera from its own `group`, and a test turns the group by 1.2 radians and still arrives and docks.
+10. **A disc you can see.** Lane 2 draws every planet and thing within the far plane as a disc (up to `budget.discs`). Each must have a row, so it can be picked, named and handed to lane 6b's map. Pinned in Task 8 (a thing 5,000 and 30,000 off is listed, one past the far plane isn't, and every lattice thing within it is) and Task 13 (a thing 5,000 off is picked at its projected point).
 
 ## Files
 
@@ -246,6 +266,7 @@ Line numbers are from `main` at `cc5e2eaf`. Lane 2's PRs 2.3 to 2.5 move them, s
 | `src/components/universe/nav.js` | `E:` ids in every destination function | 7 |
 | `src/components/universe/places/around.js` (new) | what's near the ship; where it's at; stars to aim at | 8 |
 | `src/components/universe/places/pick.js`, `dock.js` (new) | picking, which names show, docking | 9 |
+| `src/components/universe/budget.js` (lane 2's) | the `tags` field, stepped with `discs` | 9 |
 | `src/components/universe/trips.js` (new) | the scene's travel block, moved out, then taught `E:` ids | 10, 11 |
 | `src/components/universe/places/scenePlaces.js` (new) | the scene's places: around, stations, carry, here, dock, pick, tags | 12, 13 |
 | `src/components/universe/places/stationLook.js` (new) | generated stations drawn, instanced | 12 |
@@ -263,7 +284,7 @@ Line numbers are from `main` at `cc5e2eaf`. Lane 2's PRs 2.3 to 2.5 move them, s
 ### Task 1: Stations in the generator, and the expanse's face for the universe
 
 **Files:**
-- Create: `src/components/expanse/gen/stations.js`, `src/components/expanse/gen/stations.test.js`, `src/components/expanse/gen/extent.js`, `src/components/expanse/shared/space.js`, `src/components/expanse/shared/orbits.js`, `src/components/expanse/shared/shared.test.js`, `docs/superpowers/evidence/endless-universe-3/README.md` (the bundle before; later the timings and the numbers)
+- Create: `src/components/expanse/gen/stations.js`, `src/components/expanse/gen/stations.test.js`, `src/components/expanse/gen/extent.js`, `src/components/expanse/shared/space.js`, `src/components/expanse/shared/orbits.js`, `src/components/expanse/shared/shared.test.js`, `docs/superpowers/evidence/endless-universe-lane-3/README.md` (the bundle before; later the timings and the numbers)
 - Modify: `src/components/expanse/gen/space.js` (`fullSector` after `appendSystems(sector, outs)`; `wonderPlace` (`:165-178`) and `placeOf` (`:180-193`) at the file's end), `src/components/expanse/gen/tables.js` (append)
 
 **Interfaces:**
@@ -411,7 +432,7 @@ describe('stations', () => {
 - [ ] **Step 3: Implement** `extent.js` and `stations.js` to the Interfaces, append `STATION_NAMES`, wire `stations` into `fullSector`, put the station branch first in `wonderPlace`, export `placeIn`, and write both faces. The header comments are in the repo's voice, listing the exports as `things.js` does. The station header says why the pole: planets keep within ±40 of their star's plane, so a point over the pole is clear at every `t` and needs no orbit of its own.
 - [ ] **Step 4: Run them and see them pass.** Run `npx vitest run src/components/expanse`. Expected: PASS, with `fingerprint.test.js`, `space.test.js`, `density.test.js` and lane 2's `job.test.js` unchanged and green.
 - [ ] **Step 5: Record the stations' weight.** Run `npm run build` and the Step 0 command again, and add the four lines to the README. `Front` grows by the stations' code (it reaches `fullSector` through `online/rosterWhere.js`, finding 21). The others don't change, and `Waystation` is in none of them but `Front`'s `Online-*.js`.
-- [ ] **Step 6: Commit.** `git add src/components/expanse docs/superpowers/evidence/endless-universe-3 && git commit -m "Stations at one system in three, and the expanse's two faces for the universe"`. The body gives the four chunks before and after.
+- [ ] **Step 6: Commit.** `git add src/components/expanse docs/superpowers/evidence/endless-universe-lane-3 && git commit -m "Stations at one system in three, and the expanse's two faces for the universe"`. The body gives the four chunks before and after.
 
 ### Task 2: The words and cards for generated places
 
@@ -463,13 +484,14 @@ describe('stations', () => {
     };
     ```
     `count(n, word)` is a local helper. It gives `no planets` for 0, `1 planet` for 1 and `n planets` otherwise.
-  - **`THING_CARDS: { [kind]: { type, about, color, solid = true, far? } }`.**
+  - **`THING_CARDS: { [kind]: { type, about, color, solid = true, far?, move? } }`.**
     - One row for each of `rock`, `ice`, `derelict`, `rogue`, `nebula` (`solid: false`), `pulsar` and `default`.
     - The colours are `THING_KINDS`' `look.color`, and for the legacy wonders `expanse/scene/sectors.js`'s `WONDER` colours: nebula `#b48cff`, pulsar `#b8f4ff`.
-    - `far`, in units, is how far off it's listed round the ship. The default is `THING_NEAR × size` for a lattice thing and 45,000 for a wonder or an extra.
+    - `far`, in units, is how far off it's listed round the ship. The default is the far plane, 45,000, for every kind, since lane 2 draws them all as discs out to there (Task 8). A kind lane 4a draws further out (an impostor past the far plane) sets its own.
+    - `move(row, t) → [x, y, z]` is for a kind that moves on the shared clock (lane 4a's comets and drifters). None of today's kinds has one. It is named `move`, not `at`, because a `Destination`'s `at` is its position at `t` (Task 3), and `cards.js` is the generator's side, which `ids.js` may not import.
     - This is lane 4a's table: a kind it adds gets a row here, or the test below fails.
   - **`placeCard(found) → Card`**, where `found` is `placeIn`'s `{ kind, row, sector }` plus `system` (for a planet, moon or station) and `planet` (for a moon).
-  - **`Card`** is `{ kind, sub, name, type, about, facts: [[label, value]], color, r, reach, deep, solid, dock, land, faction, system, span }`:
+  - **`Card`** is `{ kind, sub, name, type, about, facts: [[label, value]], color, r, reach, deep, solid, dock, land, faction, system, span, move }`. `move` is the thing's card's `move`, else null (and null for a system, planet, moon or station, which `ids.js` places by their own orbits):
 
 | `found.kind` | `kind` | `sub` | `r` | `reach` | `deep` | other |
 |---|---|---|---|---|---|---|
@@ -515,6 +537,11 @@ describe('a generated place’s card', () => {
   it('has a card for every kind the generator makes, so a new kind needs one', () => {
     for (const k of [...THING_KINDS.map((t) => t.kind), ...WONDER_KINDS]) expect(THING_CARDS[k], k).toBeDefined();
     expect(THING_CARDS.nebula.solid).toBe(false);
+    for (const [k, c] of Object.entries(THING_CARDS)) {
+      expect(c.move === undefined || typeof c.move === 'function', k).toBe(true);
+      expect(c.at, k).toBeUndefined(); // (a mover is `move`: a Destination's `at` is a position)
+    }
+    expect(placeCard({ kind: 'thing', row: thingRow(s, 0), sector: s }).move).toBeNull();
   });
   it('says a system’s star, its planets, who holds it and how busy it is', () => {
     const sys = s.systems[0];
@@ -557,7 +584,7 @@ describe('a generated place’s card', () => {
 
 **Files:**
 - Create: `src/components/universe/places/ids.js`, `src/components/universe/places/resolve.js`, `src/components/universe/places/resolve.test.js`
-- Modify: `docs/superpowers/evidence/endless-universe-3/README.md` (the timings)
+- Modify: `docs/superpowers/evidence/endless-universe-lane-3/README.md` (the timings)
 
 **Interfaces:**
 - Consumes: Task 1's whole face (`placeIn`, `placeOf`, `spaceTime`, `UNIVERSE`) in `resolve.js`, and its light face (`orbitAt`, `moonAt`) in `ids.js`; Task 2's `placeCard`; Task 0's `parseSpaceId` and `spaceId`.
@@ -565,10 +592,10 @@ describe('a generated place’s card', () => {
 - Produces, in **`ids.js`**:
   - **`isPlaceId(id) → boolean`**, true when `parseSpaceId` reads it.
   - **`canonicalPlace(id) → string | null`**: the generator's form, `spaceId([sx, sy, sz], ...parts)`.
-  - **`atTime(place, t) → [x, y, z]`**, over anything with `{ place, src }` (a `Destination` or Task 8's `Row`):
+  - **`atTime(place, t) → [x, y, z]`**, over anything with `{ place, src, move? }` (a `Destination` or Task 8's `Row`):
     - a planet: `orbitAt(src.row, t)`
     - a moon: `moonAt(src.row, src.planet, t)`
-    - a card with `at(row, t)`: that
+    - a row carrying a `move` (its card's, Task 2): `move(src.row, t)`. The mover rides on the row itself, so `ids.js` reaches it without importing `cards.js`, which is on the generator's side.
     - otherwise `src.row.at`
 - Produces, in **`resolve.js`**:
   - **`resolvePlace(id, { universe = UNIVERSE, t = spaceTime(Date.now()), sectors = null, build = true } = {}) → Destination | null`.**
@@ -581,10 +608,11 @@ describe('a generated place’s card', () => {
   - **`Destination`** is Task 2's `Card` and:
     ```
     { id (canonical), generated: true, place: 'system' | 'planet' | 'moon' | 'station' | 'thing' | 'extra' | 'wonder',
-      at: [x, y, z] (at t), t, moving (planet or moon, or a card with at()), sector: 'main', key: sectorKey,
+      at: [x, y, z] (at t), t, move: the card's move or null, moving (planet or moon, or move set), sector: 'main', key: sectorKey,
       cube: [sx, sy, sz], to: null, src: { row, system, planet } (the generator's rows, read-only) }
     ```
-    `sector` is always `'main'`: the keep-outs keep every generated place out of the Rick and Morty pocket, so `legOf` reads it as the main map's.
+    - `sector` is always `'main'`: the keep-outs keep every generated place out of the Rick and Morty pocket, so `legOf` reads it as the main map's.
+    - `at` is set after the card is spread in, and the card's mover is `move`, never `at`. So the position can't overwrite the mover, or the mover the position.
 
 - [ ] **Step 1: Write the failing tests:**
 
@@ -640,14 +668,21 @@ describe('the resolver', () => {
     expect(atTime(resolvePlace(sys.id, { t: 0 }), 9e8)).toEqual(sys.at);
     expect(Math.abs(resolvePlace(sys.id).t - Date.now() / 1000)).toBeLessThan(5);
   });
+  it('moves a thing by the mover it carries, and a thing with none stays put', () => {
+    const thing = resolvePlace(thingRow(s, 0).id, { t: 0 });
+    expect([thing.move, thing.moving]).toEqual([null, false]);
+    const comet = { ...thing, move: (row, t) => [row.at[0] + t, row.at[1], row.at[2]] }; // (as a lane 4a card's would ride)
+    expect(atTime(comet, 10)).toEqual([thing.src.row.at[0] + 10, thing.src.row.at[1], thing.src.row.at[2]]);
+    expect(atTime(thing, 10)).toEqual(thing.src.row.at);
+  });
 });
 ```
 
 - [ ] **Step 2: Run them and see them fail.** Run `npx vitest run src/components/universe/places/resolve.test.js`. Expected: FAIL (module not found).
 - [ ] **Step 3: Implement** `ids.js` and `resolve.js`. The resolver's header says what it never does: store a row. It also says that `build` makes a whole sector on the calling thread, so the scene never passes it. The ids' header says why they're apart: a module is never split across chunks, so anything `nav.js` took from `resolve.js` would bring the generator onto every page that loads `nav.js`.
-- [ ] **Step 4: Run them and see them pass.** Same command. Expected: PASS, 6 tests.
-- [ ] **Step 5: Time a miss, for the README.** In a scratch script (not committed), time `resolvePlace` for an id in a sector not yet made: first in a fresh Node process, then warm, five each. Write the medians into `docs/superpowers/evidence/endless-universe-3/README.md`, under "A sector made on the main thread". At `cc5e2eaf` in this container, `placeOf` was 75 to 100 ms cold and about 45 ms warm (`{ things: false }`: about 38). Task 14 adds the terminal's number at 4× CPU throttling.
-- [ ] **Step 6: Commit.** `git add src/components/universe/places docs/superpowers/evidence/endless-universe-3 && git commit -m "An E: id resolves to a destination by running the generator, nothing stored; its spellings need no generator"`
+- [ ] **Step 4: Run them and see them pass.** Same command. Expected: PASS, 7 tests.
+- [ ] **Step 5: Time a miss, for the README.** In a scratch script (not committed), time `resolvePlace` for an id in a sector not yet made: first in a fresh Node process, then warm, five each. Write the medians into `docs/superpowers/evidence/endless-universe-lane-3/README.md`, under "A sector made on the main thread". At `cc5e2eaf` in this container, `placeOf` was 75 to 100 ms cold and about 45 ms warm (`{ things: false }`: about 38). Task 14 adds the terminal's number at 4× CPU throttling.
+- [ ] **Step 6: Commit.** `git add src/components/universe/places docs/superpowers/evidence/endless-universe-lane-3 && git commit -m "An E: id resolves to a destination by running the generator, nothing stored; its spellings need no generator"`
 
 ### Task 4: Parking, a park that moves, and a trip's space
 
@@ -663,7 +698,7 @@ describe('the resolver', () => {
   - **`parkDistance(dest) → number`:** how far from the place's middle it parks.
     - The usual distance is `d = reach + (deep ? PARK_GAP.deep : PARK_GAP.near)`.
     - A system: `gapRadius(system, d, PARK_GAP.deep + 40)`.
-    - A planet with moons, when none of the 32 level directions at `d` has `moonGap ≥ clearOf(moon.radius)` for every moon: `max(d, the greatest moon.orbit + clearOf(moon.radius))`. Every direction is clear out there, since the distance to a circle is at least the distance to its middle less its radius. This is 66 of 2,025 planets with moons in `E:1,0`, `E:2,0` and `E:1,1,0`.
+    - A planet with moons, when none of the 32 level directions at `d` has `moonGap ≥ clearOf(moon.radius)` for every moon: `max(d, the greatest moon.orbit + clearOf(moon.radius))`. Every direction is clear out there, since the distance to a circle is at least the distance to its middle less its radius. This is 66 of 2,025 planets with moons in `E:1,0`, `E:2,0` and `E:1,0,1` (cube `[1, 1, 0]`, as Task 8's fixture makes it).
     - `parkPlace` parks at it, and Task 8's zones and Task 5's carry measure from it.
   - **`parkPlace(dest, from: [x, z], t) → Park | null`**, where `Park` is `{ x, y, z, heading, offset: [dx, dy, dz] }` and `offset` is the park less `atTime(dest, t)`.
     - **Distance.** `parkDistance(dest)`.
@@ -1040,7 +1075,7 @@ describe('a long trip’s time', () => {
   - and add `canGo`
 - Modify: `src/components/universe/nav.test.js` (a new `describe` at the end; nothing above it changes)
 - Create: `src/components/universe/places/weight.test.js`
-- Modify: `docs/superpowers/evidence/endless-universe-3/README.md` (the bundle numbers)
+- Modify: `docs/superpowers/evidence/endless-universe-lane-3/README.md` (the bundle numbers)
 
 **Interfaces:**
 - Consumes: Task 3's `canonicalPlace` and `isPlaceId` (from `ids.js`) and `lookupOf` (from `resolve.js`, in the tests only); Task 4's `parkPlace`; Task 6's `longTrip`; `scripts/health/graph.mjs`'s `FROM`, `SIDE_EFFECT`, `resolve` and `uncomment` (in `weight.test.js`, as `avengers/world/scene.test.js:4` takes them).
@@ -1172,7 +1207,7 @@ describe('the generator stays off every page that loads nav.js', () => {
     - Over 2 kB with no `Waystation` means `park.js` is the weight. Then `nav.js` stops importing it, and takes the park from the lookup instead: `{ place(id), park(id, from) }`, which `lookupOf` and `places.look` (Task 12) supply from `parkPlace`. `parkFor` and `tripTime` call `opts.park`. Re-run, and say so in the commit.
     - Don't raise the ceiling.
   - Run `node scripts/health.mjs --check --skip build`. Expected: `boundary-breaks` and `cycles` as on the branch before Task 1 (484 and 5 at `cc5e2eaf`).
-- [ ] **Step 7: Commit.** `git add src/components/universe/nav.js src/components/universe/nav.test.js src/components/universe/places/weight.test.js docs/superpowers/evidence/endless-universe-3 && git commit -m "The nav map's places take E: ids: parked, measured, timed and found, and the generator stays off the pages that load it"`. The body gives the three chunks before and after.
+- [ ] **Step 7: Commit.** `git add src/components/universe/nav.js src/components/universe/nav.test.js src/components/universe/places/weight.test.js docs/superpowers/evidence/endless-universe-lane-3 && git commit -m "The nav map's places take E: ids: parked, measured, timed and found, and the generator stays off the pages that load it"`. The body gives the three chunks before and after.
 
 ### Task 8: What's round the ship, and which place it's at
 
@@ -1180,18 +1215,17 @@ describe('the generator stays off every page that loads nav.js', () => {
 - Create: `src/components/universe/places/around.js`, `src/components/universe/places/around.test.js`
 
 **Interfaces:**
-- Consumes: Task 1's face; Tasks 2 and 3; Task 4's `parkDistance`; `ship.js`'s `PARK_GAP`; Task 0's `SECTOR` and `sectorCentre`.
+- Consumes: Task 1's face; Tasks 2 and 3 (`atTime` for every row's `at`); Task 4's `parkDistance`; `ship.js`'s `PARK_GAP`; Task 0's `SECTOR` and `sectorCentre`.
+- **What's listed follows what's drawn** (Global Constraints, "Around the ship"). Lane 2's far layer draws every star, planet, lattice thing, extra and non-nebula wonder within the far plane as a disc, the nearest `budget.discs` (its Tasks 15 and 21). Any of those could be on screen, so each needs a row to be picked, named and listed. `THING_NEAR` is lane 2's rule for meshes and solids, and isn't used here.
 - Produces:
-  - **`AROUND = { far: 45000, planets: 20000, inside: 1000, max: 400, underWay: 1 }`.**
-  - **`Row`** is `{ id, place, kind, name, at, r, reach, deep, color, dist, park, src }`, where `dist = max(0, |cam − at| − reach)` and `park = parkDistance(row)`.
+  - **`AROUND = { far: 45000, inside: 1000, max: 400, underWay: 1 }`.** `max` is only the default, low's `discs`. The scene passes its budget's `discs` (Task 12), so the list is as long as the disc layer's.
+  - **`Row`** is `{ id, place, kind, name, at, r, reach, deep, color, move, dist, park, src }`, where `at = atTime(row, t)`, `dist = max(0, |cam − at| − reach)` and `park = parkDistance(row)`. `move` is its card's (Task 2), else null.
     - A planet of a system whose `span + inside` doesn't hold the camera has `park: null`. One that far off can't be where you're at, and finding a park past its moons costs 32 directions × its moons.
     - A Row is a light destination: `resolvePlace(row.id)` gives the card.
-  - **`placesAround(sectors, cam, t, { far, planets, inside, max } = AROUND) → Row[]`**, nearest `dist` first, at most `max`. `sectors` is a `Map` or any iterable of sectors. It lists:
-    - every system whose `dist` is within `far`
-    - the planets (at `orbitAt(p, t)`) of systems within `planets`
-    - the moons (at `moonAt`) and the station of every system whose `span + inside` holds `cam`
-    - each lattice thing within `THING_NEAR × size`, found by looking only in the cells round the camera's cell (±1, 6,000 each) of the sectors whose cube is within 6,000, binary-searched in `things.slot`
-    - extras and legacy wonders within their card's `far` (45,000 by default)
+  - **`placesAround(sectors, cam, t, { far, inside, max } = AROUND) → Row[]`**, nearest `dist` first. `sectors` is a `Map` or any iterable of sectors, and `cam` is the map-frame camera (Global Constraints, "One frame"). It lists:
+    1. **The disc kinds.** Every system, planet (of a system within `far + span`, each at `orbitAt(p, t)`), lattice thing, extra and legacy wonder whose `dist` is within `far` (or its card's own `far`). Of those it keeps the nearest `max` by distance from the middle, the disc layer's own rule.
+       - **Lattice things** are found by sweeping each sector's `things` typed arrays (`at` from the sector's `origin`, `size`), for the sectors whose box comes within `far` of `cam`: at most 8, about 1,700 things within the far plane round any point. It's a squared-distance test a thing, into a reused scratch of index and distance, with no object for a thing it rejects. `thingRow(sector, i)` is called only for the kept ones.
+    2. **Besides those**, the moons (at `moonAt`) and the station of every system whose `span + inside` holds `cam`, outside the cap: a few dozen at most, all near.
   - **`hereZone(row) → { in, out }`:** `row.park + PARK_GAP.in` and `row.park + PARK_GAP.out`, measured from the row's middle.
     - A planet that parks past its moons is arrived at its own park.
     - A system's zone is its park in the gap past its planets' bands, so a trip to a system arrives too.
@@ -1210,7 +1244,7 @@ describe('the generator stays off every page that loads nav.js', () => {
 ```js
 import { describe, expect, it } from 'vitest';
 import { PARK_GAP } from '../ship';
-import { THING_NEAR, UNIVERSE, fullSector, moonAt, orbitAt, thingRow } from '../../expanse/shared/space';
+import { UNIVERSE, fullSector, moonAt, orbitAt, thingRow } from '../../expanse/shared/space';
 import { resolvePlace } from './resolve';
 import { parkDistance, parkPlace } from './park';
 import { AROUND, aimStars, hereZone, orbitingPlace, placesAround } from './around';
@@ -1230,7 +1264,11 @@ describe('what’s round the ship', () => {
     const want = [...sectors.values()].flatMap((x) => x.systems).filter((x) => len(x.at, cam) - x.star.size * 2 <= AROUND.far).map((x) => x.id);
     expect(rows.filter((r) => r.place === 'system').map((r) => r.id).sort()).toEqual(want.sort());
     for (let i = 1; i < rows.length; i++) expect(rows[i].dist).toBeGreaterThanOrEqual(rows[i - 1].dist);
-    expect(placesAround(sectors, cam, 0, { ...AROUND, max: 10 })).toHaveLength(10);
+    // (the cap keeps the nearest by distance from the middle, as the disc layer does; the near system's moons and station ride outside it)
+    const discKind = (r) => r.place !== 'moon' && r.place !== 'station';
+    const mid = (r) => len(r.at, cam);
+    const capped = placesAround(sectors, cam, 0, { ...AROUND, max: 10 }).filter(discKind);
+    expect(capped.map((r) => r.id).sort()).toEqual(rows.filter(discKind).sort((a, b) => mid(a) - mid(b)).slice(0, 10).map((r) => r.id).sort());
   });
   it('puts planets where their orbits have them, and moons, the station and the parks only once near the system', () => {
     const sys = s.systems.find((x) => s.stations.some((st) => st.i === x.i) && x.planets.some((p) => p.moonList.length));
@@ -1243,12 +1281,29 @@ describe('what’s round the ship', () => {
     expect(outside.find((r) => r.id === p.id).park).toBeNull();
     expect(outside.find((r) => r.id === sys.id).park).toBe(parkDistance(resolvePlace(sys.id, { t: 777 })));
     expect(outside.some((r) => r.id === p.moonList[0].id)).toBe(false);
+    // (a planet 30,000 off is a disc on screen, so it has a row too)
+    const far = placesAround(sectors, [sys.at[0] + 30000, sys.at[1], sys.at[2]], 777, all);
+    expect(far.find((r) => r.id === p.id)).toMatchObject({ at: orbitAt(p, 777), park: null });
   });
-  it('lists a lattice thing near enough to be drawn, and not one further off', () => {
+  it('lists every lattice thing out to the far plane, as lane 2 draws them, and none past it', () => {
     const row = thingRow(s, 40);
-    const near = placesAround(sectors, [row.at[0] + 4 * row.size, row.at[1], row.at[2]], 0, all);
-    expect(near.find((r) => r.id === row.id)).toMatchObject({ place: 'thing', name: row.name, at: row.at });
-    expect(placesAround(sectors, [row.at[0] + (THING_NEAR + 0.5) * row.size, row.at[1], row.at[2]], 0, all).some((r) => r.id === row.id)).toBe(false);
+    for (const off of [5000, 30000]) {
+      const got = placesAround(sectors, [row.at[0] + off, row.at[1], row.at[2]], 0, all).find((r) => r.id === row.id);
+      expect(got, String(off)).toMatchObject({ place: 'thing', name: row.name, at: row.at, move: null });
+    }
+    // (today's lattice kinds are all solid, so a thing's reach is 1.2 × its size)
+    expect(placesAround(sectors, [row.at[0] + AROUND.far + 1.2 * row.size + 1, row.at[1], row.at[2]], 0, all).some((r) => r.id === row.id)).toBe(false);
+    // (every one within the far plane of a point, counted straight from the sectors' own arrays)
+    const cam = [s.origin[0] + 7000, s.origin[1] + 3000, s.origin[2] - 2000];
+    const want = [];
+    for (const x of sectors.values()) {
+      for (let i = 0; i < x.things.count; i++) {
+        const at = [0, 1, 2].map((k) => x.origin[k] + x.things.at[3 * i + k]);
+        if (len(at, cam) - 1.2 * x.things.size[i] <= AROUND.far) want.push(thingRow(x, i).id);
+      }
+    }
+    expect(want.length).toBeGreaterThan(1000);
+    expect(placesAround(sectors, cam, 0, all).filter((r) => r.place === 'thing').map((r) => r.id).sort()).toEqual(want.sort());
   });
   it('says which station the ship is at, and gives it back to the system once it has clearly left', () => {
     const st = s.stations[0];
@@ -1311,7 +1366,7 @@ describe('what’s round the ship', () => {
 ```
 
 - [ ] **Step 2: Run them and see them fail.** Run `npx vitest run src/components/universe/places/around.test.js`. Expected: FAIL (module not found).
-- [ ] **Step 3: Implement** `around.js`. It allocates no per-row objects for systems it rejects, and works out a planet's park only for the systems near enough. Measure `placesAround` over 27 sectors on a warmed run and say the time in the commit. Under 4 ms is the target.
+- [ ] **Step 3: Implement** `around.js`. It allocates no object for a system, planet or thing it rejects, and works out a planet's park only for the systems near enough. Measure `placesAround` over 27 sectors on a warmed run, with `max` at mid's 1,200 and at ultra's 4,000 (about 68 systems, 270 planets and 1,700 things lie within the far plane of a point in `E:1,0`), and say both times in the commit. Under 4 ms at mid is the target, a sixtieth of the quarter second between refreshes (Task 12). If it's over, say by how much, and don't shorten the list to meet it.
 - [ ] **Step 4: Run them and see them pass.** Same command. Expected: PASS, 7 tests, each under a second.
 - [ ] **Step 5: Commit.** `git commit -m "What's round the ship and which place it's at, each place's zone measured from its park"`
 
@@ -1319,16 +1374,20 @@ describe('what’s round the ship', () => {
 
 **Files:**
 - Create: `src/components/universe/places/pick.js`, `pick.test.js`, `src/components/universe/places/dock.js`, `dock.test.js`
+- Modify: `src/components/universe/budget.js` and `budget.test.js` (lane 2's Task 12): the `tags` field, and a new `describe`
 
 **Interfaces:**
-- Consumes: Task 8's `Row`; `ship.js`'s `PARK_GAP`. The tests import `aim.js`'s `NAME_CONE`; the modules don't.
+- Consumes: Task 8's `Row`; `ship.js`'s `PARK_GAP`; lane 2's `BUDGET` and `universeBudget({ tier, detail }, step = 0, floor = false)`. The tests import `aim.js`'s `NAME_CONE`; the modules don't.
 - Produces:
   - **`pickPlace(rows, project, px, py, { tanHalf, height }) → id | null`.**
     - `project(x, y, z, out)` is the scene's `toScreen`.
     - A row's radius on screen is `reach / (z · tanHalf) · height / 2`, held between 24 px and 160 px.
     - The nearest depth under the point wins. Nothing at a depth of 0.3 or less is picked.
     - This is `scene.js`'s `pickWonder` (`:1662-1667`), over rows.
-  - **`TAGS_MAX = { low: 3, mid: 6, high: 6, ultra: 6 }`.**
+  - **`BUDGET`'s `tags` field**, read by lane 3: 3 on `low`, 6 on `mid`, `high` and `ultra`.
+    - It is in lane 2's one tier table, as spec H asks, not a table of this lane's.
+    - The quality steps lower it as they lower `discs`, `thingsNear` and `traffic`: `tags` joins the list that steps 0 to 3 multiply by `[1, 0.75, 0.5, 0.35]` and `floor` by 0.25, rounded. Unlike the others, it never goes below 1, since the aimed or picked place keeps its name.
+    - The list's own cap needs no field: it is the row's `discs` (Task 8).
   - **`tagsFor(rows, { ship, nose, focus = [], here = null, max, cone }) → Row[]`**, chosen in this order, each row once, and capped at `max`. `focus` is a list of ids, and `here` is an id; an id with no row, or a null, is skipped. `cone` has no default: the caller passes `aim.js`'s `NAME_CONE`, because `aim.js` reaches three.js through `farStars.js` and `pick.js` stays pure.
     1. the rows whose ids are in `focus`, in that order
     2. the row whose id is `here`
@@ -1344,7 +1403,7 @@ describe('what’s round the ship', () => {
 ```js
 import { describe, expect, it } from 'vitest';
 import { NAME_CONE } from '../aim';
-import { TAGS_MAX, pickPlace, tagsFor } from './pick';
+import { pickPlace, tagsFor } from './pick';
 
 // a camera at z = 1000 looking down -z, a unit to a pixel
 const project = (x, y, z, out) => Object.assign(out, { x: 640 + x, y: 360 - y, z: 1000 - z });
@@ -1374,13 +1433,33 @@ describe('which places are named', () => {
     { id: 'picked', at: [20000, 0, 0], dist: 20000 },
   ];
   it('names what you picked, then where you are, then what’s on the nose, nearest first', () => {
-    expect(TAGS_MAX).toEqual({ low: 3, mid: 6, high: 6, ultra: 6 });
     const cone = NAME_CONE;
     expect(tagsFor(rows, { ship, nose, focus: ['picked'], max: 6, cone }).map((r) => r.id)).toEqual(['picked', 'ahead', 'aheadFar']);
     expect(tagsFor(rows, { ship, nose, focus: ['picked'], here: 'side', max: 6, cone }).map((r) => r.id)).toEqual(['picked', 'side', 'ahead', 'aheadFar']);
     expect(tagsFor(rows, { ship, nose, focus: ['picked'], max: 2, cone }).map((r) => r.id)).toEqual(['picked', 'ahead']);
     expect(tagsFor(rows, { ship, nose: [1, 0, 0], max: 6, cone }).map((r) => r.id)).toEqual(['side', 'picked']);
     expect(tagsFor(rows, { ship, nose, focus: [null, 'gone', 'picked', 'picked'], here: 'picked', max: 6, cone }).map((r) => r.id)).toEqual(['picked', 'ahead', 'aheadFar']);
+  });
+});
+```
+
+  `budget.test.js` gains, in a new `describe` (if lane 2's table test pins whole rows with `toEqual`, each expected row gains its `tags` too, which adds to the test and loosens nothing):
+
+```js
+describe('name tags (lane 3)', () => {
+  it('are 3 on low and 6 above, lowered with the discs by the quality steps, never below one', () => {
+    expect(['low', 'mid', 'high'].map((tier) => universeBudget({ tier }).tags)).toEqual([3, 6, 6]);
+    expect(universeBudget({ tier: 'high', detail: 'ultra' }).tags).toBe(6);
+    expect(universeBudget({ tier: 'mid' }, 2).tags).toBe(3);
+    for (const tier of ['low', 'mid', 'high']) {
+      for (let step = 0; step <= 3; step++) {
+        for (const floor of [false, true]) {
+          const n = universeBudget({ tier }, step, floor).tags;
+          expect(n).toBeGreaterThanOrEqual(1);
+          expect(n).toBeLessThanOrEqual(universeBudget({ tier }).tags);
+        }
+      }
+    }
   });
 });
 ```
@@ -1392,11 +1471,11 @@ describe('which places are named', () => {
   - A `place: 'planet'` row is false at any distance.
   - A docked ship drifting back and forth between `30 + 4 + 29` and `30 + 4 + 30` for 100 steps, at speeds up to 3, stays docked every step.
 
-- [ ] **Step 2: Run them and see them fail.** Run `npx vitest run src/components/universe/places/pick.test.js src/components/universe/places/dock.test.js`. Expected: FAIL (modules not found).
-- [ ] **Step 3: Implement** `pick.js` and `dock.js`.
+- [ ] **Step 2: Run them and see them fail.** Run `npx vitest run src/components/universe/places/pick.test.js src/components/universe/places/dock.test.js src/components/universe/budget.test.js`. Expected: `pick` and `dock` FAIL (modules not found), and the new budget `describe` FAILS (`tags` is undefined). Lane 2's budget tests pass.
+- [ ] **Step 3: Implement** `pick.js` and `dock.js`, and add `tags` to `BUDGET` and to the stepped fields in `universeBudget`.
 - [ ] **Step 4: Run them and see them pass.** Same command, then `npx vitest run src/components/universe src/components/expanse`. Expected: PASS.
 - [ ] **Step 5: Run PR 3.1's gate.** Run `npm run lint`, `npm test`, `npm run build` and `node scripts/health.mjs --check --skip build`. Expected: all green, with `boundary-breaks`, `cycles` and `big-files` as on the branch before Task 1.
-- [ ] **Step 6: Commit.** `git commit -m "Rules for picking a generated place, naming the ones in view, and docking at a station"`
+- [ ] **Step 6: Commit.** `git commit -m "Rules for picking a generated place, naming the ones in view, and docking at a station"`. The body says the tags' cap is a field of the one tier table, as spec H asks, and the quality steps lower it.
 
 ---
 
@@ -1407,7 +1486,7 @@ describe('which places are named', () => {
 **Files:**
 - Create: `src/components/universe/trips.js`, `src/components/universe/trips.test.js`, `lab/universe/before-3/mid/*` (from `universe-check`)
 - Modify: `src/components/universe/scene.js`: the block from `const dropAuto = () => {` (`:1769`) through the end of `chasePilot` (`:1905`, before `// ── The ship ──`). `const wall = () => performance.now() / 1000;` (`:1766`) stays.
-- Modify: `docs/superpowers/evidence/endless-universe-3/README.md` (the before rows)
+- Modify: `docs/superpowers/evidence/endless-universe-lane-3/README.md` (the before rows)
 
 **Interfaces:**
 - Consumes: the moved block's own imports: `HYPER`, `driveById`, `hyperState`, `legOf`, `parkFor`, `portalById`, `OPEN_SPACE`, `headingTo`, `isGoal` (travel's own check, `:1782`), `REAIM_MS`, `parkBehind`, `pilotId`, `pilotSpace`, `reached`, `JAMMED` and `jumpState`. Lint names any that's missed.
@@ -1417,16 +1496,16 @@ describe('which places are named', () => {
     - `props: () => props`. It's `let props = ctx` (`:491`), reassigned on every page update (`props = next`, `:6120`). The block reads `props.drive` (travel's default drive) and `props.frozen` (no travel while the page is leaving or the Shipyard is up), so a value kept at creation would fly the first drive for ever and never freeze.
     - `powers: () => powers`, `const` at `:2338`, below the call. As a value it throws a `ReferenceError` (its temporal dead zone) as the scene loads.
     - `unique: () => unique`, `const` at `:2340`, the same.
-    - `front: () => front` (`let`, `:1053`, set at `:1072`)
+    - `front: () => front`. It's a `let` (`:1053`), null until `frontFor` makes it (`:1072`), and made again when the crew's side changes. As a value it stays null, and a trip to the front never goes.
     - `heard: () => heard()` (`const` at `:1908`, below)
-    - `retarget: (ms) => retarget(ms)`
+    - `retarget: (ms) => retarget(ms)`. It's a `const` at `:1725`, above the call and never reassigned, so a value would do, but it's passed like `heard`, so the block's calls read alike.
     - `invalidate: () => ctx.invalidate()`
-    - `settle: () => { camQOn = false; }` (`let camQOn`, `:1348`)
+    - `settle: () => { camQOn = false; }`. `camQOn` is a `let` (`:1348`) that the block sets but can't reach from another module.
   - Plain values, declared above `:1769` and never reassigned: `state` (`:1174`), `emit` (`:1719`), `pilots` (`:1122`), `reduced` (`:490`), `onFoot` (`:843`) and `wall` (`:1766`).
   - `scene.js` puts `const { travel, dropAuto, arriveAt, navTo, frontSpace, withPilot, pilotGone, chasePilot } = createTrips({...});` in the block's place.
 
 - [ ] **Step 1: Take the before shots** on the branch as it stands, after lanes 1, 2, 5a and 6a have merged and before any picture of this lane.
-  - Run `node scripts/universe-check.mjs --quality mid --out lab/universe/before-3/mid`, on every pose including lane 2's `old-rim`, `above-core` and `expanse-system`. It takes about an hour in software GL. Run it in the background and wait on its exit.
+  - Run `CHROMIUM=/opt/pw-browsers/chromium node scripts/universe-check.mjs --quality mid --out lab/universe/before-3/mid`, on every pose including lane 2's `old-rim`, `above-core` and `expanse-system`. It takes about an hour in software GL. Run it in the background and wait on its exit.
   - Write the calls and triangles at each pose into the evidence README.
 - [ ] **Step 2: Write the failing tests** `trips.test.js`. They pin today's behaviour, before the move:
 
@@ -1512,6 +1591,20 @@ describe('trips (the scene’s travel, moved out)', () => {
     expect(state.auto.od).toBe(driveById('cruise').od);
     expect(state.auto.od).not.toBe(OVERDRIVE);
   });
+  it('goes to the war front just inside the fight, reading the front as it is now', () => {
+    // (front.js's goal(): { id: 'front', at, r: 30, reach: ZONE.in * 0.8 })
+    const goal = { id: 'front', at: [5000, 0, 3000], r: 30, reach: 400 };
+    let front = null;
+    const { state, trips } = make({ deps: { front: () => front } });
+    expect(trips.travel('front', 'super')).toBe(false); // (no front yet: frontFor hasn't made one)
+    front = { goal: () => goal };
+    expect(trips.travel('front', 'super')).toBe(true);
+    const { park } = state.auto;
+    expect(state.auto.id).toBe('front');
+    expect(Math.hypot(park.x - goal.at[0], park.z - goal.at[2])).toBeCloseTo(goal.reach, 6);
+    expect(park.y).toBe(goal.at[1]);
+    expect(trips.frontSpace().goals.front).toEqual(goal);
+  });
   it('can be made before the powers and the arms exist, as scene.js makes it, and reads them only on a jump', () => {
     let powers;
     let unique;
@@ -1529,16 +1622,40 @@ describe('trips (the scene’s travel, moved out)', () => {
 ```
 
 - [ ] **Step 3: Run them and see them fail.** Run `npx vitest run src/components/universe/trips.test.js`. Expected: FAIL (module not found).
-- [ ] **Step 4: Move the block.** It goes verbatim into `trips.js`, with `const` closures over `deps`, and is wired into `scene.js` as in the Interfaces. In the moved text, `props.` reads become `deps.props().`, `powers.cancel()` becomes `deps.powers().cancel()`, `unique.clear()` becomes `deps.unique().clear()` and `ctx.invalidate()` becomes `deps.invalidate()`; nothing else in it changes. Count `scene.js`'s lines before and after.
+- [ ] **Step 4: Move the block.** It goes verbatim into `trips.js`, with `const` closures over `deps`, and is wired into `scene.js` as in the Interfaces.
+  - At the top of `createTrips`, only the plain values are destructured: `const { state, emit, pilots, reduced, onFoot, wall } = deps;`. The thunks are never destructured into values. Each is called where the block read the name, every time.
+  - These are every rewrite in the moved text, by the name it read:
+
+    | Today (`scene.js`) | In `trips.js` | Where |
+    |---|---|---|
+    | `props.drive` (travel's default drive) | `deps.props().drive` | `travel`'s signature (`:1776`) |
+    | `props.frozen` | `deps.props().frozen` | `travel`'s guard (`:1782`) |
+    | `(id === 'front' && front)` | `(id === 'front' && deps.front())` | `travel`'s guard (`:1782`) |
+    | `front?.goal()` | `deps.front()?.goal()` | `frontPark` (`:1850`) |
+    | `front.goal()` | `deps.front().goal()` | `frontSpace` (`:1857`) |
+    | `heard()` | `deps.heard()` | `travel`, after the park (`:1796`) |
+    | `powers.cancel()` | `deps.powers().cancel()` | the jump (`:1822`) |
+    | `unique.clear()` | `deps.unique().clear()` | the jump (`:1823`) |
+    | `retarget(700)` | `deps.retarget(700)` | `travel`'s end (`:1835`) |
+    | `ctx.invalidate()` | `deps.invalidate()` | reduced motion's arrival (`:1807`) and `travel`'s end (`:1836`) |
+    | `camQOn = false` | `deps.settle()` | `arriveAt` (`:1844`) |
+
+  - Nothing else in it changes. `scene.js`'s own `state.auto.id === 'front' && front ? frontSpace() : OPEN_SPACE` (`:4378`, in `fly()`) stays in `scene.js` and reads its own `front`.
+  - Count `scene.js`'s lines before and after.
 - [ ] **Step 5: Run them and see them pass.** Run `npx vitest run src/components/universe`. Expected: PASS. A dep passed as a value where it should be a thunk throws as the scene loads, which the unit tests can't see: Step 6's smoke check loads `/universe` and fails on any page or console error.
-- [ ] **Step 6: Check in the browser that travel is unchanged.** Expected: each as before the move.
-  - `node scripts/navmap-check.mjs desktop`: the jump to a wonder by name
-  - `node scripts/sector-check.mjs`: through the portal and on
-  - `node scripts/flyto-check.mjs --fake`: to a pilot
-  - `node scripts/autopilot-check.mjs --only smoke --skip lint,test,build --routes /universe --quality mid`
+- [ ] **Step 6: Check in the browser that travel is unchanged.**
+  1. **Start the dev server** the first three need (Global Constraints, "The dev server"):
+     - Start `npx vite --port 5173 --strictPort` in the background.
+     - Wait until `curl --noproxy '*' -sf -o /dev/null http://localhost:5173/` succeeds, in an until-loop on that condition, giving up after 60 s.
+  2. **Run the checks.** Expected: each as before the move.
+     - `CHROME=/opt/pw-browsers/chromium node scripts/navmap-check.mjs desktop`: the jump to a wonder by name
+     - `CHROME=/opt/pw-browsers/chromium node scripts/sector-check.mjs`: through the portal and on
+     - `CHROME=/opt/pw-browsers/chromium node scripts/flyto-check.mjs --fake`: to a pilot
+     - `CHROMIUM=/opt/pw-browsers/chromium node scripts/autopilot-check.mjs --only smoke --skip lint,test,build --routes /universe --quality mid`, which runs its own preview server
+  3. **Stop the dev server.**
 
   The first three draw no pose and take no quality flag: each loads `?quality=low` itself, as Global Constraints' "Browser checks" exempts them.
-- [ ] **Step 7: Commit.** `git add src/components/universe/trips.js src/components/universe/trips.test.js src/components/universe/scene.js lab/universe/before-3 docs/superpowers/evidence/endless-universe-3 && git commit -m "The scene's travel moves to trips.js unchanged; before shots for lane 3"`. The body says `scene.js`'s line counts.
+- [ ] **Step 7: Commit.** `git add src/components/universe/trips.js src/components/universe/trips.test.js src/components/universe/scene.js lab/universe/before-3 docs/superpowers/evidence/endless-universe-lane-3 && git commit -m "The scene's travel moves to trips.js unchanged; before shots for lane 3"`. The body says `scene.js`'s line counts.
 
 ### Task 11: Trips go to generated places
 
@@ -1557,7 +1674,7 @@ describe('trips (the scene’s travel, moved out)', () => {
   - **Every other place that drops `state.auto`** drops the arrival and the wait with it, so neither outlives the trip:
     - the ship change (`:2152`), `startCrash` (`:3084`), the fall (`:3134`) and `portalThrough` (`:4250`): `state.auto = null;` becomes `state.auto = state.arrived = state.pending = null;` (0 each)
     - `takeover` (`:2251`): its `state.auto = null;` becomes `state.auto = state.arrived = null;`, and `state.pending = null;` goes before its `if (state.auto)`, since the stick calls off a trip still waiting on its sector (+1)
-  - **The trips' deps** gain `resolve: (id) => resolvePlace(id, { universe, t: state.spaceT, sectors: expanse.sectors(), build: false })`. The inline `typeof ctx.universe === 'bigint' ? ctx.universe : UNIVERSE` at `createExpanse` (`:773`) becomes a `const universe` above it (+1). There's no `fetch` yet: a place outside the loaded sectors can't be gone to until Task 12 wires `places.fetch` in. Task 12 swaps both deps for `places`'.
+  - **The trips' deps** gain `resolve: (id) => resolvePlace(id, { universe, t: state.spaceT, sectors: expanse.sectors(), build: false })`. The inline `typeof ctx.universe === 'bigint' ? ctx.universe : UNIVERSE` at `createExpanse` (`:773`) becomes a `const universe` above it (+1). There's no `fetch` yet: a place outside the loaded sectors can't be gone to until Task 12 wires `places.fetch` in. Task 12 swaps `resolve` for `places.resolve` and adds `places.fetch` and `places.missing`.
   - **The dev hooks.**
     - `__universeDebug` (`:5911`) gains `places` on its existing line (0): `{ resolve: (id) => …, parkAt: (id, from, t0, t) => … }`. `resolve` is the deps' `resolve`. `parkAt` is `followPark(dest, parkPlace(dest, from, t0), t)`: the park a trip started from `from` at `t0` is at now.
     - `__universe()` (`:5923`) gains `t: state.spaceT` (0).
@@ -1568,7 +1685,7 @@ describe('trips (the scene’s travel, moved out)', () => {
 
 **Interfaces:**
 - Consumes: Tasks 3, 4 and 7 (`canonicalPlace`, `isPlaceId`, `resolvePlace`, `parkPlace`, `followPark`, `placeSpace`, `atTime`).
-- Produces (on `createTrips`, with `deps` gaining `resolve(id) → Destination | null` and an optional `fetch(id) → Promise<Destination | null>`):
+- Produces (on `createTrips`, with `deps` gaining `resolve(id) → Destination | null`, and an optional pair, `fetch(id) → Promise<Destination | null>` and `missing(id) → boolean`, true when the id's sector isn't at hand, which Task 12 supplies from `places`):
   - **`travel(id, drive)` takes a generated id in any spelling.**
     - It canonicalises it and sets `state.arrived = null` and `state.pending = null`, as every travel now does.
     - **At hand** (`deps.resolve` finds it), it goes by an internal `go(dest, drive)`, which is all of the following:
@@ -1576,12 +1693,12 @@ describe('trips (the scene’s travel, moved out)', () => {
       - The park is `parkPlace(dest, [s.x, s.z], state.spaceT)`.
       - `state.auto` (or `state.jump`) carries `place: { dest, park }`, and the auto carries `space: placeSpace(OPEN_SPACE, dest)`.
       - Reduced motion is `arriveAt(followPark(...))`.
-    - **Not at hand, with `deps.fetch`:**
+    - **Not at hand, its sector not at hand (`deps.missing(id)`), with `deps.fetch`:**
       - It sets `state.pending = { id, drive }` and returns true.
       - When the fetch lands and `state.pending` is still that same object, it clears it and goes with the landed Destination itself, `go(dest, pending.drive)`. It never resolves the id again: the fetched sector need not be among `deps.resolve`'s yet, and a second miss would fetch for ever.
       - A fetch that gives null, or rejects, emits `{ type: 'arrived', id, done: false }`.
       - A later travel, `dropAuto`, the stick, a crash or a portal clears `state.pending`, so a late landing does nothing.
-    - **Not at hand, without `deps.fetch`:** false.
+    - **Otherwise, false:** with no `deps.fetch`, or when `deps.missing(id)` is false. A sector that's at hand and doesn't hold the place (`E:1,0:0:99`) has nothing to wait for, so it never sets `pending` or asks for a fetch.
   - **`followPlace()`**, each frame: for a trip to a place, `state.auto.park = followPark(dest, park, state.spaceT)`, and its space goal's `at` is set in place to `atTime(dest, state.spaceT)`.
   - **`outOfJump(j) → park`:**
     - a pilot's: behind them as they are now, saying who you're with or that they've gone
@@ -1624,12 +1741,18 @@ describe('trips to generated places', () => {
   it('won’t go to a place that isn’t there, or one it can’t fetch', () => {
     expect(make({ deps: { resolve } }).trips.travel('E:1,0:0:99')).toBe(false);
     expect(make({ deps: { resolve: () => null } }).trips.travel('E:9,0:0')).toBe(false);
+    // (its sector is at hand and holds nothing there: no wait, no fetch)
+    const fetch = vi.fn(async () => null);
+    const none = make({ deps: { resolve, fetch, missing: () => false } });
+    expect(none.trips.travel('E:1,0:0:99')).toBe(false);
+    expect([none.state.pending, fetch.mock.calls.length]).toEqual([null, 0]);
   });
   it('waits for a place whose sector isn’t made yet, then goes, unless something came first', async () => {
     let land;
     const fetch = vi.fn(() => new Promise((r) => { land = r; }));
     // (resolve still misses when the fetch lands: the trip goes with what landed, never resolving again)
-    const a = make({ state: { spaceT: 0 }, deps: { resolve: () => null, fetch } });
+    const missing = () => true;
+    const a = make({ state: { spaceT: 0 }, deps: { resolve: () => null, fetch, missing } });
     expect(a.trips.travel(id, 'super')).toBe(true);
     expect([a.state.auto, a.state.pending]).toEqual([null, { id, drive: 'super' }]);
     land(resolve(id));
@@ -1637,23 +1760,23 @@ describe('trips to generated places', () => {
     expect([a.state.auto?.id, a.state.pending]).toEqual([id, null]);
     expect(xyz(a.state.auto.park)).toEqual(xyz(parkPlace(resolve(id), [spawn('home').x, spawn('home').z], 0)));
     expect(fetch).toHaveBeenCalledTimes(1);
-    const b = make({ state: { spaceT: 0 }, deps: { resolve: () => null, fetch } });
+    const b = make({ state: { spaceT: 0 }, deps: { resolve: () => null, fetch, missing } });
     b.trips.travel(id, 'super');
     b.trips.travel('marvel', 'super');
     land(resolve(id));
     await flush();
     expect(b.state.auto.id).toBe('marvel');
-    const c = make({ state: { spaceT: 0 }, deps: { resolve: () => null, fetch } });
+    const c = make({ state: { spaceT: 0 }, deps: { resolve: () => null, fetch, missing } });
     c.trips.travel(id, 'super');
     c.trips.dropAuto();
     land(resolve(id));
     await flush();
     expect(c.state.auto).toBeNull();
-    const d = make({ deps: { resolve: () => null, fetch: async () => null } });
+    const d = make({ deps: { resolve: () => null, fetch: async () => null, missing } });
     d.trips.travel('E:9,0:0', 'super');
     await flush();
     expect(d.events.at(-1)).toEqual({ type: 'arrived', id: 'E:9,0:0', done: false });
-    const e = make({ deps: { resolve: () => null, fetch: async () => { throw new Error('the pool went away'); } } });
+    const e = make({ deps: { resolve: () => null, fetch: async () => { throw new Error('the pool went away'); }, missing } });
     e.trips.travel('E:9,0:0', 'super');
     await flush();
     expect([e.state.pending, e.events.at(-1)]).toEqual([null, { type: 'arrived', id: 'E:9,0:0', done: false }]);
@@ -1704,8 +1827,9 @@ describe('trips to generated places', () => {
     - Task 11's `import { resolvePlace } from './places/resolve';` becomes `import { isPlaceId } from './places/ids';` (0).
     - Its `places/park` import goes, now that `places` parks and follows (−1).
     - `aimTargets` leaves the `./aim` import's line (`:148`), now that `places` merges it (0).
-  - **Created after `createExpanse`** (`:772-780`): `const places = createScenePlaces({ group: map, universe, expanse, workers: ctx.rt.workers, startAt: props.startAt, toScreen: (...a) => toScreen(...a), prepare: (o) => warm(o), emit: (e) => emit(e), note: (text) => { state.note = { text, until: wall() + 3 }; }, tier })` (+1). The trips' deps become `resolve: (id) => places.resolve(id), fetch: (id) => places.fetch(id)` (0).
-    - Values, all declared above `:780` and never reassigned: `map` (`:503`), `universe` and `expanse` (Task 11's, `:772`), `ctx`, `tier` (`:641`). `props.startAt` is read once, for the start.
+  - **Created after `createExpanse`** (`:772-780`): `const places = createScenePlaces({ group: map, universe, expanse, workers: ctx.rt.workers, startAt: props.startAt, toScreen: (...a) => toScreen(...a), prepare: (o) => warm(o), emit: (e) => emit(e), note: (text) => { state.note = { text, until: wall() + 3 }; }, device: device() })` (+1). The trips' deps become `resolve: (id) => places.resolve(id), fetch: (id) => places.fetch(id), missing: (id) => places.missing(id)` (0, on the deps' line).
+    - Values, all declared above `:780` and never reassigned: `map` (`:503`), `universe` and `expanse` (Task 11's, `:772`), `ctx`, and `device()` (`lib/device`, imported at `:107`; the `{ tier, detail }` lane 2 hands `universeBudget`). `props.startAt` is read once, for the start.
+  - **The quality steps.** In `paceTo` (`:5053`), beside lane 2's `expanse.setStep(at.step, at.floor)` (its Task 17): `places.setStep(at.step, at.floor);` (+1). The list's length and the tags' cap come down with the discs.
     - Closures, since each is declared below: `toScreen` (`:1526`), `warm` (`:948`), `emit` (`:1719`), and `state` (`:1174`) and `wall` (`:1766`) inside `note`.
   - **In `fly()`, before the step** (`:4405-4415`):
     - `if (!state.held) state.ship = places.carry(state.ship, state.carryT ?? state.spaceT, state.spaceT); state.carryT = state.spaceT;` (+1)
@@ -1716,7 +1840,7 @@ describe('trips to generated places', () => {
     places.update({ ship: state.ship, camera, t: state.spaceT, flying: flying() && !onFoot() && !state.dive && !props.frozen, nose: state.ship ? noseOf(state.ship) : null, going: state.jump?.id ?? state.auto?.id ?? state.pending?.id ?? null, arrived: state.arrived, held: state.held })
     ```
 
-    With `flying` false, it draws no tag and tracks nothing new: `here` and `docked` keep their last values.
+    With `flying` false, it draws no tag and tracks nothing new: `here` and `docked` keep their last values. It passes the three.js `camera` itself, never `camera.position` as a place's frame: `scenePlaces` brings it into the map's frame (Interfaces).
   - **The aim** (`:803`): `aimTargets(sector, state.at)` becomes `places.aimTargets(sector, state.at)` (0). It is one merged array, kept between frames, not up to 2,000 rows spread afresh every frame. Generated stars aren't seen from inside the Curve.
   - **Names.** The aim's event (`:806`), the HUD's jump line (`:4868`, `:4872`) and `fightGoal` (`:3773`): `destinationById(id)` becomes `destinationById(id, places.look)` (0).
   - **The start** (`:2216`). The spawn's second argument becomes `(!state.sel && props.startAt && props.startAt !== MAW.id && (isGoal(props.startAt) ? parkFor(props.startAt, [0, 0]) : places.park(props.startAt, [0, 0]))) || startAt()` (0). After the spawn, `if (!state.sel && places.missing(props.startAt)) travel(props.startAt, 'hyper');` (+1). A link whose sector hadn't landed when the ship spawned goes there by the jump once it does. It usually has landed: `createScenePlaces` asks for the start's sector the moment the scene is made, seconds before a ship spawns.
@@ -1731,10 +1855,10 @@ describe('trips to generated places', () => {
   - **The handle** gains `place: (id) => places.find(id),`, `fetchPlace: (id) => places.fetch(id),` and `nearby: (max) => places.nearby(max),`, one line each (+3).
   - **The dev hooks.** `__universe()` (`:5923`) gains `place: places.here()?.id ?? null, docked: places.docked(),` (+1). `__universeDebug.places` becomes `places.debug` (0).
 
-  That is +11 here: +12 less the park import. With Task 11's −1 and Task 13's +2, Tasks 11 to 13 add 12 lines of the 40 allowed, against the ~130 Task 10 moved out.
+  That is +12 here: +13 less the park import. With Task 11's −1 and Task 13's +2, Tasks 11 to 13 add 13 lines of the 40 allowed, against the ~130 Task 10 moved out.
 
 **Interfaces:**
-- Consumes: Tasks 3, 4, 5, 8 and 9; lane 2's `expanse.sectors()` (a `Map`), its `'expanse'` worker pool and `sectorJob` message (`{ type: 'sector', key, universe, sx, sy, sz }` → `{ key, sector }`), and `withMoons` through the face.
+- Consumes: Tasks 3, 4, 5, 8 and 9 (and Task 9's `tags` in lane 2's `universeBudget`); lane 2's `expanse.sectors()` (a `Map`), its `'expanse'` worker pool and `sectorJob` message (`{ type: 'sector', key, universe, sx, sy, sz }` → `{ key, sector }`), and `withMoons` through the face; Task 0's `parseSpaceId` (for an id's sector `key`).
 - Produces:
   - **`createStationLook(group, { prepare }) → { update(rows), dispose() }`.**
     - It is two `InstancedMesh`es of at most 8 instances, from one merged procedural station, built from `src/components/universe/kit.js`'s `parts` (a hub, a ring on four spokes, a docking arm):
@@ -1743,10 +1867,12 @@ describe('trips to generated places', () => {
     - `visible = false` at 0 instances, so it costs no draw call.
     - `prepare` is called once for each mesh, when it's made.
     - Each row's matrix is at `row.at`, scaled by `row.size × row.grow`.
-  - **`createScenePlaces({ group, universe, expanse, workers, startAt, toScreen, prepare, emit, note, tier, clock = () => performance.now() / 1000 }) → { … }`**, with these methods. `clock` is the wall clock, passed in so the tests can drive it:
+  - **`createScenePlaces({ group, universe, expanse, workers, startAt, toScreen, prepare, emit, note, device, clock = () => performance.now() / 1000 }) → { … }`**, with these methods. `clock` is the wall clock, passed in so the tests can drive it. `device` is `{ tier, detail }`, read as `budget = universeBudget(device, 0)`.
+    - **One frame** (Global Constraints). Every position `scenePlaces` holds or is given is in `group`'s frame (the map's): `ship`, rows, parks, stations, solids, and what it hands `toScreen`. The camera is the one thing from another frame. Each update finds the map-frame camera as `cam = group.worldToLocal(v.copy(camera.position))`, after `group.updateWorldMatrix(true, false)`, with `v` one kept `Vector3`. That is the scene's own `camLocal` (`scene.js:5331`). What's near, the stations' grow and `aimStars` all measure from `cam`, never from `camera.position`, which is in the scene's frame and off by the map's turn.
+    - **`setStep(step, floor)`:** `budget = universeBudget(device, step, floor)`, from `paceTo`.
     - **`update({ ship, camera, t, flying, nose, going, arrived, held })`**, every frame:
-      - **What's near.** It refreshes `placesAround(sectors, cam, t)` every 0.25 s of `clock`, or when the camera has moved over 500. `sectors` is lane 2's loaded ones and the fetched ones.
-      - **Stations.** It draws the stations of systems whose `span` holds the camera, with `grow = smoothstep(span, 0.85 · span, dist to star)`.
+      - **What's near.** It refreshes `placesAround(sectors, cam, t, { ...AROUND, max: budget.discs })` every 0.25 s of `clock`, or when `cam` has moved over 500. `sectors` is lane 2's loaded ones and the fetched ones. The list is as long as the disc layer's, so whatever lane 2 draws as a disc has a row (Task 8).
+      - **Stations.** It draws the stations of systems whose `span` holds `cam`, with `grow = smoothstep(span, 0.85 · span, |cam − star|)`.
       - **Where you're at.** It tracks `here` with `orbitingPlace(ship, here, rows, prefer)`. `prefer` is the latest `arrived` object's id, from the update it first appears in until `here` is that place or the ship has left its zone.
       - **Docking.** It tracks `docked` with `dockState`.
       - **The carry's frames.** `carryFrames(frames, frameOf(rows, { here, going }), dt)`, where `dt` is `t` less the last update's, on the space clock. Held, nothing moves and nothing fades.
@@ -1764,14 +1890,15 @@ describe('trips to generated places', () => {
     - **`here() → { id, place } | null`**
     - **`docked() → id | null`**
     - **`resolve(id) → Destination | null`:** `resolvePlace` with this scene's `universe`, the last `t`, the loaded and fetched sectors, and `build: false`. It never makes a sector.
+    - **At hand.** An id's sector is at hand when its key (`parseSpaceId(id).key`) is among the loaded sectors or the fetched ones. `fetch`, `find` and `missing` turn on that, not on whether `resolve` found the place. When the sector is at hand, `resolve`'s answer is final: a place it doesn't find (`E:1,0:0:99` with `E:1,0` loaded) isn't there, and nothing will bring it.
     - **`fetch(id) → Promise<Destination | null>`:**
-      - It resolves at once when it can.
+      - With its sector at hand, it resolves at once to `resolve(id)`, a Destination or null, and makes no request and adds nothing to the fetched sectors.
       - Else it asks the pool for the sector: `workers.request('expanse', { type: 'sector', key: 'place|' + sectorKey, universe, sx, sy, sz })`. It puts the answer through `withMoons`, keeps it among the fetched sectors (the last 4), and resolves.
       - Its own key never settles the expanse's ask for the same sector.
       - Null for a malformed id, a sector whose answer is null, a request that rejects or is cancelled, or no `workers` (Node). It never rejects.
       - Asking twice for one sector shares one request.
-    - **`find(id) → Destination | null`:** `resolve(id)`. On a miss for a well-formed id it starts a `fetch`, whose landing emits `'found'`.
-    - **`missing(id) → boolean`:** a well-formed place id that `resolve` can't find yet.
+    - **`find(id) → Destination | null`:** `resolve(id)`. On a miss for a well-formed id whose sector isn't at hand, it starts a `fetch`, whose landing emits `'found'`. A miss in a sector at hand is null, with no fetch and no event.
+    - **`missing(id) → boolean`:** a well-formed place id whose sector isn't at hand yet. An id its sector at hand doesn't hold is not missing: it's nothing. So the start never jumps to it, and `trips.travel` gives false for it at once (Task 11's `missing` dep).
     - **`park(id, from) → Park | null`:** `parkPlace(resolve(id), from, t)`, or null.
     - **`look`:** `{ place: (id) => resolve(id) }`, the lookup `nav.js` takes.
     - **`mark(id, dest = null) → { at, reach, name } | null`:** for the way-to-go marker. It uses `dest` (the trip's own) when its id is `id`, else `resolve(id)`. `at` is `atTime(·, t)`. Null for a non-place id.
@@ -1791,9 +1918,16 @@ describe('trips to generated places', () => {
   - `dispose` empties the group.
 
   `scenePlaces.test.js` has three helpers:
-  - `make({ sectors, universe, workers, startAt } = {})` builds `createScenePlaces` over a fake expanse whose loaded sectors are made once, in its own universe, as lane 2's expanse makes them in the scene's: `const own = sectors ?? new Map([['E:1,0', universe ? fullSector(universe, 1, 0, 0) : s]])` and `sectors: () => own`. It passes `universe` through (the shared one when it's left out), a `THREE.Group`, a `toScreen` that projects through the fake camera, `prepare` as a no-op, `emit` and `note` recorders, and a `clock` that rises by 1 each call, so every update refreshes what's near. It returns `{ p, events, notes }`.
+  - **`make({ sectors, universe, workers, startAt, turn = 0, device = { tier: 'mid' } } = {})`** builds `createScenePlaces` over a fake expanse whose loaded sectors are made once, in its own universe, as lane 2's expanse makes them in the scene's: `const own = sectors ?? new Map([['E:1,0', universe ? fullSector(universe, 1, 0, 0) : s]])` and `sectors: () => own`. It passes:
+    - `universe` through (the shared one when it's left out)
+    - a `THREE.Group` turned by `turn` radians about y, as `map.rotation.y = state.yaw` turns the map
+    - a `toScreen` that, as `scene.js`'s does (`:1526`), takes a map-frame point through `group.localToWorld`, then projects through the latest `tick`'s camera
+    - `prepare` as a no-op, `emit` and `note` recorders, and `device`
+    - a `clock` that rises by 1 each call, so every update refreshes what's near
+
+    It returns `{ p, events, notes, group, tick }`. `tick(ship, more = {})` is `p.update({ ship, camera: fakeCamera(ship, group), t: 0, flying: true, nose: [0, 0, -1], going: null, arrived: null, held: false, ...more })`.
   - `fakePool()` is `{ request: vi.fn(async (name, m) => sectorJob(m).answer), cancel: vi.fn() }`. It runs lane 2's own job in process, so the answer comes without moons, as from the worker, on a later microtask.
-  - `fakeCamera(ship)` is a `PerspectiveCamera(34, 16 / 9, 0.1, 45000)` at the ship, looking along its heading.
+  - **`fakeCamera(ship, group = null)`** is a `PerspectiveCamera(34, 16 / 9, 0.1, 45000)` in the scene's frame, as the scene's camera is. It sits at `group.localToWorld` of the ship's point and looks at `group.localToWorld` of a point 10 ahead along its heading, then `updateMatrixWorld()`. With no group, it sits at the ship.
 
   The file imports `vi` from Vitest, `THREE`, `PLACE`, `ship.js`'s `OPEN_SPACE`, `PARK_GAP`, `SOLIDS`, `headingTo`, `spawn` and `step`, `aim.js`'s `aimTargets`, `nav.js`'s `destinationById`, the face's `UNIVERSE`, `fullSector`, `moonAt`, `sectorJob` and `universeOf`, and Tasks 3, 4 and 8's `resolvePlace`, `parkPlace`, `followPark` and `hereZone`. It sets `s = fullSector(UNIVERSE, 1, 0, 0)` and the `len` and `xyz` helpers of Task 8. The tests:
 
@@ -1801,40 +1935,39 @@ describe('trips to generated places', () => {
 const st = s.stations[0];
 const dest = resolvePlace(st.id, { t: 0 });
 const park = parkPlace(dest, [st.at[0] + 2000, st.at[2]], 0);
-const tick = (p, ship, more = {}) => p.update({ ship, camera: fakeCamera(ship), t: 0, flying: true, nose: [0, 0, -1], going: null, arrived: null, held: false, ...more });
 const flush = () => new Promise((r) => setTimeout(r, 0));
 
 it('arrives and docks at a station parked still beside it, and says so', () => {
-  const { p, events, notes } = make();
-  tick(p, { ...park, speed: 0 });
+  const { p, events, notes, tick } = make();
+  tick({ ...park, speed: 0 });
   expect(events).toEqual([{ type: 'place', what: 'arrive', id: st.id, name: st.name }, { type: 'place', what: 'dock', id: st.id, name: st.name, open: false }]);
   expect(notes).toEqual([PLACE.docked(st.name)]);
   expect([p.here()?.id, p.docked()]).toEqual([st.id, st.id]);
 });
 it('opens the hangar only for the trip that ended there, once', () => {
-  const { p, events } = make();
+  const { events, tick } = make();
   const arrived = { id: st.id };
-  tick(p, { ...park, speed: 0 }, { arrived });
+  tick({ ...park, speed: 0 }, { arrived });
   expect(events.find((e) => e.what === 'dock').open).toBe(true);
-  tick(p, { ...park, x: park.x + 200, speed: 0 }, { arrived });
-  tick(p, { ...park, speed: 0 }, { arrived });
+  tick({ ...park, x: park.x + 200, speed: 0 }, { arrived });
+  tick({ ...park, speed: 0 }, { arrived });
   expect(events.filter((e) => e.what === 'dock').map((e) => e.open)).toEqual([true, false]);
 });
 it('undocks and leaves as it flies off, back at the system, and arrives nowhere it is only passing', () => {
-  const { p, events } = make();
-  tick(p, { ...park, speed: 0 });
+  const { p, events, tick } = make();
+  tick({ ...park, speed: 0 });
   const off = { ...park, x: park.x + 100, speed: 20 };
-  tick(p, off);
+  tick(off);
   const sysRow = p.around().find((r) => r.id === st.system);
   const back = Math.hypot(off.x - sysRow.at[0], off.y - sysRow.at[1], off.z - sysRow.at[2]) < hereZone(sysRow).in;
   expect(events.slice(2).map((e) => [e.what, e.id])).toEqual([['undock', st.id], ['leave', st.id], ...(back ? [['arrive', st.system]] : [])]);
   const q = make();
-  tick(q.p, { ...park, speed: 0 }, { going: 'E:1,0:5' });
+  q.tick({ ...park, speed: 0 }, { going: 'E:1,0:5' });
   expect(q.events.some((e) => e.what === 'arrive')).toBe(false);
 });
 it('makes a drawn station solid, so flying into it is a crash with its id', () => {
-  const { p } = make();
-  tick(p, { ...park, speed: 0 });
+  const { p, tick } = make();
+  tick({ ...park, speed: 0 });
   expect(p.solids()).toContainEqual({ id: st.id, at: st.at, r: st.size, reach: st.size * 1.5 });
   let ship = { ...spawn(null), x: st.at[0] + 60, y: st.at[1], z: st.at[2], heading: headingTo(-1, 0), speed: 40 };
   const hit = [];
@@ -1875,7 +2008,31 @@ it('resolves from its loaded sectors, and never makes a sector itself', async ()
   expect(p.resolve('E:9,0:0')).toBeNull();
   expect(p.missing('E:9,0:0')).toBe(true);
   expect(p.missing('E:1,0:0')).toBe(false);
+  expect(p.missing('E:1,0:0:99')).toBe(false); // (its sector is at hand: it's nothing, not on its way)
   expect(p.missing('marvel')).toBe(false);
+});
+it('answers at once, with no request, for a place its sectors hold or say isn’t there', async () => {
+  const workers = fakePool();
+  const { p, events } = make({ workers });
+  expect(p.find('E:1,0:0:99')).toBeNull();
+  expect(await p.fetch('E:1,0:0:99')).toBeNull();
+  expect((await p.fetch('e:1,0:0'))?.id).toBe('E:1,0:0');
+  await flush();
+  expect(workers.request).not.toHaveBeenCalled();
+  expect(events.filter((e) => e.what === 'found')).toEqual([]);
+});
+it('measures from the camera in the map’s own frame, turned as the map is after an arrival', () => {
+  // (map.rotation.y = state.yaw, −heading after any arrival, spawn or pose: scene.js:1843, :2219;
+  // the camera is in the scene's frame, the places in the map's)
+  const turned = make({ turn: 1.2 });
+  const flat = make();
+  turned.tick({ ...park, speed: 0 }, { arrived: { id: st.id } });
+  flat.tick({ ...park, speed: 0 }, { arrived: { id: st.id } });
+  expect(turned.events.find((e) => e.what === 'dock')).toMatchObject({ id: st.id, open: true });
+  expect([turned.p.here()?.id, turned.p.docked()]).toEqual([st.id, st.id]);
+  expect(turned.events).toEqual(flat.events);
+  expect(turned.p.around().map((r) => r.id)).toEqual(flat.p.around().map((r) => r.id));
+  expect(turned.p.solids()).toEqual(flat.p.solids());
 });
 it('resolves in a pocket universe: its own loaded sector, and a fetch made in it', async () => {
   const marble = universeOf('marble');
@@ -1891,15 +2048,15 @@ it('resolves in a pocket universe: its own loaded sector, and a fetch made in it
   expect(destinationById('E:9,0:0', p.look)?.name).toBe(far.name);
 });
 it('aims at the hand-made places and the generated stars from one array, kept until the stars refresh', () => {
-  const { p } = make();
+  const { p, tick } = make();
   const ship = { ...park, speed: 0 };
-  tick(p, ship);
+  tick(ship);
   const a = p.aimTargets('main', null);
   expect(p.aimTargets('main', null)).toBe(a);
   expect(a.slice(0, aimTargets('main', null).length)).toEqual(aimTargets('main', null));
   expect(a.some((x) => x.id === st.system)).toBe(true);
   expect(p.aimTargets('rickmorty', null)).toEqual(aimTargets('rickmorty', null));
-  tick(p, ship);
+  tick(ship);
   expect(p.aimTargets('main', null)).not.toBe(a);
 });
 it('fetches a place outside its sectors from the worker pool, once a sector, and says when it’s found', async () => {
@@ -1918,8 +2075,8 @@ it('fetches a place outside its sectors from the worker pool, once a sector, and
   expect(await make({ workers }).p.fetch('E:9,0:9999')).toBeNull();
 });
 it('marks the way to a generated goal, from the trip’s own row or its own sectors', () => {
-  const { p } = make();
-  tick(p, { ...park, speed: 0 });
+  const { p, tick } = make();
+  tick({ ...park, speed: 0 });
   expect(p.mark(st.id)).toEqual({ at: st.at, reach: st.size * 1.5, name: st.name });
   const far = resolvePlace('E:9,0:0', { t: 0 });
   expect(p.mark('E:9,0:0', far)).toMatchObject({ at: far.at, name: far.name });
@@ -1951,7 +2108,7 @@ it('marks the way to a generated goal, from the trip’s own row or its own sect
 - [ ] **Step 6: Run the checks at mid.**
   - Run `node scripts/universe-endless-check.mjs --quality mid --only travel,dock`. Expected: exit 0, no pops over 4 px (the stations grow in), no console errors.
   - Run `node scripts/universe-check.mjs --quality mid --poses expanse-system --out lab/universe/after-3/mid`. Expected:
-    - Calls and triangles are at most `before-3`'s plus 2 when a station is in the built system, and equal when there is none. Say which in the commit.
+    - Calls and triangles are at most `before-3`'s plus 2 when a station is in the built system (the station's hull and its lights), and equal when there is none. Say which in the commit. Task 15 re-records `expanse-system` into `lab/universe/endless/<tier>`, so later lanes measure against the number this lane leaves.
 - [ ] **Step 7: Commit.** `git commit -m "Generated stations drawn and solid, a ship carried in orbit, and docking at the end of a trip"`. The body has the `scene.js` count and the pose's numbers.
 
 ### Task 13: Picking generated places, and their name tags
@@ -1968,7 +2125,7 @@ it('marks the way to a generated goal, from the trip’s own row or its own sect
     - The update gains `aim: state.aim, picked: state.sel` (0, on its line).
 
 **Interfaces:**
-- Consumes: Task 9's `pickPlace`, `tagsFor` and `TAGS_MAX`; lane 6a's `chart/declutter.js` `declutter(labels, { bounds }) → Map<id, side | null>` and `boxOf(side, label) → { x0, y0, x1, y1 }`; `nav.js`'s `shortDistance`. `placeTags` passes `bounds` alone. `declutter`'s `bounds` is a box `{ x0, y0, x1, y1 }` (or a circle `{ cx, cy, r }`), never a `DOMRect`, whose `left`, `top`, `right` and `bottom` it doesn't read. Lane 6a's code (`e59d3d04`) also takes `sides`, `dots` and `hard`, and its plan lists `sides` and `dots`: `placeTags` uses none of them.
+- Consumes: Task 9's `pickPlace` and `tagsFor`, and its `tags` field through Task 12's `budget`; lane 6a's `chart/declutter.js` `declutter(labels, { bounds }) → Map<id, side | null>` and `boxOf(side, label) → { x0, y0, x1, y1 }`; `nav.js`'s `shortDistance`. `placeTags` passes `bounds` alone. `declutter`'s `bounds` is a box `{ x0, y0, x1, y1 }` (or a circle `{ cx, cy, r }`), never a `DOMRect`, whose `left`, `top`, `right` and `bottom` it doesn't read. Lane 6a's code (`e59d3d04`) also takes `sides`, `dots` and `hard`, and its plan lists `sides` and `dots`: `placeTags` uses none of them.
 - Produces:
   - **`createPlaceTags(box, { onPick, doc = box.ownerDocument }) → { show(list, frame), dispose() }`.**
     - `list` is `[{ id, name, dist, x, y, priority }]`, in screen pixels. `frame` is `{ w, h }`, the scene's `size`.
@@ -1979,9 +2136,9 @@ it('marks the way to a generated goal, from the trip’s own row or its own sect
     - A click calls `onPick(id)`.
     - `show([])` hides them all. `dispose()` removes them from `box`.
   - **`scenePlaces.update`** also shows the tags, projected by `toScreen`, in the frame `frame()`:
-    - `tagsFor(around(), { ship, nose, focus: [going, aim, picked], here: here()?.id, max: TAGS_MAX[tier], cone: NAME_CONE })`
+    - `tagsFor(around(), { ship, nose, focus: [going, aim, picked], here: here()?.id, max: budget.tags, cone: NAME_CONE })`, so the cap is the tier table's and comes down with the quality steps (`setStep`)
     - It shows none (`show([])`) while held or not `flying`. The update runs every frame from `render()` (Task 12), so the tags go on foot, in a dive and frozen too.
-  - **`scenePlaces.pick(px, py, { tanHalf, height }) → id | null`:** `pickPlace` over `around()`, when flying.
+  - **`scenePlaces.pick(px, py, { tanHalf, height }) → id | null`:** `pickPlace` over `around()`, when flying. Since `around()` lists whatever lane 2 draws as a disc (Task 8), a rock or derelict thousands of units off is picked where it shows, not only once you're on top of it.
   - **`scenePlaces.screen(id) → { x, y } | null`**, dev: `toScreen` of its row, for the check. `places.debug` gains it.
   - **`.universe-place-tag`** is `.universe-tag`'s look (pill, mono, never under 12 px, `pointer-events: auto`) in `#9fd8ff`.
 
@@ -1999,6 +2156,8 @@ it('marks the way to a generated goal, from the trip’s own row or its own sect
     - A fake `tags` box records `show` calls. After an update facing the station, the list's first entry is the station.
     - With `held: true`, and again with `flying: false`, the list is empty.
     - `p.screen(st.id)` is the station's projected point, and null for an id not around.
+    - **A thing far off is picked where it shows.** The file also imports the face's `thingRow`. With `make({ turn: 1.2 })` and `row = thingRow(s, 40)`, tick a still ship at `row.at` plus 5,000 on x, heading `headingTo(-1, 0)` (facing it). Then `const pt = p.screen(row.id)` is non-null, and `p.pick(pt.x, pt.y, { tanHalf: Math.tan((17 * Math.PI) / 180), height: 720 })` is `row.id`.
+    - **The tags' cap is the tier table's.** Over a field of things in view, the `show` list holds at most 3 entries with `make({ device: { tier: 'low' } })` and at most 6 with mid. After `p.setStep(2, false)` on mid, it holds at most 3 (`universeBudget({ tier: 'mid' }, 2).tags`).
 - [ ] **Step 2: Run them and see them fail.** Run `npx vitest run src/components/universe/places/placeTags.test.js src/components/universe/places/scenePlaces.test.js`. Expected: `placeTags` FAILS (module not found), and the new `scenePlaces` tests FAIL.
 - [ ] **Step 3: Implement** `placeTags.js` and the `scenePlaces` additions, append the CSS, and wire `scene.js`. Count its lines.
 - [ ] **Step 4: Run them and see them pass.** Same command, then `npm test`. Expected: PASS.
@@ -2146,8 +2305,8 @@ it('marks the way to a generated goal, from the trip’s own row or its own sect
 
 **Files:**
 - Modify: `src/components/universe/poses.js` (`'expanse-station'`), `src/components/universe/poses.test.js`, `scripts/universe-check.mjs:31` (the name added)
-- Create: `docs/superpowers/evidence/endless-universe-3/HANDOFF-NOTES.md`
-- Modify: `docs/superpowers/evidence/endless-universe-3/README.md`
+- Create: `docs/superpowers/evidence/endless-universe-lane-3/HANDOFF-NOTES.md`
+- Modify: `docs/superpowers/evidence/endless-universe-lane-3/README.md`
 
 **Interfaces:**
 - Produces:
@@ -2162,22 +2321,32 @@ it('marks the way to a generated goal, from the trip’s own row or its own sect
 - [ ] **Step 2: Run it and see it fail.** Run `npx vitest run src/components/universe/poses.test.js`. Expected: FAIL.
 - [ ] **Step 3: Implement**, and add the name to `universe-check.mjs`'s `POSES`. If lane 2's `expanse-system` pose builds its sector at `poses.js`'s top level, move it inside `poseFor` the same way and say so in the commit.
 - [ ] **Step 4: Run it and see it pass.** Same command. Expected: PASS.
-- [ ] **Step 5: The full measure, once.** Run these in the background and wait on their exits:
+- [ ] **Step 5: The full measure, once.** Run these in the background, each with `CHROMIUM=/opt/pw-browsers/chromium` in front, and wait on their exits:
   - `node scripts/universe-check.mjs --quality high --out lab/universe/after-3/high`, then the same for `mid` and `low`: every pose at every tier, about three hours here in all. Run them as three, because `universe-check.mjs` ignores `--out` when more than one tier runs (`:53`, `args.out && tiers.length === 1`), and `--quality all` would write over `lab/universe/<tier>`.
   - `QUALITY=mid node scripts/perf-probe.mjs universe` and `QUALITY=low …`, against Task 10's branch point
 
   Expected:
   - **Draw calls and triangles:** at every pose in `lab/universe/baseline/<tier>.json`, no higher. Generated stations are drawn only inside a generated system's reach, and the keep-outs keep every reach away from the hand-made poses, so the fourteen hand-made poses are equal.
   - **Frame time:** p50 no worse than 2%.
-  - **New baseline:** `expanse-station` is recorded with `--quality <tier> --poses expanse-station --out lab/universe/endless/<tier>`, once a tier, and becomes its own baseline.
+  - **The endless baselines, re-recorded.** Run `--quality <tier> --poses old-rim,above-core,expanse-system,expanse-station --out lab/universe/endless/<tier>`, once a tier.
+    - `universe-check` writes one `<out>.json` a run, holding only the poses that run measured (`:237`, `:246`). A run of `expanse-station` alone would write over lane 2's `old-rim`, `above-core` and `expanse-system` numbers, so all four go in one run.
+    - `expanse-station` is new and becomes its own baseline.
+    - `expanse-system` is re-recorded, because Task 12 let it rise by up to 2 calls when a station is in the built system. Lanes 4a and 4b then compare against what lane 3 left, not a number lane 3 has already raised.
+    - `old-rim` and `above-core` should be equal to lane 2's. Any change there is a finding.
+    - The commit body and `HANDOFF-NOTES.md` (for the coordinator's pull request) say whether `expanse-system` rose, by how much, and that it is on purpose: the station's hull and its lights, two `InstancedMesh`es (Task 12's `stationLook`).
   - **Pixels:** `scripts/pixel-measure.mjs` against `before-3/mid` gives identical shots at the hand-made poses at mid.
 - [ ] **Step 6: The endless check, whole.** Run `node scripts/universe-endless-check.mjs --quality mid` and then `--quality low`, all of lane 2's steps and this lane's. Expected: exit 0 both times, and the per-step table printed and copied into the README.
 - [ ] **Step 7: The repo's checks.** Expected: each as on the branch before Task 1.
-  - `node scripts/navmap-check.mjs`
-  - `node scripts/sector-check.mjs`
-  - `node scripts/flyto-check.mjs --fake`
-  - `node scripts/links-check.mjs`
-  - `node scripts/autopilot-check.mjs --only smoke --skip lint,test,build --routes /universe`
+  1. **Start the dev server** the first four need (Global Constraints, "The dev server"):
+     - Start `npx vite --port 5173 --strictPort` in the background.
+     - Wait until `curl --noproxy '*' -sf -o /dev/null http://localhost:5173/` succeeds, in an until-loop on that condition, giving up after 60 s.
+  2. **Run the checks:**
+     - `CHROME=/opt/pw-browsers/chromium node scripts/navmap-check.mjs`
+     - `CHROME=/opt/pw-browsers/chromium node scripts/sector-check.mjs`
+     - `CHROME=/opt/pw-browsers/chromium node scripts/flyto-check.mjs --fake`
+     - `CHROME=/opt/pw-browsers/chromium node scripts/links-check.mjs`
+     - `CHROMIUM=/opt/pw-browsers/chromium node scripts/autopilot-check.mjs --only smoke --skip lint,test,build --routes /universe`, which runs its own preview server
+  3. **Stop the dev server.**
 
   The first four load `?quality=low` themselves and draw no pose. The smoke check runs at its default here, as the lane's gate.
 - [ ] **Step 8: Write the README and the hand-off notes.**
@@ -2188,7 +2357,7 @@ it('marks the way to a generated goal, from the trip’s own row or its own sect
     - the bundle numbers: `Front`, `CommandPalette`, `Interests` and `Terminal`, at Task 1's before, Task 1's after, Tasks 7 and 14 before and after, and the lane's whole growth
     - `scene.js`'s line count at each task
     - `boundary-breaks` and `cycles`, before and after
-  - **`HANDOFF-NOTES.md`, "Landed":** every module above by path, with its interface in one line each, and the six new endless steps (`travel`, `dock`, `pick`, `link`, `flat` and `terminal`) and the pose.
+  - **`HANDOFF-NOTES.md`, "Landed":** every module above by path, with its interface in one line each, and the six new endless steps (`travel`, `dock`, `pick`, `link`, `flat` and `terminal`) and the pose. Also the re-recorded `lab/universe/endless/<tier>.json`, with `expanse-system`'s change and why (Step 5), and `BUDGET`'s new `tags` field.
   - **`HANDOFF-NOTES.md`, "Left":**
     - Lane 6b lists generated places on the chart and in search, from `handle.nearby()`, `where().t` and `findDestinations`' `more`, passing `{ place: handle.place }` to `nav.js`. A visited place outside the loaded sectors comes from `handle.fetchPlace(id)`, one worker build of about 45 ms a sector, so N visited ids in N sectors cost N builds. Resolve the ones in view, not the whole list.
     - The terminal's longest task at 4× throttling, and whether it's a finding (Task 14).
@@ -2198,7 +2367,7 @@ it('marks the way to a generated goal, from the trip’s own row or its own sect
     - **Lane 6b, the "Star systems" filter.** Generated systems are `kind: 'star'`, and `KINDS`' "Star systems" is `'system'` (`nav.js:188`), the galaxy's gate systems. `findDestinations('system', …)` takes both now (Task 7). But `NavMap.jsx:317` groups a list by `d.kind === g.id`, so a generated system falls in no group, and `NavMap.jsx:243` and lane 6a's `chart/marks.js` leave `kind === 'system'` off the chart as a gate. When 6b wires search, it folds `'star'` into the "Star systems" group (or adds a `KINDS` row for it), and keeps generated systems on the chart.
     - **Anyone importing from `places/`**: from a module that loads with a page (`nav.js` and what it reaches, the page, the panel), take ids and `atTime` from `places/ids.js` and the orbits from `expanse/shared/orbits.js`, never from `places/resolve.js` or `expanse/shared/space.js`. `weight.test.js` fails otherwise.
     - Any finding from the bundle steps (Tasks 1, 7 and 14).
-- [ ] **Step 9: Run the gates and commit.** Run `npm run lint`, `npm test`, `npm run build` and `node scripts/health.mjs --check --skip build`. Expected: all green, within budget. Then `git add -A src/components/universe/poses.js src/components/universe/poses.test.js scripts/universe-check.mjs lab/universe/after-3 lab/universe/endless docs/superpowers/evidence/endless-universe-3 && git commit -m "Lane 3 measured at every tier, a station pose, and its hand-off notes"`
+- [ ] **Step 9: Run the gates and commit.** Run `npm run lint`, `npm test`, `npm run build` and `node scripts/health.mjs --check --skip build`. Expected: all green, within budget. Then `git add -A src/components/universe/poses.js src/components/universe/poses.test.js scripts/universe-check.mjs lab/universe/after-3 lab/universe/endless docs/superpowers/evidence/endless-universe-lane-3 && git commit -m "Lane 3 measured at every tier, a station pose, and its hand-off notes"`
 
 ---
 
@@ -2206,28 +2375,29 @@ it('marks the way to a generated goal, from the trip’s own row or its own sect
 
 | Name | From | Used by |
 |---|---|---|
-| `canonicalPlace(id)`, `isPlaceId(id)`, `atTime(place, t)`: no generator behind them, for anything that loads with a page | `universe/places/ids.js` | 4a, 4b, 5b, 6b |
-| `resolvePlace(id, { universe, t, sectors, build })`, `lookupOf(opts)`, `Destination`: the generator behind them, for the scene and the terminal only | `universe/places/resolve.js` | 4a, 4b, 5b, 6b |
+| `canonicalPlace(id)`, `isPlaceId(id)`, `atTime(place, t)` (a planet's orbit, a moon's, else the row's own `move(row, t)`, else its `at`): no generator behind them, for anything that loads with a page | `universe/places/ids.js` | 4a, 4b, 5b, 6b |
+| `resolvePlace(id, { universe, t, sectors, build })`, `lookupOf(opts)`, `Destination` (with `move` and `moving`): the generator behind them, for the scene and the terminal only | `universe/places/resolve.js` | 4a, 4b, 5b, 6b |
 | `orbitAt`, `moonAt`, `spaceTime`, `extentOf` (the light face) | `expanse/shared/orbits.js` | 5b, 6b |
 | `cardRow(place, found, map)` | `places/pageCard.js` | 5b, 6b |
 | `onLive('live' \| 'loading' \| 'flat')` | `UniverseMap.jsx`'s prop | 5b, 6b (what to show with no scene) |
 | `reach(entry)` and `GENERATOR` in a test that pins what a page loads | `places/weight.test.js` | every later lane that imports into `nav.js` or the page |
-| `THING_CARDS` (a row per kind: `type`, `about`, `color`, `solid`, `far`, `at?`), `placeCard`, `PLACE` | `places/cards.js`, `words.js` | 4a (its kinds' cards), 6b |
+| `THING_CARDS` (a row per kind: `type`, `about`, `color`, `solid`, `far` (default 45,000), `move?(row, t)` for a kind that moves), `placeCard`, `PLACE` | `places/cards.js`, `words.js` | 4a (its kinds' cards, comets' `move`), 6b |
 | `parkPlace(dest, from, t)`, `parkDistance`, `followPark`, `placeSpace`, `gapRadius`, `moonGap` | `places/park.js` | 4a ("Park" actions), 4b (events at a place), 5b (back in orbit) |
 | `PARK_GAP`, `clearOf` | `ship.js` | 4a, 4b |
 | `carry`, `carryFrames`, `carryZone`, `carryWeight`, `frameOf`, `CARRY` | `places/carry.js` | 5b (taking off into orbit: the planet is the frame) |
 | `longTrip`, `TRIP` | `places/trip.js` | 6b |
 | `destinationById(id, { place })`, `goalOf`, `canGo(id, { place })`, `legOf`, `parkFor(id, from, { place })`, `distanceTo(ship, id, { place })`, `tripTime(ship, id, drive, { place })`, `findDestinations(kind, q, { more, place })`, `findDestination(q, { place })` | `nav.js`. Generated places come only through the caller's `place` lookup. | 6b, 4c, 5b |
-| `placesAround`, `orbitingPlace(ship, current, rows, prefer)`, `hereZone`, `aimStars`, `AROUND`, `Row` (with `park`) | `places/around.js` | 4b (zones), 6b (marks) |
-| `pickPlace`, `tagsFor`, `TAGS_MAX`, `dockState`, `DOCK` | `places/pick.js`, `dock.js` | 4a (its own picks), 4b |
+| `placesAround(sectors, cam, t, { far, inside, max })` (every disc lane 2 draws, within the far plane, nearest `max`; `cam` in the map's frame), `orbitingPlace(ship, current, rows, prefer)`, `hereZone`, `aimStars`, `AROUND`, `Row` (with `park` and `move`) | `places/around.js` | 4b (zones), 6b (marks) |
+| `pickPlace`, `tagsFor`, `dockState`, `DOCK` | `places/pick.js`, `dock.js` | 4a (its own picks), 4b |
+| `tags` (3, 6, 6, 6, stepped with `discs`, never below 1) | lane 2's `BUDGET`, `universe/budget.js` | 6b (the chart's names, if it caps them by tier) |
 | `createPlaceTags(box, { onPick, doc })` → `{ show(list, { w, h }), dispose() }` | `places/placeTags.js` | 6b, if the chart's names want the same pool |
 | `STATION_BASE`, `stationsOf`, `extentOf`, `fullSector(…).stations`, `placeIn`, and `withMoons` and `sectorJob` on the face | `expanse/gen/stations.js`, `space.js`, via `expanse/shared/space.js` | 4a, 4b (traffic between stations) |
-| `places.look`, `places.resolve` (never builds), `places.fetch(id)` (one worker build a sector not at hand, about 45 ms; never rejects), `places.find`, `places.mark`, `places.aimTargets(sector, at)` (one kept array), `places.debug` | `places/scenePlaces.js` | 4b, 5b, 6b |
+| `places.look`, `places.resolve` (never builds), `places.fetch(id)` (one worker build a sector not at hand, about 45 ms; at once and with no request when the sector is at hand; never rejects), `places.find`, `places.missing` (the id's sector isn't at hand), `places.mark`, `places.aimTargets(sector, at)` (one kept array), `places.setStep(step, floor)`, `places.debug`. Every position in the map's frame; the camera brought in by `group.worldToLocal`. | `places/scenePlaces.js` | 4b, 5b, 6b |
 | `travel(id)` on `E:` ids (scene handle and `__universeDebug`), `where().place`, `where().docked`, `where().t`, `handle.place(id)`, `handle.fetchPlace(id)`, `handle.nearby(max)` | `scene.js`, `UniverseMap.jsx` | 4b, 5b, 6b |
 | `{ type: 'place', what: 'arrive' \| 'leave' \| 'dock' \| 'undock' \| 'found', id, name?, open?, dest? }` | `scenePlaces.js` (the scene's `emit`) | 4b (the trader), 5b, 6b |
 | `/universe/<E: id>`: starts parked with its card, found off the main thread | `Universe.jsx` | 5b (take-off's return), 4c |
 | `PlaceCard` (and its pending row) | `places/PlaceCard.jsx` | 6b, 4a |
-| `createTrips(deps)` (with `props`, `powers`, `unique` and `front` as thunks) with `resolve` and `fetch`, `state.spaceT`, `state.arrived`, `state.pending`, `endTrip`, `outOfJump` | `trips.js` | 4b, 4c |
+| `createTrips(deps)` (with `props`, `front`, `powers`, `unique`, `heard`, `retarget`, `invalidate` and `settle` as thunks) with `resolve`, `fetch` and `missing`, `state.spaceT`, `state.arrived`, `state.pending`, `endTrip`, `outOfJump` | `trips.js` | 4b, 4c |
 | the `travel`, `dock`, `pick`, `link`, `flat` and `terminal` steps, `--only` | `scripts/universe-endless-check.mjs` | every later lane |
 
 **For lane 6b in particular.**
@@ -2256,6 +2426,9 @@ Each of these can be checked once lane 2 (2.3 to 2.5), lane 1, lane 5a and lane 
 15. The build still names the chunks `Front-*.js`, `CommandPalette-*.js`, `Interests-*.js` and `Terminal-*.js`, and writes static imports as `import … from "./x.js"`, which Task 1's `chunks.mjs` follows. Both hold on `eu/lane-2`'s `dist/` today (Vite 8).
 16. Lane 2's pool `request` rejects, or gives null, when a request fails or is cancelled. Either way `places.fetch` gives null, and a trip waiting on it ends as not arrived.
 17. Lane 2's `expanse-system` pose is parked off `e:1,0:0:0` at `t = 0` (its Task 22). If it builds that sector at `poses.js`'s top level, Task 15 moves it inside `poseFor`.
+18. Lane 2's far layer draws every star, planet (at `orbitAt`), lattice thing, extra and non-nebula wonder within `far + r` of the camera as a disc, keeping the nearest `budget.discs` by distance from the middle (its Task 15's `pickDiscs` and Task 21's "Discs carry a lattice thing within the far plane"). Task 8 lists by the same rule. If lane 2's code keeps a different set (a nearer cut for things, or a cap by kind through `thingKinds`), Task 8's rule follows that code, so no drawn disc lacks a row. Check with `discs.js` once lane 2's 2.4 has merged; on `eu/lane-2` today (`058a3d17`, PR 2.3) neither `discs.js` nor `budget.js` exists yet.
+19. Lane 2's `universe/budget.js` is as its Task 12 gives it: `BUDGET` rows by tier, `universeBudget({ tier, detail }, step = 0, floor = false)`, and `discs`, `thingsNear` and `traffic` multiplied by `[1, 0.75, 0.5, 0.35]` at steps 0 to 3 and by 0.25 at the floor. Task 9 adds `tags` to that list. Lane 2's Task 17 puts `expanse.setStep(at.step, at.floor)` in `paceTo`, and Task 12 adds `places.setStep` beside it.
+20. The scene's `render()` still finds the map-frame camera as `map.worldToLocal(camLocal.copy(camera.position))` before `aimAt()` and `expanse.update`. It's at `:5331` on `main`, and at `:5296` on `eu/lane-2` after its camera-relative drawing (`b4747d89`), which moves the camera to nought only for the draw and puts it back by copy. So at update time `camera.position` is the true scene-frame position, and `scenePlaces`' own `group.worldToLocal` gives the same `cam`.
 
 ## Findings for the coordinator (spec against code)
 
@@ -2302,12 +2475,23 @@ Each of these can be checked once lane 2 (2.3 to 2.5), lane 1, lane 5a and lane 
     - **The bundle (finding 2) holds for ⌘K and the home page, not for `Front`.** "Today the generator reaches these only through the lazy scene" is true of `CommandPalette` and `Interests`, and of `nav.js` (15 files, none of the generator). It's not true of `Front`, which has had `fullSector` since `rosterWhere.js` (finding 21). The fix is taken as asked: ids and `atTime` in `places/ids.js`, `extentOf` in `gen/extent.js` behind a light face, and the three chunks measured. `Front` is held to its growth, and only `CommandPalette` and `Interests` must hold none of the generator.
     - **The declutter call (finding 10) holds for 6a's plan, not its code.** Lane 6a's plan has no `hard`, but `declutter.js` on `eu/lane-6a` (`e59d3d04`) takes `hard = []`. `placeTags` passes `bounds` alone, so it doesn't matter which lands. The `bounds` conversion is taken: `{ x0: 0, y0: 0, x1: w, y1: h }`, from the scene's `size` rather than `getBoundingClientRect`, so no frame reads layout.
     - Also found while checking: `createScenePlaces`' `frame` must be a thunk too (`size` is a `const` at `:1173`, below the call at `:780`), and Task 12's other deps were checked by line.
+23. **This revision against the third review.** Each of its ten findings was checked against the spec, the wave-1 plans and the code, and all ten hold.
+    - **The listing against what's drawn.** Spec A's table draws "planets and things as impostors" within the far plane. Lane 2's Task 15 picks stars, planets and wonders within `far + r`, and its Task 21's discs "carry a lattice thing within the far plane", the nearest `budget.discs`. Within the far plane of `E:1,0`'s middle there are 68 systems, 274 planets and 1,741 lattice things (measured at `cc5e2eaf`, against 11 things within 9,000). The old list held things only within `THING_NEAR × size` and planets within 20,000, so most discs had no row. Task 8 now lists by the disc layer's own rule, capped by `budget.discs`.
+    - **The camera's frame.** `toScreen` (`:1526`) and `aimAt` (`:800-803`) already work in the map's frame through `camLocal` (`:5331`), and `map.rotation.y = state.yaw` (`:5076`, `:5134`) turns it by `−heading` after any arrival (`:1843`), spawn (`:2219`) or pose (`:5879`). Lane 2's camera-relative drawing (`eu/lane-2`, `b4747d89`) restores the camera after the draw, so this still holds there (`:5296`). `scenePlaces` now finds `cam` from its own `group`.
+    - **The travel block's other names.** `front` (three reads), `heard()`, `retarget(700)` and `camQOn = false` are at `:1782`, `:1796`, `:1835`, `:1844`, `:1850` and `:1857`. Task 10 lists every rewrite by line, and tests a trip to the front.
+    - **Sector at hand.** Taken as given, with one more consequence: `trips.travel` gains a `missing` dep, so a trip to `E:1,0:0:99` with `E:1,0` loaded is refused at once, not left pending and then dropped.
+    - **The mover.** Taken as given, named `move` on the card, the `Destination` and the `Row`.
+    - **The baselines.** Taken, and it found a second hazard. `universe-check` writes one `<out>.json` a run, holding only the poses that run measured (`:237`, `:246`). So the old Step 5, recording `expanse-station` alone into `lab/universe/endless/<tier>`, would have written over lane 2's `old-rim`, `above-core` and `expanse-system` numbers. Task 15 now records all four endless poses in one run a tier.
+    - **The browser checks.** Taken, and it found more. `navmap-check` and `links-check` default to `/opt/google/chrome/chrome`, which this container lacks. `universe-check` and `autopilot-check` look for `chromium-N/chrome-linux/chrome`, but this container has `chromium-1243/chrome-linux64/chrome`, and Playwright's own fallback wants revision 1194. So every browser command runs with `CHROME` and `CHROMIUM` set to `/opt/pw-browsers/chromium` (Global Constraints).
+    - **The evidence folder** is `endless-universe-lane-3/`, as lane 2's and lane 6a's hand-off notes are (`eu/lane-2`, `eu/lane-6a`).
+    - **The tier table.** `tags` joins lane 2's `BUDGET` and its stepped fields. The list's cap is the row's `discs`, so neither count is kept outside the table.
+    - **The sector name.** Task 8's fixture cube `[1, 1, 0]` is `fullSector(UNIVERSE, 1, 1, 0)`, i.e. `E:1,0,1`. The 2,025 planets with moons are counted over `E:1,0`, `E:2,0` and `E:1,0,1` (checked: `E:1,1` in its place gives 2,013).
 
 ## Spec coverage
 
 - **Done item 4, "Every place you see, you can go to"** (all but "the map lists it", which is lane 6b's):
   - **It has a name** (Tasks 2 and 3, the tags in 13).
-  - **You can pick it** (Tasks 9 and 13), aim at it and press J (Task 12).
+  - **You can pick it** (Tasks 9 and 13), aim at it and press J (Task 12). "Every place you see" is taken literally: whatever lane 2 draws as a disc within the far plane has a row (Task 8), so a rock 5,000 off is picked where it shows (Task 13), named by a tag and handed to lane 6b through `handle.nearby()`. This holds with the map turned (Task 12).
   - **Travel takes you there** by the jump, super speed or cruise (Tasks 4, 7 and 11), into and out of the Curve (Task 7), and to a place outside the loaded sectors once the worker has made it (Tasks 11 and 12).
   - **You stay there:** parked, carried by what you're at, arrived at a system or a planet past its moons, and never dragged by a passing moon (Tasks 4, 5, 8 and 12).
   - **You can't fly through it:** stations are solid (Task 12), and generated bodies are lane 2's.
@@ -2324,12 +2508,13 @@ Each of these can be checked once lane 2 (2.3 to 2.5), lane 1, lane 5a and lane 
   - Every existing test is untouched.
   - Task 15 reruns the repo's checks.
 - **Done item 10, "Phones still fly":**
-  - fewer tags on `low` (Task 9)
+  - fewer tags on `low`, from spec H's one tier table, and fewer again as the quality steps come down (Tasks 9, 12 and 13)
   - no draw call for a station out of range (Task 12)
   - no sector made on the main thread by the scene or the page; spec A's rule, kept for the resolver (Tasks 3, 11, 12 and 14); the terminal's one build timed at 4× throttling (Task 14)
   - the generator kept off ⌘K and the home page, and those and the front door each held to 2 kB of growth (Tasks 7 and 14, `weight.test.js`)
   - trips to moving places that end at a frame or two a second, by the carry (Task 12's `travel` step in software GL)
   - the frame times in Task 15
+- **Section H, "One tier table … the quality steps lower these further":** the tags' cap is `BUDGET.tags`, and the list's is `BUDGET.discs`, both read through `universeBudget(device, step, floor)` and stepped by `places.setStep` from `paceTo` (Tasks 9 and 12). `expanse-system` and `expanse-station` are recorded as the endless baselines (Task 15).
 - **The spec's counts:**
   - No count of 20 kinds or 15 events is this lane's.
   - The density targets are lane 2's, and stations add to them without touching them (Task 1 leaves `density.test.js` unchanged).
@@ -2339,7 +2524,10 @@ Each of these can be checked once lane 2 (2.3 to 2.5), lane 1, lane 5a and lane 
 
 - **Types:**
   - `Destination` is defined in Task 3 and read in Tasks 4–8 and 11–14.
-  - `Row` is defined in Task 8 and read in 9, 12 and 13.
+  - `Row` is defined in Task 8 (with `move`, and `at` from `atTime`) and read in 9, 12 and 13.
+  - `move(row, t)` is defined on `THING_CARDS` (Task 2), carried by `Card`, `Destination` (Task 3) and `Row` (Task 8), and read by `atTime` alone.
+  - `BUDGET.tags` is defined in Task 9 and read by `scenePlaces` (Tasks 12 and 13) through `universeBudget(device, step, floor)`. `budget.discs` is lane 2's, and is `placesAround`'s `max` in Task 12.
+  - The map-frame camera is found in `scenePlaces.update` (Task 12) and is the `cam` that `placesAround`, `aimStars` and the stations' grow take.
   - `Park` is defined in Task 4 and read in 5, 7, 11 and 15.
   - `parkDistance` is defined in Task 4 and read in 5 (`carryZone`), 8 (`Row.park`, `hereZone`) and 12.
   - `PARK_GAP` and `clearOf` are defined in Task 2.
@@ -2351,7 +2539,8 @@ Each of these can be checked once lane 2 (2.3 to 2.5), lane 1, lane 5a and lane 
   - `isPlaceId`, `canonicalPlace` and `atTime` are defined in `ids.js` (Task 3) and imported from there by Tasks 4, 5, 7, 11, 12 and 14. `resolvePlace` and `lookupOf` come from `resolve.js` only in the scene's places (Tasks 11 and 12), the terminal (Task 14), `poses.js` (Task 15) and tests.
   - `extentOf` is defined in `gen/extent.js` (Task 1) and lent by both faces. `park.js` takes it from the light one.
   - `cardRow` and its flat and pending rows are defined in Task 14's `pageCard.js` and drawn by `PlaceCard`. `PLACE.flat` and `PLACE.plotting` are Task 2's.
-  - `createTrips`' deps: thunks for `props`, `powers`, `unique`, `front`, `heard`, `retarget`, `invalidate` and `settle` (Task 10), with `resolve` and `fetch` (Tasks 11 and 12). `createScenePlaces`' thunks are `tags`, `onPick` and `frame` (Task 13).
+  - `createTrips`' deps: thunks for `props`, `powers`, `unique`, `front`, `heard`, `retarget`, `invalidate` and `settle` (Task 10, every rewrite in its table), with `resolve`, `fetch` and `missing` (Tasks 11 and 12). `createScenePlaces`' thunks are `tags`, `onPick` and `frame` (Task 13). Its `device` is a value.
+  - "At hand" (the id's sector loaded or fetched) is defined in Task 12 and decides `fetch`, `find` and `missing`. `missing` is what Task 11's trips and Task 12's start read.
   - The `'place'` event's `what` values (`arrive`, `leave`, `dock`, `undock`, `found`) are the same in Tasks 12 and 14.
   - `places.screen` (Task 13) and `places.debug` (Task 12) are what the endless check's steps call.
 - **Review Focus lines and their tests:**
@@ -2363,4 +2552,6 @@ Each of these can be checked once lane 2 (2.3 to 2.5), lane 1, lane 5a and lane 
   - a place outside the loaded sectors: Tasks 3, 11, 12 and 14
   - the weight of every page that loads `nav.js`: Tasks 1 (the before), 7 and 14
   - hand-made trips after the move, and the deps declared below: Task 10
+  - a turned map: Task 12
+  - a disc you can see: Tasks 8 and 13
 - **Test times.** RULES asks under a second a test. The heavy ones run over `E:1,0` alone: every planet's zone, about 25 planets parked past their moons for 60 s, and one planet over 600 updates. `step` costs about 20 µs here, and 6,000 steps took 121 ms.
