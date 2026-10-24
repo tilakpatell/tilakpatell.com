@@ -4,7 +4,7 @@ import { moonAt, orbitAt } from '../gen/orbits';
 import { addBodies } from '../gen/systems';
 import { createDiscs, pickDiscs } from './discs';
 import { HAND } from './fixtures/hand';
-import { FAR, levelWeights, realAt } from './levels';
+import { FAR, discPx, levelWeights, realAt } from './levels';
 import { MOON_LOOK, TYPE_LOOK, WONDER, WONDER_SPECK, lookColour } from './sectors';
 
 const SECTOR = addBodies(HAND);
@@ -68,6 +68,18 @@ function moved(was, now) {
   for (const id of new Set([...was.keys(), ...now.keys()])) most = Math.max(most, Math.abs((now.get(id) ?? 0) - (was.get(id) ?? 0)));
   return most;
 }
+const LENS = { fovY: 34, height: 1080 }; // the chase's lens on a 1,080 px screen, as levels.test.js has it
+// the most any disc came or went in pixels between two frames of rows by id
+// (its alpha's change times its size from `cam`), but those `skip` says
+function movedPx(was, now, cam, skip = () => false) {
+  let most = 0;
+  for (const id of new Set([...was.keys(), ...now.keys()])) {
+    if (skip(id)) continue;
+    const row = now.get(id) ?? was.get(id);
+    most = Math.max(most, Math.abs((now.get(id)?.alpha ?? 0) - (was.get(id)?.alpha ?? 0)) * discPx(dist(row.at, cam), row.r, LENS));
+  }
+  return most;
+}
 
 describe('picking discs', () => {
   // four numbers a candidate: where it is and its radius
@@ -106,7 +118,7 @@ describe('the discs, fed', () => {
     const cam = between();
     expect(dist(cam, A.at)).toBeCloseTo(10000, 6);
     expect(dist(cam, B.at)).toBeCloseTo(40000, 6);
-    discs.feed([SECTOR], cam, 0);
+    discs.feed([SECTOR, null], cam, 0); // (a null among them is none)
     const got = far.byId();
     expect(ALL_A.length).toBe(5); // (the star, two planets, two moons)
     for (const id of ALL_A) expect(got.get(id)?.alpha, id).toBe(1);
@@ -193,14 +205,34 @@ describe('the discs, fed', () => {
 
   it('keeps a system whole that isn’t built, whatever its reach, when told what is', () => {
     const inside = [A.at[0], A.at[1] + 300, A.at[2]];
-    let ids = [];
+    for (const [none, some] of [[[], [A.id]], [new Set(), new Set([A.id])]]) {
+      let ids = none;
+      const far = fakeFar();
+      const discs = createDiscs(far, { budget: { discs: 100 }, built: () => ids });
+      discs.feed([SECTOR], inside, 0);
+      for (const id of ALL_A) expect(far.byId().get(id)?.alpha, id).toBe(1);
+      ids = some;
+      discs.feed([SECTOR], inside, 0);
+      for (const id of ALL_A) expect(far.byId().has(id), id).toBe(false);
+    }
+  });
+
+  it('gives a built system up by the reach it’s built within, when told it', () => {
+    const R = 2 * A.reach;
+    let built = new Map([[A.id, R]]);
     const far = fakeFar();
-    const discs = createDiscs(far, { budget: { discs: 100 }, built: () => ids });
-    discs.feed([SECTOR], inside, 0);
-    for (const id of ALL_A) expect(far.byId().get(id)?.alpha, id).toBe(1);
-    ids = [A.id];
-    discs.feed([SECTOR], inside, 0);
+    const discs = createDiscs(far, { budget: { discs: 100 }, built: () => built });
+    const at = (k) => [A.at[0], A.at[1] + k, A.at[2]];
+    discs.feed([SECTOR], at(1.5 * A.reach), 0); // (past its own reach, within the one it's built in)
     for (const id of ALL_A) expect(far.byId().has(id), id).toBe(false);
+    discs.feed([SECTOR], at(0.9 * R), 0);
+    const fading = levelWeights(0.9 * R, { reach: R }).disc;
+    expect(fading).toBeGreaterThan(0);
+    expect(fading).toBeLessThan(1);
+    for (const id of ALL_A) expect(far.byId().get(id)?.alpha, id).toBeCloseTo(fading, 12);
+    built = new Map();
+    discs.feed([SECTOR], at(300), 0); // (one the map hasn't is unbuilt)
+    for (const id of ALL_A) expect(far.byId().get(id)?.alpha, id).toBe(1);
   });
 
   it('gives a wonder up to its ball where the ball is real', () => {
@@ -239,29 +271,74 @@ describe('the budget', () => {
     expect(most).toBeLessThanOrEqual(0.05);
   });
 
-  it('takes a new budget: a cut at once, a rise eased in with nothing popping', () => {
+  it('takes a new budget, cut or raised, over frames: no disc comes or goes by more than 4 px in one', () => {
     const sector = field();
+    const cam = [0, 0, 0];
+    const settled = (budget) => {
+      const far = fakeFar();
+      createDiscs(far, { budget: { discs: budget } }).feed([sector], cam, 0);
+      return far.byId();
+    };
     const far = fakeFar();
     const discs = createDiscs(far, { budget: { discs: 40 } });
-    discs.feed([sector], [0, 0, 0], 0);
-    const whole = alphas(far);
-    expect(whole.size).toBe(40);
+    discs.feed([sector], cam, 0);
+    expect(far.last().length).toBe(40);
+    for (const budget of [5, 40, 12, 40]) {
+      discs.setBudget({ discs: budget });
+      let was = far.byId();
+      let most = 0;
+      let frames = 0;
+      for (let frame = 1; frame <= 200; frame++) {
+        discs.feed([sector], cam, 0);
+        const now = far.byId();
+        const px = movedPx(was, now, cam);
+        if (px > 0) frames = frame;
+        most = Math.max(most, px);
+        was = now;
+      }
+      expect(most, `to ${budget}`).toBeLessThanOrEqual(4);
+      expect(frames, `to ${budget}`).toBeGreaterThan(1); // (it took frames)
+      expect(frames, `to ${budget}`).toBeLessThan(200); // (and settled)
+      const want = settled(budget);
+      expect(was.size, `to ${budget}`).toBe(want.size);
+      for (const [id, row] of want) expect(was.get(id)?.alpha, id).toBeCloseTo(row.alpha, 12);
+    }
+  });
 
-    discs.setBudget({ discs: 5 });
-    discs.feed([sector], [0, 0, 0], 0);
-    expect(far.last().length).toBeLessThanOrEqual(5);
+  it('spends itself on what it draws: a system given up to its built bodies takes none of it', () => {
+    const far = fakeFar();
+    createDiscs(far, { budget: { discs: 3 } }).feed([SECTOR], [A.at[0], A.at[1] + 300, A.at[2]], 0);
+    const [, pulsar, derelict, rogue] = SECTOR.wonders; // (the nearest three, 24,000 to 28,000 off)
+    expect([...far.byId().keys()].sort()).toEqual([pulsar.id, derelict.id, rogue.id].sort());
+    for (const row of far.last()) expect(row.alpha, row.id).toBe(1);
+  });
 
-    discs.setBudget({ discs: 40 });
-    let was = alphas(far);
+  it('eases its edge in where a system it had given up comes back, so nothing beyond it pops', () => {
+    // a system of a dozen planets in the 200 stars, flown out of at 15 a frame
+    const planets = Array.from({ length: 12 }, (_, i) => {
+      const orbit = 300 + 150 * i;
+      const at = [orbit * Math.cos(2.4 * i), 0, orbit * Math.sin(2.4 * i)];
+      return { id: `E:9,9:s:${i}`, name: 'p', type: 'rock', radius: 20, color: '#888888', at, orbit, moons: 0, rings: false, seed: 1n };
+    });
+    const home = { id: 'E:9,9:s', at: [0, 0, 0], star: { class: 'G', color: '#ffffff', size: 100 }, planets };
+    const sector = addBodies({ id: 'E:9,9', systems: [...field().systems, home], wonders: [] });
+    const { reach } = sector.systems.at(-1);
+    const far = fakeFar();
+    const discs = createDiscs(far, { budget: { discs: 20 } });
+    const ours = (id) => id === home.id || id.startsWith(`${home.id}:`);
+    let was = null;
     let most = 0;
-    for (let frame = 0; frame < 120; frame++) {
-      discs.feed([sector], [0, 0, 0], 0);
-      const now = alphas(far);
-      most = Math.max(most, moved(was, now));
+    let back = 0;
+    for (let x = 0; x <= 1.2 * reach; x += 15) {
+      const cam = [x, 0, 0];
+      discs.feed([sector], cam, 0);
+      const now = far.byId();
+      if (was) most = Math.max(most, movedPx(was, now, cam, ours));
+      if (!back && [...now.keys()].some(ours)) back = x;
       was = now;
     }
-    expect(most).toBeLessThan(0.5); // (farStars' pops() counts a disc from nothing to over half)
-    expect(was.size).toBe(whole.size);
-    for (const [id, a] of whole) expect(was.get(id), id).toBeCloseTo(a, 12);
+    expect(back).toBeGreaterThan(0.75 * reach); // (it was given up, and came back)
+    expect(back).toBeLessThan(0.85 * reach);
+    expect(most).toBeLessThanOrEqual(4);
   });
 });

@@ -247,3 +247,18 @@ The worst frames are the first few (the engine warming up). Low's flight in the 
 #### The biggest disc outside a reach
 
 Flying in along each planet's line from its star, from 1.6 reaches to the reach, for the first 40 systems of `E:1,0`: the biggest disc drawn at over half is 3,448 px across at 1,080 px, `E:1,0:4:5` (radius 44), the camera 2,078 from its star and the reach 2,077, at the planet's surface. The plan's hand-over at 3 × a planet's radius would have had that disc gone with nothing built; by the system's reach it is drawn, too big for a sprite. The hand-off notes say what Task 16 builds by to keep every disc under the cap.
+
+#### Task 15's review
+
+A Node check, not committed, at `a7d07a90` and after the fix: `createDiscs` fed the 3D 3 × 3 × 3 of `fullSector`s round `E:1,0,0` (6,877 systems) at low, into a far layer that keeps what it's given. A disc's move is its alpha's change times its size on a 1,080 px screen at 34°, counted from nothing for one that comes or goes.
+
+| check | before | after |
+| --- | --- | --- |
+| at 0.3 of the reach of `E:0,-1,-1:63` (25 bodies), a budget of 35: drawn, whole | 10, 0 | 35, 22 |
+| the same, a budget of 100: drawn, whole | 75, 22 | 100, 55 |
+| 10,000 above a system, step 3 (140) to 0 (400): most a disc moves in a frame, frames | 13.9 px, 7 | 3.99 px, 21 |
+| the same, step 0 to 3: most a disc moves in a frame, frames, most drawn | 42.5 px, 1, 140 | 3.98 px, 21, 358 |
+| a feed, 10,000 above three systems, at step 0 / step 3 / the floor (ms) | 0.64 / 0.63 / 0.62 | 0.53 / 0.53 / 0.55 |
+| a feed's heap, at step 0 (KiB, over 100 feeds after a collection) | 436 | 24 |
+
+The feeds are timed after 60 to warm up, 300 at each pose, the least of three rounds, the old `discs.js` and `orbits.js` beside the new in one run. What's left on the heap is the engine's: a heap profile puts 9 KiB of it in the sort's working copy and the rest in numbers it boxes, `levelWeights`' among them, and nothing in `orbitAt` or `moonAt`. The new `orbitAt` against the old over four sectors' planets and moons at four times: 262 of 41,192 positions differ, in their last bit, 6 × 10⁻¹¹ at most.
