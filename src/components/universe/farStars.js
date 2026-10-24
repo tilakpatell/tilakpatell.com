@@ -547,7 +547,8 @@ export function createFarStars(parent, { places, skyFar, slots = [], discs = 0 }
       slotIn(i);
       const from = slotAt[i];
       const size = slotAt[i + 1] - from;
-      const c = Math.max(0, Math.min(size, Math.floor(count) || 0));
+      // (what fits, of what it was given)
+      const c = Math.max(0, Math.min(size, Math.floor(count) || 0, Math.floor(at.length / 3), r.length, Math.floor(color.length / 3)));
       const R = A.aSize.array;
       const C = A.aColor.array;
       P.set(at.subarray(0, c * 3), from * 3);

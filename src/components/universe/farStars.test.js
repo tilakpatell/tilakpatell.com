@@ -208,6 +208,21 @@ describe('slots', () => {
     stars.dispose();
   });
 
+  it('keeps none of a slot’s old specks, and what fits of too many', () => {
+    const stars = createFarStars(new THREE.Group(), { places: [], skyFar: 24000, slots: [3, 3] });
+    const R = stars.points.geometry.attributes.aSize.array;
+    stars.setSlot(0, slotOf([0, 0, 0], [ONE, { ...ONE, r: 60 }, { ...ONE, r: 70 }]));
+    stars.setSlot(0, slotOf([0, 0, 0], [{ ...ONE, r: 9 }]));
+    expect([...R.slice(0, 3)]).toEqual([9, 0, 0]);
+    const five = [1, 2, 3, 4, 5].map((r) => ({ ...ONE, r }));
+    stars.setSlot(1, slotOf([0, 0, 0], five));
+    expect([...R.slice(3, 6)]).toEqual([1, 2, 3]);
+    // (and no more than it was given, whatever the count says)
+    stars.setSlot(1, { ...slotOf([0, 0, 0], [{ ...ONE, r: 8 }]), count: 3 });
+    expect([...R.slice(3, 6)]).toEqual([8, 0, 0]);
+    stars.dispose();
+  });
+
   it('shows and hides in the call, so a swap is one frame', () => {
     const stars = make();
     stars.update(camAt(0, 0, 0));
