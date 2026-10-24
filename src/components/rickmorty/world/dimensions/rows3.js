@@ -116,7 +116,7 @@ export const ROWS = [
     wide: 70,
     sky: { top: 0x6a3a1a, mid: 0xd88a4a, low: 0xffd8a0, sun: 0xffe8c0, clouds: 0, moons: 0 },
     people: [
-      { id: 'hemorrhage', dx: 0, dz: -8, face: S, ai: { watch: 12, bark: { r: 10, every: 14, lines: ['Who wants to go in the Blood Dome? Who wants to be a man?', 'The ring is the law. The law is the ring.'] }, hunt: { speed: 2.3, catchR: 1.7, duel: { hp: 5, mortyHp: 3, task: 'blooddome', won: { who: 'Hemorrhage', text: 'He drops to one knee and pulls the helmet off. Underneath, a tired bald man. “Fine,” he says. “You’re a man. Go and tell your sister.”' } }, line: 'Hemorrhage’s gauntlet puts you on the sand. “Not a man yet,” he says, not unkindly, and the Death Stalkers carry you back to the gate.' } } },
+      { id: 'hemorrhage', dx: 0, dz: -8, face: S, ai: { watch: 12, bark: { r: 10, every: 14, lines: ['Who wants to go in the Blood Dome? Who wants to be a man?', 'The ring is the law. The law is the ring.'] }, hunt: { speed: 2.3, catchR: 1.7, duel: { hp: 7, mortyHp: 3, task: 'blooddome', won: { who: 'Hemorrhage', text: 'He drops to one knee and pulls the helmet off. Underneath, a tired bald man. “Fine,” he says. “You’re a man. Go and tell your sister.”' } }, line: 'Hemorrhage’s gauntlet puts you on the sand. “Not a man yet,” he says, not unkindly, and the Death Stalkers carry you back to the gate.' } } },
       { id: 'bsummer', who: 'summer', dx: -10, dz: -4, face: E, ai: { watch: 8, bark: { r: 5, every: 15, lines: ['Morty! Oh my god, this place is amazing. I killed a guy. It was fine.', 'If you fight him, don’t stand still. That’s the whole trick.'] } } },
     ],
     extras: [
