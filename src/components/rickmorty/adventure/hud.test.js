@@ -94,6 +94,16 @@ describe('what the HUD shows of the story', () => {
     expect(newsOf(out)).toEqual({ say: [{ kind: 'say', who, text }], card: null });
   });
 
+  it('marks a hotspot to use, never a talk or a walk in', () => {
+    const next = { id: 'cable' };
+    const episodes = [{ id: 'x', title: 'X', intro: [], outro: [], unlocks: [], steps: [{ type: 'use', id: 'dial', text: 'Put it back.' }, { type: 'talk', who: 'rick', text: 'Talk.' }, { type: 'enter', area: 'garage', text: 'Go in.' }] }];
+    expect([0, 1, 2].map((step) => markedTask({ ...fresh(), step }, next, { episodes, ready: 1 }))).toEqual([{ id: 'dial' }, null, null]);
+    // (episode 13's last step: the gun back on Rick's bench, every coordinate home already)
+    expect(markedTask({ ...fresh(), episode: 12, step: 3 }, next, { ready: 13 })).toEqual({ id: 'dial' });
+    expect(dialLead({ ...fresh(), episode: 13 }, DIAL.length)).toBe('Coordinates home: 32 of 32');
+    expect(dialItems(DIAL, { ...fresh(), episode: 13 }).every((d) => d.locked === null)).toBe(true);
+  });
+
   it('points the map’s marker at the story’s task, else the checklist’s next', () => {
     const next = progress([]).next;
     expect(markedTask(fresh(), next)).toEqual({ id: 'diner' });
