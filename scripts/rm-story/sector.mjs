@@ -32,6 +32,13 @@ const meterSays = (page, title, text) =>
   });
 // Morty moved within the place (its game going on) and stood there a moment
 const warp = (page, area, x, z, face = N) => page.evaluate(([a, x, z, f]) => window.__C137__.warp(a, x, z, f), [area, x, z, face]);
+// a page of the site opened afresh at `hash` (a hash change alone keeps the
+// last page's world tearing down under the next one's dev hook)
+async function open(page, hash) {
+  await page.goto(`${BASE}/${hash}`, { waitUntil: 'domcontentloaded' });
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await built(page);
+}
 // the place's hunters after him now
 const hunting = (page, area) => page.evaluate((a) => window.__C137__.api.act(a, 'npcs').filter((n) => n.hunting).map((n) => n.id), area);
 // the Story tab: one of the sector's parts ticked
@@ -216,8 +223,7 @@ export const SECTOR_CHECKS = {
       check((await meter(page, 'The city’s cogs').count()) === 0, 'a wound city showed its meter');
       check((await hunting(page, 'gearworld')).length === 0, 'the gear police hunted in a wound city');
       // Planet Squanch's own page: its part, then the escape that ends the episode
-      await page.goto(`${BASE}/#/c-137/squanch`, { waitUntil: 'domcontentloaded' });
-      await built(page);
+      await open(page, '#/c-137/squanch');
       await reads(page, SQUANCH.text);
       await warpUse(page, 'squanch', 'toast', ...spotAt('squanch', 'toast'));
       await page.waitForFunction(() => window.__C137__.sim.escape?.area === 'squanch', null, { timeout: 10000, polling: 100 }).catch(() => {
@@ -233,8 +239,7 @@ export const SECTOR_CHECKS = {
       });
       await at(page, 11, 0, 'after the escape');
       // and C-137: no card, the checklist's line, and Morty's line not said again
-      await page.goto(`${BASE}/#/c-137`, { waitUntil: 'domcontentloaded' });
-      await built(page);
+      await open(page, '#/c-137');
       await reads(page, CABLE);
       await page.waitForTimeout(2000);
       check((await page.locator('.rm-episode').count()) === 0, 'a card showed after the last built episode');
