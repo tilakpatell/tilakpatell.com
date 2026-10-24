@@ -281,8 +281,12 @@ float paPanes( vec2 p, float px ) {
   vec2 w = p / vec2( 1.5, 2.2 );
   vec2 f = abs( fract( w ) - 0.5 ) * vec2( 1.5, 2.2 );
   float pane = ( 1.0 - smoothstep( 0.32, 0.45, f.x ) ) * ( 1.0 - smoothstep( 0.2, 0.28, f.y ) );
-  float on = step( 0.34, paHash( floor( w ) ) );
-  return on * mix( 0.1, pane, clamp( 0.4 / px, 0.0, 1.0 ) );
+  // (far off, where a pixel holds many panes, both their shape and which are
+  // lit go to their means: lit or dark by the pane a pixel fell on, they
+  // sparkled as the ship moved)
+  float near = clamp( 0.4 / px, 0.0, 1.0 );
+  float on = mix( 0.66, step( 0.34, paHash( floor( w ) ) ), near );
+  return on * mix( 0.1, pane, near );
 }`;
 export function panes(m, unit, length) {
   m.userData.panes = true;

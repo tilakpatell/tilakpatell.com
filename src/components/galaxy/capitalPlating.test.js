@@ -113,5 +113,7 @@ describe('capitalPlating', () => {
     const s = compiled(m);
     expect(s.vertexShader).toMatch(/vPane = /);
     expect(s.fragmentShader).toMatch(/totalEmissiveRadiance \*= paPanes\(/);
+    // (far off, which are lit to its mean too: no sparkle)
+    expect(s.fragmentShader).toMatch(/float on = mix\( 0\.66, step\(/);
   });
 });
