@@ -225,3 +225,25 @@ With no discs, as every pose has, nothing changes: before the far layer draws th
 
 - \* A faint speck at (1085, 657) that the Task 14 still has a pixel higher. That still is the same to the last bit as the PR 2.3 gate's, the one shot on file with the speck there: this shot is the same to the last bit as the lane's Task 11 shot, and 0 over 8 against `main`'s.
 - † The end pixel of a faint line at (1141, 695), 60 in green against 70. To tell the run from the change, `falcon-sun` at low was shot three times back to back: the fix, `886640e4`'s `farStars.js`, the fix again. The first fix and `886640e4` are the same to the last bit, and so are `886640e4` and the Task 14 still; the two fix shots differ from each other by the dither alone (5 at most). The pixel is the first run's own.
+
+### Task 15: the discs
+
+`expanse/scene/discs.js` and its tests (13, beside it), `sectors.js`'s looks exported for it, and a fixture. Nothing draws the discs yet (Task 16 wires them), so no pose changes and `scene.js` isn't touched: 6,374 lines before and after.
+
+#### Fed into the real far layer
+
+A Node check, not committed: `createDiscs` fed into a real `createFarStars` (its `discs` room the tier's budget), the camera flown at 900 units a second and 60 frames a second (15 units a frame) from 40,000 out straight in to the system's reach, the shared clock running, `far.update` each frame and `pops()` asked from the first frame. In the legacy 3 × 3 round `E:1,0` (sectors through `addBodies(makeSector(…))`) the system is `E:1,0:0` (7 planets, 7 moons, reach 2,461); in the 3D 3 × 3 × 3 of `fullSector`s round `E:1,0,0` (6,877 systems) it is `E:1,0:275` (reach 2,825).
+
+| space | tier | frames | discs drawn, at most | pops (count, px) | a feed, mean (ms) | worst (ms) |
+| --- | --- | --: | --: | --- | --: | --: |
+| legacy 3 × 3 | low | 2,503 | 112 | 0, 0 | 0.12 | 10.1 |
+| legacy 3 × 3 | mid | 2,503 | 112 | 0, 0 | 0.13 | 8.1 |
+| 3D 3 × 3 × 3 | low | 2,479 | 400 (the budget) | 0, 0 | 1.11 | 8.9 |
+| 3D 3 × 3 × 3 | mid | 2,479 | 710 | 0, 0 | 1.25 | 9.0 |
+| 3D 3 × 3 × 3 | high | 2,479 | 710 | 0, 0 | 1.45 | 9.7 |
+
+The worst frames are the first few (the engine warming up). Low's flight in the 3D space runs at its budget the whole way, and its fading edge lets nothing pop. Timed alone at one pose in the 3D space, a feed is 0.78 ms at low's budget and 0.89 ms at mid's (the cull over every system 0.16 ms of it, `orbitAt` 0.12, `moonAt` 0.12); the flights' feeds also meet the garbage collection of the frame's other work.
+
+#### The biggest disc outside a reach
+
+Flying in along each planet's line from its star, from 1.6 reaches to the reach, for the first 40 systems of `E:1,0`: the biggest disc drawn at over half is 3,448 px across at 1,080 px, `E:1,0:4:5` (radius 44), the camera 2,078 from its star and the reach 2,077, at the planet's surface. The plan's hand-over at 3 × a planet's radius would have had that disc gone with nothing built; by the system's reach it is drawn, too big for a sprite. The hand-off notes say what Task 16 builds by to keep every disc under the cap.

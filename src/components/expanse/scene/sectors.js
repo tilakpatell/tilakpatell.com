@@ -11,13 +11,16 @@
 // additive puffs, a pulsar a small bright sphere, a derelict or a rogue
 // world a small dark one. No textures.
 //
-// PLANET_NEAR, TYPE_LOOK: { [planet type]: LOOKS id }
+// PLANET_NEAR, TYPE_LOOK: { [planet type]: LOOKS id }, MOON_LOOK: { [moon
+//   type]: LOOKS id }, lookColour(id) → a look's colour as a whole ('#rrggbb')
+// WONDER: { [kind]: how it looks }; WONDER_SPECK: a wonder's speck's radius,
+//   a share of its size (where it's real goes by it: levels.js's realAt)
 // createSector(sector, { tier = 'mid', skyFar = SKY_FAR, build = buildBody })
 //   → { group, sector, update(t, dt, camera), reanchor(at), dispose(), count() }
 //   The caller puts the group under a root at `at` and calls reanchor(at) whenever `at` moves.
 
 import * as THREE from 'three';
-import { buildBody } from '../../galaxy/bodies';
+import { LOOKS, buildBody } from '../../galaxy/bodies';
 import { SKY_FAR } from '../../universe/deepspace';
 import { createFarStars } from '../../universe/farStars';
 import { rngOf } from '../gen/seed';
@@ -36,14 +39,18 @@ export const TYPE_LOOK = {
   forest: 'endor',
   desert: 'tatooine',
 };
+export const MOON_LOOK = { icy: 'hoth', rocky: 'moon-grey' };
+// (its swatch: what a disc of it is drawn in, far off)
+export const lookColour = (id) => (LOOKS[id] ?? LOOKS['moon-grey']).swatch;
 
 // how a wonder looks as a speck, and as itself
-const WONDER = {
+export const WONDER = {
   nebula: { color: '#b48cff' },
   pulsar: { color: '#b8f4ff', r: 0.15 },
   derelict: { color: '#7a808c', r: 0.12, dark: '#2a2d33' },
   rogue: { color: '#6b5a50', r: 0.5, dark: '#1e1a18' },
 };
+export const WONDER_SPECK = 0.4;
 const PUFFS = 48; // a nebula's
 
 // shared by every sector, never disposed
@@ -161,7 +168,7 @@ export function createSector(sector, { tier = 'mid', skyFar = SKY_FAR, build = b
   const far = createFarStars(group, {
     places: [
       ...sector.systems.map((s, i) => ({ id: s.id, at: local(s.at), r: s.star.size, color: s.star.color, group: stars[i] })),
-      ...sector.wonders.map((w, i) => ({ id: w.id, at: local(w.at), r: w.size * 0.4, color: (WONDER[w.kind] ?? WONDER.rogue).color, group: wonders[i] })),
+      ...sector.wonders.map((w, i) => ({ id: w.id, at: local(w.at), r: w.size * WONDER_SPECK, color: (WONDER[w.kind] ?? WONDER.rogue).color, group: wonders[i] })),
     ],
     skyFar,
   });
