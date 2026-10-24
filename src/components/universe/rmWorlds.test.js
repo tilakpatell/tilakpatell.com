@@ -54,4 +54,25 @@ describe('the Central Finite Curve’s worlds', () => {
     expect(built.nuptia.meshes).toBeGreaterThan(2); // (its bands and the stone)
     expect(built.resort.meshes).toBeGreaterThan(1); // (its field)
   });
+
+  it('lays Cronenberg World’s flesh on the real Earth’s coasts when it has their map, else on its blobs', () => {
+    const u = MOONS.find((m) => m.id === 'cronenberg');
+    const compiled = (T) => {
+      const p = shell(u);
+      RM_WORLDS.cronenberg(p, { u, T });
+      const lib = THREE.ShaderLib.standard;
+      const shader = { uniforms: {}, vertexShader: lib.vertexShader, fragmentShader: lib.fragmentShader };
+      p.body.material.onBeforeCompile(shader);
+      return { shader, key: p.body.material.customProgramCacheKey() };
+    };
+    const land = new THREE.Texture();
+    const withLand = compiled({ 'cronenberg-land': land });
+    expect(withLand.shader.fragmentShader).toContain('#define RM_LAND');
+    expect(withLand.shader.uniforms.uRmLand.value).toBe(land);
+    const without = compiled({});
+    expect(without.shader.fragmentShader).not.toContain('#define RM_LAND');
+    expect(without.shader.uniforms.uRmLand).toBeUndefined();
+    // (two programs, so each is its own in the cache and the warm-up)
+    expect(withLand.key).not.toBe(without.key);
+  });
 });
