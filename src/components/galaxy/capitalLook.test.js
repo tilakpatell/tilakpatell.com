@@ -46,6 +46,10 @@ describe('capitalLook', () => {
     expect(shader.vertexShader).toMatch(/vShip = /);
     expect(glass.material.emissiveIntensity).toBeGreaterThan(1);
     expect(engine.material.userData.burning).toBe(true);
+    // (its glow by the housing's own map, not the plating over it)
+    const burnt = { uniforms: {}, vertexShader: THREE.ShaderLib.standard.vertexShader, fragmentShader: THREE.ShaderLib.standard.fragmentShader };
+    engine.material.onBeforeCompile(burnt);
+    expect(burnt.fragmentShader).toMatch(/aftOwn = texture2D\( map, vMapUv \)\.rgb \* diffuse;/);
     expect(metal.material.emissive.getHex()).toBe(0);
     // (the export's whole metal brought down to paint, a dielectric as the game's; a material made plain left plain)
     expect(engine.material.metalness).toBe(0);

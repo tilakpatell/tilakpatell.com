@@ -98,7 +98,8 @@ function burn(m, unit, colour) {
       .replace('#include <begin_vertex>', '#include <begin_vertex>\nvAft = -normalize( mat3( uUnit ) * objectNormal ).z;\nvAftZ = ( uUnit * vec4( position, 1.0 ) ).z;');
     shader.fragmentShader = shader.fragmentShader
       .replace('#include <common>', '#include <common>\nvarying float vAft;\nvarying float vAftZ;')
-      .replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\n  float aftLit = dot( diffuseColor.rgb, vec3( 0.3, 0.59, 0.11 ) );\n  totalEmissiveRadiance *= smoothstep( 0.55, 0.9, vAft ) * smoothstep( 0.25, 0.8, aftLit ) * ( 1.0 - smoothstep( -0.3, -0.15, vAftZ ) ) * 1.6;');
+      // (how hot by the housing's own map, not the plating laid over it: its panels aren't in the glow)
+      .replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\n  vec3 aftOwn = diffuseColor.rgb;\n#ifdef USE_MAP\n  aftOwn = texture2D( map, vMapUv ).rgb * diffuse;\n#endif\n  float aftLit = dot( aftOwn, vec3( 0.3, 0.59, 0.11 ) );\n  totalEmissiveRadiance *= smoothstep( 0.55, 0.9, vAft ) * smoothstep( 0.25, 0.8, aftLit ) * ( 1.0 - smoothstep( -0.3, -0.15, vAftZ ) ) * 1.6;');
   });
 }
 
