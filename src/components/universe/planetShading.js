@@ -141,9 +141,10 @@ function detailTile() {
 // The ground's hooks, after airGlow's (and any the builder gave it), each
 // with its own part of the cache key: the clouds' shadows on it (darkening
 // the ground by up to 0.55 under them, their texture read where they've
-// turned to over it), the ground's own detail fading in from three radii
-// to 1.3 (so it mottles rather than blurs as you come in), and a floor on
-// how glossy it can be (0.22: a sea's glint, not a white disc).
+// turned to over it, so it wraps: planetMaps.js's wrapRound), the ground's
+// own detail fading in from three radii to 1.3 (so it mottles rather than
+// blurs as you come in), and a floor on how glossy it can be (0.22: a sea's
+// glint, not a white disc).
 export function groundHooks(mat, { clouds, alpha, detail, rough }) {
   if (!clouds && !detail && !rough) return null;
   const u = {
@@ -178,9 +179,9 @@ export function groundHooks(mat, { clouds, alpha, detail, rough }) {
   return u;
 }
 
-// C-137 as the show draws it: the direct light in three flat bands (full
+// C-137 as the show draws it: its sun's light in three flat bands (full
 // above 0.55 of n·l, 0.72 down to 0.15, 0.45 to the terminator, night past
-// it), each edge two pixels soft (from how fast the normal turns on the
+// it; any other light, the fill, a soft wash under them), each edge two pixels soft (from how fast the normal turns on the
 // screen) so it doesn't crawl as the planet turns; no specular but a flat
 // glint where it's glossy (its seas), as the show draws one; and, with `ink`,
 // its limb inked: darkened by pow(1 − n·v, ink) × 0.8, so it's outlined like
@@ -201,10 +202,18 @@ export function celShade(mat, { bands = [0.55, 0.15], levels = [1, 0.72, 0.45], 
           float lit = ${f(levels[2])} * smoothstep(-celEdge, celEdge, ndl);
           lit = mix(lit, ${f(levels[1])}, smoothstep(${f(bands[1])} - celEdge, ${f(bands[1])} + celEdge, ndl));
           lit = mix(lit, ${f(levels[0])}, smoothstep(${f(bands[0])} - celEdge, ${f(bands[0])} + celEdge, ndl));
+          // (only its own sun is drawn in bands, and glints, the show's one
+          // light: the scene's cool fill, banded too, ruled three hard lines
+          // across a plain sea and put a second sun in it, so it's a soft wash)
+          float celKey = 1.0;
+          #ifdef KEY_SUN
+          celKey = step(0.9999, dot(directLight.direction, normalize((viewMatrix * vec4(uKeySunW, 0.0)).xyz)));
+          lit = mix(0.6 * smoothstep(-0.2, 0.8, ndl), lit, celKey);
+          #endif
           reflectedLight.directDiffuse += lit * directLight.color * BRDF_Lambert(material.diffuseContribution);
           float gloss = 1.0 - smoothstep(0.3, 0.6, material.roughness);
           float h = dot(geometryNormal, normalize(directLight.direction + geometryViewDir));
-          reflectedLight.directSpecular += directLight.color * 0.35 * gloss * smoothstep(0.985 - celEdge, 0.985 + celEdge, h) * step(0.0, ndl);
+          reflectedLight.directSpecular += directLight.color * 0.35 * gloss * celKey * smoothstep(0.985 - celEdge, 0.985 + celEdge, h) * step(0.0, ndl);
         }
         // (the sky's light on it stays, flat; its reflection goes)
         void RE_IndirectSpecular_Cel(const in vec3 radiance, const in vec3 irradiance, const in vec3 clearcoatRadiance, const in vec3 geometryPosition, const in vec3 geometryNormal, const in vec3 geometryViewDir, const in vec3 geometryClearcoatNormal, const in PhysicalMaterial material, inout ReflectedLight reflectedLight) {

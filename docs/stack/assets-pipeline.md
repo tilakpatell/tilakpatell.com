@@ -15,7 +15,7 @@ The census rows are in [README.md](README.md); every file that imports these is 
 - **Pictures** (`sharp`): `scripts/photos.mjs` (the travel photos), `scripts/hq-assets.mjs` (the Avengers HQ’s textures and skies) and the AI tests under `scripts/ai-e2e/`.
 - **Archives** (`fflate`): `scripts/mc-atlas.mjs` reads a Minecraft resource pack (a folder, `.zip` or `.jar`); `scripts/deathstar-hd.mjs` reads the Death Stars’ source archives.
 - **Atlases** (`watlas`): `scripts/reatlas.mjs` puts a Meshy figure on a new texture atlas.
-- **The globe** (`d3-geo`, `topojson-client`, `world-atlas`): `scripts/build-globe.mjs` writes `src/data/globe.js`, the dotted globe in “Places I’ve been”.
+- **The globe** (`d3-geo`, `topojson-client`, `world-atlas`): `scripts/build-globe.mjs` writes `src/data/globe.js`, the dotted globe in “Places I’ve been”; `scripts/planets/earth.mjs` traces the same coasts for the universe map’s two drawn Earths (Marvel’s Earth-616 and C-137’s).
 
 ## How the site uses it
 

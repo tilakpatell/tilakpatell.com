@@ -209,14 +209,15 @@ const FANDOMS = [
   },
   {
     id: 'rickmorty',
-    air: { colour: '#b8ff5a', density: 2.0, top: 1.05, flat: true }, // (drawn as the show draws air: two flat bands)
+    air: { colour: '#8fd2ff', density: 2.0, top: 1.05, flat: true }, // (Earth's sky, drawn as the show draws air: two flat bands)
     label: 'Rick and Morty',
     world: 'Dimension C-137',
     to: '/c-137',
     swatch: '#97ce4c',
     accent: '#97ce4c',
+    rim: '#8fd2ff', // (the portal's green is the show's, but C-137 is Earth: its rim is its sky)
     size: 0.6,
-    palette: { base: '#6f4fa8', dark: '#2a1a4a', light: '#c7a6ff', glow: '#b6f04a' },
+    palette: { base: '#5fb13e', dark: '#2a72cc', light: '#e2c072', glow: '#b6f04a' }, // (its land, its sea, its deserts; the portal's green its beacon)
   },
   {
     id: 'gaming',

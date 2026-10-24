@@ -1,3 +1,4 @@
+import * as THREE from 'three';
 import { describe, expect, it, vi } from 'vitest';
 
 // (no network: each map "loads" at once, and one of them is missing)
@@ -20,5 +21,12 @@ describe('loadTextures', () => {
     for (let i = 1; i < told.length; i++) expect(told[i]).toBeGreaterThan(told[i - 1]);
     expect(T.earth).toBeTruthy();
     expect(T['earth-clouds']).toBeUndefined();
+  });
+
+  it('wraps the cloud maps round as they load (their shadows are read where the clouds have turned to)', async () => {
+    const T = await loadTextures({ level: 'high' });
+    expect(T['rickmorty-clouds'].wrapS).toBe(THREE.RepeatWrapping);
+    expect(T['caribbean-clouds'].wrapS).toBe(THREE.RepeatWrapping);
+    expect(T.rickmorty.wrapS).toBeUndefined();
   });
 });

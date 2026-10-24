@@ -22,6 +22,7 @@
 import * as THREE from 'three';
 import { forgetTexture, loadTexture } from '../../lib/three/textures';
 import { detailLevel } from '../../lib/detail';
+import { wrapRound } from './planetMaps';
 
 const BASE = '/textures/universe/';
 const NEAR = 6;
@@ -77,11 +78,11 @@ export function createNearMaps({ level = detailLevel(), small = false, load = lo
     free(s);
   };
   // the first of a map's files that loads, or nothing
-  const fetchOne = async (s, { file, fallback, colour }) => {
+  const fetchOne = async (s, { name, file, fallback, colour }) => {
     for (const f of [file, fallback].filter(Boolean)) {
       s.asked.add(BASE + f);
       try {
-        return { url: BASE + f, t: await load(BASE + f, { color: colour }) };
+        return { url: BASE + f, t: wrapRound(name, await load(BASE + f, { color: colour })) };
       } catch {
         // (the next file down, or the planet keeps its standard map)
       }

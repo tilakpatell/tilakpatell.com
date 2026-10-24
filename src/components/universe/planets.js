@@ -596,16 +596,14 @@ const BUILDERS = {
 
   rickmorty(p, { u, T }) {
     const r = u.size;
-    // an alien world as the show draws one (scripts/planets/rickmorty.mjs):
-    // flat colour in cel steps, inked round every shape, teal seas, purple
-    // lands, pink deserts, lime jungle, lakes of glowing ooze, cartoon
-    // craters, and the show's inked puffs of cloud going over
+    // the Smiths' Earth as the show draws it from orbit
+    // (scripts/planets/rickmorty.mjs): the real coasts inked, flat colour in
+    // cel steps, the show's blue sea and its cyan shallows, the land green
+    // and tan by climate, the show's puffs of cloud going over, and the
+    // cities lit on the night side
     p.body.material = new THREE.MeshStandardMaterial({
       map: T.rickmorty ?? null,
       color: T.rickmorty ? '#ffffff' : u.palette.base,
-      emissive: '#ffffff',
-      emissiveMap: T['rickmorty-glow'] ?? null,
-      emissiveIntensity: T['rickmorty-glow'] ? 1.3 : 0,
       // (the seas glossy, so they catch the sun: scripts/planets/rickmorty.mjs)
       roughnessMap: T['rickmorty-rough'] ?? null,
       roughness: T['rickmorty-rough'] ? 1 : 0.85,
@@ -613,6 +611,7 @@ const BUILDERS = {
     });
     // lit as the show lights it: in flat bands, its limb inked (celShade)
     celShade(p.body.material);
+    p.night = T['rickmorty-night'] ?? null;
     if (T['rickmorty-clouds']) {
       const sky = new THREE.Mesh(
         new THREE.SphereGeometry(r * 1.012, T.small ? 44 : 64, T.small ? 28 : 40),

@@ -534,22 +534,23 @@ export const LANDINGS = {
       { kind: 'bush', n: 40, from: 22, to: 90, scale: range(1) },
       { kind: 'plumbus', n: 4, from: 12, to: 40, scale: range(1), solid: false },
     ],
-    // the show's world (scripts/planets/rickmorty.mjs): its purple and pink
-    // hills, out past town; the rest is the Smiths' street
+    // the show's Earth (scripts/planets/rickmorty.mjs): its dry tan hills,
+    // out past town (the map's deserts and ranges); the rest is the Smiths'
+    // street
     biomes: [
       {
         id: 'hills',
-        match: (c) => hue(c, 250, 350) && c.s > 0.25,
-        title: 'The purple hills',
+        match: (c) => hue(c, 22, 50) && c.s > 0.3 && c.l < 0.85,
+        title: 'The hills out past town',
         sub: 'Rick and Morty · out past town, where the portal came out',
-        ground: { style: 'grass', colors: ['#7a4aa8', '#9a6ac8', '#e88ac0'] },
-        sky: { zenith: '#3f9be0', horizon: '#e8d8fb', sun: '#fff6d8' },
+        ground: { style: 'grass', colors: ['#b89a58', '#d6bb76', '#8fa64a'] },
+        sky: { zenith: '#3f9be0', horizon: '#f2e8cf', sun: '#fff6d8' },
         things: [
           { kind: 'portal', at: [-20, 14], r: 1.6, door: { label: 'the portal', reach: 3 } },
           { kind: 'figure', at: [-14, 22], r: 0.4, say: { name: 'Rick', line: 'Wubba lubba dub dub!' }, opts: { meshy: 'rick', tall: 1.85 } },
         ],
         scatter: [
-          { kind: 'bush', n: 50, from: 22, to: 100, scale: range(1.2), opts: { color: '#c86ab8' } },
+          { kind: 'bush', n: 50, from: 22, to: 100, scale: range(1.2), opts: { color: '#8a9a48' } },
           { kind: 'plumbus', n: 6, from: 12, to: 50, scale: range(1), solid: false },
         ],
       },
