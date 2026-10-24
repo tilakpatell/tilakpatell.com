@@ -6,7 +6,8 @@
 // Pure: runs in Node and in the flight's terrain worker.
 //
 //   noiseFor(seed, { type, frequency, octaves, lacunarity, gain, fractal, warp }) → (x, z) → −1…1
-//   noise3For(seed, the same options) → (x, y, z) → −1…1
+//   noise3For(seed, the same options) → (x, y, z) → −1…1 (its type 'smooth'
+//     unless asked: OpenSimplex2S, which has no steps)
 //   cells3For(seed, { frequency, jitter = 1 }) → (x, y, z) → distance ≥ 0, in cells
 //   fold(seed: bigint | number) → int32
 
@@ -16,6 +17,8 @@ export const fold = (seed) => (typeof seed === 'bigint' ? Number((seed ^ (seed >
 
 const TYPES = {
   simplex: FastNoiseLite.NoiseType.OpenSimplex2,
+  // OpenSimplex2S: the 3D default, as the fast one steps where its corners tie
+  smooth: FastNoiseLite.NoiseType.OpenSimplex2S,
   cellular: FastNoiseLite.NoiseType.Cellular,
   perlin: FastNoiseLite.NoiseType.Perlin,
   value: FastNoiseLite.NoiseType.Value,
@@ -59,13 +62,19 @@ export function noiseFor(seed, { type = 'simplex', frequency = 0.01, octaves = 4
 // noiseFor's twin in 3D: a round planet's ground is a function of the
 // direction, so it has no seam and it wraps. The warp is three noises, one an
 // axis, at half the frequency, for the same reason as the 2D one.
-export function noise3For(seed, { type = 'simplex', frequency = 0.01, octaves = 4, lacunarity = 2, gain = 0.5, fractal = 'fbm', warp = 0 } = {}) {
+//
+// Its simplex is the smooth kind, OpenSimplex2S. The fast OpenSimplex2 in 3D
+// reads four corners, and where two are equally near (on the planes y = z,
+// x = y, x = z and their like) it takes one by a comparison, so the value
+// steps by up to 0.006 across them: a metre or more on a ridge, and one of
+// those planes is a great circle through the poles of every planet.
+export function noise3For(seed, { type = 'smooth', frequency = 0.01, octaves = 4, lacunarity = 2, gain = 0.5, fractal = 'fbm', warp = 0 } = {}) {
   const s = fold(seed);
   const n = make(s, type, frequency, fractal, octaves, lacunarity, gain);
   if (!warp) return (x, y, z) => n.GetNoise(x, y, z);
-  const wx = make(s ^ WARP_X, 'simplex', frequency * 0.5, 'fbm', 3, 2, 0.5);
-  const wy = make(s ^ WARP_Y, 'simplex', frequency * 0.5, 'fbm', 3, 2, 0.5);
-  const wz = make(s ^ WARP_Z, 'simplex', frequency * 0.5, 'fbm', 3, 2, 0.5);
+  const wx = make(s ^ WARP_X, 'smooth', frequency * 0.5, 'fbm', 3, 2, 0.5);
+  const wy = make(s ^ WARP_Y, 'smooth', frequency * 0.5, 'fbm', 3, 2, 0.5);
+  const wz = make(s ^ WARP_Z, 'smooth', frequency * 0.5, 'fbm', 3, 2, 0.5);
   return (x, y, z) => n.GetNoise(x + wx.GetNoise(x, y, z) * warp, y + wy.GetNoise(x, y, z) * warp, z + wz.GetNoise(x, y, z) * warp);
 }
 

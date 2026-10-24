@@ -74,6 +74,20 @@ describe('noise3For', () => {
     }
   });
 
+  it('is continuous across its lattice’s ties too: a hair either side of y = z, it reads the same', () => {
+    // (OpenSimplex2's fast 3D takes one of two equally near corners by a
+    // comparison, so it steps up to 0.006 where they tie: y = z, x = y, x = z)
+    for (const warp of [0, 0.3]) {
+      const n = noise3For(8, { frequency: 1, octaves: 1, fractal: 'none', warp });
+      for (let i = 0; i < 400; i++) {
+        const [x, y] = [Math.sin(i * 12.9898) * 20, Math.cos(i * 78.233) * 20];
+        expect(Math.abs(n(x, y, y + 1e-11) - n(x, y, y - 1e-11))).toBeLessThan(1e-6);
+      }
+      // where a planet's map wraps at its equator (sphereField.js's seam)
+      expect(Math.abs(n(-1.6, 0, 1e-12) - n(-1.6, 0, -1e-12))).toBeLessThan(1e-6);
+    }
+  });
+
   it('is a function of all three: moving along y alone changes it', () => {
     const n = noise3For(9);
     expect(n(100, 0, 100)).not.toBe(n(100, 60, 100));
@@ -85,7 +99,7 @@ describe('noise3For', () => {
   });
 
   it('takes every type and fractal it names', () => {
-    for (const type of ['simplex', 'cellular', 'perlin', 'value'])
+    for (const type of ['smooth', 'simplex', 'cellular', 'perlin', 'value'])
       for (const fractal of ['fbm', 'ridged', 'pingpong', 'none']) expect(Number.isFinite(noise3For(3, { type, fractal })(50, 70, -20))).toBe(true);
   });
 });
