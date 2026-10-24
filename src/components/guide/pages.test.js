@@ -62,6 +62,14 @@ describe('which guide a page gets', () => {
     expect(C137.keys.flatMap((g) => g.rows).some(([k, what]) => /Space/.test(k) && /jump/i.test(what))).toBe(true);
   });
 
+  it('tips the story on the Citadel’s page: its step heads the line, and the cruiser ends it', () => {
+    const tip = PAGES['/c-137/citadel'].tips.find(([where]) => where === 'The story');
+    expect(tip?.[1]).toMatch(/episode 10/);
+    expect(tip?.[1]).toMatch(/line at the top/);
+    expect(tip?.[1]).toMatch(/cruiser/);
+    expect(PAGES['/c-137/citadel'].tips.at(-1)[0]).toBe('The story');
+  });
+
   it('has none for a page it doesn’t know', () => {
     expect(guideFor('/avengers/gate/deeper')).toBe(null);
     expect(guideFor('/nowhere')).toBe(null);
