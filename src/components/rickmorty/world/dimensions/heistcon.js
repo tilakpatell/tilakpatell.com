@@ -3,8 +3,8 @@
 // onto a casino strip at night (its world, ./worlds.js) and the con's banner
 // over the glass, booths down the sides, a badge table by the way in,
 // and heisters milling about (./destinations.js; stage.js's NPC behaviour).
-// Miles's job: his crew, then Heistotron's plan, the booths lifted in a
-// dealt order (./destinations.js's `sequence`, played by ./stage.js), their
+// Miles's job: his crew, then Heistotron's plan (taped to the stage's
+// edge), the booths lifted in a dealt order (./destinations.js's `sequence`, played by ./stage.js), their
 // alarms lit as they go.
 
 import * as THREE from 'three';
@@ -56,6 +56,33 @@ export async function buildHeistcon(kit) {
     R.add(lamp, { ink: false });
     lamps[set] = lamp;
   }
+  // Heistotron's plan, taped to the stage's edge by its spot: the hall from
+  // above in blueprint, the four booths circled in red
+  R.cell('heistplan', 256, 160, (g, w, h) => {
+    g.fillStyle = '#1d3d6e';
+    g.fillRect(0, 0, w, h);
+    fitText(g, 'THE PLAN', w / 2, 13, w - 30, 14, { color: '#f6f2e8' });
+    g.strokeStyle = '#f6f2e8';
+    g.lineWidth = 3;
+    g.strokeRect(14, 26, w - 28, h - 40);
+    g.fillStyle = '#f6f2e8';
+    g.fillRect(w / 2 - 40, 26, 80, 16);
+    g.strokeStyle = '#ff3a3a';
+    g.lineWidth = 4;
+    for (const [dx, dz] of [
+      [15, 12],
+      [-15, 12],
+      [17, -10],
+      [-17, -10],
+    ]) {
+      const [x, y] = [14 + ((dx + 22) / 44) * (w - 28), 26 + ((dz + 17) / 34) * (h - 40)];
+      g.fillRect(x - 9, y - 5, 18, 10);
+      g.beginPath();
+      g.arc(x, y, 16, 0, Math.PI * 2);
+      g.stroke();
+    }
+  });
+  R.frame(...P(6, -11.94), 0, { list: 'fixed' }).box(0xf6f2e8, 0, 0.12, 0, 1.5, 0.98, 0.02).decal('heistplan', 0, 0.61, 0.015, 1.44, 0.9, { bright: true });
   // the badge table
   const [bx, bz] = P(-8, 13);
   R.frame(bx, bz, 0).box(0x3a302a, 0, 0, 0, 3, 0.9, 1).box(0xf6f2e8, 0, 0.9, 0, 3.1, 0.04, 1.1);

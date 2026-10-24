@@ -259,8 +259,8 @@ export function stage(kit, id, { ground, groundTile = 4, floor, floorTile = 2, w
       if (airing.events.some((e) => e.type === 'dark')) state.emit?.('miss', { area: id });
       // (the clock started where the place has hunters on it: they've heard)
       if (sq.spotted && airing.events.some((e) => e.type === 'start')) state.emit?.('spotted', { area: id, who: null, text: sq.spotted });
-      // (a set used before the countdown says so, over its own line)
-      if (sq.early && airing.events.some((e) => e.type === 'early')) state.emit?.('note', { area: id, text: sq.early });
+      // (a set used before the countdown says so, over its own line; before the place's say-so, what it's waiting on)
+      if (sq.early && airing.events.some((e) => e.type === 'early')) state.emit?.('note', { area: id, text: sq.before && !airing.ready ? sq.before : sq.early });
       // (the start before the place's collect is in says so, over its own line: Heist-Con's crew)
       if (sq.before && airing.events.some((e) => e.type === 'wait')) state.emit?.('note', { area: id, text: sq.before });
     }
@@ -502,7 +502,8 @@ export function stage(kit, id, { ground, groundTile = 4, floor, floorTile = 2, w
         ...(sq.before && { collected: () => switched.push({ ready: true }) }),
         sequence: () => ({ phase: airing.phase, order: [...airing.order], on: airing.on, left: airing.left, len: airing.len, last: airing.last, ready: airing.ready }),
         meter: () => sequenceReadout(woundUp ? null : airing, labels, sq.words),
-        ...(import.meta.env.DEV && { setSequence: (patch) => (airing = { ...airing, ...patch }) }),
+        // (in development, the builder's lamps by set too: lit 1, dark 0.15)
+        ...(import.meta.env.DEV && { setSequence: (patch) => (airing = { ...airing, ...patch }), lamps: () => Object.fromEntries(Object.entries(lamps ?? {}).map(([u, l]) => [u, l.material.color.r])) }),
       });
     if (ascent)
       Object.assign(area.actions, {

@@ -30,6 +30,25 @@ const jobIs = (page, want, what) =>
   page.waitForFunction((w) => Object.entries(w).every(([k, v]) => window.__C137__.api.act('heistcon', 'sequence')[k] === v), want, { timeout: 10000, polling: 100 }).catch(async () => {
     throw new Error(`${what}: the job is ${JSON.stringify(await job(page))}`);
   });
+// a toast saying `text` gone (they're up 4.4 s), so the next one saying it is fresh
+const gone = (page, text) => page.locator('.rm-toast', { hasText: text }).waitFor({ state: 'detached', timeout: 15000 });
+// no toast saying `text` for `ms` of the page's own time
+const never = async (page, text, ms, what) =>
+  page
+    .locator('.rm-toast', { hasText: text })
+    .waitFor({ timeout: ms })
+    .then(
+      () => {
+        throw new Error(what);
+      },
+      () => {},
+    );
+// the booths' alarms, lit (1) or dark (0.15), by booth
+const lampsAre = (page, want, what) =>
+  page.waitForFunction((w) => JSON.stringify(window.__C137__.api.act('heistcon', 'lamps')) === JSON.stringify(w), want, { timeout: 10000, polling: 100 }).catch(async () => {
+    throw new Error(`${what} the alarms are ${JSON.stringify(await page.evaluate(() => window.__C137__.api.act('heistcon', 'lamps')))}`);
+  });
+const lit = (on) => Object.fromEntries(JOB.items.map((id) => [id, on.includes(id) ? 1 : 0.15]));
 const noMeter = async (page, what) => check((await meter(page, TITLE).count()) === 0, `${what} the job’s meter showed`);
 const nobodyHunting = async (page, what) => check((await hunting(page, 'heistcon')).length === 0, `${what} the crew hunted him`);
 const crewHunting = (page) =>
@@ -92,6 +111,11 @@ export const SCORE_CHECKS = {
     await later(page, 1);
     await noMeter(page, 'before the job,');
     await nobodyHunting(page, 'before the job,');
+    // a booth before the crew: what's missing is the crew, not the job's start
+    await press(page, 'heistbooth');
+    await toast(page, JOB.before);
+    check((await page.locator('.rm-toast', { hasText: JOB.early }).count()) === 0, 'a booth before the crew sent him to the plan');
+    await gone(page, JOB.before);
     // the plan before the crew: it waits, and says why
     await start(page);
     await toast(page, JOB.before);
@@ -99,9 +123,7 @@ export const SCORE_CHECKS = {
     await jobIs(page, { phase: 'idle', ready: false }, 'the plan started the job before the crew');
     await noMeter(page, 'with no crew,');
     await nobodyHunting(page, 'with no crew,');
-    // a booth before the job
-    await press(page, 'heistbooth');
-    await toast(page, JOB.early);
+    await lampsAre(page, lit([]), 'before the job,');
     // the crew alone ticks nothing, and readies the job
     for (const id of CREW) {
       await goalIs(page, id, 'signing the crew');
@@ -110,6 +132,9 @@ export const SCORE_CHECKS = {
     await notDone(page, 'heistcon', 'the badge and the crew alone ticked Heist-Con');
     await jobIs(page, { ready: true }, 'the crew didn’t ready the job');
     await goalIs(page, 'heistplan', 'with the crew in');
+    // a booth with the crew in, the job not started: to the plan
+    await press(page, 'heistbooth');
+    await toast(page, JOB.early);
 
     // home with the crew in, then mid-crew: the crew to sign again each time
     await home(page, 'heistcon');
@@ -142,11 +167,13 @@ export const SCORE_CHECKS = {
     await meterSays(page, TITLE, JOB.words.next(label(order[0]), 0, 4));
     await crewHunting(page);
     await goalIs(page, order[0], 'on the job');
-    // one right, then a wrong booth: back to the first
+    // one right, its alarm lit; then a wrong booth: back to the first, every alarm dark
     await press(page, order[0]);
+    await lampsAre(page, lit([order[0]]), 'with the first booth lifted,');
     await press(page, order[2]);
     await meterSays(page, TITLE, JOB.words.dark(label(order[0])));
     await jobIs(page, { phase: 'run', on: 0 }, 'a wrong booth');
+    await lampsAre(page, lit([]), 'after a wrong booth,');
     // a booth lifted again costs nothing
     await press(page, order[0]);
     await press(page, order[0]);
@@ -179,6 +206,7 @@ export const SCORE_CHECKS = {
     await later(page, 1);
     await nobodyHunting(page, 'with the job done,');
     await noMeter(page, 'with the job done,');
+    await lampsAre(page, lit(JOB.items), 'with the job done,');
     await at(page, 11, 1, 'after Heist-Con');
     await reads(page, VIND.text);
     await noLink(page, 'after Heist-Con');
@@ -243,9 +271,10 @@ export const SCORE_CHECKS = {
       await nobodyHunting(page, 'with the job done,');
       await crewUp(page);
       await start(page);
-      await later(page, 1);
+      // (its own line said, and no word of a crew after it)
+      await toast(page, H.say.heistplan.text);
+      await never(page, JOB.before, 1500, 'the plan asked for a crew for a job already done');
       await jobIs(page, { phase: 'idle' }, 'the plan started a job already done');
-      check((await page.locator('.rm-toast', { hasText: JOB.before }).count()) === 0, 'the plan asked for a crew for a job already done');
       await page.evaluate(() => window.__C137__.complete('vindicators'));
       await over(page, 'after the Vindicators');
     },
