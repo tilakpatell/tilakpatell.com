@@ -293,7 +293,8 @@ export function createNpcs({ id, area: A, solids = [], words = {}, others = null
       else if (talking || say?.look) look ??= eyes;
     }
     let barked = false;
-    if (ai.bark && m && !turned && toM < ai.bark.r && t > (n.barkAt ?? -1e9) + (ai.bark.every ?? 14) && !state.fading) {
+    // (not while the place's hunters are after him: what's said of the hunt stays up to be read)
+    if (ai.bark && m && !turned && !hunting && toM < ai.bark.r && t > (n.barkAt ?? -1e9) + (ai.bark.every ?? 14) && !state.fading) {
       n.barkAt = t;
       n.barkN = (n.barkN ?? -1) + 1;
       const text = ai.bark.lines[n.barkN % ai.bark.lines.length];

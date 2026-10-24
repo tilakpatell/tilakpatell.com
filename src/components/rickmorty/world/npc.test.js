@@ -127,6 +127,19 @@ describe('a local’s body', () => {
     expect(says[0][1].target.x).toBeCloseTo(3, 6);
   });
 
+  it('keeps its bark to itself while the place’s hunters are after him, and barks again once they’ve stopped', () => {
+    const N = createNpcs({ id: 'x', area: AREA });
+    const c = figure();
+    const n = local(N, c);
+    N.hunt(true);
+    let r = run(N, [n], 2, () => ({ x: 3, z: 0 }));
+    expect(r.events.filter(([name]) => name === 'bark')).toEqual([]);
+    expect(reacts(c, 'say').length).toBe(0);
+    N.hunt(false);
+    r = run(N, [n], 1, () => ({ x: 3, z: 0 }), { t0: r.t });
+    expect(r.events.filter(([name]) => name === 'bark').length).toBe(1);
+  });
+
   it('turns its head and talks with its hands when Morty talks to it, once a word', () => {
     const N = createNpcs({ id: 'x', area: AREA });
     const c = figure();
