@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { FAR_STARS, brightness, createFarStars, realAt, starK, starPx } from './farStars';
 import { MOONS, UNIVERSES } from './universes';
 import { SUN } from './layout';
-import { FADE, FAR, REAL_REACHES, SPECK_LEAST, discPx, speckBright } from '../expanse/scene/levels';
+import { FADE, FAR, REAL_REACHES, SPECK_LEAST, discPx, speckBright } from '../expanse/shared/levels';
 
 // a camera at a point, looking down -z, its world matrix up to date
 const camAt = (x, y, z) => {
@@ -182,12 +182,27 @@ describe('one draw', () => {
     stars.dispose();
     expect(parent.children).toHaveLength(0);
   });
+
+  it('draws the discs last, after every speck, so a disc covers the specks behind it', () => {
+    // (one draw blends in the vertices' order: a speck adds over what's drawn
+    // before it, a disc covers it)
+    const stars = createFarStars(new THREE.Group(), { places: [{ id: 'a', at: [0, 0, -10000], reach: 100, color: '#ffffff' }], skyFar: 24000, slots: [4, 3], discs: 2 });
+    const { aSlot, aK, position } = stars.points.geometry.attributes;
+    expect([...aSlot.array]).toEqual([-2, 0, 0, 0, 0, 1, 1, 1, -1, -1]);
+    stars.update(camAt(0, 0, 0));
+    stars.discs.begin();
+    stars.discs.push(0, 0, -20000, 300, 0.05, 0.05, 0.05, 1, 0, 0, 1);
+    stars.discs.end();
+    expect(aK.getX(8)).toBe(1);
+    expect(position.getZ(8)).toBe(-20000);
+    stars.dispose();
+  });
 });
 
 describe('slots', () => {
   const SLOTS = [400, 400, 400, 400, 400];
   const make = () => createFarStars(new THREE.Group(), { places: [{ id: 'a', at: [0, 0, -10000], reach: 100, color: '#ffffff' }], skyFar: 24000, slots: SLOTS, discs: 4 });
-  const start = (i) => 1 + 4 + 400 * i; // (the places, the discs, then the slots)
+  const start = (i) => 1 + 400 * i; // (the places, then the slots, then the discs)
 
   it('takes a sector into its slot, uploads only that slot, and keeps it hidden', () => {
     const stars = make();
@@ -261,17 +276,21 @@ describe('slots', () => {
     stars.dispose();
   });
 
-  it('draws no hidden slot past the last one shown', () => {
+  it('draws every vertex, whatever shows, so the discs after the slots are never cut', () => {
     const stars = make();
+    const geo = stars.points.geometry;
+    const drawn = () => [geo.drawRange.start, Math.min(geo.drawRange.count, geo.attributes.position.count)];
+    const all = [0, start(SLOTS.length) + 4];
     stars.update(camAt(0, 0, 0));
-    expect(stars.points.geometry.drawRange.count).toBe(start(0));
+    expect(drawn()).toEqual(all);
     stars.setSlot(3, slotOf([0, 0, -1e5], [ONE]));
     stars.showSlots([3]);
-    expect(stars.points.geometry.drawRange.count).toBe(start(4));
+    expect(drawn()).toEqual(all);
     stars.hideSlots([3]);
     stars.setSlot(1, slotOf([0, 0, -1e5], [ONE]));
     stars.fadeSlot(1, 0.5);
-    expect(stars.points.geometry.drawRange.count).toBe(start(2));
+    stars.update(camAt(0, 0, 0));
+    expect(drawn()).toEqual(all);
     stars.dispose();
   });
 });
@@ -299,6 +318,27 @@ describe('discs', () => {
     stars.discs.end();
     expect([...aK.array.slice(0, 3)]).toEqual([Math.fround(0.4), 0, 0]);
     expect(position.getX(0)).toBe(8500);
+    stars.dispose();
+  });
+
+  it('takes no disc that is nowhere, so one never stops it keeping the nearest', () => {
+    const stars = createFarStars(new THREE.Group(), { places: [], skyFar: 24000, discs: 2 });
+    const { position, aK } = stars.points.geometry.attributes;
+    stars.update(camAt(0, 0, 0));
+    stars.discs.begin();
+    stars.discs.push(NaN, 0, 0, 10, 1, 1, 1, 0, 0, 0, 1);
+    for (const d of [1000, 2000, 3000]) stars.discs.push(d, 0, 0, 10, 1, 1, 1, 0, 0, 0, 1);
+    stars.discs.end();
+    expect([position.getX(0), position.getX(1)]).toEqual([2000, 1000]);
+    // nor one infinitely far, even with room for it
+    stars.discs.begin();
+    stars.discs.push(Infinity, 0, 0, 10, 1, 1, 1, 0, 0, 0, 1);
+    stars.discs.push(0, -Infinity, 0, 10, 1, 1, 1, 0, 0, 0, 1);
+    stars.discs.push(500, 0, 0, 10, 1, 1, 1, 0, 0, 0, 1);
+    stars.discs.end();
+    expect([...aK.array.slice(0, 2)]).toEqual([1, 0]);
+    expect(position.getX(0)).toBe(500);
+    expect([...position.array].every(Number.isFinite)).toBe(true);
     stars.dispose();
   });
 
@@ -357,13 +397,14 @@ describe('pops (dev)', () => {
     stars.update(cam);
     stars.points.onBeforeRender(stubRenderer);
     stars.pops();
-    for (const i of [0, 1, 2]) stars.setSlot(i, slotOf([0, 0, -100000], [ONE]));
+    // (slots 0 and 1 hold the same sector, as a centre's swap stages it)
+    for (const [i, key] of [[0, 'E:1,0,0'], [1, 'E:1,0,0'], [2, 'E:2,0,0']]) stars.setSlot(i, { ...slotOf([0, 0, -100000], [ONE]), key });
     stars.showSlots([0]);
     stars.update(cam);
     const p = stars.pops();
     expect(p.count).toBe(1);
     expect(p.px).toBeCloseTo(starPx(speckBright(100000, 50)), 5);
-    // a swap: shown as another goes, in one frame
+    // a swap: shown as another holding the same goes, in one frame
     stars.hideSlots([0]);
     stars.showSlots([1]);
     stars.update(cam);
@@ -377,6 +418,51 @@ describe('pops (dev)', () => {
     stars.showSlots([0]);
     stars.update(cam);
     expect(stars.pops()).toEqual({ count: 0, px: 0 });
+    stars.dispose();
+  });
+
+  it('counts a slot shown as another goes when it holds something else', () => {
+    const stars = createFarStars(new THREE.Group(), { places: [], skyFar: 24000, slots: [4, 4] });
+    const cam = camAt(0, 0, 0);
+    stars.update(cam);
+    stars.points.onBeforeRender(stubRenderer);
+    stars.setSlot(0, { ...slotOf([0, 0, -100000], [ONE]), key: 'A' });
+    stars.showSlots([0]);
+    stars.update(cam);
+    stars.pops();
+    stars.setSlot(1, { ...slotOf([0, 0, -200000], [{ ...ONE, r: 80 }]), key: 'B' });
+    stars.update(cam); // (set, still hidden: nothing)
+    expect(stars.pops()).toEqual({ count: 0, px: 0 });
+    stars.hideSlots([0]);
+    stars.showSlots([1]);
+    stars.update(cam);
+    const p = stars.pops();
+    expect(p.count).toBe(1);
+    expect(p.px).toBeCloseTo(starPx(speckBright(200000, 80)), 5);
+    // a shown slot set again with something else and shown at once is new too
+    stars.setSlot(1, { ...slotOf([0, 0, -100000], [ONE]), key: 'C' });
+    stars.showSlots([1]);
+    stars.update(cam);
+    expect(stars.pops().count).toBe(1);
+    // and with what it held, the same: no pop
+    stars.setSlot(1, { ...slotOf([0, 0, -100000], [ONE]), key: 'C' });
+    stars.showSlots([1]);
+    stars.update(cam);
+    expect(stars.pops()).toEqual({ count: 0, px: 0 });
+    // with no key, nothing's the same as anything
+    stars.setSlot(0, slotOf([0, 0, -100000], [ONE]));
+    stars.hideSlots([1]);
+    stars.showSlots([0]);
+    stars.update(cam);
+    expect(stars.pops().count).toBe(1);
+    // and a slot hidden before it was ever drawn hands nothing on
+    stars.setSlot(1, { ...slotOf([0, 0, -100000], [ONE]), key: 'D' });
+    stars.showSlots([1]);
+    stars.hideSlots([1]);
+    stars.setSlot(0, { ...slotOf([0, 0, -100000], [ONE]), key: 'D' });
+    stars.showSlots([0]);
+    stars.update(cam);
+    expect(stars.pops().count).toBe(1);
     stars.dispose();
   });
 });

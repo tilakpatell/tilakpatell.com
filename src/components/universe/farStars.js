@@ -23,7 +23,8 @@
 //
 // It is the far layer of generated space as well (the design's section A,
 // expanse/scene/levels.js), still in its one draw: after the hand-made
-// places come the discs, then the slots.
+// places come the slots, then the discs (one draw blends in its vertices'
+// order, so the discs go last, over the specks).
 //   - A disc is a star, planet or wonder within the far plane, drawn at its
 //     true size, lit from its star (or shining), over whatever's behind it:
 //     the discs writer takes them a frame, keeps the nearest it has room
@@ -36,9 +37,11 @@
 // Everything is written from the camera, and the Points sit at the camera
 // (in the parent's space), so what goes to the chip is small and exact even
 // 10^9 out. Blending is premultiplied: a star or speck writes alpha 0, so it
-// adds as it always has, and a disc writes its cover, so a dark rock hides
-// the stars behind it. The shaders take their numbers from levels.js's and
-// this file's, so the chip can't drift from the rules.
+// adds as it always has, and a disc writes its cover; drawn after them, a
+// dark rock hides the places and specks behind it. Every vertex is drawn
+// (the hidden are put out of the frame, so they cost next to nothing). The
+// shaders take their numbers from levels.js's and this file's, so the chip
+// can't drift from the rules.
 //
 // createFarStars(parent, { places: [{ id, at, reach | r, color, sector?, station?, group? }], skyFar, slots = [], discs = 0 })
 //   → { points, update(camera, dt, { focus, sector }), kOf(id) → 0 (real) … 1 (far),
@@ -46,10 +49,11 @@
 //       discs: { begin(), push(…), end() }, pops() → { count, px }, dispose() }
 // `at` is in the parent's space (the map's), and the points are added to it.
 // `slots` is each slot's size in specks; `discs` how many discs it draws.
-//   setSlot(i, { centre: [x, y, z], at: Float32Array, color: Uint8Array, r: Float32Array, count })
+//   setSlot(i, { centre: [x, y, z], at: Float32Array, color: Uint8Array, r: Float32Array, count, key? })
 //     a slot's specks: `at` (3 a speck) from `centre` (the parent's space),
 //     `color` (3 a speck) as a hex colour's bytes, `r` the star's radius;
-//     only that slot's range is uploaded, and it is hidden till shown
+//     only that slot's range is uploaded, and it is hidden till shown;
+//     `key` names what it holds (a sector's key), for pops() alone
 //   showSlots(list), hideSlots(list): at once, so a swap is one frame
 //   fadeSlot(i, seconds): shown over that long, from where it is
 //   discs.push(x, y, z, r, cr, cg, cb, lx, ly, lz, alpha, id?) between begin()
@@ -59,11 +63,12 @@
 //     disc weight); `id`, if given, is for pops() alone
 //   pops() (dev): what came in at over half in one frame since it was last
 //     asked, the largest in the frame's pixels: a disc from nothing (by its
-//     id) or a slot shown out of nothing (one shown in the frame another goes
-//     is a swap, what the other drew). Nothing is counted till it's first asked.
+//     id) or a slot shown out of nothing (one shown in the frame another
+//     drawn with the same key goes is a swap: the same thing, moved; one with
+//     no key is always new). Nothing is counted till it's first asked.
 
 import * as THREE from 'three';
-import { BRIGHT_AT, FADE, FAR, REAL_LEAST, REAL_REACHES, SPECK_LEAST, discPx, levelWeights, realAt, speckBright } from '../expanse/scene/levels';
+import { BRIGHT_AT, FADE, FAR, REAL_LEAST, REAL_REACHES, SPECK_LEAST, discPx, levelWeights, realAt, speckBright } from '../expanse/shared/levels';
 import { WONDERS, reachOf } from './deep';
 import { POSITIONS, REACH, SUN } from './layout';
 import { MOONS, UNIVERSES } from './universes';
@@ -243,11 +248,13 @@ export function createFarStars(parent, { places, skyFar, slots = [], discs = 0 }
   const D = Math.max(0, Math.floor(discs));
   const S = slots.length;
   if (S > MOST_SLOTS) throw new RangeError(`the far layer holds ${MOST_SLOTS} slots at most, not ${S}`);
-  // the places, then the discs, then each slot's specks
+  // the places, then each slot's specks, then the discs: one draw blends in
+  // the vertices' order, so a disc drawn last covers the specks behind it
   const slotAt = new Int32Array(S + 1);
-  slotAt[0] = n + D;
+  slotAt[0] = n;
   for (let i = 0; i < S; i++) slotAt[i + 1] = slotAt[i] + Math.max(0, Math.floor(slots[i]));
-  const total = slotAt[S];
+  const discAt = slotAt[S];
+  const total = discAt + D;
   const real = places.map((p) => (p.station ? STATION_REAL : realAt(p)));
   const base = places.map((p) => new THREE.Color(p.color).lerp(WHITE, TO_WHITE));
   const attr = (size) => new THREE.BufferAttribute(new Float32Array(total * size), size).setUsage(THREE.DynamicDrawUsage);
@@ -258,7 +265,7 @@ export function createFarStars(parent, { places, skyFar, slots = [], discs = 0 }
   const PLACE = [A.position, A.aSize, A.aBright, A.aColor, A.aK, A.aFocus];
   const DISC = [A.aSize, A.aColor, A.aLight, A.aK];
   const SPECK = [A.position, A.aColor, A.aSize];
-  const kind = new Float32Array(total).fill(-1, n, n + D);
+  const kind = new Float32Array(total).fill(-1, discAt, total);
   kind.fill(-2, 0, n);
   for (let i = 0; i < S; i++) kind.fill(i, slotAt[i], slotAt[i + 1]);
   geo.setAttribute('aSlot', new THREE.BufferAttribute(kind, 1));
@@ -311,19 +318,21 @@ export function createFarStars(parent, { places, skyFar, slots = [], discs = 0 }
   let popPx = 0;
   let seen = new Map(); // a disc's id → how much showed last frame
   let seenNext = new Map();
-  let swapped = false; // (a slot went this frame)
+  const gone = new Set(); // (the keys of the slots drawn last frame and hidden since)
   const pop = (size) => {
     popped++;
     popPx = Math.max(popPx, size);
   };
 
-  // the slots: how much of each shows, its fade in (a second), its centre
-  // (the parent's space), how many specks it has
+  // the slots: how much of each shows, its fade in (a second), how much of
+  // what it holds was drawn last frame, its centre (the parent's space), how
+  // many specks it has and what it holds (for pops)
   const sAlpha = new Float64Array(S);
   const sRate = new Float64Array(S);
   const sWas = new Float64Array(S);
   const sCentre = new Float64Array(S * 3);
   const sCount = new Int32Array(S);
+  const sKey = new Array(S).fill(null);
   const tint = new THREE.Color();
   const weights = { full: 0, disc: 0, speck: 0 };
   const NONE = { reach: 0 };
@@ -332,19 +341,8 @@ export function createFarStars(parent, { places, skyFar, slots = [], discs = 0 }
     if (!(i >= 0 && i < S)) throw new RangeError(`no slot ${i} of ${S}`);
     return i;
   };
-  // (drawn up to the last slot that shows: the rest cost nothing)
-  const range = () => {
-    let end = n + D;
-    for (let i = S - 1; i >= 0; i--)
-      if (sAlpha[i] > 0 || sRate[i] > 0) {
-        end = slotAt[i + 1];
-        break;
-      }
-    geo.setDrawRange(0, end);
-  };
-  range();
   const hide = (i) => {
-    if (sAlpha[i] > 0 || sRate[i] > 0) swapped = true;
+    if (sWas[i] > 0 && sKey[i] !== null) gone.add(sKey[i]);
     sAlpha[i] = 0;
     sRate[i] = 0;
     U[i].w = 0;
@@ -398,12 +396,12 @@ export function createFarStars(parent, { places, skyFar, slots = [], discs = 0 }
   };
   const writeDiscs = () => {
     for (let k = 0; k < shown; k++) {
-      const v = (n + k) * 3;
+      const v = (discAt + k) * 3;
       P[v] = shownAt[k * 3] - camAt.x;
       P[v + 1] = shownAt[k * 3 + 1] - camAt.y;
       P[v + 2] = shownAt[k * 3 + 2] - camAt.z;
     }
-    mark(A.position, n, shown);
+    mark(A.position, discAt, shown);
   };
   const writer = {
     begin() {
@@ -415,6 +413,8 @@ export function createFarStars(parent, { places, skyFar, slots = [], discs = 0 }
       const dy = y - camAt.y;
       const dz = z - camAt.z;
       const d = Math.sqrt(dx * dx + dy * dy + dz * dz);
+      // (nowhere, or infinitely far: none, as a NaN would stick in the heap)
+      if (!(d < Infinity)) return;
       let s;
       if (staged < D) {
         s = staged;
@@ -453,7 +453,7 @@ export function createFarStars(parent, { places, skyFar, slots = [], discs = 0 }
           heap[0] = heap[size];
           down(0, size);
         }
-        const v = n + k;
+        const v = discAt + k;
         for (let j = 0; j < 3; j++) {
           shownAt[k * 3 + j] = dAt[s * 3 + j];
           C[v * 3 + j] = dRGB[s * 3 + j];
@@ -468,11 +468,11 @@ export function createFarStars(parent, { places, skyFar, slots = [], discs = 0 }
         }
         dId[s] = null;
       }
-      K.fill(0, n + m, n + was);
+      K.fill(0, discAt + m, discAt + was);
       shown = m;
       staged = 0;
       writeDiscs();
-      for (const a of DISC) mark(a, n, Math.max(m, was));
+      for (const a of DISC) mark(a, discAt, Math.max(m, was));
       if (track) {
         const t = seen;
         seen = seenNext;
@@ -530,21 +530,24 @@ export function createFarStars(parent, { places, skyFar, slots = [], discs = 0 }
           if (sAlpha[i] >= 1) sRate[i] = 0;
         }
         placeSlot(i);
-        if (track && !swapped && !(sWas[i] > 0) && sAlpha[i] > 0.5) {
+        // (out of nothing, unless it's what another drawn last frame held)
+        if (track && !(sWas[i] > 0) && sAlpha[i] > 0.5 && !(sKey[i] !== null && gone.has(sKey[i]))) {
           const most = slotPx(i);
           if (most > 0) pop(most);
         }
         sWas[i] = sAlpha[i];
       }
-      swapped = false;
-      if (S) range();
+      gone.clear();
     },
     kOf(id) {
       const i = index.get(id);
       return i === undefined ? null : far[i];
     },
-    setSlot(i, { centre, at, color, r, count }) {
-      slotIn(i);
+    setSlot(i, { centre, at, color, r, count, key = null }) {
+      hide(slotIn(i));
+      // (what it holds now was never drawn)
+      sWas[i] = 0;
+      sKey[i] = key;
       const from = slotAt[i];
       const size = slotAt[i + 1] - from;
       // (what fits, of what it was given)
@@ -567,9 +570,7 @@ export function createFarStars(parent, { places, skyFar, slots = [], discs = 0 }
       sCentre[i * 3] = centre[0];
       sCentre[i * 3 + 1] = centre[1];
       sCentre[i * 3 + 2] = centre[2];
-      hide(i);
       placeSlot(i);
-      range();
     },
     showSlots(list) {
       for (const i of list) {
@@ -577,11 +578,9 @@ export function createFarStars(parent, { places, skyFar, slots = [], discs = 0 }
         sRate[i] = 0;
         U[i].w = 1;
       }
-      range();
     },
     hideSlots(list) {
       for (const i of list) hide(slotIn(i));
-      range();
     },
     fadeSlot(i, seconds) {
       slotIn(i);
@@ -591,7 +590,6 @@ export function createFarStars(parent, { places, skyFar, slots = [], discs = 0 }
         sRate[i] = 0;
         U[i].w = 1;
       }
-      range();
     },
     discs: writer,
     pops() {

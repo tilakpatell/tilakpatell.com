@@ -156,7 +156,7 @@ Not this PR's: the far layer's `pops()` arrives with PR 2.4's levels of detail.
 
 ### Task 14: the far layer
 
-Two commits on `eu/lane-2`: `88471c74` farStars draws generated specks and discs in its one draw, and `a455bf1e` a far-layer slot keeps only what it was given. `scene.js` isn't touched: 6,374 lines before and after.
+Two commits on `eu/lane-2`: `88471c74` farStars draws generated specks and discs in its one draw, and `a455bf1e` a far-layer slot keeps only what it was given; then, after review, a third that draws the discs after the slots, keys a slot for `pops()`, refuses a disc that is nowhere and takes `levels.js` through the Expanse's `shared/` face. `scene.js` isn't touched: 6,374 lines before and after.
 
 #### Drawn for real
 
@@ -164,12 +164,21 @@ A page that draws only the far layer, through the dev server in headless Chromiu
 
 | frame | calls | points drawn | what the pixels show |
 | --- | --: | --: | --- |
-| the place alone | 1 | 5 | the place's star in the middle, (255, 208, 208): a white core in a red glare |
-| the discs, the slot set but hidden | 1 | 5 | the rock over the star, (9, 9, 9); the shining disc (255, 204, 76), its colour exactly; no speck |
-| the slot shown | 1 | 9 | the far speck (255, 255, 255) at its core; the near one nothing (a disc's, within the far plane) |
-| the rock's sides | 1 | 9 | (5, 5, 5) 10 px left of its middle, (78, 78, 78) 10 px right: lit from +x |
+| the place alone | 1 | 13 | the place's star in the middle, (255, 208, 208): a white core in a red glare |
+| the discs, the slot set but hidden | 1 | 13 | the rock over the star, (9, 9, 9); the shining disc (255, 204, 76), its colour exactly; no speck |
+| the slot shown | 1 | 13 | the far speck (255, 255, 255) at its core; the near one nothing (a disc's, within the far plane) |
+| the rock's sides | 1 | 13 | (5, 5, 5) 10 px left of its middle, (78, 78, 78) 10 px right: lit from +x |
 
-Sizes, measured on the shot: the rock 35 to 36 px across (true size 35.3), the shining disc 21 px (21.9), the far speck 9 px (`starPx(speckBright(92,195, 500))`, 9.45). The draw stops at the last slot shown (5 points, then 9 of the layer's 13). No shader error, and no console error but one 404 for something the page doesn't name (the site has no `/favicon.ico`); the map and the camera are back where they were after each draw.
+Sizes, measured on the shot: the rock 35 to 36 px across (true size 35.3), the shining disc 21 px (21.9), the far speck 9 px (`starPx(speckBright(92,195, 500))`, 9.45). Every vertex is drawn, all 13 of the layer's points, the hidden put out of the frame in the vertex shader (at `538b14af` the draw stopped at the last slot shown: 5 points, then 9; the pixels were the same as these). No shader error, and no console error but one 404 for something the page doesn't name (the site has no `/favicon.ico`); the map and the camera are back where they were after each draw.
+
+A second page, the review's: the same camera, two dark discs (grey 0.05, radius 600) 20,000 ahead, a hand-made place straight behind the left one and a speck 92,000 off straight behind the right one, and a speck in the open. One draw and one program, and no error but the same 404.
+
+| | left rock's middle (a place behind) | right rock's middle (a speck behind) | the speck in the open |
+| --- | --: | --: | --: |
+| `538b14af` (discs, then slots) | (13, 13, 13) | (255, 255, 255): the speck through the rock | (255, 255, 255) |
+| after (slots, then discs) | (13, 13, 13) | (13, 13, 13) | (255, 255, 255) |
+
+One draw blends in its vertices' order, so a speck drawn after a disc adds over it; with the discs last, a dark rock hides the places and the specks behind it. The baseline poses weren't shot again for this: with no slots and no discs, as every pose has, the layer's vertices and its draw are what they were.
 
 #### No pixel changes at the core
 
