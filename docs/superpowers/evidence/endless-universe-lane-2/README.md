@@ -151,3 +151,37 @@ These can't speak to the plan's 2%. The browser here draws in software, the mach
 ### Pops
 
 Not this PR's: the far layer's `pops()` arrives with PR 2.4's levels of detail.
+
+## PR 2.4: levels of detail
+
+### Task 14: the far layer
+
+Two commits on `eu/lane-2`: `88471c74` farStars draws generated specks and discs in its one draw, and `a455bf1e` a far-layer slot keeps only what it was given. `scene.js` isn't touched: 6,374 lines before and after.
+
+#### Drawn for real
+
+A page that draws only the far layer, through the dev server in headless Chromium (software GL, 640 × 360): the camera at (10^9, 2 × 10^8, −7 × 10^8), looking down −z, drawn through `relative.js`'s `drawn()`, the map moved round it. One hand-made place 30,000 ahead (red); a dark grey disc of radius 600 20,000 ahead, over it, lit from +x; a shining disc of radius 400 (1, 0.8, 0.3) at (8,000, 0, −20,000); a slot of two green specks, one 92,000 off past the far plane and one 20,000 off within it.
+
+| frame | calls | points drawn | what the pixels show |
+| --- | --: | --: | --- |
+| the place alone | 1 | 5 | the place's star in the middle, (255, 208, 208): a white core in a red glare |
+| the discs, the slot set but hidden | 1 | 5 | the rock over the star, (9, 9, 9); the shining disc (255, 204, 76), its colour exactly; no speck |
+| the slot shown | 1 | 9 | the far speck (255, 255, 255) at its core; the near one nothing (a disc's, within the far plane) |
+| the rock's sides | 1 | 9 | (5, 5, 5) 10 px left of its middle, (78, 78, 78) 10 px right: lit from +x |
+
+Sizes, measured on the shot: the rock 35 to 36 px across (true size 35.3), the shining disc 21 px (21.9), the far speck 9 px (`starPx(speckBright(92,195, 500))`, 9.45). The draw stops at the last slot shown (5 points, then 9 of the layer's 13). No shader error, and no console error but one 404 for something the page doesn't name (the site has no `/favicon.ico`); the map and the camera are back where they were after each draw.
+
+#### No pixel changes at the core
+
+Every baseline pose draws the hand-made places through the new path: written from the camera, the points at the camera, premultiplied blending, the hidden put out of the frame in the vertex shader. Shot with the clock stopped (the PR 2.3 gate's way), at 1280 × 720, against the lane's own stills at `058a3d17` (nothing between draws differently: `439f22b8` and `57436f12` add pure modules nothing draws yet). Pixels that differ by more than 8 (of 255) in any channel, out of 921,600, and the calls and triangles before and after:
+
+| pose | mid: over 8 (largest) | mid: calls, triangles | low: over 8 (largest) | low: calls, triangles |
+| --- | --: | --- | --: | --- |
+| `overview` | 0 (5) | 99, 488,962 = | 0 (5) | 98, 486,570 = |
+| `falcon-sun` | 0 (0) | 81, 473,940 = | 0 (5) | 80, 471,548 = |
+| `belt` | 0 (4) | 46, 421,298 = | 0 (4) | 46, 418,920 = |
+| `station` | 0 (5) | 69, 459,214 = | 0 (5) | 69, 456,836 = |
+| `far-rim` | 0 (5) | 42, 40,598 = | 0 (5) | 42, 38,220 = |
+| `middleearth-limb` | 0 (5) | 39, 37,732 = | 0 (4) | 39, 32,738 = |
+
+The rest is the dither of at most 5 that differs between any two runs (above). `far-rim`'s sky has the far places' stars in it, spikes and all, and they land where they did. High wasn't shot again: the far layer does nothing by tier.
