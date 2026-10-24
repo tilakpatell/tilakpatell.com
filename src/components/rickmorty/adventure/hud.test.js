@@ -3,7 +3,7 @@ import { progress } from '../world/rules';
 import { EPISODES } from './episodes';
 import { fresh } from './story';
 import { DIAL } from '../world/dimensions/destinations';
-import { dialItems, dialLead, markedTask, newsOf, objectiveLine } from './hud';
+import { SAID_MS, dialItems, dialLead, leaveHold, markedTask, newsOf, objectiveLine } from './hud';
 
 describe('what the HUD shows of the story', () => {
   it('reads the story’s step first, then the checklist’s next', () => {
@@ -78,6 +78,14 @@ describe('what the HUD shows of the story', () => {
     expect(newsOf([{ type: 'done', episode: 0 }, { type: 'episode', episode: 1 }])).toEqual({ say: [{ kind: 'say', who, text }], card: 1 });
     expect(newsOf([{ type: 'done', episode: 12 }, { type: 'end' }]).say[0].text).toBe(EPISODES[12].outro[0][1]);
     expect(newsOf([])).toEqual({ say: [], card: null });
+  });
+
+  it('holds a page that’s leaving long enough for an episode’s closing line, and no longer for anything else', () => {
+    expect(SAID_MS).toBe(4000);
+    expect(leaveHold([{ type: 'step', episode: 10, step: 0 }, { type: 'done', episode: 10 }, { type: 'episode', episode: 11 }])).toBe(4000);
+    expect(leaveHold([{ type: 'step', episode: 10, step: 0 }])).toBe(0);
+    expect(leaveHold([{ type: 'episode', episode: 11 }])).toBe(0);
+    expect(leaveHold([])).toBe(0);
   });
 
   it('says only the last closing line, and shows no card for an episode already over', () => {

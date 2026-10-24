@@ -64,7 +64,7 @@ import {
 import { newFedShip, newShipVoice, onTail, shipSays, stepFedShip } from './ship';
 import { DESTINATIONS, DIAL, destinationById, isPlanet, isWayHome, linkTarget, portalTarget, readDial, writeDial } from './dimensions/destinations';
 import { useAdventure } from '../adventure/useAdventure';
-import { dialItems, dialLead, markedTask, newsOf, objectiveLine } from '../adventure/hud';
+import { dialItems, dialLead, leaveHold, markedTask, newsOf, objectiveLine } from '../adventure/hud';
 import { arriveAt } from '../adventure/ways';
 import { backLink, boundOf, inLine, planetOf, planetProgress, relabel } from './planetMode';
 import { dialledNote, isGunKey, portalName } from './portalGun';
@@ -401,6 +401,7 @@ export default function RmWorld({ start = null, onLeave = null, frozen = false, 
       const out = feed(e);
       if (openRef.current) held.current.push(...out);
       else show(out);
+      return out;
     },
     [feed, show],
   );
@@ -432,7 +433,7 @@ export default function RmWorld({ start = null, onLeave = null, frozen = false, 
       api.current?.play('cheer', { hold: 0.2, layer: 'auto' });
       if (openRef.current) pending.current.push(id);
       else tellDone([id]);
-      tell({ type: 'task', id });
+      return tell({ type: 'task', id });
     },
     [tellDone, earn, tell],
   );
@@ -904,19 +905,23 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
       const s = sim.current;
       if (s.fading) return;
       // a planet's own portal: out of the game, back to space (a place left in
-      // a hurry counted first, and a moment longer for it to be seen)
+      // a hurry counted first, and a moment longer for it to be seen; an
+      // episode it ends, its closing line read before the fade covers it)
       if (planet && onLeave && isWayHome(via, planet.id)) {
         s.fading = true;
         s.keys.clear();
         const e = s.escape;
         const made = Boolean(e && e.area === planet.id && s.t - e.at <= e.s);
-        if (made) {
-          complete(e.task);
-          unlock(e.task);
-        }
-        setFade('portal');
-        sound('portalOpen');
-        later(onLeave, FADE_MS + (made ? 900 : 0));
+        const out = made ? complete(e.task) : null;
+        if (made) unlock(e.task);
+        const leave = () => {
+          setFade('portal');
+          sound('portalOpen');
+          later(onLeave, FADE_MS + (made ? 900 : 0));
+        };
+        const hold = leaveHold(out ?? []);
+        if (hold) later(leave, hold);
+        else leave();
         return;
       }
       // (the garage's portal goes where the dial is set: read fresh, in case another tab's set it)

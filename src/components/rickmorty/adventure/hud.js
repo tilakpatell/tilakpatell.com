@@ -1,6 +1,7 @@
 // What the HUD shows of the story, worked out apart from the drawing so
 // RmWorld and the Citadel only call it: the objective line, what an event's
-// out says, the task the map's marker points at, and the dial's locks. Pure.
+// out says (and how long a page leaving holds for it), the task the map's
+// marker points at, and the dial's locks. Pure.
 
 import { EPISODES } from './episodes';
 import { coordinates, current, dialOpen, lockNote } from './story';
@@ -48,6 +49,12 @@ export function newsOf(out, { episodes = EPISODES } = {}) {
   }
   return { say, card };
 }
+
+// How long a page that's leaving holds for what an out says: an episode's
+// closing line, long enough to be read before the fade covers it (the
+// escape that ends an episode on a planet's own page); nothing else holds.
+export const SAID_MS = 4000;
+export const leaveHold = (out) => (newsOf(out).say.length ? SAID_MS : 0);
 
 // What the map's marker points at: the story's task, or the game it's to
 // win, while its step waits on one (an `all`'s part on the planet Morty's on,
