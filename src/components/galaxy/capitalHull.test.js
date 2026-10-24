@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
-import { GAME_HULLS, GAME_MAPS, combineMaterial, dressGameHull, dressGameMaps, hullMaterial, inFrame, joined, sizesFor } from './capitalHull';
+import { GAME_HULLS, GAME_MAPS, paintMaterial, dressGameHull, dressGameMaps, hullMaterial, inFrame, joined, sizesFor } from './capitalHull';
 
 // a texture as the loader gives one (the sheets tile)
 const map = () => new THREE.Texture();
@@ -177,7 +177,7 @@ describe('capitalHull', () => {
 
   it('paints the Venator’s hull grey under its mask on UV1, the occlusion read from green, and the sheets on UV0', () => {
     const maps = { combine: map(), tilingNormal: map(), breakup: map(), breakupNormal: map() };
-    const m = combineMaterial(maps, GAME_HULLS.venator);
+    const m = paintMaterial(maps, GAME_HULLS.venator);
     expect(m.userData.gameHull).toBe(true);
     expect(m.aoMap).toBe(maps.combine);
     expect(maps.combine.channel).toBe(1);
@@ -190,7 +190,7 @@ describe('capitalHull', () => {
     expect(shader.fragmentShader).toMatch(/uGhBreakN/);
     expect(shader.uniforms.uGhBreak.value).toBe(maps.breakup);
     // (the mask alone, the lowest detail's: no sheets in the shader)
-    const bare = compiled(combineMaterial({ combine: map() }, GAME_HULLS.venator));
+    const bare = compiled(paintMaterial({ combine: map() }, GAME_HULLS.venator));
     expect(bare.fragmentShader).toMatch(/ghMask/);
     expect(bare.fragmentShader).not.toMatch(/ghBn/);
   });
@@ -238,5 +238,34 @@ describe('capitalHull', () => {
     await dressGameHull(again, 'venator', { phone: true, loadMesh: async (url) => (urls2.push(url), url.includes('detailback') ? null : part()), loadTexture: async () => map() });
     expect(urls2.every((u) => u.endsWith('.lod2.glb'))).toBe(true);
     expect(again.children[0].material.userData.gameHull).toBeUndefined();
+  });
+
+  it('puts the MC80’s hull and its seven nodules in its stand-in, painted with the breakup the cut carries, on the UVs it was made for', async () => {
+    const m = GAME_HULLS.moncal;
+    expect(m.material.test('MC_80_Met')).toBe(true);
+    expect(m.material.test('MC_80_light_Met')).toBe(false);
+    expect(m.parts).toHaveLength(8);
+    const root = new THREE.Group();
+    const nose = new THREE.Group();
+    nose.name = 'nose';
+    nose.rotation.y = Math.PI;
+    const breakup = map();
+    const standIn = new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshStandardMaterial({ name: 'MC_80_Met', map: breakup }));
+    nose.add(standIn);
+    root.add(nose);
+    const urls = [];
+    const asked = [];
+    const ok = await dressGameHull(root, 'moncal', { detail: 'high', loadMesh: async (url) => (urls.push(url.split('/').pop()), packHull()), loadTexture: async (path, size) => (asked.push([path.split('/').pop(), size]), map()) });
+    expect(ok).toBe(true);
+    expect(urls).toHaveLength(8);
+    expect(urls.every((u) => u.endsWith('.lod2.glb'))).toBe(true);
+    expect(asked).toEqual([['t_starcruisermc80panels_01_ns', 1024]]);
+    const shader = compiled(standIn.material);
+    expect(shader.uniforms.uGhBreak.value).toBe(breakup);
+    expect(breakup.wrapS).toBe(THREE.RepeatWrapping);
+    // (no mask: none of its lines; the panel sheet's z rebuilt from its x and y)
+    expect(shader.fragmentShader).not.toMatch(/ghMask/);
+    expect(shader.fragmentShader).toMatch(/mapN\.z = sqrt/);
+    expect(shader.fragmentShader).not.toMatch(/ghBn/);
   });
 });

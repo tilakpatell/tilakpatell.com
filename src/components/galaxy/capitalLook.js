@@ -17,7 +17,9 @@
 // - the windows' glass is lit, a cool white;
 // - an engine glows only where it faces aft at the stern (its nozzles),
 //   blue-white, the housing round it its own texture (and a hull metal the
-//   site took for a lamp, the MC80's `light_Met`, is metal again); and each
+//   site took for a lamp by its name, the Arquitens' hatch, is metal again;
+//   the MC80's `light_Met` is its lit windows, the game's
+//   SS_EmissiveWindows_01, small panes); and each
 //   nozzle has a soft glow drawn
 //   over it (one draw a ship: `glows`), so the stern burns as it does on screen.
 //
@@ -35,7 +37,7 @@ import { panes, patchShaders, plate } from './capitalPlating';
 export const LENGTH = { destroyer: 1600, executor: 19000, interdictor: 1600, venator: 1137, acclamator: 752, moncal: 1200, nebulon: 300, corvette: 150, hammerhead: 315, lightcruiser: 325, gozanti: 64, transport: 90, providence: 1088, munificent: 825, lucrehulk: 3170 };
 // the plating's grey by kind: the films' light Imperial grey, the Republic's
 // paler one, the Separatists' tan and blue-grey
-const TINT = { destroyer: '#878d95', interdictor: '#878d95', executor: '#7c8188', venator: '#a3a6a8', acclamator: '#9a9da0', lightcruiser: '#8e949b', lucrehulk: '#8f8170', providence: '#7f8893', munificent: '#8d8a84', moncal: '#9d8f74' };
+const TINT = { destroyer: '#878d95', interdictor: '#878d95', executor: '#7c8188', venator: '#a3a6a8', acclamator: '#9a9da0', lightcruiser: '#8e949b', lucrehulk: '#8f8170', providence: '#7f8893', munificent: '#8d8a84', moncal: '#949ca1' };
 export const plateTint = (kind) => TINT[kind] ?? '#8c9198';
 // an engine's light, by side (the Separatists' a little violet)
 const ENGINE = { lucrehulk: [0.75, 0.75, 1.6], providence: [0.75, 0.75, 1.6], munificent: [0.75, 0.75, 1.6] };
@@ -48,6 +50,10 @@ const WINDOW = /window/i;
 const ENGINE_NAME = /engine|thruster/i;
 const RED = /^red$/i;
 const LIT = /emissive/i;
+// (the windows the game lights with a map of their own, SS_EmissiveWindows_01:
+// the MC80's, a mesh of their own; the map, t_mc80_windows_01_rgba, isn't
+// published, and the export gave them the hull's breakup in its place)
+const LIT_WINDOWS = /^MC_80_light_Met$/;
 // (the kinds whose own maps are next to flat colour at a ship's size, a few
 // KB each, or one scratched metal tiled over the whole of it: plated over them)
 const PLATE_ALL = new Set(['acclamator', 'executor', 'gozanti']);
@@ -247,6 +253,16 @@ export function dressCapital(holder, kind, { plating = true, size = 2048, lite =
         engines.push(mesh);
         return l;
       }
+      // the windows the game lights by a map of their own: dark, small panes on them
+      if (LIT_WINDOWS.test(m.name)) {
+        const w = painted(m.clone());
+        w.map = null;
+        w.color.setRGB(0.05, 0.055, 0.06);
+        w.emissive.setRGB(1.0, 0.88, 0.7);
+        w.emissiveIntensity = plating ? 1.4 : 0.3;
+        if (plating) panes(w, unit, length);
+        return w;
+      }
       // a kind whose own maps are next to flat colour: plated over them
       if (PLATE_ALL.has(kind) && m.map && !m.transparent && !ENGINE_NAME.test(m.name)) {
         const p = painted(m.clone());
@@ -309,8 +325,8 @@ export function dressCapital(holder, kind, { plating = true, size = 2048, lite =
       }
       // the rest of the hull, its own maps (the trenches, the towers, the
       // decks' details): painted, and the plating over them lightly (a hull
-      // metal tune() took for a lamp by its name, the MC80's `light_Met`, the
-      // Arquitens' `ImperialLightCruiser_Hatch`, put out first)
+      // metal tune() took for a lamp by its name, the Arquitens'
+      // `ImperialLightCruiser_Hatch`, put out first)
       const d = painted(m.clone());
       if (d.emissiveIntensity === 3.2) {
         d.emissive.setRGB(0, 0, 0);

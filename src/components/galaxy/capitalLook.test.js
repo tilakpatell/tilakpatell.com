@@ -16,7 +16,7 @@ const ship = () => {
   };
   const engine = new THREE.Mesh(nozzle(-0.3), new THREE.MeshStandardMaterial({ name: 'M_MainEngine_01_lods', map: new THREE.Texture(), metalness: 1 }));
   const engine2 = new THREE.Mesh(nozzle(0.3), engine.material);
-  const metal = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.2, 0.2), new THREE.MeshStandardMaterial({ name: 'MC_80_light_Met', emissive: '#ffffff', emissiveIntensity: 3.2, map: new THREE.Texture() }));
+  const metal = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.2, 0.2), new THREE.MeshStandardMaterial({ name: 'ImperialLightCruiser_Hatch', emissive: '#ffffff', emissiveIntensity: 3.2, map: new THREE.Texture() }));
   holder.add(hull, glass, engine, engine2, metal);
   return { holder, hull, glass, engine, engine2, metal };
 };
@@ -95,6 +95,17 @@ describe('capitalLook', () => {
     expect(glow.material.userData.plated).toBeUndefined();
     expect(done.nozzles).toHaveLength(1);
     expect(holder.children.filter((o) => o.userData.glows)).toHaveLength(1);
+  });
+
+  it('lights the MC80’s own lit windows, which the export gave the hull’s breakup, as small panes', () => {
+    const { holder } = ship();
+    const windows = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.2, 0.2), new THREE.MeshStandardMaterial({ name: 'MC_80_light_Met', emissive: '#ffffff', emissiveIntensity: 3.2, map: new THREE.Texture() }));
+    holder.add(windows);
+    dressCapital(holder, 'moncal');
+    expect(windows.material.map).toBeNull();
+    expect(windows.material.userData.panes).toBe(true);
+    expect(windows.material.emissiveIntensity).toBeGreaterThan(1);
+    expect(windows.material.color.r).toBeLessThan(0.1);
   });
 
   it('leaves a ship that isn’t a capital as it was', () => {

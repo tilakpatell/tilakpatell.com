@@ -42,8 +42,9 @@ const REACH = 1.35;
 const BATTERY = 0.014;
 // where the ship breaks: the middle third's ends, shares of its length from the middle
 export const SECTIONS = [-0.17, 0.17];
-// the built parts' grey, by kind (the hull's own, near enough)
-const GREY = { destroyer: '#8d9196', executor: '#6c7076', interdictor: '#8a8e93', venator: '#9a9a98', moncal: '#9b8b6c', providence: '#77808c', lucrehulk: '#8a7a62', gozanti: '#9c9fa2' };
+// the built parts' grey, by kind (the hull's own, near enough), a dielectric's
+// paint as the hulls' are (capitalLook.js's PAINT)
+const GREY = { destroyer: '#8d9196', executor: '#6c7076', interdictor: '#8a8e93', venator: '#9a9a98', moncal: '#8f979c', providence: '#77808c', lucrehulk: '#8a7a62', gozanti: '#9c9fa2' };
 
 export const reachOf = (p) => p.reach ?? p.r * REACH;
 
@@ -195,7 +196,7 @@ const shapes = () =>
   });
 const looks = new Map(); // a kind → its built parts' materials (shared by every copy)
 function looksOf(kind) {
-  if (!looks.has(kind)) looks.set(kind, { hull: new THREE.MeshStandardMaterial({ color: GREY[kind] ?? '#8a8e94', roughness: 0.55, metalness: 0.4 }), lit: new THREE.MeshBasicMaterial({ color: new THREE.Color(1.1, 1.45, 2.1), toneMapped: false }) });
+  if (!looks.has(kind)) looks.set(kind, { hull: new THREE.MeshStandardMaterial({ color: GREY[kind] ?? '#8a8e94', roughness: 0.58, metalness: 0 }), lit: new THREE.MeshBasicMaterial({ color: new THREE.Color(1.1, 1.45, 2.1), toneMapped: false }) });
   return looks.get(kind);
 }
 export function disposeLooks() {

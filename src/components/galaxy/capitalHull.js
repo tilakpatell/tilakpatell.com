@@ -41,7 +41,7 @@
 // GAME_HULLS (kind → its hull's files), sizesFor(detail, phone),
 // dressGameHull(root, kind, { detail, phone, aniso, loadMesh, loadTexture })
 // → Promise<boolean> (true when the game's hull is on), hullMaterial(maps,
-// def, { name }), combineMaterial(maps, def, { name }) and inFrame(geometry,
+// def, { name }), paintMaterial(maps, def, { name }) and inFrame(geometry,
 // from, to) are the parts, for tests; and GAME_MAPS, dressGameMaps(root,
 // kind, { detail, phone, aniso, loadTexture }) → Promise<boolean>, for the
 // capitals whose cut wears the game's maps already, small (below).
@@ -95,6 +95,38 @@ export const GAME_HULLS = {
     combine: { map: tex('kamino', 't_venatorstardestroyer_hull_01_combine_rgba'), tone: 0.333 },
     tiling: { normal: tex('kamino', 't_venatorstardestroyer_paneltile_02_n'), tiling: 1 },
     breakup: { colour: tex('kamino', 't_venatorstardestroyer_paneltile_01_breakup_02_rgba'), normal: tex('kamino', 't_venatorstardestroyer_paneltile_01_breakup_01_rgba'), mean: [0.465, 0.463, 0.451], tiling: 1, strength: 0.6 },
+  },
+  moncal: {
+    // (MC_80_light_Met, the windows, its own mesh and maps: left as it is)
+    material: /^MC_80_Met$/,
+    own: 'MC_80_Met',
+    // (the hull and the seven nodules sb_endor's cells set on it, each a
+    // plain offset in metres; the export joined them in one material)
+    parts: [
+      { mesh: `${LEVELS}/sb_endor/meshes/mc80_mainhull_01_mesh`, own: /^MC_80_Met(_lods)?$/ },
+      ...[
+        ['largenodule_01', -151.988, 1.976, -166.892],
+        ['largenodule_02', -64.651, 30.499, 28.692],
+        ['largenodule_03', 62.045, 29.047, 28.694],
+        ['largenodule_04', 131.23, 3.747, -172.483],
+        ['largenodule_05', -2.562, -49.176, 352.212],
+        ['largenodule_06', -73.57, -47.806, -91.127],
+        ['nodulehanger_01', 55.199, -52.994, -118.09],
+      ].map(([name, x, y, z]) => ({ mesh: `${LEVELS}/sb_endor/meshes/mc80_${name}_mesh`, own: /^MC_80_Met(_lods)?$/, place: at(x, y, z) })),
+    ],
+    // (the hull's first LOD alone is 293,000 triangles: its third, the whole about 90,000)
+    lod: { computer: 2, phone: 3 },
+    have: [256, 512, 1024],
+    // the Mon Calamari's grey, a little blue, under the breakup's mottle
+    // (its own mask, t_mc80_hull_01_combine_rgba, and its relief sheets are
+    // in the private bucket only: the MC80's panel sheet the Endor level's
+    // far cruisers wear stands in for its relief)
+    paint: '#a3abb0',
+    tiling: { normal: tex('endor/deathstar', 't_starcruisermc80panels_01_ns'), tiling: 1, rg: true },
+    // (the breakup the cut carries already, the export's, on the UVs it was made for: its mean the 1,024's, sRGB read linear)
+    // (`hue`, `amount`: a third of its tan and three quarters of its mottle,
+    // or its grime read as rust over a grey hull)
+    breakup: { colour: null, mean: [0.252, 0.194, 0.106], tiling: 1, hue: 0.3, amount: 0.75 },
   },
 };
 
@@ -186,57 +218,78 @@ export function hullMaterial(maps, def, { name = 'M_Hull_01' } = {}) {
   return m;
 }
 
-// the Venator's: its paint under the hull's mask on UV1 (its red the
+// a hull with no colour map of the game's: its paint (`def.paint`), under the
+// hull's mask on UV1 where it has one (the Venator's RGBAUnique: its red the
 // patchwork and grime, by its mean; its green the occlusion, half of it in
 // the paint and the whole of it on the light from the sky and the
 // environment, three's own AO read from green; its alpha the plates' edges;
-// its blue the blotches), and on UV0 the panel sheet's relief with the
-// breakup's colour (by its mean) and relief over it, UDN
+// its blue the blotches), and on UV0 the panel sheet's relief (`rg`: a sheet
+// that keeps only a normal's x and y, its z rebuilt) with the breakup's
+// colour (by its mean; `hue` and `amount` how much of its colour and of its
+// contrast) and, where it has one, its relief over it, UDN
 const MASK = { tone: 0.5, ao: 0.5, edge: [0.8, 1.1], blot: 0.35 };
-export function combineMaterial(maps, def, { name = def.own } = {}) {
+export function paintMaterial(maps, def, { name = def.own } = {}) {
   const m = new THREE.MeshStandardMaterial({ name: `${name}|game`, color: def.paint, roughness: 0.62, metalness: 0 });
   m.userData.gameHull = true;
-  maps.combine.channel = 1;
-  m.aoMap = maps.combine;
-  const sheets = maps.tilingNormal && maps.breakup && maps.breakupNormal;
+  if (maps.combine) {
+    maps.combine.channel = 1;
+    m.aoMap = maps.combine;
+  }
+  const sheets = Boolean(maps.tilingNormal && maps.breakup);
   if (sheets) {
     maps.tilingNormal.channel = 0;
     maps.tilingNormal.repeat.setScalar(def.tiling.tiling);
     m.normalMap = maps.tilingNormal;
   }
   const ratio = def.breakup.tiling / def.tiling.tiling;
-  patchShaders(m, 'gamecombine', (shader) => {
-    shader.uniforms.uGhBreak = { value: maps.breakup };
-    shader.uniforms.uGhBreakN = { value: maps.breakupNormal };
-    shader.fragmentShader = shader.fragmentShader
-      .replace('#include <common>', '#include <common>\nuniform sampler2D uGhBreak;\nuniform sampler2D uGhBreakN;')
-      .replace('#include <aomap_fragment>', THREE.ShaderChunk.aomap_fragment.replace('texture2D( aoMap, vAoMapUv ).r', 'texture2D( aoMap, vAoMapUv ).g'))
-      .replace(
-        '#include <map_fragment>',
-        `#include <map_fragment>
+  const relief = sheets && maps.breakupNormal;
+  patchShaders(m, 'gamepaint', (shader) => {
+    shader.uniforms.uGhBreak = { value: maps.breakup ?? null };
+    shader.uniforms.uGhBreakN = { value: maps.breakupNormal ?? null };
+    let fs = shader.fragmentShader.replace('#include <common>', '#include <common>\nuniform sampler2D uGhBreak;\nuniform sampler2D uGhBreakN;');
+    if (maps.combine) fs = fs.replace('#include <aomap_fragment>', THREE.ShaderChunk.aomap_fragment.replace('texture2D( aoMap, vAoMapUv ).r', 'texture2D( aoMap, vAoMapUv ).g'));
+    fs = fs.replace(
+      '#include <map_fragment>',
+      `#include <map_fragment>${
+        maps.combine
+          ? `
   // (the paint under the hull's mask)
   vec4 ghMask = texture2D( aoMap, vAoMapUv );
-  diffuseColor.rgb *= mix( 1.0, clamp( ghMask.r / ${f(def.combine.tone)}, 0.3, 2.0 ), ${f(MASK.tone)} ) * mix( 1.0, ghMask.g, ${f(MASK.ao)} ) * mix( ${f(MASK.edge[0])}, ${f(MASK.edge[1])}, ghMask.a ) * ( 1.0 - ${f(MASK.blot)} * ghMask.b );${
-    sheets
-      ? `
-  diffuseColor.rgb *= clamp( texture2D( uGhBreak, vNormalMapUv * ${f(ratio)} ).rgb / ${vec3(def.breakup.mean)}, 0.0, 2.0 );`
-      : ''
-  }`,
-      );
+  diffuseColor.rgb *= mix( 1.0, clamp( ghMask.r / ${f(def.combine.tone)}, 0.3, 2.0 ), ${f(MASK.tone)} ) * mix( 1.0, ghMask.g, ${f(MASK.ao)} ) * mix( ${f(MASK.edge[0])}, ${f(MASK.edge[1])}, ghMask.a ) * ( 1.0 - ${f(MASK.blot)} * ghMask.b );`
+          : ''
+      }${
+        sheets
+          ? `
+  vec3 ghB = texture2D( uGhBreak, vNormalMapUv * ${f(ratio)} ).rgb / ${vec3(def.breakup.mean)};
+  ghB = mix( vec3( dot( ghB, vec3( 0.2126, 0.7152, 0.0722 ) ) ), ghB, ${f(def.breakup.hue ?? 1)} );
+  diffuseColor.rgb *= clamp( mix( vec3( 1.0 ), ghB, ${f(def.breakup.amount ?? 1)} ), 0.0, 2.0 );`
+          : ''
+      }`,
+    );
     if (sheets)
-      shader.fragmentShader = shader.fragmentShader.replace(
+      fs = fs.replace(
         '#include <normal_fragment_maps>',
         `#ifdef USE_NORMALMAP_TANGENTSPACE
-  // (the breakup's relief over the panels', UDN: its red and green a normal's x and y)
-  vec3 mapN = texture2D( normalMap, vNormalMapUv ).xyz * 2.0 - 1.0;
+  // (the panels' relief${def.tiling.rg ? ', its z rebuilt from its x and y' : ''}${relief ? ", and the breakup's over it, UDN: its red and green a normal's x and y" : ''})
+  vec3 mapN = texture2D( normalMap, vNormalMapUv ).xyz * 2.0 - 1.0;${
+    def.tiling.rg
+      ? `
+  mapN.z = sqrt( saturate( 1.0 - dot( mapN.xy, mapN.xy ) ) );`
+      : ''
+  }${
+    relief
+      ? `
   vec2 ghBn = texture2D( uGhBreakN, vNormalMapUv * ${f(ratio)} ).xy * 2.0 - 1.0;
-  mapN = normalize( vec3( mapN.xy + ghBn * ${f(def.breakup.strength ?? 1)}, mapN.z ) );
+  mapN = normalize( vec3( mapN.xy + ghBn * ${f(def.breakup.strength ?? 1)}, mapN.z ) );`
+      : ''
+  }
   mapN.xy *= normalScale;
   normal = normalize( tbn * mapN );
 #else
 #include <normal_fragment_maps>
 #endif`,
       );
+    shader.fragmentShader = fs;
   });
   return m;
 }
@@ -395,22 +448,42 @@ export async function dressGameHull(root, kind, { detail = 'high', phone = false
   const size = Object.fromEntries(Object.entries(want).map(([k, n]) => [k, fit(n, def.have)]));
   const lod = phone ? def.lod.phone : def.lod.computer;
   const get = (path, n, opts) => (path && n ? loadTexture(path, n, { aniso, ...opts }) : Promise.resolve(null));
-  const mask = Boolean(def.combine);
-  const [parts, own, sheets] = await Promise.all([
+  const painted = Boolean(def.paint);
+  // (a sheet the cut carries already, on the wrong UVs: the MC80's breakup)
+  const cutMap = () => {
+    const t = size.colour ? ([targets[0].material].flat().find((m) => def.material.test(m?.name ?? ''))?.map ?? null) : null;
+    if (t && t.wrapS !== THREE.RepeatWrapping) {
+      t.wrapS = t.wrapT = THREE.RepeatWrapping;
+      t.needsUpdate = true;
+    }
+    return Promise.resolve(t);
+  };
+  const wanted = painted
+    ? {
+        combine: def.combine ? get(def.combine.map, size.atlas, { srgb: false }) : null,
+        tilingNormal: get(def.tiling.normal, size.normal, { srgb: false, repeat: true }),
+        breakup: def.breakup.colour ? get(def.breakup.colour, size.colour, { srgb: false, repeat: true }) : cutMap(),
+        breakupNormal: def.breakup.normal ? get(def.breakup.normal, size.normal, { srgb: false, repeat: true }) : null,
+      }
+    : {
+        atlas: get(def.atlas.colour, size.atlas, { srgb: true }),
+        orm: get(def.atlas.orm, size.orm, { srgb: false }),
+        panels: get(def.panels.colour, size.colour, { srgb: true, repeat: true }),
+        panelsNormal: get(def.panels.normal, size.normal, { srgb: false, repeat: true }),
+        details: get(def.details.colour, size.colour, { srgb: true, repeat: true }),
+        detailsNormal: get(def.details.normal, size.normal, { srgb: false, repeat: true }),
+      };
+  const [parts, got] = await Promise.all([
     Promise.all(def.parts.map((p) => loadMesh(`${p.mesh}.lod${lod}.glb`, p.own))),
-    // (the hull's own map at the least)
-    mask ? Promise.all([get(def.combine.map, size.atlas, { srgb: false })]) : Promise.all([get(def.atlas.colour, size.atlas, { srgb: true }), get(def.atlas.orm, size.orm, { srgb: false })]),
-    // (and the sheets all or none)
-    mask
-      ? Promise.all([get(def.tiling.normal, size.normal, { srgb: false, repeat: true }), get(def.breakup.colour, size.colour, { srgb: false, repeat: true }), get(def.breakup.normal, size.normal, { srgb: false, repeat: true })])
-      : Promise.all([get(def.panels.colour, size.colour, { srgb: true, repeat: true }), get(def.panels.normal, size.normal, { srgb: false, repeat: true }), get(def.details.colour, size.colour, { srgb: true, repeat: true }), get(def.details.normal, size.normal, { srgb: false, repeat: true })]),
+    Promise.all(Object.entries(wanted).map(([k, v]) => Promise.resolve(v).then((t) => [k, t]))).then(Object.fromEntries),
   ]);
-  // (every part, or the stand-in would lose what it held)
-  if (parts.some((p) => !p) || !own[0]) return false;
-  const all = sheets.every(Boolean);
-  const material = mask
-    ? combineMaterial({ combine: own[0], ...(all ? { tilingNormal: sheets[0], breakup: sheets[1], breakupNormal: sheets[2] } : {}) }, def)
-    : hullMaterial({ atlas: own[0], orm: own[1], ...(all ? { panels: sheets[0], panelsNormal: sheets[1], details: sheets[2], detailsNormal: sheets[3] } : {}) }, def, { name: def.own });
+  // (every part, or the stand-in would lose what it held; the hull's own map
+  // at the least, where it has one; and the sheets all or none)
+  if (parts.some((p) => !p) || (painted ? def.combine && !got.combine : !got.atlas)) return false;
+  const sheetNames = painted ? ['tilingNormal', 'breakup', ...(def.breakup.normal ? ['breakupNormal'] : [])] : ['panels', 'panelsNormal', 'details', 'detailsNormal'];
+  const maps = { ...got };
+  if (!sheetNames.every((k) => maps[k])) for (const k of sheetNames) delete maps[k];
+  const material = painted ? paintMaterial(maps, def) : hullMaterial(maps, def, { name: def.own });
   const rootInverse = new THREE.Matrix4().copy(root.matrixWorld).invert();
   targets.forEach((mesh, i) => {
     // (the first stand-in takes the whole hull; any other is the same hull split, gone)
