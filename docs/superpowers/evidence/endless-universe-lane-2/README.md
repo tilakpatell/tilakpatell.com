@@ -194,3 +194,34 @@ Every baseline pose draws the hand-made places through the new path: written fro
 | `middleearth-limb` | 0 (5) | 39, 37,732 = | 0 (4) | 39, 32,738 = |
 
 The rest is the dither of at most 5 that differs between any two runs (above). `far-rim`'s sky has the far places' stars in it, spikes and all, and they land where they did. High wasn't shot again: the far layer does nothing by tier.
+
+#### Depth, after review
+
+A disc wrote no depth, and the far layer is drawn first in the opaque list, so a mesh farther off, drawn after it, covered it: a generated planet would go behind a hand-made world farther away. The layer now writes depth but tests none (`AlwaysDepth`), so nothing of it hides behind the sky or the far plane. A disc writes its own depth where it covers half a pixel or more; a star or speck writes the far plane's (1, what the depth is cleared to); and so does a faint disc or a disc's rim. The review's fix had the stars and specks keep the depth of where they're drawn, taking them to be past the far plane. They sit at `skyFar`, 24,000, inside it, and the probe below shows what that depth does to a mesh in front of them.
+
+A page that draws the far layer and five `MeshBasicMaterial` balls, through the dev server in headless Chromium (software GL, 640 × 360), the camera 10^9 out, drawn round it (`relative.js`'s `drawn()`): (1) a dark disc (grey 0.05, radius 600) 10,000 ahead, over a red ball of radius 3,000 30,000 ahead; (2) the same disc at alpha 0.1, over another red ball; (3) a green ball 30,000 ahead, over a far place's star 100,000 off; (4) a blue ball over a speck 92,000 off; (5) a grey ball of radius 300 10,000 ahead, over a shining disc 30,000 ahead. Each pixel is read at the middle of what's in front.
+
+| pixel | before | the review's fix as written | after |
+| --- | --: | --: | --: |
+| the dark disc over the red ball | (255, 0, 0): the ball over the disc | (13, 13, 13) | (13, 13, 13) |
+| the faint disc over the red ball | (255, 0, 0) | (1, 1, 1): a hole of sky | (255, 0, 0) |
+| the green ball over a place's star | (0, 255, 0) | (255, 255, 255): the star through the ball | (0, 255, 0) |
+| the blue ball over a speck | (0, 0, 255) | (255, 255, 255): the speck through the ball | (0, 0, 255) |
+| the grey ball over the shining disc | (128, 128, 128) | (128, 128, 128) | (128, 128, 128) |
+| a place and a speck in the open | (255, 255, 255) | (255, 255, 255) | (255, 255, 255) |
+
+Six calls and two programs in each, and no error but the site's missing `/favicon.ico`.
+
+With no discs, as every pose has, nothing changes: before the far layer draws there is only the sky, which writes no depth, so a star writing 1 leaves the depth as it was. The six poses were shot again with the clock stopped (as above), 1280 × 720, against the Task 14 stills. Pixels that differ by more than 8 (of 255) in any channel, out of 921,600:
+
+| pose | mid: over 8 (largest) | mid: calls, triangles | low: over 8 (largest) | low: calls, triangles |
+| --- | --: | --- | --: | --- |
+| `overview` | 0 (5) | 99, 488,962 = | 0 (5) | 98, 486,570 = |
+| `falcon-sun` | 2 (51) * | 81, 473,940 = | 1 (10) † | 80, 471,548 = |
+| `belt` | 0 (4) | 46, 421,298 = | 0 (4) | 46, 418,920 = |
+| `station` | 0 (5) | 69, 459,214 = | 0 (5) | 69, 456,836 = |
+| `far-rim` | 0 (4) | 42, 40,598 = | 0 (5) | 42, 38,220 = |
+| `middleearth-limb` | 0 (0) | 39, 37,732 = | 0 (5) | 39, 32,738 = |
+
+- \* A faint speck at (1085, 657) that the Task 14 still has a pixel higher. That still is the same to the last bit as the PR 2.3 gate's, the one shot on file with the speck there: this shot is the same to the last bit as the lane's Task 11 shot, and 0 over 8 against `main`'s.
+- † The end pixel of a faint line at (1141, 695), 60 in green against 70. To tell the run from the change, `falcon-sun` at low was shot three times back to back: the fix, `886640e4`'s `farStars.js`, the fix again. The first fix and `886640e4` are the same to the last bit, and so are `886640e4` and the Task 14 still; the two fix shots differ from each other by the dither alone (5 at most). The pixel is the first run's own.

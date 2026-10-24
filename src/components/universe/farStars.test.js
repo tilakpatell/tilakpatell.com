@@ -276,6 +276,45 @@ describe('slots', () => {
     stars.dispose();
   });
 
+  it('uploads a frame only the places’ and the discs’ ranges, never a slot’s', () => {
+    const stars = make();
+    const attrs = stars.points.geometry.attributes;
+    const discAt = start(SLOTS.length);
+    const cam = camAt(0, 0, 0);
+    stars.update(cam);
+    const clear = () => Object.values(attrs).forEach((a) => a.clearUpdateRanges());
+    // (each attribute's waiting ranges, as [from, to) in its array)
+    const ranges = () => Object.fromEntries(Object.entries(attrs).map(([k, a]) => [k, a.updateRanges.map((r) => [r.start, r.start + r.count]).sort((x, y) => x[0] - y[0])]));
+    const frame = (discs) => {
+      stars.discs.begin();
+      for (let k = 0; k < discs; k++) stars.discs.push(0, 0, -1000 * (k + 2), 10, 1, 1, 1, 0, 0, 0, 1);
+      stars.discs.end();
+      stars.update(cam);
+    };
+    const span = (size, from, count) => [from * size, (from + count) * size];
+    clear();
+    frame(3);
+    expect(ranges()).toEqual({
+      position: [span(3, 0, 1), span(3, discAt, 3)],
+      aSize: [span(1, 0, 1), span(1, discAt, 3)],
+      aColor: [span(3, 0, 1), span(3, discAt, 3)],
+      aK: [span(1, 0, 1), span(1, discAt, 3)],
+      aBright: [span(1, 0, 1)],
+      aFocus: [span(1, 0, 1)],
+      aLight: [span(3, discAt, 3)],
+      aSlot: [],
+    });
+    // fewer discs the next frame: the ones gone are written too, as nothing
+    clear();
+    frame(1);
+    const r = ranges();
+    for (const k of ['aSize', 'aColor', 'aK', 'aLight']) expect(r[k].at(-1), k).toEqual(span(attrs[k].itemSize, discAt, 3));
+    expect(r.position.at(-1)).toEqual(span(3, discAt, 1));
+    // and nothing over a slot's specks, which only setSlot uploads
+    for (const [k, list] of Object.entries(r)) for (const [a, b] of list) expect(b <= start(0) * attrs[k].itemSize || a >= discAt * attrs[k].itemSize, `${k} ${a}…${b}`).toBe(true);
+    stars.dispose();
+  });
+
   it('draws every vertex, whatever shows, so the discs after the slots are never cut', () => {
     const stars = make();
     const geo = stars.points.geometry;
@@ -352,6 +391,23 @@ describe('discs', () => {
     expect(m.fragmentShader).toMatch(/gl_FragColor = vec4\(c \* smoothstep\(1\.0, 0\.75, r\) \* vK, 0\.0\)/); // (a star's alpha 0: added)
     expect(m.fragmentShader).toMatch(/gl_FragColor = vec4\(vColor \* lit \* a, a\)/); // (a disc's: over)
     stars.dispose();
+  });
+
+  it('writes a disc’s depth where it covers, so a farther mesh drawn after it can’t cover it', () => {
+    // (tested against nothing, so nothing of it hides behind the sky or the far plane)
+    const m = createFarStars(new THREE.Group(), { places: [], skyFar: 24000, discs: 3 }).points.material;
+    expect([m.transparent, m.depthTest, m.depthFunc, m.depthWrite]).toEqual([false, true, THREE.AlwaysDepth, true]);
+    // (where it covers at least half the pixel, as a solid edge is drawn; a
+    // faint disc, or its rim, lets what's behind it show rather than a hole)
+    expect(m.fragmentShader).toMatch(/gl_FragDepth = a >= 0\.5 \? gl_FragCoord\.z : 1\.0;\s*gl_FragColor = vec4\(vColor \* lit \* a, a\)/);
+  });
+
+  it('writes a star’s and a speck’s depth as the far plane’s, so it never cuts a mesh in front of it', () => {
+    // (it sits at skyFar, inside the far plane, not where it is)
+    const f = createFarStars(new THREE.Group(), { places: [], skyFar: 24000 }).points.material.fragmentShader;
+    expect(f).toMatch(/gl_FragDepth = 1\.0;\s*gl_FragColor = vec4\(c \* smoothstep\(1\.0, 0\.75, r\) \* vK, 0\.0\)/);
+    // (and every fragment not thrown away writes one)
+    expect(f.match(/gl_FragDepth =/g)).toHaveLength(f.match(/gl_FragColor =/g).length);
   });
 
   it('takes its numbers from the levels, so the chip cannot drift from them', () => {

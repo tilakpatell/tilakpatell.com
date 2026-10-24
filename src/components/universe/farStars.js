@@ -38,7 +38,15 @@
 // (in the parent's space), so what goes to the chip is small and exact even
 // 10^9 out. Blending is premultiplied: a star or speck writes alpha 0, so it
 // adds as it always has, and a disc writes its cover; drawn after them, a
-// dark rock hides the places and specks behind it. Every vertex is drawn
+// dark rock hides the places and specks behind it. It writes depth but
+// tests none: a disc writes its own where it covers half a pixel or more,
+// so a world farther off, drawn after it, can't cover it; a star or speck
+// writes the far plane's, as it sits on the sky (skyFar, inside the far
+// plane), not where it is, so it never cuts a mesh in front of it; and so
+// does a faint disc or a disc's rim, so what's behind shows through it, not
+// a hole of sky. What one draw can't do: a place's star nearer than a disc
+// in line with it is covered by the disc (the place is drawn first, on the
+// sky). It's rare and brief, and left as it is. Every vertex is drawn
 // (the hidden are put out of the frame, so they cost next to nothing). The
 // shaders take their numbers from levels.js's and this file's, so the chip
 // can't drift from the rules.
@@ -199,7 +207,8 @@ const VERT = /* glsl */ `
 // (galaxy/sky.js's beacon: a hot core, a glow in its colour, a cross of
 // spikes, brighter for the brighter stars and the one in focus; a disc is a
 // ball in its colour, lit from its star or shining, its rim smoothed, and
-// under a pixel across it covers only what it would)
+// under a pixel across it covers only what it would. A star's depth is the
+// far plane's, a disc's its own where it covers half the pixel or more)
 const FRAG = /* glsl */ `
   varying vec3 vColor;
   varying float vK;
@@ -220,6 +229,7 @@ const FRAG = /* glsl */ `
         lit = 0.04 + 0.96 * max(dot(n, normalize(vLight)), 0.0);
       }
       float a = vK * (1.0 - smoothstep(1.0 - 2.0 / max(vPx, 2.0), 1.0, r)) * min(1.0, vPx * vPx);
+      gl_FragDepth = a >= 0.5 ? gl_FragCoord.z : 1.0;
       gl_FragColor = vec4(vColor * lit * a, a);
       return;
     }
@@ -227,6 +237,7 @@ const FRAG = /* glsl */ `
     float glow = exp(-r * 5.5) * 0.9;
     float spikes = (exp(-abs(q.x) * 30.0) + exp(-abs(q.y) * 30.0)) * (1.0 - r) * (smoothstep(0.3, 0.8, vBright) * 0.5 + vFocus * 0.8);
     vec3 c = vColor * (glow + spikes) + vec3(1.6 + vFocus * 1.4) * core;
+    gl_FragDepth = 1.0;
     gl_FragColor = vec4(c * smoothstep(1.0, 0.75, r) * vK, 0.0);
   }
 `;
@@ -271,10 +282,13 @@ export function createFarStars(parent, { places, skyFar, slots = [], discs = 0 }
   geo.setAttribute('aSlot', new THREE.BufferAttribute(kind, 1));
   const U = Array.from({ length: Math.max(1, S) }, () => new THREE.Vector4());
   // In the opaque list (transparent false) just after the sky and before
-  // anything else there: with the depth test off a star never hides behind
-  // the far plane or the sky, and anything solid drawn after it (a near
-  // planet in front of a far one) still covers it. Premultiplied: a star
-  // adds (its alpha 0) and a disc covers (its alpha its cover)
+  // anything else there. Tested against nothing (AlwaysDepth), so nothing of
+  // it hides behind the far plane or the sky; but it writes depth: a disc
+  // its own, so a mesh farther off drawn after it fails against it, and a
+  // star or speck the far plane's (1, what the depth is cleared to), so
+  // anything solid drawn after it (a near planet in front of a far one)
+  // still covers it. Premultiplied: a star adds (its alpha 0) and a disc
+  // covers (its alpha its cover)
   const mat = new THREE.ShaderMaterial({
     vertexShader: VERT,
     fragmentShader: FRAG,
@@ -285,8 +299,9 @@ export function createFarStars(parent, { places, skyFar, slots = [], discs = 0 }
     blendSrc: THREE.OneFactor,
     blendDst: THREE.OneMinusSrcAlphaFactor,
     transparent: false,
-    depthTest: false,
-    depthWrite: false,
+    depthTest: true,
+    depthFunc: THREE.AlwaysDepth,
+    depthWrite: true,
   });
   const points = new THREE.Points(geo, mat);
   points.name = 'far-stars';
