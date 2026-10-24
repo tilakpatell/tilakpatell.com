@@ -5,9 +5,10 @@
 // keynote run out, then the job), and Rick's rooms on the Vindicators' ship
 // played through their overlay (a room by keys, a wrong pick by click, Esc
 // mid-trial, the rest by clicks), the episode's end; a returner whose old
-// crew ticked Heist-Con; and one who did the Vindicators first.
+// crew ticked Heist-Con; and one who did the Vindicators first. Each ends on
+// episode 13's card.
 /* global window, document */
-import { check, use, reads, at, opens, toast, playTo, game, later, warpUse, caught, spotAt, wayInOf, goalIs, noLink, meter, meterSays, warp, hunting, inArea, openOnCard, dial, home, notDone, ticked, done, PLACES, N, SECTOR, SCORE, CABLE, ROOMS } from './helpers.mjs';
+import { check, use, reads, at, opens, toast, playTo, game, later, warpUse, caught, spotAt, wayInOf, goalIs, noLink, meter, meterSays, warp, hunting, inArea, openOnCard, cardFor, dial, home, notDone, ticked, done, isDone, achieved, PLACES, N, SECTOR, SCORE, EVIL, ROOMS } from './helpers.mjs';
 
 const H = PLACES.dest('heistcon');
 const JOB = H.sequence;
@@ -56,14 +57,6 @@ const crewHunting = (page) =>
     throw new Error('Miles’s crew didn’t both come after him');
   });
 // a task done, and an achievement earned
-const isDone = (page, id, what) =>
-  page.waitForFunction((id) => JSON.parse(localStorage.getItem('tp-c137-done') ?? '[]').includes(id), id, { timeout: 30000, polling: 100 }).catch(() => {
-    throw new Error(what);
-  });
-const achieved = (page, id, what) =>
-  page.waitForFunction((id) => JSON.parse(localStorage.getItem('tp-achievements') ?? '[]').includes(id), id, { timeout: 30000, polling: 250 }).catch(() => {
-    throw new Error(what);
-  });
 // the booths lifted in the order dealt, from the job's start
 const lift = async (page) => {
   await crewUp(page);
@@ -71,11 +64,10 @@ const lift = async (page) => {
   await jobIs(page, { phase: 'run' }, 'the plan didn’t start the job');
   for (const id of (await job(page)).order) await press(page, id);
 };
-// the episode over: its closing line, no card (episode 13 isn't built), every place open
+// the episode over: its closing line and episode 13's card, every place open
 const over = async (page, when) => {
   await toast(page, SCORE.outro[0][1]);
-  await page.waitForTimeout(1500);
-  check((await page.locator('.rm-episode').count()) === 0, `a card showed ${when}`);
+  await cardFor(page, 12);
   await at(page, 12, 0, when);
   await opens(page, PLACES.dial, true, when);
 };
@@ -252,7 +244,7 @@ export const SCORE_CHECKS = {
     check((await rooms(page).count()) === 0, 'the rooms stayed open once won');
     await over(page, 'after episode 12');
     await home(page, 'vindicators');
-    await reads(page, CABLE);
+    await reads(page, EVIL.steps[0].text);
     for (const id of SCORE.unlocks) check((await page.evaluate((id) => window.__C137__.dial(id), id)) === id, `the dial wouldn’t take ${id} after episode 12`);
   },
 
