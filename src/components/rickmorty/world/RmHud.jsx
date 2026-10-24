@@ -4,6 +4,7 @@ import { PowerBar } from '../../universe/shared/powerBar';
 import { Link as RouterLink } from 'react-router-dom';
 import { RiArrowDownLine, RiArrowLeftLine, RiArrowUpLine, RiCheckLine, RiCloseLine, RiCrosshair2Line, RiEmotionLaughLine, RiEyeLine, RiHeart3Line, RiHome4Line, RiListCheck2, RiFlashlightLine, RiLiveLine, RiPlantLine, RiSearchEyeLine, RiShieldLine, RiShirtLine, RiTimerLine, RiToolsLine, RiTyphoonLine } from 'react-icons/ri';
 import { EMOTES, wheelAngle } from '../../../lib/emote';
+import { local } from '../../../lib/hooks';
 import { Arms, Cluster, Prompt, Reticle, Stick, TouchButton, Vitals, createFlightCluster, reticleState } from '../../../runtime/hud';
 import { enemyShare, heartsToHealth } from './vitalsOf';
 import { PROMPT as LOOK_PROMPT } from '../../../runtime/look';
@@ -561,6 +562,8 @@ function ThingsToDo({ box, prog, done, onClose, back, planet }) {
   const [voice, setVoice] = useState(shipVoiceOn);
   const [tab, setTab] = useState('story');
   const story = useAdventure();
+  // (the Citadel's scenes made, to tick its step if made before it came up)
+  const [citadel] = useState(() => local.get('tp-citadel-done', []));
   const { label, rows, rest } = listOf(planet, done);
   const home = homeLink(planet);
   return (
@@ -584,7 +587,7 @@ function ThingsToDo({ box, prog, done, onClose, back, planet }) {
         ))}
       </div>
       <div className="rm-list-panel" id="rm-list-panel" role="tabpanel" aria-labelledby={`rm-tab-${tab}`}>
-        {tab === 'story' ? <StoryList state={story.state} tasks={done} /> : <Checklist rows={rows} rest={rest} next={prog.next} />}
+        {tab === 'story' ? <StoryList state={story.state} tasks={done} citadel={citadel} /> : <Checklist rows={rows} rest={rest} next={prog.next} />}
       </div>
       <label className="rm-list-switch">
         <input
