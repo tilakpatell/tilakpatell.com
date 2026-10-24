@@ -87,6 +87,8 @@ import { GLOW, glowAt } from '../universe/battleFx';
 import { bloomGroups } from '../../lib/three/bloom';
 import { LOOK } from './look';
 import { createCapitalShadows, shadowSize } from './capitalShadow';
+import { sendDetailWith } from './capitalPlating';
+import { warm as warmTextures } from '../../lib/three/textures';
 import { followRatio } from './drawnAt';
 import { houseOn } from '../../lib/three/house';
 import { SHIP, TUNE, autopilot, forward, spawn, step } from '../universe/ship';
@@ -290,6 +292,9 @@ export async function create(canvas, ctx) {
   // anything's compiled, where the device draws shadows, so every shader's
   // made once with it
   const shadows = createCapitalShadows({ renderer, sun: keys[0], size: shadowSize(device(), budget()) });
+  // (the capitals' plating's detail map, baked in its worker, sent in spare
+  // time before the hulls take it: capitalPlating.js)
+  sendDetailWith((t) => warmTextures(renderer, [t], { idle: true }));
   const ambient = new THREE.AmbientLight(LOOK.space.ambient, 0.32);
   // (inside a level's area of its own, the scene under its light: areaLook.js)
   let areaLook = null;
@@ -3083,6 +3088,7 @@ export async function create(canvas, ctx) {
       fleet.dispose();
       models.dispose();
       shadows?.dispose();
+      sendDetailWith(null);
       bolts.dispose();
       flashes.dispose();
       speedLines.dispose();

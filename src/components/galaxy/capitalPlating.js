@@ -50,6 +50,26 @@ export function detailTexture(pixels, size) {
   t.needsUpdate = true;
   return t;
 }
+// who sends a new map to the GPU before the hulls take it (galaxy/scene.js:
+// its renderer, in spare time): a 2,048 map and its mips sent in the frame
+// that first drew it was a hitch; without one, it goes up then all the same
+let send = null;
+export const sendDetailWith = (fn) => {
+  send = fn;
+};
+// the worker's map in the shared uniform, once it's been sent
+export function takeDetail(next, size) {
+  return Promise.resolve(send ? send(next) : null)
+    .catch(() => {})
+    .then(() => {
+      // (a bigger one asked for since)
+      if (size !== DETAIL.size) return void next.dispose();
+      const was = DETAIL.value;
+      DETAIL.value = next;
+      was?.dispose();
+    });
+}
+
 // the shared uniform, its map at `size` asked for (the biggest asked wins;
 // where there's no worker, the flat one stays)
 export function detailMap(size) {
@@ -66,9 +86,7 @@ export function detailMap(size) {
   worker.onmessage = ({ data }) => {
     worker.terminate();
     if (data?.size !== DETAIL.size) return; // (a bigger one asked for since)
-    const was = DETAIL.value;
-    DETAIL.value = detailTexture(data.pixels, data.size);
-    was?.dispose();
+    takeDetail(detailTexture(data.pixels, data.size), data.size);
   };
   worker.onerror = () => worker.terminate();
   worker.postMessage({ size });

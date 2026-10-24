@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
-import { MAPPED, detailMap, detailTexture, panes, plate } from './capitalPlating';
+import { MAPPED, detailMap, detailTexture, panes, plate, sendDetailWith, takeDetail } from './capitalPlating';
 
 // a material as three compiles it: its shaders, the uniforms they're handed
 const compiled = (m) => {
@@ -70,6 +70,30 @@ describe('capitalPlating', () => {
     const shared = detailMap(4096);
     expect(shared.value.image.width).toBe(1);
     expect(Array.from(shared.value.image.data)).toEqual([128, 128, 128, 0]);
+  });
+
+  it('takes the worker’s map only once it’s been sent to the GPU, and drops one a bigger ask has passed', async () => {
+    const shared = detailMap(4096);
+    const before = shared.value;
+    let sent = null;
+    let done;
+    sendDetailWith((t) => {
+      sent = t;
+      return new Promise((r) => (done = r));
+    });
+    const next = detailTexture(new Uint8Array(4 * 4 * 4), 4);
+    const took = takeDetail(next, 4096);
+    await Promise.resolve();
+    expect(sent).toBe(next);
+    expect(shared.value).toBe(before);
+    done();
+    await took;
+    expect(shared.value).toBe(next);
+    // (one for a size since passed: dropped, the shared one kept; with no sender, taken straight)
+    sendDetailWith(null);
+    const stale = detailTexture(new Uint8Array(4 * 4 * 4), 4);
+    await takeDetail(stale, 2048);
+    expect(shared.value).toBe(next);
   });
 
   it('makes the baked map a tiling, mipmapped data texture', () => {
