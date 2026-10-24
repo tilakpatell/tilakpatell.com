@@ -6,7 +6,7 @@
 // after; a returner who'd done all three places before it was built, and one
 // who'd done the lair first.
 /* global window, document */
-import { check, use, reads, at, opens, toast, playTo, later, warpUse, warp, caught, spotAt, wayInOf, goalIs, noLink, hunting, inArea, open, openOnCard, dial, home, notDone, ticked, done, isDone, achieved, gun, PLACES, EVIL, SCORE, CABLE } from './helpers.mjs';
+import { check, use, reads, at, opens, toast, playTo, later, warpUse, warp, caught, spotAt, wayInOf, goalIs, noLink, hunting, inArea, open, openOnCard, dial, home, notDone, ticked, isDone, achieved, gun, PLACES, EVIL, SCORE, CABLE } from './helpers.mjs';
 
 const [DOME, LAIR, EYEPATCH, BENCH_STEP] = EVIL.steps;
 // a stand in Rick's garage where the bench (the dial) is the nearest thing
@@ -135,7 +135,13 @@ export const EVIL_CHECKS = {
     await opens(page, SCORE.unlocks, true, 'at episode 13');
     await reads(page, DOME.text);
     await noLink(page, 'in C-137');
-    check(!(await page.locator('.rm-list-rest', { hasText: 'whole story' }).count()), 'the story read as over at episode 13');
+    await page.keyboard.press('m');
+    const tab = page.locator('#rm-list');
+    await tab.waitFor({ timeout: 10000 });
+    check((await tab.locator('.rm-list-rest', { hasText: 'whole story' }).count()) === 0, 'the story read as over at episode 13');
+    check((await tab.getByText('More of the story soon.').count()) === 0, 'the Story tab says there’s more to come at episode 13');
+    await page.keyboard.press('m');
+    await tab.waitFor({ state: 'detached', timeout: 10000 });
     await page.evaluate(() => window.__C137__.goto('garage', -302.3, 101.4, Math.PI));
     await inArea(page, 'garage');
     await goalIs(page, 'garage-portal', 'in the garage');
@@ -173,13 +179,20 @@ export const EVIL_CHECKS = {
     await at(page, 12, 2, 'after Evil Rick');
     await goalIs(page, 'evilmorty', 'with Evil Rick down');
 
-    // the Morty with the eyepatch: his reveal read before it counts
+    // the Morty with the eyepatch: through his portal while it's open (4 s
+    // of the place's time, evilrick.js's), his reveal read before what
+    // follows covers it, and then the tick told
     await warpUse(page, 'evilrick', 'evilmorty', ...spotAt('evilrick', 'evilmorty'));
     await toast(page, said('evilrick', 'evilmorty'));
-    await page.waitForTimeout(4000);
-    check((await page.locator('.rm-toast', { hasText: said('evilrick', 'evilmorty') }).count()) === 1, 'the reveal was covered before it was read');
-    check(!(await done(page)).includes('evilmorty'), 'the talk counted before the reveal was read');
+    const t0 = await page.evaluate(() => window.__C137__.sim.t);
     await isDone(page, 'evilmorty', 'the talk didn’t tick the Morty with the eyepatch');
+    const gone = (await page.evaluate(() => window.__C137__.sim.t)) - t0;
+    check(gone < 3.9, `the Morty with the eyepatch outstayed his portal (gone at ${gone.toFixed(1)} s)`);
+    await page.waitForTimeout(Math.max(0, 4000 - gone * 1000));
+    check((await page.locator('.rm-toast', { hasText: said('evilrick', 'evilmorty') }).count()) === 1, 'the reveal was covered before it was read');
+    await page.locator('.rm-toast', { hasText: /\d+ of \d+ done/ }).waitFor({ timeout: 10000 }).catch(() => {
+      throw new Error('the reveal’s tick was never told');
+    });
     await achieved(page, 'evilmorty', 'The one behind him wasn’t earned');
     await at(page, 12, 3, 'after the talk');
     await reads(page, BENCH_STEP.text);
