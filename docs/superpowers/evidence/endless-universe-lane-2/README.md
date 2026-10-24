@@ -262,3 +262,57 @@ A Node check, not committed, at `a7d07a90` and after the fix: `createDiscs` fed 
 | a feed's heap, at step 0 (KiB, over 100 feeds after a collection) | 436 | 24 |
 
 The feeds are timed after 60 to warm up, 300 at each pose, the least of three rounds, the old `discs.js` and `orbits.js` beside the new in one run. What's left on the heap is the engine's: a heap profile puts 9 KiB of it in the sort's working copy and the rest in numbers it boxes, `levelWeights`' among them, and nothing in `orbitAt` or `moonAt`. The new `orbitAt` against the old over four sectors' planets and moons at four times: 262 of 41,192 positions differ, in their last bit, 6 × 10⁻¹¹ at most.
+
+### Task 16: the nearest systems built
+
+`84b8b31d` on `eu/lane-2`: `expanse/scene/near.js` and its tests (20, beside it); `sectors.js` down to the wonders, with `slotOf` for the far layer; the Expanse's wiring (slots, discs, near.js, `now`); and the universe's face `universe/shared/far.js`. `scene.js` isn't touched: 6,374 lines before and after. Health: boundary breaks 485 before and after (the sector file's two reaches into the universe go; `near.js` and its test reach `galaxy/bodies`), GLSL sites 613 to 614 (the ring's `ShaderMaterial`, within the budget of 619).
+
+#### Made, shown and let go: a flight in Node
+
+A Node check, not committed: the legacy 3 × 3 round `E:1,0` (sectors through `addBodies(makeSector(…))`) in a real far layer (its slots set and shown, its room for discs the tier's budget times 1.5), the discs fed with `built: near.built`, `near.js` building real bodies (`buildBody`, textures stubbed), the camera flown at 15 units a frame from 40,000 above `E:1,0:1` (a ringed rock and its moon, two more planets, five moons in all; reach 1,383, build reach 1,492) in to half its build reach and out again to twice it, the shared clock running from 1.7 × 10⁹, `pops()` asked from the first frame.
+
+| tier | frames | bodies made | made from | shown from | let go at | pops (px) | `near.update`, mean / worst (ms) |
+| --- | --: | --: | --: | --: | --: | --: | --- |
+| low | 2,769 | 8 | 1,706 | 1,586 | 1,940 | 0 | 0.038 / 26.97 |
+| mid | 2,769 | 8 | 1,706 | 1,586 | 1,940 | 0 | 0.046 / 24.74 |
+| high | 2,769 | 8 | 1,706 | 1,631 | 1,940 | 0 | 0.017 / 8.99 |
+
+It's made from 1.15 of its build reach (1,716, the first frame inside), shown before its discs begin to give way (1,492), and let go at 1.3 of it (1,940). The worst frame is the one a big body is made in: a body is made whole, and its sphere and air take 8 to 25 ms here (the hand-off notes say what's left).
+
+#### No unbuilt disc past the cap
+
+Task 15 found a disc 3,448 px across at a planet's surface just outside its system's reach. The same flights, along each planet's line from 1.6 build reaches in to the planet's surface at 15 units a frame, for the first 40 systems of `E:1,0`, discs at 1,080 px and 34°, drawn at over half:
+
+| | biggest disc | where |
+| --- | --: | --- |
+| nothing built | 3,698 px | `E:1,0:9:1`, the camera 790 from its star |
+| built by `near.js`: a system not shown | 416 px | `E:1,0:10:0`, 1,247 from its star (build reach 1,079) |
+| built by `near.js`: a system shown | 3,369 px | `E:1,0:8:4`, 2,019 from its star (build reach 2,162) |
+
+Under the 512 px a chip draws as one point at the least, wherever a system isn't built. A shown system's discs can be big while they fade (over the last fifth of its build reach), but each sits behind its own mesh: its depth is its middle's, and the mesh's near side is nearer.
+
+#### Drawn for real
+
+`lab/near/check.mjs` (not committed): the dev server in headless Chromium (software GL, 960 × 540), a pose held so the ship's flying, then the ship and a held view moved past the rim to `E:1,0:1` (at t = 0: the scene doesn't pass `now` till Task 17). The Expanse wakes, its sectors come in, and `near.js` makes and shows the system: in 9 s at low and 10 s at mid, its star, three planets, five moons and the rock's ring (no `prepare` given yet, so it shows once made). Then four views, each a frame's calls and triangles:
+
+| view | low: calls, triangles | mid: calls, triangles |
+| --- | --- | --- |
+| 9 radii off the ringed rock, on its day side | 33, 16,294 | 31, 10,082 |
+| 3.2 radii off it | 34, 25,798 | 34, 25,800 |
+| by the star, looking at it | 31, 5,542 | 31, 5,544 |
+| 34 radii off the rock: the system | 37, 16,358 | 35, 16,328 |
+
+The rock wears its look, lit from its star's side; the ring lies in its orbit plane, its bands soft, behind the rock and in front of it; the moon and the other planets are there in their looks. No page error and no shader error. The console's errors are seven 403s, all the dev server refusing files from `node_modules`, which in this worktree is a link to another checkout (the fonts and three's basis transcoder); its warnings are the frame guard's on the scene's own shaders: the PMREM generator's, remade as the key light's star changes on the way out, and a station's dish at low. None names a mesh of `near.js`. The star is the flat ball in its colour the Expanse always drew it as.
+
+#### The baseline poses
+
+Inside the rim the Expanse sleeps, and asleep nothing of this task runs: `createExpanse` adds one empty group (`expanse-near`) and makes nothing else till it wakes, so no pose gains a call or a triangle. Four poses shot at low with `universe-check.mjs --frames 3` (the clock running), beside the lane's stopped-clock figures from Task 14:
+
+| pose | this commit: calls, triangles | Task 14, the clock stopped |
+| --- | --- | --- |
+| `overview` | 99, 486,650 | 98, 486,570 |
+| `falcon-sun` | 80, 471,548 | 80, 471,548 |
+| `station` | 65, 454,558 | 69, 456,836 |
+| `far-rim` | 42, 38,232 | 42, 38,220 |
+
+They sit inside low's own spread from run to run (above: `main` against `main` moves by more), and `far-rim`, where the rim's line is, is the same picture as `main`'s but for the engine's glow (5,058 of 921,600 pixels over 8). Task 17 shoots all ten with the clock stopped, at every tier, once it's wired.
