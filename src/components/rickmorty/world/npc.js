@@ -119,7 +119,9 @@ export function createNpcs({ id, area: A, solids = [], words = {}, others = null
 
   // a step towards `to` for `n`, round the solids, the others, whoever
   // stands about and (unless it's after him) Morty (context steering,
-  // lib/ai/steer.js): where it's heading, or null if it's stuck
+  // lib/ai/steer.js): where it's heading, or null if it's stuck. A hunter
+  // only minds the solids nearer than Morty: a counter at his back is no
+  // wall between them (it would mask every way to him, and he'd never be caught)
   const steerTo = (n, to, speed, dt, { round = true } = {}) => {
     const g = n.c.group;
     const from = { x: g.position.x, z: g.position.z };
@@ -128,7 +130,8 @@ export function createNpcs({ id, area: A, solids = [], words = {}, others = null
     ctx.danger.fill(0);
     seek(ctx, from, to, 1);
     const vel = { x: Math.cos(n.heading ?? 0) * speed, z: -Math.sin(n.heading ?? 0) * speed };
-    for (const b of blocks) avoid(ctx, from, vel, b, 0.45, 2.5);
+    const toT = Math.hypot(to.x - from.x, to.z - from.z);
+    for (const b of blocks) if (round || Math.hypot(b.at.x - from.x, b.at.z - from.z) - b.r < toT) avoid(ctx, from, vel, b, 0.45, 2.5);
     for (const b of crowd.posts) avoid(ctx, from, vel, b, 0.35, 1.5);
     if (round && crowd.morty) avoid(ctx, from, vel, crowd.morty, 0.35, 1.5);
     separate(
