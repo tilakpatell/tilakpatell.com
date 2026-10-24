@@ -2,7 +2,10 @@
 // black sky with a ring of rocks across it and two close moons; mushrooms of
 // three sizes, mushroom-shaped houses, the king's pyramid palace at the north
 // with his podium before it; King Flippy Nips on the steps, Scroopy Noopers
-// with his protest sign, and Plutonians gathered to hear the speech.
+// with his protest sign, and Plutonians gathered to hear the speech. On the
+// palace's front hang four banners, each a claim about Pluto: the deal's
+// things (../games/deal.js), weighed up and told the king; a claim told and
+// the king cheers, and the rally with him.
 
 import { BALL, CYL, fitText } from '../interiors/shell';
 import { specks, stage } from './stage';
@@ -18,17 +21,28 @@ export async function buildPluto(kit) {
   const pal = R.frame(px, pz, 0);
   for (let i = 0; i < 5; i++) pal.box(i % 2 ? 0xb8c8e8 : 0xa8b8d8, 0, i * 1.4, 0, 14 - i * 2.6, 1.4, 8 - i * 1.4);
   pal.box(0xe8c84a, 0, 7, 0, 1.6, 1, 1.4);
-  // the steps down its front to the podium, and the king's banner
+  // the steps down its front to the podium, and the king's banners: his
+  // crest over a claim, west to east as the claims' spots stand
   pal.box(0xc8d4ee, 0, 0, 4.4, 4, 0.35, 1.2);
-  R.cell('plutobanner', 64, 128, (g, w, h) => {
-    g.fillStyle = '#8a1a2a';
-    g.fillRect(0, 0, w, h);
-    g.fillStyle = '#e8c84a';
-    g.beginPath();
-    g.arc(w / 2, h / 2, 18, 0, Math.PI * 2);
-    g.fill();
-  });
-  for (const u of [-4.5, 4.5]) pal.decal('plutobanner', u, 3.2, 4.02, 1.4, 2.8);
+  for (const [u, id, a, b] of [
+    [-5.4, 'claim-growing', 'IS', 'GROWING'],
+    [-2.2, 'claim-moons', 'HAS TWO', 'MOONS'],
+    [2.2, 'claim-mines', 'HAS NO', 'MINES'],
+    [5.4, 'claim-planet', 'IS A', 'PLANET'],
+  ]) {
+    R.cell(`pluto-${id}`, 96, 192, (g, w, h) => {
+      g.fillStyle = '#8a1a2a';
+      g.fillRect(0, 0, w, h);
+      g.fillStyle = '#e8c84a';
+      g.beginPath();
+      g.arc(w / 2, 34, 18, 0, Math.PI * 2);
+      g.fill();
+      fitText(g, 'PLUTO', w / 2, 84, w - 12, 24, { color: '#f6e8b0' });
+      fitText(g, a, w / 2, 118, w - 12, 20, { color: '#f6e8b0' });
+      fitText(g, b, w / 2, 148, w - 12, 22, { color: '#e8c84a' });
+    });
+    pal.decal(`pluto-${id}`, u, 3.2, 4.02, 1.4, 2.8);
+  }
   // the podium
   R.frame(...P(0, -9.2), 0).box(0x5a3a2a, 0, 0, 0, 1.2, 1.15, 0.8).cyl(0x2a2a2a, 0, 1.15, -0.2, 0.03, 0.35);
 
@@ -72,6 +86,17 @@ export async function buildPluto(kit) {
   // lamps on posts round the gathering
   for (const dx of [-6, 6]) R.frame(...P(dx, -7), 0).cyl(0x3a3a4a, 0, 0, 0, 0.08, 3).glow(CYL, 0x9adcff, 1.5, 0, 3, 0, 0, 0.5, 0.3, 0.5);
 
-  S.people();
-  return S.done(LIGHT);
+  // the king, to cheer a claim told; and the rally hops with him
+  let king = null;
+  S.people({ who: { flippynips: { onPlace: (c) => (king = c) } } });
+  let told = 0;
+  const area = S.done(LIGHT, () => {
+    const n = S.taken().length;
+    if (n > told) {
+      area.actions.hop?.();
+      king?.play?.('cheer', { hold: 0.2 });
+    }
+    told = n;
+  });
+  return area;
 }

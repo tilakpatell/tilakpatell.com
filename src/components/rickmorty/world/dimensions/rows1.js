@@ -201,20 +201,7 @@ export const ROWS = [
       'bcrystal-grass': { who: null, text: 'It sings one note as you lift it, and the grass leans after it.' },
     },
     // the crystals picked up, every one, up the clay where it crumbles: the climb (../games/climb.js)
-    climb: {
-      task: 'birdworld',
-      top: null,
-      foot: null,
-      spot: null,
-      picks: ['bcrystal-path', 'bcrystal-trees', 'bcrystal-east', 'bcrystal-west', 'bcrystal-grass'],
-      stairs: CLAY_TOWERS.stairs,
-      who: null,
-      lost: 'The clay crumbled under you: a drum that cracks is about to go.',
-      fell: 'A long way down, but the grass is soft.',
-      words: { still: 'The clay’s holding: up you go', shiver: 'It’s cracking: off it before it crumbles', bite: 'It’s crumbling: wait till it holds', up: (m) => `${m} m up the clay`, found: (n, of) => `${n} of ${of} crystals found` },
-      meter: { title: 'Bird World’s crystals', label: 'Crystals', icon: 'gem' },
-      unlock: null,
-    },
+    climb: { task: 'birdworld', top: null, foot: null, spot: null, picks: ['bcrystal-path', 'bcrystal-trees', 'bcrystal-east', 'bcrystal-west', 'bcrystal-grass'], stairs: CLAY_TOWERS.stairs, who: null, lost: 'The clay crumbled under you: a drum that cracks is about to go.', fell: 'A long way down, but the grass is soft.', words: { still: 'The clay’s holding: up you go', shiver: 'It’s cracking: off it before it crumbles', bite: 'It’s crumbling: wait till it holds', up: (m) => `${m} m up the clay`, found: (n, of) => `${n} of ${of} crystals found` }, meter: { title: 'Bird World’s crystals', label: 'Crystals', icon: 'gem' }, unlock: null },
     goal: 'bcrystal-path',
     // (the achievement stays on the knock)
     unlock: { door: 'birdworld' },
@@ -542,6 +529,11 @@ export const ROWS = [
       { id: 'flippynips', dx: 0, dz: -12, label: 'King Flippy Nips', verb: 'Talk' },
       { id: 'podium', dx: 0, dz: -7.6, label: 'The podium', verb: 'Speak' },
       { id: 'scroopy', dx: 11, dz: -2, label: 'Scroopy Noopers', verb: 'Talk' },
+      // the claims on the palace's banners, west to east (the deal, below)
+      { id: 'claim-growing', dx: -5.4, dz: -13.2, label: 'Pluto is growing', verb: 'Weigh up', r: 1.2 },
+      { id: 'claim-moons', dx: -2.2, dz: -13.2, label: 'Pluto has two moons', verb: 'Weigh up', r: 1.2 },
+      { id: 'claim-mines', dx: 2.2, dz: -13.2, label: 'Pluto has no mines', verb: 'Weigh up', r: 1.2 },
+      { id: 'claim-planet', dx: 5.4, dz: -13.2, label: 'Pluto is a planet', verb: 'Weigh up', r: 1.2 },
     ],
     solids: [
       { id: 'palace', dx: 0, dz: -19, w: 14, d: 8 },
@@ -551,13 +543,21 @@ export const ROWS = [
       { id: 'house-b', dx: -22, dz: 7, r: 3 },
       { id: 'house-c', dx: 21, dz: 8, r: 3 },
     ],
-    tasks: [{ id: 'pluto', name: 'Tell Pluto it’s a planet', hint: 'Land on Pluto in the Rick and Morty sector, and step up to the king’s podium.' }],
+    tasks: [{ id: 'pluto', name: 'Tell the king what’s true', hint: 'Land on Pluto in the Rick and Morty sector, and tell the king only the claims on his palace that are true: weigh up two at most, and Scroopy calls out a lie.' }],
     say: {
       flippynips: { who: 'King Flippy Nips', text: 'Pluto is a planet! The scientists say so. The scientists who work for me say so.' },
       podium: { who: null, text: 'You step up to the podium. “Pluto is a planet.” They cheer for a long, long time.' },
       scroopy: { who: 'Scroopy Noopers', text: 'Pluto’s shrinking, kid. They’re mining the core. Nobody wants to hear it.' },
+      'claim-growing': { who: null, text: 'Scroopy’s sign across the plain says otherwise, in red.' },
+      'claim-moons': { who: null, text: 'Two moons hang low over the palace, and the king has them counted every night.' },
+      'claim-mines': { who: null, text: 'Out past the plain the mine wheels are turning, all night long.' },
+      'claim-planet': { who: null, text: 'The king’s favourite, and the crowd mouths along before you’ve said it.' },
     },
-    done: { podium: 'pluto' },
+    // the claims weighed up (two checks) and told the king (../games/deal.js):
+    // the two true ones told is the task, a lie told is Scroopy's to call out
+    deal: { task: 'pluto', items: ['claim-growing', 'claim-moons', 'claim-mines', 'claim-planet'], bad: ['claim-growing', 'claim-mines'], need: 2, looks: 2, who: 'scroopy', lost: 'That’s a lie, kid, and the whole plain heard it: back to the portal with you.', words: { good: 'True: once more to tell the king', bad: 'Not true: leave it out', blind: 'No checks left: once more to chance it', taken: (n, need) => `Told the king ${n} of ${need}` }, meter: { title: 'The king’s ear', label: 'Checks', icon: 'crown' } },
+    goal: 'claim-growing',
+    // (the achievement stays on the podium)
     unlock: { podium: 'pluto' },
     kinds: ['flippynips', 'scroopy', 'plutonian-a', 'plutonian-b'],
   }),
@@ -612,19 +612,7 @@ export const ROWS = [
     },
     // the city's cogs wound in a running order dealt each run, the clock from
     // the first one, the police after him while it runs (../games/sequence.js)
-    sequence: {
-      task: 'gearworld',
-      items: ['cogs', 'gcog-nw', 'gcog-ne', 'gcog-se', 'gcog-sw'],
-      need: 4,
-      s: 45,
-      hunt: true,
-      who: null,
-      lost: 'The city ran down before every cog was wound: back to the portal, and wind them again.',
-      spotted: 'The gear police heard the city turn, and they’re coming for you.',
-      words: { next: (l, on, n) => `${on} of ${n} wound: next, ${low(l)}`, dark: (l) => `Wrong cog, and the city’s jammed: start again with ${low(l)}`, again: (l) => `That one’s turning already: next, ${low(l)}` },
-      meter: { title: 'The city’s cogs', label: 'Time', icon: 'cog' },
-      unlock: null,
-    },
+    sequence: { task: 'gearworld', items: ['cogs', 'gcog-nw', 'gcog-ne', 'gcog-se', 'gcog-sw'], need: 4, s: 45, hunt: true, who: null, lost: 'The city ran down before every cog was wound: back to the portal, and wind them again.', spotted: 'The gear police heard the city turn, and they’re coming for you.', words: { next: (l, on, n) => `${on} of ${n} wound: next, ${low(l)}`, dark: (l) => `Wrong cog, and the city’s jammed: start again with ${low(l)}`, again: (l) => `That one’s turning already: next, ${low(l)}` }, meter: { title: 'The city’s cogs', label: 'Time', icon: 'cog' }, unlock: null },
     caught: 'He clamps a hand on your shoulder and marches you back to the portal, and every cog stops.',
     goal: 'cogs',
     // (the achievement stays on Gearhead's hello)

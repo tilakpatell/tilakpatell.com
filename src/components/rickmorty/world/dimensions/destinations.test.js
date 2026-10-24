@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { AREAS, HOTSPOTS, LINKS, MORTY, PEOPLE, ROOM_IDS, TASKS } from '../rules';
+import { newDeal, stepDeal } from '../games/deal';
 import { DEST_COL, DESTINATIONS, DIAL, GARAGE_BACK, PLANETS, destArea, destinationById, isBigPlanet, isPlanet, isWayHome, linkTarget, pageOf, planetStart, portalTarget, validArrive } from './destinations';
 
 const inside = (a, x, z, pad = 0) => x >= a.x0 + pad && x <= a.x1 - pad && z >= a.z0 + pad && z <= a.z1 - pad;
@@ -203,7 +204,7 @@ describe('a place that runs on power', () => {
 describe('a place that runs on a deal', () => {
   it('sells its own things, each looked over and taken by its own spot, and only the game ticks its task', () => {
     const dealing = DESTINATIONS.filter((d) => d.deal);
-    expect(dealing.map((d) => d.id)).toEqual(['needful']);
+    expect(dealing.map((d) => d.id)).toEqual(['needful', 'pluto']);
     for (const d of dealing) {
       const spots = d.hotspots.map((h) => h.id);
       for (const id of d.deal.items) {
@@ -216,7 +217,13 @@ describe('a place that runs on a deal', () => {
       expect(d.tasks.map((t) => t.id)).toContain(d.deal.task);
       expect(spots).toContain(d.goal);
       expect(Object.values(d.done), `${d.id}: a talk ticks the task`).not.toContain(d.deal.task);
-      expect(d.deal.bad).toBeLessThan(d.deal.items.length);
+      // (cursed: a count dealt each run, short of them all; or the very ones, each a thing for sale, leaving enough to win)
+      if (Array.isArray(d.deal.bad)) {
+        for (const id of d.deal.bad) expect(d.deal.items, `${d.id}: ${id}`).toContain(id);
+        expect(new Set(d.deal.bad).size, d.id).toBe(d.deal.bad.length);
+        expect(d.deal.bad.length, d.id).toBeLessThan(d.deal.items.length);
+        expect(d.deal.items.length - d.deal.bad.length, d.id).toBeGreaterThanOrEqual(d.deal.need);
+      } else expect(d.deal.bad).toBeLessThan(d.deal.items.length);
       expect(d.deal.lost.length).toBeGreaterThan(10);
       expect(d.deal.lost).not.toMatch(/!/);
       expect(d.deal.lost.split(/[.?]\s/)).toHaveLength(1);
@@ -229,6 +236,45 @@ describe('a place that runs on a deal', () => {
     expect(shop.deal).toMatchObject({ task: 'needful', items: ['typewriter', 'aftershave', 'cream', 'shopclock', 'shopmirror'], bad: 4, need: 1, looks: 3, who: 'needful' });
     expect(shop.goal).toBe('needful');
     expect(shop.unlock).toEqual({ needful: 'needful' });
+  });
+  it('is Pluto’s four claims on the palace, two of them lies: two weighed up at most, two told the king', () => {
+    const pluto = destinationById('pluto');
+    const ITEMS = ['claim-growing', 'claim-moons', 'claim-mines', 'claim-planet'];
+    expect(pluto.deal).toMatchObject({ task: 'pluto', items: ITEMS, bad: ['claim-growing', 'claim-mines'], need: 2, looks: 2, who: 'scroopy' });
+    expect(pluto.deal.lost).toBe('That’s a lie, kid, and the whole plain heard it: back to the portal with you.');
+    const w = pluto.deal.words;
+    expect([w.good, w.bad, w.blind, w.taken(1, 2)]).toEqual(['True: once more to tell the king', 'Not true: leave it out', 'No checks left: once more to chance it', 'Told the king 1 of 2']);
+    expect(pluto.deal.meter).toEqual({ title: 'The king’s ear', label: 'Checks', icon: 'crown' });
+    expect(pluto.goal).toBe('claim-growing');
+    // (the podium no longer ticks it; the achievement stays on it)
+    expect(pluto.done).toEqual({});
+    expect(pluto.unlock).toEqual({ podium: 'pluto' });
+    expect(pluto.tasks).toEqual([{ id: 'pluto', name: 'Tell the king what’s true', hint: 'Land on Pluto in the Rick and Morty sector, and tell the king only the claims on his palace that are true: weigh up two at most, and Scroopy calls out a lie.' }]);
+    const at = (id) => pluto.hotspots.find((h) => h.id === id);
+    const c = pluto.centre;
+    expect(ITEMS.map((id) => [at(id).label, at(id).verb, at(id).r, +(at(id).x - c.x).toFixed(3), +(at(id).z - c.z).toFixed(3)])).toEqual([
+      ['Pluto is growing', 'Weigh up', 1.2, -5.4, -13.2],
+      ['Pluto has two moons', 'Weigh up', 1.2, -2.2, -13.2],
+      ['Pluto has no mines', 'Weigh up', 1.2, 2.2, -13.2],
+      ['Pluto is a planet', 'Weigh up', 1.2, 5.4, -13.2],
+    ]);
+    // (each claim far enough from the king that the two prompts never fight)
+    for (const id of ITEMS) expect(Math.hypot(at(id).x - at('flippynips').x, at(id).z - at('flippynips').z), id).toBeGreaterThanOrEqual(2.5);
+    expect(ITEMS.map((id) => pluto.say[id])).toEqual([
+      { who: null, text: 'Scroopy’s sign across the plain says otherwise, in red.' },
+      { who: null, text: 'Two moons hang low over the palace, and the king has them counted every night.' },
+      { who: null, text: 'Out past the plain the mine wheels are turning, all night long.' },
+      { who: null, text: 'The king’s favourite, and the crowd mouths along before you’ve said it.' },
+    ]);
+    expect(pluto.say.podium).toEqual({ who: null, text: 'You step up to the podium. “Pluto is a planet.” They cheer for a long, long time.' });
+    // played: weighing never loses, nor does telling a true claim, nor a lie weighed and used again; telling a lie does
+    const deal = () => newDeal({ items: ITEMS, bad: pluto.deal.bad, need: 2, looks: 2 });
+    const play = (uses) => uses.reduce((g, use) => stepDeal(g, { use }), deal());
+    expect(play(['claim-growing', 'claim-moons', 'claim-mines', 'claim-planet']).phase).toBe('run');
+    expect(play(['claim-growing', 'claim-growing', 'claim-moons', 'claim-moons']).phase).toBe('run');
+    expect(play(['claim-moons', 'claim-moons', 'claim-planet', 'claim-planet']).phase).toBe('won');
+    expect(play(['claim-growing', 'claim-moons', 'claim-mines', 'claim-mines']).phase).toBe('lost');
+    expect(play(['claim-moons', 'claim-planet', 'claim-growing', 'claim-growing']).phase).toBe('lost');
   });
 });
 
