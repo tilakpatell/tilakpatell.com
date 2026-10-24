@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { AREAS, HOTSPOTS, LINKS, MORTY, PEOPLE, ROOM_IDS, TASKS } from '../rules';
 import { newDeal, stepDeal } from '../games/deal';
+import { gameGoal } from './gameGoal';
 import { DEST_COL, DESTINATIONS, DIAL, GARAGE_BACK, PLANETS, destArea, destinationById, isBigPlanet, isPlanet, isWayHome, linkTarget, pageOf, planetStart, portalTarget, validArrive } from './destinations';
 
 const inside = (a, x, z, pad = 0) => x >= a.x0 + pad && x <= a.x1 - pad && z >= a.z0 + pad && z <= a.z1 - pad;
@@ -216,6 +217,8 @@ describe('a place that runs on a deal', () => {
       }
       expect(d.tasks.map((t) => t.id)).toContain(d.deal.task);
       expect(spots).toContain(d.goal);
+      // (where the map falls back to once the game has nothing left to mark: never one of the things, which may be a lie)
+      expect(d.deal.items, `${d.id}: its goal`).not.toContain(d.goal);
       expect(Object.values(d.done), `${d.id}: a talk ticks the task`).not.toContain(d.deal.task);
       // (cursed: a count dealt each run, short of them all; or the very ones, each a thing for sale, leaving enough to win)
       if (Array.isArray(d.deal.bad)) {
@@ -245,7 +248,12 @@ describe('a place that runs on a deal', () => {
     const w = pluto.deal.words;
     expect([w.good, w.bad, w.blind, w.taken(1, 2)]).toEqual(['True: once more to tell the king', 'Not true: leave it out', 'No checks left: once more to chance it', 'Told the king 1 of 2']);
     expect(pluto.deal.meter).toEqual({ title: 'The king’s ear', label: 'Checks', icon: 'crown' });
-    expect(pluto.goal).toBe('claim-growing');
+    // (the map marks the first claim to weigh up, then the one to tell; with nothing left to mark, the king, never a lie)
+    expect(pluto.goal).toBe('flippynips');
+    const weighed = (uses) => uses.reduce((g, use) => stepDeal(g, { use }), newDeal({ items: pluto.deal.items, bad: pluto.deal.bad, need: 2, looks: 2 }));
+    expect(gameGoal(pluto, { deal: weighed([]) })).toBe('claim-growing');
+    expect(gameGoal(pluto, { deal: weighed(['claim-growing', 'claim-moons']) })).toBe('claim-moons');
+    expect(gameGoal(pluto, { deal: weighed(['claim-growing', 'claim-moons', 'claim-moons', 'claim-mines', 'claim-planet']) })).toBe(null);
     // (the podium no longer ticks it; the achievement stays on it)
     expect(pluto.done).toEqual({});
     expect(pluto.unlock).toEqual({ podium: 'pluto' });

@@ -556,7 +556,8 @@ export const ROWS = [
     // the claims weighed up (two checks) and told the king (../games/deal.js):
     // the two true ones told is the task, a lie told is Scroopy's to call out
     deal: { task: 'pluto', items: ['claim-growing', 'claim-moons', 'claim-mines', 'claim-planet'], bad: ['claim-growing', 'claim-mines'], need: 2, looks: 2, who: 'scroopy', lost: 'That’s a lie, kid, and the whole plain heard it: back to the portal with you.', words: { good: 'True: once more to tell the king', bad: 'Not true: leave it out', blind: 'No checks left: once more to chance it', taken: (n, need) => `Told the king ${n} of ${need}` }, meter: { title: 'The king’s ear', label: 'Checks', icon: 'crown' } },
-    goal: 'claim-growing',
+    // (the map's own point, once the game has nothing left to mark: the king, never a claim)
+    goal: 'flippynips',
     // (the achievement stays on the podium)
     unlock: { podium: 'pluto' },
     kinds: ['flippynips', 'scroopy', 'plutonian-a', 'plutonian-b'],
