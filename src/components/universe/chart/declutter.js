@@ -21,8 +21,9 @@
 // SIDES: right, left and under the dot
 // boxOf(side, { x, y, w, h }) → { x0, y0, x1, y1 }
 // declutter(labels, { bounds, sides, dots, hard }) → Map of id → side or null
-// firstInside(label, { bounds, sides }) → the first side inside the frame, or
-//   null: where a name left off shows over the rest, on a hover or a focus
+// firstInside(label, { bounds, sides, hard }) → where a name left off shows
+//   over the rest, on a hover or a focus: the first side inside the frame and
+//   clear of everything hard, else the first inside the frame, else null
 //
 // A label is { id, x, y, w, h, priority, firm? }: x and y its dot's middle, w and h
 // its dot and name together, so a box's near end is the dot's far edge, 8 px
@@ -81,4 +82,8 @@ export function declutter(labels, { bounds, sides = SIDES, dots = [], hard = [] 
   return out;
 }
 
-export const firstInside = (label, { bounds, sides = SIDES }) => sides.find((s) => within(boxOf(s, label), bounds)) ?? null;
+export function firstInside(label, { bounds, sides = SIDES, hard = [] }) {
+  const inside = sides.filter((s) => within(boxOf(s, label), bounds));
+  const blocks = blocksFor(label, hard);
+  return inside.find((s) => !blocks.some((b) => meet(boxOf(s, label), b))) ?? inside[0] ?? null;
+}

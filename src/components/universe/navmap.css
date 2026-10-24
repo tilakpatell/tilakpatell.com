@@ -118,7 +118,7 @@
 .navmap-stage {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.5rem; /* (the gap the width below takes off with the bar) */
   align-self: center;
   justify-self: center;
   width: min(100%, calc(100cqh - 3.25rem)); /* (the bar under the circle: a 44 px tool and the gap) */
@@ -138,10 +138,13 @@
   user-select: none; /* (a drag across the names moves the chart, never selects them) */
 }
 .navmap-chart:active { cursor: grabbing; }
-.navmap-bar { display: flex; align-items: center; gap: 0.5rem; min-width: 0; }
+.navmap-bar { display: flex; align-items: center; gap: 0.5rem; min-width: 0; } /* (the stage's gap: the readout as far off the tools as the bar is off the circle) */
+/* the ship's sector and height on the way out's glass, padded as its pill is
+   (0.3rem), its lines closer than the body's (1.3): on a phone they wrap
+   beside the tools */
 .navmap-readout { min-width: 0; margin: 0; padding: 0.3rem 0.6rem; border-radius: min(var(--r-btn), 10px); background: rgb(3 6 16 / 0.8); color: #cfe9ff; font-size: var(--fs-xs); line-height: 1.3; font-variant-numeric: tabular-nums; }
-.navmap-tools { display: flex; flex: none; gap: 0.3rem; margin-left: auto; }
-.navmap-tools .navmap-tool { justify-content: center; width: 36px; height: 36px; padding: 0; font-size: 1rem; }
+.navmap-tools { display: flex; flex: none; gap: 0.3rem; margin-left: auto; } /* (the charts' and the kinds' chips are as far apart: .navmap-views) */
+.navmap-tools .navmap-tool { justify-content: center; width: 36px; height: 36px; padding: 0; font-size: var(--fs-base); } /* (the + and − and the icons at the body's size, not the head's tools' small words) */
 .navmap-tools .navmap-tool[aria-disabled='true'] { color: rgb(207 233 255 / 0.55); cursor: default; }
 .navmap-tools .navmap-tool[aria-disabled='true']:hover { background: none; }
 @media (pointer: coarse) {

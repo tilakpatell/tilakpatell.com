@@ -2,8 +2,8 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { RiArrowLeftLine } from 'react-icons/ri';
 import { BELT } from '../layout';
 import ChartTools from './ChartTools';
-import { REGIONS } from './marks';
-import { placeMarks, placeShip, ringOn, sectorGrid } from './place';
+import { REGIONS, foldMarks } from './marks';
+import { nameRuler, placeMarks, placeShip, ringOn, sectorGrid } from './place';
 import { FRAMES, levelOf, project, reachOn, ringsFor, toFrame, warp } from './projection';
 
 // The nav map's chart: the circle the places are drawn on, and the bar under
@@ -24,8 +24,10 @@ import { FRAMES, levelOf, project, reachOn, ringsFor, toFrame, warp } from './pr
 // button a place (Tab through them, a click picks, a second goes, a double
 // click goes), Home system's and the Curve's (a click opens their chart),
 // the front's, and the far fights' names. The sun and the pilots are drawn
-// only. A name goes on whichever side of its dot place.js found clear, and
-// one with no room (data-quiet) shows on a hover, a focus or a pick.
+// only. The Curve drawn small is its own button alone, its places folded
+// into it but the pick (marks.js's foldMarks), so they never pile up. A name
+// goes on whichever side of its dot place.js found clear, and one with no
+// room (data-quiet) shows on a hover, a focus or a pick.
 //
 // <NavChart view marks ship course front onFront frontTitle frontOff pick
 //   here hover dim onChoose onGo onRegion out tools readout handlers boxRef />
@@ -38,10 +40,12 @@ import { FRAMES, levelOf, project, reachOn, ringsFor, toFrame, warp } from './pr
 //   null with no ship.
 //
 // It measures its width on a resize, and the names with a canvas in their
-// font, NAME_REM of the root's (and again once the page's fonts are in), so a
-// name's box is what the page draws. No name goes under the way out: its box
-// (WAY_OUT) is one place.js avoids. Server-side it lays them out at 1,000 px
-// with place.js's estimate.
+// font, NAME_REM of the root's (each once, and again once the page's fonts
+// are in), so a name's box is what the page draws. No name goes under the way
+// out: its box (WAY_OUT) is one place.js avoids, and a name left off shows on
+// a side clear of it where it has one. A pick it blocks on every side is the
+// one that can (its name shows, on glass). Server-side it lays them out at
+// 1,000 px with place.js's estimate.
 
 const F = FRAMES.nav;
 const ALL = ['system', 'neighbourhood', 'universe'];
@@ -127,9 +131,11 @@ function wayOut(fontPx, scale) {
   return { x0: F.w / 2 - w / 2, y0: foot - h, x1: F.w / 2 + w / 2, y1: foot };
 }
 
-// what the page draws a name at: its size, its families, and a canvas to measure them on
+// what the page draws a name at: its size, its families, and a canvas to
+// measure them on (place.js's ruler, each name once: a new one on a resize
+// and once the page's fonts are in, when the names' widths change)
 function useNameRuler(box) {
-  const [ruler, setRuler] = useState({ scale: 1, fontPx: 11, measure: null, fonts: 0 });
+  const [ruler, setRuler] = useState({ scale: 1, fontPx: 11, measure: null });
   const canvas = useRef(null);
   useLayoutEffect(() => {
     const el = box.current;
@@ -139,28 +145,15 @@ function useNameRuler(box) {
       if (!w) return; // (hidden: a phone's list. It's measured again when it shows)
       const css = getComputedStyle(el);
       const fontPx = NAME_REM * (parseFloat(getComputedStyle(document.documentElement).fontSize) || 16);
-      const sans = css.fontFamily;
-      const mono = css.getPropertyValue('--font-mono').trim() || 'monospace';
+      const font = { sans: css.fontFamily, mono: css.getPropertyValue('--font-mono').trim() || 'monospace', fontPx, regionPx: (fontPx * REGION_REM) / NAME_REM, pad: NAME_PAD };
       canvas.current ??= document.createElement('canvas').getContext('2d');
-      const g = canvas.current;
-      const measure = g
-        ? (mark) => {
-            if (mark.kind !== 'region') {
-              g.font = `${fontPx}px ${sans}`;
-              return Math.ceil(g.measureText(mark.name).width) + NAME_PAD;
-            }
-            const px = (fontPx * REGION_REM) / NAME_REM;
-            g.font = `${px}px ${mono}`;
-            return Math.ceil(g.measureText(mark.name.toUpperCase()).width + 0.08 * px * mark.name.length) + NAME_PAD;
-          }
-        : null;
-      setRuler((r) => ({ ...r, scale: w / F.w, fontPx, measure }));
+      setRuler({ scale: w / F.w, fontPx, measure: canvas.current ? nameRuler(canvas.current, font) : null });
     };
     read();
     const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(read) : null;
     ro?.observe(el);
     let on = true;
-    document.fonts?.ready.then(() => on && setRuler((r) => ({ ...r, fonts: r.fonts + 1 }))); // (the names' widths change once the fonts are in)
+    document.fonts?.ready.then(() => on && read());
     return () => {
       on = false;
       ro?.disconnect();
@@ -196,16 +189,18 @@ export default function NavChart({ view, marks, ship = null, course = null, fron
   const points = (list) => list.map((p) => toFrame(F, p)).map(({ x, y }) => `${r2(x)},${r2(y)}`).join(' ');
 
   // the places, and the front: one the filter leaves out keeps its dot but
-  // not a name of its own (it shows on a hover, as one with no room does)
+  // not a name of its own (it shows on a hover, as one with no room does);
+  // the Curve, drawn small, is one mark (marks.js's foldMarks)
   const fm = frontMark(front);
   const all = fm ? [...marks, fm] : marks;
   const byId = new Map(all.map((m) => [m.id, m]));
   const shipAt = placeShip(view, ship, F);
+  const keep = pick ? [pick] : [];
   const placed = placeMarks(
     view,
-    all.map((m) => (dimmed(m.id) && m.name ? { ...m, name: '' } : m)),
+    foldMarks(view, all, F, { scale, keep }).map((m) => (dimmed(m.id) && m.name ? { ...m, name: '' } : m)),
     F,
-    { keep: pick ? [pick] : [], fontPx, scale, avoid: [shipAt, out && wayOut(fontPx, scale)], measure },
+    { keep, fontPx, scale, avoid: [shipAt, out && wayOut(fontPx, scale)], measure },
   );
   const listed = placed.filter((p) => p.mark.pickable || LISTED.has(p.mark.kind));
   const war = front && Array.isArray(front.sectors) ? front.sectors.filter((s) => Array.isArray(s?.at) && s.at.every(finite)) : [];
@@ -226,13 +221,13 @@ export default function NavChart({ view, marks, ship = null, course = null, fron
     const name = <span className="navmap-name">{nameOf(p)}</span>;
     if (m.kind === 'region')
       return (
-        <button type="button" className="navmap-place navmap-homebtn" onClick={() => onRegion?.(PRESET[p.id])}>
+        <button type="button" className="navmap-place navmap-homebtn" aria-label={nameOf(p)} onClick={() => onRegion?.(PRESET[p.id])}>
           {name}
         </button>
       );
     if (m.kind === 'front')
       return (
-        <button type="button" className="navmap-place navmap-frontbtn" disabled={frontOff} onClick={() => onFront?.()} title={frontTitle}>
+        <button type="button" className="navmap-place navmap-frontbtn" aria-label={nameOf(p)} disabled={frontOff} onClick={() => onFront?.()} title={frontTitle}>
           {name}
         </button>
       );

@@ -2,11 +2,12 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
 import NavChart, { NAME_REM, REGION_REM, WAY_OUT } from './NavChart';
-import { FRAMES, createView, orbitBy, project, toFrame, unproject } from './projection';
+import { CHART, FRAMES, createView, orbitBy, project, toFrame, unproject } from './projection';
 import { HAND_MARKS, markById, presetView } from './marks';
 import { boxOf } from './declutter';
 import { labelSize } from './place';
 import { CHART_WORDS as W } from '../words';
+import { mapSectorOf } from '../layout';
 
 const view = createView({ range: 120000 });
 const li = (html, id) => html.match(new RegExp(`<li[^>]*data-id="${id}"[^>]*>`))?.[0] ?? '';
@@ -102,6 +103,34 @@ describe('the nav map’s chart', () => {
     expect(boxes.length).toBeGreaterThan(3);
     for (const b of boxes) expect(meet(b, outBox)).toBe(false);
   });
+  it('shows a name left off by the way out, on a hover, on a side clear of it where it has one', () => {
+    const near = { id: 'near', kind: 'world', name: 'Near the way out', at: unproject(view, [(390 - 500) / 470, (890 - 500) / 470]), priority: 1, color: '#fff', levels: ['neighbourhood'], pickable: true };
+    const west = { ...near, id: 'west', name: '', at: unproject(view, [(330 - 500) / 470, (890 - 500) / 470]) }; // (its dot on near's left)
+    const tag = li(renderToStaticMarkup(<NavChart view={view} marks={[near, west]} out={{ label: 'Back through the portal', onClick: () => {} }} />), 'near');
+    expect(tag).toContain('data-quiet');
+    expect(tag).toContain('data-side="left"'); // (its right and under run under the way out)
+  });
+  it('folds the Curve into its own named button where its places would pile up, as on the chart a ship in the main sector opens on', () => {
+    const inCurve = HAND_MARKS.filter((m) => m.pickable && mapSectorOf(...m.at) === 'rickmorty').map((m) => m.id);
+    const open = createView({ focus: markById('middleearth').at, range: CHART.range.open });
+    const html = renderToStaticMarkup(<NavChart view={open} marks={HAND_MARKS} />);
+    for (const id of inCurve) expect(li(html, id), id).toBe('');
+    expect(li(html, 'chart:curve')).toContain('data-kind="region"');
+    expect(li(html, 'chart:curve')).not.toContain('data-quiet');
+    // no two buttons within 8 units of each other, but the portal beside the Rick and Morty planet
+    const spots = [...html.matchAll(/<li style="left:([-\d.e]+)%;top:([-\d.e]+)%[^>]*data-id="([^"]+)"/g)].map((m) => [Number(m[1]) * 10, Number(m[2]) * 10, m[3]]);
+    expect(spots.length).toBeGreaterThan(10);
+    const close = [];
+    for (let i = 0; i < spots.length; i++) for (let j = i + 1; j < spots.length; j++) if (Math.hypot(spots[i][0] - spots[j][0], spots[i][1] - spots[j][1]) < 8) close.push([spots[i][2], spots[j][2]].sort());
+    expect(close).toEqual([['rickmorty', 'rmportal']]);
+    // a Curve place picked from the list stays on it, named
+    const picked = li(renderToStaticMarkup(<NavChart view={open} marks={HAND_MARKS} pick="citadel" />), 'citadel');
+    expect(picked).toContain('data-pick');
+    expect(picked).not.toContain('data-quiet');
+    // and on the Curve's own chart every one of its places is there
+    const curve = renderToStaticMarkup(<NavChart view={presetView('rickmorty', { y: 0 })} marks={HAND_MARKS} />);
+    for (const id of inCurve) expect(li(curve, id), id).not.toBe('');
+  });
   it('names Home system and the Curve as buttons at their zoom, and keeps the sun and the pilots off the list', () => {
     const near = draw({});
     expect(li(near, 'chart:home')).toContain('data-kind="region"');
@@ -113,6 +142,19 @@ describe('the nav map’s chart', () => {
     expect(tags(html, 'navmap-pilot')).toHaveLength(1);
     const far = renderToStaticMarkup(<NavChart view={createView({ range: 400000 })} marks={HAND_MARKS} />);
     expect(li(far, 'chart:curve')).toContain('data-kind="region"');
+  });
+  it('gives every button on the chart a name of its own, so one whose name is quiet still has it', () => {
+    const front = { name: 'The battle of the gap', at: [1200, 0, 900], sectors: [], colours: [] };
+    for (const range of [120000, 400000]) {
+      const html = renderToStaticMarkup(<NavChart view={createView({ range })} marks={HAND_MARKS} front={front} frontTitle="Race to the front" />);
+      const list = html.slice(html.indexOf('class="navmap-places"'), html.indexOf('</ul>'));
+      const buttons = list.match(/<button[^>]*>/g);
+      expect(buttons.length).toBeGreaterThan(3);
+      for (const b of buttons) expect(b).toMatch(/aria-label="[^"]+"/);
+    }
+    expect(draw({}).match(/<button[^>]*navmap-homebtn[^>]*>/)[0]).toContain('aria-label="Home system"');
+    expect(renderToStaticMarkup(<NavChart view={createView({ range: 400000 })} marks={HAND_MARKS} />).match(/<li[^>]*data-id="chart:curve"[^>]*><button[^>]*>/)[0]).toContain('aria-label="The Curve"');
+    expect(draw({ front }).match(/<button[^>]*navmap-frontbtn[^>]*>/)[0]).toContain('aria-label="The front · The battle of the gap"');
   });
   it('dims what the filter leaves out, lights what the list points at, and marks the pick and where the ship is', () => {
     const html = draw({ dim: new Set(['marvel']), hover: 'aurelia', pick: 'veil', here: 'ember' });

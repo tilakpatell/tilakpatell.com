@@ -84,6 +84,16 @@ describe('declutter', () => {
     expect(declutter([L('a', 380, 884, 1, 60)], { bounds, hard: [button] }).get('a')).toBe('left');
     expect(declutter([firm(L('a', 500, 894, 1))], { bounds, hard: [button] }).get('a')).toBeNull(); // (its dot under the button)
   });
+  it('shows a name left off on a side clear of anything hard where it has one, else the first inside the frame', () => {
+    const button = { x0: 405, y0: 878, x1: 595, y1: 910 };
+    expect(firstInside(L('a', 395, 894, 1), { bounds })).toBe('right');
+    expect(firstInside(L('a', 395, 894, 1), { bounds, hard: [button] })).toBe('left'); // (its right runs under the button)
+    expect(firstInside(L('a', 500, 500, 1), { bounds, hard: [{ x: 540, y: 500 }] })).toBe('left'); // (the ship on its right)
+    expect(firstInside(L('a', 500, 500, 1), { bounds, hard: [{ x: 504, y: 504 }] })).toBe('right'); // (one on its own dot blocks nothing)
+    expect(firstInside(L('a', 430, 884, 1), { bounds, hard: [button] })).toBe('right'); // (every side meets it)
+    expect(firstInside(L('a', 950, 500, 1), { bounds, hard: [{ x: 900, y: 500 }] })).toBe('left'); // (never past the frame for it)
+    expect(firstInside(L('lost', NaN, 500, 1), { bounds, hard: [button] })).toBeNull();
+  });
   it('finds the first side inside the frame, for a name left off to show on', () => {
     expect(firstInside(L('a', 500, 500, 1), { bounds })).toBe('right');
     expect(firstInside(L('a', 950, 500, 1), { bounds })).toBe('left');

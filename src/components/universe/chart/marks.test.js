@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { CHART_VIEWS, DESTINATIONS } from '../nav';
 import { MOONS } from '../universes';
-import { BELT, HOME_RADIUS, SECTORS, SUN } from '../layout';
-import { CHART, FRAMES, levelOf } from './projection';
+import { BELT, HOME_RADIUS, SECTORS, SUN, mapSectorOf } from '../layout';
+import { CHART, FRAMES, createView, levelOf } from './projection';
 import { placeMarks } from './place';
-import { HAND_MARKS, REGIONS, liveMarks, markById, openView, presetOf, presetView } from './marks';
+import { FOLD, HAND_MARKS, REGIONS, foldMarks, liveMarks, markById, openView, presetOf, presetView } from './marks';
 
 const places = DESTINATIONS.filter((d) => d.kind !== 'system');
 
@@ -93,6 +93,28 @@ describe('the chart’s marks', () => {
     const all = shown(openView(null));
     expect(all.map((p) => p.id)).toEqual(expect.arrayContaining(['chart:home', 'chart:sun', 'marvel', 'aurelia']));
     expect(all.some((p) => p.mark.kind === 'station')).toBe(false);
+  });
+  it('folds the Curve into its own mark where its edge is drawn too small to hold its places apart', () => {
+    const inCurve = (m) => m.pickable && mapSectorOf(...m.at) === 'rickmorty';
+    expect(HAND_MARKS.filter(inCurve)).toHaveLength(13);
+    const open = createView({ focus: markById('middleearth').at, range: CHART.range.open }); // (where a ship in the main sector opens the map)
+    const folded = foldMarks(open, HAND_MARKS, FRAMES.nav);
+    expect(folded.filter(inCurve)).toEqual([]);
+    expect(folded).toHaveLength(HAND_MARKS.length - 13);
+    expect(folded.find((m) => m.id === 'chart:curve')).toMatchObject({ name: CHART_VIEWS.rickmorty.name, levels: ['system', 'neighbourhood', 'universe'], firm: true });
+    expect(markById('chart:curve').firm).toBeUndefined(); // (a copy: the hand-made mark is as it was)
+    // drawn bigger, or zoomed in on, it opens up: its edge, at the page's scale, is FOLD px round or more
+    expect(FOLD).toBe(30);
+    expect(foldMarks(open, HAND_MARKS, FRAMES.nav, { scale: 2.5 })).toEqual(HAND_MARKS);
+    expect(foldMarks(presetView('rickmorty', null), HAND_MARKS, FRAMES.nav)).toEqual(HAND_MARKS);
+    // the pick stays out of the fold, and so does what isn't a place (a pilot there)
+    const pilot = { id: 'pilot:x', kind: 'pilot', shape: 'pilot', name: '', at: SECTORS.rickmorty.origin, priority: 70, levels: ['system', 'neighbourhood'], pickable: false };
+    const ids = foldMarks(open, [...HAND_MARKS, pilot], FRAMES.nav, { keep: ['citadel'] }).map((m) => m.id);
+    expect(ids).toEqual(expect.arrayContaining(['citadel', 'pilot:x', 'chart:curve']));
+    expect(ids).not.toContain('squanch');
+    // with no mark of its own to stand in for them, nothing folds
+    const unmarked = HAND_MARKS.filter((m) => m.id !== 'chart:curve');
+    expect(foldMarks(open, unmarked, FRAMES.nav)).toEqual(unmarked);
   });
   it('takes an unknown preset as the universe, and a far focus as no preset', () => {
     expect(presetView('constructor', null)).toEqual(presetView('all', null));

@@ -7,13 +7,20 @@
 //   { id, kind, name, at: [x, y, z], priority, color,
 //     levels: ['system' | 'neighbourhood' | 'universe', …],
 //     shape?: 'dot' | 'cloud' | 'hole' | 'star' | 'portal' | 'sun' | 'pilot' | 'fight',
-//     reach?, pickable?, type? }
+//     reach?, pickable?, type?, firm? }
 // type is what it is in words (nav.js's: "Star", "Station"), for its button's
-// label. An empty name means no label, and an id is unique on its chart.
+// label; firm, its name is never left off for another place's dot, as the
+// pick's isn't (a region folded into one mark: marks.js's foldMarks). An
+// empty name means no label, and an id is unique on its chart.
 // Lane 6b adds the generated places, events and pilots as more marks with
 // their own levels, through no other door: nothing here changes for them.
 //
 // labelSize(name, fontPx) → [w, h] in px, the dot and its name together
+// nameRuler(g, { sans, mono, fontPx, regionPx, pad }) → measure(mark), the
+//   map's ruler on a canvas's 2D context g: a name in sans at fontPx, a
+//   region's (Home system, the Curve) in mono capitals 0.08em apart at
+//   regionPx, pad added to each. Each name is measured once, a region's apart
+//   from a place's; a new ruler measures afresh (a resize, the fonts in)
 // placeMarks(view, marks, frame, opts) → Placed[], in the marks' order (the tab order)
 //   opts = { level, keep, fontPx, scale, sides, avoid, levels, measure }: avoid
 //   is the { x, y } points, in frame units, whose dots no name may cover, not
@@ -25,7 +32,8 @@
 //   Placed = { id, mark, x, y, footX, footY, size, side, spare, edge, depth }, in frame units:
 //   side is where its name goes, or null to leave it off; spare is where a
 //   name left off shows over the rest, on a hover or a focus (the first side
-//   inside the frame), and null for one with a side or none that fits
+//   inside the frame and clear of what it avoids, else the first inside), and
+//   null for one with a side or none that fits
 // placeShip(view, ship, frame) → { x, y, angle, edge }, or null with no ship
 // sectorGrid(view, n) → [{ key, points }]; ringOn(view, centre, radius, n) → points
 //   (closed outlines, in chart units, for the drawing to put through toFrame)
@@ -61,6 +69,22 @@ const EDGE = 12; // points along a sector's edge, its corners among them: the sc
 // px: a name's letters at about 0.58 of the font's size, then the 16 px dot and its gap
 const DOT_GAP = 22;
 export const labelSize = (name, fontPx) => [name.length * 0.58 * fontPx + DOT_GAP, Math.max(24, 1.6 * fontPx)];
+
+// (the chart is drawn again on every move of a drag and every where() tick:
+// its forty-odd names are measured once, not each time)
+export function nameRuler(g, { sans, mono, fontPx, regionPx, pad }) {
+  const widths = new Map();
+  return (mark) => {
+    const region = mark.kind === 'region';
+    const key = `${region ? 'region' : 'name'}:${mark.name}`;
+    if (!widths.has(key)) {
+      g.font = region ? `${regionPx}px ${mono}` : `${fontPx}px ${sans}`;
+      const text = g.measureText(region ? mark.name.toUpperCase() : mark.name).width;
+      widths.set(key, Math.ceil(region ? text + 0.08 * regionPx * mark.name.length : text) + pad);
+    }
+    return widths.get(key);
+  };
+}
 
 // the box the names must stay in, in px: a round frame is cut to the biggest
 // circle round its middle (the nav map's chart clips the rest)
@@ -99,8 +123,8 @@ export function placeMarks(view, marks, frame, opts = {}) {
     .map((p) => {
       const [guess, h] = labelSize(p.mark.name, fontPx);
       const w = measure ? measure(p.mark) + DOT_GAP : guess;
-      const firm = kept.has(p.id);
-      return { id: p.id, x: p.x * scale, y: p.y * scale, w, h, priority: firm ? Infinity : p.mark.priority, firm };
+      const firm = kept.has(p.id) || p.mark.firm === true;
+      return { id: p.id, x: p.x * scale, y: p.y * scale, w, h, priority: kept.has(p.id) ? Infinity : p.mark.priority, firm };
     });
   const px = (d) => ('x0' in d ? { x0: d.x0 * scale, y0: d.y0 * scale, x1: d.x1 * scale, y1: d.y1 * scale } : { x: d.x * scale, y: d.y * scale });
   const known = (d) => Boolean(d) && ('x0' in d ? [d.x0, d.y0, d.x1, d.y1].every(finite) : finite(d.x) && finite(d.y));
@@ -108,7 +132,7 @@ export function placeMarks(view, marks, frame, opts = {}) {
   const hard = avoid.filter(known).map(px);
   const bounds = boundsOf(frame, scale);
   const side = declutter(labels, { bounds, sides, dots, hard });
-  const spare = new Map(labels.filter((l) => side.get(l.id) === null).map((l) => [l.id, firstInside(l, { bounds, sides })]));
+  const spare = new Map(labels.filter((l) => side.get(l.id) === null).map((l) => [l.id, firstInside(l, { bounds, sides, hard })]));
   for (const p of placed) {
     p.side = side.get(p.id) ?? null;
     p.spare = spare.get(p.id) ?? null;

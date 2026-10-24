@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { CHART, FRAMES, createView, levelOf, orbitBy, project, reachOn, unproject } from './projection';
-import { fitRange, labelSize, miniView, placeMarks, placeShip, reveal, ringOn, sectorGrid } from './place';
+import { fitRange, labelSize, miniView, nameRuler, placeMarks, placeShip, reveal, ringOn, sectorGrid } from './place';
 
 const ALL = ['system', 'neighbourhood', 'universe'];
 const M = (id, at, more = {}) => ({ id, kind: 'world', name: id.toUpperCase(), at, priority: 50, color: '#fff', levels: ALL, ...more });
@@ -131,6 +131,28 @@ describe('placing marks', () => {
     const outline = sectorGrid(tilted, 0)[0].points;
     expect(outline).toHaveLength(4 * 11 + 1);
     expect(outline.at(-1)).toEqual(outline[0]);
+  });
+  it('names a firm mark (a folded region) even ringed by dots, but draws it only where it would be drawn anyway', () => {
+    const dot = (id, x, y) => M(id, drawnAt(x, y), { name: '' });
+    const ringed = [M('region', drawnAt(500, 400), { firm: true, priority: 1 }), dot('a', 540, 400), dot('b', 460, 400), dot('c', 500, 430)];
+    expect(placeMarks(view, ringed, FRAMES.nav)[0].side).toBe('right');
+    expect(placeMarks(view, [{ ...ringed[0], firm: false }, ...ringed.slice(1)], FRAMES.nav)[0].side).toBeNull();
+    expect(placeMarks(view, [M('far', [900000, 0, 0], { firm: true })], FRAMES.nav)).toEqual([]);
+    expect(placeMarks(view, [M('near', [2000, 0, 0], { firm: true, levels: ['universe'] })], FRAMES.nav)).toEqual([]);
+  });
+  it('measures each name once on the map’s ruler, a region’s in mono capitals, and a new ruler afresh', () => {
+    const calls = [];
+    const g = { font: '', measureText: (t) => (calls.push([g.font, t]), { width: t.length * 5 }) };
+    const font = { sans: 'Inter', mono: 'Mono', fontPx: 11, regionPx: 9.5, pad: 8 };
+    const measure = nameRuler(g, font);
+    for (let i = 0; i < 3; i++) {
+      expect(measure({ kind: 'world', name: 'Ember' })).toBe(25 + 8);
+      expect(measure({ kind: 'region', name: 'The Curve' })).toBe(Math.ceil(45 + 0.08 * 9.5 * 9) + 8);
+    }
+    expect(measure({ kind: 'region', name: 'Ember' })).toBe(Math.ceil(25 + 0.08 * 9.5 * 5) + 8); // (the same words as a region's: measured in its own font)
+    expect(calls).toEqual([['11px Inter', 'Ember'], ['9.5px Mono', 'THE CURVE'], ['9.5px Mono', 'EMBER']]);
+    nameRuler(g, font)({ kind: 'world', name: 'Ember' });
+    expect(calls).toHaveLength(4);
   });
   it('sizes names in pixels, puts the pick’s down first, and keeps them off the ship and inside the circle', () => {
     expect(labelSize('Ember', 11)).toEqual([5 * 0.58 * 11 + 22, 24]);
