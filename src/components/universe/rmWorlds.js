@@ -33,19 +33,22 @@ void main() {
 }`;
 
 // a mesh's material made a world's ground: its colour, glow and roughness
-// from `glsl`'s rmSurface, worked out where it's drawn; lit in flat bands
-function wear(mesh, key, glsl, { p, sun, metal = 0 }) {
+// from `glsl`'s rmSurface, worked out where it's drawn; lit in flat bands.
+// `land`: a map of where its land is (white on black, the usual layout),
+// read as uRmLand with RM_LAND defined (Cronenberg World's Earth coasts)
+function wear(mesh, key, glsl, { p, sun, metal = 0, land = null }) {
   const time = { value: 0 };
   const sunU = { value: sun };
   const mat = new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 1, metalness: metal });
   mat.onBeforeCompile = (shader) => {
     shader.uniforms.uRmTime = time;
     shader.uniforms.uRmSun = sunU;
+    if (land) shader.uniforms.uRmLand = { value: land };
     shader.vertexShader = shader.vertexShader
       .replace('#include <common>', '#include <common>\nvarying vec3 vRmP;\nvarying vec3 vRmN;')
       .replace('#include <begin_vertex>', '#include <begin_vertex>\nvRmP = position;\nvRmN = normalize(mat3(modelMatrix) * normal);');
     shader.fragmentShader = shader.fragmentShader
-      .replace('#include <common>', `#include <common>\nuniform float uRmTime;\nuniform vec3 uRmSun;\nvarying vec3 vRmP;\nvarying vec3 vRmN;\n${SRGB}\n${RM_NOISE}\n${glsl}`)
+      .replace('#include <common>', `#include <common>\nuniform float uRmTime;\nuniform vec3 uRmSun;\nvarying vec3 vRmP;\nvarying vec3 vRmN;\n${land ? '#define RM_LAND\nuniform sampler2D uRmLand;\n' : ''}${SRGB}\n${RM_NOISE}\n${glsl}`)
       .replace(
         '#include <map_fragment>',
         `#include <map_fragment>
@@ -58,7 +61,7 @@ function wear(mesh, key, glsl, { p, sun, metal = 0 }) {
       .replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\nroughnessFactor = max(rmRough, 0.65);')
       .replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\ntotalEmissiveRadiance += rmLin(rmGlow);');
   };
-  mat.customProgramCacheKey = () => `rmworld-${key}`;
+  mat.customProgramCacheKey = () => `rmworld-${key}${land ? '-land' : ''}`;
   celShade(mat);
   mesh.material = mat;
   p.tick.push((t) => (time.value = t));
@@ -66,7 +69,7 @@ function wear(mesh, key, glsl, { p, sun, metal = 0 }) {
 }
 
 // the body itself, worn as its world
-const ground = (p, u) => wear(p.body, u.id, RM_SURFACES[u.id], { p, sun: p.sun });
+const ground = (p, u, { land = null } = {}) => wear(p.body, u.id, RM_SURFACES[u.id], { p, sun: p.sun, land });
 
 // a flat brass-and-ink look for the made things round them (gears, rings)
 const metal = (color, { rough = 0.4, metalness = 0.35, emissive = '#000000', glow = 0 } = {}) =>
@@ -529,9 +532,10 @@ export const RM_WORLDS = {
     ground(p, u);
     field(p, u.size, T.small);
   },
-  // (their grounds are all they need: the flesh breathes, the villages burn)
-  cronenberg(p, { u }) {
-    ground(p, u);
+  // (their grounds are all they need: the flesh breathes, the villages burn;
+  // Cronenberg World's on the real Earth's coasts, C-137's own: scripts/planets/cronenberg.mjs)
+  cronenberg(p, { u, T }) {
+    ground(p, u, { land: T['cronenberg-land'] ?? null });
   },
   purge(p, { u }) {
     ground(p, u);

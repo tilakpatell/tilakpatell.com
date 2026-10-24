@@ -21,7 +21,7 @@ const BASE = '/textures/universe/';
 // the Milky Way behind it stay sharp as the camera comes in. The fandoms'
 // own maps are baked by scripts/build-fandom-planets.mjs (Middle-earth,
 // Breaking Bad, the Caribbean, C-137, the Office, Music, Marvel's Earth-616,
-// Hogwarts' world) at all three sizes; Earth's, the sun's and the sky's by
+// Hogwarts' world) at all three sizes, and Cronenberg World's coasts; Earth's, the sun's and the sky's by
 // scripts/build-universe-textures.py (--hq for the -hq set); Cybertron's and
 // Invincible's by their own scripts (Invincible's at all three sizes and an
 // -xl; Cybertron's 2048 on high and up, 1024 below, and an -xl worn near).
@@ -39,7 +39,7 @@ const MAPS = Object.fromEntries([
   ...map(['middleearth-night', 'breakingbad-night', 'invincible-night', 'sky-glow'], { sm: true, hq: false, colour: true }),
   ...map(['breakingbad-clouds', 'invincible-clouds'], { sm: true, hq: false, colour: false }),
   ...map(['middleearth-glow', 'caribbean-night', 'rickmorty-night', 'invincible-glow', 'potter-night', 'potter-glow', 'marvel-night', 'office-night', 'plates', 'hull'], { sm: false, hq: false, colour: true }),
-  ...map(['plates-normal', 'plates-rough', 'hull-normal', 'hull-rough', 'transformers-glow-sm', 'middleearth-rough', 'office-rough', 'breakingbad-rough', 'caribbean-rough', 'earth-rough', 'rickmorty-rough', 'invincible-rough', 'potter-rough', 'marvel-rough'], { sm: false, hq: false, colour: false }),
+  ...map(['plates-normal', 'plates-rough', 'hull-normal', 'hull-rough', 'transformers-glow-sm', 'middleearth-rough', 'office-rough', 'breakingbad-rough', 'caribbean-rough', 'earth-rough', 'rickmorty-rough', 'invincible-rough', 'potter-rough', 'marvel-rough', 'cronenberg-land'], { sm: false, hq: false, colour: false }),
 ]);
 
 export const MAP_NAMES = Object.keys(MAPS);
