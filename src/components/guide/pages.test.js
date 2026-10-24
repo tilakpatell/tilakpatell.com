@@ -58,7 +58,7 @@ describe('which guide a page gets', () => {
     expect(tip?.[1]).toMatch(/Stair Goblins/);
     expect(tip?.[1]).toMatch(/beanstalk/);
     expect(tip?.[1]).toMatch(/shivers/);
-    expect(C137.tips.slice(-4).map(([where]) => where)).toEqual(['Fantasy World', 'Bird World', 'Gear World', 'Pluto']);
+    expect(C137.tips.slice(-5).map(([where]) => where)).toEqual(['Fantasy World', 'Bird World', 'Gear World', 'Pluto', 'Heist-Con']);
     expect(C137.keys.flatMap((g) => g.rows).some(([k, what]) => /Space/.test(k) && /jump/i.test(what))).toBe(true);
   });
 
@@ -75,6 +75,12 @@ describe('which guide a page gets', () => {
     expect(tip('Pluto')).toMatch(/two checks/);
     expect(tip('Pluto')).toMatch(/Scroopy/);
     for (const where of ['Bird World', 'Gear World', 'Pluto']) expect(tip(where), where).not.toMatch(/!/);
+  });
+
+  it('tips Heist-Con’s job on C-137’s page: the crew first, the booths in order, and the crew turned on him', () => {
+    const tip = C137.tips.find(([where]) => where === 'Heist-Con')?.[1] ?? '';
+    for (const words of [/badge/, /muscle and a cat burglar/, /Heistotron’s plan/, /order/, /wrong booth/, /watch your crew/, /back at the door/]) expect(tip).toMatch(words);
+    expect(tip).not.toMatch(/!/);
   });
 
   it('tips a planet page’s games: each a meter, and a loss only back to the portal', () => {
