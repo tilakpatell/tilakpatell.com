@@ -21,7 +21,7 @@
 //   nozzle has a soft glow drawn
 //   over it (one draw a ship: `glows`), so the stern burns as it does on screen.
 //
-// dressCapital(holder, kind, { plating }) after models.js has fitted the model (its
+// dressCapital(holder, kind, { plating, size, lite }) after models.js has fitted the model (its
 // holder: the unit frame, nose +z, 1 long); patched materials are copies
 // (one per mesh that needs its own frame), the template's to keep.
 // isCapital(kind); plateTint(kind) and LENGTH (metres a ship is long, so the
@@ -29,6 +29,7 @@
 
 import * as THREE from 'three';
 import { HULLS } from '../universe/wars';
+import { panes, patchShaders, plate } from './capitalPlating';
 
 // metres long, Wookieepedia's (the plates are metres, whatever a ship's drawn at)
 export const LENGTH = { destroyer: 1600, executor: 19000, interdictor: 1600, venator: 1137, acclamator: 752, moncal: 1200, nebulon: 300, corvette: 150, hammerhead: 315, lightcruiser: 325, gozanti: 64, transport: 90, providence: 1088, munificent: 825, lucrehulk: 3170 };
@@ -47,128 +48,41 @@ const WINDOW = /window/i;
 const ENGINE_NAME = /engine|thruster/i;
 const RED = /^red$/i;
 const LIT = /emissive/i;
-// (the kinds whose own maps are next to flat colour, a few KB each: plated over them)
-const PLATE_ALL = new Set(['acclamator']);
-const LAMP = /glow|lamp|bluelight|redlight|beacon/i;
+// (the kinds whose own maps are next to flat colour at a ship's size, a few
+// KB each, or one scratched metal tiled over the whole of it: plated over them)
+const PLATE_ALL = new Set(['acclamator', 'executor', 'gozanti']);
+const LAMP = /glow|lamp|bluelight|redlight|whitelight|beacon/i;
+// (black and glass: no paint to layer)
+const BARE_BLACK = /^dark$|glass/i;
+// painted metal, as the hull is (the export gave most of the game's
+// materials a metal's whole shine with nothing to reflect but a dark sky:
+// a navy speckle where the films have grey plating)
+const PAINT = { metalness: 0.28, roughness: 0.58 };
+const saturation = (c) => {
+  const hi = Math.max(c.r, c.g, c.b);
+  return hi > 0 ? (hi - Math.min(c.r, c.g, c.b)) / hi : 0;
+};
+const painted = (m) => {
+  // (down to paint, never up: a material the model made plain stays plain)
+  m.metalness = Math.min(m.metalness, m.metalnessMap ? 0.5 : PAINT.metalness);
+  if (!m.roughnessMap) m.roughness = PAINT.roughness;
+  return m;
+};
 const MARKING = '#8e2b22'; // (the Republic's red)
-
-// ── the plating ──
-const PLATE_VERT = `
-uniform mat4 uUnit;
-uniform float uLength;
-varying vec3 vShip;
-varying vec3 vShipN;
-varying float vPerMetre;`;
-const PLATE_FRAG = `
-uniform float uLit;
-varying vec3 vShip;
-varying vec3 vShipN;
-varying float vPerMetre;
-float plHash( vec2 p ) {
-  vec3 p3 = fract( vec3( p.xyx ) * 0.1031 );
-  p3 += dot( p3, p3.yzx + 33.33 );
-  return fract( ( p3.x + p3.y ) * p3.z );
-}
-// one course of plates at \`size\` metres: its shade, how far to its nearest edge (m), a second dice
-vec3 plCells( vec2 p, vec2 size ) {
-  vec2 q = p / size;
-  q.x += plHash( vec2( floor( q.y ), 3.7 ) );
-  vec2 id = floor( q );
-  vec2 f = fract( q );
-  vec2 e = min( f, 1.0 - f ) * size;
-  return vec3( plHash( id ), min( e.x, e.y ), plHash( id + 19.3 ) );
-}
-// a plane's plating: (shade, seam, height, windows); px: metres a pixel spans
-vec4 plPlating( vec2 p, float px, float wall ) {
-  // (three courses: sections of the hull, the plates on them, the panels on those)
-  vec3 s = plCells( p + vec2( 11.0, 5.0 ), vec2( 96.0, 52.0 ) );
-  vec3 a = plCells( p, vec2( 26.0, 14.0 ) );
-  vec3 b = plCells( p + vec2( 3.1, 1.7 ), vec2( 6.5, 3.5 ) );
-  // (a seam's weight: whole where it's wider than a pixel, its mean where it's not)
-  float ws = clamp( 1.6 / px, 0.0, 1.0 );
-  float wa = clamp( 0.7 / px, 0.0, 1.0 );
-  float wb = clamp( 0.3 / px, 0.0, 1.0 );
-  float ss = ( 1.0 - smoothstep( 0.4, 1.6, s.y ) ) * ws;
-  float sa = ( 1.0 - smoothstep( 0.15, 0.7, a.y ) ) * wa;
-  float sb = ( 1.0 - smoothstep( 0.05, 0.3, b.y ) ) * wb;
-  float shade = ( s.x - 0.5 ) * 0.14 + ( a.x - 0.5 ) * 0.1 * clamp( 3.0 / px, 0.3, 1.0 ) + ( b.x - 0.5 ) * 0.05 * wb;
-  // a raised panel or a dark vent, here and there among the small plates
-  float raised = step( 0.82, b.z ) * wb;
-  float vent = step( b.z, 0.07 ) * smoothstep( 0.3, 0.9, b.y ) * wb;
-  float h = raised * 0.6 - sa * 1.0 - sb * 0.45 - vent * 0.5;
-  // windows: on a wall, a row along some big plates' middles, each lit or not
-  float lit = 0.0;
-  if ( wall > 0.5 && a.z > 0.5 ) {
-    vec2 w = vec2( p.x / 3.2, ( p.y - 1.0 ) / 14.0 );
-    float row = abs( fract( w.y ) - 0.5 ) * 14.0;
-    float col = abs( fract( w.x ) - 0.5 ) * 3.2;
-    float on = step( 0.45, plHash( floor( w ) + a.x * 31.0 ) );
-    float pane = ( 1.0 - smoothstep( 0.35, 0.5, row ) ) * ( 1.0 - smoothstep( 0.55, 0.8, col ) );
-    // (its share of the plate's light where a pane is under a pixel: a faint glow, never a glitter)
-    lit = on * mix( 0.08, pane, clamp( 0.8 / px, 0.0, 1.0 ) );
-  }
-  return vec4( shade - vent * 0.2, ss * 0.45 + sa * 0.32 + sb * 0.16, h * wb - ss * ws, lit );
-}
-// the bump: the normal tilted by the height's slope across the screen
-// (three's perturbNormalArb; the height in the view's units, vPerMetre)
-vec3 plBump( vec3 surf, vec3 n, vec2 dH, float faceDirection ) {
-  vec3 sx = dFdx( surf.xyz );
-  vec3 sy = dFdy( surf.xyz );
-  vec3 r1 = cross( sy, n );
-  vec3 r2 = cross( n, sx );
-  float det = dot( sx, r1 ) * faceDirection;
-  vec3 g = sign( det ) * ( dH.x * r1 + dH.y * r2 );
-  return normalize( abs( det ) * n - g );
-}`;
-
-function plate(m, unit, length) {
-  const was = m.onBeforeCompile;
-  const key = Object.hasOwn(m, 'customProgramCacheKey') ? m.customProgramCacheKey : null;
-  m.userData.plated = true;
-  m.onBeforeCompile = (shader, renderer) => {
-    was?.call(m, shader, renderer);
-    shader.uniforms.uUnit = { value: unit };
-    shader.uniforms.uLength = { value: length };
-    shader.uniforms.uLit = { value: 1.6 };
-    shader.vertexShader = shader.vertexShader
-      .replace('#include <common>', `#include <common>\n${PLATE_VERT}`)
-      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvShip = ( uUnit * vec4( position, 1.0 ) ).xyz * uLength;\nvShipN = normalize( mat3( uUnit ) * objectNormal );\nvPerMetre = length( modelMatrix[ 0 ].xyz ) / ( length( uUnit[ 0 ].xyz ) * uLength );');
-    shader.fragmentShader = shader.fragmentShader
-      .replace('#include <common>', `#include <common>\n${PLATE_FRAG}`)
-      .replace(
-        '#include <map_fragment>',
-        `#include <map_fragment>
-  vec3 plW = pow( abs( vShipN ), vec3( 4.0 ) );
-  plW /= plW.x + plW.y + plW.z + 1e-5;
-  float plPx = length( fwidth( vShip ) ) + 1e-4;
-  float plWall = 1.0 - smoothstep( 0.35, 0.6, abs( vShipN.y ) );
-  vec4 plX = plPlating( vShip.zy, plPx, plWall );
-  vec4 plY = plPlating( vShip.xz, plPx, 0.0 );
-  vec4 plZ = plPlating( vShip.xy, plPx, plWall );
-  vec4 plP = plX * plW.x + plY * plW.y + plZ * plW.z;
-  diffuseColor.rgb *= ( 1.0 + plP.x ) * ( 1.0 - plP.y );`,
-      )
-      .replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\n  roughnessFactor = clamp( roughnessFactor + plP.y * 0.25 - plP.x * 0.3, 0.3, 0.95 );')
-      .replace('#include <normal_fragment_maps>', '#include <normal_fragment_maps>\n  normal = plBump( -vViewPosition, normal, vec2( dFdx( plP.z ), dFdy( plP.z ) ) * vPerMetre * 0.35, faceDirection );')
-      .replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\n  totalEmissiveRadiance += vec3( 1.0, 0.94, 0.82 ) * plP.w * uLit;');
-  };
-  m.customProgramCacheKey = () => `${key ? key.call(m) : ''}|plated`;
-  m.needsUpdate = true;
-}
 
 // ── the engines: lit where they face aft ──
 const AFT_VERT = `
-uniform mat4 uUnit;
+#ifndef CAP_UNIT
+#define CAP_UNIT
+uniform mat4 uUnit; // (the plating's and the engines' both: declared once)
+#endif
 varying float vAft;
 varying float vAftZ;`;
 function burn(m, unit, colour) {
-  const was = m.onBeforeCompile;
-  const key = Object.hasOwn(m, 'customProgramCacheKey') ? m.customProgramCacheKey : null;
   m.userData.burning = true;
   m.emissive?.setRGB(...colour);
   m.emissiveIntensity = 1;
-  m.onBeforeCompile = (shader, renderer) => {
-    was?.call(m, shader, renderer);
+  patchShaders(m, 'aft', (shader) => {
     shader.uniforms.uUnit = { value: unit };
     shader.vertexShader = shader.vertexShader
       .replace('#include <common>', `#include <common>\n${AFT_VERT}`)
@@ -176,9 +90,7 @@ function burn(m, unit, colour) {
     shader.fragmentShader = shader.fragmentShader
       .replace('#include <common>', '#include <common>\nvarying float vAft;\nvarying float vAftZ;')
       .replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\n  float aftLit = dot( diffuseColor.rgb, vec3( 0.3, 0.59, 0.11 ) );\n  totalEmissiveRadiance *= smoothstep( 0.55, 0.9, vAft ) * smoothstep( 0.25, 0.8, aftLit ) * ( 1.0 - smoothstep( -0.3, -0.15, vAftZ ) ) * 1.6;');
-  };
-  m.customProgramCacheKey = () => `${key ? key.call(m) : ''}|aft`;
-  m.needsUpdate = true;
+  });
 }
 
 // ── the nozzles' glow: one draw a ship, each a soft disc facing the eye ──
@@ -300,8 +212,9 @@ function glowsOf(nozzles, colour, k) {
 }
 
 // (`plating`: off on the lowest detail, where a phone's every fragment counts;
-// the windows and the engines are lit whatever the detail)
-export function dressCapital(holder, kind, { plating = true } = {}) {
+// the windows and the engines are lit whatever the detail; `size` and
+// `lite`: the plating's detail map and a phone's lighter hand, capitalPlating.js)
+export function dressCapital(holder, kind, { plating = true, size = 2048, lite = false } = {}) {
   if (!isCapital(kind)) return null;
   holder.updateMatrixWorld(true);
   const k = holder.scale.x;
@@ -316,57 +229,79 @@ export function dressCapital(holder, kind, { plating = true } = {}) {
     const one = (m) => {
       if (!m?.isMeshStandardMaterial) return m;
       // the game's lights and engine glow in one material of their own (the
-      // Nebulon-B's `Emissive`, bare as it came: tune() greyed it): alight
+      // Nebulon-B's `Emissive`, bare as it came: tune() greyed it, and its
+      // mask, which lights only its windows and lamps, didn't come through):
+      // dark, small lights on it as on the window strips, and its faces aft
+      // the nozzles' glow
       if (LIT.test(m.name) && !m.map) {
         const l = m.clone();
         l.color.setRGB(0.12, 0.13, 0.15);
-        l.emissive.setRGB(...colour);
-        l.emissiveIntensity = 0.9;
+        l.emissive.setRGB(1.0, 0.88, 0.7);
+        l.emissiveIntensity = plating ? 1.4 : 0.3;
+        if (plating) panes(l, unit, length);
         engines.push(mesh);
         return l;
       }
       // a kind whose own maps are next to flat colour: plated over them
       if (PLATE_ALL.has(kind) && m.map && !m.transparent && !ENGINE_NAME.test(m.name)) {
-        const p = m.clone();
-        if (plating) plate(p, unit, length);
+        const p = painted(m.clone());
+        if (plating) plate(p, unit, length, { size, lite });
         return p;
       }
       // the hull's great plates: no colour map of their own (the Venator's
       // red markings came as a bare material named for their colour)
-      if (!m.map && !m.transparent && (HULL.test(m.name) || RED.test(m.name) || m.color.getHex() === 0x6b6f76 || m.color.getHex() === 0xffffff)) {
-        const p = m.clone();
+      // (and a bare one a model left black, a map it never had: its hull's
+      // grey, in shadow; one named for it is black on purpose)
+      const black = !m.map && !LAMP.test(m.name) && !BARE_BLACK.test(m.name) && m.color.r + m.color.g + m.color.b < 0.06;
+      if (!m.map && !m.transparent && (black || HULL.test(m.name) || RED.test(m.name) || m.color.getHex() === 0x6b6f76 || m.color.getHex() === 0xffffff)) {
+        const p = painted(m.clone());
         p.color.set(RED.test(m.name) ? MARKING : tint);
-        p.metalness = 0.35;
-        p.roughness = 0.62;
-        if (plating) plate(p, unit, length);
+        if (black) p.color.multiplyScalar(0.5);
+        if (plating) plate(p, unit, length, { size, lite });
         return p;
       }
-      // the windows' glass, lit
+      // the windows' glass: dark, and on it rows of small lit panes
       if (WINDOW.test(m.name) && m.transparent) {
         const w = m.clone();
-        w.emissive.setRGB(0.85, 0.92, 1.0);
-        w.emissiveIntensity = 1.5;
-        w.opacity = 0.85;
+        w.color.setRGB(0.03, 0.035, 0.045);
+        w.emissive.setRGB(1.0, 0.88, 0.7);
+        // (without the panes, the lowest detail's, a strip's mean light: never a slab)
+        w.emissiveIntensity = plating ? 1.6 : 0.3;
+        w.opacity = 0.9;
+        if (plating) panes(w, unit, length);
         return w;
       }
-      // (a hull metal or a hatch whose name only has 'light' in it, the
-      // MC80's `light_Met`, the Arquitens' `ImperialLightCruiser_Hatch`, not
-      // a lamp: models.js's tune() lit it whole, white)
-      if (m.emissiveIntensity === 3.2 && !LAMP.test(m.name) && !ENGINE_NAME.test(m.name)) {
-        const d = m.clone();
-        d.emissive.setRGB(0, 0, 0);
-        d.emissiveIntensity = 1;
-        return d;
+      // a lamp, glass, black: as it came
+      if (m.transparent || LAMP.test(m.name) || BARE_BLACK.test(m.name)) return m;
+      // (a bare one of a strong colour a model didn't name, the Acclamator's
+      // blue ones: a lamp, alight in its colour)
+      if (!m.map && saturation(m.color) > 0.6) {
+        const l = m.clone();
+        l.emissive.copy(m.color);
+        l.emissiveIntensity = 1.2;
+        return l;
       }
-      // an engine: its own texture, alight only where it faces aft
+      // an engine: its own texture, painted and plated as the hull round it
+      // is, alight only where it faces aft
       if (ENGINE_NAME.test(m.name)) {
-        const e = m.clone();
+        const e = painted(m.clone());
         e.emissiveMap = null;
+        if (plating) plate(e, unit, length, { mapped: true, size, lite });
         burn(e, unit, colour);
         engines.push(mesh);
         return e;
       }
-      return m;
+      // the rest of the hull, its own maps (the trenches, the towers, the
+      // decks' details): painted, and the plating over them lightly (a hull
+      // metal tune() took for a lamp by its name, the MC80's `light_Met`, the
+      // Arquitens' `ImperialLightCruiser_Hatch`, put out first)
+      const d = painted(m.clone());
+      if (d.emissiveIntensity === 3.2) {
+        d.emissive.setRGB(0, 0, 0);
+        d.emissiveIntensity = 1;
+      }
+      if (plating) plate(d, unit, length, { mapped: true, size, lite });
+      return d;
     };
     mesh.material = Array.isArray(mesh.material) ? mesh.material.map(one) : one(mesh.material);
   }

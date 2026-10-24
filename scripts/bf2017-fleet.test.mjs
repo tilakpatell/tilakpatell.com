@@ -7,10 +7,10 @@ import { FLEET, writtenTurn } from './bf2017-fleet.mjs';
 import { qmul } from './lib/rig-clips.mjs';
 
 // the space layer's rows the fleet is written for, as galaxy/models.js has
-// them on a laptop (MODELS is this device's: a test runs at ultra, and on a
-// desktop the kits' rows are their ultra cuts and the fighters' the game's
+// them on a phone (MODELS is this device's: a test runs at ultra, and on a
+// computer the kits' rows are their ultra cuts and the fighters' the game's
 // plain surface cuts, the space fidelity design's)
-const MODELS = modelsAt('mid');
+const MODELS = modelsAt('mid', { phone: true });
 const rowOf = (file) => (file.startsWith('hq/') ? HQ[file.slice(3)] : MODELS[file]);
 const at = (path) => new URL(`../public${path}`, import.meta.url);
 // a file's bytes: on disk, or as published to the bucket (src/data/galaxyAssets.json)

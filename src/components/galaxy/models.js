@@ -198,8 +198,8 @@ export const HIGH_CUTS = Object.fromEntries(
 // (16,029 triangles, `_source`: lab/assets/bf2017/web/models.jsonl) with its
 // engine and its lights and 1,024 maps (scripts/bf2017-fleet.mjs's hq/nebulon
 // row, over Daniel Andersson's), which holds up with a fighter flying along
-// its hull. Only a desktop with a graphics card loads it (detail high or
-// ultra); a laptop or a phone keeps the lighter one. It has its own far-off
+// its hull. A computer loads it (detail mid and up: rowsFor); a phone, or
+// the lowest detail, keeps the lighter one. It has its own far-off
 // copy, since the plain one's, fitted to this hull's box, would sit wrong on
 // it (scripts/galaxy-lod.mjs hq/<kind>). The battles' subsystems, batteries
 // and hulls (universe/wars.js) are shares of the ship's length, so they hold
@@ -213,10 +213,13 @@ export const HQ = {
 // (the Star Destroyer's 1,600 m the whole 60,000 triangles, a corvette's no
 // less than 8,000; `_source`: bf2017-space.mjs's capOf) with every map at the
 // game's own 1,024, in the bucket (scripts/assets-publish.mjs), loaded on a
-// desktop (high and ultra) since the space fidelity design (2026-10-15): the
+// desktop (high and ultra) since the space fidelity design (2026-10-15), and
+// on any computer at mid since 2026-10-24 (rowsFor): the
 // fleet's cut carries its maps at 256 and 128 (bf2017-space.mjs's FLEET_CUT),
 // a texel to several metres of a Star Destroyer, which is why the war's
-// capitals read blurred close up; a phone and a laptop keep that cut. The
+// capitals read blurred close up; a phone and the lowest detail keep that
+// cut, and every capital's hull is plated over its maps whatever the cut
+// (capitalPlating.js, but for the lowest detail). The
 // same hulls as the fleet's cuts, so each keeps its far-off copy. (What a
 // desktop pays: the Star Destroyer's 21.6 MB, about 160 MB of graphics
 // memory at 1,024, by lib/glbTextures' count: the design names the lighter
@@ -253,10 +256,15 @@ export const withHq = (models, detail) =>
     : LIGHT_DETAILS.has(detail)
       ? { ...models, ...over(models, LIGHT_CUTS) }
       : models;
-// the models as a device of this detail loads them (MODELS is this device's)
+// the models as a device of this detail loads them (MODELS is this device's):
+// a computer at mid draws a desktop's rows, the capitals' ultra cuts and the
+// fighters' plain ones (the owner, 2026-10-24: medium and up as good as the
+// ships get; only a phone and the lowest detail cut hard), a phone at mid the
+// light ones (lib/device's `phone`)
 const LIGHT = { ...MODELS };
-export const modelsAt = (detail) => withHq(LIGHT, detail);
-Object.assign(MODELS, modelsAt(device().detail));
+export const rowsFor = (detail, { phone = false } = {}) => (detail === 'mid' && !phone ? 'high' : detail);
+export const modelsAt = (detail, opts) => withHq(LIGHT, rowsFor(detail, opts));
+Object.assign(MODELS, modelsAt(device().detail, { phone: device().phone }));
 
 // what every system's arrival loads, whatever's there (galaxy/scene.js): the
 // Star Destroyer and the corvette the set pieces and the battles fly, and the
@@ -455,7 +463,7 @@ export function createModels({ prepare = null, load: fetchModel = loadGLTF, hull
         tune(root);
         const n = normalise(root, def.nose, kind);
         // (a capital's hull plated, its windows lit, its engines burning aft: capitalLook.js)
-        dressCapital(n.holder, kind, { plating: device().detail !== 'low' });
+        dressCapital(n.holder, kind, { plating: device().detail !== 'low', size: device().phone ? 1024 : 2048, lite: device().phone });
         // (a skinned one's copies need bones of their own: SkeletonUtils)
         root.traverse((o) => o.isSkinnedMesh && (n.skinned = true));
         if (prepare) await prepare(n.holder);

@@ -36,7 +36,7 @@ try {
   const { modelsAt } = await load('src/components/galaxy/models.js');
   const { reachOf, piecesOf } = await load('src/components/galaxy/capitalParts.js');
   const { fitScale } = await load('src/components/universe/shipFit.js');
-  const MODELS = modelsAt('mid');
+  const MODELS = modelsAt('mid', { phone: true }); // (the fleet's cuts: the same hulls as the ultra ones, and in the checkout)
   const kinds = typeof args.kinds === 'string' ? args.kinds.split(',') : args.snap ? Object.keys(TURRETS) : Object.keys(SUBSYSTEMS);
   for (const kind of kinds) {
     const row = MODELS[kind];

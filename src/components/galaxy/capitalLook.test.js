@@ -14,7 +14,7 @@ const ship = () => {
     const g = new THREE.CylinderGeometry(0.08, 0.08, 0.3, 12).rotateX(Math.PI / 2).translate(x, 0, -2.1);
     return g;
   };
-  const engine = new THREE.Mesh(nozzle(-0.3), new THREE.MeshStandardMaterial({ name: 'M_MainEngine_01_lods', map: new THREE.Texture() }));
+  const engine = new THREE.Mesh(nozzle(-0.3), new THREE.MeshStandardMaterial({ name: 'M_MainEngine_01_lods', map: new THREE.Texture(), metalness: 1 }));
   const engine2 = new THREE.Mesh(nozzle(0.3), engine.material);
   const metal = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.2, 0.2), new THREE.MeshStandardMaterial({ name: 'MC_80_light_Met', emissive: '#ffffff', emissiveIntensity: 3.2, map: new THREE.Texture() }));
   holder.add(hull, glass, engine, engine2, metal);
@@ -41,11 +41,15 @@ describe('capitalLook', () => {
     hull.material.onBeforeCompile(shader);
     expect(shader.uniforms.uLength.value).toBe(LENGTH.destroyer);
     expect(shader.uniforms.uUnit.value.elements[0]).toBeCloseTo(0.25, 6);
-    expect(shader.fragmentShader).toMatch(/plPlating/);
+    expect(shader.fragmentShader).toMatch(/plOf\(/);
+    expect(shader.uniforms.uDetail.value.isTexture).toBe(true);
     expect(shader.vertexShader).toMatch(/vShip = /);
     expect(glass.material.emissiveIntensity).toBeGreaterThan(1);
     expect(engine.material.userData.burning).toBe(true);
     expect(metal.material.emissive.getHex()).toBe(0);
+    // (the export's whole metal brought down to paint; a material made plain left plain)
+    expect(engine.material.metalness).toBeCloseTo(0.28, 6);
+    expect(hull.material.metalness).toBe(0);
     // (and the nozzles' glows, one mesh)
     expect(done.nozzles).toHaveLength(2);
     expect(holder.children.filter((o) => o.userData.glows)).toHaveLength(1);
@@ -65,11 +69,18 @@ describe('capitalLook', () => {
     dressCapital(holder, 'nebulon');
     expect(lights.material.emissiveIntensity).toBeGreaterThan(0.5);
     expect(lights.material.userData.plated).toBeUndefined();
+    // (small lights on it, not a lit slab: its mask didn't come through)
+    expect(lights.material.userData.panes).toBe(true);
     const flat = ship();
     const painted = new THREE.Mesh(new THREE.BoxGeometry(1, 0.1, 1), new THREE.MeshStandardMaterial({ name: 'Mat_1', map: new THREE.Texture() }));
     flat.holder.add(painted);
+    const lamp = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.1, 0.1), new THREE.MeshStandardMaterial({ name: 'Material.017', color: 0x009ce7 }));
+    flat.holder.add(lamp);
     dressCapital(flat.holder, 'acclamator');
     expect(painted.material.userData.plated).toBe(true);
+    // (and a bare one of a strong colour, a lamp: alight, not plated)
+    expect(lamp.material.emissive.getHex()).toBe(lamp.material.color.getHex());
+    expect(lamp.material.userData.plated).toBeUndefined();
   });
 
   it('leaves a ship that isn’t a capital as it was', () => {

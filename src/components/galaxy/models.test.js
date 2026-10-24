@@ -79,10 +79,20 @@ describe('the galaxy’s models', () => {
 
   // (lane S1, the galaxy-in-space design's decision 1: where the game has the
   // hull, the galaxy draws it. MODELS is this device's table, a test's at
-  // ultra; the plain rows are a desktop's, modelsAt('high'))
+  // ultra; the plain rows are a desktop's, modelsAt('high'); a phone's at
+  // mid, the light ones, MID)
   describe('the game’s hulls', () => {
     const HIGH = modelsAt('high');
-    const MID = modelsAt('mid');
+    const MID = modelsAt('mid', { phone: true });
+    const light = (detail) => modelsAt(detail, { phone: true });
+
+    it('draws a desktop’s rows on a computer at mid, and a phone’s light ones only on a phone', () => {
+      expect(modelsAt('mid')).toEqual(HIGH);
+      expect(modelsAt('mid', { phone: false })).toEqual(HIGH);
+      expect(light('mid').destroyer.url).toBe('/models/galaxy/destroyer.glb');
+      expect(light('high')).toEqual(HIGH);
+      expect(modelsAt('low')).toEqual(light('low'));
+    });
 
     it('draws the war’s capitals from the space levels’ kits at the fleet’s cut, each turned to fly bow first', () => {
       for (const kind of ['destroyer', 'venator', 'corvette', 'providence']) expect(MID[kind], kind).toEqual({ url: `/models/galaxy/${kind}.glb`, nose: 0 });
@@ -121,7 +131,7 @@ describe('the galaxy’s models', () => {
         expect(onSite(HIGH_CUTS[kind].url), kind).toBe(true);
         expect(bytesOf(HIGH_CUTS[kind].url), kind).toBeGreaterThan(bytesOf(`/models/galaxy/${kind}.glb`));
         for (const detail of ['high', 'ultra']) expect(modelsAt(detail)[kind], `${detail} ${kind}`).toEqual({ ...MID[kind], url: HIGH_CUTS[kind].url, nose: 0, farNose: MID[kind].nose });
-        for (const detail of ['low', 'mid']) expect(modelsAt(detail)[kind].url, `${detail} ${kind}`).toBe(`/models/galaxy/${kind}.glb`);
+        for (const detail of ['low', 'mid']) expect(light(detail)[kind].url, `${detail} ${kind}`).toBe(`/models/galaxy/${kind}.glb`);
         expect(lodUrl(kind, modelsAt('high')), kind).toBe(`/models/galaxy/lod/${kind}.glb`);
       }
       // (a kind the fleet turned: its fleet file wears the row's nose, its surface file none)
@@ -130,18 +140,19 @@ describe('the galaxy’s models', () => {
     });
 
     it('draws a fighter’s light cut on a phone or a laptop, the plain one on a desktop, the same far copy either way', () => {
-      for (const detail of ['low', 'mid']) for (const kind of Object.keys(LIGHT_CUTS)) expect(modelsAt(detail)[kind], `${detail} ${kind}`).toEqual({ ...HIGH[kind], url: LIGHT_CUTS[kind] });
+      for (const detail of ['low', 'mid']) for (const kind of Object.keys(LIGHT_CUTS)) expect(light(detail)[kind], `${detail} ${kind}`).toEqual({ ...HIGH[kind], url: LIGHT_CUTS[kind] });
       for (const detail of ['high', 'ultra']) for (const kind of Object.keys(LIGHT_CUTS)) expect(modelsAt(detail)[kind].url, `${detail} ${kind}`).toBe(HIGH[kind].url);
       for (const detail of ['low', 'high']) expect(lodUrl('xwing', modelsAt(detail))).toBe('/models/galaxy/lod/xwing.glb');
       // (a table laid over kinds the models have, and no other)
       expect(withHq({ tie: { url: '/t.glb', nose: 0 } }, 'low')).toEqual({ tie: { url: '/t.glb', nose: 0 } });
     });
 
-    it('draws the kits’ ultra cuts, the game’s 1,024 maps, on a desktop (high and ultra), the fleet’s cut on a phone or a laptop, the same far copies', () => {
+    it('draws the kits’ ultra cuts, the game’s 1,024 maps, on a computer (mid, high and ultra), the fleet’s cut on a phone or at the lowest detail, the same far copies', () => {
       for (const kind of ['destroyer', 'moncal', 'venator', 'corvette', 'providence']) {
         expect(ULTRA[kind], kind).toBe(`/models/galaxy/${kind}.ultra.glb`);
-        for (const detail of ['high', 'ultra']) expect(modelsAt(detail)[kind], `${detail} ${kind}`).toEqual({ ...MID[kind], url: ULTRA[kind] });
-        for (const detail of ['low', 'mid']) expect(modelsAt(detail)[kind].url, `${detail} ${kind}`).toBe(`/models/galaxy/${kind}.glb`);
+        for (const detail of ['mid', 'high', 'ultra']) expect(modelsAt(detail)[kind], `${detail} ${kind}`).toEqual({ ...MID[kind], url: ULTRA[kind] });
+        for (const detail of ['low', 'mid']) expect(light(detail)[kind].url, `${detail} ${kind}`).toBe(`/models/galaxy/${kind}.glb`);
+        expect(modelsAt('low')[kind].url, kind).toBe(`/models/galaxy/${kind}.glb`);
         expect(lodUrl(kind, modelsAt('ultra')), kind).toBe(`/models/galaxy/lod/${kind}.glb`);
       }
     });
@@ -150,7 +161,7 @@ describe('the galaxy’s models', () => {
   it('has the ten ships brought in (from Sketchfab; the Munificent since made again with Meshy, the Providence the game’s), each turned to fly nose first, and the Razor Crest that walks the surfaces', () => {
     const noses = { tie: 0, tiebomber: 0, tieadvanced: 0, shuttle: 0, lightcruiser: Math.PI / 2, gozanti: 0, munificent: 0, providence: 0, nubian: 0, ghost: 0 };
     for (const [kind, nose] of Object.entries(noses)) {
-      expect(modelsAt('mid')[kind], kind).toEqual({ url: `/models/galaxy/${kind}.glb`, nose }); // (a laptop's rows: a desktop's TIEs are the game's plain cuts, its Providence the kit's ultra cut)
+      expect(modelsAt('mid', { phone: true })[kind], kind).toEqual({ url: `/models/galaxy/${kind}.glb`, nose }); // (a phone's rows: a computer's TIEs are the game's plain cuts, its Providence the kit's ultra cut)
       expect(onSite(MODELS[kind].url), kind).toBe(true);
     }
     expect(MODELS.razorcrest).toEqual({ url: '/models/galaxy/surface/razorcrest.glb', nose: 0 });
@@ -289,9 +300,10 @@ describe('the galaxy’s models', () => {
       }
     });
 
-    it('is what modelsAt gives a desktop, and not a laptop', () => {
+    it('is what modelsAt gives a computer, and not a phone', () => {
       expect(modelsAt('high').nebulon.url).toBe(HQ.nebulon.url);
-      expect(modelsAt('mid').nebulon.url).not.toBe(HQ.nebulon.url);
+      expect(modelsAt('mid').nebulon.url).toBe(HQ.nebulon.url);
+      expect(modelsAt('mid', { phone: true }).nebulon.url).not.toBe(HQ.nebulon.url);
     });
   });
 
@@ -320,12 +332,12 @@ describe('the galaxy’s models', () => {
     // Star Destroyer came at the fleet's cut, whose 256 maps are the blur
     // the design names; the lighter `high` cut it asks of the owner's desktop
     // brings this back under 15.)
-    it('is the Star Destroyer, the corvette, the X-wing and the interceptor, with their far-off copies, under 4 MB on a phone or a laptop, 40 on a desktop and at ultra', () => {
+    it('is the Star Destroyer, the corvette, the X-wing and the interceptor, with their far-off copies, under 4 MB on a phone and at the lowest detail, 40 on a computer at mid and up', () => {
       expect(ARRIVAL).toEqual(['destroyer', 'corvette', 'xwing', 'interceptor']);
-      for (const [detail, cap] of [['low', 4e6], ['mid', 4e6], ['high', 40e6], ['ultra', 40e6]]) {
-        const models = modelsAt(detail);
+      for (const [detail, cap, phone] of [['low', 4e6, false], ['mid', 4e6, true], ['mid', 40e6, false], ['high', 40e6, false], ['ultra', 40e6, false]]) {
+        const models = modelsAt(detail, { phone });
         const bytes = ARRIVAL.flatMap((k) => [models[k].url, lodUrl(k, models)]).reduce((n, url) => n + bytesOf(url), 0);
-        expect(bytes, detail).toBeLessThan(cap);
+        expect(bytes, `${detail}${phone ? ' (a phone)' : ''}`).toBeLessThan(cap);
       }
     });
   });
@@ -458,7 +470,7 @@ describe('the galaxy’s models', () => {
     it('turns a desktop fighter’s far copy as the fleet file it was baked from, so it sits where the model is', async () => {
       const turned = () => {
         const m = fakeModel();
-        m.scene.rotation.y = -modelsAt('mid').uwing.nose;
+        m.scene.rotation.y = -modelsAt('mid', { phone: true }).uwing.nose; // (the fleet file's nose, a phone's row)
         return m;
       };
       const load = vi.fn(async (url) => (url === lodUrl('uwing') ? turned() : fakeModel()));
@@ -588,7 +600,7 @@ describe('the galaxy’s models', () => {
 
     it('turns no ship it fits by length so that it is more than twice as wide or tall as it is long (as a nose turned the wrong way would be)', () => {
       let read = 0;
-      for (const models of [modelsAt('mid'), modelsAt('high'), modelsAt('ultra'), HUNTER_GLB]) {
+      for (const models of [modelsAt('mid', { phone: true }), modelsAt('high'), modelsAt('ultra'), HUNTER_GLB]) {
         for (const [kind, def] of Object.entries(models)) {
           if (BY_SPAN.has(kind) || !here(def.url)) continue; // (a published file is measured where the checkout has it)
           read++;
