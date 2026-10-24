@@ -17,9 +17,9 @@
   - Lane 2's near and far layers take a lattice thing's or list row's look, solid and disc from the catalogue, at where it is now (Task 4), before any list has a row. Legacy wonders keep lane 2's own.
   - Each kind's card and words go in with its rows, through lane 3's `THING_CARDS` and `PLACE`. Lane 3's resolver, parking, picking and tags take every kind. The one change to lane 3's rules is in `around.js`, so that what's listed stays what's drawn: its cap counts what the disc layer draws (Task 4), a kind drawn with no disc (a field, a cloud, a gargantuan) is listed by its card's own `far` outside the cap, as moons and stations are, and a binary's companions take their places in the cap as their discs do in the pick (Task 6).
 - **Drawn (PR group 4a.2).**
-  - A drawer for each kind through lane 2's `drawers` hook: instanced, shared geometry, the palette's tints.
+  - A drawer for each kind through lane 2's `drawers` hook: instanced, shared geometry, the palette's tints. Each instance fades or grows in by its level weight, so a storm or a herd with no far-layer disc never pops, and each `InstancedMesh` is anchored near the camera, so a rock 9.6 million out stays within a pixel.
   - Nebula pockets and supernova remnants through lane 1's one nebula renderer.
-  - Gargantuans' impostors are extra instances of the landmark draw, in a slot the Curve's sun leaves free in the main sector, so a baseline pose gains no draw call and no triangle. Their meshes are built near and fade in through what each material really draws with: a `uFade` uniform in the black hole's shaders, `opacity` on the stock materials.
+  - Gargantuans' impostors are extra instances of the landmark draw, in a slot the Curve's sun leaves free in the main sector, so a baseline pose gains no draw call and no triangle. Their meshes are built near and fade in through what each material really draws with: a `uFade` uniform in the black hole's shaders (behind `#ifdef USE_FADE`, which the Maw doesn't set), `opacity` on the stock materials.
   - The Maw's look moves out of `deepspace.js`, so a generated black hole wears it.
 - **What you can do (PR group 4a.3).** Pure rules (`universe/things/rules.js`) say what each thing does: ore, salvage, scans, hails, signals, tails, storms, beams and wormholes. `universe/things/index.js` plays them in the scene. Dev hooks force every kind and every gargantuan form, and the endless check visits each.
 - **Three PR groups on the one branch.** The coordinator merges every lane, so this plan opens no pull request. Its tasks end in commits.
@@ -76,10 +76,17 @@ Line numbers are from `main` at `cc5e2eaf`. Lanes 1, 2 and 3 move them, so find 
   - No cycles: `extras/*`, `gargantuans.js` and `finder.js` import `things.js` and the leaf `gen/cube.js`, never `space.js`; `things.js` imports no list (Task 4).
   - `boundary-breaks` and `cycles` don't rise. Each task's last run step is `node scripts/health.mjs --only boundary-breaks,cycles`, its two numbers equal to Task 1's Step 0 and written in the commit body.
 - **GLSL.**
-  - `glsl-sites` rises by one at most: `gargantuans/hole.js`'s own material helper (Task 18). The Maw's three shader strings gain a `uFade` uniform in place (`deepspaceShaders.js`), which adds no site.
+  - `glsl-sites` rises by one at most: `gargantuans/hole.js`'s own material helper (Task 18). The Maw's three shader strings gain a `uFade` uniform in place (`deepspaceShaders.js`), behind `#ifdef USE_FADE`, which only a generated hole defines, so the Maw compiles what it did. It adds no site.
   - Gargantuan impostors are new branches in the landmark material, which already exists. Every other look is `MeshStandardMaterial` or `MeshBasicMaterial`, or (a rogue world only) a body through `galaxy/bodies.js`'s `buildBody`.
   - A gargantuan's mesh fades, so every one of its materials is made `transparent` at create: three keys a program by it, and a fade must never change a program mid-flight.
   - No new `onBeforeCompile`. The rocks reuse `lib/three/rock.js`'s `rockMaterial`, as the belt does.
+- **Two clocks.**
+  - Where a thing is (`rowAt`, a comet's tail, a storm's middle, a beacon's blink) runs on `state.spaceT`, lane 3's shared clock: `spaceTime(Date.now())`, epoch seconds, about 1.76e9. It is worked out in doubles, each reduced by `frac(t / period)` before it becomes an angle, as `orbits.js` does.
+  - **No shader uniform takes `spaceT`.** A float32 at 1.76e9 steps by 128, so a `uTime` there would freeze for minutes, then jump, and its noise would turn to garbage.
+  - A GPU clock (a `uTime` uniform: the black hole's three shaders, the landmark draw) takes the scene's render clock `t` (`scene.js:5067`), as deep space's does (`deepspace.js:1445`, from `deep.update(t, …)` at `scene.js:5335`).
+- **Far from home** (the index's Review Focus 4, "within a pixel"). Lane 2's camera-relative draw (`relative.js`'s `drawn()`) fixes `Object3D` matrices, which three works out in doubles. It doesn't fix `instanceMatrix`, a `Float32Array`. A wormhole throws you 3.6 to 9.6 million units out, where a float32 steps by 0.25 to 1.
+  - So an `InstancedMesh` never holds absolute positions. Each one's `position` is set in doubles, every update, to an anchor near what it draws, and its instance translations are written relative to that anchor.
+  - The drawers anchor at `anchorOf(cam)` (Task 13). A gargantuan's instanced parts anchor at its own `at` (Task 20).
 - **Warm-up** (lane 1's rule for its renderer, and lane 2's for its near layer):
   - Every new material is made when its drawer or renderer is made, on one hidden mesh of the kind that draws it (an `InstancedMesh`, with `instanceColor` when it uses one, since three keys a program by both), in the module's own group. The scene's start-up `prepareScene` (`scene.js:6023-6033`, `roots: [scene]`, which links hidden things too: `gpuWork.js:21`) compiles them before the map is seen.
   - Nothing of this lane calls `prepare` while it is being made. The scene's `warm` is declared at `scene.js:948`, after `createThings` (before `createExpanse`, `:772`) and `createGargantuans` (after `createLandmarks`, `:786`) run. A `prepare: (o) => warm(o)` thunk run then throws a `ReferenceError` (the `const`'s temporal dead zone), and the scene never builds. The repo says so at `:952`: "none is made before the first frame".
@@ -94,7 +101,8 @@ Line numbers are from `main` at `cc5e2eaf`. Lanes 1, 2 and 3 move them, so find 
 |---|---|---|
 | `w0`–`w2` | the middle layer's legacy wonders | `makeSector` |
 | `w3` | the sector's gargantuan | `gargantuan` list (this lane) |
-| `w4`–`w7` | the arrival's gargantuans, core only | `arrival` list, rows from lane 4c |
+| `w4` | the arrival's gargantuan, core only, one at most | `arrival` list, its row from lane 4c |
+| `w5`–`w7` | kept free | |
 | `w8`–`w45` | out between the systems (table below) | this lane |
 | `w46`–`w63` | kept free | |
 | `w64`–`w8063` | the lattice, `THING_BASE + slot` | lane 2 |
@@ -134,12 +142,14 @@ Line numbers are from `main` at `cc5e2eaf`. Lanes 1, 2 and 3 move them, so find 
 | relay | 0.5 | 12–45 | `ink`, 0.3 | yes |
 | monolith | 0.25 | 15–60 | `sky`, 0.05 | yes |
 
+A beacon's far-layer disc is 3 × its size, so its lamp reads from afar. In the core sector it is 1 × its size: the core is "lighter" (spec A) and holds the hand-made places, and about 75 beacons lie within the far plane of a core pose. Task 1's `discRadius` says it once, for lane 2's discs and lane 3's cap alike.
+
 *Out between the systems (low ids; none in the core sector):*
 
 | list | kind(s) | ids | a sector | size | moves | extent |
 |---|---|---|---|---|---|---|
 | `gargantuan` | `hole`, `arc`, `hulk`, `giant`, `dyson` | `w3` | 1 in a residue sector | by form | no | size |
-| `arrival` | lane 4c's | `w4`–`w7` | lane 4c's rows, core only | — | no | — |
+| `arrival` | lane 4c's | `w4` | lane 4c's row, core only, one at most | — | no | — |
 | `wormhole` | `wormhole` | `w8` | 1 | 60–140 | no | 0 |
 | `remnant` | `remnant` | `w10`–`w11` | 1–2 | 2,500–6,000 | no | 0 |
 | `pulsar` | `pulsar` (0.7), `magnetar` (0.3) | `w12`–`w14` | 1–3 | 40–90 | beams sweep | beam, 25 × size |
@@ -174,11 +184,11 @@ Line numbers are from `main` at `cc5e2eaf`. Lanes 1, 2 and 3 move them, so find 
 - **Where a gargantuan goes.**
   - `residuesOf(universe)`: three residues mod 3 from `hash64(universe, 'gargantuans')`, never all nought. A sector holds one when `mod(sx, 3)`, `mod(sy, 3)` and `mod(sz, 3)` match them. The core sector never does.
   - Placed by up to 200 darts in the cube `CUBE_HALF − size` round the sector's middle (`CUBE_HALF` is lane 2's 56,000, moved to the leaf `gen/cube.js` in Task 4), so its whole extent stays in its own sector, where a neighbour's systems and lattice, which don't know it, can't reach. Clear of:
-    - every row of `KEEP_OUTS` by `FAR + size` (45,000 + size), so its mesh is never built at a baseline pose. All 27 rows, not `keepOutsNear(sx, sy, sz)`: that keeps only the keep-outs whose sphere touches the sector's cube, and every hand-made place is within about 40,000 of home, so for four of the six face neighbours it is empty.
+    - every row of `KEEP_OUTS` by `FAR + size` (45,000 + size), so its mesh is never built at a baseline pose. All 27 rows, not `keepOutsNear(sx, sy, sz)`: that keeps only the keep-outs whose sphere touches the sector's cube, and every hand-made place is within about 40,000 of home, so for five of the core's six face neighbours it is empty (only `E:0,-1` gets one, the pocket's; measured at `cc5e2eaf`).
     - legacy systems by `reach + size + 2,000`
     - legacy wonders by `w.size + size`
     - beacons by `3,000 + size`
-  - Then appended systems keep out of `{ at, r: size + 2,000 }`, and the lattice and extras keep off its solid parts (`gargantuanKeeps`). In the shared universe's core sector the same holds for each of the arrival's gargantuans (lane 4c's rows).
+  - Then appended systems keep out of `{ at, r: size + 2,000 }`, and the lattice and extras keep off its solid parts (`gargantuanKeeps`). In the shared universe's core sector the same holds for the arrival's gargantuan (lane 4c's row). There is at most one (`ARRIVAL_MAX = 1`), and the core never holds a generated one, so the core keeps spec C's "at most one a sector" too.
 - **Clearances for every extra:**
   - from every row of `KEEP_OUTS` (all 27, for the reason above; lane 2's lattice keeps `ctx.outs`, which is enough for its clearances of at most 2,340) by `(THING_NEAR + 1) × size + extent`; pockets and remnants by `NEBULA_SHOW + size`, where `NEBULA_SHOW = 40000`. A swarm keeps the first rule: it is drawn near, not by the nebula renderer.
   - from a system by `reach + size + extent`; a list placed round a system skips its own system
@@ -202,7 +212,7 @@ Line numbers are from `main` at `cc5e2eaf`. Lanes 1, 2 and 3 move them, so find 
   - Salvage pays `found` ×2, once a thing a visit; a derelict is a trap one time in six.
   - A relay's scan pays `found` ×1. A monolith's pays `found` ×3 and gives a line of lore, once a visit.
   - A comet's tail pays `found` ×1 for 2 s inside it, once a comet a visit.
-  - A storm drains 4 shields a second, never below 10. The drain isn't a hit: no `laser` event (Comms' hit sound and crew line, `Comms.jsx:249-251`), no shake, no hurt flash (Task 24's `drain`, beside `hurt`).
+  - A storm drains 4 shields a second, never below 10. The drain isn't a hit: no `laser` event (Comms' hit sound and crew line, `Comms.jsx:249-251`), no shake, no hurt flash (Task 24's `drain`, beside `hurt`). The shields don't come back while it drains: they regrow 12 a second once `delay` has passed since the last hit (`scene.js:3981`), three times the drain, so the regen waits `delay` after a drain as after a hit (`state.drainAt`, Task 24).
   - A pulsar's beam scrambles the HUD for 1.2 s.
   - A wormhole throws you 30–80 sectors away, one way, from inside 0.45 × its size, and never mid-trip.
 - **The budget's rows** (Task 12, in lane 2's one tier table):
@@ -245,17 +255,18 @@ Line numbers are from `main` at `cc5e2eaf`. Lanes 1, 2 and 3 move them, so find 
 - **"Not a pixel changes" is decided by bytes, at a held clock.**
   - The scene's clock runs at a held pose (`scene.js:5067`, `t = (now − t0) / 1000`), and the Maw's disc, the belt and the Twins move with it. So a shot to compare is taken with `universe-check --t <seconds>` (Task 18), which pins the clock as the quality floor does (`scene.js:6157-6160`).
   - `scripts/pixel-measure.mjs` prints a picture's luminance statistics; it doesn't compare two. `scripts/same-pixels.mjs` (Task 18) does: it decodes both shots with sharp and compares the raw buffers byte for byte, outside an optional mask. Its answer decides. Pixel-measure's numbers go in the README beside it.
+  - It compares lossless PNGs, never the WebPs. `universe-check` writes its shots as WebP at quality 88 (`universe-check.mjs:236`), and a small real change can be quantised away in a lossy picture. So `universe-check --png` (Task 18) also writes the screenshot's own PNG beside each WebP. The PNGs are compared, and not committed (each is over the 1 MB rule); the WebPs, the JSONs and the answers are.
   - First, two befores at the same `t` are compared. If they differ (something on screen the clock doesn't hold, a passing ship), the box where they differ is the mask for every comparison of that pose, and the README names what moved there.
 
 ## Review Focus
 
 1. **A thing that moves.** A comet, storm, herd or swarm is drawn, listed, picked, collided with and parked at where it is now, not where it was at t = 0. At a frame or two a second a ship parked at a comet stays parked: every comet is under `COMET.fast` (0.25), the autopilot's stop, and the carry takes it. A tab open for days (t = 1e10) moves them smoothly. Pinned in Task 2 (paths at large t), Task 4 (the near and far layers read `rowAt`) and Task 5 (every comet under `COMET.fast`; the carry takes a mover, and a parked ship drifts under a unit in 300 s).
-2. **A gargantuan at the handover, or all round you.** Coming in, the impostor and the mesh are never both missing, and never both full: `k + fade` stays at 1, where `fade` is what each material really draws with (the hole's `uFade`, the stock materials' `opacity`). A mesh is never cut by the far plane. The impostor keeps its true angle at 10^6 out. With the camera inside a ringworld's ring, a Dyson shell or a black hole's disc, the mesh is up and nothing pops. A black hole's disc and jets still move: `buildHole`'s three shaders read the `uTime` they're given, deep space's for the Maw and the gargantuans' own for the rest. Pinned in Task 18 (the real `buildHole`'s `uFade` and `uTime`, and two Maw shots at different clocks), Task 19 (the angle, the placement) and Task 20 (the handover on the real looks, inside).
+2. **A gargantuan at the handover, or all round you.** Coming in, the impostor and the mesh are never both missing, and never both full: `k + fade` stays at 1, where `fade` is what each material really draws with (the hole's `uFade`, the stock materials' `opacity`). A mesh is never cut by the far plane. The impostor keeps its true angle at 10^6 out. With the camera inside a ringworld's ring, a Dyson shell or a black hole's disc, the mesh is up and nothing pops. A black hole's disc and jets still move: `buildHole`'s three shaders read the `uTime` they're given, deep space's for the Maw and, for the rest, the gargantuans' own, set from the scene's render clock `t` and never from `spaceT` (Global Constraints, "Two clocks"). Pinned in Task 18 (the real `buildHole`'s `uFade` and `uTime`, and two Maw shots at different clocks), Task 19 (the angle, the placement) and Task 20 (the handover on the real looks, inside, and the clock it's given against an epoch-sized `spaceT`).
 3. **The hand-made core.** The ten baseline poses keep their draw calls and triangles: no extra is built near a keep-out, and no pocket is drawn there, including the lists of the sectors next to the core, whose keep-outs `keepOutsNear` doesn't return. The gargantuan's quad takes the Curve's sun's free slot, and gives it back: lane 1 writes a slot's kind, colours, cell and axis once, at create (`landmarks.js:250-259` on `main`), so every update writes them for every slot from `MAIN_DRAWN` up, and in the Rick and Morty sector the Curve's sun is itself again. The portfolio's stations aren't buried. Pinned in Task 8 (from the ten poses' own points, against all of `KEEP_OUTS`), Task 10 (`FAR + size`, the same way), Task 19 (the instance count, and the slots given back) and Task 22 (the baseline poses measured).
-4. **A pocket universe** (`/universe?seed=marble`). Its residues, forms, lists, traits, companions and wormhole exits are its own, deterministic, and kept out of the keep-outs. Its rows share id strings with the shared universe's, so nothing is memoised by id alone. The arrival's gargantuans belong to the shared universe only. Pinned in Tasks 3 and 6 (memos by seed), 5, 9 and 10.
+4. **A pocket universe** (`/universe?seed=marble`). Its residues, forms, lists, traits, companions and wormhole exits are its own, deterministic, and kept out of the keep-outs. Its rows share id strings with the shared universe's, so nothing is memoised by id alone. The arrival's gargantuan belongs to the shared universe only. Pinned in Tasks 3 and 6 (memos by seed), 5, 9 and 10.
 5. **Actions not by accident, and not for ever.**
    - A trip that passes through a wormhole's throat doesn't throw you: only flying by hand does.
-   - A storm never destroys the ship, and its drain isn't a hit: `hurt()` emits `laser` and sets the shake and the hurt flash on every call (`scene.js:3154-3168`), and Comms plays a hit sound every 120 ms and a crew line on each (`Comms.jsx:249-251`). The storm lowers the shield through `drain`, which does none of that.
+   - A storm never destroys the ship, and its drain isn't a hit: `hurt()` emits `laser` and sets the shake and the hurt flash on every call (`scene.js:3154-3168`), and Comms plays a hit sound every 120 ms and a crew line on each (`Comms.jsx:249-251`). The storm lowers the shield through `drain`, which does none of that. It does hold the regen off (`state.drainAt`), or the shields' 12 a second would undo its 4.
    - Ore, salvage, scans and tails pay once a thing a visit.
    - E at a generated thing never takes over E at a hand-made place: generated things are outside every keep-out, and the hand-made branch comes first.
    - A hostile fleet fights only after a hail.
@@ -264,12 +275,14 @@ Line numbers are from `main` at `cc5e2eaf`. Lanes 1, 2 and 3 move them, so find 
 7. **Phones still fly** (done item 10). Every drawer is capped by its `thingKinds` count and the gargantuans' detail by `gargantuan`, both lowered by the quality steps (Task 12). The ten baseline poses build nothing of this lane's, so their frame time can't show it. Task 25 bounds the frame time on `low` and `mid` where this lane does build: `at-gargantuan`, `in-field` and `expanse-system`, against lane 3's endless numbers.
 8. **What's listed is what's drawn.** Lane 3's `placesAround` keeps the nearest `max` disc rows, and lane 2's `pickDiscs` the nearest `max` discs. A row the disc layer doesn't draw (a field, a cloud, a gargantuan) must not take a drawn disc's place in the list, or that disc can't be picked or named (lane 3's Review Focus 10, done item 4); and a companion's disc, which takes a place in the pick, takes one in the list. Pinned in Task 4 (the rule, on test lists), Task 6 (companions) and Task 11 (with every list in).
 9. **The scene builds.** Nothing of this lane's calls the scene's `warm` while the scene is being made (Global Constraints, "Warm-up"). Pinned in Tasks 13, 14–16 and 20 (no `prepare` at create) and Task 22 (`/universe` loads with no console error before any endless step).
+10. **A cloud or a herd coming in.** Six near kinds draw no far-layer disc: storms, herds, swarms, debris, fields and ice fields. Nothing hands over to them, and lane 2's `pops()` measures only far-layer discs. A 4,000-size storm shown whole at its reach (32,000) would appear in one frame 14° across, and a herd hundreds of pixels across at 2,400. So every drawer weights every instance by `w = levelWeights(dist, { reach: THING_NEAR × size }).full`: colour × `w` for an additive look, scale × `w` for the rest. Pinned in Task 13 (a sweep across the band for a storm and a herd) and Task 22 (a held-pose pop measure at a storm's edge and a herd's, with a control that sees them).
+11. **Far from home.** Rocks of radius 0.3 to 3, beacons, debris, haulers and a herd's segments, seen from tens of units 9.6 million out, stay within a pixel of where they are. Every `InstancedMesh` sits at an anchor set in doubles, its instances relative to it (Global Constraints, "Far from home"). Pinned in Task 13 (an instance 9.6e6 out, measured the way lane 2's `relative.test.js` measures a body, against the same instance unanchored) and Task 20 (a Dyson's panels).
 
 ## Files
 
 | File | Responsibility | Task |
 |---|---|---|
-| `src/components/expanse/gen/catalogue.js` (new) | the 23 entries, 32 kinds, looks, solids, traits | 1, 3 |
+| `src/components/expanse/gen/catalogue.js` (new) | the 23 entries, 32 kinds, looks, solids (a fleet's ship by ship), disc radii, traits | 1, 3, 7 |
 | `src/components/expanse/gen/paths.js` (new) | movers on the shared clock | 2 |
 | `src/components/expanse/gen/things.js` | the lattice's kinds; extras of any length; no list of its own | 3, 4 |
 | `src/components/expanse/gen/cube.js` (new) | `CUBE_HALF`, a leaf the lists and `space.js` share | 4 |
@@ -293,13 +306,13 @@ Line numbers are from `main` at `cc5e2eaf`. Lanes 1, 2 and 3 move them, so find 
 | `src/components/universe/budget.js` (lane 2's) | `thingKinds`, `gargantuan` stepping | 12 |
 | `src/components/expanse/scene/nearThings.js`, `discs.js` (lane 2's) | the catalogue's looks, solids, discs and movers; companions' discs | 4, 6 |
 | `src/components/expanse/scene/near.js` (lane 2's) | companions in a built system | 15 |
-| `src/components/universe/things/layout.js` (new) | pure layouts: rocks in a field, pieces, bodies, beams, ships | 13–16 |
+| `src/components/universe/things/layout.js` (new) | pure layouts: rocks in a field, pieces, bodies, beams, ships; the drawers' weight and anchor | 13–16 |
 | `src/components/universe/things/drawers.js` (new) | `createThingDrawers`: lane 2's `drawers` hook | 13 |
 | `src/components/universe/things/looks/*.js` (new) | `rocks`, `comet`, `wrecks`, `signals`, `stars`, `weather`, `life`, `fleets` (with the original `trader`), `rogue` | 13–16 |
 | `src/components/universe/things/pockets.js` (new) | pockets and remnants fed to lane 1's renderer | 17 |
 | `src/components/universe/nebula/index.js` (lane 1's) | a cloud's `k`; `shown()` | 17 |
 | `src/components/universe/gargantuans/hole.js` (new), `deepspace.js`, `deepspaceShaders.js` | the Maw's look, shared, with a fade and the clock it's given | 18 |
-| `scripts/same-pixels.mjs`, `scripts/same-pixels.test.mjs` (new); `scripts/universe-check.mjs` (`--t`) | two shots compared byte for byte; the clock held for a shot | 18 |
+| `scripts/same-pixels.mjs`, `scripts/same-pixels.test.mjs` (new); `scripts/universe-check.mjs` (`--t`, `--png`) | two lossless shots compared byte for byte; the clock held for a shot | 18 |
 | `src/components/universe/landmarkRules.js` (new) | `landK`, `drawnAngle`, `quadAxes`, pure, re-exported by `landmarks.js` | 19 |
 | `src/components/universe/gargantuans/rules.js`, `impostorGlsl.js` (new), `landmarks.js` (lane 1's) | impostors in the landmark draw | 19 |
 | `src/components/universe/gargantuans/looks/*.js`, `index.js` (new) | meshes near, solids, light, lens | 20 |
@@ -342,7 +355,15 @@ Line numbers are from `main` at `cc5e2eaf`. Lanes 1, 2 and 3 move them, so find 
     | 12 | `outpost` | | |
 
   - **`KINDS: { [kind]: { kind, n, body, disc, lit, tint, color, near, core } }`**, one row per kind (32):
-    - `body`: what's solid, as a share of the row's `size`, or null for nothing solid. It is 1 for the lattice kinds, 0.25 for `pulsar` and `magnetar`, 0.12 for `protostar`, 0.6 for `rig`, 0.5 for `shipyard`, 1 for `comet`, and null for everything else. Gargantuans' solids are their own (Task 20), and stations' are lane 3's.
+    - `body`: what's solid as one sphere, a share of the row's `size`, or null for no one sphere. It is 1 for the lattice kinds, 0.25 for `pulsar` and `magnetar`, 0.12 for `protostar`, 0.6 for `rig`, 0.5 for `shipyard`, 1 for `comet`, and null for everything else. Gargantuans' solids are their own (Task 20), and stations' are lane 3's.
+      - **A fleet is solid ship by ship**, not as one sphere: `rowSolids` gives one sphere a ship (Task 7), as traffic's big ships are solid (`traffic.js:483-495`).
+      - **Passable on purpose,** each said in the module's header:
+        - a storm: you fly in, and its drain is the point
+        - a herd and a swarm: they are animals, and the site's own leviathans aren't solid either ("Nothing hurts them", `leviathans.js:13`; none is in the solids). They swim, so a solid at a frame or two a second would shove the ship through itself. And their drawn count is cut by the tier's `thingKinds.bodies`, so a solid creature would be an invisible wall on a phone.
+        - battle debris: hull plates and girders a few units across, drawn for salvage
+        - a field: its rocks join the rock fields' registry when it's near (Task 13), so the hull and the bolts meet them as they meet the belt's
+        - a pocket and a remnant: clouds
+      - The owner may overrule the herd (finding 37).
     - `disc`: the disc lane 2's far layer draws, as a share of `size`, or 0 for none. It is 1 for the lattice kinds and `rig`; 3 for `beacon` (its lamp reads from afar); 4 for `comet` (its coma); 0.5 for `pulsar` and `magnetar`; 0.6 for `protostar` and `wormhole`; 0.4 for `fleet`; 0.8 for `shipyard`; and 0 otherwise.
     - `tint`: `[paletteName, k]`. `color` is `hexOf(tint(name, k))`, except lane 2's four lattice kinds, which keep `#8a8178`, `#cfe3ee`, `#6d727c` and `#4a3f38`. The tints are the lattice table's above, and: `field` `grey` 0.25, `icefield` `engine` 0.6, `comet` `star` 0, `pulsar` `engine` 0.5, `magnetar` `nebula` 0.5, `protostar` `sun` 0.2, `storm` `engine` 0, `wormhole` `nebula` 0.3, `debris` `grey` 0.1, `fleet` `bone` 0.2, `rig` `sun` 0, `shipyard` `bone` 0.3, `herd` `nebula` 0.4, `swarm` `engine` 0.3, `pocket` `nebula` 0.15, `remnant` `engine` 0.2, `hole` `sun` 0, `arc` `bone` 0, `hulk` `grey` 0, `giant` `sun` 0.3, `dyson` `star` 0, and `system`, `station` and `nebula` `star` 0.
     - `lit`: false for `beacon`, `comet`, `pulsar`, `magnetar`, `protostar`, `storm`, `wormhole` and `swarm`; true otherwise.
@@ -350,6 +371,8 @@ Line numbers are from `main` at `cc5e2eaf`. Lanes 1, 2 and 3 move them, so find 
     - `core`: false for every kind of the low-id lists and for `fleet` and `shipyard`; true for the lattice kinds, `field`, `icefield`, `comet`, `rig`, `system`, `station` and `nebula`.
   - **`lookOf(kind) → { color, lit, disc }`.** An unknown kind reads as `rock`'s colour, lit, disc 1.
   - **`solidOf(row, at = row.at) → { id, at, r, reach } | null`**, with `r = body × size` and `reach = 1.2 × r`. It is null where `body` is null.
+  - **`rowSolids(row, at = row.at) → [{ id, at, r, reach }]`**: everything solid a row adds to the solids. It is `[solidOf(row, at)]`, or `[]` where that's null. Task 7 gives a fleet one sphere a ship. Lane 2's near layer reads this (Task 4), never `solidOf` alone.
+  - **`discRadius(kind, size, { core = false } = {}) → number`**: the far-layer disc's radius, `size × lookOf(kind).disc`, except a `beacon` in the core sector, `size × 1`. Lane 2's `discs.js` and lane 3's cap both read it (Task 4), so what's drawn and what's listed can't drift.
   - **`hexOf([r, g, b]) → '#rrggbb'`**, from linear light (the inverse of `palette.js`'s `linearOf`).
   - **`PLANET_SIZE`**: the weighted mean of `PLANET_TYPES`' radius midpoints.
 
@@ -366,7 +389,7 @@ Line numbers are from `main` at `cc5e2eaf`. Lanes 1, 2 and 3 move them, so find 
 import { describe, expect, it } from 'vitest';
 import { PALETTE, tint } from '../../universe/shared/space';
 import { PLANET_TYPES } from './tables';
-import { CATALOGUE, KINDS, PLANET_SIZE, hexOf, lookOf, solidOf } from './catalogue';
+import { CATALOGUE, KINDS, PLANET_SIZE, discRadius, hexOf, lookOf, rowSolids, solidOf } from './catalogue';
 
 const LANE2 = { rock: '#8a8178', ice: '#cfe3ee', derelict: '#6d727c', rogue: '#4a3f38' };
 
@@ -394,9 +417,19 @@ describe('the catalogue', () => {
     expect(solidOf({ id: 'E:1,0:w64', kind: 'rock', at: [1, 2, 3], size: 50 })).toEqual({ id: 'E:1,0:w64', at: [1, 2, 3], r: 50, reach: 60 });
     expect(solidOf({ id: 'p', kind: 'pulsar', at: [0, 0, 0], size: 80 })).toEqual({ id: 'p', at: [0, 0, 0], r: 20, reach: 24 });
     expect(solidOf({ id: 'c', kind: 'comet', at: [5, 5, 5], size: 10 }, [9, 9, 9]).at).toEqual([9, 9, 9]);
+    // (passable on purpose: a storm, a herd, a swarm, debris, a field's drift and the clouds; a fleet is solid ship by ship, Task 7)
     for (const kind of ['field', 'icefield', 'pocket', 'remnant', 'storm', 'wormhole', 'debris', 'herd', 'swarm', 'fleet', 'nebula', 'hole', 'arc', 'hulk', 'giant', 'dyson']) {
       expect(solidOf({ id: 'x', kind, at: [0, 0, 0], size: 100 }), kind).toBeNull();
     }
+    const rock = { id: 'E:1,0:w64', kind: 'rock', at: [1, 2, 3], size: 50 };
+    expect(rowSolids(rock)).toEqual([solidOf(rock)]);
+    expect(rowSolids({ id: 's', kind: 'storm', at: [0, 0, 0], size: 2000 })).toEqual([]);
+  });
+  it('draws a beacon’s disc three times its size, but its own size in the core', () => {
+    expect(discRadius('beacon', 20)).toBe(60);
+    expect(discRadius('beacon', 20, { core: true })).toBe(20);
+    expect(discRadius('rock', 50, { core: true })).toBe(50);
+    expect(discRadius('storm', 3000)).toBe(0);
   });
   it('knows which kinds others draw, and which may sit in the core', () => {
     expect(Object.values(KINDS).filter((k) => !k.near).map((k) => k.kind).sort()).toEqual(['arc', 'dyson', 'giant', 'hole', 'hulk', 'nebula', 'pocket', 'remnant', 'station', 'system']);
@@ -563,26 +596,29 @@ describe('paths', () => {
   - `SECTOR_EXTRAS` leaves `things.js` for `extras/index.js`, and `thingsOf`'s default becomes `extras = []`. So `things.js` imports no list, and every list can import `THING_NEAR`, `THING_BASE` and `EXTRA_HIGH` from it with no cycle.
 - Modify: `src/components/expanse/gen/space.js`:
   - `CUBE_HALF` from `./cube`, `SECTOR_EXTRAS` from `./extras`
-  - `fullSector(universe, sx, sy, sz, { things = true, lattice = things, extras = SECTOR_EXTRAS })`: with `lattice: false` the lattice is empty and the lists are made; `extras` is for tests
+  - `fullSector(universe, sx, sy, sz, { things = true, lattice = things, extras = SECTOR_EXTRAS })`. `extras` is for tests.
+    - `things: false` makes neither the lattice nor any list: `things.count` 0 and `extras` `{}`, as lane 2's "gives no things when asked for none" (`space.test.js:58-64`) asserts. `thingsOf` isn't called.
+    - `lattice: false` (with `things` true) leaves the lattice empty and makes the lists.
+    - What appended systems keep out of (lane 2's keep-outs, and from Task 10 the gargantuan and the arrival's) is applied whatever the options, so a system's id never depends on them.
   - the ctx `thingsOf` gets gains `wonders` (today's, as now), `beacons`, `stations` (lane 3's, already made at that point), `d` (Chebyshev distance in sectors), `core` (`!sx && !sy && !sz`) and `universe`. `outs` stays lane 2's `keepOutsNear`, for the lattice.
   - **`export function wonderPlace(sector, n, extras = SECTOR_EXTRAS)`** (module-private today, `space.js:165`) looks in the lists first, by range, then lane 3's stations, then the lattice, then the legacy wonders
 - Modify: `src/components/expanse/gen/things.test.js`: its `SECTOR_EXTRAS` import comes from `./extras`, and `expect(SECTOR_EXTRAS).toEqual([])` is replaced by "every list's range is low or high, and none overlaps another". Name it in the commit.
-- Modify: lane 3's `src/components/expanse/shared/space.js`: `SECTOR_EXTRAS` is lent from `../gen/extras` (its names unchanged)
+- Modify: lane 3's `src/components/expanse/shared/space.js` and `shared.test.js`: `SECTOR_EXTRAS` is lent from `../gen/extras` (its names unchanged), and the face lends `discRadius`, which `around.js` imports through it
 - Modify: lane 2's `src/components/expanse/scene/nearThings.js` and `nearThings.test.js`, `discs.js` and `discs.test.js` (new `it`s; every existing one stays)
-- Modify: lane 3's `src/components/universe/places/around.js` and `around.test.js` (a new `it`): the cap counts what the disc layer draws (below). It reads `lookOf` through `expanse/shared/space.js`, which has lent it since Task 3.
+- Modify: lane 3's `src/components/universe/places/around.js` and `around.test.js` (a new `it`): the cap counts what the disc layer draws (below). It reads `lookOf` (lent since Task 3) and `discRadius` through `expanse/shared/space.js`.
 - Test: `src/components/expanse/gen/lists.test.js` (new)
 
 **Interfaces:**
-- Consumes: lane 2's `thingsOf`, `fullSector`, `placeIn`, `placeOf`, `pickNear`, `createNearThings`, `createDiscs` and `pickDiscs`; lane 3's `stationsOf`, the station branch it put in `wonderPlace`, and `placesAround` and `AROUND`; Task 1's `KINDS`, `lookOf` and `solidOf`; Task 2's `rowAt`.
+- Consumes: lane 2's `thingsOf`, `fullSector`, `placeIn`, `placeOf`, `pickNear`, `createNearThings`, `createDiscs` and `pickDiscs`; lane 3's `stationsOf`, the station branch it put in `wonderPlace`, and `placesAround` and `AROUND`; Task 1's `KINDS`, `lookOf`, `rowSolids` and `discRadius`; Task 2's `rowAt`.
 - Produces, in the generator: `EXTRA_HIGH`, `CUBE_HALF` (in `gen/cube.js`), `SECTOR_EXTRAS` and `EXTRA_LISTS` (in `gen/extras/index.js`), the ctx above, `make(ctx, made)`, `fullSector`'s `lattice` and `extras` options, and `wonderPlace` exported, lists first.
 - Produces, in lane 2's layers, so a list's rows are drawn right from the first task that makes one (Task 5):
   - **`pickNear(sectors, cam, { max, t = 0 })`** measures each lattice thing and list row at `rowAt(row, t)`, and leaves out the list kinds whose `KINDS[kind].near` is false. Each entry is `{ id, kind, at, size, look, row }`: `look` is `lookOf(kind)` (lane 2's four keep their colours), and `row` is the source row (for the lattice, `thingRow(sector, i)`, memoised by the sector's seed and the slot, the last 256).
-  - **`createNearThings(…).solids()`** lists `solidOf(entry.row, entry.at)` for lattice things and list rows, and skips null.
-  - **`discs.js`** pushes a lattice thing or list row as a disc of radius `size × lookOf(kind).disc`, at `rowAt(row, t)`, and not at all when that's 0.
+  - **`createNearThings(…).solids()`** lists every sphere of `rowSolids(entry.row, entry.at)` for lattice things and list rows (none for a kind with no solid; a fleet's ships from Task 7).
+  - **`discs.js`** pushes a lattice thing or list row as a disc of radius `discRadius(kind, size, { core })`, where `core` is its sector's `!sx && !sy && !sz`, at `rowAt(row, t)`, and not at all when that's 0.
   - **Legacy wonders (`w0`–`w2`) keep lane 2's own rules**, in all three: their look (`sectors.js:41-46`'s `WONDER`: the derelict `#7a808c`, the rogue `#6b5a50`, the pulsar `#b8f4ff`), their solids, their discs, and whether `pickNear` takes them. The catalogue reads lattice things and list rows only. A legacy wonder's kind shares a name with a catalogue kind, but `lookOf` would recolour three of them and shrink a legacy pulsar's solid to `0.25 × size`, and a lane doesn't change another's drawing on the way past (as with lane 2's four lattice colours).
   - Until Tasks 13–16 give a kind its drawer, a near list row is lane 2's ball in its catalogue colour. The clearances keep every list row past `THING_NEAR × size + extent` from the baseline poses (Task 8), so none is built there.
 - Produces, in lane 3's `around.js` (`placesAround(sectors, cam, t, { far, inside, max })`), the cap by the disc layer's own rule:
-  - A lattice thing or list row whose `lookOf(kind).disc` is over 0 is a disc kind: it is within the far plane by lane 3's rule, counts toward `max`, and is ranked by distance from the middle, as `pickDiscs` ranks it. For the cap's count it uses the disc layer's radius, `size × lookOf(kind).disc`.
+  - A lattice thing or list row whose `lookOf(kind).disc` is over 0 is a disc kind: it is within the far plane by lane 3's rule, counts toward `max`, and is ranked by distance from the middle, as `pickDiscs` ranks it. For the cap's count it uses the disc layer's radius, `discRadius(kind, size, { core })`, the same call `discs.js` makes.
   - A list row whose `disc` is 0 (`field`, `icefield`, `pocket`, `remnant`, `storm`, `herd`, `swarm`, `debris` and the five gargantuan forms) is drawn by no disc, so it never takes a disc's place. It is listed outside the cap, as moons and stations are, when its `dist` is within its card's own `far` (`AROUND.far` when the card has none; `NEBULA_SHOW` for a pocket or remnant; 400,000 for a gargantuan, Task 10).
   - Systems, planets and legacy wonders keep lane 3's rule unchanged.
   - Why: lane 3 counted every extra within the far plane toward `budget.discs` (400 on low against about 1,700 lattice things there). Every disc-0 row inside the cap pushed a drawn disc out of the list, and that disc couldn't be picked or named.
@@ -603,16 +639,18 @@ describe('paths', () => {
       - legacy `w0`
       - and `w60`, `w8064` and `w9999` give null
     - `fullSector(UNIVERSE, 1, 0, 0, { lattice: false, extras: lists })` has `things.count === 0`, and calls each list's `make` once (a counting `make`).
+    - `fullSector(UNIVERSE, 1, 0, 0, { things: false, extras: lists })` calls no `make` and has `extras` `{}`, and its `systems` (ids, places and seeds) deep-equal `fullSector(UNIVERSE, 1, 0, 0)`'s. Lane 2's "gives no things when asked for none" passes unchanged.
     - The ctx a `make` sees carries `stations` (lane 3's, the same rows as `fullSector(…).stations`), `beacons`, `wonders`, `d`, `core` and `universe`.
     - `placeOf(UNIVERSE, 'e:1,0:w64')` is unchanged from before this task, row for row.
   - **`nearThings.test.js`, new `it`s,** with a hand-made sector holding a comet (with a `path`), a pocket, a gargantuan `hole`, a field and a rock:
     - `pickNear` at t = 5000 puts the comet at `rowAt(comet, 5000)` and finds it by that place. It leaves out the pocket and the hole, and keeps the field and the rock, each with its `row` and `look` `lookOf(kind)`.
     - `solids()` holds the comet at its place with `r: size`, and the rock with `r: size, reach: 1.2 × size`. It holds neither the field nor the pocket.
     - The same slot of the same id in two sectors with different seeds gives each its own `row`.
-  - **`discs.test.js`, new `it`s:** the field and the pocket push no disc; the comet pushes one of radius `4 × size` at `rowAt`; a beacon one of `3 × size`; a lane 2 rock one of `size`, in `#8a8178`.
+  - **`discs.test.js`, new `it`s:** the field and the pocket push no disc; the comet pushes one of radius `4 × size` at `rowAt`; a beacon one of `3 × size`, and the same beacon in a sector at `[0, 0, 0]` one of `size`; a lane 2 rock one of `size`, in `#8a8178`.
+  - **`nearThings.test.js`:** `solids()` holds exactly the spheres of `rowSolids(entry.row, entry.at)` over the entries, so nothing for the field, the pocket or a storm.
   - **Legacy wonders, in `nearThings.test.js` and `discs.test.js`:** a sector holding a legacy `derelict`, `rogue` and `pulsar` wonder gives each the same entry, look, solid and disc as before this task (each recorded from lane 2's code in the test, before the change): the derelict still `#7a808c`, and the pulsar's solid still lane 2's.
   - **Lane 3's `around.test.js`, a new `it`: the capped list is the disc layer's pick.**
-    - Sectors: the 27 round `E:1,0`, each made with `fullSector(…, { extras: lists })`, where `lists` is the test's own: a low list of 60 `nebula` rows (disc 0; lane 3's card for a legacy nebula already names the kind, and the catalogue's own disc-0 kinds get their cards in Tasks 5–10) and a high list of 40 `beacon`s (disc 3) and 40 `outpost`s (disc 1), darted in each sector's cube by a seeded rng.
+    - Sectors: the 27 round `E:1,0`, the core among them, each made with `fullSector(…, { extras: lists })`, where `lists` is the test's own: a low list of 60 `nebula` rows (disc 0; lane 3's card for a legacy nebula already names the kind, and the catalogue's own disc-0 kinds get their cards in Tasks 5–10) and a high list of 40 `beacon`s (disc 3, and 1 in the core) and 40 `outpost`s (disc 1), darted in each sector's cube by a seeded rng.
     - Camera: `E:1,0`'s middle plus `[7000, 3000, −2000]`.
     - `placesAround(sectors, cam, 0, { ...AROUND, max: 400 })`'s disc rows (its rows less moons, stations and the disc-0 kinds) are exactly the set lane 2's `createDiscs` pushes, with `budget.discs` 400, fed the same sectors and camera through a recording fake far layer (its `discs.push` records the place and radius). Each pushed disc is matched to a row by its place (to 1e-3) and radius.
     - Every `nebula` row within its card's `far` is listed besides, and none of them is among the 400. Task 11 runs the same test with every real list in.
@@ -760,11 +798,17 @@ describe('paths', () => {
 **Files:**
 - Create: `src/components/expanse/gen/extras/anchored.js`, `src/components/expanse/gen/extras/anchored.test.js`
 - Modify: `extras/index.js` (lists `fleet` 50000, `shipyard` 60000), `words.js`, `things/cards.js` and its test
+- Modify: `src/components/expanse/gen/catalogue.js` and `catalogue.test.js`: `fleetLayout`, and a fleet's branch in `rowSolids`. (In the catalogue, not `anchored.js`: `anchored.js` imports `things.js`, which imports the catalogue, so the other way would be a cycle.)
 
 **Interfaces:**
-- Consumes: Task 4's ctx (`stations`, `core`); lane 3's `poleHeight(system, size)` and `Station` rows (`{ id, i, system, at, size, faction, seed }`).
+- Consumes: Task 4's ctx (`stations`, `core`); lane 3's `poleHeight(system, size)` and `Station` rows (`{ id, i, system, at, size, faction, seed }`); Task 1's `rowSolids`.
 - Produces:
   - **`FLEET = { share: 0.5, size: [80, 220], ships: [3, 7] }`**, from `rngOf(hash64(station.seed, 'fleet'))`. The row is `{ kind: 'fleet', name, at, size, station: id, system, faction: system.faction, ships, seed }`, where `at = station.at + side · [0, 3 × station.size + size, 0]` and `side` is the sign of the station's height over its star.
+  - **`fleetLayout(row, at = row.at) → [{ k, at: [x, y, z], heading, length }]`**, in `catalogue.js`, pure, from `rngOf(hash64(row.seed, 'ships'))`: the one place a fleet's ships are, which both its solids and its drawing (Task 16's `fleetShips`) read.
+    - `row.ships` ships in a loose line abreast through `at`, all on one heading drawn from the rng
+    - ship 0, the capital, at `at`, `0.48 × size` long; the escorts `0.16 × size` long, on alternate sides at `0.3`, `0.6` and `0.9 × size` along the line, each jittered by up to `0.03 × size`
+    - so every ship's sphere (below) is within `size` of `at`, and no two overlap
+  - **`rowSolids(fleet, at)`** gives one sphere a ship: `{ id: row.id + ':s' + k, at, r: 0.3 × length, reach: 0.3 × length }`, the rule traffic's big ships use (`r = size × 0.3`, `reach` the same, `traffic.js:489-492`).
   - **`YARD = { share: 0.25, size: [120, 300] }`**, from `rngOf(hash64(station.seed, 'yard'))`.
     - `h = poleHeight(system, size)` on the other pole, `at = star + [0, −side · h, 0]`; none when `h` is null.
     - The row is `{ kind: 'shipyard', name, at, size, station: id, system, seed }`.
@@ -777,13 +821,14 @@ describe('paths', () => {
 - [ ] **Step 1: Write the failing tests** over `E:1,0`, `E:2,0` and `E:1,0,1`:
   - the share of stations with a fleet is in `[0.38, 0.62]`, and with a shipyard in `[0.12, 0.35]`
   - a fleet sits on its station's pole, `3 × station size + size` further from the star, and flies its system's faction
+  - **a fleet is solid ship by ship,** in `catalogue.test.js`: for every fleet of the three sectors, `rowSolids(fleet)` has `fleet.ships` spheres; sphere 0's `r` is three times each other's; every sphere is within `fleet.size` of `fleet.at`; no two overlap; and their `at`s and ids are `fleetLayout(fleet)`'s, in order. `solidOf(fleet)` stays null. `rowSolids(fleet, [0, 0, 0])` is the same spheres moved by `−fleet.at`.
   - a shipyard sits on the other pole at `poleHeight`, clear for t in `{0, 1e4, 1.7e9}` of every planet by `extentOf(p) + size`
   - `E:0,0` has none of either
   - ids resolve at `w50000…` and `w60000…`, and the rows are plain data
-- [ ] **Step 2: Run them and see them fail.** Run `npx vitest run src/components/expanse/gen/extras/anchored.test.js`. Expected: FAIL.
+- [ ] **Step 2: Run them and see them fail.** Run `npx vitest run src/components/expanse/gen/extras/anchored.test.js src/components/expanse/gen/catalogue.test.js`. Expected: FAIL.
 - [ ] **Step 3: Implement.**
 - [ ] **Step 4: Run them and see them pass.** Run `npx vitest run src/components/expanse src/components/universe/things`. Expected: PASS.
-- [ ] **Step 5: Commit.** `git commit -m "Fleets at anchor over the stations' poles, and shipyards over the other"`
+- [ ] **Step 5: Commit.** `git commit -m "Fleets at anchor over the stations' poles, solid ship by ship, and shipyards over the other"`
 
 ### Task 8: Clouds and life between the systems
 
@@ -888,16 +933,17 @@ describe('paths', () => {
 - Create: `src/components/expanse/gen/gargantuans.js`, `src/components/expanse/gen/gargantuans.test.js`
 - Modify: `src/components/expanse/gen/space.js` (`fullSector`, which gains the option `arrivals`, for tests):
   - after the legacy pass, `g = hasGargantuan(…) ? gargantuanOf(universe, sx, sy, sz, sector) : null`
-  - `arrivals` defaults to `ARRIVAL_GARGANTUANS` in the shared universe's core sector and `[]` everywhere else
+  - `arrivals` defaults to `ARRIVAL_GARGANTUANS` in the shared universe's core sector and `[]` everywhere else. More than `ARRIVAL_MAX` (1) throws a `RangeError` naming spec C's "at most one a sector".
   - `big = [g, ...arrivals]` without the null. Then `appendSystems(sector, [...outs, ...big.map((b) => ({ id: 'gargantuan', at: b.at, r: b.size + GARGANTUAN.systems }))])` (the rows get their ids from their lists, after).
+  - All of this runs whatever `things` and `lattice` say (Task 4), so an appended system's id never depends on them. `things: false` still gives `extras` `{}`.
   - the ctx `thingsOf` gets has `gargantuan: g`, `arrivals` and `keeps: big.flatMap(gargantuanKeeps)`, and `outs` stays lane 2's keep-outs
 - Modify: `src/components/expanse/gen/things.js`: the lattice's cell keeps clear of `ctx.keeps` as it does of `ctx.outs`, by `(THING_NEAR + 1) × size` (one concatenation in `prepare`, made once a ctx)
 - Modify: `src/components/expanse/gen/extras/place.js`: `roomFor` keeps every list row clear of `ctx.keeps` by its size and extent. The show rule's `NEBULA_SHOW` is for the keep-outs alone, or a pocket would keep 40,000 off a gargantuan.
-- Modify: `extras/index.js` (lists `gargantuan` at base 3, max 1, giving `[ctx.gargantuan]` or `[]`; and `arrival` at base 4, max 4, giving `ctx.arrivals`), `words.js`, `things/cards.js` and its test
+- Modify: `extras/index.js` (lists `gargantuan` at base 3, max 1, giving `[ctx.gargantuan]` or `[]`; and `arrival` at base 4, max 1 (`ARRIVAL_MAX`), giving `ctx.arrivals`), `words.js`, `things/cards.js` and its test
 - Modify: lane 3's `src/components/universe/places/around.test.js` (a new `it`; `around.js` itself is unchanged here). A gargantuan's forms have `disc` 0, so Task 4's rule already lists it outside the cap, by its card's `far`, 400,000.
   - Why it matters: `placesAround` keeps the nearest `max` disc rows by distance (400 on low, 1,200 on mid), and about 1,700 lattice things lie within the far plane of any point.
   - A gargantuan is always in a neighbouring sector, 60,000 to 170,000 off, so in the cap it would be cut. Its impostor would be on the sky, but it couldn't be picked, tagged or carded, against "every place you see, you can pick".
-- Modify: lane 3's `src/components/expanse/shared/space.js` and `shared.test.js`: the face lends `GARGANTUAN_FORMS`, `GARGANTUAN`, `gargantuanSectors`, `formOf`, `gargantuanKeeps`, `ARRIVAL_BASE`, `ARRIVAL_GARGANTUANS` and `checkGargantuan`
+- Modify: lane 3's `src/components/expanse/shared/space.js` and `shared.test.js`: the face lends `GARGANTUAN_FORMS`, `GARGANTUAN`, `gargantuanSectors`, `formOf`, `gargantuanKeeps`, `ARRIVAL_BASE`, `ARRIVAL_MAX`, `ARRIVAL_GARGANTUANS` and `checkGargantuan`
 - Modify: `src/components/universe/things/clear.test.js` (Task 8's; a new `it`)
 
 **Interfaces:**
@@ -909,7 +955,7 @@ describe('paths', () => {
   - **`hasGargantuan(universe, sx, sy, sz) → boolean`**, with a mod that's never negative
   - **`formOf(universe, sx, sy, sz) → form`**: the first draw of `rngOf(hash64(sectorSeedOf(universe, sx, sy, sz), 'gargantuan'))`. It is cheap: no sector is made.
   - **`gargantuanOf(universe, sx, sy, sz, legacy) → row | null`**. The same rng draws: the form, its dimensions, `axis` (a unit), `light` (a unit), the two colours, the name, then the darts. `legacy` is `{ systems, wonders, beacons }`.
-    - The darts land in the cube `CUBE_HALF − size` round the sector's middle and must clear every row of `KEEP_OUTS` (`clearOfKeepOuts(at, GARGANTUAN.far + size)`, its default `outs`), and the legacy rows as Global Constraints says. Its header says why not `keepOutsNear`: it is empty for four of the core's six face neighbours.
+    - The darts land in the cube `CUBE_HALF − size` round the sector's middle and must clear every row of `KEEP_OUTS` (`clearOfKeepOuts(at, GARGANTUAN.far + size)`, its default `outs`), and the legacy rows as Global Constraints says. Its header says why not `keepOutsNear`: it is empty for five of the core's six face neighbours.
     - The row is `{ kind: form, gargantuan: true, name, at, size, body, band?, span?, mid?, axis, light, colors: [hex, hex], seed }`.
     - The colours: `hole` `[sun 0, shot 0.1]` (as the Maw's), `arc` `[bone 0, engine 0.3]`, `hulk` `[grey 0, shot 0]`, `giant` two of `[sun, bone, shot, engine, nebula]` at 0.2, `dyson` `[sun 0, star 0]`.
   - **`gargantuanKeeps(row) → [{ at, r }]`**, the solid parts as spheres:
@@ -918,7 +964,9 @@ describe('paths', () => {
     - `hulk`: along the spine every `0.2 × size`, each `0.14 × size`
     - `giant`: one, `size × 1.05`
     - `dyson`: one, `body × 3`
-  - **`ARRIVAL_BASE = 4`, `ARRIVAL_MAX = 4`, `ARRIVAL_GARGANTUANS = []`**: lane 4c's rows, in the core sector at `w4` to `w7`. The core's appended systems, lattice and lists keep off each, as off a generated one.
+  - **`ARRIVAL_BASE = 4`, `ARRIVAL_MAX = 1`, `ARRIVAL_GARGANTUANS = []`**: lane 4c's row, in the core sector at `w4`. The core's appended systems, lattice and lists keep off it, as off a generated one.
+    - One at most, so the core keeps spec C's "at most one a sector": the core never holds a generated gargantuan (`hasGargantuan` is false there), and a second arrival row throws a `RangeError` naming that rule, from `fullSector` before any list is made.
+    - The spec's arrival parks a new visitor at one of "three or four chosen fandom worlds", each with "a gargantuan placed by hand behind it". One gargantuan has to serve them all, or the owner lets the core hold more (finding 39). `w5`–`w7` stay free for that.
   - **`checkGargantuan(row) → row`**: throws `TypeError` on a form not in the list, a non-finite `at`, a `size` outside 20–200 × `PLANET_SIZE`, or a missing `axis`. Lane 4c's own test runs it over its rows.
   - **`gargantuanSectors(universe, from: [sx, sy, sz], { form = null, n = 1, ring = 12 }) → [[sx, sy, sz], …]`**: the nearest `n` gargantuan sectors with that form (any, if null), out to Chebyshev `ring`. Nearest first by straight-line distance in sector units, ties broken by `sectorKey`. It reads residues and `formOf` only.
   - **Words:** `hole: 'Black hole'`, `arc: 'Ringworld arc'`, `hulk: 'Derelict hulk'`, `giant: 'Supergiant'`, `dyson: 'Dyson swarm'`, and abouts:
@@ -941,7 +989,7 @@ import { UNIVERSE, sectorSeedOf, universeOf } from './seed';
 import { addBodies } from './systems';
 import { fullSector } from './space';
 import { PLANET_SIZE } from './catalogue';
-import { ARRIVAL_BASE, GARGANTUAN, GARGANTUAN_FORMS, checkGargantuan, formOf, gargantuanKeeps, gargantuanOf, gargantuanSectors, hasGargantuan, residuesOf } from './gargantuans';
+import { ARRIVAL_BASE, ARRIVAL_MAX, GARGANTUAN, GARGANTUAN_FORMS, checkGargantuan, formOf, gargantuanKeeps, gargantuanOf, gargantuanSectors, hasGargantuan, residuesOf } from './gargantuans';
 
 const len = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
 const near = (r) => { const out = []; for (let x = -r; x <= r; x++) for (let y = -r; y <= r; y++) for (let z = -r; z <= r; z++) out.push([x, y, z]); return out; };
@@ -990,9 +1038,13 @@ describe('gargantuans', () => {
       expect(px).toBeGreaterThanOrEqual(20);
     }
   });
-  it('comes in five forms, every one of them within four sectors of home', () => {
-    const forms = new Set(near(4).filter((c) => hasGargantuan(UNIVERSE, ...c)).map((c) => formOf(UNIVERSE, ...c)));
-    expect([...forms].sort()).toEqual([...GARGANTUAN_FORMS].sort());
+  it('comes in five forms, every one of them within six sectors of home, in each universe', () => {
+    // (near(6) holds 81 gargantuan sectors: with five forms equally likely, one is missing about 5 × 0.8^81 ≈ 1e-7 of
+    // the time; near(4)'s 27 would miss one about 1% of the time, and a seed that did would have no way out)
+    for (const u of [UNIVERSE, universeOf('marble'), universeOf('ab')]) {
+      const forms = new Set(near(6).filter((c) => hasGargantuan(u, ...c)).map((c) => formOf(u, ...c)));
+      expect([...forms].sort(), String(u)).toEqual([...GARGANTUAN_FORMS].sort());
+    }
   });
   it('keeps systems out of it and things off its solid parts, at w3', () => {
     const c = near(1).find((x) => hasGargantuan(UNIVERSE, ...x));
@@ -1006,7 +1058,7 @@ describe('gargantuans', () => {
       expect(clearOfKeepOuts(at, 9 * s.things.size[i], keeps)).toBe(true);
     }
   });
-  it('holds the arrival’s at w4 on, in the core of the shared universe only, and keeps the core off it', () => {
+  it('holds the arrival’s at w4, one at most, in the core of the shared universe only, and keeps the core off it', () => {
     expect(ARRIVAL_BASE).toBe(4);
     expect(fullSector(UNIVERSE, 0, 0, 0, { lattice: false }).extras.arrival).toEqual([]);
     expect(fullSector(UNIVERSE, 0, 0, 0, { lattice: false }).extras.gargantuan).toEqual([]);
@@ -1020,6 +1072,12 @@ describe('gargantuans', () => {
       expect(clearOfKeepOuts(at, 9 * s.things.size[i], keeps)).toBe(true);
     }
     expect(fullSector(universeOf('marble'), 0, 0, 0, { lattice: false }).extras.arrival).toEqual([]);
+    // (at most one a sector, spec C: the core holds no generated one, so the arrival's one is the most it may hold)
+    expect(ARRIVAL_MAX).toBe(1);
+    expect(() => fullSector(UNIVERSE, 0, 0, 0, { lattice: false, arrivals: [row, { ...row, at: [-30000, 0, 30000] }] })).toThrow(RangeError);
+    // (and the arrival's keeps the appended systems off it whatever the options: their ids don't depend on them)
+    const sys = (o) => fullSector(UNIVERSE, 0, 0, 0, { arrivals: [row], ...o }).systems.map((x) => [x.id, x.at]);
+    expect(sys({ things: false })).toEqual(sys({}));
   });
   it('finds the nearest of a form without making a sector', () => {
     const got = gargantuanSectors(UNIVERSE, [0, 0, 0], { form: 'arc', n: 2 });
@@ -1045,7 +1103,7 @@ describe('gargantuans', () => {
 - [ ] **Step 2: Run them and see them fail.** Run `npx vitest run src/components/expanse/gen/gargantuans.test.js src/components/universe/things/clear.test.js src/components/universe/places/around.test.js`. Expected: the new tests FAIL; lane 3's existing ones pass.
 - [ ] **Step 3: Implement**, and wire `fullSector`. The `space.js` change says why the gargantuan comes before appended systems: a system appended into a black hole's disc couldn't be moved after.
 - [ ] **Step 4: Run them and see them pass.** Run `npx vitest run src/components/expanse src/components/universe/places src/components/universe/things`, then `node scripts/health.mjs --only boundary-breaks,cycles`. Expected: PASS. Lane 2's `space.test.js` counts, density, fingerprint and speed, and lane 3's tests, are unchanged; Task 1's Step 0 numbers.
-- [ ] **Step 5: Commit.** `git commit -m "Gargantuans: exactly one in every 3 × 3 × 3, never the core, clear of the hand-made places by the far plane"`. The body says which sectors near home hold one, and that appended systems in those sectors moved (nothing stored names them: finding 4).
+- [ ] **Step 5: Commit.** `git commit -m "Gargantuans: exactly one in every 3 × 3 × 3, never the core, clear of the hand-made places by the far plane"`. The body says which sectors near home hold one, and that appended systems in those sectors moved (nothing stored names them: finding 4). It says the five-forms test looks within six sectors, not four: near(4)'s 27 gargantuan sectors miss a form about one seed in a hundred, near(6)'s 81 about one in ten million. And it says the arrival holds one gargantuan at most (finding 39).
 
 ### Task 11: The catalogue holds, the finder and the face
 
@@ -1055,9 +1113,11 @@ describe('gargantuans', () => {
 - Modify: lane 3's `src/components/universe/places/weight.test.js`: `GENERATOR` names this lane's generator files too
 - Modify: lane 3's `src/components/universe/places/around.test.js` (a new `it`, with every list in)
 - Modify: `src/components/expanse/gen/things.test.js`: a new `it` pins `EXTRA_LISTS`
+- Modify: `src/components/universe/things/cards.test.js` (a new `it`: every kind has a name, a card and a park). It lives on the universe side because it reads lane 3's resolver, cards and parking, which `holds.test.js` can't import without a boundary break (a test crosses nothing only beside its own file, `boundary-breaks.mjs:57`).
+- Modify: `src/components/universe/things/clear.test.js` (a new `it`: the discs over 4 px each kind adds at the ten poses, for the gate)
 
 **Interfaces:**
-- Consumes: Tasks 1–10; lane 3's `stations`; lane 2's `FAR`, `FADE` and `levelWeights` (`expanse/scene/levels.js`, pure).
+- Consumes: Tasks 1–10; lane 3's `stations`, `resolvePlace(id, { t, sectors, build })`, `placeCard` and `parkPlace(dest, from: [x, z], t)`; lane 2's `FAR`, `FADE`, `levelWeights` and `discPx` (`expanse/scene/levels.js`, pure).
 - Produces:
   - **`kindsIn(sectors) → Map<kind, number>`**: how many of each kind the sectors hold. `sectors` is any iterable of sectors: a caller holding lane 2's `Map` passes `map.values()`.
     - systems, as `system`
@@ -1066,9 +1126,9 @@ describe('gargantuans', () => {
   - **`nearestOfKind(sectors, kind, at: [x, y, z], t = 0) → { id, kind, at, sector } | null`**: the nearest row of that kind, measured at `rowAt(row, t)`, over any iterable of sectors. It also takes `binary` and `trinary`, and `gargantuan` for any form.
   - **`EXTRA_LISTS`**, final: `['gargantuan', 'arrival', 'wormhole', 'remnant', 'pulsar', 'protostar', 'storm', 'pocket', 'swarm', 'herd', 'debris', 'field', 'comet', 'rig', 'fleet', 'shipyard']`
   - **The face** `expanse/shared/space.js` lends, besides lane 3's names:
-    - from earlier tasks: `KINDS`, `lookOf`, `traitsOf` (Task 3); `rowAt`, `pathAt`, `pathSpeed`, `COMET_PERIOD`, `tailOf` (Task 5); `companionsOf`, `companionAt` (Task 6); `NEBULA_SHOW` (Task 8); `wormholeExit` (Task 9); `GARGANTUAN_FORMS`, `GARGANTUAN`, `gargantuanSectors`, `formOf`, `gargantuanKeeps`, `ARRIVAL_BASE`, `ARRIVAL_GARGANTUANS`, `checkGargantuan` (Task 10)
-    - from this task: `CATALOGUE`, `solidOf`, `PLANET_SIZE`, `EXTRA_HIGH`, `EXTRA_LISTS`, `kindsIn`, `nearestOfKind`
-    - and lane 2's `FAR`, `FADE` and `levelWeights`, from `../scene/levels`, which the drawers (Task 13) and the gargantuans (Tasks 19 and 20) import through it and nowhere else
+    - from earlier tasks: `KINDS`, `lookOf`, `traitsOf` (Task 3); `discRadius` (Task 4); `rowAt`, `pathAt`, `pathSpeed`, `COMET_PERIOD`, `tailOf` (Task 5); `companionsOf`, `companionAt` (Task 6); `NEBULA_SHOW` (Task 8); `wormholeExit` (Task 9); `GARGANTUAN_FORMS`, `GARGANTUAN`, `gargantuanSectors`, `formOf`, `gargantuanKeeps`, `ARRIVAL_BASE`, `ARRIVAL_MAX`, `ARRIVAL_GARGANTUANS`, `checkGargantuan` (Task 10)
+    - from this task: `CATALOGUE`, `solidOf`, `rowSolids`, `fleetLayout`, `PLANET_SIZE`, `EXTRA_HIGH`, `EXTRA_LISTS`, `kindsIn`, `nearestOfKind`
+    - and lane 2's `FAR`, `FADE`, `levelWeights` and `discPx`, from `../scene/levels`, which the drawers (Task 13), the gargantuans (Tasks 19 and 20) and `clear.test.js` import through it and nowhere else
     - The light face is unchanged.
   - **`GENERATOR`** in `weight.test.js` becomes:
 
@@ -1092,9 +1152,14 @@ describe('gargantuans', () => {
     - making `E:1,0` after `E:2,0`, or alone, gives deep-equal lists
   - **The finder takes lane 2's `Map`:** `nearestOfKind(new Map(blocks.map((x) => [x.id, x])).values(), 'comet', [0, 0, 0], 1234)` equals the array call's.
   - **The face:** `shared.test.js` pins its sorted names, and `GARGANTUAN.far` equals `FAR`, both read through it.
-  - **Lane 3's `around.test.js`, a new `it`: what's listed is what's drawn, with every list in.** Task 6's test again, over the 27 real sectors round `E:1,0` as this lane makes them, at `max` 400 (low's `discs`) and at a point in each of three sectors (`E:1,0`'s middle plus `[7000, 3000, −2000]`, `E:2,0`'s middle, and the home block's gargantuan sector's middle): the capped rows plus companions' places equal `createDiscs`' pushes, and every disc-0 row within its card's `far` is listed besides.
+  - **`things/cards.test.js`, a new `it`: every one has a name, a card and a parking spot** (spec B), through lane 3's own resolver and parking, not only in the slow browser sweep. Over `E:1,0`'s block (the 27 round it, lattice and lists, made once in a `beforeAll` through the face and kept in a `Map` passed to `resolvePlace` as `sectors`), for each of this lane's kinds the first three rows (a lattice kind's from `thingRow`; companions as their system), and the block's gargantuan:
+    - `resolvePlace(row.id, { t: 0, sectors, build: false })` resolves, its `name` a non-empty string
+    - `placeCard` gives a card whose `type` is `PLACE.thing[kind]` and whose `about` is a non-empty string
+    - `parkPlace(dest, [origin x + 50,000, origin z], 0)`, from outside the block's middle sector, is non-null and outside every sphere of `rowSolids(row, rowAt(row, 0))`, and for a gargantuan of `gargantuanKeeps(row)`, by at least 1
+  - **`things/clear.test.js`, a new `it`: the discs over 4 px each kind adds at the ten poses, for the gate.** From each pose's point (Task 8's), over the 27 sectors round home with the lattice and lists, it counts by kind the lattice things and list rows within the far plane whose `discPx(dist, discRadius(kind, size, { core }), { fovY: 34°, height: 1080 })` is over 4. It asserts that every count is a whole number and that no core beacon's radius is over its size, and prints the table (pose by kind) for the README. Lane 2's four kinds and this lane's are in separate columns.
+  - **Lane 3's `around.test.js`, a new `it`: what's listed is what's drawn, with every list in.** Task 6's test again, over the 27 real sectors round `E:1,0` as this lane makes them (the core among them), at `max` 400 (low's `discs`) and at a point in each of four sectors (`E:1,0`'s middle plus `[7000, 3000, −2000]`, `E:2,0`'s middle, the home block's gargantuan sector's middle, and the `belt` pose's point in the core, where beacons' discs are their size): the capped rows plus companions' places equal `createDiscs`' pushes, and every disc-0 row within its card's `far` is listed besides.
   - **`weight.test.js`:** passes with the wider `GENERATOR`, unchanged otherwise (no file of this lane's is on `nav.js`'s, ⌘K's or the home page's imports).
-- [ ] **Step 2: Run them and see them fail.** Run `npx vitest run src/components/expanse/gen/holds.test.js src/components/expanse/shared src/components/universe/places/weight.test.js src/components/universe/places/around.test.js`. Expected: FAIL. `weight.test.js` passes already (it pins what must stay true), and so should the new `around.test.js` `it` (Tasks 4 and 6 made the rule; this pins it with every list in): if it fails, the fault is in a list's `disc` or card, found and fixed here.
+- [ ] **Step 2: Run them and see them fail.** Run `npx vitest run src/components/expanse/gen/holds.test.js src/components/expanse/shared src/components/universe/places/weight.test.js src/components/universe/places/around.test.js src/components/universe/things`. Expected: FAIL. `weight.test.js` passes already (it pins what must stay true), and so should the new `around.test.js` `it` (Tasks 4 and 6 made the rule; this pins it with every list in): if it fails, the fault is in a list's `disc` or card, found and fixed here.
 - [ ] **Step 3: Implement** `finder.js`, the face and the regex.
 - [ ] **Step 4: Run the gate for PR group 4a.1.**
   - Run `npm run lint`, `npm test`, `npm run build` and `node scripts/health.mjs --check --skip build`. Expected: all green; `boundary-breaks`, `cycles` and `big-files` as Task 1's Step 0; `glsl-sites` unchanged.
@@ -1102,7 +1167,8 @@ describe('gargantuans', () => {
     - calls and triangles equal at every pose
     - pictures changed only by the far layer's specks: the lattice's new mix, the core's fields, comets and rigs, and its systems' companions. Put the pairs side by side in the README.
     - A call or triangle more, or any other change, is a stop: find it in Tasks 3–10.
-- [ ] **Step 5: Commit.** `git commit -m "Every kind of the catalogue in every 3 × 3 × 3, the density targets still held, and a finder for each"`. The body gives a sector's counts (`E:1,0`'s list rows by kind), the ten-sector time before and after this group, and the mid poses' calls and triangles against the before.
+  - **The hand-made core not buried** (the spec's failure "the hand-made core buried under generated clutter"). Run `npx vitest run src/components/universe/things/clear.test.js -t "discs over 4 px"` and put its table in the README beside the pairs: at each of the ten poses, how many discs over 4 px across each new kind adds, against lane 2's four. The hand-off notes ask the owner to sign off the pairs and the table by name ("For the owner"). If they won't, the core's discs come down further, as the beacon's did (`discRadius`).
+- [ ] **Step 5: Commit.** `git commit -m "Every kind of the catalogue in every 3 × 3 × 3, the density targets still held, and a finder for each"`. The body gives a sector's counts (`E:1,0`'s list rows by kind), the ten-sector time before and after this group, the mid poses' calls and triangles against the before, and the discs over 4 px each new kind adds at the ten poses (the table's totals).
 
 ---
 
@@ -1141,22 +1207,35 @@ describe('gargantuans', () => {
   - `src/components/universe/things/looks/rocks.js`, `src/components/universe/things/looks/comet.js`
 
 **Interfaces:**
-- Consumes: Task 4's entries; Task 12's `thingKinds`; lane 2's `levelWeights` and `THING_NEAR` and Task 5's `tailOf`, all through `expanse/shared/space.js` (Task 11), never `expanse/scene/levels.js` itself; `rock`, `rockMaterial` (`lib/three/rock.js`); `universe/kit.js`'s `paint` (`kit.js:32-41`, a canvas from `document.createElement`) and `glowMat`; `PALETTE`, `tint`; the scene's texture set `T` (`scene.js:647`, `loadTextures`), for `kit.js`'s `hull(T, color)` (`kit.js:175`).
+- Consumes: Task 4's entries; Task 12's `thingKinds`; lane 2's `levelWeights` and `THING_NEAR` and Task 5's `tailOf`, all through `expanse/shared/space.js` (Task 11), never `expanse/scene/levels.js` itself; `rock`, `rockMaterial` (`lib/three/rock.js`); `universe/kit.js`'s `paint` (`kit.js:32-41`, a canvas from `document.createElement`) and `glowMat`; `PALETTE`, `tint`; the scene's texture set `T` (`scene.js:647`, `loadTextures`), for `kit.js`'s `hull(T, color)` (`kit.js:175`); in the test only, lane 2's `createRelativeDraw` (`universe/relative.js`).
 - Produces:
-  - **`createThingDrawers(group, { budget, tier, prepare, rocks = null, textures = {} }) → { drawers, drawn(), fields(), dispose() }`**
+  - **`createThingDrawers(group, { budget, tier, prepare, rocks = null, textures = {} }) → { drawers, drawn(), weight(id), fields(), dispose() }`**
     - `group` holds the warm-up meshes (below). `createThings` passes a group of its own under the map.
     - `budget` is a thunk giving the row, so `setStep` reaches the drawers.
     - `textures` is the scene's `T`, for `hull()`. With `{}` (the tests' stand-in), `hull` gets no maps (`tiled(undefined)` is null, `kit.js:12`) and still makes its material.
     - `drawers[kind](g, ctx) → { update(entries, camera, t), dispose() }` is lane 2's hook, `g` lane 2's group. This task fills `rock`, `ice`, `field`, `icefield`, `rig` and `comet`; Tasks 14–16 add the rest. Each kind with `near: false` gets a drawer that draws nothing, so lane 2's ball never stands in for it.
     - `drawn() → { [kind]: instances shown }`, for the dev hooks
+    - `weight(id) → number | null`: the `w` last applied to that entry, or null when it isn't built, for the dev hooks (Task 22's held-pose measure)
     - `fields() → [{ id, rocks: [{ x, y, z, r }], hidden: Set<index> }]`: the near fields' rocks, for the bolts (Task 24)
     - `rocks`: Task 21's registry. A field coming near is added with `{ id, grid: rockGrid(rocks, 20), box: boxOf(rocks), field: { hide(i), show(i) } }`, and removed when it goes.
   - **The drawer contract**, which every drawer of Tasks 13–16 keeps (Global Constraints, "Warm-up"):
     - Its materials and shared geometry are made when `createThingDrawers` is, each on one hidden mesh in `group` of the kind that draws it (an `InstancedMesh` of count 1, with `instanceColor` when the drawer uses one). The scene's start-up `prepareScene` compiles them. **`prepare` isn't called then**, nor by a factory `drawers[kind](g, ctx)`, which lane 2 may call while the scene is being made.
     - Every mesh made after that (a drawer's `InstancedMesh`es, a near field's own rocks, a rogue's body) is passed to `prepare(mesh)` once, from the first `update` that has something for it, and shown when that resolves.
     - an `InstancedMesh` per part, sized from `budget()`, with `visible = count > 0`
-    - an entry is shown when `levelWeights(dist, { reach: THING_NEAR × size }).full > 0.01`
+    - **Its weight** (Review Focus 10). Every update, each entry's `w = weightOf(dist, size)`, where `dist = |entry.at − camera.position|`, and every instance of that entry is drawn at strength `w`:
+      - an additive look (a comet's coma and tail, a storm's puffs and bolts, a swarm, a beacon's lamp, a pulsar's or magnetar's beams, a wormhole's swirl, work lights): its instance colour × `w`
+      - every other look: its instance scale × `w`, about the instance's own middle (rocks, a field's rocks, debris, a herd's segments, hulls, haulers, dishes, a fleet's ships, a shipyard's parts)
+      - one exception, a rogue's `buildBody`, whose shaders read its radius (`uR`, `galaxy/bodies.js:343`) and can't be scaled: it's shown whole once `w ≥ 0.5`, under its far-layer disc of the same size and tint (a lattice kind, disc 1), as lane 2's built planets are
+      - So a disc-0 kind (a storm, a herd, a swarm, debris, a field, an ice field) fades in from nothing at its reach, and a disc kind's mesh grows in as its disc fades out.
+      - An entry is drawn when `w > 0.001`, and not built below that. (Not 0.01: Task 22's held-pose measure steps in by under 1% of the reach and needs it built there.)
+    - **Its anchor** (Review Focus 11; Global Constraints, "Far from home"). Each `InstancedMesh`'s `position` is set every update, in doubles, to `anchorOf(camera.position)`, and its instance translations are `at − anchor`.
+      - When the anchor changes, every instance is rewritten that update. Otherwise a still entry's matrices aren't.
+      - Every entry drawn is within `THING_NEAR × 4,000 = 32,000` of the camera, its parts within its size of it, and the anchor within 3,550 of the camera, so an offset is under 40,000, where a float32 steps by 0.004: 0.1 px for a rock 50 off. The same rock written absolute, 9.6 million out, is off by up to a unit, about 36 px.
+      - A per-entry mesh (a rogue's body, a fleet's ships) sits at its entry's `at` in doubles, which lane 2's `drawn()` already keeps exact.
+    - **Its clock** (Global Constraints, "Two clocks"). `update(entries, camera, t)`'s `t` is `spaceT`. An animation (a blink, a tumble, a swim) reduces it by `frac(t / period)` in doubles before it's an angle, and no drawer puts it in a uniform.
     - `dispose()` frees what it made and empties what it added
+  - **`weightOf(dist, size) → w`** in `layout.js`: `levelWeights(dist, { reach: THING_NEAR × size }).full`.
+  - **`anchorOf([x, y, z]) → [x, y, z]`** in `layout.js`: each coordinate rounded to a multiple of `ANCHOR = 4096`, so it moves only when the camera crosses a cell.
   - **Pure layouts** in `layout.js`, each seeded from the row's seed:
     - `fieldRocks(row, n) → [{ x, y, z, r, shape }]`: `n` rocks of radius 0.3–3, in a flattened ball of the field's size (height × 0.35), none within `0.12 × size` of its middle, so a park there is clear. `shape` is 0–2.
     - `rigHaulers(row, n, t) → [{ at, heading }]`: `n` haulers (3–5 from the seed) on loops from the rig out to the field's edge and back, one round in 90–150 s
@@ -1181,14 +1260,24 @@ describe('gargantuans', () => {
       - after `createThingDrawers` and every factory `drawers[kind](g, {})`, `prepare` has been called **0** times, and `group` holds a hidden mesh for each material the drawers made (every material of every drawer's meshes is one of theirs, by identity; a rogue's body aside, which `buildBody` makes when it's near and which goes through `prepare` then, Task 16)
       - the first `update` with three rock entries calls `prepare` once for each mesh it makes (the rock drawer's `InstancedMesh`es), and a second `update` calls it no more
       - a field coming near calls it once for its rocks' mesh; the same field again, none
-    - `drawn()` counts what's shown
+    - `drawn()` counts what's shown, and `weight(id)` is the `w` last applied (null for an entry not built)
     - an entry past `THING_NEAR × size` shows nothing
+    - **The weight, across the band** (Review Focus 10), as a helper `sweepWeight(drawer, entry, read)` the later tasks reuse. A field entry (size 700, disc 0, its rocks scaled) and a comet entry (its coma and tail additive), each swept from `1.05 ×` to `0.75 × THING_NEAR × size` in steps of `0.001 ×` that reach:
+      - at and past the reach, nothing is drawn: `drawn()` has neither, and no instance colour or scale is over 0
+      - at each step, the field's largest rock scale over its full one, and the comet's largest coma colour channel over its full-strength one, equal `weightOf(dist, size)` to 1e-6
+      - each changes by at most 0.01 a step, and is 1 from `0.8 ×` the reach in
+      - The step is a share of the reach, not lane 2's 5 units: across a herd's 480-unit band, 5 units moves `smoothstep` by up to 0.016.
+      - Task 15 runs it for a storm (size 4,000, additive puffs) and Task 16 for a herd (size 300, scaled segments): the two the review named.
+    - **Within a pixel, 9.6 million out** (Review Focus 11). The test copies lane 2's 32-bit helpers from its `relative.test.js` (`f32`, `mul32`, `shaderPx`, `truePx`, local to that file) and builds its tree (a scene, the map, lane 2's group in it, the camera) with lane 2's `createRelativeDraw`.
+      - A field entry at `[9.6e6, 0, 0]`, and the camera 50 from its first rock (radius 0.3–3), at no round number, looking at it. `update`, then inside `drawn()`: that rock's middle as the chip places it, `shaderPx(mesh, camera, mul32(instanceMatrix(i), [0, 0, 0]))`, is within 1 px of `truePx`.
+      - The same rock in a plain `InstancedMesh` at the origin with its absolute place in its matrix is over 1 px off, so the test can tell the two apart (lane 2's "would not without it").
+      - `anchorOf` moves only when the camera crosses a 4,096 cell: an update with the camera 10 further on rewrites no instance matrix (its `version` unchanged), and one across a cell rewrites them all.
     - every `near: false` kind has a drawer that draws nothing
     - `dispose()` empties the group
 - [ ] **Step 2: Run them and see them fail.** Run `npx vitest run src/components/universe/things`. Expected: FAIL.
 - [ ] **Step 3: Implement.**
 - [ ] **Step 4: Run them and see them pass.** Same command. Expected: PASS.
-- [ ] **Step 5: Commit.** `git commit -m "Rocks, ice, asteroid fields, mining rigs and comets drawn near, instanced"`
+- [ ] **Step 5: Commit.** `git commit -m "Rocks, ice, asteroid fields, mining rigs and comets drawn near, instanced, fading in and anchored near the camera"`
 
 ### Task 14: Wrecks and signals
 
@@ -1217,6 +1306,7 @@ describe('gargantuans', () => {
   - `beaconBlink` is on 20% of its period over 1,000 samples (±3%)
   - a monolith's box is in its ratio
   - each drawer: none shown for no entries, instance counts for some, `thingKinds.pieces` caps debris
+  - each drawer keeps Task 13's weight and anchor: Task 13's `sweepWeight` for a debris field (disc 0, its pieces scaled) and a beacon (its lamp's colour), and every `InstancedMesh` at `anchorOf(camera.position)`
   - each drawer keeps Task 13's warm-up rule: no `prepare` at create or from its factory, one a mesh from the first `update` that has it
   - `derelict` and `outpost` are made with `hull(textures, …)` from the `textures` given, and with `{}` still make a `MeshStandardMaterial` (the canvas stubbed as in Task 13)
 - [ ] **Step 2: Run them and see them fail.** Run `npx vitest run src/components/universe/things`. Expected: FAIL.
@@ -1252,7 +1342,7 @@ describe('gargantuans', () => {
   - `beamDirs` are unit, opposite, 0.5 rad from the spin axis, and back where they began after one period
   - storm puffs ride the storm's `rowAt`
   - a bolt lasts 0.15 s
-  - the drawers as Task 13's
+  - the drawers as Task 13's: its warm-up rule, its anchor, and its `sweepWeight` for a storm entry of size 4,000, whose additive puffs' instance colour follows `weightOf` from nothing at 32,000 in (the case the review named: a storm shown whole there would be 14° across in one frame)
   - **`near.test.js`:** a built binary's companion is at `companionAt` for t in `{0, 1000}`, in `stars()` and `solids()`; its ball's radius is `c.size` and its colour `c.color`, the disc's; a system without companions builds none
 - [ ] **Step 2: Run them and see them fail.** Run `npx vitest run src/components/universe/things src/components/expanse/scene/near.test.js`. Expected: FAIL.
 - [ ] **Step 3: Implement.**
@@ -1266,12 +1356,12 @@ describe('gargantuans', () => {
 - Modify: `things/layout.js` and its test, `things/drawers.js` and its test
 
 **Interfaces:**
-- Consumes: Task 13's kit; `trafficModels.js`'s `buildTraffic`, `buildModel` and `BUILT_KINDS` (`:991-1021`); `galaxy/bodies.js`'s `buildBody` and `LOOKS`; Task 3's `traitsOf`.
+- Consumes: Task 13's kit; `trafficModels.js`'s `buildTraffic`, `buildModel` and `BUILT_KINDS` (`:991-1021`); `galaxy/bodies.js`'s `buildBody` and `LOOKS`; Task 3's `traitsOf`; Task 7's `fleetLayout` and `rowSolids`, through the face.
 - Produces:
   - **Layouts:**
     - `herdBodies(row, n, t) → [{ segments: [{ at, r }] }]`: `n` bodies (`min(row.bodies, thingKinds.bodies)`) round the herd's `rowAt`, each eight segments long, a swimming wave down them
     - `swarmBodies(row, n, t) → [{ at, pulse }]`: drifting about the swarm's `rowAt`, `pulse` 0–1
-    - `fleetShips(row) → [{ model, at, heading, scale }]`: `row.ships` ships in a loose line abreast, the first a capital at three times the others' scale. `model` is from `FLEET_MODELS[row.faction.id] ?? FLEET_MODELS.independent`.
+    - `fleetShips(row, at = row.at) → [{ model, at, heading, length }]`: Task 7's `fleetLayout(row, at)` (through the face), each ship given its `model` from `FLEET_MODELS[row.faction.id] ?? FLEET_MODELS.independent` (the capital the list's first, the escorts its second). So the ships drawn are the spheres the near layer makes solid, ship for ship.
     - `yardParts(row) → { scaffold, cranes, hull }`: a scaffold box, 2–4 cranes and a half-built hull's ribs
   - **`FLEET_MODELS = { empire: ['destroyer', 'shuttle'], federation: ['federation', 'patrol'], dea: ['madrigal', 'suv'], independent: ['trader', 'trader'] }`**: the site's own models for the authored sides (each in `BUILT_KINDS`), and `trader` for everyone else. Independent and generated factions hold most space past `d = 1` (`tables.js:94-120`), so `trader` is most fleets' look.
   - **`trader`**, this lane's original freighter, built in `looks/fleets.js` from its own kit as the site's models are: `TRADER = (k) => …` (a boxy hull of stacked cargo pods on a spine, a cab and two engine pods, from `k`'s parts), made with `buildModel(TRADER, 'trader')` (exported from `trafficModels.js:1027`, centred and one long in z).
@@ -1282,14 +1372,16 @@ describe('gargantuans', () => {
     - `swarm`: jellyfish as instanced bells and tendrils, additive, their colour pulsing
     - `fleet`: the models, cloned with shared geometry
     - `shipyard`: the scaffold, cranes and ribs, instanced, with work lights
-    - `rogue`: `buildBody(ROGUE_LOOK[traitsOf(row).type], { r: size, tier })`, where `ROGUE_LOOK = { rock: 'moon-grey', ice: 'hoth', desert: 'moon-dust', gas: 'endor-giant' }`. Two at most at once.
+    - `rogue`: `buildBody(ROGUE_LOOK[traitsOf(row).type], { r: size, tier })`, where `ROGUE_LOOK = { rock: 'moon-grey', ice: 'hoth', desert: 'moon-dust', gas: 'endor-giant' }`. Two at most at once. It is Task 13's one exception to the weight: its shaders read its radius, so it's shown whole once `weightOf` is 0.5 or more, under its disc.
 
 - [ ] **Step 1: Write the failing tests:**
   - herd segments stay within the herd's size of its `rowAt`, and the wave moves continuously
   - `herdBodies` honours `thingKinds.bodies`
+  - the herd drawer keeps Task 13's anchor, and its `sweepWeight` for a herd entry of size 300, whose segments' instance scale follows `weightOf` from nothing at 2,400 in (the review's other case: hundreds of pixels across in one frame)
+  - a fleet's ships are drawn where it is solid: `fleetShips(row)`'s places and lengths are `fleetLayout(row)`'s, and each ship's model, scaled to its `length`, is centred on its sphere of `rowSolids(row)` (`buildModel` centres a model on its box)
   - `fleetShips` gives `row.ships` ships, the first the capital, with models by faction and `trader` for an independent or generated faction (a row of `fullSector(UNIVERSE, 5, 0, 5)`'s `fleet` list whose faction isn't one of the authored sides)
   - **No fleet falls back to a TIE:** every name in `FLEET_MODELS` is `trader` or in `BUILT_KINDS`, `modelOf('nonsense')` throws, and the model built for a generated faction's fleet isn't `buildTraffic('tie')`'s (its `group.name` is `'traffic-trader'`, as `buildModel` names it, and its `size` differs from the TIE's)
-  - a rogue entry calls `buildBody` once with its type's look, from an `update` (not at create), and `prepare` once with its body
+  - a rogue entry calls `buildBody` once with its type's look, from an `update` (not at create), and `prepare` once with its body; its body is hidden at a distance where `weightOf` is 0.4 and shown, unscaled, where it's 0.6
   - the drawers as Task 13's
 - [ ] **Step 2: Run them and see them fail.** Run `npx vitest run src/components/universe/things`. Expected: FAIL.
 - [ ] **Step 3: Implement.**
@@ -1330,9 +1422,10 @@ describe('gargantuans', () => {
 **Files:**
 - Create: `src/components/universe/gargantuans/hole.js`, `src/components/universe/gargantuans/hole.test.js`
 - Create: `scripts/same-pixels.mjs`, `scripts/same-pixels.test.mjs`
-- Modify: `scripts/universe-check.mjs`: a `--t <seconds>` option (below), and its line in the header's usage
+- Modify: `scripts/universe-check.mjs`: the `--t <seconds>` and `--png` options (below), and their lines in the header's usage
 - Modify: `src/components/universe/deepspace.js`: `blackHole(w)` (`:695-711`, from `const blackHole = (w) => {`) becomes a call to `buildHole`, about −15 lines
-- Modify: `src/components/universe/deepspaceShaders.js`: `PHOTON_FRAG` (`:413`), `DISK_FRAG` (`:452`) and `JET_FRAG` (`:523`) each gain `uniform float uFade;`, and their last line's colour is multiplied by it (`gl_FragColor = vec4(col * uFade, 1.0);` and the like). All three are additive, so this fades them to nothing. Nothing else uses these three strings (`deepspace.js` alone imports them). Multiplying by exactly 1.0 changes no bit of a float.
+- Modify: `src/components/universe/deepspaceShaders.js`: `PHOTON_FRAG` (`:413`), `DISK_FRAG` (`:452`) and `JET_FRAG` (`:523`) each gain the fade **behind `#ifdef USE_FADE`**: `#ifdef USE_FADE` / `uniform float uFade;` / `#endif` with the other uniforms, and after the last `gl_FragColor = …;` `#ifdef USE_FADE` / `gl_FragColor.rgb *= uFade;` / `#endif`. No existing line changes. All three are additive, so this fades them to nothing. Nothing else uses these three strings (`deepspace.js` alone imports them).
+  - Why a define, not `* uFade` always: the Maw's materials get no `USE_FADE`, so the source its GPU compiles, once preprocessed, is token for token what it compiled before. A `* uFade` it always ran could let a driver reassociate the sums and change a bit, with no fault in the move. Only a generated hole (`fade: true`) sets `defines: { USE_FADE: '' }`, which gives it a program of its own (three keys a program by its defines), warmed at create like the rest (Task 20).
 
 **Interfaces:**
 - Consumes: `deepspaceShaders.js`'s `PHOTON_VERT`, `PHOTON_FRAG`, `DISK_VERT`, `DISK_FRAG`, `JET_VERT`, `JET_FRAG`; `mergeGeometries`; deep space's clock, `uTime` (`deepspace.js:554`).
@@ -1340,15 +1433,16 @@ describe('gargantuans', () => {
   - It builds exactly what `blackHole(w)` builds: the black shadow sphere `(r, 48, 32)`; the photon plane (render order 2, `uDiskN` the disk's normal, `uReach` 2.6); the disk ring from `1.6 r` to `disk` in the tilt group (render order 1); and the jets (render order 1). The materials, blending and sides are the same.
   - **`uTime` is the clock, a uniform object, and is required** (a `TypeError` without it). All three shaders read it: the photon ring's noise (`PHOTON_FRAG`, `:440`), the disc's swirl (`DISK_FRAG`, `:480`) and the jets' flow (`JET_FRAG`, `:542`). Today they get it from deep space's `shader()`, which spreads `{ uTime, ...uniforms }` (`:563`) over the one object deep space advances every frame (`:1445`). A uniform of their own would freeze the Maw's disc and jets, and every generated hole's.
     - The Maw passes deep space's `uTime`.
-    - `createGargantuans` passes one of its own and sets its `value` in `update(camera, cam, t)` (Task 20).
+    - `createGargantuans` passes one of its own and sets its `value` from the scene's render clock `t` in `update({ camera, cam, t, spaceT })`, never from `spaceT` (Task 20; Global Constraints, "Two clocks").
   - The three shader materials share one `uFade: { value: 1 }` uniform object, and the `uTime` object they were given, by identity.
-  - **`fade: true`** (a generated hole) makes the shadow's `MeshBasicMaterial` `transparent` at create. The Maw passes nothing, so its shadow stays opaque and `uFade` stays 1: not a pixel moves.
-  - **`setFade(f)`** sets `uFade.value = f` and, with `fade`, the shadow's `opacity = f`. Setting `.opacity` on the shader materials would do nothing, since their shaders don't read it.
+  - **`fade: true`** (a generated hole) sets `defines: { USE_FADE: '' }` on the three shader materials and makes the shadow's `MeshBasicMaterial` `transparent`, both at create. The Maw passes nothing: no define, so its shaders never read `uFade`, and its shadow stays opaque. Not a pixel moves.
+  - **`setFade(f)`** sets `uFade.value = f` and, with `fade`, the shadow's `opacity = f`. Setting `.opacity` on the shader materials would do nothing, since their shaders don't read it. Without `fade` it changes nothing drawn (no shader reads `uFade`).
   - The tilt is `euler` (the Maw's `TILT`) or, given `axis`, the quaternion that turns +y onto it.
   - The Maw's `dispose` joins deep space's own list (`own({ dispose })`), so deep space's `dispose` frees it once, as it did.
   - It has one `ShaderMaterial` site of its own: `glsl-sites` +1.
 - Produces, for the checks:
   - **`universe-check --t <seconds>`**: at each pose, before the numbers and the shot, the scene's clock is held at that many seconds, as the quality floor holds it (`scene.js:6157-6160`): `__universeDebug.state.tLow = t` and `state.low = true`, then two frames. `render` then takes `t = state.tLow` (`scene.js:5067`), so the Maw's disc, the belt's turn and the Twins are where that clock puts them on every run.
+  - **`universe-check --png`**: also writes the screenshot's own PNG, `<out>/<pose>.png`, beside the WebP (`universe-check.mjs:236` writes the WebP at quality 88, lossy, from the same `png` buffer). `same-pixels` compares the PNGs. They aren't committed: each is over the 1 MB rule.
   - **`samePixels(a, b, { mask = null }) → { same, differing, box }`** in `scripts/same-pixels.mjs`, over two decoded `{ data, width, height, channels }`, and its CLI `node scripts/same-pixels.mjs <a> <b> [--mask x0,y0,x1,y1]`: sharp decodes both to raw buffers, and they are compared byte for byte outside the mask. `box` is the smallest box holding every differing pixel. It prints the result as JSON, and exits 0 when they're the same and 1 when not. Two pictures of different sizes throw.
 
 - [ ] **Step 1: Write the failing tests.**
@@ -1360,27 +1454,29 @@ describe('gargantuans', () => {
       - the jets, render order 1
     - **The clock:** `uniforms.uTime` on all three shader materials is `uTime`, the object passed in (`toBe`), so setting `uTime.value = 12` reads 12 on each. `buildHole(g, { r: 60, disk: 600 })` throws a `TypeError`.
     - with `axis: [0, 0, 1]` the tilt group's +y is +z
-    - **The fade, on the real materials:** with `fade: true`, `setFade(0.3)` leaves `uniforms.uFade.value` at 0.3 on all three shader materials (one object), and the shadow `transparent` with `opacity` 0.3. Without `fade`, the shadow's `transparent` is false and `uFade` is 1. Each of the three fragment strings declares `uniform float uFade`.
+    - **The fade, on the real materials:** with `fade: true`, `setFade(0.3)` leaves `uniforms.uFade.value` at 0.3 on all three shader materials (one object), each has `defines.USE_FADE`, and the shadow is `transparent` with `opacity` 0.3. Without `fade`, no shader material has a `USE_FADE` define, the shadow's `transparent` is false, and `uFade` is 1.
+    - **The fade only behind its guard:** in each of the three fragment strings, every line that names `uFade` lies between an `#ifdef USE_FADE` and its `#endif`.
     - `dispose()` frees every geometry and material
   - **`scripts/same-pixels.test.mjs`:** two equal 4 × 3 RGBA buffers are `{ same: true, differing: 0, box: null }`; one byte changed at (2, 1) gives `{ same: false, differing: 1, box: [2, 1, 3, 2] }`; the same with `mask: [2, 1, 3, 2]` is the same; a 4 × 3 against a 3 × 4 throws.
 - [ ] **Step 2: Run them and see them fail.** Run `npx vitest run src/components/universe/gargantuans/hole.test.js scripts/same-pixels.test.mjs`. Expected: FAIL (modules not found).
 - [ ] **Step 3: Implement `same-pixels.mjs` and `--t`, not the move yet.** Run `npx vitest run scripts/same-pixels.test.mjs`. Expected: PASS.
 - [ ] **Step 4: The befores, at a held clock, on the code as Task 17 left it.** Run, one after the other:
-  - `node scripts/universe-check.mjs --quality mid --poses maw --t 1000 --out lab/universe/before-4a-18/t1000`
+  - `node scripts/universe-check.mjs --quality mid --poses maw --t 1000 --png --out lab/universe/before-4a-18/t1000`
   - the same again, `--out lab/universe/before-4a-18/t1000b`
   - the same at `--t 1012`, `--out lab/universe/before-4a-18/t1012`
 
-  Then compare (each shot is `<out>/maw.webp`):
+  Each run with `--png`. Then compare (each shot is `<out>/maw.png`, the lossless one):
   - `t1000` against `t1000b`. Expected: same. If not, something on screen the clock doesn't hold has moved between two page loads: the README names it, and the `box` printed is the `--mask` for every comparison below.
   - `t1000` against `t1012`. Expected: **differ**, in the Maw's disc. If they're the same, the clock wasn't held or doesn't reach the Maw, and the check below would prove nothing: stop and find why.
 - [ ] **Step 5: Implement `buildHole`, and move the Maw onto it,** passing deep space's `uTime`. Keep `deepspace.js`'s `lensAt` and every other builder where they are. Run `npx vitest run src/components/universe/gargantuans/hole.test.js`, then `npx vitest run src/components/universe`. Expected: PASS, `deepspace`'s tests unchanged.
-- [ ] **Step 6: Check no pixel moves, and the disc still swirls.** Run `universe-check` at `--t 1000` and `--t 1012` again, into `lab/universe/after-4a-18/t1000` and `t1012`. Then, with the mask if Step 4 set one:
-  - `node scripts/same-pixels.mjs lab/universe/before-4a-18/t1000/maw.webp lab/universe/after-4a-18/t1000/maw.webp`, and the same for `t1012`. Expected: same, both. This decides.
+  - **The Maw's shader source is untouched.** Run `git diff -U0 src/components/universe/deepspaceShaders.js`. Expected: no line removed, and every line added is an `#ifdef USE_FADE`, an `#endif`, or a line between them. With no `USE_FADE`, the preprocessor leaves the Maw's three shaders as they were, token for token.
+- [ ] **Step 6: Check no pixel moves, and the disc still swirls.** Run `universe-check --png` at `--t 1000` and `--t 1012` again, into `lab/universe/after-4a-18/t1000` and `t1012`. Then, with the mask if Step 4 set one:
+  - `node scripts/same-pixels.mjs lab/universe/before-4a-18/t1000/maw.png lab/universe/after-4a-18/t1000/maw.png`, and the same for `t1012`. Expected: same, both. This decides.
   - the two afters, `t1000` against `t1012`. Expected: differ, as the befores did. With both pairs the same, the swirl moved between the two clocks exactly as it did before the move. A frozen `uTime` would show here as the two afters the same.
   - `after-4a-18/t1000.json`'s `calls` and `triangles` for `maw` equal `before-4a-18/t1000.json`'s.
   - Run `node scripts/pixel-measure.mjs` on the four shots and put its numbers in the README beside the answer. They don't decide.
-  - A changed pixel means the move is wrong.
-- [ ] **Step 7: Commit.** `git add` the code, the two scripts and `lab/universe/before-4a-18`, `lab/universe/after-4a-18`, then `git commit -m "The Maw's look moves out of deep space so a generated black hole can wear it; not a pixel changes"`. The body says `deepspace.js`'s lines before and after, `glsl-sites` +1, and the four comparisons' answers.
+  - A changed pixel means the move is wrong: the Maw compiles what it compiled before (Step 5's diff), so a difference is in what `buildHole` builds, not in a driver.
+- [ ] **Step 7: Commit.** `git add` the code, the two scripts, and the WebPs and JSONs of `lab/universe/before-4a-18` and `lab/universe/after-4a-18` (not the PNGs), then `git commit -m "The Maw's look moves out of deep space so a generated black hole can wear it; not a pixel changes"`. The body says `deepspace.js`'s lines before and after, `glsl-sites` +1, and the four comparisons' answers.
 
 ### Task 19: Gargantuans on the sky: impostors in the landmark draw
 
@@ -1460,8 +1556,8 @@ describe('gargantuans', () => {
   - **`createGargantuans(group, { budget, tier, prepare, sectors, universe, textures = {} }) → { … }`**
     - `textures` is the scene's `T`, for the hulk's `hull()` (Task 13 says why).
     - **Warm-up** (Global Constraints): at create it makes one hidden mesh in `group` for each kind of material its looks use (a small `buildHole` with `fade: true`, a transparent `MeshStandardMaterial`, a transparent `MeshBasicMaterial` with a map and `vertexColors`, an additive back-side `MeshBasicMaterial`, and the Dyson's instanced panel), so the start-up `prepareScene` compiles every program. It calls `prepare` for none of them: the scene's `warm` doesn't exist yet when this runs. A look built near calls `prepare(look.group)` once, from `update`, and shows when that resolves.
-    - **Its own clock:** one `uTime = { value: 0 }`, passed to every `buildHole` it makes, its `value` set to `t` in every `update`, so a generated hole's disc swirls and its jets flow as the Maw's do.
-    - `update(camera, cam, t)`: reads `[...sectors().values()]`; builds the mesh of a row within `1.2 × nearOf(row)`; frees it past `1.3 ×`. Every frame it calls the look's `setFade(1 − k)`.
+    - **Its own clock:** one `uTime = { value: 0 }`, passed to every `buildHole` it makes, its `value` set to the frame's `t` in every `update`, so a generated hole's disc swirls and its jets flow as the Maw's do. That `t` is the scene's render clock (`scene.js:5067`), the one deep space gives the Maw (`deepspace.js:1445`). **Never `spaceT`**: at about 1.76e9 a float32 steps by 128, and `PHOTON_FRAG` (`uTime * 0.3` in its noise), `DISK_FRAG` (`uTime / 18`) and `JET_FRAG` (`uTime * 0.9`) would freeze for minutes, then jump (Global Constraints, "Two clocks").
+    - **`update({ camera, cam, t, spaceT })`**: `t` the render clock for the GPU, `spaceT` the shared clock for where a row is (`rowAt(row, spaceT)`; none moves yet, but the shape is shared). It reads `[...sectors().values()]`; builds the mesh of a row within `1.2 × nearOf(row)`; frees it past `1.3 ×`. Every frame it calls the look's `setFade(1 − k)`.
     - `impostors`: one array kept between frames, the rows `inView`, nearest first, as `impostorOf` gives them, for `landmarks.update`'s `extra`
     - `solids(ship)`: `solidsOf` of the built rows
     - `stars()`
@@ -1471,6 +1567,7 @@ describe('gargantuans', () => {
     - `dispose()`
   - **The look contract:** each look is `{ group, setFade(f), dispose() }`.
     - Every material it makes is `transparent` from create, at its full opacity, with `depthWrite` on, so the fade never changes a program (three keys a program by `transparent`).
+    - Its `group` sits at the row's `at`, set in doubles, and every part is placed relative to it. An `InstancedMesh` of its own (the Dyson's panels, the arc's or hulk's repeated parts) is a child of that group, so its instance translations are under the row's size, never absolute (Global Constraints, "Far from home").
     - `setFade(f)` sets `opacity = f × full` on each stock material, and the hole's `buildHole(…).setFade(f)` its `uFade`.
     - `buildBody` can't do this: its surface is a `ShaderMaterial` (`galaxy/bodies.js:449`) that reads neither `opacity` nor a fade. So the supergiant has a look of its own, below, rather than a planet body.
   - **Looks** (original):
@@ -1497,7 +1594,8 @@ describe('gargantuans', () => {
   - **Light:** `stars()` holds the Dyson's star.
   - **Lens:** `lens(cam)` is the nearest hole within `40 × body`, and null past it. Its `at` is a `THREE.Vector3`, the same object on two calls, and its `axis` an array of three.
   - **Warm-up:** after `createGargantuans`, `prepare` has been called **0** times, and `group` holds a hidden mesh for each kind of material named above. Moving to `N` from a hole calls it once, with that hole's look's group; another `update` at `N` calls it no more; leaving past `1.3 N` and coming back calls it once more (a new mesh).
-  - **The clock:** a generated hole's three shader materials share one `uniforms.uTime`, not deep space's, and after `update(camera, cam, 77)` its `value` is 77.
+  - **The clock:** a generated hole's three shader materials share one `uniforms.uTime`, not deep space's. After `update({ camera, cam, t: 77, spaceT: 1.76e9 })` its `value` is 77, the render clock passed in, and not the epoch-sized `spaceT`. After a second with `t: 77.5`, it is 77.5.
+  - **Far from home:** a Dyson at `[9.6e6, 0, 0]`, built: its look's group's position is the row's `at`, and no instance translation of its panels' `InstancedMesh` is over the row's size in any axis.
   - **Detail:** on `'low'` the hole has no jets.
   - **Freeing:** `dispose()` frees everything.
 - [ ] **Step 2: Run them and see them fail.** Run `npx vitest run src/components/universe/gargantuans`. Expected: FAIL.
@@ -1527,11 +1625,11 @@ describe('gargantuans', () => {
   - **Debris:** a debris rock is found at its place plus `DEBRIS_DRIFT(t)`.
   - **Added fields:** a field `add`ed with no ring or drift is swept in the map's frame, and `remove` takes it out.
 - [ ] **Step 2: Run them and see them fail.** Run `npx vitest run src/components/universe/rockFields.test.js`. Expected: FAIL.
-- [ ] **Step 3: The befores, at a held clock, before the move** (Global Constraints, "Not a pixel changes"; the belt turns with the clock, `BELT_SPIN`). Run `node scripts/universe-check.mjs --quality mid --poses belt --t 1000 --out lab/universe/before-4a-21/t1000`, then the same into `t1000b`. Compare the two `belt.webp`s with `scripts/same-pixels.mjs`: the same, or the printed `box` is the mask below, named in the README.
+- [ ] **Step 3: The befores, at a held clock, before the move** (Global Constraints, "Not a pixel changes"; the belt turns with the clock, `BELT_SPIN`). Run `node scripts/universe-check.mjs --quality mid --poses belt --t 1000 --png --out lab/universe/before-4a-21/t1000`, then the same into `t1000b`. Compare the two `belt.png`s with `scripts/same-pixels.mjs`: the same, or the printed `box` is the mask below, named in the README.
 - [ ] **Step 4: Implement, and move.** Count `scene.js`'s lines before and after.
 - [ ] **Step 5: Run them, and check nothing changed.**
   - Run `npm test`. Expected: PASS.
-  - Run the same `universe-check` at `--t 1000` into `lab/universe/after-4a-21/t1000`, then `node scripts/same-pixels.mjs lab/universe/before-4a-21/t1000/belt.webp lab/universe/after-4a-21/t1000/belt.webp` (with the mask, if any). Expected: same, and `calls` and `triangles` equal in the two JSONs. The bytes decide; pixel-measure's numbers go in the README beside them.
+  - Run the same `universe-check` at `--t 1000 --png` into `lab/universe/after-4a-21/t1000`, then `node scripts/same-pixels.mjs lab/universe/before-4a-21/t1000/belt.png lab/universe/after-4a-21/t1000/belt.png` (with the mask, if any). Expected: same, and `calls` and `triangles` equal in the two JSONs. The bytes decide; pixel-measure's numbers go in the README beside them.
 - [ ] **Step 6: Commit.** `git commit -m "The rock fields move out of the scene, so a generated field's rocks can join them"`. The body says `scene.js`'s lines before and after (about −50) and the comparison's answer.
 
 ### Task 22: Wired into the scene; checked at mid
@@ -1548,7 +1646,7 @@ describe('gargantuans', () => {
   - **`createExpanse`'s options** gain `drawers: things.drawers,` (+1).
   - **After `createLandmarks`.** `const gargantuans = createGargantuans(map, { budget: universeBudget(device(), 0), tier, prepare: (o) => warm(o), sectors: () => expanse.sectors(), universe, textures: T });` (+1). The same holds: `prepare` first runs from `update`.
   - **`render()`.**
-    - `landmarks.update(…)` gains `extra: gargantuans.impostors` (0, in place). The gargantuans' `update(camera, camLocal, state.spaceT)` goes just before it (+1).
+    - `landmarks.update(…)` gains `extra: gargantuans.impostors` (0, in place). `gargantuans.update({ camera, cam: camLocal, t, spaceT: state.spaceT })` goes just before it (+1). Its `t` is `render`'s own (`scene.js:5067`), the clock `deep.update(t, …)` (`:5335`) and `landmarks.update(camera, t, …)` (`:5338`) already take: the generated holes' `uTime` reads it, never `spaceT` (Global Constraints, "Two clocks").
     - `things.update({ ship: state.ship, camera, cam: camLocal, t: state.spaceT, dt, flying: flying() && !onFoot() && !state.dive && !props.frozen })` goes right after `places.update(…)` (+1).
   - **The light.** `lightAt(…, { nova, stars: expanse.stars() })` becomes `stars: [...expanse.stars(), ...gargantuans.stars()]` (0). If that allocation shows in the frame time, keep one merged array in `gargantuans`.
   - **The solids.** The step's `solidsWith(…)` and the autopilot's `moving` gain `gargantuans.solids(state.ship)` (0, both in place).
@@ -1575,7 +1673,7 @@ describe('gargantuans', () => {
     - `find(kind) → id | null`: `nearestOfKind(deps.sectors().values(), kind, [ship.x, ship.y, ship.z], t)?.id`, from lane 2's `Map` and the ship's object. Else, for a gargantuan form not in the loaded sectors, `spaceId(gargantuanSectors(universe, sectorAt(ship.x, ship.y, ship.z), { form })[0], { wonder: 3 })`.
     - `force(kind) → Promise<id | null>`: `travel(find(kind), 'hyper')`, which waits on lane 3's fetch when the sector isn't at hand
     - `parkOf(kind) → Promise<{ id, park } | null>`: `find(kind)`, `places.fetch(id)` when its sector isn't at hand, then `places.park(id, [ship.x, ship.z])`. It moves nothing: the check teleports there with `__universeDebug.teleport(park.x, park.y, park.z, park.heading, 0)`.
-    - `drawn()`: the drawers'
+    - `drawn()` and `weight(id)`: the drawers'
     - `pockets()`: the feed's shown ids
 
 - [ ] **Step 1: Write the failing tests** in `things/index.test.js` (Node, three):
@@ -1598,6 +1696,14 @@ describe('gargantuans', () => {
       3. Wait until `things.debug.shown(kind, id)`.
       4. Shoot `things/<kind>.jpg` into the evidence folder.
       5. **For `binary` and `trinary`, the handover without a pop** (Global Constraints, "Binary and trinary systems"; lane 2's level rule). Teleport to `1.5 × systemReach` from the star and wait until `solids()` lacks `<id>:c0` (lane 2 lets a built system go past 1.3 × its reach). Then teleport to `1.002 × systemReach`, on the line that puts companion 0 on screen facing the star, and hold: wait two frames, shoot A, and check `solids()` still lacks `<id>:c0` (not built). Teleport to `0.998 × systemReach` on the same line, wait until `solids()` holds `<id>:c0` (built), then two frames, and shoot B. The camera moved 0.4% of the reach, so the companion's size changed by under half a percent. A and B, cropped to a box of `4 × ` the companion's projected radius round its projected point (from `__universeDebug.camera`), have no differing blob over 4 px across, by the same blob measure lane 2's held-pose pop check uses (lane 2's step 6). Record `expanse.pops()` over the step too. Expected: under 4 px both.
+      6. **For `storm` and `herd`, the fade-in without a pop** (Review Focus 10). Neither draws a far-layer disc, so nothing hands over to it and `pops()` can't see it. With `R = THING_NEAR × size`, and the row's place read as `rowAt(row, __universe().t)` when each teleport is made (a storm moves under 2.5 units a second, a herd under 4):
+         - Teleport to `1.3 R` out from it, facing it, and wait until `things.debug.weight(id)` is null (not built).
+         - Teleport to `1.002 R` on the same line. Wait two frames, check `weight(id)` is still null, and shoot A.
+         - Teleport to `0.995 R`. Wait until `weight(id)` is over 0 (built, about 0.002), then two frames, and shoot B.
+         - Teleport to `0.85 R`. Wait until `weight(id)` is over 0.8, then two frames, and shoot C, the control.
+         - Crop all three to the row's projected disc (its `size` at its distance, round its projected point, from `__universeDebug.camera`). The camera moved 0.7% of the reach from A to B, so anything else in the crop moved by under 1%.
+         - Expected: A and B have no differing blob over 4 px across, by lane 2's held-pose blob measure. A and C do: if they don't, the crop missed the storm or the herd and the check proved nothing, so stop and find why.
+         - Record `expanse.pops()` over the step too.
     - **`gargantuan`** (the spec's "reaches a gargantuan"):
       1. `force('gargantuan')` by the jump, and wait until arrived.
       2. Teleport to `4 N` and `2 N` out along the line in, and check `gargantuans.debug.angle(id)` is `2 × atan(size / d)` to 1e-3 rad.
@@ -1757,28 +1863,33 @@ describe('what a thing does', () => {
 - Modify: `src/components/universe/things/index.js` and its test (the actions)
 - Modify `src/components/universe/scene.js`. Each change says the lines it adds:
   - **`createThings`' deps** (on its line, 0; `EVENTS` joins `scene.js`'s import from `./director`, 0 lines): `pay: (w, n) => pay(w, n)`, `note: (text) => { state.note = { text, until: wall() + 3 }; }`, `emit: (e) => emit(e)`, `happen: (id) => happen(id, state.ship)`, `soon: (id) => director?.soon(id)`, `hunt: (faction, from) => hunters?.pack(faction, state.ship, { from, size: 3 })`, `side: () => sideHere()`, `shield: () => state.shield`, `drain: (n, floor) => drain(n, floor)`, `scramble: (s) => { state.static = Math.max(state.static, s); }`, `trip: () => Boolean(state.auto || state.jump)`, `throwTo: (park, opts) => throwTo(park, opts)`, `events: EVENTS`. All are thunks, since each is declared below the call. There is no `follow` dep yet: it is lane 4b's to pass (below).
-  - **The drain** (+6), just below `hurt` (`:3154-3168`), which it mirrors without the hit:
+  - **The drain** (+7), just below `hurt` (`:3154-3168`), which it mirrors without the hit:
 
     ```js
     // a drain on the shields that isn't a hit (an ion storm's, things/rules.js): no laser, no shake, no flash, never under `floor`
     const drain = (n, floor) => {
       if (state.crash || !state.ship || powers.mods.ghost || !(n > 0)) return;
       state.shield = Math.max(Math.min(state.shield, floor), state.shield - n * state.stats.armor * state.stats.armorGame);
+      state.drainAt = state.clock; // (the shields wait to come back, as after a hit)
       if (state.shield < 35 && !state.lowSaid) { state.lowSaid = true; emit({ type: 'shields' }); }
     };
     ```
 
     - Why not `hurt`: it emits `{ type: 'laser' }`, sets `hitAt`, `hurt` and the shake on every call. Called every frame inside a storm, Comms would play its hit sound every 120 ms and a crew "hit" line on each (`Comms.jsx:249-251`), and the screen would shake for as long as you're in.
-    - It keeps what a hit keeps: plating (`armor`, `armorGame`), the ghost mod ("nothing of the game's lands"), and the low-shields alarm once (`lowSaid`, reset at `:3982` as before). It never destroys the ship.
+    - It keeps what a hit keeps: plating (`armor`, `armorGame`), the ghost mod ("nothing of the game's lands"), the low-shields alarm once (`lowSaid`, reset at `:3982` as before), and the regen's wait. It never destroys the ship, and never adds to `state.hurtNow` (the director's intensity is for fights).
+  - **The regen waits for a drain too** (0, in place). `:3981`'s `if (state.clock - state.hitAt > state.stats.delay && state.shield < 100)` becomes `if (state.clock - Math.max(state.hitAt, state.drainAt ?? -Infinity) > state.stats.delay && state.shield < 100)`. Without it the shields come back at `12 × regen` a second (`:3981`) once `delay` has passed since the last hit, three times a storm's 4: the storm would never drain them, and a fight's hits would be the only thing that stopped the regen.
   - **Bolts.** `const mh = meteors.hit(shotFrom, b.position) ?? mines.hit(shotFrom, b.position);` (`:2606`) gains `?? things.hit(shotFrom, b.position)`, and the missiles' (`:2790`) the same (0, both in place).
   - **The lock.** `const rocks = (meteors.count || mines.count) && …` (`:4526`) becomes `(meteors.count || mines.count || things.count) && … ? [...meteors.targets, ...mines.targets, ...things.targets] : []` (0, in place). (Name the local something other than `rocks` if Task 21's `rocks` is in scope.)
   - **E.** After the `state.at` branch (`:5502`): `if ((key === 'e' || (key === 'enter' && !onControl)) && things.canAct()) { e.preventDefault(); things.act(); return; }` (+1).
   - **The prompt.** In `placePrompt`, before the aim's branch: `else if (!onFoot() && flying() && things.prompt()) { text = things.prompt(); cap = 'E'; }` (+1).
-  - **The throw.** `riftThrough` (`:4210`) splits: its body after `const park = …` becomes `throwTo(park, { flash: 2.4 })`, the same lines, and the wormhole uses it too (0).
+  - **The throw** (+3). `riftThrough` (`:4210-4238`) splits, and `throwTo` holds only what any one-way throw does:
+    - **`const throwTo = (park, { flash = 2.4 } = {}) => { … };`**, just above `riftThrough`, holds `riftThrough`'s lines from `dropAuto();` (`:4216`) through `crashFx.arrive({ point: …, kind: state.kind, heading: park.heading });` (`:4229`), as they are: `dropAuto()`, `arriveAt(park)`, the hunters', meteors' and mines' `clear()`, the `dropEscort(); dropEclipse();` pair (`:4221-4222`, lane 4b's sixth), the wingmen's, skirmishes' and npcs' `clear()`, `state.interdicted = false`, `state.safeUntil`, the flare (`Math.max(state.flare, flash)`, its one change) and `crashFx.arrive`. `park` is `{ x, y, z, heading }`, what `arriveAt` spreads onto the ship (`:1841-1845`).
+    - **`riftThrough` keeps** what is the rift's: `const s`, `const exit = riftExit(…)`, `const park = parkFor(exit, …)` (lane 4b edits these three in place), `pieces.closeRift()`, `if (!park) return;`, then `throwTo(park, { flash: 2.4 });`, then the `isPlace(exit)` selection reset and both emits, `{ type: 'event', id: 'rifted' }` and `{ type: 'rifted', id: exit }`. Its behaviour is unchanged, line for line.
+    - **The wormhole** calls `throwTo({ x: exit.at[0], y: exit.at[1], z: exit.at[2], heading: exit.heading }, { flash: 2.4 })` with `wormholeExit`'s `{ at, heading }`, and emits only its own `{ type: 'thing', what: 'through', id, to: exit.key }`. Never a `'rifted'` emit: that unlocks the `rifted` achievement (`Universe.jsx:427`) and plays the rift's crew line, and a wormhole is neither.
   - **`where()`** gains `cameFrom: things.cameFrom(),` (+1).
   - **The handle** gains `act: (id) => things.act(id),` (+1).
 
-  That is +11 here: Tasks 22 and 24 add 21 lines, against Task 21's −50.
+  That is +14 here (the drain 7, the throw 3, E, the prompt, `where()` and the handle 1 each): Tasks 22 and 24 add 24 lines, against Task 21's −50.
 - Modify:
   - `src/components/universe/UniverseMap.jsx`: the handle gains `act: (id) => view.current?.act?.(id) ?? false`
   - `src/pages/Universe.jsx`: the map ref's stand-in gains `act: () => false`. `onEvent` handles `{ type: 'thing', what: 'can' | 'cannot', id, verb }` into an `act` state.
@@ -1797,7 +1908,7 @@ describe('what a thing does', () => {
   - **`act(id = here) → boolean`**: plays `rules.act`'s outcome through `pay`, `note`, `soon(lead)` (or `happen` for a trap) and `hunt`. It emits `{ type: 'thing', what: 'acted', id, action }`.
     - **A beacon's lead goes through one rule.** When `deps.follow(row, lead)` is given and returns true, it has taken the beacon, and `soon` isn't called. Lane 4b passes its `events.follow` here. Without it, `soon(lead)` plays the director's event.
     - So there is one beacon rule, `traitsOf(row).leads`, rather than this lane's and a second `followOf(id)` (finding 16).
-  - **`update`** also plays `rules.effects` each frame while flying: `drain(drain, STORM.floor)` (never `hurt`), `scramble(static)`, `pay` for a tail, `note`, and for `through`, `throwTo(exit park)`. It sets `cameFrom` to `{ id, name, at, key }` and emits `{ type: 'thing', what: 'through', id, to: exit.key }`.
+  - **`update`** also plays `rules.effects` each frame while flying: `drain(drain, STORM.floor)` (never `hurt`), `scramble(static)`, `pay` for a tail, `note`, and for `through`, `throwTo({ x: exit.at[0], y: exit.at[1], z: exit.at[2], heading: exit.heading }, { flash: 2.4 })`. It sets `cameFrom` to `{ id, name, at, key }` and emits `{ type: 'thing', what: 'through', id, to: exit.key }`.
   - It emits `'can'` and `'cannot'` as the actionable place comes and goes.
   - **`cameFrom() → { id, name, at, key } | null`**, for lane 6b's map (`THINGS.note.cameFrom` is its label). It is the scene's one `where().cameFrom`.
   - **`setCameFrom({ id, name, at, key })`**: how anything else that throws you one way records where you came in, lane 4b's rift among them. That keeps one `where()` key in one shape, rather than a second `{ at, sector }` (finding 16).
@@ -1809,7 +1920,7 @@ describe('what a thing does', () => {
   - **A trap:** a trapped derelict's `act()` calls `happen('hunt')` (no `'derelict'` in today's `EVENTS`).
   - **A hostile fleet:** hailing one with a hunting side calls `hunt('empire', from)`.
   - **A storm:** inside one, the `drain` dep is called with `STORM.drain × dt` and `STORM.floor` each frame, `hurt` is never called and `emit` never gets `{ type: 'laser' }`, and over 60 s at `dt` 0.25 a fake shield that `drain` lowers never goes under 10.
-  - **A wormhole:** flying in by hand calls `throwTo` with a park at `wormholeExit`'s point and sets `cameFrom`. On a trip it calls neither.
+  - **A wormhole:** flying in by hand calls `throwTo` once, with `{ x, y, z, heading }` from `wormholeExit`'s `at` and `heading` and `{ flash: 2.4 }`, sets `cameFrom`, and emits `{ type: 'thing', what: 'through', … }`. `emit` never gets a `'rifted'` or `{ type: 'event', id: 'rifted' }`. On a trip it calls none of them.
   - **The hooks for lane 4b:** `setCameFrom(x)` makes `cameFrom()` return `x`. A beacon's `act()` with a `follow` dep returning true calls it with the row and its lead and doesn't call `soon`; without the dep it calls `soon(lead)`.
   - **`PlaceCard.test.jsx`:** with an `action`, the button reads `Salvage` with an E cap; without one, as before.
 - [ ] **Step 2: Run them and see them fail.** Run `npx vitest run src/components/universe/things src/components/universe/places/PlaceCard.test.jsx`. Expected: FAIL.
@@ -1819,13 +1930,16 @@ describe('what a thing does', () => {
   - **The endless check's three new steps:**
     - **`ore`:**
       1. Teleport to `parkOf('field')`.
-      2. Wait until `things.targets` has a rock; aim at it with `__universeDebug.state` and fire through the guns' dev hook.
-      3. Wait until the wallet's credits rise by `EARN.found.credits` (`__universeDebug.economy`).
-      4. Shoot `ore.jpg`.
+      2. Wait until `things.targets` has a rock. Teleport 30 units from it, nose on it (`__universeDebug.teleport(x, y, z, heading, pitch)` with the heading and pitch toward the rock).
+      3. Hold the trigger: `__universeDebug.state.fireBtn = true`. The scene fires every frame it's set, at the guns' own pace (`scene.js:4412`), and needs no key focus. There's no fire hook on `__universeDebug`; this flag is what the touch button sets (`:6193`).
+      4. Wait until the wallet's credits rise by `EARN.found.credits` (`__universeDebug.economy`, which `useEarn` puts there in development, `useEarn.js:39-45`), then set `fireBtn` back to false.
+      5. Shoot `ore.jpg`.
     - **`hazards`:**
       1. Teleport to `parkOf('storm')`, then into its middle.
-      2. Read `__universeDebug.state.hitAt`. Wait until the shield falls, then until 60 more seconds of the wall clock have passed (on a condition), and check it's at 10 or more, `state.hitAt` hasn't changed (no `hurt`: no laser event, no shake) and `state.shake` is 0.
-      3. Teleport to `parkOf('pulsar')`, turn into a beam by `beamDirs`, and wait until the HUD has `data-static`.
+      2. Read `__universeDebug.state.hitAt`, and set `__universeDebug.state.shield = 14`, just over the floor. (From 100 the floor is never reached here: the scene's step is held to 0.05 s (`runtime.js:62`), so at one or two frames a second a minute of wall clock is 3 to 6 s of the scene's, 12 to 24 shield points.)
+      3. Wait until the shield is at most 10.5: about 18 frames of the storm's 4 a second, with the regen held off by `state.drainAt`. If the regen weren't held off, its 12 a second would lift the shield instead, and this wait would never end: the step gives up, failing, after 400 frames.
+      4. Then `__universe().frames(40)`, and check the shield is between 10 and 10.5 (the floor holds, and the regen still waits), `state.hitAt` hasn't changed (no `hurt`: no laser event, no shake) and `state.shake` is 0.
+      5. Teleport to `parkOf('pulsar')`, turn into a beam by `beamDirs`, and wait until the HUD has `data-static`.
     - **`wormhole`:**
       1. Teleport to `parkOf('wormhole')`, then fly in by hand.
       2. Wait until `where().cameFrom.id` is the wormhole and the ship's sector is the exit's.
@@ -1837,7 +1951,7 @@ describe('what a thing does', () => {
 ### Task 25: The poses, the full measure, and the hand-off notes
 
 **Files:**
-- Modify: `src/components/universe/poses.js` (`'at-gargantuan'` and `'in-field'`), `src/components/universe/poses.test.js`, `scripts/universe-check.mjs:31` (the two names)
+- Modify: `src/components/universe/poses.js` (`'at-gargantuan'` and `'in-field'`), `src/components/universe/poses.test.js`, `scripts/universe-check.mjs:33`, its `POSES` (the two names)
 - Create: `docs/superpowers/evidence/endless-universe-lane-4a/HANDOFF-NOTES.md`
 - Modify: `docs/superpowers/evidence/endless-universe-lane-4a/README.md`
 
@@ -1884,14 +1998,17 @@ describe('what a thing does', () => {
     - the ten-sector time before and after 4a.1
   - **`HANDOFF-NOTES.md`, "Landed":** every module above by path with its interface in one line; the catalogue's 23 entries and 32 kinds; the dev hooks; the endless steps (`things`, `gargantuan`, `ore`, `hazards`, `wormhole`); the two poses; the re-recorded endless baselines.
   - **`HANDOFF-NOTES.md`, "Left":**
-    - **Lane 4c:** the arrival's gargantuans go in `ARRIVAL_GARGANTUANS` (`expanse/gen/gargantuans.js`), rows `checkGargantuan` passes, at `E:0,0:w4` on.
-      - Each is drawn and parked like any other, and the core's appended systems, lattice and lists keep off it (Task 10), so adding one moves what the core appends round it. Nothing stored names those.
+    - **Lane 4c:** the arrival's gargantuan goes in `ARRIVAL_GARGANTUANS` (`expanse/gen/gargantuans.js`), a row `checkGargantuan` passes, at `E:0,0:w4`.
+      - **One at most** (`ARRIVAL_MAX = 1`; a second throws a `RangeError`). Spec C says "at most one a sector", and the core holds no generated one, so one is all it may hold. The spec's arrival picks one of "three or four chosen fandom worlds", each with "a gargantuan placed by hand behind it": the one gargantuan has to sit behind every chosen world's park as seen from there, or the owner lets the core hold more (finding 39). `w5`–`w7` are kept free if they do.
+      - It is drawn and parked like any other, and the core's appended systems, lattice and lists keep off it (Task 10), so adding it moves what the core appends round it. Nothing stored names those.
       - Only the first impostor in the main sector is free. Each further one costs its quad's two triangles at any baseline pose it's in view from, and a mesh within `1.2 × nearOf(row)`. Put them past that from every baseline pose, or pay for them. `things/clear.test.js` measures from the poses' own points.
       - They reach the sky through `gargantuans.impostors`, which `landmarks.update`'s `extra` takes nearest first, at most `EXTRA_ROOM` (7), every borrowed slot written back each frame (Task 19).
     - **Lane 4b:**
       - **One wormhole rule.** Lane 4b's rift takes its exit from `wormholeExit({ seed, sector }, universe)` (`extras/stars.js`, on the face), not a second `wormholeExit(from, rand)` of its own.
       - **One `where().cameFrom`.** It records where you came in through `things.setCameFrom({ id, name, at, key })`, rather than adding a second `cameFrom: { at, sector }` to `where()`.
       - **One beacon rule.** It passes `follow: (row, lead) => events.follow(…)` to `createThings`, which hands it every beacon with `traitsOf(row).leads`, rather than a second `followOf(id)`.
+      - **A fleet is solid ship by ship.** Its waylay's clearance (its Task 16) reads every extras row's `solidOf(row)`, which is null for a fleet. It should read `rowSolids(row)` (on the face), which gives a fleet's ships, and is `[solidOf(row)]` for everything else.
+      - **The two clocks.** No shader uniform takes `spaceT`; a GPU clock takes the scene's render `t` (Global Constraints). A tidal pull's hole made with `buildHole` gets a `uTime` set from `t`.
       - a derelict's trap leads to `'derelict'` and a beacon to `'treasure'` once those events exist (`things/rules.js`'s `LEADS`); today they fall back to `'hunt'` and `'distress'`, or a quiet line
       - the storm, comet, wormhole and herd looks and rules are there for the ion-storm front, the comet fly-by, the wormhole opening and the leviathan migration (`things/looks/weather.js`, `comet.js`, `life.js`; `rules.js`'s `effects`)
       - tidal pull near a black hole: a generated hole has no pull of its own; `gargantuans.debug.rows()` gives where they are. A hole of its own is `buildHole(parent, { r, disk, uTime, … })`, and its `uTime` is required.
@@ -1902,9 +2019,15 @@ describe('what a thing does', () => {
       - `where().cameFrom` is the wormhole's mark, labelled `THINGS.note.cameFrom`
       - gargantuans list out to 400,000 (`far`), outside `placesAround`'s cap (lane 3's `around.js`, Task 10)
       - `paths.js` imports only `orbits.js`, so `rowAt` can join the light face for marks that move, at no weight
+    - **For the owner:**
+      - the core's far-layer specks before and after (Task 11's pairs and its table of discs over 4 px by kind at the ten poses): sign them off, or say which kind comes down
+      - herds, swarms, storms and battle debris are passable on purpose (Task 1); fleets are solid ship by ship
+      - the arrival holds one gargantuan (above)
     - **Every later lane:**
+      - no shader uniform takes `spaceT` (about 1.76e9, where a float32 steps by 128); a GPU clock takes the scene's render `t`
+      - an `InstancedMesh` holds no absolute position: anchor it near what it draws, in doubles (Task 13's `anchorOf`)
       - anything made in the scene before `warm` (`scene.js:948`) makes its materials on hidden meshes and calls `prepare` only from `update` (Global Constraints, "Warm-up")
-      - "not a pixel changes" is `universe-check --t <seconds>` and `scripts/same-pixels.mjs`, not pixel-measure's statistics
+      - "not a pixel changes" is `universe-check --t <seconds> --png` and `scripts/same-pixels.mjs` over the PNGs, not pixel-measure's statistics and not the lossy WebPs
     - Anything that rose at an endless pose, and why.
 - [ ] **Step 9: Run the gates and commit.** Run `npm run lint`, `npm test`, `npm run build` and `node scripts/health.mjs --check --skip build`. Expected: all green, within budget. Then `git add src/components/universe/poses.js src/components/universe/poses.test.js scripts/universe-check.mjs lab/universe/after-4a lab/universe/endless docs/superpowers/evidence/endless-universe-lane-4a && git commit -m "Lane 4a measured at every tier, posed at a gargantuan and in a field, and its hand-off notes"`
 
@@ -1914,11 +2037,11 @@ describe('what a thing does', () => {
 
 | Name | From | Used by |
 |---|---|---|
-| `ARRIVAL_GARGANTUANS`, `ARRIVAL_BASE`, `checkGargantuan`, `GARGANTUAN_FORMS`, `GARGANTUAN`, `gargantuanKeeps` | `expanse/gen/gargantuans.js`, via `expanse/shared/space.js` | 4c (the arrival's gargantuan) |
+| `ARRIVAL_GARGANTUANS`, `ARRIVAL_BASE`, `ARRIVAL_MAX` (1), `checkGargantuan`, `GARGANTUAN_FORMS`, `GARGANTUAN`, `gargantuanKeeps` | `expanse/gen/gargantuans.js`, via `expanse/shared/space.js` | 4c (the arrival's gargantuan, one at most) |
 | `nearOf`, `impostorOf`, `inView` | `universe/gargantuans/rules.js` | 4c (where its gargantuan sits on the sky) |
 | `landK`, `drawnAngle`, `quadAxes` (pure; `landmarks.js` re-exports them) | `universe/landmarkRules.js` | 4c, anyone pure that crossfades a landmark |
-| `createGargantuans(…).debug` (`rows`, `meshed() → ids`, `angle`, `handover → { k, fade }`, `screen`), `gargantuans.solids`, `.stars`, `.lens` (`at` a kept `Vector3`) | `universe/gargantuans/index.js` | 4b (tidal pull), 4c |
-| `CATALOGUE`, `KINDS`, `lookOf`, `solidOf`, `traitsOf`, `PLANET_SIZE` | `expanse/gen/catalogue.js` | 4b, 5b, 6b |
+| `createGargantuans(…)`: `update({ camera, cam, t, spaceT })` (`t` the render clock, for the GPU), `.debug` (`rows`, `meshed() → ids`, `angle`, `handover → { k, fade }`, `screen`), `.solids`, `.stars`, `.lens` (`at` a kept `Vector3`) | `universe/gargantuans/index.js` | 4b (tidal pull), 4c |
+| `CATALOGUE`, `KINDS`, `lookOf`, `solidOf`, `rowSolids` (a fleet ship by ship; what to clear), `fleetLayout`, `discRadius`, `traitsOf`, `PLANET_SIZE` | `expanse/gen/catalogue.js`, via the face | 4b (`rowSolids` for its waylay), 5b, 6b |
 | `rowAt`, `pathAt`, `pathSpeed`, `tailOf`, `COMET_PERIOD` | `expanse/gen/paths.js`, `extras/systems.js` | 4b (the comet fly-by, storm front), 6b (marks where movers are) |
 | `kindsIn`, `nearestOfKind` | `expanse/gen/finder.js` | 4b (an event at a kind of thing), 6b |
 | `wormholeExit({ seed, sector }, universe)`, `companionsOf`, `companionAt` | `extras/stars.js`, `companions.js` | 4b (its rift's exit: the one rule), 6b |
@@ -1927,14 +2050,14 @@ describe('what a thing does', () => {
 | `CATALOGUE_CARDS` (`type`, `about`, `solid`, `far`, `move`, `land`, `chart`) | `universe/things/cards.js`, spread into lane 3's `THING_CARDS` | 5b (`land`), 6b (`chart`) |
 | `THINGS` (`verb`, `note`, `lore`) | `universe/words.js` | 4b, 6b |
 | `ACT`, `PAYS`, `LEADS`, `actionOf`, `createThingRules`, `leadEvent` | `universe/things/rules.js` | 4b |
-| `createThingDrawers(group, { budget, tier, prepare, rocks, textures })` and each look (`looks/*.js`), with the drawer contract (materials made at create on hidden meshes, `prepare` only from `update`) | `universe/things/` | 4b (event visuals that reuse a kind's look) |
+| `createThingDrawers(group, { budget, tier, prepare, rocks, textures })` (`drawers`, `drawn`, `weight(id)`, `fields`) and each look (`looks/*.js`), with the drawer contract: materials made at create on hidden meshes, `prepare` only from `update`, every instance weighted by `weightOf(dist, size)`, every `InstancedMesh` at `anchorOf(cam)` | `universe/things/` | 4b (event visuals that reuse a kind's look) |
 | `FLEET_MODELS`, `modelOf(kind)` and the original `trader` | `universe/things/looks/fleets.js` | 4b (traffic and convoys out past the authored sides) |
 | `createThings(…)`: `debug.force(kind)`, `debug.parkOf(kind)`, `debug.kinds()`, `debug.shown(kind, id)`, `cameFrom()`, `setCameFrom(x)`, the optional `follow(row, lead)` dep, `act(id)`, `targets`, `hit` | `universe/things/index.js`, `scene.js`'s handle and `__universeDebug.things` | 4b (`setCameFrom`, `follow`), 6b, the endless check |
 | `{ type: 'thing', what: 'can' \| 'cannot' \| 'acted' \| 'through', id, … }` | the scene's `emit` | 6b, 4b |
 | `createRockFields` (`add`, `remove`, `sweep`, `smash`) | `universe/rockFields.js` | 4b (a meteor shower's or comet's rocks the ship can hit) |
-| `buildHole(parent, { r, disk, uTime, … })` (with `fade` and `setFade`; `uTime` required) | `universe/gargantuans/hole.js` | 4b (tidal pull's hole), the Maw |
-| the scene's `drain(n, floor)`: shields lowered without a hit | `scene.js`, beside `hurt` | 4b (the ion storm front) |
-| `samePixels` / `scripts/same-pixels.mjs <a> <b> [--mask]`, and `universe-check --t <seconds>` | `scripts/` | every later lane that says "not a pixel changes" |
+| `buildHole(parent, { r, disk, uTime, … })` (with `fade`, which sets `USE_FADE`, and `setFade`; `uTime` required, from the render clock) | `universe/gargantuans/hole.js` | 4b (tidal pull's hole), the Maw |
+| the scene's `drain(n, floor)`: shields lowered without a hit, the regen held off by `state.drainAt`; the scene's `throwTo(park, { flash })`: any one-way throw, no emit of its own | `scene.js`, beside `hurt` and `riftThrough` | 4b (the ion storm front; the rift and the wormhole event) |
+| `samePixels` / `scripts/same-pixels.mjs <a> <b> [--mask]`, and `universe-check --t <seconds> --png` | `scripts/` | every later lane that says "not a pixel changes" |
 | `createNebulae(…).shown()` | lane 1's `universe/nebula/index.js` | the dev hooks, 6b |
 | the cap counts what the disc layer draws: a disc-0 row listed outside it by its card's `far` (a gargantuan's 400,000); a companion takes its disc's place | lane 3's `places/around.js` | 4c, 6b |
 | landmarks' `extra` (nearest first, clamped to `EXTRA_ROOM`, every slot from `MAIN_DRAWN` rewritten each update), `EXTRA_SLOTS`, `MAIN_DRAWN`, `EXTRA_ROOM`, kinds 4–7 | `universe/landmarks.js` | 4c |
@@ -1964,7 +2087,7 @@ Each of these can be checked once lanes 1, 2 and 3 have merged. Where one is fal
     - `placesAround(sectors, cam, t, { far, inside, max })` keeps the nearest `max` disc rows, honours a card's own `far`, and lists moons and stations outside the cap (its Task 8); `pickPlace(rows, project, px, py, { tanHalf, height })` (its Task 10)
     - `places/weight.test.js` and its `GENERATOR`, as its Task 7 writes it
 13. **Lane 3's tests** don't turn on the kind of lattice slot 0 or 40 of `E:1,0` beyond "solid and stays put". Its `around.test.js` counts every lattice thing with `1.2 × size`, which holds because every lattice kind is solid.
-14. **`scene.js`** still has `rocksHit` and the rock fields as on `main` (`:711-721`, `:3170-3243`), `riftThrough` (`:4208-4237`), the bolt and missile chains (`:2606`, `:2790`), the lock's `rocks` (`:4526`), `bend()` (`:3571-3592`, reading `L.at` as a `Vector3`, `L.r` and `DISK_N` as an array), `placePrompt`'s branches, and the E key's `state.at` branch (`:5502`). Lane 3's `trips.js` took the travel block, not these.
+14. **`scene.js`** still has `rocksHit` and the rock fields as on `main` (`:711-721`, `:3170-3243`), `riftThrough` (`:4210-4238`; `throwTo` takes `:4216-4229`), the bolt and missile chains (`:2606`, `:2790`), the lock's `rocks` (`:4526`), `bend()` (`:3571-3592`, reading `L.at` as a `Vector3`, `L.r` and `DISK_N` as an array), `placePrompt`'s branches, and the E key's `state.at` branch (`:5502`). Lane 3's `trips.js` took the travel block, not these.
 15. **`sides.js`'s sides** carry `factions: { [id]: { role } }` with `role: 'hunt'` for the hunters, as `RICKMORTY` and the Star Wars side do on `main`.
 16. **The ten baseline poses** (`lab/universe/baseline/mid.json`) each have their `at` and `eye` inside a core keep-out. At `cc5e2eaf` the tightest is `gaming`, 51 inside, and `maw` is 486 inside. Task 8's pose test measures from the points themselves, so if a lane moves a pose outside every keep-out, that test says so.
 17. **Lane 4b** (beside this lane, merging after it) takes this lane's `wormholeExit`, `things.setCameFrom` and the `follow` dep in place of its own `wormholeExit(from, rand)`, `cameFrom: { at, sector }` and `followOf(id)` (finding 16). Until it does, the two plans each give `where()` a `cameFrom`.
@@ -1975,6 +2098,11 @@ Each of these can be checked once lanes 1, 2 and 3 have merged. Where one is fal
 22. **Lane 1's landmarks** keep `main`'s split: `aKind`, `aCol0`, `aCol1`, `aCell` and `aAxis` written once at create (`landmarks.js:250-259`), and `update` writing `aCenter`, `aSize` and `aK` (`:311-340`). Lane 1's order is `maw`, `ember`, `halcyon`, `curvesun`, `sun`, the two `twins`, `lantern`, then `veil` and `cradle` (its Task 7). If lane 1 writes every attribute every update already, Task 19's rewrite costs nothing more and its tests still hold.
 23. **Deep space's clock**: `deepspace.js` still makes one `uTime` (`:554`), spreads it into every shader (`:563`) and sets it each frame (`:1445`). Lane 1 changes deep space's nebulae, not these.
 24. **The scene's textures:** `T` is still `loadTextures`' result at `scene.js:647`, declared above `createThings`' line, with the `plates` maps `kit.js`'s `hull` reads.
+25. **Two clocks.** Lane 3's `state.spaceT` is `spaceTime(state.held || reduced ? 0 : Date.now())`, epoch seconds (its plan, `:1669-1670`), and `render`'s own `t` (`scene.js:5067`) stays the clock `deep.update` and `landmarks.update` take (`:5335`, `:5338`). If lane 3 or 2 merges the two, the gargantuans' `uTime` takes whichever is small, and Task 20's test (`t: 77` against `spaceT: 1.76e9`) still says which.
+26. **Lane 2's camera-relative test helpers** are as committed in its worktree (`b4747d89`, `src/components/universe/relative.test.js`): `f32`, `mul32`, `shaderPx`, `truePx` and `pxAngle`, local to that file, and `createRelativeDraw({ camera, map, scene }) → { drawn(draw), … }`. Task 13 copies the helpers rather than importing them. If lane 2 exports them, it imports them instead.
+27. **Lane 2's `levelWeights`** is its plan's: `full = 1 − smoothstep(0.8 × reach, reach, dist)` (its Task 13). So `weightOf` is 0 at and past the reach and 1 inside `0.8 ×` it, and Task 22's held-pose step picks its distances (1.002, 0.995 and 0.85 of the reach) by that. If the band differs, those three move with it, keeping A unbuilt, B barely built and C nearly whole.
+28. **The shields** still come back as `scene.js:3981` has them (`12 × regen` a second once `state.clock − state.hitAt > state.stats.delay`), `hurt` still sets `hitAt` (`:3160`), and the scene's step is still held to `MAX_DT = 0.05` (`runtime.js:62`). Task 24's regen change and its `hazards` step are sized by these.
+29. **Lane 2's `thingsOf`** takes a list's rows as its `make` gives them, up to its `max`. The arrival's one-at-most is checked in `fullSector` itself (Task 10), so it holds whatever `thingsOf` does with a list over its `max`.
 
 ## Findings for the coordinator (spec against code)
 
@@ -2019,7 +2147,7 @@ Each of these can be checked once lanes 1, 2 and 3 have merged. Where one is fal
     - It costs no call and no triangle (farStars' one `Points`). The before is taken before Task 1, and Task 11's gate compares.
     - Lane 2's two layers read the catalogue from Task 4, before any list has a row, so no row reaches them without a look.
 23. **`SECTOR_EXTRAS` moves from `things.js` to `extras/index.js`.** The lists import `THING_NEAR`, `THING_BASE` and `EXTRA_HIGH` from `things.js`, so a re-export the other way would be a cycle. `things.js` keeps `thingsOf(ctx, extras = [])`, and lane 3's face lends `SECTOR_EXTRAS` from the new home, so its readers (4b among them) see no change.
-24. **The arrival's gargantuans were placed but not kept clear of.** The core's appended systems, lattice and lists now keep off lane 4c's rows as off a generated gargantuan (Task 10). (The review's last finding was cut off at "Task 10 (ARRIV"; this is what I found when I checked the arrival list, and may not be what it said.)
+24. **The arrival's gargantuan was placed but not kept clear of.** The core's appended systems, lattice and lists now keep off lane 4c's row as off a generated gargantuan (Task 10). Finding 39 says why there is one at most.
 25. **A scene part made before `warm` exists can't warm itself.** `warm` is a `const` at `scene.js:948`; `createExpanse` (`:772`) and `createLandmarks` (`:786`) run before it. A `prepare: (o) => warm(o)` thunk called at create throws a `ReferenceError` and the map never builds; `:952` says as much for the fleet. This plan's first draft called `prepare` at create. Now every material is made on a hidden mesh at create, the start-up `prepareScene` (`:6023`, hidden things too) compiles it, and `prepare` runs only from `update` (Global Constraints, "Warm-up"). Lanes 1 and 2 already work this way; a later lane that passes `prepare` into something made before `:948` should too.
 26. **The landmark draw writes a slot's look once.** On `main`, `aKind`, `aCol0`, `aCol1`, `aCell` and `aAxis` are written at create only (`landmarks.js:250-259`). Anything that borrows a slot (this lane's gargantuans, and lane 4c's arrival through the same `extra`) has to write it back, or the borrowed look stays. Task 19 rewrites every slot from `MAIN_DRAWN` up each update.
 27. **The Maw's three shaders read deep space's clock.** `PHOTON_FRAG` (`:440`), `DISK_FRAG` (`:480`) and `JET_FRAG` (`:542`) take `uTime` from deep space's shared uniform (`deepspace.js:554`, `:563`). Moved out with a uniform of their own, the disc and jets would freeze, and a still shot can't see it. `buildHole` now requires the `uTime` object, and Task 18 compares shots at two held clocks.
@@ -2029,6 +2157,17 @@ Each of these can be checked once lanes 1, 2 and 3 have merged. Where one is fal
 31. **The storm's drain isn't a hit.** `hurt()` emits `laser` and shakes on every call (`scene.js:3154-3168`), and Comms answers each with a hit sound and a crew line (`Comms.jsx:249-251`). The scene gains `drain(n, floor)` beside it (Task 24), which lane 4b's ion storm front can use too.
 32. **The review's `hauler` finding was half right.** `hauler` isn't unbuilt: it is Rick and Morty's junky space truck (`fleetRickmorty.js:298`, in `BUILT_KINDS`), so `buildTraffic('hauler')` doesn't fall back to a TIE. But this plan called it "this lane's original freighter", which it isn't, and it would have put a cartoon delivery van at anchor in most independent systems. The independent fleets now fly an original `trader`, built in `looks/fleets.js` through `buildModel`, and `modelOf` throws on a kind it can't build rather than turn it into a TIE (Task 16).
 33. **The review's trait-share arithmetic.** The lattice's weights total 11.0, not 11.35, but the point stands: 2,000 rows hold about 73 rogues, and the gas share's band was about ±1 standard deviation. The test now takes every lattice row of three sectors (about 870 rogues) and asserts the counts that make each band at least 2.5 standard deviations wide (Task 3).
+34. **A generated black hole would have frozen on `spaceT`.** Lane 3 keeps `state.spaceT` as epoch seconds, about 1.76e9, where a float32 steps by 128. The plan had set the holes' `uTime` from it: `PHOTON_FRAG`'s noise (`uTime * 0.3`), `DISK_FRAG`'s swirl (`uTime / 18`) and `JET_FRAG`'s flow (`uTime * 0.9`) would have frozen for minutes, then jumped. The gargantuans now take the scene's render `t` (`scene.js:5067`), as deep space does (`deepspace.js:1445`), and Global Constraints says no shader uniform takes `spaceT` (Tasks 20 and 22; Task 20's test passes both clocks and checks which one lands).
+35. **Six near kinds drew no disc and would have popped in.** Storms, herds, swarms, debris, fields and ice fields have no far-layer stand-in, and the drawer contract only said when an entry is shown. A storm 4,000 across would have appeared whole at 32,000, 14° across in one frame, against spec A's "a change of level fades, never pops" and done item 1. Lane 2's `pops()` measures far-layer discs only. Every drawer now weights each instance by `levelWeights(…).full`, colour for additive looks and scale for the rest (Task 13), swept across the band in Tasks 13, 15 and 16, and measured at a held pose with a control in Task 22.
+   - **Lane 2's levels test, as planned, can't pass with its formula.** Its plan sweeps `dist` "in steps of 5" for reach 300 and asks for at most 0.01 a step, but `smoothstep` over a band of `0.2 × 300 = 60` moves by up to `1.5 × 5 / 60 = 0.125` in 5 units. Its code isn't on its branch (`eu/lane-2`) yet. Lane 2 should step by a share of the reach, as Task 13 here does, or widen `FADE`. For the coordinator, before lane 2's PR 2.4 lands.
+36. **Instances far from home would have shaken.** Lane 2's camera-relative draw fixes `Object3D` matrices, which three works out in doubles, but not `instanceMatrix`, a `Float32Array`. 3.6 to 9.6 million units out (a wormhole's throw), a float32 steps by 0.25 to 1, so a rock of radius 0.3 seen from 50 units would have moved by tens of pixels. Every `InstancedMesh` now sits at an anchor near the camera, set in doubles (Task 13's `anchorOf`), or at its gargantuan's `at` (Task 20). The test measures it the way lane 2's `relative.test.js` measures a body, against the same rock unanchored.
+37. **A fleet at anchor was a ghost.** Its 3 to 7 ships, a capital three times the others, had no solid, against done item 4 ("You can't fly through a solid body"), while traffic's big ships are solid (`traffic.js:483-495`). A fleet is now solid ship by ship from one pure layout (`fleetLayout`, Task 7) that the drawing reads too (Task 16), through `rowSolids`. **Herds, swarms, storms and debris stay passable on purpose** (Task 1): the site's own leviathans aren't solid (`leviathans.js:13`), a swimming solid at a frame or two a second would shove the ship through itself, and a herd's drawn count is cut by the tier, so a solid creature would be an invisible wall on a phone. The owner may overrule the herd. **Lane 4b's waylay** reads `solidOf(row)` for every extras row (its Task 16), which is null for a fleet: it should read `rowSolids(row)`.
+38. **The storm couldn't drain the shields.** They come back at `12 × regen` a second once `delay` has passed since the last hit (`scene.js:3981`), and a drain, rightly, isn't a hit, so the regen ran straight through a storm's 4 a second. The drain now sets `state.drainAt`, and the regen waits on it as on `hitAt` (Task 24, 0 lines). The review's `hazards` finding (a minute of wall clock is 3 to 6 s of the scene's, so the floor was never reached) is fixed too: the step sets the shield to 14 and waits until it's at most 10.5, which without the regen fix would never come.
+39. **The arrival list allowed four gargantuans in the core.** Spec C: "at most one a sector". The spec's arrival also picks one of "three or four chosen fandom worlds", each with "a gargantuan placed by hand behind it". `ARRIVAL_MAX` is now 1, a second row throws, and lane 4c is told one gargantuan has to serve every chosen world (hand-off notes). If the owner wants one behind each world, the core breaks "at most one a sector": their call.
+40. **"Not a pixel changes" compared lossy pictures.** `universe-check` writes WebP at quality 88 (`universe-check.mjs:236`). `--png` now also writes the screenshot's PNG, which `same-pixels` compares; the PNGs aren't committed. And the Maw's fade is behind `#ifdef USE_FADE`, set only on a generated hole, so the Maw's shaders compile as before, token for token, and a driver's reassociation can't fail the check for no fault (Task 18).
+41. **Beacons' discs would have crowded the core.** A beacon is about 4.5% of the lattice, about 75 within the far plane of a core pose, drawn as emissive discs three times their size: up to 16 px at 20,000. In the core sector a beacon's disc is now its own size (`discRadius`, Task 1), and Task 11's gate records the discs over 4 px each new kind adds at the ten poses, for the owner to sign off.
+42. **Small corrections.** `keepOutsNear` is empty for five of the core's six face neighbours, not four (only `E:0,-1` gets the pocket's; checked by running it). `universe-check`'s `POSES` is at `:33`, not `:31`. `fullSector`'s `things: false` makes neither the lattice nor any list, and the gargantuan's and the arrival's keep-outs for appended systems apply whatever the options (Tasks 4 and 10). The five-forms test looks within six sectors (81 gargantuan sectors, a form missing about one seed in ten million) rather than four (27, about one in a hundred, with no way out for a seed that missed). `riftThrough`'s split is now exact: `throwTo` holds `:4216-4229`, and the rift keeps `exit`, its selection reset and its two `'rifted'` emits, so a wormhole neither unlocks `rifted` (`Universe.jsx:427`) nor plays the rift's line.
+43. **Every row has a name, a card and a park, pinned without a browser.** Task 11 runs lane 3's resolver, cards and parking over a sample of every kind and the block's gargantuan, on the universe side (a test imports across worlds only beside its own file, `boundary-breaks.mjs:57`).
 
 ## Spec coverage
 
@@ -2038,16 +2177,23 @@ Each of these can be checked once lanes 1, 2 and 3 have merged. Where one is fal
   - the events and the ten-minute count are lane 4b's
 - **Done item 2, "It seems populated":** lane 2's density targets stay green with every list in, checked again over this lane's sectors (Task 11). Herds, swarms, storms, comets, beams and the rigs' haulers add something moving. The 20-second count is lane 4b's, over traffic and events.
 - **Done item 4:**
-  - Every kind has a name, a card and a parking spot through lane 3 (Tasks 3, 5–10).
+  - Every kind has a name, a card and a parking spot through lane 3 (Tasks 3, 5–10), pinned in Node over a sample of every kind and the gargantuan, the park outside the row's solids (Task 11), and in the browser by the endless sweep (Task 22).
   - Movers park and stay parked (Task 5's carry).
-  - Solid bodies are solid: lane 2's near layer takes the catalogue's solids (Task 4), and gargantuans' parts are solid (Task 20).
+  - Solid bodies are solid: lane 2's near layer takes the catalogue's solids through `rowSolids` (Task 4), a fleet's ship by ship (Task 7), and gargantuans' parts are solid (Task 20). Storms, herds, swarms and battle debris are passable on purpose, said in Task 1 and flagged to the owner (finding 37).
   - "Every place you see, you can pick": lane 3's capped list keeps exactly the discs lane 2 draws, with every list and companion in (Tasks 4, 6 and 11), and a gargantuan on the sky is listed outside the cap and picked (Task 10).
   - "The map lists it" is lane 6b's, from the cards' `chart` and the finder.
-- **Done item 1, "no wall of things popping in":** for this lane's kinds, a thing comes in as a far-layer disc that fades as its mesh takes over (Task 4); a companion sun does the same (Tasks 6 and 15, measured at a held pose in Task 22); a gargantuan crossfades from its impostor with `k + fade` at 1 (Tasks 19, 20, 22); a pocket fades in by `k` (Task 17).
+- **Done item 1, "no wall of things popping in":**
+  - every near drawer weights each instance by `weightOf(dist, size)`, so its mesh fades or grows in from nothing at its reach (Task 13, swept across the band in Tasks 13, 15 and 16)
+  - a disc kind's disc fades out as its mesh comes in (Task 4)
+  - a disc-0 kind (a storm, a herd, a swarm, debris, a field) has no disc, and fades in from nothing: measured at a held pose, with a control, for a storm and a herd (Task 22)
+  - a companion sun hands over from its disc to its ball (Tasks 6 and 15, measured at a held pose in Task 22)
+  - a gargantuan crossfades from its impostor with `k + fade` at 1 (Tasks 19, 20, 22), and a pocket fades in by `k` (Task 17)
+  - the core's discs are lighter: a beacon's is its own size there, and Task 11 records what each kind adds over 4 px at the ten poses for the owner
 - **Done item 5, last bullet:** gargantuans are world-anchored at their true angle, roll with the stars (lane 1's world-up quad), and hand over to a mesh (Tasks 19, 20, and Task 22's parallax and roll check). Generated nebula pockets are lane 1's renderer (Task 17).
 - **Done item 8:** the arrival's gargantuan is lane 4c's, through `ARRIVAL_GARGANTUANS` (Task 10).
 - **Done item 9:**
-  - the rock fields' move is pinned (Task 21), and the Maw's is byte-identical at two held clocks, its disc still swirling (Task 18)
+  - the rock fields' move is pinned (Task 21), and the Maw's is byte-identical in lossless shots at two held clocks, its disc still swirling, its shaders compiling as before (the fade behind `#ifdef USE_FADE`, Task 18)
+  - the rift behaves line for line as before after `throwTo` is split out of it (Task 24)
   - the Curve's sun keeps its look in its own sector after a gargantuan has borrowed its slot (Task 19)
   - a storm's drain makes no hit sound, crew line or shake (Task 24)
   - the two replaced tests are listed (Tasks 3, 4)
@@ -2058,7 +2204,8 @@ Each of these can be checked once lanes 1, 2 and 3 have merged. Where one is fal
   - the density targets
   - "things cluster round systems, but never so tightly that the space between is empty": fields, comets, rigs, fleets and shipyards round systems; the lattice and eleven lists between them
   - "Places with life" is lane 4b's; stations are lane 3's
-- **Section C, gargantuans:** at most one a sector, at least one in every 3 × 3 × 3, none within 20,000 of home, 20–200 planets across, visible across a sector, five forms of the spec's six, the Maw as it was (Tasks 10, 18–20). A leviathan migration is lane 4b's event.
+- **Section C, gargantuans:** at most one a sector (the core's one the arrival's, `ARRIVAL_MAX = 1`), at least one in every 3 × 3 × 3, none within 20,000 of home, 20–200 planets across, visible across a sector, five forms of the spec's six, each within six sectors of home in every universe tested, the Maw as it was, a generated hole's disc and jets moving on the render clock (Tasks 10, 18–20). A leviathan migration is lane 4b's event.
+- **Done item 1 far out ("from anywhere"; the index's Review Focus 4), for this lane's things:** every instance within a pixel 9.6 million out, where a wormhole throws you (Tasks 13 and 20).
 - **Section H:** the tier table's rows (Task 12); the poses "at a gargantuan" and "in an asteroid field" (Task 25). The baseline poses keep their calls and triangles (Tasks 22, 25).
 - **Section A's "lighter" core:** only fields, comets, rigs and the lattice's kinds in the core sector, and no generated gargantuan (Tasks 1, 10, 11).
 
@@ -2066,6 +2213,11 @@ Each of these can be checked once lanes 1, 2 and 3 have merged. Where one is fal
 
 - **Types:**
   - `KINDS[kind].body`, `near` and `disc` are defined in Task 1 and read by `solidOf` (Task 1), lane 2's near and far layers (Task 4), the drawers (Tasks 13–16) and `debug.shown` (Task 22).
+  - `rowSolids(row, at)` (Task 1, a fleet's branch Task 7) is what lane 2's `createNearThings.solids()` lists (Task 4) and what Task 11's parks keep clear of; `fleetLayout` (Task 7) is what both it and `fleetShips` (Task 16) place ships by. `discRadius(kind, size, { core })` (Task 1) is what `discs.js` pushes and `around.js` counts (Task 4).
+  - `weightOf(dist, size)` and `anchorOf(cam)` (Task 13) are kept by every drawer of Tasks 13–16; `weight(id)` (Task 13) is what Task 22's held-pose step waits on.
+  - `createGargantuans(…).update({ camera, cam, t, spaceT })` (Task 20) is what the scene calls with `render`'s `t` (Task 22); `buildHole`'s `uTime` is set from that `t`, never `spaceT`.
+  - `throwTo(park, { flash })` (Task 24) takes `{ x, y, z, heading }`: `riftThrough`'s `parkFor` gives that shape, and the wormhole builds it from `wormholeExit`'s `{ at, heading }`.
+  - `ARRIVAL_MAX` (Task 10) is lent on the face (Tasks 10, 11) and named in the hand-off for lane 4c.
   - `rowAt` (Task 2) is read by the near and far layers (Task 4), the lists' tests (Tasks 5, 8), the cards' `move` (Tasks 5, 8), the finder (Task 11), the drawers (13–16) and the rules (23).
   - `traitsOf` (Task 3, memoised by seed) is read by the cards (3), the looks (14–16) and the rules (23). `companionsOf` and `companionAt` (Task 6, by seed) by the card and the far layer's discs and lane 3's cap (6), the finder (11) and `near.js` (15), whose ball is the disc's size and colour.
   - `make(ctx, made)` and the ctx (Task 4) are used by every list (Tasks 5–10). `ctx.gargantuan`, `ctx.arrivals` and `ctx.keeps` come from Task 10. Every list's keep-out test is all of `KEEP_OUTS`, through `roomFor` (Task 5); `ctx.outs` is the lattice's alone.
@@ -2076,7 +2228,7 @@ Each of these can be checked once lanes 1, 2 and 3 have merged. Where one is fal
   - `createThingDrawers(group, { …, textures })` (Task 13) and `createGargantuans(group, { …, textures })` (Task 20) take the scene's `T` (Task 22) for `hull()`. Neither, nor any factory, calls `prepare` at create; each calls it from `update` (Tasks 13–16, 20), and Task 22's smoke run proves the scene builds.
   - `EXTRA_ROOM` (Task 19) clamps `gargantuans.impostors`, which Task 20 orders nearest first.
   - `drain(n, floor)` (Task 24, the scene's) is what `createThings`' `drain` dep calls with `rules.effects`' `drain` and `STORM.floor` (Task 23).
-  - `universe-check --t` and `same-pixels.mjs` (Task 18) are what Tasks 18 and 21 decide by.
+  - `universe-check --t --png` and `same-pixels.mjs` over the PNGs (Task 18) are what Tasks 18 and 21 decide by.
   - `landK` comes from `landmarkRules.js` (Task 19) in `gargantuans/rules.js`, and `FAR` from the face (Task 11).
   - `nearestOfKind(sectors, kind, at: [x, y, z], t)` (Task 11) takes any iterable; `debug.find` (22) passes `sectors().values()` and `[ship.x, ship.y, ship.z]`.
   - `EXTRA_LISTS` is pinned in Task 11 in the order Tasks 5–10 add them.
@@ -2094,4 +2246,6 @@ Each of these can be checked once lanes 1, 2 and 3 have merged. Where one is fal
   - phones: Tasks 12, 13–16, 20 and 25
   - what's listed is what's drawn: Tasks 4, 6, 10 and 11
   - the scene builds: Tasks 13–16, 20 and 22
-- **Test times.** The heavy setups are `beforeAll`s, as lane 2's density test's is: Task 3's three sectors, Task 8's 26 sectors without the lattice, Task 11's two blocks of 27, and the 27 sectors of Tasks 4 and 6's `around.test.js` `it`s (the lattice in, as lane 3's own test makes them). Every `it` stays under a second.
+  - a cloud or a herd coming in: Tasks 13, 15, 16 and 22
+  - far from home: Tasks 13 and 20
+- **Test times.** The heavy setups are `beforeAll`s, as lane 2's density test's is: Task 3's three sectors, Task 8's 26 sectors without the lattice, Task 11's two blocks of 27 and its universe-side block for the names, cards and parks (`things/cards.test.js`), and the 27 sectors of Tasks 4 and 6's `around.test.js` `it`s (the lattice in, as lane 3's own test makes them). Task 10's five-forms test reads residues and `formOf` only, over 13³ sectors in three universes, no sector made. Every `it` stays under a second.
