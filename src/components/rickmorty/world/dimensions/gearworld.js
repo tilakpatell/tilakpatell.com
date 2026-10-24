@@ -1,11 +1,16 @@
 // Gear World ("Auto Erotic Assimilation"'s neighbour, Gearhead's home in
 // "Mortynight Run"): a brass and copper city on the face of a vast cog under
-// an amber sky; towers of stacked gears turning slowly, Gearhead's shop at
-// the west with him at its door, a great wheel turning beside the square,
-// cog-shaped lamps, and gear people about.
+// an amber sky; towers of stacked gears, Gearhead's shop at the west with him
+// at its door, a great wheel beside the square, cog-shaped lamps, gear people
+// about and the gear police on their beats. The city stands still till it's
+// wound: each tower's crank and the great wheel are the sequence's cogs
+// (../games/sequence.js), and a cog wound in its turn sets its stack turning
+// (a wrong one stops them all); once the task's done, the whole city turns.
+// Gearhead's sign always does.
 
 import * as THREE from 'three';
 import { BALL } from '../interiors/shell';
+import { litSets } from '../games/sequence';
 import { stage } from './stage';
 
 const LIGHT = { sun: [0xffe2b0, 1.7], hemi: [0xffd8a0, 0x5a3a1a, 1.25], fog: [0xc98a4a, 60, 300] };
@@ -46,30 +51,42 @@ export async function buildGearworld(kit) {
   const S = stage(kit, 'gearworld', { ground: COG, groundTile: 8 });
   const { R, P } = S;
 
-  // the towers: stacks of gears, each layer turning its own way
-  const turning = [];
+  // the towers: stacks of gears, each layer turning its own way once its
+  // cog's wound (`spins`: a cog's id to its meshes, their speeds and the axis
+  // they turn on), and by each its crank, a little wheel on a post
+  const spins = {};
   const brass = [0xc8a24a, 0xb87a3a, 0xd8b86a, 0x9a6a3a];
-  const tower = (dx, dz, r, layers) => {
+  const crank = R.own(gearGeo(0.45, 8, 0.12).rotateX(Math.PI / 2));
+  const at = (id) => S.d.hotspots.find((h) => h.id === id);
+  const tower = (dx, dz, r, layers, cog) => {
     const [x, z] = P(dx, dz);
+    const list = (spins[cog] = []);
     for (let i = 0; i < layers; i++) {
       const rr = r * (1 - i * 0.12);
       const geo = R.own(gearGeo(rr, 10 + Math.round(rr * 2), 1.4));
       const m = new THREE.Mesh(geo, kit.mats.toon(brass[i % brass.length]));
       m.position.set(x, i * 1.6, z);
       R.add(m);
-      turning.push([m, (i % 2 ? 1 : -1) * (0.15 + 0.4 / rr)]);
+      list.push([m, (i % 2 ? 1 : -1) * (0.15 + 0.4 / rr), 'y']);
       R.frame(x, z, 0).cyl(0x5a3a1a, 0, i * 1.6, 0, rr * 0.3, 1.6);
     }
+    const h = at(cog);
+    R.frame(h.x, h.z, 0).cyl(0x5a3a1a, 0, 0, 0, 0.1, 1.3).box(0x7a4a22, 0, 0, 0, 0.6, 0.12, 0.6);
+    const w = new THREE.Mesh(crank, kit.mats.toon(0xe8c84a));
+    w.position.set(h.x, 1.45, h.z);
+    R.add(w);
+    list.push([w, 1.6, 'z']);
   };
-  tower(-22, -12, 5, 6);
-  tower(22, -14, 6, 8);
-  tower(23, 7, 4, 5);
-  tower(-23, 8, 4, 4);
-  // the great wheel by the square, upright, turning
+  tower(-22, -12, 5, 6, 'gcog-nw');
+  tower(22, -14, 6, 8, 'gcog-ne');
+  tower(23, 7, 4, 5, 'gcog-se');
+  tower(-23, 8, 4, 4, 'gcog-sw');
+  // the great wheel by the square, upright, the first cog of the city
   const [wx, wz] = P(9, -12);
   const wheel = new THREE.Mesh(R.own(gearGeo(3.2, 14, 0.6).rotateX(Math.PI / 2)), kit.mats.toon(0xd8b86a));
   wheel.position.set(wx, 3.4, wz);
   R.add(wheel);
+  spins.cogs = [[wheel, 0.3, 'z']];
   R.frame(wx, wz, 0).box(0x5a3a1a, -0.6, 0, 0, 0.3, 3.4, 0.3).box(0x5a3a1a, 0.6, 0, 0, 0.3, 3.4, 0.3);
 
   // Gearhead's shop: a copper front, a big gear over the door, a window of cogs
@@ -79,7 +96,6 @@ export async function buildGearworld(kit) {
   const sign = new THREE.Mesh(R.own(gearGeo(1.1, 10, 0.25).rotateX(Math.PI / 2)), kit.mats.toon(0xe8c84a));
   sign.position.set(sx, 4.9, sz + 2.6);
   R.add(sign);
-  turning.push([sign, 0.6]);
 
   // lamps: posts with a little gear for a shade, lit
   for (const [dx, dz] of [
@@ -91,8 +107,11 @@ export async function buildGearworld(kit) {
     R.frame(...P(dx, dz), 0).cyl(0x5a3a1a, 0, 0, 0, 0.08, 3).cyl(0xc8a24a, 0, 3, 0, 0.45, 0.12).glow(BALL, 0xffd890, 1.5, 0, 2.8, 0, 0, 0.3);
 
   S.people();
-  return S.done(LIGHT, (t, dt) => {
-    for (const [m, w] of turning) m.rotation.y += w * dt;
-    wheel.rotation.z += 0.3 * dt;
+  const items = S.d.sequence.items;
+  const area = S.done(LIGHT, (t, dt, state) => {
+    const lit = litSets({ items, ...area.actions.sequence() }, (state?.done ?? []).includes('gearworld'));
+    for (const cog of lit) for (const [m, w, axis] of spins[cog]) m.rotation[axis] += w * dt;
+    sign.rotation.y += 0.6 * dt;
   });
+  return area;
 }

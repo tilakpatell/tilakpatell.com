@@ -25,7 +25,7 @@
 // server (default http://127.0.0.1:5197), CHROME the browser, OUT a folder for
 // a shot of each scenario's end. Headless browsers draw in software, slowly:
 // the first world takes a while to build. The scenarios are ./rm-story/'s
-// (basics.mjs, early.mjs, late.mjs, citadel.mjs), the steps they share its helpers.mjs, and
+// (basics.mjs, early.mjs, late.mjs, citadel.mjs, sector.mjs), the steps they share its helpers.mjs, and
 // where they stand Morty in a place through the portal its places.mjs, read
 // from the places' own data.
 import { chromium } from 'playwright-core';
@@ -35,8 +35,9 @@ import { BASICS } from './rm-story/basics.mjs';
 import { EARLY } from './rm-story/early.mjs';
 import { LATE } from './rm-story/late.mjs';
 import { AT_THE_CITADEL } from './rm-story/citadel.mjs';
+import { SECTOR_CHECKS } from './rm-story/sector.mjs';
 
-const SCENARIOS = { ...BASICS, ...EARLY, ...LATE, ...AT_THE_CITADEL };
+const SCENARIOS = { ...BASICS, ...EARLY, ...LATE, ...AT_THE_CITADEL, ...SECTOR_CHECKS };
 
 const only = process.argv.slice(2);
 for (const n of only) if (!SCENARIOS[n]) throw new Error(`no scenario ${n} (there are ${Object.keys(SCENARIOS).join(', ')})`);

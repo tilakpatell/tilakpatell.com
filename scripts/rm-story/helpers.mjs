@@ -91,6 +91,7 @@ export const JERRY = EPISODES[6];
 export const PRIME = EPISODES[7];
 export const FAIRY = EPISODES[8];
 export const CITADEL = EPISODES[9];
+export const SECTOR = EPISODES[10];
 // Morty by the garage portal, stepped through it, and stood where it took him
 export async function throughPortal(page) {
   await goto(page, 'garage', -302.3, 101.4, Math.PI);
@@ -166,7 +167,11 @@ export const chasing = (page, phase, what) =>
     throw new Error(what);
   });
 // a new visitor's first card passed, and the story played to episode `e`'s
-// start through the hooks (`wins` fed first), each card on the way checked
+// start through the hooks (`wins` fed first, an `all`'s parts each a task),
+// each card on the way checked. The Citadel's episode is played as a visitor
+// who made its escape before walking in: the escape kept, the walk in fed,
+// and the visit opened afresh on the next card (its closing line is the
+// Citadel's own scenarios' to check).
 export async function playTo(page, e, wins = []) {
   await page.goto(`${BASE}/#/c-137`, { waitUntil: 'domcontentloaded' });
   await page.locator('.rm-episode').waitFor({ timeout: 600000 });
@@ -175,7 +180,19 @@ export async function playTo(page, e, wins = []) {
   await built(page);
   for (const game of wins) await page.evaluate((game) => window.__RMSTORY__.feed({ type: 'win', game }), game);
   for (let i = 0; i < e; i++) {
-    for (const step of EPISODES[i].steps) if (step.type === 'task') await page.evaluate((id) => window.__C137__.complete(id), step.id);
+    const steps = EPISODES[i].steps.flatMap((s) => (s.type === 'all' ? s.steps : [s]));
+    if (steps.some((s) => s.type === 'citadel')) {
+      await page.evaluate(() => {
+        window.localStorage.setItem('tp-citadel-done', JSON.stringify(['daycare', 'wafers', 'council', 'votemorty', 'citadelout']));
+        window.__RMSTORY__.feed({ type: 'enter', area: 'page:/c-137/citadel' });
+      });
+      await page.reload({ waitUntil: 'domcontentloaded' });
+      await page.locator('.rm-episode').waitFor({ timeout: 600000 });
+      await cardFor(page, i + 1);
+      await built(page);
+      continue;
+    }
+    for (const step of steps) if (step.type === 'task') await page.evaluate((id) => window.__C137__.complete(id), step.id);
     await toast(page, EPISODES[i].outro[0][1]);
     await cardFor(page, i + 1);
   }
@@ -195,6 +212,30 @@ export const standOn = (page, area, id, { dx = 0, dz = 0 } = {}) => {
 export async function later(page, s) {
   const t0 = await page.evaluate(() => window.__C137__.sim.t);
   await page.waitForFunction((t) => window.__C137__.sim.t >= t, t0 + s, { timeout: 120000, polling: 16 });
+}
+// the map's marker (the sim's `goal`): a link's or a spot's id
+export const goalIs = (page, id, where) =>
+  page.waitForFunction((id) => window.__C137__.sim.goal?.id === id, id, { timeout: 15000, polling: 100 }).catch(async () => {
+    throw new Error(`${where} the marker’s on ${await page.evaluate(() => window.__C137__.sim.goal?.id ?? null)}, not ${id}`);
+  });
+// the objective line isn't a link
+export const noLink = async (page, where) => check((await page.locator('.rm-hud .rm-objective-link').count()) === 0, `${where} the line is a link`);
+// a place's meter, by its title, and its line
+export const meter = (page, title) => page.locator(`.rm-cluster[aria-label="${title}"][data-on]`);
+export const meterSays = (page, title, text) =>
+  page.waitForFunction(([t, s]) => document.querySelector(`.rm-cluster[aria-label="${t}"][data-on]`)?.textContent.includes(s), [title, text], { timeout: 15000, polling: 100 }).catch(async () => {
+    throw new Error(`the meter reads “${await meter(page, title).first().textContent().catch(() => '(none)')}”, not “${text}”`);
+  });
+// Morty moved within a place, its game going on
+export const warp = (page, area, x, z, face = N) => page.evaluate(([a, x, z, f]) => window.__C137__.warp(a, x, z, f), [area, x, z, face]);
+// a place's hunters after him now
+export const hunting = (page, area) => page.evaluate((a) => window.__C137__.api.act(a, 'npcs').filter((n) => n.hunting).map((n) => n.id), area);
+// a page of the site opened afresh at `hash` (a hash change alone keeps the
+// last page's world tearing down under the next one's dev hook)
+export async function open(page, hash) {
+  await page.goto(`${BASE}/${hash}`, { waitUntil: 'domcontentloaded' });
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await built(page);
 }
 export const rickallOn = (page) => page.waitForFunction(() => window.__C137__.sim.rickall?.phase === 'on', null, { timeout: 300000, polling: 250 });
 

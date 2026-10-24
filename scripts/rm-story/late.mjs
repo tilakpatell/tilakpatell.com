@@ -4,7 +4,7 @@
 // Fantasy World's climb and Froopyland, and the Citadel.
 /* global window, document */
 import { COURSE, chaseStart, newChase } from '../../src/components/rickmorty/world/games/chase.js';
-import { BASE, OUT, N, check, done, built, goto, use, story, reads, WIPED, SMALL, HEAT, DEALS, JERRY, throughPortal, toast, inArea, cardFor, at, opens, warpUse, caught, before, chasing, playTo, game, homeOf, spotAt, wayInOf, place, PRIME, FAIRY, CITADEL, CITADEL_LINE, citadelUp, citadelReads, citadelToast, linksTo, standOn, later, PLACES } from './helpers.mjs';
+import { BASE, OUT, N, check, done, built, goto, use, story, reads, WIPED, SMALL, HEAT, DEALS, JERRY, throughPortal, toast, inArea, cardFor, at, opens, warpUse, caught, before, chasing, playTo, game, homeOf, spotAt, wayInOf, place, PRIME, FAIRY, CITADEL, SECTOR, CITADEL_LINE, citadelUp, citadelReads, citadelToast, linksTo, standOn, later, PLACES } from './helpers.mjs';
 
 export const LATE = {
   // a new visitor plays episode 5: the cruiser's chase (taking off ticks
@@ -477,7 +477,8 @@ export const LATE = {
   // Citadel's own line through its scenes; home mid-chain, where the line
   // links back, and back by it (no card again); the vote and red alert; the
   // real escape in the cruiser, its own line first and then Morty's closing
-  // line; every place open; and home, the checklist's next
+  // line with episode 11's card; the sector's four open; and home, the
+  // sector's line, with no link, the marker on the garage portal
   async 'episode-10'(page) {
     const three = ['daycare', 'wafers', 'council'];
     await playTo(page, 9, ['cabinet', 'chase']);
@@ -521,15 +522,22 @@ export const LATE = {
     check((await page.locator('.citadel-stage .shire-toast', { hasText: 'The cruiser’s away' }).count()) === 1, 'the episode’s closing line cut the escape’s short');
     await citadelToast(page, CITADEL.outro[0][1], CITADEL.outro[0][0]);
     if (OUT) await page.screenshot({ path: `${OUT}/episode-10-outro.png` });
+    // (episode 11's card with it)
+    await cardFor(page, 10);
     await at(page, 10, 0, 'after the escape');
-    await opens(page, [...CITADEL.unlocks, 'evilrick'], true, 'after episode 10');
-    check((await page.locator('.rm-episode').count()) === 0, 'a card showed for an episode that isn’t built');
+    await opens(page, CITADEL.unlocks, true, 'after episode 10');
+    await opens(page, [...SECTOR.unlocks, 'evilrick'], false, 'after episode 10');
     await citadelReads(page, null, CITADEL_LINE([...three, 'votemorty', 'citadelout']));
-    // home: past the last built episode, the objective is the checklist's next (and Morty's line, said, isn't said again)
+    // home: the sector's line, no link, the marker on the garage portal (and Morty's line, said, isn't said again, nor the card shown)
     await page.getByRole('link', { name: 'Back to Dimension C-137' }).click();
     await inArea(page, 'garage');
-    await reads(page, 'Go into the Smith house and put interdimensional cable on the TV.');
+    await reads(page, SECTOR.steps[0].text);
+    check((await page.locator('.rm-hud .rm-objective-link').count()) === 0, 'the sector’s line is a link');
+    await page.waitForFunction(() => window.__C137__.sim.goal?.id === 'garage-portal', null, { timeout: 10000 }).catch(async () => {
+      throw new Error(`the marker’s on ${await page.evaluate(() => window.__C137__.sim.goal?.id ?? null)}, not the garage portal`);
+    });
     await page.waitForTimeout(2000);
     check((await page.locator('.rm-toast', { hasText: CITADEL.outro[0][1] }).count()) === 0, 'Morty’s line was said again in C-137');
+    check((await page.locator('.rm-episode').count()) === 0, 'episode 11’s card showed again in C-137');
   },
 };

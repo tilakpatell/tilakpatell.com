@@ -64,3 +64,14 @@ describe('the map’s marker inside a game', () => {
     expect(gameGoal(null, {})).toBe(null);
   });
 });
+
+describe('the marker on a climb with things to pick up', () => {
+  const d = { climb: { task: 'birdworld', top: null, foot: null, spot: null, picks: ['a', 'b', 'c'] } };
+  it('points at the first thing not yet picked, and at nothing once it’s done or lost', () => {
+    expect(gameGoal(d, { climb: { phase: 'idle', stand: 0, picked: [] } })).toBe('a');
+    expect(gameGoal(d, { climb: { phase: 'run', stand: 2, picked: ['a'] } })).toBe('b');
+    expect(gameGoal(d, { climb: { phase: 'run', stand: 0, picked: ['a', 'c'] } })).toBe('b');
+    expect(gameGoal(d, { climb: { phase: 'lost', stand: 0, picked: ['a'] } })).toBe(null);
+    expect(gameGoal(d, { done: ['birdworld'], climb: { phase: 'idle', stand: 0, picked: [] } })).toBe(null);
+  });
+});

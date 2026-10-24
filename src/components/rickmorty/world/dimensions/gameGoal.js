@@ -4,7 +4,8 @@
 // by whether Morty's carrying one, the next Jerry not yet talked to, a thing
 // in the shop found clean to take or else the next not yet looked over, the
 // control booth till the countdown's started and then the next set on, the
-// stairs' foot till Morty's up on a ledge and then the giants at the top. Pure
+// stairs' foot till Morty's up on a ledge and then the giants at the top (or,
+// a climb with things to pick up, the next not yet picked). Pure
 // and import-free, read by RmWorld's goalOf with what the place's stage says
 // of its game.
 //
@@ -39,7 +40,10 @@ export function gameGoal(d, { used = new Set(), done = [], power = null, find = 
     return sequence.order[sequence.on] ?? null;
   }
   const cl = d.climb;
-  // (the stairs' foot till he's up on a ledge, then the giants)
-  if (cl && climb && !done.includes(cl.task) && climb.phase !== 'lost') return climb.stand > 0 ? cl.spot : cl.foot;
+  // (things to pick up: the next not yet picked; else the stairs' foot till he's up on a ledge, then the giants)
+  if (cl && climb && !done.includes(cl.task) && climb.phase !== 'lost') {
+    if (cl.picks?.length) return cl.picks.find((id) => !climb.picked?.includes(id)) ?? null;
+    return climb.stand > 0 ? cl.spot : cl.foot;
+  }
   return null;
 }

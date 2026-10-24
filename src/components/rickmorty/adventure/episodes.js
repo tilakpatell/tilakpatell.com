@@ -18,7 +18,7 @@
 // ready one the dial is open, so nobody waits on one that isn't there. Each
 // phase raises it by one. Pure: story.js plays these.
 
-export const READY = 10;
+export const READY = 11;
 export const START = ['customs'];
 export const WINS = ['cabinet', 'chase'];
 export const STEP_TYPES = ['task', 'win', 'enter', 'talk', 'use', 'citadel', 'all'];
@@ -148,10 +148,10 @@ export const EPISODES = [
         type: 'all',
         text: 'Four sets are out on the sector’s planets. Dial each one.',
         steps: [
-          task('birdworld', 'Bird World: the crystals in the grass.', 'birdworld'),
-          task('gearworld', 'Gear World: the city’s cogs.', 'gearworld'),
-          task('pluto', 'Pluto: tell the king what he wants to hear.', 'pluto'),
-          task('squanch', 'Planet Squanch: get out in time.', 'squanch'),
+          task('birdworld', 'Bird World: pick up the crystals in the grass and on the clay towers’ tops.', 'birdworld'),
+          task('gearworld', 'Gear World: wind the city’s cogs in order while the gear police hunt you.', 'gearworld'),
+          task('pluto', 'Pluto: tell the king what he wants to hear, and only the true parts.', 'pluto'),
+          task('squanch', 'Planet Squanch: raise a glass at the wedding, then get back to the portal in time.', 'squanch'),
         ],
       },
     ],

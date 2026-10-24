@@ -814,8 +814,9 @@ export const HOTSPOTS = [
   // the destinations' people and things (./dimensions/destinations.js)
   ...DESTINATIONS.flatMap((d) => d.hotspots),
 ];
-// (`done`: a hotspot whose `until` is done is gone; left out, they all count)
-export const nearHotspot = (area, x, z, done) => nearest(done ? HOTSPOTS.filter((h) => present(h, done)) : HOTSPOTS, area, x, z);
+// (`done`: a hotspot whose `until` is done is gone; left out, they all count.
+// `gone(id)`: one gone for now, a crystal picked up)
+export const nearHotspot = (area, x, z, done, gone = null) => nearest(done || gone ? HOTSPOTS.filter((h) => (!done || present(h, done)) && !gone?.(h.id)) : HOTSPOTS, area, x, z);
 
 // ── walking ──
 

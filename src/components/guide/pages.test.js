@@ -58,8 +58,30 @@ describe('which guide a page gets', () => {
     expect(tip?.[1]).toMatch(/Stair Goblins/);
     expect(tip?.[1]).toMatch(/beanstalk/);
     expect(tip?.[1]).toMatch(/shivers/);
-    expect(C137.tips.at(-1)[0]).toBe('Fantasy World');
+    expect(C137.tips.slice(-4).map(([where]) => where)).toEqual(['Fantasy World', 'Bird World', 'Gear World', 'Pluto']);
     expect(C137.keys.flatMap((g) => g.rows).some(([k, what]) => /Space/.test(k) && /jump/i.test(what))).toBe(true);
+  });
+
+  it('tips the sector’s three games on C-137’s page, and the planets on the portal gun after episode 10', () => {
+    const tip = (where) => C137.tips.find(([w]) => w === where)?.[1] ?? '';
+    expect(tip('The planets')).toMatch(/After episode 10, Bird World, Gear World, Pluto and Planet Squanch are on the portal gun too/);
+    expect(tip('Bird World')).toMatch(/crystals/);
+    expect(tip('Bird World')).toMatch(/clay tower/);
+    expect(tip('Bird World')).toMatch(/crumble/);
+    expect(tip('Gear World')).toMatch(/cogs?/);
+    expect(tip('Gear World')).toMatch(/gear police/);
+    expect(tip('Gear World')).toMatch(/order/);
+    expect(tip('Pluto')).toMatch(/true/);
+    expect(tip('Pluto')).toMatch(/two checks/);
+    expect(tip('Pluto')).toMatch(/Scroopy/);
+    for (const where of ['Bird World', 'Gear World', 'Pluto']) expect(tip(where), where).not.toMatch(/!/);
+  });
+
+  it('tips a planet page’s games: each a meter, and a loss only back to the portal', () => {
+    const tip = PAGES['/c-137/planet'].tips.find(([where]) => where === 'The games')?.[1] ?? '';
+    expect(tip).toMatch(/Bird World, Gear World and Pluto/);
+    expect(tip).toMatch(/meter/);
+    expect(tip).toMatch(/back at the portal/);
   });
 
   it('tips the story on the Citadel’s page: its step heads the line, and the cruiser ends it', () => {

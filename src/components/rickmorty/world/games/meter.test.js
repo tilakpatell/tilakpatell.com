@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { DESTINATIONS, destinationById } from '../dimensions/destinations';
-import { KINDS, METER, METER_OFF, kindOf } from './meter';
+import { KINDS, METER, METER_OFF, kindOf, meterOf } from './meter';
 import { dealReadout } from './deal';
 import { findReadout } from './find';
 import { freezeReadout } from './freeze';
@@ -40,5 +40,20 @@ describe('one meter for a place’s game', () => {
     expect(METER_OFF).toEqual(findReadout(null));
     expect(METER_OFF).toEqual(sequenceReadout(null));
     expect(METER_OFF).toEqual(climbReadout(null));
+  });
+});
+
+describe('a place’s own meter', () => {
+  it('is its kind’s, with the place’s own title, word and icon over it', () => {
+    expect(meterOf({ climb: { task: 'x' } })).toEqual({ kind: 'climb', ...METER.climb });
+    expect(meterOf({ climb: { task: 'x', meter: { title: 'Bird World’s crystals', label: 'Crystals', icon: 'gem' } } })).toEqual({ kind: 'climb', title: 'Bird World’s crystals', label: 'Crystals', icon: 'gem' });
+    expect(meterOf({ deal: { task: 'x', meter: { title: 'The king’s ear' } } })).toEqual({ kind: 'deal', title: 'The king’s ear', label: METER.deal.label });
+    expect(meterOf({})).toBe(null);
+    expect(meterOf(null)).toBe(null);
+  });
+
+  it('names every place’s game its own way: no two titles alike', () => {
+    const titles = DESTINATIONS.map(meterOf).filter(Boolean).map((m) => m.title);
+    expect(new Set(titles).size).toBe(titles.length);
   });
 });

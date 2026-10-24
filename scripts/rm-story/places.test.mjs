@@ -19,6 +19,9 @@ const USED = {
   schwifty: ['mic'],
   fantasy: ['goblins', 'giants'],
   froopyland: ['tommy'],
+  pluto: ['claim-growing', 'claim-moons', 'claim-mines', 'claim-planet'],
+  gearworld: ['cogs', 'gcog-nw', 'gcog-ne', 'gcog-se', 'gcog-sw'],
+  birdworld: ['bcrystal-path', 'bcrystal-trees', 'bcrystal-east', 'bcrystal-west', 'bcrystal-grass'],
 };
 
 describe('where the browser check stands Morty', () => {
@@ -43,6 +46,7 @@ describe('where the browser check stands Morty', () => {
     expect(z).toBeCloseTo(1288.88, 2);
     expect(top).toBe(2.3);
     expect(ledgeOf(destinationById('fantasy'), 'beanstalk')[2]).toBe(20.9);
+    expect(ledgeOf(destinationById('birdworld'), 'tower-b')[2]).toBe(9.6);
     // (a solid that isn't a ledge, or no solid at all: said so)
     expect(() => ledgeOf(destinationById('fantasy'), 'tavern')).toThrow(/fantasy has no ledge tavern/);
     expect(() => ledgeOf(destinationById('fantasy'), 'nope')).toThrow(/fantasy has no ledge nope/);

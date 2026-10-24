@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import RmEarnNote from '../RmEarnNote';
 import { PowerBar } from '../../universe/shared/powerBar';
 import { Link as RouterLink } from 'react-router-dom';
-import { RiArrowDownLine, RiArrowLeftLine, RiArrowUpLine, RiCheckLine, RiCloseLine, RiCrosshair2Line, RiEmotionLaughLine, RiEyeLine, RiHeart3Line, RiHome4Line, RiListCheck2, RiFlashlightLine, RiLiveLine, RiPlantLine, RiSearchEyeLine, RiShieldLine, RiShirtLine, RiTimerLine, RiToolsLine, RiTyphoonLine } from 'react-icons/ri';
+import { RiArrowDownLine, RiArrowLeftLine, RiArrowUpLine, RiCheckLine, RiCloseLine, RiCrosshair2Line, RiEmotionLaughLine, RiEyeLine, RiHeart3Line, RiHome4Line, RiListCheck2, RiFlashlightLine, RiLiveLine, RiPlantLine, RiSearchEyeLine, RiSettings3Line, RiShieldLine, RiShirtLine, RiTimerLine, RiToolsLine, RiTyphoonLine, RiVipCrownLine, RiVipDiamondLine } from 'react-icons/ri';
 import { EMOTES, wheelAngle } from '../../../lib/emote';
 import { local } from '../../../lib/hooks';
 import { Arms, Cluster, Prompt, Reticle, Stick, TouchButton, Vitals, createFlightCluster, reticleState } from '../../../runtime/hud';
@@ -13,7 +13,7 @@ import Wardrobe from '../wardrobe/Wardrobe';
 import DimensionDial from './dimensions/DimensionDial';
 import { ROOMS } from './dimensions/vindicatorsRules';
 import { destinationById } from './dimensions/destinations';
-import { METER, kindOf } from './games/meter';
+import { METER, meterOf } from './games/meter';
 import { listOf } from './planetMode';
 import { firstHint } from './portalGun';
 import { MEMORIES, MEMORY_COLORS } from './rules';
@@ -42,8 +42,8 @@ const EMOTE_NAME = { wave: 'Wave', cheer: 'Cheer', dance: 'Dance', taunt: 'Taunt
 // the gun in Morty's hand in a duel, on the kit's Arms (no rack: it never runs dry)
 const HAND_GUN = { name: 'Rick’s gun', line: 'primary', index: 0, ammo: 0, max: 0, filling: 0 };
 
-// a place's game's meter, its icon by the kind (./games/meter.js)
-const METER_ICON = { power: <RiFlashlightLine aria-hidden="true" />, deal: <RiSearchEyeLine aria-hidden="true" />, freeze: <RiEyeLine aria-hidden="true" />, find: <RiTimerLine aria-hidden="true" />, sequence: <RiLiveLine aria-hidden="true" />, climb: <RiPlantLine aria-hidden="true" /> };
+// a place's game's meter, its icon by the kind, or the place's own (./games/meter.js)
+const METER_ICON = { power: <RiFlashlightLine aria-hidden="true" />, deal: <RiSearchEyeLine aria-hidden="true" />, freeze: <RiEyeLine aria-hidden="true" />, find: <RiTimerLine aria-hidden="true" />, sequence: <RiLiveLine aria-hidden="true" />, climb: <RiPlantLine aria-hidden="true" />, gem: <RiVipDiamondLine aria-hidden="true" />, cog: <RiSettings3Line aria-hidden="true" />, crown: <RiVipCrownLine aria-hidden="true" /> };
 
 export default function RmHud({
   touch,
@@ -130,7 +130,7 @@ export default function RmHud({
   const top = useRef(null);
   // (the game the place Morty's in runs, if any: its meter's name)
   // (in the street, its one meter is the stone's at the park's pond)
-  const meterKind = hud.area === 'street' ? 'skip' : (kindOf(destinationById(hud.area)) ?? 'power');
+  const meter = hud.area === 'street' ? { kind: 'skip', ...METER.skip } : (meterOf(destinationById(hud.area)) ?? { kind: 'power', ...METER.power });
   // a duel: Morty's health and his gun on the HUD kit's cluster (his hearts
   // on the one scale: ./vitalsOf.js), written when the duel changes
   const footRef = useRef(null);
@@ -421,8 +421,8 @@ export default function RmHud({
       )}
       {/* in a place that runs a game (./games/meter.js): its meter, named by the kind (the world's charge and the cells carried; the deal's looks; who's looking; the pick-up's time), the same kit's cluster (the frame loop writes it) */}
       {chargeRef && (
-        <Cluster rootRef={chargeRef} className={`rm-cluster rm-meter rm-meter-${meterKind}`} label={METER[meterKind].title}>
-          <Vitals label={METER[meterKind].label} icon={METER_ICON[meterKind]} className="rm-cluster-vitals">
+        <Cluster rootRef={chargeRef} className={`rm-cluster rm-meter rm-meter-${meter.kind}`} label={meter.title}>
+          <Vitals label={meter.label} icon={METER_ICON[meter.icon ?? meter.kind]} className="rm-cluster-vitals">
             <span ref={chargeLine} className="hud-line" />
           </Vitals>
         </Cluster>

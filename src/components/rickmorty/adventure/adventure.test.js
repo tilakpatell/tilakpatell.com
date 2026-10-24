@@ -156,9 +156,12 @@ describe('the adventure’s store', () => {
     expect(a.dialOpen('frundles')).toBe(true);
     expect(a.dialOpen('birdworld')).toBe(false); // (episode 10 is built too)
     a.jump(10);
-    expect(a.dialOpen('birdworld')).toBe(true); // (past the last ready episode)
+    expect(a.dialOpen('birdworld')).toBe(true);
+    expect(a.dialOpen('heistcon')).toBe(false); // (episode 11 is built too)
+    a.jump(11);
+    expect(a.dialOpen('heistcon')).toBe(true); // (past the last ready episode)
     a.jump(99);
-    expect(a.get().episode).toBe(10);
+    expect(a.get().episode).toBe(11);
     a.reset();
     expect(a.get()).toEqual(fresh());
   });
@@ -190,7 +193,7 @@ describe('the adventure’s store', () => {
     // part-way through one, past the built ones, or on free roam: none
     at({ episode: 1, step: 1 });
     expect(createAdventure({ saves, read: none }).intro()).toBe(null);
-    at({ episode: 10, step: 0 });
+    at({ episode: 11, step: 0 });
     expect(createAdventure({ saves, read: none }).intro()).toBe(null);
     at({ episode: 1, step: 0, freeRoam: true });
     expect(createAdventure({ saves, read: none }).intro()).toBe(null);
@@ -358,5 +361,22 @@ describe('the adventure’s store', () => {
     const out = createAdventure({ saves, read: { tasks: () => [], citadel: () => ['daycare', 'wafers', 'council', 'votemorty', 'citadelout'] } });
     expect(out.get()).toMatchObject({ episode: 9, step: 0 });
     expect(out.intro()).toBe(9);
+  });
+
+  it('opens episode 11 for a visitor who finished episode 10 before it was built', () => {
+    const at = (data) => store.setItem(STORY_KEY, JSON.stringify({ v: 1, data: { ...fresh(), ...data } }));
+    const knowing = (tasks) => ({ tasks: () => tasks, citadel: () => [] });
+    at({ episode: 10, step: 0 });
+    expect(createAdventure({ saves, read: none }).intro()).toBe(10);
+    // a planet's task done already (the old knock, hello, podium or escape): its part passed at once, the card still shown
+    at({ episode: 10, step: 0 });
+    const one = createAdventure({ saves, read: knowing(['pluto']) });
+    expect(one.get()).toMatchObject({ episode: 10, step: 0, got: [2] });
+    expect(one.intro()).toBe(10);
+    // all four: episode 11 finishes as the visit loads, with no card (episode 12 isn't built)
+    at({ episode: 10, step: 0 });
+    const all = createAdventure({ saves, read: knowing(['birdworld', 'gearworld', 'pluto', 'squanch']) });
+    expect(all.get()).toMatchObject({ episode: 11, step: 0 });
+    expect(all.intro()).toBe(null);
   });
 });
