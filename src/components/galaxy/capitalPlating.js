@@ -137,15 +137,21 @@ float plWindows( vec2 p, float px ) {
   vec2 q = p / vec2( 26.0, 13.0 );
   q.x += plHash( vec2( floor( q.y ), 3.7 ) );
   vec2 id = floor( q );
-  if ( plHash( id + 19.3 ) < 0.5 ) return 0.0;
+  // (far off, where a pixel holds many plates or panes, which are lit goes to
+  // their mean: lit or dark by the one a pixel fell on, a dark wall glittered
+  // all over, the Executor's from a few kilometres)
+  float plates = clamp( 4.0 / px, 0.0, 1.0 );
+  float lit = mix( 0.5, step( 0.5, plHash( id + 19.3 ) ), plates );
+  if ( lit == 0.0 ) return 0.0;
   // (small panes, half a metre by seven tenths, two and a half metres apart)
   vec2 w = vec2( p.x / 2.4, ( p.y - 1.0 ) / 13.0 );
   float row = abs( fract( w.y ) - 0.5 ) * 13.0;
   float col = abs( fract( w.x ) - 0.5 ) * 2.4;
-  float on = step( 0.45, plHash( floor( w ) + plHash( id ) * 31.0 ) );
+  float near = clamp( 0.35 / px, 0.0, 1.0 );
+  float on = mix( 0.55, step( 0.45, plHash( floor( w ) + plHash( id ) * 31.0 ) ), near );
   float pane = ( 1.0 - smoothstep( 0.18, 0.26, row ) ) * ( 1.0 - smoothstep( 0.28, 0.38, col ) );
   // (its share of the plate's light where a pane is under a pixel: a faint glow, never a glitter)
-  return on * mix( 0.03, pane, clamp( 0.35 / px, 0.0, 1.0 ) );
+  return lit * on * mix( 0.03, pane, near );
 }
 struct Plating {
   float shade; // the paint's grey, about 0

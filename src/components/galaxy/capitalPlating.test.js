@@ -116,4 +116,12 @@ describe('capitalPlating', () => {
     // (far off, which are lit to its mean too: no sparkle)
     expect(s.fragmentShader).toMatch(/float on = mix\( 0\.66, step\(/);
   });
+
+  it('takes a bare wall’s windows to their mean far off, which plates and panes are lit', () => {
+    const m = new THREE.MeshStandardMaterial();
+    plate(m, unit, 19000);
+    const s = compiled(m);
+    expect(s.fragmentShader).toMatch(/float lit = mix\( 0\.5, step\( 0\.5, plHash\( id \+ 19\.3 \) \), plates \);/);
+    expect(s.fragmentShader).toMatch(/float on = mix\( 0\.55, step\( 0\.45, /);
+  });
 });
