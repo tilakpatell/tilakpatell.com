@@ -1423,6 +1423,16 @@ describe('C-137: the things to touch', () => {
     expect(nearHotspot('house', cable.x + 1.5, cable.z)).toBe(null);
   });
 
+  it('leaves out a spot gone for now (a crystal picked up), and only that one', () => {
+    const c = HOTSPOTS.find((h) => h.id === 'bcrystal-path');
+    expect(nearHotspot(c.area, c.x, c.z, []).id).toBe('bcrystal-path');
+    expect(nearHotspot(c.area, c.x, c.z, [], (id) => id === 'bcrystal-path')).toBe(null);
+    expect(nearHotspot(c.area, c.x, c.z, [], (id) => id === 'bcrystal-trees').id).toBe('bcrystal-path');
+    expect(nearHotspot(c.area, c.x, c.z, undefined, (id) => id === 'bcrystal-path')).toBe(null);
+    // (and gone for good once its task's done)
+    expect(nearHotspot(c.area, c.x, c.z, ['birdworld'])).toBe(null);
+  });
+
   // (the town round the street's, out to its hedges, ./town/plan.test.js walks to;
   // a place's spots in a test of their own, so each runs well inside its limit)
   for (const area of [...new Set(HOTSPOTS.filter((o) => !o.town).map((h) => h.area))]) {

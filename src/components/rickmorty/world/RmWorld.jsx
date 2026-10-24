@@ -197,6 +197,8 @@ const TALK_UNLOCK = { therapy: 'wong', ...Object.assign({}, ...DESTINATIONS.map(
 // the hotspot that starts the clock: the Purge Planet's siren, Customs'
 // scanner, the wedding's toast
 const FREEZE_SPOTS = new Set(DESTINATIONS.filter((d) => d.freeze).map((d) => d.freeze.spot));
+// (a climb's things to pick up: gone from reach once picked up on this visit)
+const PICKS = new Set(DESTINATIONS.flatMap((d) => d.climb?.picks ?? []));
 const ESCAPES = Object.fromEntries(DESTINATIONS.filter((d) => d.escape).map((d) => [d.escape.spot, { ...d.escape, area: d.id }]));
 // and what using a hotspot tells its place's builder
 const ACTS = Object.assign({}, ...DESTINATIONS.map((d) => Object.fromEntries(Object.entries(d.acts).map(([spot, name]) => [spot, [d.id, name]]))));
@@ -1657,7 +1659,7 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
     if (s.flying) near = !s.landing && canLand(s.c, { motorcade }) ? 'land' : null;
     else if (!s.fading && !s.rickall) {
       const l = nearLink(s.area, s.m.x, s.m.z, doneRef.current);
-      const h = l ? null : nearHotspot(s.area, s.m.x, s.m.z, doneRef.current);
+      const h = l ? null : nearHotspot(s.area, s.m.x, s.m.z, doneRef.current, (id) => PICKS.has(id) && s.used?.has(id));
       near = l ? `link:${l.id}` : h ? `spot:${h.id}` : s.area === 'street' && Math.hypot(s.m.x - s.c.x, s.m.z - s.c.z) < BOARD_R ? 'cruiser' : null;
     }
     s.near = near ? PROMPT[near] : null;

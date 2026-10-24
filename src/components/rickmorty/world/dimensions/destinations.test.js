@@ -45,6 +45,14 @@ describe('the destinations', () => {
       for (const id of Object.keys(d.done)) expect(d.hotspots.map((h) => h.id)).toContain(id);
     }
   });
+  it('point the map at one of their own spots for each thing to do', () => {
+    // (as RmWorld's GOAL has it: the talk that finishes it, the escape's first spot, or the place's goal)
+    for (const d of DESTINATIONS)
+      for (const t of d.tasks) {
+        const spot = Object.keys(d.done).find((k) => d.done[k] === t.id) ?? d.escape?.after ?? d.escape?.spot ?? d.goal;
+        expect(d.hotspots.map((h) => h.id), `${d.id}: ${t.id}`).toContain(spot);
+      }
+  });
 });
 
 describe('the dial', () => {
@@ -304,9 +312,9 @@ describe('a place that runs on a sequence', () => {
 });
 
 describe('a place that runs on a climb', () => {
-  it('has its stairs and its top as ledges, the stairs’ foot and the giants as spots, and only the game ticks its task', () => {
+  it('has its stairs as ledges and a top or things to pick up, its spots with their lines, and only the game ticks its task', () => {
     const climbing = DESTINATIONS.filter((d) => d.climb);
-    expect(climbing.map((d) => d.id)).toEqual(['fantasy']);
+    expect(climbing.map((d) => d.id)).toEqual(['birdworld', 'fantasy']);
     for (const d of climbing) {
       const cl = d.climb;
       const ledge = (id) => d.solids.find((s) => s.id === id && s.ledge);
@@ -314,15 +322,42 @@ describe('a place that runs on a climb', () => {
         expect(s.steps.length, `${d.id}: ${s.id}`).toBeGreaterThan(0);
         for (const id of s.steps) expect(ledge(id), `${d.id}: ${id} is a ledge`).toBeTruthy();
       }
-      expect(ledge(cl.top), `${d.id}: its top is a ledge`).toBeTruthy();
       const spots = d.hotspots.map((h) => h.id);
-      expect(spots).toContain(cl.foot);
-      expect(spots).toContain(cl.spot);
-      expect(d.say[cl.foot]?.text).toBeTruthy();
-      expect(d.say[cl.spot]?.text).toBeTruthy();
-      // (the spot at the top is up on it: its pin floats there)
-      expect(d.hotspots.find((h) => h.id === cl.spot).y).toBe(ledge(cl.top).top);
-      expect(d.goal).toBe(cl.foot);
+      // (a climb to the top: the stairs' foot, and the spot up there)
+      if (cl.top != null) {
+        expect(ledge(cl.top), `${d.id}: its top is a ledge`).toBeTruthy();
+        expect(spots).toContain(cl.foot);
+        expect(spots).toContain(cl.spot);
+        expect(d.say[cl.foot]?.text).toBeTruthy();
+        expect(d.say[cl.spot]?.text).toBeTruthy();
+        // (the spot at the top is up on it: its pin floats there)
+        expect(d.hotspots.find((h) => h.id === cl.spot).y).toBe(ledge(cl.top).top);
+        expect(d.goal).toBe(cl.foot);
+      } else {
+        // (or things to pick up: each a spot of its own, gone once the task's done, that tells the stage)
+        expect(cl.picks?.length, `${d.id}: a top or things to pick up`).toBeGreaterThanOrEqual(2);
+        expect(cl.foot).toBe(null);
+        expect(cl.spot).toBe(null);
+        for (const id of cl.picks) {
+          const h = d.hotspots.find((o) => o.id === id);
+          expect(h, `${d.id}: ${id} is a spot`).toBeTruthy();
+          expect(d.say[id]?.text, id).toBeTruthy();
+          expect(h.until, id).toBe(cl.task);
+          expect(h.verb, id).not.toBe('Look');
+          expect(d.acts[id], id).toBe(`climb-pick-${id}`);
+        }
+        // (one up on a ledge, its pin floating there, out of reach from the ground round it)
+        const up = cl.picks
+          .map((id) => d.hotspots.find((o) => o.id === id))
+          .filter((h) => h.y != null)
+          .map((h) => [h, d.solids.find((s) => s.ledge && s.top === h.y && Math.hypot(s.x - h.x, s.z - h.z) < s.r)]);
+        expect(up.length, `${d.id}: a pick up on a ledge`).toBeGreaterThan(0);
+        for (const [h, l] of up) {
+          expect(l, `${h.id} stands on a ledge at its height`).toBeTruthy();
+          expect(l.r + MORTY.radius - Math.hypot(l.x - h.x, l.z - h.z), h.id).toBeGreaterThan(h.r);
+        }
+        expect(d.goal).toBe(cl.picks[0]);
+      }
       expect(d.tasks.map((t) => t.id)).toContain(cl.task);
       expect(d.collect?.task, `${d.id}: a collect ticks the task`).not.toBe(cl.task);
       expect(Object.values(d.done), `${d.id}: a talk ticks the task`).not.toContain(cl.task);
@@ -350,8 +385,55 @@ describe('a place that runs on a climb', () => {
     expect(fantasy.say.giants).toEqual({ who: 'A giant', text: 'A little man, all the way up our beanstalk. Wipe your feet. And mind the edge: it’s cloud.' });
     expect(fantasy.say.fmeeseeks).toEqual({ who: 'A Meeseeks', text: 'Existence is pain to a Meeseeks, Morty. Give me something to do.' });
   });
-  it('gives ledges to no other place', () => {
-    for (const d of DESTINATIONS.filter((p) => p.id !== 'fantasy')) expect(d.solids.filter((s) => s.ledge || s.top != null).map((s) => s.id), d.id).toEqual([]);
+  it('gives ledges to no place without a climb', () => {
+    for (const d of DESTINATIONS.filter((p) => !p.climb)) expect(d.solids.filter((s) => s.ledge || s.top != null).map((s) => s.id), d.id).toEqual([]);
+  });
+  it('is Bird World’s five crystals: three in the grass and one up each clay tower, where the clay crumbles', () => {
+    const bird = destinationById('birdworld');
+    const PICKS = ['bcrystal-path', 'bcrystal-trees', 'bcrystal-east', 'bcrystal-west', 'bcrystal-grass'];
+    expect(bird.climb).toMatchObject({ task: 'birdworld', top: null, foot: null, spot: null, picks: PICKS, who: null, unlock: null });
+    expect(bird.climb.stairs).toEqual([
+      { id: 'crumble-a', steps: ['tower-a-3', 'tower-a-4', 'tower-a-5'] },
+      { id: 'crumble-b', steps: ['tower-b-3', 'tower-b-4', 'tower-b-5'] },
+    ]);
+    expect(bird.climb.lost).toBe('The clay crumbled under you: a drum that cracks is about to go.');
+    expect(bird.climb.fell).toBe('A long way down, but the grass is soft.');
+    const w = bird.climb.words;
+    expect([w.still, w.shiver, w.bite, w.up(3), w.found(2, 5)]).toEqual(['The clay’s holding: up you go', 'It’s cracking: off it before it crumbles', 'It’s crumbling: wait till it holds', '3 m up the clay', '2 of 5 crystals found']);
+    expect(bird.climb.meter).toEqual({ title: 'Bird World’s crystals', label: 'Crystals', icon: 'gem' });
+    expect(bird.goal).toBe('bcrystal-path');
+    // (the knock no longer ticks it; the achievement stays on the door)
+    expect(bird.done).toEqual({});
+    expect(bird.unlock).toEqual({ door: 'birdworld' });
+    expect(bird.tasks).toEqual([{ id: 'birdworld', name: 'Pick up Bird World’s crystals', hint: 'Land on Bird World in the Rick and Morty sector, and pick up the crystals round Birdperson’s house: three in the grass, and one up each clay tower, where the clay crumbles.' }]);
+    const at = (id) => bird.hotspots.find((h) => h.id === id);
+    const c = bird.centre;
+    expect(PICKS.map((id) => [at(id).label, at(id).verb, at(id).r])).toEqual([
+      ['A crystal by the path', 'Pick up', 1.4],
+      ['A crystal by the trees', 'Pick up', 1.4],
+      ['The crystal on the east tower', 'Pick up', 1],
+      ['The crystal on the west tower', 'Pick up', 1],
+      ['A crystal in the long grass', 'Pick up', 1.4],
+    ]);
+    expect([at('bcrystal-path'), at('bcrystal-trees'), at('bcrystal-grass')].map((h) => [h.x - c.x, h.z - c.z, h.y])).toEqual([
+      [6, 9, undefined],
+      [24, 14, undefined],
+      [-24, 8, undefined],
+    ]);
+    expect(at('bcrystal-east').y).toBe(9.6);
+    expect(at('bcrystal-west').y).toBe(8);
+    expect(PICKS.map((id) => bird.say[id])).toEqual([
+      { who: null, text: 'It hums in your hand and goes quiet in your pocket.' },
+      { who: null, text: 'A crystal the size of your fist, buzzing like a phone on silent.' },
+      { who: null, text: 'The highest crystal on Bird World, still warm from the clay.' },
+      { who: null, text: 'Grown right out of the clay up here, and it comes away clean.' },
+      { who: null, text: 'It sings one note as you lift it, and the grass leans after it.' },
+    ]);
+    // (the old tower posts are the clay towers' tops now; the rest of the place's lines stay)
+    expect(bird.solids.find((s) => s.id === 'tower-a')).toMatchObject({ r: 2, top: 8, ledge: true });
+    expect(bird.solids.find((s) => s.id === 'tower-b')).toMatchObject({ r: 2.2, top: 9.6, ledge: true });
+    expect(bird.say.door).toEqual({ who: null, text: 'Birdperson’s house. He doesn’t lock it. Nobody on Bird World does.' });
+    expect(bird.say.crystals).toEqual({ who: null, text: 'The crystals hum when you walk past them. It’s nice.' });
   });
 });
 

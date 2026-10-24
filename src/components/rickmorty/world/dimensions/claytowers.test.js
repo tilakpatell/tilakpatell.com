@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { CLAY_TOWERS, TOWERS, claytowers } from './claytowers';
-import { CLIMB, MORTY } from '../rules';
+import { destinationById } from './destinations';
+import { CLIMB, COLLIDERS, MORTY, nearHotspot, newMorty, solidIn, stepMorty } from '../rules';
+import { standingOn } from '../games/climb';
 
 const { solids, stairs, paths, spots } = CLAY_TOWERS;
 const byId = (id) => solids.find((s) => s.id === id);
@@ -109,5 +111,131 @@ describe('Bird World’s clay towers: a flight of drums round each, and its top'
       // (and on it, clear of the trunk, it's in reach)
       expect(1 - (0.4 + MORTY.radius), id).toBeGreaterThanOrEqual(0);
     }
+  });
+});
+
+describe('the clay towers on the walker', () => {
+  const b = destinationById('birdworld');
+  const A = 'birdworld';
+  const DT = 1 / 60;
+  const ledge = (id) => b.solids.find((o) => o.id === id);
+  const onIt = (m, c) => !m.air && Math.abs(m.y - c.top) < 1e-3 && standingOn([c], m) === c.id;
+  const crystal = (t) => b.hotspots.find((h) => h.id === t.crystal);
+  // (a crystal Morty's near enough to pick up there, the task not done)
+  const picks = (m) => nearHotspot(A, m.x, m.z, [])?.id;
+
+  it('has the drums and tops in the walker’s solids with their tops, and the trunks in its way', () => {
+    const ids = new Set(ledges.map((s) => s.id));
+    const walls = new Set(solidIn(A).map((c) => c.id));
+    for (const c of COLLIDERS.birdworld.filter((o) => ids.has(o.id))) {
+      expect(c, c.id).toMatchObject({ top: byId(c.id).top, ledge: true });
+      expect(walls.has(c.id), c.id).toBe(false);
+    }
+    expect(COLLIDERS.birdworld.filter((o) => ids.has(o.id))).toHaveLength(ids.size);
+    for (const t of TOWERS) expect(walls.has(`${t.id}-trunk`), t.id).toBe(true);
+  });
+
+  it('is climbed by a runner who aims for each drum in turn, to the crystal on each top', () => {
+    for (const dt of [DT, 0.05])
+      for (const t of TOWERS) {
+        const legs = paths[t.id].map(ledge);
+        // (from the ground a few metres out past the first drum)
+        const first = legs[0];
+        const ox = first.x - ledge(t.id).x;
+        const oz = first.z - ledge(t.id).z;
+        const k = 3 / Math.hypot(ox, oz);
+        let m = newMorty({ x: first.x + ox * k, z: first.z + oz * k, face: 0 });
+        let time = 0;
+        for (const c of legs) {
+          // (the last leg: across the top to its crystal, clear of the trunk)
+          const a = c.id === t.id ? crystal(t) : c;
+          for (let s = 0; s < 4 && !onIt(m, c); s += dt, time += dt) {
+            const dx = a.x - m.x;
+            const dz = a.z - m.z;
+            const d = Math.hypot(dx, dz) || 1;
+            m = stepMorty(m, { x: dx / d, z: dz / d, jump: !m.air && c.top - m.y > MORTY.step && d < 2.6 }, dt, A);
+          }
+          expect(onIt(m, c), `${c.id} at dt ${dt} (y ${m.y.toFixed(2)})`).toBe(true);
+        }
+        const c = crystal(t);
+        for (let s = 0; s < 2 && Math.hypot(c.x - m.x, c.z - m.z) > 0.3; s += dt) {
+          const dx = c.x - m.x;
+          const dz = c.z - m.z;
+          const d = Math.hypot(dx, dz) || 1;
+          m = stepMorty(m, { x: dx / d, z: dz / d }, dt, A);
+        }
+        expect(m.y, t.id).toBeCloseTo(ledge(t.id).top, 6);
+        expect(picks(m), t.id).toBe(t.crystal);
+        expect(time, t.id).toBeLessThan(20);
+      }
+  });
+
+  it('holds him on a top, and keeps each top’s crystal out of reach from every drum and the ground', () => {
+    for (const t of TOWERS) {
+      const top = ledge(t.id);
+      let m = { ...newMorty({ x: crystal(t).x, z: crystal(t).z }), y: top.top };
+      for (let s = 0; s < 1; s += DT) m = stepMorty(m, {}, DT, A);
+      expect(m, t.id).toMatchObject({ y: top.top, air: false });
+      // from every drum, walked at the crystal (no hop) till he stops or falls: never near enough to pick it up
+      for (const id of paths[t.id].slice(0, -1)) {
+        const c = ledge(id);
+        let w = stepMorty({ ...newMorty({ x: c.x, z: c.z }), y: c.top }, {}, DT, A);
+        for (let s = 0; s < 3; s += DT) {
+          const dx = crystal(t).x - w.x;
+          const dz = crystal(t).z - w.z;
+          const d = Math.hypot(dx, dz) || 1;
+          w = stepMorty(w, { x: dx / d, z: dz / d, run: true }, DT, A);
+          expect(picks(w), `${t.id} from ${id}`).not.toBe(t.crystal);
+        }
+      }
+      // and round the tower on the ground, pressed in at it
+      for (let i = 0; i < 24; i++) {
+        const a = (i / 24) * 2 * Math.PI;
+        let g = newMorty({ x: top.x + 6 * Math.cos(a), z: top.z + 6 * Math.sin(a) });
+        for (let s = 0; s < 3; s += DT) g = stepMorty(g, { x: -Math.cos(a), z: -Math.sin(a), run: true }, DT, A);
+        expect(picks(g), `${t.id} from the ground at ${i}`).not.toBe(t.crystal);
+      }
+    }
+  });
+
+  it('leaves no ground cut off by the towers: all of it is reached from the way in', () => {
+    const area = b.area;
+    const S = 0.5;
+    const nx = Math.round((area.x1 - area.x0) / S);
+    const nz = Math.round((area.z1 - area.z0) / S);
+    const all = [...solidIn(A), ...b.solids.filter((o) => o.ledge)];
+    // (within a body's width of a solid or a ledge: the ground there is out of his reach)
+    const near = (c, x, z) => (c.r != null ? Math.hypot(x - c.x, z - c.z) < c.r + MORTY.radius : Math.abs(x - c.x) < c.w / 2 + MORTY.radius && Math.abs(z - c.z) < c.d / 2 + MORTY.radius);
+    const free = (x, z) => x > area.x0 + 0.4 && x < area.x1 - 0.4 && z > area.z0 + 0.4 && z < area.z1 - 0.4 && !all.some((c) => near(c, x, z));
+    const grid = new Uint8Array(nx * nz);
+    for (let i = 0; i < nx; i++) for (let j = 0; j < nz; j++) grid[i * nz + j] = free(area.x0 + (i + 0.5) * S, area.z0 + (j + 0.5) * S) ? 1 : 0;
+    const start = Math.floor((b.arrive.x - area.x0) / S) * nz + Math.floor((b.arrive.z - area.z0) / S);
+    const seen = new Uint8Array(nx * nz);
+    const todo = [start];
+    seen[start] = 1;
+    while (todo.length) {
+      const k = todo.pop();
+      const i = Math.floor(k / nz);
+      const j = k % nz;
+      for (const [u, v] of [
+        [1, 0],
+        [-1, 0],
+        [0, 1],
+        [0, -1],
+      ]) {
+        const ii = i + u;
+        const jj = j + v;
+        if (ii < 0 || jj < 0 || ii >= nx || jj >= nz) continue;
+        const q = ii * nz + jj;
+        if (grid[q] && !seen[q]) {
+          seen[q] = 1;
+          todo.push(q);
+        }
+      }
+    }
+    const cut = [];
+    for (let k = 0; k < nx * nz; k++) if (grid[k] && !seen[k]) cut.push(k);
+    expect(grid.reduce((a, v) => a + v, 0)).toBeGreaterThan(10000);
+    expect(cut).toEqual([]);
   });
 });

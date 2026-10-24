@@ -2,6 +2,10 @@
 
 import { E, N, S, W, place } from './place';
 import { BEANSTALK } from './beanstalk';
+import { CLAY_TOWERS } from './claytowers';
+
+// (Bird World's crystals up on the clay towers' tops: ./claytowers.js)
+const TOP = CLAY_TOWERS.spots;
 
 export const ROWS = [
   place(0, {
@@ -166,24 +170,51 @@ export const ROWS = [
       { id: 'unity', dx: 10, dz: -3, label: 'Unity', verb: 'Talk' },
       { id: 'door', dx: 1.4, dz: -11.4, label: 'Birdperson’s door', verb: 'Knock' },
       { id: 'crystals', dx: -12, dz: 4, label: 'The crystals', verb: 'Look', r: 2 },
+      // the crystals to pick up, in the order the map points at them (the climb, below)
+      { id: 'bcrystal-path', dx: 6, dz: 9, label: 'A crystal by the path', verb: 'Pick up', until: 'birdworld' },
+      { id: 'bcrystal-trees', dx: 24, dz: 14, label: 'A crystal by the trees', verb: 'Pick up', until: 'birdworld' },
+      { id: 'bcrystal-east', ...TOP['bcrystal-east'], label: 'The crystal on the east tower', verb: 'Pick up', r: 1, until: 'birdworld' },
+      { id: 'bcrystal-west', ...TOP['bcrystal-west'], label: 'The crystal on the west tower', verb: 'Pick up', r: 1, until: 'birdworld' },
+      { id: 'bcrystal-grass', dx: -24, dz: 8, label: 'A crystal in the long grass', verb: 'Pick up', until: 'birdworld' },
     ],
     solids: [
       { id: 'house', dx: 0, dz: -16, r: 4 },
-      { id: 'tower-a', dx: -22, dz: -15, r: 4 },
-      { id: 'tower-b', dx: 20, dz: -17, r: 4.5 },
+      // the clay towers: their drums, tops and trunks (./claytowers.js)
+      ...CLAY_TOWERS.solids,
       { id: 'tree-a', dx: -16, dz: 10, r: 1.2 },
       { id: 'tree-b', dx: 18, dz: 6, r: 1.2 },
       { id: 'crystals', dx: -12, dz: 6, r: 1.2 },
     ],
-    tasks: [{ id: 'birdworld', name: 'Visit Birdperson at home', hint: 'Land on Bird World in the Rick and Morty sector, and knock at Birdperson’s door.' }],
+    tasks: [{ id: 'birdworld', name: 'Pick up Bird World’s crystals', hint: 'Land on Bird World in the Rick and Morty sector, and pick up the crystals round Birdperson’s house: three in the grass, and one up each clay tower, where the clay crumbles.' }],
     say: {
       bbirdperson: { who: 'Birdperson', text: 'Morty. In my culture, this is the time of greeting. Welcome to my home.' },
       phoenixperson: { who: 'Phoenixperson', text: 'Birdperson is gone. There is only Phoenixperson now.' },
       unity: { who: 'Unity', text: 'Rick isn’t here? Good. I came to see Birdperson. We all get a little lonely, Morty.' },
       door: { who: null, text: 'Birdperson’s house. He doesn’t lock it. Nobody on Bird World does.' },
       crystals: { who: null, text: 'The crystals hum when you walk past them. It’s nice.' },
+      'bcrystal-path': { who: null, text: 'It hums in your hand and goes quiet in your pocket.' },
+      'bcrystal-trees': { who: null, text: 'A crystal the size of your fist, buzzing like a phone on silent.' },
+      'bcrystal-east': { who: null, text: 'The highest crystal on Bird World, still warm from the clay.' },
+      'bcrystal-west': { who: null, text: 'Grown right out of the clay up here, and it comes away clean.' },
+      'bcrystal-grass': { who: null, text: 'It sings one note as you lift it, and the grass leans after it.' },
     },
-    done: { door: 'birdworld' },
+    // the crystals picked up, every one, up the clay where it crumbles: the climb (../games/climb.js)
+    climb: {
+      task: 'birdworld',
+      top: null,
+      foot: null,
+      spot: null,
+      picks: ['bcrystal-path', 'bcrystal-trees', 'bcrystal-east', 'bcrystal-west', 'bcrystal-grass'],
+      stairs: CLAY_TOWERS.stairs,
+      who: null,
+      lost: 'The clay crumbled under you: a drum that cracks is about to go.',
+      fell: 'A long way down, but the grass is soft.',
+      words: { still: 'The clay’s holding: up you go', shiver: 'It’s cracking: off it before it crumbles', bite: 'It’s crumbling: wait till it holds', up: (m) => `${m} m up the clay`, found: (n, of) => `${n} of ${of} crystals found` },
+      meter: { title: 'Bird World’s crystals', label: 'Crystals', icon: 'gem' },
+      unlock: null,
+    },
+    goal: 'bcrystal-path',
+    // (the achievement stays on the knock)
     unlock: { door: 'birdworld' },
     kinds: ['birdperson', 'phoenixperson', 'unity', 'birdperson-house'],
   }),
