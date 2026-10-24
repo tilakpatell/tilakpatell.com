@@ -108,8 +108,11 @@ describe('what the HUD shows of the story', () => {
     const next = progress([]).next;
     expect(markedTask(fresh(), next)).toEqual({ id: 'diner' });
     expect(markedTask({ ...fresh(), step: 3 }, next)).toEqual({ id: 'customs' });
-    // past the last ready episode: the checklist's
-    expect(markedTask({ ...fresh(), episode: 12 }, next)).toBe(next);
+    // past the last ready episode: the checklist's (episode 12 done, with 13 not built; the story's end)
+    expect(markedTask({ ...fresh(), episode: 12 }, next, { ready: 12 })).toBe(next);
+    expect(markedTask({ ...fresh(), episode: 13 }, next)).toBe(next);
+    // episode 13: the Blood Dome, Evil Rick, the Morty with the eyepatch, then Rick's bench
+    ['blooddome', 'evilrick', 'evilmorty', 'dial'].forEach((id, step) => expect(markedTask({ ...fresh(), episode: 12, step }, next)).toEqual({ id }));
     // episode 12: Heist-Con, then the Vindicators
     ['heistcon', 'vindicators'].forEach((id, step) => expect(markedTask({ ...fresh(), episode: 11, step }, next)).toEqual({ id }));
     // episode 11: the sector's first planet still to do
@@ -146,7 +149,7 @@ describe('what the HUD shows of the story', () => {
     expect(items.find((d) => d.id === 'customs')).toEqual({ ...DIAL.find((d) => d.id === 'customs'), locked: null });
     expect(items.find((d) => d.id === 'vat').locked).toBe('Opens after episode 5, “Heat”.');
     expect(items.filter((d) => !d.locked).map((d) => d.id)).toEqual(['customs']);
-    // free roam, or past the last built episode: nothing locked
+    // free roam, or episode 12 done: nothing locked
     expect(dialItems(DIAL, { ...fresh(), freeRoam: true }).every((d) => d.locked === null)).toBe(true);
     expect(dialItems(DIAL, { ...fresh(), episode: 12 }).every((d) => d.locked === null)).toBe(true);
     // after episode 1, its places, and the next episode's still shut
