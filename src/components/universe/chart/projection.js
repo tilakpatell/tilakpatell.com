@@ -37,7 +37,7 @@ export const CHART = Object.freeze({
   range: Object.freeze({ min: 300, open: 120000, max: 3000000 }),
   pitchMax: 1.35, // short of side-on, so the plane never folds into a line
   stemFloor: 0.45,
-  miniPitch: Math.acos(0.42), // the mini-map's old tilt (MiniMap.jsx's TILT)
+  miniPitch: Math.acos(0.42), // the old flat map's tilt (its TILT, 0.42)
   levels: Object.freeze([
     Object.freeze({ id: 'system', upTo: 8000 }),
     Object.freeze({ id: 'neighbourhood', upTo: 250000 }),
@@ -45,9 +45,10 @@ export const CHART = Object.freeze({
   ]),
 });
 
-// The two frames a chart is drawn in, in their SVGs' units. nav is NavMap.jsx's
-// V (1,000 across) and nav.js's MARGIN (a radius 0.47 of it); mini is
-// MiniMap.jsx's W and H, its K (W / 2 − 34) and its middle (H / 2 − 8 down).
+// The two frames a chart is drawn in, in their SVGs' units, the old maps'
+// numbers: nav is the old nav map's 1,000 across and nav.js's MARGIN (a
+// radius 0.47 of it); mini is the old flat map's 600 by 300, its scale (half
+// its width less 34) and its middle (8 above the box's).
 export const FRAMES = Object.freeze({
   nav: Object.freeze({ w: 1000, h: 1000, cx: 500, cy: 500, r: 470, shape: 'circle' }),
   mini: Object.freeze({ w: 600, h: 300, cx: 300, cy: 142, r: 266, shape: 'box', pad: 8 }),

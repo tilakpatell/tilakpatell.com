@@ -9,7 +9,7 @@
 // hyperdrive charges, flies out to a wonder at super speed with the
 // selection cleared under it, then the phone layout: the list first, the
 // chart a tap away, its names clear of each other. `minimap` shoots the
-// flat map (3D off) and Home's teaser; `far` puts the ship two sectors out
+// flat map (3D off), on a desktop and on a phone, and Home's teaser; `far` puts the ship two sectors out
 // and shoots the map. Screenshots go to $OUT. Headless Chrome draws in
 // software, slowly: clicks go through the DOM, and the waits are long.
 import { chromium } from 'playwright-core';
@@ -274,8 +274,8 @@ if (run('phone')) {
 
 // the map drawn flat, with 3D off: its own context, as the universe never
 // starts here, so there is no __universe for open() to wait on
-if (run('minimap')) {
-  const ctx = await browser.newContext({ viewport: { width: 1280, height: 800 } });
+async function openFlat(viewport) {
+  const ctx = await browser.newContext({ viewport, hasTouch: viewport.width < 600 });
   await ctx.addInitScript(() => {
     window.localStorage.setItem('tp-intro', '1');
     window.localStorage.setItem('tp-tour', '"done"');
@@ -284,7 +284,10 @@ if (run('minimap')) {
   const page = await ctx.newPage();
   listen(page);
   await page.goto(URL, { waitUntil: 'domcontentloaded', timeout: GOTO });
-  const flat = await page.waitForSelector('.universe-flat .minimap', { timeout: 120000 });
+  return { ctx, page, flat: await page.waitForSelector('.universe-flat .minimap', { timeout: 120000 }) };
+}
+if (run('minimap')) {
+  const { ctx, page, flat } = await openFlat({ width: 1280, height: 800 });
   await shot(page, '11-minimap-flat', flat);
   // Home's teaser, at the foot of the page: its section mounts only as it
   // nears the screen, so scroll down a screen at a time till it's there
@@ -302,6 +305,10 @@ if (run('minimap')) {
   const teaser = await page.waitForSelector('.minimap-teaser .minimap-hit', { timeout: 60000 }).then(() => page.$('.minimap-teaser'));
   await shot(page, '12-minimap-teaser', teaser);
   await ctx.close();
+  // the whole map on a phone, in a box 342 px across
+  const phone = await openFlat({ width: 390, height: 844 });
+  await shot(phone.page, '18-phone-minimap-flat', phone.flat);
+  await phone.ctx.close();
 }
 
 // the ship two sectors out, and the map opened on it

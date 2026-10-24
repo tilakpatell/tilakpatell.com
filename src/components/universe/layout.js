@@ -131,7 +131,7 @@ export const BODIES = [...ORDER, ...MOONS.map((m) => m.id)];
 // which sector each body is in
 export const SECTOR_OF = Object.fromEntries(BODIES.map((id) => [id, byId(id).sector ?? 'main']));
 
-// how far out the furthest fandom reaches (the main sector's: the mini-map's scale)
+// how far out the furthest fandom reaches (the main sector's)
 export const MAP_RADIUS = Math.max(...ORDER.map((id) => Math.hypot(POSITIONS[id][0], POSITIONS[id][2]) + REACH[id]));
 // and each sector's, round its own middle (the chart's scale in it)
 export const SECTOR_RADIUS = Object.fromEntries(

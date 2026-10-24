@@ -8,7 +8,7 @@ import FlightSettings from './FlightSettings';
 import Hangar from './Hangar';
 import { UNIVERSES } from './universes';
 import { ORDER, keyStep } from './layout';
-import MiniMap from './MiniMap';
+import { FlatMap } from './MiniMap';
 import GuideCue from '../guide/GuideCue';
 import { askBrief } from '../tour/brief';
 import LoadingVeil from '../worlds/LoadingVeil';
@@ -498,8 +498,7 @@ export default function UniverseMap({ selected, onSelect, onOpen, handle, frozen
         </>
       ) : (
         <div className="universe-flat">
-          {/* (selected is a universe's or a moon's id: a wonder picked on it is startAt, its link's) */}
-          <MiniMap selected={selected ?? startAt} onSelect={onSelect} interactive />
+          <FlatMap selected={selected} startAt={startAt} onSelect={onSelect} />
         </div>
       )}
     </WorldHost>

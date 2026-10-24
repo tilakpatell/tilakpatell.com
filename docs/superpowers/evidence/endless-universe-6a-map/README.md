@@ -63,8 +63,11 @@ The check’s shots of the flights (`3-jumping`, `4-after-jump`, `6-super-to-aur
 | `11-minimap-flat` | The flat map, with 3D off | ![](before/11-minimap-flat.png) | |
 | `12-minimap-teaser` | Home’s teaser | ![](before/12-minimap-teaser.png) | |
 | `13-far-ship` | The ship two sectors out (x 250,000): no ship on the chart | ![](before/13-far-ship.png) | |
+| `18-phone-minimap-flat` | The flat map on a phone, 3D off (below) | ![](before/18-phone-minimap-flat.png) | |
 
 `7-home-system` was shot on `main` with the ship where the failed Citadel step (below) left it: in the Rick and Morty sector, 350 ship-lengths from The Citadel, on the pulse drive to Aurelia, the jump ready. So no ship marker is expected on the Home chart in the before shot. Once the Citadel step works, the after shot starts from another place, and the two won’t compare like for like there.
+
+`18-phone-minimap-flat` was added in Task 9’s review and shot on `main` at `cc5e2eaf` the same way, by the check’s `minimap` mode at 390 × 844. On `main` the 3D-off map names every world on a phone, some names over others (Pirates of the Caribbean over The Lord of the Rings, the stations’ in a heap). After Task 9 it has all 44 places in that 342 px box, and at its opening zoom it names none: no name has room clear of the other places’ dots. A name shows for the pick, on a tap or a hover, and zoomed in. That is a decision, not a slip: a world’s name over a wonder’s or a moon’s dot would put the world’s button over that dot (a world’s stacks above them), and a tap on the dot would pick the world. The other way is to let a world’s name cover the lesser dots in a small box; Task 10’s look at the phone is where to weigh it again.
 
 ## The checks on `main`
 
@@ -78,14 +81,14 @@ The check’s shots of the flights (`3-jumping`, `4-after-jump`, `6-super-to-aur
 
 The `far` mode says the ship’s marker is missing from the chart: `NavMap.jsx` draws the ship only in the chart’s own sector and inside its circle.
 
-## The mini-map's bundle (Task 9)
+## The mini-map’s bundle (Task 9)
 
-The mini-map now reads the nav map's own marks (`chart/marks.js`, from `nav.js`), its projection and its hook, so Home's lazy section (`Interests`) loads them too. Built with `npx vite build` (the plain build, without `prebuild`'s GitHub snapshot) on Task 8's commit (`5c76fb0b`) and on Task 9's, Vite's report for the two chunks, and the whole of what `Interests` loads that the first page and Home don't (its chunk and the static imports under it, read from the built files):
+The mini-map now reads the nav map’s own marks (`chart/marks.js`, from `nav.js`), its projection and its hook, so Home’s lazy section (`Interests`) loads them too. Built with `npx vite build` (the plain build, without `prebuild`’s GitHub snapshot) on Task 8’s commit (`5c76fb0b`) and on Task 9’s, Vite’s report for the two chunks, and the whole of what `Interests` loads that the first page and Home don’t (its chunk and the static imports under it, read from the built files):
 
 | | Task 8 (`5c76fb0b`) | Task 9 |
 | --- | --- | --- |
 | `Interests` chunk | 7.41 kB (gzip 2.90 kB) | 7.41 kB (gzip 2.91 kB) |
 | `MiniMap` chunk | 2.62 kB (gzip 1.30 kB) | 4.20 kB (gzip 2.11 kB) |
-| Home's lazy section, all of it | 24.70 kB (gzip 10.71 kB), 4 files | 55.22 kB (gzip 24.80 kB), 9 files |
+| Home’s lazy section, all of it | 24.70 kB (gzip 10.71 kB), 4 files | 55.22 kB (gzip 24.80 kB), 9 files |
 
-The five new files are `nav.js` (9.74 kB), the chart's modules and hook (16.57 kB), the gesture reader (1.20 kB), the universe's glossary (1.16 kB) and an icon. `ship.js` was already in the first page's load, so it adds nothing here.
+The five new files are `nav.js` (9.74 kB), the chart’s modules and hook (16.57 kB), the gesture reader (1.20 kB), the universe’s glossary (1.16 kB) and an icon. `ship.js` was already in the first page’s load, so it adds nothing here.

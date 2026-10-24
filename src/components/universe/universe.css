@@ -16,9 +16,12 @@
 .minimap-stem { stroke: rgb(159 216 255 / 0.45); stroke-width: 1; vector-effect: non-scaling-stroke; }
 .minimap-stem[data-dir='down'] { stroke-dasharray: 2 3; }
 .minimap-ship { fill: #fff; filter: drop-shadow(0 0 3px #9fd8ff); }
-.minimap-labels { position: absolute; inset: 0; margin: 0; padding: 0; list-style: none; }
-.minimap-item { position: absolute; width: 0; height: 0; }
-.minimap-item:is(:hover, :focus-within) { z-index: 1; } /* (its name over its neighbours') */
+/* (its own stacking: a place's tier never reaches over the page's panel) */
+.minimap-labels { position: absolute; inset: 0; margin: 0; padding: 0; list-style: none; isolation: isolate; }
+/* a place stacks by its tier, a world over the wonders and moons beside it
+   (--z, MiniMap.jsx's), and a hover or a focus lifts its name over them all */
+.minimap-item { position: absolute; width: 0; height: 0; z-index: var(--z, auto); }
+.minimap-item:is(:hover, :focus-within) { z-index: var(--top, 1); }
 .minimap-hit {
   position: absolute;
   left: 0;

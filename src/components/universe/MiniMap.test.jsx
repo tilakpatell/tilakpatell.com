@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { MemoryRouter } from 'react-router-dom';
-import MiniMap from './MiniMap';
+import MiniMap, { FlatMap } from './MiniMap';
 import NavChart from './chart/NavChart';
 import { DESTINATIONS } from './nav';
 import { UNIVERSES, byId } from './universes';
 import { FRAMES } from './chart/projection';
-import { HAND_MARKS } from './chart/marks';
+import { HAND_MARKS, markById } from './chart/marks';
 import { miniView } from './chart/place';
 import { boxOf } from './chart/declutter';
 import { CHART_WORDS as W } from './words';
@@ -95,7 +95,58 @@ describe('the mini-map', () => {
     expect(live).toMatch(/<div[^>]*class="minimap[^"]*"[^>]*data-level="neighbourhood"/);
     for (const w of [W.zoomIn, W.zoomOut, W.fit]) expect(live.match(new RegExp(`<button[^>]*aria-label="${w}"[^>]*>`))?.[0], w).toContain('class="chip"');
     for (const w of [W.toShip, W.flat]) expect(live).not.toContain(`aria-label="${w}"`);
+    // 0 shows it all, as the tool does: its title says so
+    expect(live.match(new RegExp(`<button[^>]*aria-label="${W.fit}"[^>]*>`))[0]).toContain(`title="${W.fit} (0)"`);
     const still = draw({});
     expect(still).not.toContain(`aria-label="${W.zoomIn}"`);
+  });
+  it('stacks a place over the lesser ones beside it, so a click on a world’s dot picks the world', () => {
+    const html = draw({});
+    const order = ids(html);
+    const z = (id) => Number(/--z:(\d+)/.exec(li(html, id))?.[1] ?? 0);
+    // (of two at the same z, the later in the list is drawn over the other)
+    const over = (a, b) => z(a) > z(b) || (z(a) === z(b) && order.indexOf(a) > order.indexOf(b));
+    const rank = (id) => markById(id).priority;
+    let near = 0;
+    // a place's button is a 44 px square round its dot at the least: in the desktop's 876 px box and a phone's 342 px
+    for (const w of [876, 342]) {
+      const px = (id) => {
+        const [l, t] = /left:([-\d.e]+)%;top:([-\d.e]+)%/.exec(li(html, id)).slice(1).map(Number);
+        return [(l / 100) * w, (t / 100) * (w / 2)];
+      };
+      for (const a of order)
+        for (const b of order) {
+          if (rank(b) >= rank(a)) continue;
+          const [[ax, ay], [bx, by]] = [px(a), px(b)];
+          if (Math.abs(ax - bx) >= 22 || Math.abs(ay - by) >= 22) continue;
+          near++;
+          expect(over(a, b), `${a}’s dot under ${b}’s button at ${w} px`).toBe(true);
+        }
+    }
+    expect(near).toBeGreaterThan(0);
+    expect(over('rickmorty', 'rmportal')).toBe(true);
+  });
+  it('gives each map its own clip, so two on a page never share an id', () => {
+    const html = renderToStaticMarkup(
+      <>
+        <MiniMap onSelect={() => {}} />
+        <MiniMap onSelect={() => {}} interactive />
+      </>,
+    );
+    const clips = [...html.matchAll(/<clipPath id="([^"]+)"/g)].map((m) => m[1]);
+    expect(clips).toHaveLength(2);
+    expect(new Set(clips).size).toBe(2);
+    expect([...html.matchAll(/clip-path="url\(#([^)]+)\)"/g)].map((m) => m[1])).toEqual(clips);
+  });
+  it('presses a wonder from its link on the 3D-off map, and starts the arrows from it', () => {
+    const button = (html, id) => html.match(new RegExp(`<li[^>]*data-id="${id}"[^>]*><button[^>]*>`))[0];
+    const html = renderToStaticMarkup(<FlatMap selected={null} startAt="aurelia" onSelect={() => {}} />);
+    expect(html).toContain('data-live="true"');
+    expect(button(html, 'aurelia')).toContain('aria-pressed="true"');
+    expect(button(html, 'aurelia')).toContain('tabindex="0"');
+    // a universe picked on the page is pressed over the link's wonder
+    const picked = renderToStaticMarkup(<FlatMap selected="marvel" startAt="aurelia" onSelect={() => {}} />);
+    expect(button(picked, 'marvel')).toContain('aria-pressed="true"');
+    expect(button(picked, 'aurelia')).toContain('aria-pressed="false"');
   });
 });

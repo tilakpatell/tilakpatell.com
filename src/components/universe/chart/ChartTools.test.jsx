@@ -25,4 +25,11 @@ describe('the chart’s tools', () => {
     expect(button(html, W.flat)).toContain('aria-disabled="true"');
     expect(button(html, W.fit)).toContain('class="chip"');
   });
+  it('gives show everything a key where there’s no ship tool to have it', () => {
+    const mini = renderToStaticMarkup(<ChartTools buttonClass="chip" onZoomIn={f} onZoomOut={f} onFit={f} fitKey="0" />);
+    expect(button(mini, W.fit)).toContain(`title="${W.fit} (0)"`);
+    const nav = renderToStaticMarkup(<ChartTools buttonClass="chip" onZoomIn={f} onZoomOut={f} onShip={f} atShip={false} onFit={f} fitKey="0" />);
+    expect(button(nav, W.toShip)).toContain(`title="${W.toShip} (0)"`);
+    expect(button(nav, W.fit)).toContain(`title="${W.fit}"`);
+  });
 });
