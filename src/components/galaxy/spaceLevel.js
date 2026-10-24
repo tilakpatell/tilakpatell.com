@@ -20,6 +20,8 @@ import { createLevel, packOf } from './surface/level';
 import { createLevelArea } from './levelArea';
 import { LIGHTS } from '../../data/bf2017/light';
 import { METRES } from './surface/missions/starfighter';
+import { levelHull } from './capitalHull';
+import { budget, device } from '../../lib/device';
 
 const _v = new THREE.Vector3();
 // (a mesh the export gives no colour map, the Death Star's wreckage among
@@ -29,12 +31,25 @@ const greyed = (root) =>
   root.traverse((o) => {
     if (!o.isMesh) return;
     for (const m of [o.material].flat()) {
-      if (!m || m.userData.spaceGrey || m.map || !m.color) continue;
+      if (!m || m.userData.spaceGrey || m.userData.gameHull || m.map || !m.color) continue;
       m.userData.spaceGrey = true;
       m.color.copy(HULL);
       if ('metalness' in m) m.metalness = Math.max(m.metalness, 0.45);
       if ('roughness' in m) m.roughness = Math.min(m.roughness, 0.6);
     }
+  });
+
+// (a level's own bare hull, a Star Destroyer's, a Venator's, an MC80's: the
+// game's material on it as the war's ship of its kind has, capitalHull.js's
+// levelHull, so the level's ships and the war's are one paint; asked once a mesh)
+const asked = new WeakSet();
+export const hulled = (root, { hull = levelHull } = {}) =>
+  root.traverse((o) => {
+    if (!o.isMesh || Array.isArray(o.material) || asked.has(o)) return;
+    asked.add(o);
+    hull(o.material?.name, { detail: device().detail, phone: device().phone, aniso: budget().aniso })?.then((m) => {
+      if (m) o.material = m;
+    });
   });
 
 export function drawSpaceLevel(scene, { pack, origin, packOrigin, tier, renderer = null, area = null, ships = [] }) {
@@ -89,6 +104,7 @@ export function drawSpaceLevel(scene, { pack, origin, packOrigin, tier, renderer
         const now = performance.now();
         if (now - looked >= 1000) {
           looked = now;
+          hulled(group);
           greyed(group);
         }
       },

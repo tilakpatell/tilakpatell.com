@@ -49,6 +49,7 @@ import { createRocks } from './rocks';
 import { createPlaces } from './placesDraw';
 import { placesOf } from './places';
 import { createSpacePieces } from './spacePieces';
+import { dressKit } from './spaceKits';
 import { createTrench } from '../universe/trench';
 import { trenchBand } from '../universe/deep';
 import { DEATHSTAR_REACH, STATION_NAMES, TRACTOR_REACH, reachOf } from './systems';
@@ -839,7 +840,8 @@ export function buildSystem(sys, { models, bolts, flashes, small = false, ratio 
   }
   // ── The game's space level, where the system has one (spacePieces.js): scenery, not the war's ships,
   // and aside while the war's battle is on (a Starfighter Assault draws its own level: warfront.js) ──
-  const spaceLevel = createSpacePieces(sys.id);
+  // (its capitals dressed as the war's ships of their kind are: spaceKits.js)
+  const spaceLevel = createSpacePieces(sys.id, { dress: dressKit });
   group.add(spaceLevel.group);
   for (const g of spaceLevel.goals) addSolid({ ...g, at: [...g.at] });
   disposers.push(() => spaceLevel.dispose());

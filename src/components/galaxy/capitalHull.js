@@ -500,28 +500,16 @@ export async function dressGameMaps(root, kind, { detail = 'high', phone = false
 // the size of a map the device asks for, among those published (`have`)
 const fit = (want, have) => (!want || !have ? want : (have.filter((n) => n <= want).pop() ?? have[0]));
 
-export async function dressGameHull(root, kind, { detail = 'high', phone = false, aniso = 8, loadMesh = packMesh, loadTexture = packMap } = {}) {
-  const def = GAME_HULLS[kind];
-  if (!def) return false;
-  // the stand-ins: the meshes whose material is the bare hull's
-  root.updateMatrixWorld(true);
-  const targets = [];
-  root.traverse((o) => o.isMesh && [o.material].flat().some((m) => def.material.test(m?.name ?? '')) && targets.push(o));
-  if (!targets.length) return false;
+// a hull's game material: its maps at the device's sizes and the material
+// over them, or null when its own map can't be had (`cutMap`: a sheet the
+// cut carries already, on the wrong UVs, the MC80's breakup)
+async function materialOf(def, { detail, phone, aniso, loadTexture, cutMap = null }) {
   const want = sizesFor(detail, phone);
   const size = Object.fromEntries(Object.entries(want).map(([k, n]) => [k, fit(n, def.have)]));
-  const lod = phone ? def.lod.phone : def.lod.computer;
-  if (def.keep) {
-    const parts = await Promise.all(def.parts.map((p) => loadMesh(`${p.mesh}.lod${lod}.glb`, p.own)));
-    if (parts.some((p) => !p)) return false;
-    swapIn(root, targets, def, parts, null);
-    return true;
-  }
   const get = (path, n, opts) => (path && n ? loadTexture(path, n, { aniso, ...opts }) : Promise.resolve(null));
   const painted = Boolean(def.paint);
-  // (a sheet the cut carries already, on the wrong UVs: the MC80's breakup)
-  const cutMap = () => {
-    const t = size.colour ? ([targets[0].material].flat().find((m) => def.material.test(m?.name ?? ''))?.map ?? null) : null;
+  const cut = () => {
+    const t = size.colour ? cutMap : null;
     if (t && t.wrapS !== THREE.RepeatWrapping) {
       t.wrapS = t.wrapT = THREE.RepeatWrapping;
       t.needsUpdate = true;
@@ -532,7 +520,7 @@ export async function dressGameHull(root, kind, { detail = 'high', phone = false
     ? {
         combine: def.combine ? get(def.combine.map, size.atlas, { srgb: false }) : null,
         tilingNormal: get(def.tiling.normal, size.normal, { srgb: false, repeat: true }),
-        breakup: def.breakup.colour ? get(def.breakup.colour, size.colour, { srgb: false, repeat: true }) : cutMap(),
+        breakup: def.breakup.colour ? get(def.breakup.colour, size.colour, { srgb: false, repeat: true }) : cut(),
         breakupNormal: def.breakup.normal ? get(def.breakup.normal, size.normal, { srgb: false, repeat: true }) : null,
       }
     : {
@@ -543,19 +531,51 @@ export async function dressGameHull(root, kind, { detail = 'high', phone = false
         details: get(def.details.colour, size.colour, { srgb: true, repeat: true }),
         detailsNormal: get(def.details.normal, size.normal, { srgb: false, repeat: true }),
       };
-  const [parts, got] = await Promise.all([
-    Promise.all(def.parts.map((p) => loadMesh(`${p.mesh}.lod${lod}.glb`, p.own))),
-    Promise.all(Object.entries(wanted).map(([k, v]) => Promise.resolve(v).then((t) => [k, t]))).then(Object.fromEntries),
-  ]);
-  // (every part, or the stand-in would lose what it held; the hull's own map
-  // at the least, where it has one; and the sheets all or none)
-  if (parts.some((p) => !p) || (painted ? def.combine && !got.combine : !got.atlas)) return false;
+  const got = await Promise.all(Object.entries(wanted).map(([k, v]) => Promise.resolve(v).then((t) => [k, t]))).then(Object.fromEntries);
+  // (the hull's own map at the least, where it has one; and the sheets all or none)
+  if (painted ? def.combine && !got.combine : !got.atlas) return null;
   const sheetNames = painted ? ['tilingNormal', 'breakup', ...(def.breakup.normal ? ['breakupNormal'] : [])] : ['panels', 'panelsNormal', 'details', 'detailsNormal'];
   const maps = { ...got };
   if (!sheetNames.every((k) => maps[k])) for (const k of sheetNames) delete maps[k];
-  const material = painted ? paintMaterial(maps, def) : hullMaterial(maps, def, { name: def.own });
+  return painted ? paintMaterial(maps, def) : hullMaterial(maps, def, { name: def.own });
+}
+
+export async function dressGameHull(root, kind, { detail = 'high', phone = false, aniso = 8, loadMesh = packMesh, loadTexture = packMap } = {}) {
+  const def = GAME_HULLS[kind];
+  if (!def) return false;
+  // the stand-ins: the meshes whose material is the bare hull's
+  root.updateMatrixWorld(true);
+  const targets = [];
+  root.traverse((o) => o.isMesh && [o.material].flat().some((m) => def.material.test(m?.name ?? '')) && targets.push(o));
+  if (!targets.length) return false;
+  const lod = phone ? def.lod.phone : def.lod.computer;
+  const cutMap = [targets[0].material].flat().find((m) => def.material.test(m?.name ?? ''))?.map ?? null;
+  const [parts, material] = await Promise.all([
+    Promise.all(def.parts.map((p) => loadMesh(`${p.mesh}.lod${lod}.glb`, p.own))),
+    def.keep ? null : materialOf(def, { detail, phone, aniso, loadTexture, cutMap }),
+  ]);
+  // (every part, or the stand-in would lose what it held; and the game's material, where it has one)
+  if (parts.some((p) => !p) || (!def.keep && !material)) return false;
   swapIn(root, targets, def, parts, material);
   return true;
+}
+
+// The space level a battle is fought in (spaceLevel.js) draws the pack's
+// own hulls, the same meshes with both their UVs, and bare: each takes the
+// game's material its kind has on the war's ship (one a kind, shared), so
+// the level's Star Destroyers are the war's. (The MC80's breakup only its
+// cut carries: the level's MC80 its paint alone.)
+export const LEVEL_HULLS = [
+  { kind: 'destroyer', material: /^M_Hull_01(_lods)?$/ },
+  { kind: 'venator', material: /^M_VenatorStarDestroyer_(Hull_01|ControlTower_01|DetailBack_01)(_lods)?$/ },
+  { kind: 'moncal', material: /^MC_80_Met(_lods)?$/ },
+];
+const levelMade = new Map(); // a kind → Promise<Material | null>
+export function levelHull(name, { detail = 'high', phone = false, aniso = 8, loadTexture = packMap } = {}) {
+  const row = LEVEL_HULLS.find((r) => r.material.test(name ?? ''));
+  if (!row) return null;
+  if (!levelMade.has(row.kind)) levelMade.set(row.kind, materialOf(GAME_HULLS[row.kind], { detail, phone, aniso, loadTexture }));
+  return levelMade.get(row.kind);
 }
 
 // the parts, joined, in the first stand-in's place (and its material, unless
