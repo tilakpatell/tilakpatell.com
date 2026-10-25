@@ -124,6 +124,19 @@ describe('capitalLook', () => {
     expect(dark.material.color.r).toBeLessThan(metal.material.color.r * 0.6);
   });
 
+  it('paints the GR-75’s cargo pods in faded colours, not the stock metal’s toy red', () => {
+    const { holder } = ship();
+    const pod = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.1, 0.1), new THREE.MeshStandardMaterial({ name: 'ScratchedMetalRed', map: new THREE.Texture() }));
+    holder.add(pod);
+    dressCapital(holder, 'transport');
+    expect(pod.material.map).toBeNull();
+    expect(pod.material.userData.plated).toBe(true);
+    const hsl = pod.material.color.getHSL({}, THREE.SRGBColorSpace);
+    // (a red, faded: under half a toy red's saturation)
+    expect(hsl.h < 0.08 || hsl.h > 0.95).toBe(true);
+    expect(hsl.s).toBeLessThan(0.5);
+  });
+
   it('lights a bare disc of a strong colour at the stern, facing aft, as an engine’s mouth, not a lamp', () => {
     const { holder } = ship();
     holder.remove(...holder.children.filter((o) => /Engine/.test(o.material.name)));

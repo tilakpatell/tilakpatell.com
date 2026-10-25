@@ -57,7 +57,8 @@ const LIT_WINDOWS = /^MC_80_light_Met$/;
 // (the kinds whose own maps are next to flat colour at a ship's size, a few
 // KB each, or one scratched metal tiled over the whole of it: plated over them)
 const PLATE_ALL = new Set(['acclamator', 'executor', 'gozanti']);
-const STOCK_METAL = /^ScratchedMetal/;
+const STOCK_METAL = /^ScratchedMetal(Red|Green|Brown)?/;
+const STOCK_PAINT = { Red: '#86493d', Green: '#5c6a54', Brown: '#7b6853' };
 const LAMP = /glow|lamp|bluelight|redlight|whitelight|beacon/i;
 // (black and glass: no paint to layer)
 const BARE_BLACK = /^dark$|glass/i;
@@ -289,15 +290,19 @@ export function dressCapital(holder, kind, { plating = true, size = 2048, lite =
         if (plating) panes(w, unit, length);
         return w;
       }
-      // a kind whose own maps are next to flat colour: plated over them
-      if (PLATE_ALL.has(kind) && m.map && !m.transparent && !ENGINE_NAME.test(m.name)) {
+      // a kind whose own maps are next to flat colour, or a stock metal a
+      // model tiled over the whole of it: plated over them
+      if ((PLATE_ALL.has(kind) || STOCK_METAL.test(m.name)) && m.map && !m.transparent && !ENGINE_NAME.test(m.name)) {
         const c = m.clone();
         // (a stock scratched metal tiled over the whole ship, the Executor's,
-        // its scratches a metre long on a hull of nineteen kilometres: not
-        // its paint, which is its side's grey, the darker for the model's dark one)
-        if (STOCK_METAL.test(m.name)) {
+        // the Gozanti's, the GR-75's, its scratches a metre long on a hull of
+        // nineteen kilometres, the GR-75's cargo pods in a toy's red, green
+        // and brown: not its paint, which is its side's grey, the darker for
+        // the model's dark one, and the pods' colours faded as the films' are)
+        const stock = STOCK_METAL.exec(m.name);
+        if (stock) {
           c.map = c.metalnessMap = c.roughnessMap = null;
-          c.color.set(tint).multiplyScalar(m.color.r < 0.5 ? 0.45 : 1);
+          c.color.set(STOCK_PAINT[stock[1]] ?? tint).multiplyScalar(m.color.r < 0.5 ? 0.45 : 1);
         }
         const p = painted(c);
         if (plating) plate(p, unit, length, { size, lite });
