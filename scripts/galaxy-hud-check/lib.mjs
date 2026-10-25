@@ -7,10 +7,25 @@ const base = process.env.BASE ?? 'http://127.0.0.1:5188';
 export const settle = (page, ms = 400) => page.waitForTimeout(ms);
 
 // a galaxy at Tatooine, flown in an X-wing, nothing else open (the first-flight keys card up);
-// `controls`: the flight settings stored first (controls.js's, as the page keeps them)
-export const open = async (viewport, { reduced = false, controls = null } = {}) => {
+// `controls`: the flight settings stored first (controls.js's, as the page keeps them);
+// `touch`: the page's script asks matchMedia as a touch screen's would answer (a coarse pointer, no hover), from
+// before it loads, so what React draws for a touch screen is drawn (the check turns the sheets' rules over after)
+export const open = async (viewport, { reduced = false, controls = null, touch = false } = {}) => {
   const ctx = await browser.newContext({ viewport, ...(reduced ? { reducedMotion: 'reduce' } : {}) });
   if (controls) await ctx.addInitScript((c) => window.localStorage.setItem('tp-universe-controls', JSON.stringify(c)), controls);
+  if (touch)
+    await ctx.addInitScript(() => {
+      const real = window.matchMedia.bind(window);
+      window.matchMedia = (q) => {
+        const m = real(q);
+        const as = /pointer:\s*coarse|hover:\s*none/.test(q) ? true : /pointer:\s*fine|hover:\s*hover/.test(q) ? false : null;
+        if (as === null) return m;
+        const said = Object.create(m);
+        Object.defineProperty(said, 'matches', { value: as });
+        for (const k of ['addEventListener', 'removeEventListener', 'addListener', 'removeListener']) if (typeof m[k] === 'function') said[k] = m[k].bind(m);
+        return said;
+      };
+    });
   await ctx.addInitScript(() => {
     window.localStorage.setItem('tp-3d', 'on');
     window.localStorage.setItem('tp-intro', '1');

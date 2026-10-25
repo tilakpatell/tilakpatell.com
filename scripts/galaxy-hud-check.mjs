@@ -35,7 +35,7 @@ import { difficulty } from './galaxy-hud-check/difficulty.mjs';
 
 // (a galaxy at Tatooine, flown in an X-wing, nothing else open, the first-flight keys card up: lib.mjs's, with a touch screen's rules on after)
 const open = async (viewport, touch) => {
-  const opened = await baseOpen(viewport);
+  const opened = await baseOpen(viewport, { touch });
   if (touch) await asTouch(opened.page);
   return opened;
 };

@@ -72,6 +72,28 @@
     --thumbs-b: var(--hud-pad-b, 12px);
   }
 }
+/* (a short phone upright, its sheet up: three rows, not four, so the grid's top row stays clear of the chips and the jump along
+   the top, and three columns, clear of the shields at the left; the galaxy has no portal gun or way out to place. The universe
+   map puts its grid away while the sheet's up: the galaxy flies with it) */
+@media (pointer: coarse) and (max-width: 767px) and (min-height: 501px) and (max-height: 779px) {
+  :root .galaxy-page .universe-map .universe-thumbs {
+    grid-template-columns: var(--touch-secondary) var(--touch-action) var(--touch-primary);
+    grid-template-rows: var(--touch-secondary) var(--touch-secondary) var(--touch-primary);
+    grid-template-areas:
+      'p2   p1     climb'
+      'view weapon climb'
+      '.    fire   boost';
+  }
+}
+/* (a phone on its side: the war's lines take the top's middle, so the chips go in the left column, under the Galaxy map button) */
+@media (pointer: coarse) and (max-height: 500px) {
+  .fc-buffs { top: calc(var(--nav-h, 68px) + 60px); left: var(--hud-edge, 12px); right: auto; max-width: 132px; }
+}
+/* (a touch screen wider than a phone upright: the jump over the grid, in line with its right edge, as the universe map's, and
+   close over it, clear of the war's lines along the top on a phone on its side) */
+@media (pointer: coarse) and (min-width: 768px) {
+  :root .galaxy-page .galaxy-jumpbtn { left: auto; right: var(--thumbs-r); bottom: calc(var(--thumbs-b) + var(--thumbs-h, 0px) + 6px); max-width: calc(100% - var(--thumbs-r) - var(--hud-edge, 12px)); translate: none; }
+}
 
 /* The flying keys (KeysCard.jsx): over the cluster, in the middle of the open
    part of the map, for the first flight and from the Keys chip. A desktop's:
