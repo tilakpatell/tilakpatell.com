@@ -1,8 +1,12 @@
 import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
+import { spaceId } from '../../../lib/space/address';
 import { moonAt, orbitAt } from '../gen/orbits';
+import { UNIVERSE } from '../gen/seed';
+import { fullSector } from '../gen/space';
+import { THING_KINDS, THING_NEAR } from '../gen/things';
 import { addBodies } from '../gen/systems';
-import { createDiscs, pickDiscs } from './discs';
+import { THING_SHARE, createDiscs, pickDiscs, thingShare, thingsFar } from './discs';
 import { HAND } from './fixtures/hand';
 import { FAR, discPx, levelWeights, realAt } from './levels';
 import { MOON_LOOK, TYPE_LOOK, WONDER, WONDER_SPECK, lookColour } from './sectors';
@@ -261,6 +265,204 @@ describe('the discs, fed', () => {
     expect(far.byId().get(pulsar.id).alpha).toBe(1);
     discs.feed([SECTOR], [pulsar.at[0], pulsar.at[1] + 0.9 * real, pulsar.at[2]], 0);
     expect(far.byId().get(pulsar.id).alpha).toBeCloseTo(levelWeights(0.9 * real, { reach: real }).disc, 12);
+    discs.feed([SECTOR], [pulsar.at[0], pulsar.at[1] + 0.5 * real, pulsar.at[2]], 0);
+    expect(far.byId().has(pulsar.id)).toBe(false);
+  });
+});
+
+// a sector of lattice things made by hand, its middle at `origin`, and any extras
+const KIND = Object.fromEntries(THING_KINDS.map((k, i) => [k.kind, i]));
+const LOOK_OF = Object.fromEntries(THING_KINDS.map((k) => [k.kind, k.look]));
+function thingSector(list, { origin = [600000, 0, 0], extras = {}, wonders = [] } = {}) {
+  return {
+    id: 'E:5,0',
+    sx: 5,
+    sy: 0,
+    sz: 0,
+    seed: 1n,
+    origin,
+    systems: [],
+    wonders,
+    things: {
+      count: list.length,
+      slot: Uint16Array.from(list.map((t) => t.slot)),
+      kind: Uint8Array.from(list.map((t) => KIND[t.kind])),
+      at: Float32Array.from(list.flatMap((t) => t.at)),
+      size: Float32Array.from(list.map((t) => t.size)),
+    },
+    extras,
+    beacons: {},
+  };
+}
+const thingId = (slot) => spaceId([5, 0, 0], { wonder: 64 + slot });
+
+// E:1,0 as the worker makes it, made once for the tests that want a real one
+let real = null;
+const realSector = () => (real ??= fullSector(UNIVERSE, 1, 0, 0));
+
+describe('things in space, as discs', () => {
+  const THINGS = [
+    { slot: 1, kind: 'rock', size: 100, at: [0, 0, 20000] },
+    { slot: 2, kind: 'ice', size: 50, at: [0, 30000, 0] },
+    { slot: 3, kind: 'rogue', size: 200, at: [0, 0, -45300] }, // (past the far plane by more than its size)
+  ];
+  const EXTRAS = {
+    field: [
+      { kind: 'derelict', at: [610000, 0, 0], size: 60, id: 'E:5,0:w3' },
+      { kind: 'glow', at: [600000, -12000, 0], size: 20, id: 'E:5,0:w4', look: { color: '#ff00ff', lit: false } },
+    ],
+  };
+
+  it('carries each lattice thing and extra within the far plane, its size, in its kind’s look, lit from the light it’s given', () => {
+    const sector = thingSector(THINGS, { extras: EXTRAS });
+    const far = fakeFar();
+    const discs = createDiscs(far, { budget: { discs: Infinity } });
+    discs.feed([sector], sector.origin, 0, null, [0, 1, 0]);
+    let got = far.byId();
+    expect([...got.keys()].sort()).toEqual([thingId(1), thingId(2), 'E:5,0:w3', 'E:5,0:w4'].sort());
+    const rock = got.get(thingId(1));
+    expect(rock.at).toEqual([600000, 0, 20000]);
+    expect(rock.r).toBe(100);
+    expect(rock.colour).toEqual(rgb(LOOK_OF.rock.color));
+    expect(rock.light).toEqual([0, 1, 0]);
+    expect(rock.alpha).toBe(1);
+    const ice = got.get(thingId(2));
+    expect(ice.colour).toEqual(rgb(LOOK_OF.ice.color));
+    expect(ice.alpha).toBeCloseTo(levelWeights(30000, { reach: THING_NEAR * 50 }).disc, 12);
+    const derelict = got.get('E:5,0:w3');
+    expect([derelict.r, derelict.light]).toEqual([60, [0, 1, 0]]);
+    expect(derelict.colour).toEqual(rgb(LOOK_OF.derelict.color));
+    const glow = got.get('E:5,0:w4');
+    expect([glow.r, glow.light]).toEqual([20, [0, 0, 0]]);
+    expect(glow.colour).toEqual(rgb('#ff00ff'));
+    // (with no light, a lit thing shines in its colour; and each takes its sector's share)
+    discs.feed([sector], sector.origin, 0, [0.25]);
+    got = far.byId();
+    expect(got.get(thingId(1)).light).toEqual([0, 0, 0]);
+    expect(got.get(thingId(1)).alpha).toBeCloseTo(0.25, 12);
+  });
+
+  it('finds every thing of a real sector a look at each would, wherever the camera is', () => {
+    const sector = realSector(); // (its wonders are lattice things alone: it has no others)
+    expect(sector.wonders).toEqual([]);
+    const t = sector.things;
+    const at = (i) => [0, 1, 2].map((k) => sector.origin[k] + t.at[i * 3 + k]);
+    const far = fakeFar();
+    const discs = createDiscs(far, { budget: { discs: Infinity } });
+    for (const cam of [sector.origin, [sector.origin[0] + 59000, 30000, -59000], [sector.origin[0] - 95000, 0, 0], [sector.origin[0], 200000, 0]]) {
+      discs.feed([sector], cam, 0);
+      const want = [];
+      for (let i = 0; i < t.count; i++) {
+        const d = dist(at(i), cam);
+        if (d < FAR && levelWeights(d, { reach: THING_NEAR * t.size[i] }).disc > 0) want.push(spaceId([1, 0, 0], { wonder: 64 + t.slot[i] }));
+      }
+      expect(far.last().map((row) => row.id).filter((id) => id.includes(':w')).sort(), `${cam}`).toEqual(want.sort());
+    }
+  });
+
+  it('draws the things as far off as a quarter of its budget fills, the nearest kept, and the bodies in the rest', () => {
+    const sector = realSector();
+    const isThing = (id) => id.includes(':w');
+    for (const discs of [400, 1200, 4000]) {
+      const far = fakeFar();
+      createDiscs(far, { budget: { discs } }).feed([sector], sector.origin, 0);
+      const rows = far.last();
+      const share = thingShare(discs);
+      expect(share).toBe(Math.floor(discs * THING_SHARE));
+      const things = rows.filter((r) => isThing(r.id));
+      expect(things.length, `${discs}`).toBeLessThanOrEqual(share);
+      expect(things.length, `${discs}`).toBeGreaterThan(0.75 * share);
+      for (const r of things) expect(dist(r.at, sector.origin)).toBeLessThan(thingsFar(share));
+      expect(rows.length - things.length, `${discs}`).toBeLessThanOrEqual(discs - share);
+    }
+    // (every one within the far plane, with no budget to speak of)
+    expect(thingsFar(Infinity)).toBe(FAR);
+    expect(thingsFar(thingShare(400))).toBeLessThan(thingsFar(thingShare(1200)));
+  });
+
+  it('takes a new budget for its things over frames: no thing comes or goes by more than 4 px in one', () => {
+    const sector = realSector();
+    const cam = sector.origin;
+    const far = fakeFar();
+    const discs = createDiscs(far, { budget: { discs: 1200 } });
+    discs.feed([sector], cam, 0);
+    for (const budget of [400, 1200]) {
+      discs.setBudget({ discs: budget });
+      let was = far.byId();
+      let most = 0;
+      let frames = 0;
+      for (let frame = 1; frame <= 90; frame++) {
+        discs.feed([sector], cam, 0);
+        const now = far.byId();
+        const px = movedPx(was, now, cam, (id) => !id.includes(':w'));
+        if (px > 0) frames = frame;
+        most = Math.max(most, px);
+        was = now;
+      }
+      expect(most, `to ${budget}`).toBeLessThanOrEqual(4);
+      expect(frames, `to ${budget}`).toBeGreaterThan(1);
+      expect(frames, `to ${budget}`).toBeLessThan(90);
+      for (const [id, row] of was) if (id.includes(':w')) expect(dist(row.at, cam)).toBeLessThan(thingsFar(thingShare(budget)));
+    }
+  });
+
+  it('never pops a thing flying through them: none comes or goes by more than 4 px a frame but where its ball takes over', () => {
+    const sector = { ...realSector(), systems: [] }; // (its things alone)
+    const far = fakeFar();
+    const discs = createDiscs(far, { budget: { discs: 1200 } });
+    let was = null;
+    let most = 0;
+    let crossed = 0;
+    // 900 units a second at 60 frames a second, along a line through the sector
+    for (let k = 0; k <= 400; k++) {
+      const cam = [sector.origin[0] - 3000 + 15 * k, 1234, -2000];
+      discs.feed([sector], cam, 0);
+      const now = far.byId();
+      if (was) {
+        const near = (id) => {
+          const row = now.get(id) ?? was.get(id);
+          return !id.includes(':w') || dist(row.at, cam) < THING_NEAR * row.r + 15;
+        };
+        most = Math.max(most, movedPx(was, now, cam, near));
+        for (const id of now.keys()) if (id.includes(':w') && !was.has(id)) crossed++;
+      }
+      was = now;
+    }
+    expect(crossed).toBeGreaterThan(30); // (things came in at the edge all the way)
+    expect(most).toBeLessThanOrEqual(4);
+  });
+
+  it('gives a thing up to its mesh over the last fifth of THING_NEAR of its size, once it’s drawn near; one that isn’t keeps its disc whole', () => {
+    const sector = thingSector(THINGS);
+    const near = THING_NEAR * 100;
+    const cam = (k) => [600000, 0, 20000 - k * near];
+    let drawn = new Set();
+    const far = fakeFar();
+    const discs = createDiscs(far, { budget: { discs: 100 }, shown: () => drawn });
+    for (const ids of [new Set(), new Set([thingId(1)])]) {
+      drawn = ids;
+      discs.feed([sector], cam(0.9), 0);
+      const fading = ids.size ? levelWeights(0.9 * near, { reach: near }).disc : 1;
+      expect(fading).toBeGreaterThan(0);
+      expect(far.byId().get(thingId(1))?.alpha).toBeCloseTo(fading, 12);
+      discs.feed([sector], cam(0.5), 0);
+      expect(far.byId().get(thingId(1))?.alpha).toBe(ids.size ? undefined : 1);
+    }
+    // (told nothing, every thing is taken as drawn near)
+    const own = fakeFar();
+    createDiscs(own, { budget: { discs: 100 } }).feed([sector], cam(0.5), 0);
+    expect(own.byId().has(thingId(1))).toBe(false);
+  });
+
+  it('keeps a wonder whole that isn’t drawn near, when told what is', () => {
+    const pulsar = SECTOR.wonders[1];
+    const real = realAt({ r: pulsar.size * WONDER_SPECK });
+    let drawn = new Set();
+    const far = fakeFar();
+    const discs = createDiscs(far, { budget: { discs: 100 }, shown: () => drawn });
+    discs.feed([SECTOR], [pulsar.at[0], pulsar.at[1] + 0.5 * real, pulsar.at[2]], 0);
+    expect(far.byId().get(pulsar.id).alpha).toBe(1);
+    drawn = new Set([pulsar.id]);
     discs.feed([SECTOR], [pulsar.at[0], pulsar.at[1] + 0.5 * real, pulsar.at[2]], 0);
     expect(far.byId().has(pulsar.id)).toBe(false);
   });

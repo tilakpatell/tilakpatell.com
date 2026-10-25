@@ -5287,7 +5287,7 @@ export async function create(canvas, ctx) {
     farStars.update(camera, dt, { focus: state.jump?.id ?? state.aim ?? state.auto?.id ?? null, sector: skySector });
     landmarks.update(camera, t, { sector: skySector, groups: landmarkGroup });
     aimAt();
-    expanse.update({ ship: flying() && !state.dive ? state.ship : null, camera, t, dt, now: state.held || reduced ? 0 : Date.now() });
+    expanse.update({ ship: flying() && !state.dive ? state.ship : null, camera, t, dt, now: state.held || reduced ? 0 : Date.now(), light: litBy.key });
     sectorPortals.update(t, camera);
     curve.update(t, sectorOf(camLocal.x, camLocal.y, camLocal.z) === 'rickmorty');
     sectorFleet.update(t, Boolean(state.ship) && sectorOf(state.ship.x, state.ship.y, state.ship.z) === 'rickmorty');

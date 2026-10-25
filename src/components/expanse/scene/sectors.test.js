@@ -8,7 +8,8 @@ import { UNIVERSE } from '../gen/seed';
 import { addBodies } from '../gen/systems';
 import { PLANET_TYPES, WONDERS, WONDER_KINDS } from '../gen/tables';
 import { createDiscs } from './discs';
-import { FAR, levelWeights, realAt } from './levels';
+import { FAR, levelWeights } from './levels';
+import { createNearThings, pickNear } from './nearThings';
 import { TYPE_LOOK, WONDER, WONDER_SPECK, createSector, slotOf } from './sectors';
 
 const named = (group, prefix) => {
@@ -65,15 +66,19 @@ describe('a generated sector, drawn', () => {
     for (const id of Object.values(TYPE_LOOK)) expect(LOOKS[id], id).toBeTruthy();
   });
 
-  it('draws its wonders and nothing else: its stars are the far layer’s, its systems near.js’s', () => {
-    const sector = makeSector(UNIVERSE, 2, -1);
-    const s = createSector(sector);
-    expect(s.group.name).toBe('sector:E:2,-1');
-    expect(s.sector).toBe(sector);
-    expect(named(s.group, 'wonder:')).toHaveLength(sector.wonders.length);
-    for (const prefix of ['star:', 'planet:', 'far-stars']) expect(named(s.group, prefix), prefix).toHaveLength(0);
-    expect(s.count()).toBe(sector.wonders.length);
-    s.dispose();
+  it('draws its nebulae and nothing else: its stars are the far layer’s, its systems near.js’s, its other wonders near things', () => {
+    for (const sector of [makeSector(UNIVERSE, 1, -1), HAND]) {
+      const nebulae = sector.wonders.filter((w) => w.kind === 'nebula');
+      expect(nebulae.length).toBeGreaterThan(0);
+      expect(nebulae.length).toBeLessThan(sector.wonders.length);
+      const s = createSector(sector);
+      expect(s.group.name).toBe(`sector:${sector.id}`);
+      expect(s.sector).toBe(sector);
+      expect(named(s.group, 'wonder:').map((o) => o.name)).toEqual(nebulae.map((w) => `wonder:${w.id}`));
+      for (const prefix of ['star:', 'planet:', 'far-stars']) expect(named(s.group, prefix), prefix).toHaveLength(0);
+      expect(s.count()).toBe(nebulae.length);
+      s.dispose();
+    }
   });
 
   it('hands its stars and wonders to a slot of the far layer, from its middle', () => {
@@ -127,23 +132,14 @@ describe('a generated sector, drawn', () => {
     s.dispose();
   });
 
-  it('shows a wonder only within where it’s real, as its speck has it', () => {
+  it('shows a nebula’s cloud where it is, not where the numbers in it are, moved with the group', () => {
     const s = createSector(HAND);
-    const root = new THREE.Group();
-    root.add(s.group);
-    for (const w of HAND.wonders.filter((one) => one.kind !== 'nebula')) {
-      const real = realAt({ r: w.size * WONDER_SPECK });
-      const obj = s.group.getObjectByName(`wonder:${w.id}`);
-      s.update(0, 1 / 60, camAt([w.at[0], w.at[1] + 0.95 * real, w.at[2]]));
-      expect(obj.visible, w.kind).toBe(true);
-      s.update(0, 1 / 60, camAt([w.at[0], w.at[1] + 1.05 * real, w.at[2]]));
-      expect(obj.visible, w.kind).toBe(false);
-    }
-    // (moved with the group: where it is, not where the numbers in it are)
-    const w = HAND.wonders[1];
+    const w = HAND.wonders.find((one) => one.kind === 'nebula');
     s.reanchor([390000, 0, 0]);
     s.update(0, 1 / 60, camAt([w.at[0] - 390000, w.at[1] + 10, w.at[2]]));
     expect(s.group.getObjectByName(`wonder:${w.id}`).visible).toBe(true);
+    s.update(0, 1 / 60, camAt([w.at[0], w.at[1] + 10, w.at[2]]));
+    expect(s.group.getObjectByName(`wonder:${w.id}`).visible).toBe(false);
     s.dispose();
   });
 
@@ -175,13 +171,19 @@ describe('a generated sector, drawn', () => {
     // each kind at the least and the most the table makes it, HAND's, and a real sector's
     const sized = WONDERS.flatMap(({ kind, size }, j) => size.map((sz, q) => ({ id: `E:5,0:s${j}${q}`, kind, name: kind, at: [400000 + j * 6000, 0, 20000 + q * 6000], size: sz, seed: BigInt(2 * j + q + 1) })));
     const sectors = [HAND, { ...HAND, wonders: sized }, makeSector(UNIVERSE, 1, -1)];
-    // how much of a ball or cloud shows: none hidden, else its blend's
-    // constant alpha if it fades by it, or all of it
-    const shown = (o) => (!o.visible ? 0 : o.material.blending === THREE.CustomBlending ? o.material.blendAlpha : 1);
+    // how much of a cloud shows: none hidden, else its blend's constant alpha
+    const cloudOf = (o) => (!o.visible ? 0 : o.material.blendAlpha);
+    // a ball: a near thing's (nearThings.js), drawn whole while it's picked
+    const near = createNearThings(new THREE.Group());
+    const ball = (sector, at, id) => {
+      near.update(pickNear([sector], at), null, 0);
+      return near.shown().has(id) ? 1 : 0;
+    };
     // the discs, into a far layer's writer that keeps a frame's rows (with
-    // no budget to speak of, their edge is the far plane's from the first)
+    // no budget to speak of, their edge is the far plane's from the first),
+    // told what's drawn near
     const rows = [];
-    const discs = createDiscs({ discs: { begin: () => (rows.length = 0), push: (...a) => rows.push({ id: a[11], alpha: a[10] }), end() {} } }, { budget: { discs: Infinity } });
+    const discs = createDiscs({ discs: { begin: () => (rows.length = 0), push: (...a) => rows.push({ id: a[11], alpha: a[10] }), end() {} } }, { budget: { discs: Infinity }, shown: near.shown });
     const camera = camAt([0, 0, 0]);
     const kinds = new Set();
     for (const sector of sectors) {
@@ -189,22 +191,25 @@ describe('a generated sector, drawn', () => {
       for (const w of sector.wonders) {
         kinds.add(w.kind);
         const obj = s.group.getObjectByName(`wonder:${w.id}`);
+        const one = { ...sector, wonders: [w], systems: [] };
         for (let d = 0; d <= 60000; d += 100) {
           const at = [w.at[0], w.at[1] + d, w.at[2]];
           camera.position.set(...at);
           camera.updateMatrixWorld();
           s.update(0, 1 / 60, camera);
-          discs.feed([{ systems: [], wonders: [w] }], at);
+          const shown = obj ? cloudOf(obj) : ball(one, at, w.id);
+          discs.feed([one], at);
           const disc = rows.find((r) => r.id === w.id)?.alpha ?? 0;
           // (its slot's speck, as the far layer's shader has it: in over the far plane's last fifth)
           const speck = levelWeights(d, { reach: 0 }).speck;
-          const drawn = shown(obj) + disc + speck;
+          const drawn = shown + disc + speck;
           if (!(drawn >= 0.5)) expect.fail(`${w.id}, a ${w.kind} of size ${w.size}, at ${d}: ${drawn.toFixed(3)} of it drawn`);
         }
       }
       s.dispose();
     }
     expect([...kinds].sort()).toEqual([...WONDER_KINDS].sort());
+    near.dispose();
   });
 
   it('disposes down to an empty group, out of its parent', () => {

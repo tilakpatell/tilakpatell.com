@@ -14,14 +14,17 @@
 // the 3 × 3 × 3 come as specks, a ring a job, nearest first (gen/job.js's
 // beyondJob, on a worker of their own).
 //
-// Drawing, in levels.js's levels: each loaded sector's wonders
+// Drawing, in levels.js's levels: each loaded sector's nebulae
 // (sectors.js); its stars and wonders as a slot of specks in the far layer,
 // past the far plane, and each ring beyond in a slot of its own; within the
-// far plane its stars, planets, moons and wonders as discs (discs.js), fed
-// every frame, faded in over PLACE_IN as its sector comes, the specks
-// coming in where their budget ends; and the nearest systems built whole
-// (near.js). Planets and moons go round on the shared clock (orbits.js's
-// spaceTime of the wall time it's given).
+// far plane its stars, planets, moons, wonders and things as discs
+// (discs.js), fed every frame, faded in over PLACE_IN as its sector comes,
+// the specks coming in where their budget ends; the nearest systems built
+// whole (near.js); and the wonders and things near the camera built
+// (nearThings.js: each kind with a drawer by its drawer, the rest as balls),
+// from the sectors come in whole (till then, their discs stand for them).
+// Planets and moons go round on the shared clock (orbits.js's spaceTime of
+// the wall time it's given).
 //
 // The centre drawn. The far layer draws one centre's 3 × 3 × 3 and rings,
 // whole. Once the ship is SWAP_PAST into the next sector (so one sitting on
@@ -35,14 +38,15 @@
 // a swap, in at once), so nothing comes or goes there at once.
 //
 // What it builds is solid and lit by its own star: solids() (for ship.js's
-// step, through shipHits.js's solidsWith) and stars() (lighting.js's
-// lightAt). With no ship, or in the Rick and Morty pocket (walled off as it
-// always was), it lets everything go. Nothing generated is kept but while
-// it's near: a sector is made from its seed each time it's wanted.
+// step, through shipHits.js's solidsWith: the systems built, then the
+// things near) and stars() (lighting.js's lightAt). With no ship, or in the
+// Rick and Morty pocket (walled off as it always was), it lets everything go.
+// Nothing generated is kept but while it's near: a sector is made from its
+// seed each time it's wanted.
 //
 // createExpanse(parent, { universe, workers, far, tier, detail, budget,
-//   prepare, reduced, onSector, make, makeNear, build, timer, warn })
-//   → { root, update({ ship, camera, t, dt, now }), loaded(), sector(),
+//   prepare, reduced, onSector, drawers, make, makeNear, build, timer, warn })
+//   → { root, update({ ship, camera, t, dt, now, light }), loaded(), sector(),
 //   sectors(), nearestSystem(at), stars(), solids(), setStep(step, floor),
 //   pops(), workMs(), reload(id), dispose() }
 //   workers: the page's pool (runtime/workers.js's, rt.workers), its pools
@@ -56,13 +60,18 @@
 //   draw
 //   tier, detail: the device's (lib/device), for the budget; budget:
 //   universe/budget.js's row (the level's, unless it's given)
-//   prepare(root, alive): the scene's warm(), for what near.js builds
+//   prepare(root, alive): the scene's warm(), for what near.js and
+//   nearThings.js build
+//   drawers: nearThings.js's, a kind of thing's drawer by its kind (lane
+//   4a's, from universe/things/); the rest are balls
 //   onSector(id): where the ship is, by layout.js's sectorOf ('main' inside
 //   the core's edge, else an 'E:' key), each time it changes
-//   make: a sector's wonders drawn (sectors.js's createSector); makeNear,
+//   make: a sector's nebulae drawn (sectors.js's createSector); makeNear,
 //   build: near.js's createNear and its body builder; timer: () → ms
 //   update: `t` the scene's clock, `now` the wall time in ms (0 holds the
-//   orbits where they start)
+//   orbits where they start), `light` the key light where the camera is
+//   (lighting.js's lightAt(…).key, its `dir` from the star toward the
+//   camera), for the lit things' discs (none: they shine in their colour)
 //   loaded() → the ids of the sectors it holds; sectors() → Map(id → Sector,
 //   withMoons'd); sector() → the id of the sector the ship is in (null
 //   before)
@@ -70,7 +79,8 @@
 //   stars(): lighting.js's STARS, then the light of each system built; one
 //   array, the same every frame
 //   solids(): what's built, each where it is this frame ({ id, at, r,
-//   reach }, near.js's); one array, kept while what's built stays the same
+//   reach }): near.js's, then nearThings.js's; one array, the same every
+//   frame
 //   setStep(step, floor): the pace's (qualityStep.js's stepAt): the discs
 //   and the rings beyond to the level's budget at that step, and near.js's
 //   detail with it
@@ -95,6 +105,7 @@ import { UNIVERSE } from '../gen/seed';
 import { createDiscs } from './discs';
 import { FAR } from './levels';
 import { createNear } from './near';
+import { createNearThings, pickNear } from './nearThings';
 import { createSector } from './sectors';
 
 const PLACE_IN = 0.5; // a place with nothing before it fades in over this many seconds
@@ -161,7 +172,7 @@ function noseOf(s) {
   return [quarter(-Math.sin(s.heading) * Math.cos(p)), quarter(Math.sin(p)), quarter(-Math.cos(s.heading) * Math.cos(p))];
 }
 
-export function createExpanse(parent, { universe = UNIVERSE, workers = null, far = null, tier = 'mid', detail, budget = universeBudget({ tier, detail }), prepare = null, reduced = false, onSector = null, make = createSector, makeNear = createNear, build, timer = () => performance.now(), warn = (...a) => console.warn(...a) } = {}) {
+export function createExpanse(parent, { universe = UNIVERSE, workers = null, far = null, tier = 'mid', detail, budget = universeBudget({ tier, detail }), prepare = null, reduced = false, onSector = null, drawers = {}, make = createSector, makeNear = createNear, build, timer = () => performance.now(), warn = (...a) => console.warn(...a) } = {}) {
   const root = new THREE.Group();
   root.name = 'expanse';
   parent.add(root);
@@ -170,6 +181,11 @@ export function createExpanse(parent, { universe = UNIVERSE, workers = null, far
   nearRoot.name = 'expanse-near';
   root.add(nearRoot);
   const near = makeNear(nearRoot, { budget, tier, prepare, build });
+  // the things near, in the map's space too
+  const thingsRoot = new THREE.Group();
+  thingsRoot.name = 'expanse-things';
+  root.add(thingsRoot);
+  const things = createNearThings(thingsRoot, { drawers, prepare, tier, most: budget.thingsNear });
   const pool = workers;
   if (pool) definePools(pool, { make: () => new Worker(new URL('./sector.worker.js', import.meta.url), { type: 'module' }), size: budget.workers });
   const radius = pool ? 1 : 0;
@@ -184,15 +200,22 @@ export function createExpanse(parent, { universe = UNIVERSE, workers = null, far
     if (!layer) {
       const own = far ? null : createFarStars(parent, { places: [], skyFar: SKY_FAR, ...roomOf(budget) });
       const into = far ?? own;
-      layer = { far: into, own, discs: createDiscs(into, { budget: stepped, built: near.built }), free: Array.from({ length: budget.nearSlots }, (_, i) => budget.nearSlots - 1 - i) };
+      layer = { far: into, own, discs: createDiscs(into, { budget: stepped, built: near.built, shown: things.shown }), free: Array.from({ length: budget.nearSlots }, (_, i) => budget.nearSlots - 1 - i) };
     }
     return layer;
   };
   const rings = (pool ? ringsOf(budget) : NONE).map((r) => ({ r, slots: [budget.nearSlots + 2 * (r - 1), budget.nearSlots + 2 * (r - 1) + 1], shown: null, staged: null }));
   const wanted = () => Math.min(stepped.beyondRings, rings.length);
 
-  // the light of what's built, after the map's own (one array, kept)
+  // the light of what's built, after the map's own, and what's built as
+  // solids (one array each, kept)
   const lit = [...STARS];
+  const solids = [];
+  const fillSolids = () => {
+    solids.length = 0;
+    for (const o of near.solids()) solids.push(o);
+    for (const o of things.solids()) solids.push(o);
+  };
   const held = new Map(); // grid key → { id, cell, sector, stars, drawn, slot, shown }
   const byId = new Map(); // sector id → Sector
   const blocked = new Set(); // grid keys given up on
@@ -206,6 +229,10 @@ export function createExpanse(parent, { universe = UNIVERSE, workers = null, far
   // discs show (faded in as it comes)
   const fed = [];
   let fedSectors = [];
+  const comeIn = []; // (the sectors fed that are in whole: their things built near)
+  const nearRows = [];
+  const PICK = { max: 0, out: nearRows };
+  const toward = [0, 0, 0]; // (the way toward the key light, for the lit things' discs)
   let systems = [];
   let restale = true;
   let shares = new Float64Array(0);
@@ -453,6 +480,7 @@ export function createExpanse(parent, { universe = UNIVERSE, workers = null, far
     blocked.clear();
     fails.clear();
     near.update(NONE, cam);
+    things.update(NONE);
     if (layer) {
       layer.far.discs.begin();
       layer.far.discs.end();
@@ -467,7 +495,7 @@ export function createExpanse(parent, { universe = UNIVERSE, workers = null, far
     awake = false;
   };
 
-  function fly(ship, camera, t, dt, now) {
+  function fly(ship, camera, t, dt, now, light) {
     const x = ship.x;
     const y = ship.y ?? 0;
     const z = ship.z;
@@ -542,21 +570,29 @@ export function createExpanse(parent, { universe = UNIVERSE, workers = null, far
     }
     const ts = spaceTime(now);
     near.update(systems, cam, ts, camera, t);
-    L.discs.feed(fedSectors, cam, ts, shares);
+    comeIn.length = 0;
+    for (let i = 0; i < n; i++) if (shares[i] >= 1) comeIn.push(fed[i].sector);
+    PICK.max = stepped.thingsNear;
+    things.update(pickNear(comeIn, cam, PICK), camera, t);
+    const dir = light?.dir;
+    const len = dir ? Math.hypot(dir[0], dir[1], dir[2]) : 0;
+    if (len > 0) for (let k = 0; k < 3; k++) toward[k] = -dir[k] / len + 0; // (no −0)
+    L.discs.feed(fedSectors, cam, ts, shares, len > 0 ? toward : null);
     // (the specks come in where the discs' budget ends)
     L.far.setDiscEdge?.(L.discs.edge());
   }
 
   return {
     root,
-    update({ ship, camera, t = 0, dt = 1 / 60, now = 0 }) {
+    update({ ship, camera, t = 0, dt = 1 / 60, now = 0, light = null }) {
       const t0 = timer();
       if (!ship || sectorOf(ship.x, ship.y ?? 0, ship.z) === 'rickmorty') {
         if (awake) sleep();
       } else {
         awake = true;
-        fly(ship, camera, t, dt, now);
+        fly(ship, camera, t, dt, now, light);
       }
+      fillSolids();
       most = Math.max(most, timer() - t0);
     },
     loaded: () => [...byId.keys()],
@@ -578,7 +614,7 @@ export function createExpanse(parent, { universe = UNIVERSE, workers = null, far
       for (let i = 0; i < built.length; i++) lit.push(built[i]);
       return lit;
     },
-    solids: () => near.solids(),
+    solids: () => solids,
     setStep(step, floor = false) {
       stepped = universeBudget({ tier, detail }, step, floor);
       layer?.discs.setBudget(stepped);
@@ -600,6 +636,8 @@ export function createExpanse(parent, { universe = UNIVERSE, workers = null, far
     dispose() {
       sleep();
       near.dispose();
+      things.dispose();
+      solids.length = 0;
       layer?.own?.dispose();
       root.clear();
       root.removeFromParent();

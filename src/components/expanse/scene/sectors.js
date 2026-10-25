@@ -1,13 +1,13 @@
-// One loaded sector of the expanse (gen/sector.js's), drawn: its wonders.
+// One loaded sector of the expanse (gen/sector.js's), drawn: its nebulae.
 // Everything in it sits in the sector's own frame, its centre at nought, so
 // the numbers in its buffers stay small however far out it is; the group is
-// moved to where the sector is relative to the floating origin (reanchor).
-// The wonders are cheap: a nebula a cloud of soft additive puffs, a pulsar a
-// small bright sphere, a derelict or a rogue world a small dark one, each
-// shown within where it's real (levels.js's realAt, of its speck) and a
-// disc (discs.js) or a speck past that. A nebula has no disc: its cloud
-// shows while all of it is within the far plane (FAR less its size), fading
-// over the last fifth of that as its speck comes in. No textures.
+// moved to where the sector is (reanchor). A nebula is a cloud of soft
+// additive puffs, and it has no disc: its cloud shows while all of it is
+// within the far plane (FAR less its size), fading over the last fifth of
+// that as its speck comes in. No textures. The other wonders (a pulsar a
+// small bright sphere, a derelict or a rogue world a small dark one) are
+// near things (nearThings.js), built within where they're real (levels.js's
+// realAt, of their specks), and discs (discs.js) or specks past that.
 //
 // Its stars are the far layer's (universe/farStars.js): slotOf gives the
 // sector's stars and wonders as a slot of specks, for past the far plane;
@@ -24,8 +24,8 @@
 import * as THREE from 'three';
 import { LOOKS } from '../../galaxy/shared/bodies';
 import { rngOf } from '../gen/seed';
-import { FAR, levelWeights, realAt } from './levels';
-import { WONDER, WONDER_SPECK } from './specks';
+import { FAR, levelWeights } from './levels';
+import { WONDER } from './specks';
 
 export { WONDER, WONDER_SPECK, slotOf } from './specks';
 
@@ -44,9 +44,6 @@ export const MOON_LOOK = { icy: 'hoth', rocky: 'moon-grey' };
 export const lookColour = (id) => (LOOKS[id] ?? LOOKS['moon-grey']).swatch;
 
 const PUFFS = 48; // a nebula's
-
-// shared by every sector, never disposed
-const BALL = new THREE.SphereGeometry(1, 16, 12);
 
 const PUFF_VERT = /* glsl */ `
   attribute float aSize;
@@ -127,31 +124,12 @@ export function createSector(sector) {
   const group = new THREE.Group();
   group.name = `sector:${sector.id}`;
   const made = []; // geometries and materials, this sector's own
-  const mats = new Map(); // a basic material per colour
-  const matOf = (color) => {
-    if (!mats.has(color)) {
-      const m = new THREE.MeshBasicMaterial({ color, toneMapped: false });
-      mats.set(color, m);
-      made.push(m);
-    }
-    return mats.get(color);
-  };
-  const ball = (name, at, r, color) => {
-    const m = new THREE.Mesh(BALL, matOf(color));
-    m.name = name;
-    m.position.set(...at);
-    m.scale.setScalar(r);
-    return m;
-  };
 
-  // the wonders, each shown within where it's real
-  const wonders = sector.wonders.map((w) => {
-    const look = WONDER[w.kind] ?? WONDER.rogue;
-    let obj;
-    if (w.kind === 'nebula') {
-      obj = nebula(w, made);
-      obj.position.set(...local(w.at));
-    } else obj = ball('', local(w.at), w.size * look.r, look.dark ?? look.color);
+  // the nebulae
+  const nebulae = sector.wonders.filter((w) => w.kind === 'nebula');
+  const wonders = nebulae.map((w) => {
+    const obj = nebula(w, made);
+    obj.position.set(...local(w.at));
     obj.name = `wonder:${w.id}`;
     group.add(obj);
     return obj;
@@ -159,8 +137,8 @@ export function createSector(sector) {
   // (a nebula has no disc: its cloud stands for it while all of it is
   // within the far plane, fading over the last fifth of that, as its speck
   // comes in over the far plane's)
-  const real = sector.wonders.map((w) => (w.kind === 'nebula' ? FAR - w.size : realAt({ r: w.size * WONDER_SPECK })));
-  const clouds = sector.wonders.map((w, i) => (w.kind === 'nebula' ? fading(wonders[i].material) : null));
+  const real = nebulae.map((w) => FAR - w.size);
+  const clouds = wonders.map((obj) => fading(obj.material));
 
   const cam = new THREE.Vector3();
   const REACH = { reach: 0 };
@@ -174,7 +152,7 @@ export function createSector(sector) {
       wonders.forEach((obj, i) => {
         const d = obj.position.distanceTo(cam);
         obj.visible = d < real[i];
-        if (clouds[i] && obj.visible) {
+        if (obj.visible) {
           REACH.reach = real[i];
           clouds[i].blendAlpha = levelWeights(d, REACH, W).full;
         }
