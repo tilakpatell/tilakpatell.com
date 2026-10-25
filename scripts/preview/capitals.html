@@ -70,7 +70,7 @@
       scene.environment = pm.fromScene(env, 0.02).texture;
       const sun = new THREE.DirectionalLight('#ffffff', 2.2);
       sun.position.copy(sunDir);
-      const ambient = new THREE.AmbientLight(LOOK.space.ambient, 0.32);
+      const ambient = new THREE.AmbientLight(LOOK.space.ambient, 0.32 * LOOK.space.fill);
       scene.add(sun, sun.target, ambient);
       const shadows = q.get('shadows') === '0' ? null : createCapitalShadows({ renderer, sun, size: 2048 });
       const house = houseOn({ renderer, scene, sun, ambient, keepExposure: true, look: { fog: false, ...LOOK.house } });

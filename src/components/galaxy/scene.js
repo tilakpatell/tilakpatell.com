@@ -296,7 +296,7 @@ export async function create(canvas, ctx) {
   // (the capitals' plating's detail map, baked in its worker, sent in spare
   // time before the hulls take it: capitalPlating.js)
   sendDetailWith((t) => warmTextures(renderer, [t], { idle: true }));
-  const ambient = new THREE.AmbientLight(LOOK.space.ambient, 0.32);
+  const ambient = new THREE.AmbientLight(LOOK.space.ambient, 0.32 * LOOK.space.fill);
   // (inside a level's area of its own, the scene under its light: areaLook.js)
   let areaLook = null;
   scene.add(ambient);
@@ -2446,7 +2446,7 @@ export async function create(canvas, ctx) {
       const light = state.eclipse;
       keys[0].intensity = 2.2 * light;
       keys[1].intensity = world.sunLights[1] ? 1.1 * light : 0;
-      ambient.intensity = 0.22 + 0.12 * light;
+      ambient.intensity = (0.22 + 0.12 * light) * LOOK.space.fill;
     }
     const inTunnel = state.jump?.phase === 'tunnel';
     // (inside a level's area of its own, Kamino's storm, its dome is the sky: the galaxy's hidden)
