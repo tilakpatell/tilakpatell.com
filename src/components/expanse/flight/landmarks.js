@@ -11,7 +11,8 @@
 // under it, 20 m across, differs from the flight's by more than DROP_Y) is
 // dropped and counted: a wall along a riverbank the flight has no river for
 // would hang in the air. Where no site has it, the POI's own list
-// (LANDMARKS) stands on the flight's ground.
+// (LANDMARKS), or a generated planet's place its kind's (POI_KITS), stands
+// on the flight's ground.
 //
 // No three.js: the sites and the galaxy's terrain are data and pure code.
 //
@@ -21,7 +22,7 @@
 //     false }], dropped }
 
 import { makeHeight, siteOf } from '../../galaxy/shared/ground';
-import { DROP_Y, LANDMARKS, LANDMARK_MAX, SITE_PLACES } from '../../../lib/land/flight/landmarkTables';
+import { DROP_Y, LANDMARK_MAX, SITE_PLACES, landmarkRowsOf } from '../../../lib/land/flight/landmarkTables';
 
 // the site's air, not its places': drawn by the walkable site round you, never from a ship
 const AIR = new Set(['lightshafts', 'ds2sky', 'ds1sky']);
@@ -143,6 +144,6 @@ export function placementsFor(spec, poi, { heightAt, site = null } = {}) {
   const m = mapOf(spec, poi);
   const data = site ? { site, height: site.noGround ? () => 0 : makeHeight(flightGround(site.ground)) } : m ? siteData(m.site) : null;
   if (m && data) return fromSite(data, m, poi, heightAt);
-  const rows = LANDMARKS[spec?.id]?.[poi?.id];
+  const rows = landmarkRowsOf(spec, poi);
   return rows ? fromTable(rows, poi, heightAt) : { list: [], dropped: 0 };
 }

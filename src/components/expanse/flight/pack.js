@@ -4,7 +4,8 @@ export const PACK = {
   pages: ['src/pages/Fly.jsx'], // page modules: the build adds their JS/CSS chunks
   src: ['src/components/expanse/flight', 'src/pages/Fly.jsx'], // where its source is: pack-check scans these
   // (the planets' landmarks and Coruscant's tower: lib/land/flight/planetTables.js's parts and hero;
-  // the POIs' buildings and the kit clutter, ./landmarkFiles.js's at every level, held to it by its test)
+  // the POIs' buildings and the kit clutter, ./landmarkFiles.js's at every level, held to it by its test,
+  // a generated planet's places and exotic trees among them)
   urls: [
     '/kit/naturemega/birch.glb',
     '/kit/naturemega/bush.glb',
@@ -28,6 +29,8 @@ export const PACK = {
     '/kit/space/roof.glb',
     '/kit/space/rover.glb',
     '/kit/space/solarpanel.glb',
+    '/kit/space/spaceship.glb',
+    '/kit/space/tree.glb',
     '/models/galaxy/surface/aat.glb',
     '/models/galaxy/surface/aat.lod1.glb',
     '/models/galaxy/surface/airspeeder.glb',

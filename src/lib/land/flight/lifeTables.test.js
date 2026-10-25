@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { PLANETS, lifeFor, planetSpecOf } from './fixtures/expanse.js';
 import { DENSITY, KINDS, LIFE, expanseLife, isDead, kindAt, lifeFor as lifeWith, systemOf } from './lifeTables';
 import { planetSpecOf as specWith } from './planetSpec';
-import { MOONS } from './fixtures/generated';
+import { MOONS, lookupOf, randomSystems } from './fixtures/generated';
 
 const BODIES = ['beast', 'person', 'flyer', 'walker', 'speeder', 'drone', 'craft'];
 // the roster's named worlds (docs/research/2026-10-09-planet-geographies.md, “The roster”)
@@ -99,9 +99,63 @@ describe('lifeTables', () => {
     expect(systemOf(rocky.id.toUpperCase(), { expanse: MOONS })).toEqual(rocky.system);
     const life = lifeWith(specWith(rocky.id, { expanse: MOONS }), { expanse: MOONS });
     expect(Array.isArray(life.air) && Array.isArray(life.ground)).toBe(true);
-    // (an icy moon is ice's: its herds graze it)
-    expect(lifeWith(specWith(icy.id, { expanse: MOONS }), { expanse: MOONS }).ground.some((r) => r.model === 'tauntaun')).toBe(true);
+    // (an icy moon walks its own fauna, not ice's herds: this one's a flock)
+    const spec = specWith(icy.id, { expanse: MOONS });
+    const wild = lifeWith(spec, { expanse: MOONS }).ground.filter((r) => r.kind === 'wild');
+    expect(spec.fauna.density).toBeGreaterThan(0);
+    expect(wild.map((r) => r.body)).toEqual(spec.fauna.plans.map((p) => p.body));
+    expect(wild.some((r) => r.model === 'tauntaun')).toBe(false);
     expect(systemOf('e:3,-2:1:0', { expanse: MOONS })).toBeNull();
+  });
+
+  const QUIET = { faction: null, traffic: 0, hazard: null };
+  const PLANS = [
+    { body: 'beast', role: 'herd', tint: '#806040', group: [4, 8] },
+    { body: 'flyer', role: 'flock', tint: '#c0c0c0', group: [4, 8] },
+  ];
+
+  it('lets a generated planet’s fauna walk it, scaled by its density', () => {
+    const biomes = [{ id: 'a' }, { id: 'b' }];
+    const life = expanseLife('forest', biomes, QUIET, { density: 1, plans: PLANS });
+    expect(life.ground).toHaveLength(2);
+    expect(life.ground.map((r) => r.model)).toEqual(['figure', 'figure']);
+    expect(life.ground.map((r) => r.perKm2)).toEqual([0.3, 0.3]);
+    expect(life.ground.map((r) => r.body)).toEqual(['beast', 'flyer']);
+    expect(life.ground.map((r) => r.tint)).toEqual(['#806040', '#c0c0c0']);
+    expect(life.ground[1].alt).toEqual([6, 50]);
+    expect(life.ground[0].alt).toBeUndefined();
+    // (its own, in place of the forest's nerfs)
+    expect(life.ground.some((r) => r.model === 'nerf')).toBe(false);
+    expect(kindAt(life, 'a')).toBe('wild');
+    expect(expanseLife('forest', biomes, QUIET, { density: 0.5, plans: PLANS }).ground[0].perKm2).toBeCloseTo(0.15, 9);
+  });
+
+  it('has no wild rows with no fauna', () => {
+    const biomes = [{ id: 'a' }, { id: 'b' }];
+    const none = expanseLife('forest', biomes, QUIET, { density: 0, plans: PLANS });
+    expect(none.ground.some((r) => r.kind === 'wild')).toBe(false);
+    expect(isDead(none)).toBe(true);
+    // (a faction's colonists and the pirates are as they were)
+    const held = expanseLife('forest', biomes, { faction: { id: 'empire' }, traffic: 0.3, hazard: 'pirates' }, { density: 0, plans: PLANS });
+    expect(held.ground.map((r) => r.name)).toEqual(['colonist', 'pirate']);
+    expect(kindAt(held, 'a')).toBe('settled');
+    expect(kindAt(held, 'b')).toBe('hostile');
+  });
+
+  it('walks a generated planet with its own fauna, a seeded one with its type’s', () => {
+    const rows = randomSystems(60, 3).flat();
+    const expanse = lookupOf(rows);
+    const specs = rows.map((r) => specWith(r.id, { expanse })).filter((s) => s?.fauna?.density > 0);
+    expect(specs.length).toBeGreaterThan(10);
+    for (const spec of specs) {
+      const wild = lifeWith(spec, { expanse }).ground.filter((r) => r.kind === 'wild');
+      expect(wild.map((r) => r.body), spec.id).toEqual(spec.fauna.plans.map((p) => p.body));
+      for (const r of wild) expect(r.perKm2, spec.id).toBeCloseTo(0.3 * spec.fauna.density, 9);
+    }
+    // (the thirteen keep FAUNA[type]'s: an ice world's tauntauns)
+    const ice = PLANETS.map((p) => planetSpecOf(p.id)).find((s) => s.type === 'ice' && s.id.startsWith('e:'));
+    expect(ice?.fauna).toBeNull();
+    expect(lifeFor(ice).ground.some((r) => r.model === 'tauntaun')).toBe(true);
   });
 
   it('names nothing from the sequel films', () => {
