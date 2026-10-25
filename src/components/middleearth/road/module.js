@@ -93,7 +93,7 @@ export function sFromAddress(at) {
 export default {
   id: 'road',
   shading: 'nodes',
-  mb: 8,
+  mb: 27, // (WORLD_MB’s, the ride measured whole)
   label: 'The Road through Middle-earth',
   create(rt, props = {}) {
     const scene = new THREE.Scene();
