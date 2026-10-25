@@ -19,7 +19,7 @@
 // createHoth(ctx) → { update(dt, t, live, events), hit, targets, markers(live), dispose() }
 
 import * as THREE from 'three';
-import { sweptHit } from '../../universe/targeting';
+import { sweptHit } from '../../../lib/combat/flight/targeting';
 import { GCW, seeded } from '../gcw';
 import { SIDES } from '../sides';
 

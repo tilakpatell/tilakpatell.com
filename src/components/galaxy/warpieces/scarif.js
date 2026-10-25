@@ -20,7 +20,7 @@
 //
 // createScarif(ctx) → { update(dt, t, live, events), hit, targets, markers(live), dispose() }
 
-import { sweptHit } from '../../universe/targeting';
+import { sweptHit } from '../../../lib/combat/flight/targeting';
 import { GCW } from '../gcw';
 
 const REBELS = 0;
