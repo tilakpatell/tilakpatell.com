@@ -53,3 +53,37 @@ The after goes beside the lane’s mid column in Task 11. A pose over its before
 
 - **Frame times** (`perf-probe.mjs universe`, twice a tier for the noise floor). Headless Chromium draws in software at a frame or two a second, so its frame times say little, and the browser budget leaves the timing to the coordinator’s measure at the end. The before can be taken again at any commit before Task 7, the first that changes what the map draws (Tasks 2 to 6 add pure files, a renderer nothing calls yet and a sky option that defaults to today’s bake).
 - **The two route shots** (`autopilot-check.mjs --routes /universe` and `--routes /galaxy`, with `--before`). The overview pose stands for `/universe`. `/galaxy`’s before, which Task 11 compares pixel for pixel, can be shot at any commit before Task 6, the first to touch the galaxy’s sky (`src/components/galaxy/sky.js`); until then the galaxy is as `ebfb2307` has it.
+
+## Task 7: the landmarks
+
+The first task that changes what the map draws. The landmarks’ quad stands upright in the world (its up the map’s +y, `quadAxes`) and tests depth. The Veil and the Cradle are no longer drawn as landmarks. Deep space’s own clouds stand for them until Task 8 hands them to `nebula/`.
+
+### The shader, compiled and drawn
+
+Node can’t compile GLSL, so the landmarks were drawn alone in headless Chromium (software GL) at 960 × 540 through a 12° lens. The lab page and its script are `lab/landmarks/index.html` and `shot.mjs`, git-ignored. `main`’s `landmarks.js` (`cc5e2eaf`) is on the left of each sheet, this branch’s on the right.
+
+- **The new program links:** no console error, `gl.getError()` 0 at every pose.
+- **The one 404:** each run logs a single resource 404 on whichever page loads first, so it’s the browser’s own request, not either module.
+- **The draw:** one call either way. The draw is 8 instances and 16 triangles, against 10 and 20.
+
+![Ember: level, rolled 0.7 rad, straight overhead, a ball in front](task7-stars.webp)
+
+`task7-stars.webp`, top to bottom:
+
+1. **Level:** the same.
+2. **Rolled 0.7 rad:** `main`’s rays stay where the screen has them. The branch’s turn with the roll, as the stars do.
+3. **Straight overhead:** drawn whole, no NaN.
+4. **A ball in front, drawn first:** `main`’s glare paints over it. The branch’s is hidden behind it.
+
+![The Maw level and rolled; the Veil from 30,000 out](task7-maw-veil.webp)
+
+`task7-maw-veil.webp`:
+
+- **The Maw, level and rolled:** the same on both sides. Its disk was already read from its axis in the view, and it is now read in the quad’s own basis.
+- **The Veil from 30,000 out:** `main` draws its painted cloud. The branch draws none, since the Veil is `nebula/`’s now.
+
+### The counts after Task 7
+
+- `wc -l src/components/universe/scene.js`: 6,374, unchanged. The landmarks call lost its `renderer`, `small` and `level`; the comment stayed two lines.
+- `glsl-sites`: 616 after Tasks 4 and 5, now 615. The atlas’s paint material is gone.
+- `big-files`: 22, unchanged.
