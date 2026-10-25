@@ -5,7 +5,7 @@
 // know about the planet, what's next there, and what the HUD says.
 
 import { byId } from '../../universe/universes';
-import { destinationById, isPlanet, planetStart } from './dimensions/destinations';
+import { DIAL, destinationById, isPlanet, planetStart } from './dimensions/destinations';
 import { TASKS, progress } from './rules';
 
 export const WAY_HOME = 'Back to space';
@@ -34,6 +34,8 @@ export function planetPage(id) {
 
 // a planet's hint, once he's on it: without the landing ('Land on Pluto in
 // the Rick and Morty sector, and step up…' → 'Step up…')
+const GUN = new Set(DIAL.filter((d) => isPlanet(d.id)).map((d) => d.name));
+const onTheGun = (hint) => hint.replace(/^Land on (.+?) in the Rick and Morty sector, (?:and )?/, (all, name) => (GUN.has(name) ? `Dial ${name} on the portal gun (or land on it from the universe map), ${all.endsWith('and ') ? 'and ' : ''}` : all));
 export const hereHint = (hint) => hint.replace(/^Land (?:on|at) .+? in the Rick and Morty sector, (?:and )?/, '').replace(/^./, (c) => c.toUpperCase());
 
 // what's done and what's next, there: everything counts as it does in C-137,
@@ -53,7 +55,8 @@ export const backLink = (planet) => (planet ? { to: `/universe/${planet.id}`, la
 // planet, its own things to do as said there, and one line for the rest
 export function listOf(planet, done = []) {
   const row = (t, hint = t.hint) => ({ id: t.id, name: t.name, hint, done: done.includes(t.id) });
-  if (!planet) return { label: 'Things to do in Dimension C-137', rows: TASKS.map((t) => row(t)), rest: null };
+  // (in C-137 the four planets on the gun are dialled too: their rows say so)
+  if (!planet) return { label: 'Things to do in Dimension C-137', rows: TASKS.map((t) => row(t, onTheGun(t.hint))), rest: null };
   const { count, total } = progress(done);
   return { label: `Things to do on ${inLine(planet.name)}`, rows: planet.tasks.map((t) => row(t, hereHint(t.hint))), rest: `${count} of ${total} done in all, with Dimension C-137’s.` };
 }

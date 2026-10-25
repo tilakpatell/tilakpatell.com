@@ -4,7 +4,8 @@ import { EPISODES } from './episodes';
 import { fresh } from './story';
 import { DIAL } from '../world/dimensions/destinations';
 import { createToastSlot, readMs } from '../world/toastSlot';
-import { SAID_MS, STORY_DONE, caughtNote, dialItems, dialLead, leaveHold, markedTask, newsOf, objectiveLine, passesCard, showNews } from './hud';
+import { SAID_MS, STORY_DONE, caughtNote, dialItems, dialLead, leaveHold, listNext, listTab, markedTask, newsOf, objectiveLine, passesCard, showNews } from './hud';
+import { listOf } from '../world/planetMode';
 
 describe('what the HUD shows of the story', () => {
   it('reads the story’s step first, then the checklist’s next', () => {
@@ -19,6 +20,22 @@ describe('what the HUD shows of the story', () => {
     expect(STORY_DONE).toBe('That’s the whole story: the Checklist tab has the rest.');
     expect(objectiveLine(null, prog, { ended: true })).toEqual({ text: STORY_DONE, to: null });
     expect(objectiveLine(null, prog, {})).toEqual({ text: prog.objective, to: null });
+  });
+
+  it('lights the story’s task in the Checklist, else the checklist’s next', () => {
+    const { rows } = listOf(null, []);
+    const next = progress([]).next;
+    expect(next.id).toBe('cable');
+    expect(listNext(fresh(), next, rows)).toEqual({ id: 'diner' });
+    // (a step that's a game won isn't a row: the checklist's own next)
+    expect(listNext({ ...fresh(), episode: 1, step: 1 }, next, rows)).toBe(next);
+    expect(listNext({ ...fresh(), episode: 13 }, next, rows)).toBe(next);
+  });
+
+  it('opens Things to do on the Checklist once the story’s over, on the Story tab till then', () => {
+    expect(listTab(fresh())).toBe('story');
+    expect(listTab({ ...fresh(), episode: 12, step: 3 })).toBe('story');
+    expect(listTab({ ...fresh(), episode: 13 })).toBe('checklist');
   });
 
   it('links the checklist’s closing line to the map, in C-137 only', () => {

@@ -120,6 +120,16 @@ export const BASICS = {
     await built(page);
     check((await story(page)).freeRoam === false, 'a new visitor started on free roam');
     await reads(page, WIPED.steps[0].text);
+    // (the Checklist lights the story's task, Shoney's, not the list's first thing)
+    await page.keyboard.press('m');
+    const list = page.locator('#rm-list');
+    await list.waitFor({ timeout: 10000 });
+    await list.getByRole('tab', { name: 'Checklist' }).click();
+    const lit = await list.locator('li[data-next] .rm-list-name').textContent();
+    const diner = await page.evaluate(async () => (await import('/src/components/rickmorty/world/rules.js')).TASKS.find((t) => t.id === 'diner').name);
+    check(lit === diner, `the Checklist lights “${lit}”, not the story’s task`);
+    await page.keyboard.press('m');
+    await list.waitFor({ state: 'detached', timeout: 5000 });
     // the first step's marker: inside Shoney's, on the agent in his booth, not the way back out
     await warp(page, 'diner', -300, 800, N);
     await inArea(page, 'diner');

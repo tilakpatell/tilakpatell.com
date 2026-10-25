@@ -103,6 +103,18 @@ export function markedTask(state, next, { here = null, ...opts } = {}) {
   return part?.type === 'win' ? { id: part.game } : null;
 }
 
+// The Checklist's lit row (C-137's Things to do): the story's task while its
+// step waits on one of the rows, else the checklist's own next (a game won,
+// or the gun put back, isn't a row)
+export function listNext(state, next, rows, opts) {
+  const m = markedTask(state, next, opts);
+  return m && rows.some((r) => r.id === m.id) ? m : next;
+}
+
+// The tab Things to do opens on: the Story's while there's a story to follow,
+// the Checklist's once it's over
+export const listTab = (state, { episodes = EPISODES } = {}) => (state.episode >= episodes.length ? 'checklist' : 'story');
+
 // The dial's places, each with its lock: null when it's open, else the
 // episode that opens it.
 export const dialItems = (items, state) => items.map((d) => ({ ...d, locked: dialOpen(state, d.id) ? null : lockNote(d.id) }));

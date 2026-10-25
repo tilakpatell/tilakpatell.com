@@ -86,7 +86,14 @@ describe('C-137: a planet played on its own', () => {
   it('lists everything in C-137, with where to go for it', () => {
     const l = listOf(null, ['cable']);
     expect(l).toMatchObject({ label: 'Things to do in Dimension C-137', rest: null });
-    expect(l.rows).toEqual(TASKS.map((t) => ({ id: t.id, name: t.name, hint: t.hint, done: t.id === 'cable' })));
+    // (the four planets on the gun: dialled, or landed on from the map)
+    const DIALLED = {
+      birdworld: 'Dial Bird World on the portal gun (or land on it from the universe map), and pick up the crystals round Birdperson’s house: three in the grass, and one up each clay tower, where the clay crumbles.',
+      gearworld: 'Dial Gear World on the portal gun (or land on it from the universe map), and wind the city’s cogs in the order the meter gives before the city runs down, with the gear police after you.',
+      pluto: 'Dial Pluto on the portal gun (or land on it from the universe map), and tell the king only the claims on his palace that are true: weigh up two at most, and Scroopy calls out a lie.',
+      squanch: 'Dial Planet Squanch on the portal gun (or land on it from the universe map), raise a glass at the wedding, and get back through the portal when the Federation arrives.',
+    };
+    expect(l.rows).toEqual(TASKS.map((t) => ({ id: t.id, name: t.name, hint: DIALLED[t.id] ?? t.hint, done: t.id === 'cable' })));
   });
 
   it('names the bench for what it does at the story’s last step: the gun put back, not a dimension picked', () => {
@@ -156,6 +163,12 @@ describe('C-137: the planets’ things to do, left to the planets', () => {
     expect(p).toMatchObject({ count: here.length, total: TASKS.length, next: null });
     expect(p.objective).toMatch(/planets.*Rick and Morty sector/);
     expect(p.objective).not.toMatch(/!/);
+    // (it names what's left: the four on the gun only while they are)
+    expect(p.objective).toBe('Everything here’s done. The rest are on the planets in the Rick and Morty sector of the universe map: the Purge Planet, Snake Planet, Nuptia 4, the Immortality Field Resort and Cronenberg World, and Bird World, Gear World, Pluto and Planet Squanch, which are on the portal gun too.');
+    const four = progress([...here, 'birdworld', 'gearworld', 'pluto', 'squanch'], { skip: PLANET_TASKS });
+    expect(four.objective).toBe('Everything here’s done. The rest are on the planets in the Rick and Morty sector of the universe map: the Purge Planet, Snake Planet, Nuptia 4, the Immortality Field Resort and Cronenberg World.');
+    const one = progress([...here, 'gearworld', 'pluto', 'squanch', 'purge', 'snakeplanet', 'nuptia', 'resort', 'cronenberg'], { skip: PLANET_TASKS });
+    expect(one.objective).toBe('Everything here’s done. The rest are on the planets in the Rick and Morty sector of the universe map: Bird World, which is on the portal gun too.');
     // what's skipped and left isn't on a planet: only that this place is done
     expect(progress(TASKS.slice(1).map((t) => t.id), { skip: ['cable'] }).objective).toBe('Everything here’s done.');
     // and all of it done is all done, skipped or not

@@ -229,6 +229,10 @@ export const EVIL_CHECKS = {
     await page.keyboard.press('m');
     const list = page.locator('#rm-list');
     await list.waitFor({ timeout: 10000 });
+    // (the story over, the list opens on the Checklist, Free roam gone; the Story tab a tap away)
+    check((await list.getByRole('tab', { name: 'Checklist' }).getAttribute('aria-selected')) === 'true', 'after the story the list opens on the Story tab');
+    check((await list.getByText('Free roam').count()) === 0, 'after the story the list still offers Free roam');
+    await list.getByRole('tab', { name: 'Story' }).click();
     check((await list.locator('li.rm-story-ep[data-done]').count()) === 13, 'the Story tab doesn’t tick all thirteen');
     check((await list.locator('.rm-list-rest', { hasText: 'That’s the whole story: the Checklist tab has the rest.' }).count()) === 1, 'the Story tab doesn’t close the story');
     check((await list.getByText('More of the story soon.').count()) === 0, 'the Story tab says there’s more to come');
