@@ -110,6 +110,20 @@ describe('capitalLook', () => {
     expect(holder.children.filter((o) => o.userData.glows)).toHaveLength(1);
   });
 
+  it('paints the Executor in its grey, not the stock scratched metal its model tiled over the whole of it', () => {
+    const { holder } = ship();
+    const metal = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.1, 1), new THREE.MeshStandardMaterial({ name: 'ScratchedMetal', map: new THREE.Texture(), metalnessMap: new THREE.Texture(), metalness: 0.5 }));
+    const dark = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.1, 1), new THREE.MeshStandardMaterial({ name: 'ScratchedMetalDark', color: 0x1a1a1a, map: new THREE.Texture(), metalnessMap: new THREE.Texture(), metalness: 0.5 }));
+    holder.add(metal, dark);
+    dressCapital(holder, 'executor');
+    expect(metal.material.map).toBeNull();
+    expect(metal.material.metalness).toBe(0);
+    expect(metal.material.color.getHex()).toBe(new THREE.Color(plateTint('executor')).getHex());
+    expect(metal.material.userData.plated).toBe(true);
+    // (its dark one, darker)
+    expect(dark.material.color.r).toBeLessThan(metal.material.color.r * 0.6);
+  });
+
   it('lights a bare disc of a strong colour at the stern, facing aft, as an engine’s mouth, not a lamp', () => {
     const { holder } = ship();
     holder.remove(...holder.children.filter((o) => /Engine/.test(o.material.name)));

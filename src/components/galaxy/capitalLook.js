@@ -57,6 +57,7 @@ const LIT_WINDOWS = /^MC_80_light_Met$/;
 // (the kinds whose own maps are next to flat colour at a ship's size, a few
 // KB each, or one scratched metal tiled over the whole of it: plated over them)
 const PLATE_ALL = new Set(['acclamator', 'executor', 'gozanti']);
+const STOCK_METAL = /^ScratchedMetal/;
 const LAMP = /glow|lamp|bluelight|redlight|whitelight|beacon/i;
 // (black and glass: no paint to layer)
 const BARE_BLACK = /^dark$|glass/i;
@@ -290,7 +291,15 @@ export function dressCapital(holder, kind, { plating = true, size = 2048, lite =
       }
       // a kind whose own maps are next to flat colour: plated over them
       if (PLATE_ALL.has(kind) && m.map && !m.transparent && !ENGINE_NAME.test(m.name)) {
-        const p = painted(m.clone());
+        const c = m.clone();
+        // (a stock scratched metal tiled over the whole ship, the Executor's,
+        // its scratches a metre long on a hull of nineteen kilometres: not
+        // its paint, which is its side's grey, the darker for the model's dark one)
+        if (STOCK_METAL.test(m.name)) {
+          c.map = c.metalnessMap = c.roughnessMap = null;
+          c.color.set(tint).multiplyScalar(m.color.r < 0.5 ? 0.45 : 1);
+        }
+        const p = painted(c);
         if (plating) plate(p, unit, length, { size, lite });
         return p;
       }
