@@ -163,7 +163,8 @@ async function galaxyBolt(page) {
   await galaxyTarget(page);
   await page.evaluate(() => window.__galaxyDebug.arms().select(0));
   let takers = [];
-  for (let i = 0; i < 20 && !takers.length; i++) {
+  // (held 6 s at most: a page drawn in software under load is slow to fire)
+  for (let i = 0; i < 60 && !takers.length; i++) {
     takers = await page.evaluate(() => ((window.__galaxyDebug.state.fireBtn = true), [...window.__takers]));
     await page.waitForTimeout(100);
   }
