@@ -313,6 +313,11 @@ async function run(viewport, touch) {
     await page.evaluate(() => document.activeElement?.blur?.());
     await page.keyboard.press('t');
     await settle(page, 500);
+    // (the lock's bracket, where it's drawn: its words, and the way-to-go's, at the HUD's floor)
+    if (await G(() => Boolean(document.querySelector('.universe-lock[data-on]')))) {
+      const small = await smallText(page, '.universe-hud');
+      say(small.length === 0, `the lock’s words are 0.7 rem at least${small.length ? `: ${small.join(', ')}` : ''}`);
+    }
     if (!touch && viewport.width > 1100) {
       const name = await G(() => document.querySelector('.fc-target-name')?.textContent ?? '');
       say(name.length > 0, `T locks a target and the cluster names it (${name})`);
