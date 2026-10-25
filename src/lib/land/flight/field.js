@@ -12,14 +12,34 @@
 // cone dug into the land, the Pit of Carkoon's kind) and `step` (metres:
 // every height snapped to that grid, so the pixel world is terraces).
 //
+// A round planet (a spec with `round`: a generated one) is none of that.
+// Its ground is a field of the direction on its sphere (sphereField.js),
+// and the flight's (x, z) is the chart round its landing spot (sphere.js's
+// exponential map): (x, z) walks hypot(x, z) metres along the ground that
+// way, so 2πR on it comes round to where it began. Its POIs are levelled on
+// the sphere, by their `dir`.
+//
 // Pure: runs in Node and in the flight's terrain worker.
 //
 //   planetField(spec) → { heightAt(x, z) → metres, biomeAt(x, z) → index of the heaviest }
+//   fieldKey(spec) → string: what a field is cached by. A plane's is its id;
+//     a round one's is its id and its spot, since one planet landed at two
+//     spots is two charts
 
 import { fieldAt } from '../layers.js';
 import { flatten } from '../flats.js';
 import { biomeWeights } from './biomes.js';
 import { noiseFor } from './fnl.js';
+import { chartOf } from './sphere.js';
+import { sphereField } from './sphereField.js';
+
+export const fieldKey = (spec) => (spec.round ? `${spec.id}@${spec.round.at.join(',')}` : spec.id);
+
+function roundField(spec) {
+  const ground = sphereField(spec);
+  const { toDir } = chartOf(spec.round.at, spec.round.radius);
+  return { heightAt: (x, z) => ground.heightAt(toDir(x, z)), biomeAt: (x, z) => ground.biomeAt(toDir(x, z)) };
+}
 
 function stackOf(spec, b, i) {
   const seed = spec.seed + i * 101;
@@ -33,6 +53,7 @@ function stackOf(spec, b, i) {
 }
 
 export function planetField(spec) {
+  if (spec.round) return roundField(spec);
   const stacks = spec.biomes.map((b, i) => stackOf(spec, b, i));
   const raw = (x, z) => {
     const w = biomeWeights(spec, x, z);
