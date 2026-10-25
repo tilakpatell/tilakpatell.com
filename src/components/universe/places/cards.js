@@ -23,6 +23,11 @@
 //   name } | null), system (its system's id, a system's own; null for a
 //   thing), span (a system's reach, else null), move (the thing's card's, else
 //   null) }
+// placeLook(kind, row) → { kind, sub, name, r, reach, deep, solid, color, move }:
+//   the card's own, from the row alone (kind is placeIn's), with no words
+//   made and no system looked for, for a row round the ship (around.js)
+// placeReach(kind, row) → the card's reach, from the row alone, making nothing
+// thingCardOf(kind) → THING_CARDS' row for a thing's kind, or the default's
 
 import { parseSpaceId } from '../../../lib/space/address.js';
 import { THING_KINDS } from '../../expanse/shared/gen';
@@ -55,6 +60,28 @@ function systemOf({ kind, row, sector, system }) {
   return sector?.systems?.[parseSpaceId(row.id)?.system];
 }
 
+// (a lattice thing, a sector's extra or a legacy wonder; a kind with no row
+// of its own, or one named like an object's own key, takes the default's)
+export const thingCardOf = (kind) => (Object.hasOwn(THING_CARDS, kind) ? THING_CARDS[kind] : THING_CARDS.default);
+
+export function placeReach(kind, row) {
+  if (kind === 'system') return row.star.size * 2;
+  if (kind === 'planet') return Math.max(1.9 * row.radius, row.ringBand?.outer ?? 0);
+  if (kind === 'moon') return 1.9 * row.radius;
+  if (kind === 'station') return 1.5 * row.size;
+  return thingCardOf(row.kind).solid ? 1.2 * row.size : 0;
+}
+
+export function placeLook(kind, row) {
+  const reach = placeReach(kind, row);
+  if (kind === 'system') return { kind: 'star', sub: row.star.class, name: row.name, r: row.star.size, reach, deep: true, solid: true, color: row.star.color, move: null };
+  if (kind === 'planet') return { kind: 'world', sub: row.type, name: row.name, r: row.radius, reach, deep: false, solid: true, color: row.color, move: null };
+  if (kind === 'moon') return { kind: 'world', sub: row.type, name: row.name, r: row.radius, reach, deep: false, solid: true, color: MOON_COLOR[row.type], move: null };
+  if (kind === 'station') return { kind: 'station', sub: 'station', name: row.name, r: row.size, reach, deep: false, solid: true, color: STATION_COLOR, move: null };
+  const c = thingCardOf(row.kind);
+  return { kind: 'wonder', sub: row.kind, name: row.name ?? c.type, r: c.solid ? row.size : 0, reach, deep: true, solid: c.solid, color: c.color, move: c.move ?? null };
+}
+
 function systemCard(row, sector) {
   const star = PLACE.star[row.star.class];
   const station = Boolean(sector?.stations?.some((st) => st.i === row.i));
@@ -66,16 +93,10 @@ function systemCard(row, sector) {
   if (row.hazard) facts.push([PLACE.facts.hazard, PLACE.hazard[row.hazard]]);
   return {
     ...NONE,
-    kind: 'star',
-    sub: row.star.class,
-    name: row.name,
+    ...placeLook('system', row),
     type: PLACE.system(star),
     about: PLACE.about.system({ star, planets: row.planets.length, station, held: PLACE.held(row.faction.name) }),
     facts,
-    color: row.star.color,
-    r: row.star.size,
-    reach: row.star.size * 2,
-    deep: true,
     faction: row.faction,
     system: row.id,
     span: row.reach,
@@ -93,16 +114,10 @@ function planetCard(row, sys) {
   if (rings) facts.push([PLACE.facts.rings, PLACE.yes]);
   return {
     ...NONE,
-    kind: 'world',
-    sub: row.type,
-    name: row.name,
+    ...placeLook('planet', row),
     type,
     about: PLACE.about.planet({ type, system: sys.name, moons, rings }),
     facts,
-    color: row.color,
-    r: row.radius,
-    reach: Math.max(1.9 * row.radius, row.ringBand?.outer ?? 0),
-    deep: false,
     land: !GIANTS.has(row.type),
     faction: sys.faction ?? null,
     system: sys.id,
@@ -113,19 +128,13 @@ function moonCard(row, planet, sys) {
   const type = PLACE.moon[row.type];
   return {
     ...NONE,
-    kind: 'world',
-    sub: row.type,
-    name: row.name,
+    ...placeLook('moon', row),
     type,
     about: PLACE.about.moon({ type, planet: planet.name, system: sys.name }),
     facts: [
       [PLACE.facts.planet, planet.name],
       [PLACE.facts.system, sys.name],
     ],
-    color: MOON_COLOR[row.type],
-    r: row.radius,
-    reach: 1.9 * row.radius,
-    deep: false,
     land: true,
     faction: sys.faction ?? null,
     system: sys.id,
@@ -136,9 +145,7 @@ function stationCard(row, sys) {
   const faction = row.faction ?? sys.faction;
   return {
     ...NONE,
-    kind: 'station',
-    sub: 'station',
-    name: row.name,
+    ...placeLook('station', row),
     type: PLACE.station,
     about: PLACE.about.station({ system: sys.name, held: PLACE.held(faction.name) }),
     facts: [
@@ -146,34 +153,20 @@ function stationCard(row, sys) {
       [PLACE.facts.held, faction.name],
       [PLACE.facts.traffic, PLACE.traffic(sys.traffic)],
     ],
-    color: STATION_COLOR,
-    r: row.size,
-    reach: 1.5 * row.size,
-    deep: false,
     dock: true,
     faction,
     system: row.system ?? sys.id,
   };
 }
 
-// (a lattice thing, a sector's extra or a legacy wonder; a kind with no row
-// of its own, or one named like an object's own key, takes the default's)
-function thingCard(row) {
-  const c = Object.hasOwn(THING_CARDS, row.kind) ? THING_CARDS[row.kind] : THING_CARDS.default;
+function thingCard(kind, row) {
+  const c = thingCardOf(row.kind);
   return {
     ...NONE,
-    kind: 'wonder',
-    sub: row.kind,
-    name: row.name ?? c.type,
+    ...placeLook(kind, row),
     type: c.type,
     about: c.about,
-    color: c.color,
-    r: c.solid ? row.size : 0,
-    reach: c.solid ? 1.2 * row.size : 0,
-    deep: true,
-    solid: c.solid,
     faction: row.faction ?? null,
-    move: c.move ?? null,
   };
 }
 
@@ -181,7 +174,7 @@ export function placeCard(found) {
   if (!found?.row) return null;
   const { kind, row } = found;
   if (kind === 'system') return systemCard(row, found.sector);
-  if (kind !== 'planet' && kind !== 'moon' && kind !== 'station') return thingCard(row);
+  if (kind !== 'planet' && kind !== 'moon' && kind !== 'station') return thingCard(kind, row);
   const sys = systemOf(found);
   if (!sys) return null;
   if (kind === 'planet') return planetCard(row, sys);

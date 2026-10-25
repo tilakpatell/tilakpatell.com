@@ -3,7 +3,7 @@ import { PLACE } from '../words';
 import { PARK_GAP, clearOf } from '../ship';
 import { THING_KINDS, WONDER_KINDS, fullSector, placeIn, thingRow, UNIVERSE } from '../../expanse/shared/gen';
 import { parseSpaceId } from '../../../lib/space/address';
-import { THING_CARDS, placeCard } from './cards';
+import { THING_CARDS, placeCard, placeLook, placeReach } from './cards';
 
 const s = fullSector(UNIVERSE, 1, 0, 0);
 const found = (id) => {
@@ -125,5 +125,21 @@ describe('the rest of a generated place’s card', () => {
     expect(PLACE.traffic(0.9)).toBe('Busy');
     expect(PLACE.traffic(0.4)).toBe('Some');
     expect(PLACE.traffic(0.1)).toBe('Quiet');
+  });
+});
+
+describe('a generated place’s look, without its card', () => {
+  it('is the card’s own, from the row alone, for every kind', () => {
+    const planets = s.systems.flatMap((x) => x.planets);
+    const mooned = planets.find((q) => q.moonList.length);
+    const ids = [s.systems[0].id, mooned.id, mooned.moonList[0].id, planets.find((q) => q.ringBand).id, s.stations[0].id];
+    const rows = [...ids.map((id) => found(id)), { kind: 'thing', row: thingRow(s, 0), sector: s }, { kind: 'wonder', row: { id: 'E:2,0:w0', kind: 'nebula', name: 'Veil', at: [1, 2, 3], size: 2000 }, sector: s }];
+    for (const f of rows) {
+      const card = placeCard(f);
+      const look = placeLook(f.kind, f.row);
+      expect(Object.keys(look).sort(), f.row.id).toEqual(['color', 'deep', 'kind', 'move', 'name', 'r', 'reach', 'solid', 'sub']);
+      expect(card, f.row.id).toMatchObject(look);
+      expect(placeReach(f.kind, f.row), f.row.id).toBe(card.reach);
+    }
   });
 });
