@@ -1107,10 +1107,15 @@ export const MEMORY_COLORS = { blue: '#52d6ff', purple: '#b47cff', red: '#ff4d5e
 // the universe map, or for the sector's four dialled too): the small ones'; a big planet's are retired with TASKS'
 export const PLANET_TASKS = new Set(DESTINATIONS.filter((d) => isPlanet(d.id) && !isBigPlanet(d.id)).flatMap((d) => d.tasks.map((t) => t.id)));
 
+// a thing to do's hint as this player's told it: on a touch screen, a row
+// whose hint names a key (F, E) has its buttons' words too (`touch`)
+export const hintOf = (t, touch = false) => (touch && t.touch) || t.hint;
+
 // What's done and what's next. `done` is the ids finished, in any order.
 // `skip` (ids, or a Set) is passed over when picking what's next, but still
-// counts: C-137 skips PLANET_TASKS.
-export function progress(done = [], { skip = [] } = {}) {
+// counts: C-137 skips PLANET_TASKS. On `touch`, what's next is said with its
+// buttons (hintOf).
+export function progress(done = [], { skip = [], touch = false } = {}) {
   const passed = new Set(skip);
   const finished = TASKS.filter((t) => done.includes(t.id));
   const left = TASKS.filter((t) => !done.includes(t.id));
@@ -1123,7 +1128,7 @@ export function progress(done = [], { skip = [] } = {}) {
   const named = (ds) => ds.map((d) => d.name.replace(/^The /, 'the ')).reduce((s, n, i, a) => (i ? `${s}${i === a.length - 1 ? ' and ' : ', '}${n}` : n), '');
   const onGun = gun.length ? `${named(gun)}, which ${gun.length === 1 ? 'is' : 'are'} on the portal gun too` : '';
   const rest = left.every((t) => PLANET_TASKS.has(t.id)) ? `Everything here’s done. The rest are on the planets in the Rick and Morty sector of the universe map: ${[named(map), onGun].filter(Boolean).join(', and ')}.` : 'Everything here’s done.';
-  return { done: finished.map((t) => t.id), count: finished.length, total: TASKS.length, next, objective: next ? next.hint : left.length ? rest : 'Everything’s done. Wubba lubba dub dub.' };
+  return { done: finished.map((t) => t.id), count: finished.length, total: TASKS.length, next, objective: next ? hintOf(next, touch) : left.length ? rest : 'Everything’s done. Wubba lubba dub dub.' };
 }
 
 // ── the pop quiz ──

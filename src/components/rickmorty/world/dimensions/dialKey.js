@@ -26,3 +26,8 @@ export function dialPad(now, before) {
   if (now.b && !was.b) out.push('Escape');
   return out;
 }
+
+// …and on a touch screen, with none of these keys, what the dial's foot says
+// in their place (RmHud passes it there; a keyboard keeps the dial's own, or
+// Rick's rooms'): a tap picks a row, the × at the top puts it away
+export const TOUCH_FOOT = { gun: 'Tap a place to set the dial, or × to put the gun down', rooms: 'Tap one to pick it, or × to back out' };

@@ -254,3 +254,29 @@ describe('C-137: the planets’ things to do, left to the planets', () => {
     expect(progress(TASKS.map((t) => t.id), { skip: PLANET_TASKS }).objective).toBe('Everything’s done. Wubba lubba dub dub.');
   });
 });
+
+describe('C-137: the list on a touch screen', () => {
+  it('on touch a row’s hint names no key', () => {
+    // (the three whose hints name a key: the duels' F, the pond's E)
+    const KEYED = { evilrick: /\bF fires\b/, blooddome: /\bF fires\b/, pond: /\bE picks a stone up\b/ };
+    const key = /\b[EFP]\b|\b(?:Tab|Esc|Space|Shift|Enter)\b/;
+    const keys = listOf(null, []).rows;
+    const touch = listOf(null, [], { touch: true }).rows;
+    for (const [id, said] of Object.entries(KEYED)) expect(keys.find((r) => r.id === id).hint, id).toMatch(said);
+    for (const r of touch) {
+      expect(r.hint, r.id).not.toMatch(key);
+      expect(r.hint, r.id).not.toMatch(/!|'|—/);
+    }
+    // (their buttons, as the touch HUD has them: the star in a fight, the pond's Skip a stone)
+    expect(touch.find((r) => r.id === 'evilrick').hint).toBe('Dial Evil Rick’s lair on the portal gun, free three Mortys from the dome, and when he comes for you, fight: the star fires, and he hits hard. Keep moving.');
+    expect(touch.find((r) => r.id === 'blooddome').hint).toBe('Dial the Blood Dome on the portal gun, step into the ring, and beat Hemorrhage: the star fires, and he hits hard. Don’t stand still.');
+    expect(touch.find((r) => r.id === 'pond').hint).toBe('The park’s north of the Smiths’ back yard, past the back road. At the pond, tap Skip a stone to pick one up, then tap again to throw it, with the bar in the green.');
+    expect(touch.find((r) => r.id === 'pond').hint).toContain(`tap ${HOTSPOTS.find((h) => h.id === 'pond').verb} `);
+    // every other row is as a keyboard has it
+    for (const r of touch) if (!KEYED[r.id]) expect(r.hint, r.id).toBe(keys.find((k) => k.id === r.id).hint);
+    // and the objective line, when the pond's what's next, says it as the list does
+    const allButPond = TASKS.filter((t) => t.id !== 'pond').map((t) => t.id);
+    expect(progress(allButPond, { touch: true }).objective).toBe(touch.find((r) => r.id === 'pond').hint);
+    expect(progress(allButPond).objective).toBe(keys.find((r) => r.id === 'pond').hint);
+  });
+});

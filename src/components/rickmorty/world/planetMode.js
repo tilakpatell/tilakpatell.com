@@ -6,7 +6,7 @@
 
 import { byId } from '../../universe/universes';
 import { DIAL, GAME_SPOTS, destinationById, isPlanet, planetStart } from './dimensions/destinations';
-import { TASKS, progress } from './rules';
+import { TASKS, hintOf, progress } from './rules';
 
 export const WAY_HOME = 'Back to space';
 export const ALL_DONE_HERE = 'All done here. Back through the portal to space.';
@@ -52,13 +52,14 @@ export function planetProgress(planet, done = []) {
 export const backLink = (planet) => (planet ? { to: `/universe/${planet.id}`, label: WAY_HOME, replace: true } : { to: '/', label: 'Back to the site', replace: false });
 
 // the list (M): in C-137, every thing to do with where to go for it; on a
-// planet, its own things to do as said there, and one line for the rest
-export function listOf(planet, done = []) {
-  const row = (t, hint = t.hint) => ({ id: t.id, name: t.name, hint, done: done.includes(t.id) });
+// planet, its own things to do as said there, and one line for the rest. On
+// `touch`, a row whose hint names a key says its buttons instead (hintOf)
+export function listOf(planet, done = [], { touch = false } = {}) {
+  const row = (t, hint) => ({ id: t.id, name: t.name, hint, done: done.includes(t.id) });
   // (in C-137 the four planets on the gun are dialled too: their rows say so)
-  if (!planet) return { label: 'Things to do in Dimension C-137', rows: TASKS.map((t) => row(t, onTheGun(t.hint))), rest: null };
+  if (!planet) return { label: 'Things to do in Dimension C-137', rows: TASKS.map((t) => row(t, onTheGun(hintOf(t, touch)))), rest: null };
   const { count, total } = progress(done);
-  return { label: `Things to do on ${inLine(planet.name)}`, rows: planet.tasks.map((t) => row(t, hereHint(t.hint))), rest: `${count} of ${total} done in all, with Dimension C-137’s.` };
+  return { label: `Things to do on ${inLine(planet.name)}`, rows: planet.tasks.map((t) => row(t, hereHint(hintOf(t, touch)))), rest: `${count} of ${total} done in all, with Dimension C-137’s.` };
 }
 
 // what a press at a game's own spot does now (`done` the tasks done; `deal`

@@ -359,8 +359,9 @@ export const TOWN_PEOPLE = [
 ];
 // (the agent at the cinema stands still: a person in the way, talked to)
 export const TOWN_STANDING = [{ id: 'cinemaagent', who: 'fedagent', x: cinema.x + 6.2, z: cinema.front - 4, face: Math.PI / 2 }];
-// the things to do the town adds (rules.js's TASKS, at the end of the list)
+// the things to do the town adds (rules.js's TASKS, at the end of the list;
+// the pond's `touch`, its hint on a touch screen: rules.js's hintOf)
 export const TOWN_TASKS = [
-  { id: 'pond', name: 'Skip a stone five times', hint: 'The park’s north of the Smiths’ back yard, past the back road. At the pond, E picks a stone up; E again throws it, with the bar in the green.' },
+  { id: 'pond', name: 'Skip a stone five times', hint: 'The park’s north of the Smiths’ back yard, past the back road. At the pond, E picks a stone up; E again throws it, with the bar in the green.', touch: 'The park’s north of the Smiths’ back yard, past the back road. At the pond, tap Skip a stone to pick one up, then tap again to throw it, with the bar in the green.' },
   { id: 'posters', name: 'Read every missing-cat poster', hint: 'Someone’s put posters up round town: on four street lights, one near each corner, and on the bandstand. Read all five.' },
 ];

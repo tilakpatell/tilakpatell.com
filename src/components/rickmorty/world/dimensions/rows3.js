@@ -36,7 +36,7 @@ export const ROWS = [
       { id: 'crate-b', dx: 7, dz: 4, w: 2, d: 2 },
     ],
     tasks: [
-      { id: 'evilrick', name: 'Beat Evil Rick', hint: 'Dial Evil Rick’s lair on the portal gun, free three Mortys from the dome, and when he comes for you, fight: F fires, and he hits hard. Keep moving.' },
+      { id: 'evilrick', name: 'Beat Evil Rick', hint: 'Dial Evil Rick’s lair on the portal gun, free three Mortys from the dome, and when he comes for you, fight: F fires, and he hits hard. Keep moving.', touch: 'Dial Evil Rick’s lair on the portal gun, free three Mortys from the dome, and when he comes for you, fight: the star fires, and he hits hard. Keep moving.' },
       { id: 'evilmorty', name: 'Find out who was behind him', hint: 'Once Evil Rick is down, talk to the Morty with the eyepatch before he leaves.' },
     ],
     say: {
@@ -142,7 +142,7 @@ export const ROWS = [
       { id: 'wreck-b', dx: -24, dz: -10, w: 4, d: 2.4 },
       { id: 'sign', dx: 0, dz: 15.6, w: 2.4, d: 0.4 },
     ],
-    tasks: [{ id: 'blooddome', name: 'Win in the Blood Dome', hint: 'Dial the Blood Dome on the portal gun, step into the ring, and beat Hemorrhage: F fires, and he hits hard. Don’t stand still.' }],
+    tasks: [{ id: 'blooddome', name: 'Win in the Blood Dome', hint: 'Dial the Blood Dome on the portal gun, step into the ring, and beat Hemorrhage: F fires, and he hits hard. Don’t stand still.', touch: 'Dial the Blood Dome on the portal gun, step into the ring, and beat Hemorrhage: the star fires, and he hits hard. Don’t stand still.' }],
     say: {
       ring: { who: 'Hemorrhage', text: '“A boy walks into my ring.” The Death Stalkers start to chant. “Then a boy fights.” He comes down off the gate.' },
       bsummer: { who: 'Summer', text: '“I live here now, kind of. It’s a whole thing. Rick’s doing a whole thing too, with an arm. Don’t ask.”' },

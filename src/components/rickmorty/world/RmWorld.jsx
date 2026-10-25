@@ -541,8 +541,8 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
   const home = arriveAt(useLocation().state);
   const navigate = useNavigate();
   if (!sim.current) sim.current = newSim(planet ?? home ?? START, !!planet || !!home);
-  // (C-137's next is never a planet's: they're played as planets, landed on or, the sector's four, dialled)
-  const prog = planet ? planetProgress(planet, done) : progress(done, { skip: PLANET_TASKS });
+  // (C-137's next is never a planet's: they're played as planets, landed on or, the sector's four, dialled; on touch, said with its buttons)
+  const prog = planet ? planetProgress(planet, done) : progress(done, { skip: PLANET_TASKS, touch });
   const progRef = useRef(prog);
   progRef.current = prog;
   // the story's objective first, and its task for the map's marker (C-137's; a planet keeps its own)
