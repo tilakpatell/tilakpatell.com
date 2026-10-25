@@ -12,15 +12,17 @@
 //     its fade (from 88% of it: world.css's rm-toast) starts once it's read.
 //   readFor(t, now) → ms till `t` has been read: a line said, its readMs, at
 //     most as long as it's up; anything else, nought.
-//   createToastSlot({ show, hide, now, later, cancel }) → { put(t, { after, onShow }), due(), reading(), clear() }
+//   createToastSlot({ show, hide, now, later, cancel }) → { put(t, { after, onShow }), due(), pending(), reading(), clear() }
 //     `show(t)` puts `t` (stamped `at`) up, and `hide(t)` takes it down at the
 //     end of its own life, never one put up since; `after`: wait till what's up has
 //     been read; `onShow()`: run as `t` goes up. One waits at a time: a later
 //     one takes its place (and the onShow of what it put behind runs as it
 //     goes up), and it waits on behind a line said meanwhile. `due()`: ms
-//     till what waits goes up (nought with nothing waiting). `reading()`:
-//     whether a line that's up is still being read (a passer-by's bark waits
-//     for it). `clear()` drops what waits.
+//     till what waits goes up (nought with nothing waiting). `pending()`:
+//     what waits (null with nothing waiting: a planet's page that leaves
+//     keeps the story's line for the next). `reading()`: whether a line
+//     that's up is still being read (a passer-by's bark waits for it).
+//     `clear()` drops what waits.
 
 export const TOAST_MS = { say: 5600, sayMost: 14000, bad: 3400, other: 4400 };
 const FADE_AT = 0.88;
@@ -71,6 +73,7 @@ export function createToastSlot({ show, hide = () => {}, now = () => performance
       if (timer == null) next();
     },
     due: () => (waiting ? left() : 0),
+    pending: () => waiting,
     reading: () => left() > 0,
     clear() {
       if (timer != null) cancel(timer);

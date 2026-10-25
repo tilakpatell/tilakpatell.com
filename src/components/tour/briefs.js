@@ -620,7 +620,7 @@ export const BRIEFS = {
     {
       id: 'walk',
       title: 'Walking',
-      text: 'The Smiths’ house, Rick’s garage, the school, Shoney’s and Dr. Wong’s office are along the street; Blips and Chitz is through the portal.',
+      text: 'The Smiths’ house, Rick’s garage, the school, Shoney’s and Dr. Wong’s office are along the street; Rick’s portal in the garage goes wherever his gun is dialled.',
       keys: [...WALK, ['Space', 'Jump']],
       touch: WALK_TOUCH,
     },

@@ -22,6 +22,7 @@ import { setShipVoice, shipVoiceOn, stopSpeaking } from './shipVoice';
 import { Title, Toast } from './WorldCards';
 import { EPISODES } from '../adventure/episodes';
 import EpisodeCard from '../adventure/EpisodeCard';
+import { listNext, listTab } from '../adventure/hud';
 import StoryList from '../adventure/StoryList';
 import { useAdventure } from '../adventure/useAdventure';
 import { homeLink } from '../adventure/ways';
@@ -531,7 +532,7 @@ export default function RmHud({
         )}
       </div>
 
-      {list && <ThingsToDo box={listBox} prog={prog} done={done} onClose={closeList} back={back} planet={planet} />}
+      {list && <ThingsToDo box={listBox} prog={prog} done={done} onClose={closeList} back={back} planet={planet} here={hud.area} />}
     </>
   );
 }
@@ -559,10 +560,12 @@ function EmoteWheel({ hover, touch, onPick, onClose }) {
 // and every thing to do, ticked when it's done, with where to go for the rest
 // (on a planet, its own and a line for the rest: ./planetMode.js's listOf);
 // then the cruiser's voice, and Free roam (every place on the dial open).
-function ThingsToDo({ box, prog, done, onClose, back, planet }) {
+function ThingsToDo({ box, prog, done, onClose, back, planet, here }) {
   const [voice, setVoice] = useState(shipVoiceOn);
-  const [tab, setTab] = useState('story');
   const story = useAdventure();
+  // (the Story tab while there's a story to follow, the Checklist once it's over)
+  const [tab, setTab] = useState(() => listTab(story.state));
+  const over = listTab(story.state) === 'checklist';
   // (the Citadel's scenes made, to tick its step if made before it came up)
   const [citadel] = useState(() => local.get('tp-citadel-done', []));
   const { label, rows, rest } = listOf(planet, done);
@@ -588,7 +591,7 @@ function ThingsToDo({ box, prog, done, onClose, back, planet }) {
         ))}
       </div>
       <div className="rm-list-panel" id="rm-list-panel" role="tabpanel" aria-labelledby={`rm-tab-${tab}`}>
-        {tab === 'story' ? <StoryList state={story.state} tasks={done} citadel={citadel} /> : <Checklist rows={rows} rest={rest} next={prog.next} />}
+        {tab === 'story' ? <StoryList state={story.state} tasks={done} citadel={citadel} /> : <Checklist rows={rows} rest={rest} next={planet ? prog.next : listNext(story.state, prog.next, rows, { here })} />}
       </div>
       <label className="rm-list-switch">
         <input
@@ -602,13 +605,15 @@ function ThingsToDo({ box, prog, done, onClose, back, planet }) {
         />
         <span>The ship’s voice</span>
       </label>
-      <label className="rm-list-switch">
-        <input type="checkbox" checked={story.state.freeRoam} onChange={(e) => story.setFreeRoam(e.target.checked)} />
-        <span>
-          Free roam
-          <span className="rm-list-sub">Every place on the dial, open.</span>
-        </span>
-      </label>
+      {!over && (
+        <label className="rm-list-switch">
+          <input type="checkbox" checked={story.state.freeRoam} onChange={(e) => story.setFreeRoam(e.target.checked)} />
+          <span>
+            Free roam
+            <span className="rm-list-sub">Every place on the dial, open.</span>
+          </span>
+        </label>
+      )}
       <RouterLink to={back.to} replace={back.replace} className="rm-list-back">
         <RiArrowLeftLine aria-hidden="true" /> {back.label}
       </RouterLink>

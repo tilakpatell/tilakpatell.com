@@ -4,7 +4,7 @@
 // Fantasy World's climb and Froopyland, and the Citadel.
 /* global window, document */
 import { COURSE, chaseStart, newChase } from '../../src/components/rickmorty/world/games/chase.js';
-import { BASE, OUT, N, check, done, built, goto, use, story, reads, WIPED, SMALL, HEAT, DEALS, JERRY, throughPortal, toast, inArea, cardFor, at, opens, warpUse, caught, before, chasing, playTo, game, homeOf, spotAt, wayInOf, place, PRIME, FAIRY, CITADEL, SECTOR, CITADEL_LINE, citadelUp, citadelReads, citadelToast, linksTo, standOn, later, PLACES } from './helpers.mjs';
+import { BASE, OUT, N, check, done, built, goto, use, story, reads, WIPED, SMALL, HEAT, DEALS, JERRY, throughPortal, toast, inArea, cardFor, at, opens, warpUse, caught, before, chasing, playTo, game, homeOf, spotAt, wayInOf, place, PRIME, FAIRY, CITADEL, SECTOR, CITADEL_LINE, citadelUp, citadelReads, citadelToast, linksTo, standOn, later, promptIs, PLACES } from './helpers.mjs';
 
 export const LATE = {
   // a new visitor plays episode 5: the cruiser's chase (taking off ticks
@@ -132,6 +132,8 @@ export const LATE = {
       });
     await warpUse(page, 'needful', 'typewriter', ...spotAt('needful', 'typewriter', Math.PI));
     await seen('typewriter', 'bad');
+    // (a curse seen is left be: its press only says its line again, and the prompt says so)
+    await promptIs(page, PLACES.spot('needful', 'typewriter').label, 'Look', 'with the typewriter seen cursed,');
     await page.locator('.rm-cluster[aria-label="The deal"][data-on]').waitFor({ timeout: 10000 }).catch(() => {
       throw new Error('no deal meter on the HUD');
     });
@@ -149,6 +151,8 @@ export const LATE = {
     // no looks left: the clock chanced, and cursed
     await warpUse(page, 'needful', 'shopclock', ...spotAt('needful', 'shopclock', N, 0));
     await seen('shopclock', 'blind');
+    // (chanced: the next press takes it, and the prompt says so)
+    await promptIs(page, PLACES.spot('needful', 'shopclock').label, PLACES.dest('needful').deal.take, 'with the clock chanced,');
     await use(page, 'shopclock');
     await caught(page, wayInOf('needful'));
     check((await game(page, 'needful', 'deal')).phase === 'idle' && !(await done(page)).includes('needful'), 'a cursed thing taken counted');
@@ -224,10 +228,14 @@ export const LATE = {
       throw new Error('no find meter on the HUD');
     });
     if (OUT) await page.screenshot({ path: `${OUT}/episode-7-jerryboree.png` });
+    // (heard: the next press takes him, and the prompt says so; ruled out, he's only talked to)
+    const tv = PLACES.spot('jerryboree', 'jerrytv').label;
+    await promptIs(page, tv, PLACES.dest('jerryboree').find.take, 'with the Jerry at the TV heard,');
     await use(page, 'jerrytv');
     await page.waitForFunction(() => window.__C137__.api.act('jerryboree', 'find').wrong.includes('jerrytv'), null, { timeout: 30000, polling: 100 }).catch(() => {
       throw new Error('a wrong Jerry picked wasn’t counted wrong');
     });
+    await promptIs(page, tv, 'Talk', 'with the Jerry at the TV ruled out,');
     const left = (await game(page, 'jerryboree', 'find')).left;
     check(left <= 30 && !(await done(page)).includes('jerryboree'), `a wrong Jerry picked left ${left} s, or counted`);
     // out of time: back at the door, the find idle, nothing done

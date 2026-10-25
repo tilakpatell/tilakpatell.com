@@ -7,6 +7,8 @@
 //
 //   newCheer() → cheer
 //   stepCheer(cheer, { done, t }) → cheer   `hop`: the crowd hops this step
+//   cheerTask(d) → the task whose win a place's crowd cheers: its game's, or
+//     its duel's (a hunter's `hunt.duel`), or null
 
 export const CHEER = Object.freeze({
   s: 6, // seconds the cheer lasts
@@ -21,4 +23,10 @@ export function stepCheer(c, { done, t }) {
   if (!n.seen && done) Object.assign(n, { seen: true, till: t + CHEER.s, next: t });
   if (t <= n.till + 1e-9 && t >= n.next - 1e-9) Object.assign(n, { hop: true, next: t + CHEER.beat });
   return n;
+}
+
+const GAMES = ['power', 'deal', 'freeze', 'find', 'sequence', 'climb', 'rhythm'];
+export function cheerTask(d) {
+  const game = GAMES.map((k) => d[k]).find(Boolean) ?? d.people.find((p) => p.ai?.hunt?.duel)?.ai.hunt.duel;
+  return game?.task ?? null;
 }

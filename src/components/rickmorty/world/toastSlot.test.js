@@ -149,6 +149,25 @@ describe('the toast slot', () => {
     expect(slot.due()).toBe(0);
   });
 
+  it('pending() returns the waiting toast', () => {
+    // (a planet's page that leaves with the story's line still waiting keeps it for the next page)
+    const c = clock();
+    const { slot } = slotOn(c);
+    expect(slot.pending()).toBe(null);
+    slot.put(REVEAL);
+    expect(slot.pending()).toBe(null);
+    c.to(1000);
+    slot.put(DONE, { after: true });
+    slot.put(OUTRO, { after: true });
+    expect(slot.pending()).toBe(OUTRO);
+    c.to(READ);
+    expect(slot.pending()).toBe(null);
+    slot.put(REVEAL);
+    slot.put(OUTRO, { after: true });
+    slot.clear();
+    expect(slot.pending()).toBe(null);
+  });
+
   it('tells what waits that it’s gone up only once it has, and once', () => {
     const c = clock();
     const { slot, shown } = slotOn(c);

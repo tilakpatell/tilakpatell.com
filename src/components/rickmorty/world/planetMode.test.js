@@ -1,9 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import { AREAS, HOTSPOTS, LINKS, PLANET_TASKS, TASKS, areaAt, progress } from './rules';
 import { DESTINATIONS, PLANETS, destinationById, isBigPlanet, isPlanet, isWayHome } from './dimensions/destinations';
-import { ALL_DONE_HERE, WAY_HOME, backLink, boundOf, hereHint, inLine, listOf, planetOf, planetPage, planetProgress, relabel } from './planetMode';
+import { newDeal, stepDeal } from './games/deal';
+import { newFind, stepFind } from './games/find';
+import { ALL_DONE_HERE, WAY_HOME, backLink, boundOf, hereHint, inLine, listOf, planetOf, planetPage, planetProgress, playOf, relabel } from './planetMode';
 
 const prompt = (l) => ({ kind: 'link', id: l.id, name: l.label, verb: 'Step through', link: l });
+// a spot's prompt, as RmWorld's PROMPT has it
+const spotPrompt = (id) => {
+  const h = HOTSPOTS.find((o) => o.id === id);
+  return { kind: 'spot', id, name: h.label, verb: h.verb, spot: h };
+};
 
 describe('C-137: a planet played on its own', () => {
   it('knows each planet: where Morty starts, its way home, its name and things to do', () => {
@@ -86,7 +93,14 @@ describe('C-137: a planet played on its own', () => {
   it('lists everything in C-137, with where to go for it', () => {
     const l = listOf(null, ['cable']);
     expect(l).toMatchObject({ label: 'Things to do in Dimension C-137', rest: null });
-    expect(l.rows).toEqual(TASKS.map((t) => ({ id: t.id, name: t.name, hint: t.hint, done: t.id === 'cable' })));
+    // (the four planets on the gun: dialled, or landed on from the map)
+    const DIALLED = {
+      birdworld: 'Dial Bird World on the portal gun (or land on it from the universe map), and pick up the crystals round Birdperson’s house: three in the grass, and one up each clay tower, where the clay crumbles.',
+      gearworld: 'Dial Gear World on the portal gun (or land on it from the universe map), and wind the city’s cogs in the order the meter gives before the city runs down, with the gear police after you.',
+      pluto: 'Dial Pluto on the portal gun (or land on it from the universe map), and tell the king only the claims on his palace that are true: weigh up two at most, and Scroopy calls out a lie.',
+      squanch: 'Dial Planet Squanch on the portal gun (or land on it from the universe map), raise a glass at the wedding, and get back through the portal when the Federation arrives.',
+    };
+    expect(l.rows).toEqual(TASKS.map((t) => ({ id: t.id, name: t.name, hint: DIALLED[t.id] ?? t.hint, done: t.id === 'cable' })));
   });
 
   it('names the bench for what it does at the story’s last step: the gun put back, not a dimension picked', () => {
@@ -110,6 +124,78 @@ describe('C-137: a planet played on its own', () => {
     const spot = { kind: 'spot', id: HOTSPOTS[0].id, name: HOTSPOTS[0].label };
     expect(relabel(spot, { planet: purge, portal: 'x' })).toBe(spot);
     expect(relabel(null, { planet: purge })).toBeNull();
+  });
+
+  it('says a done game’s spots only look (or talk, where someone stands), and leaves anyone else’s verb be', () => {
+    const booth = spotPrompt('cablebooth');
+    expect(relabel(booth, { done: ['cablestudio'] })).toMatchObject({ id: 'cablebooth', name: 'The control booth', verb: 'Look' });
+    expect(relabel(booth, { done: [] })).toBe(booth);
+    expect(relabel(booth)).toBe(booth);
+    expect(booth.verb).toBe('Start the countdown');
+    expect(relabel(spotPrompt('set-ants'), { done: ['cablestudio'] }).verb).toBe('Look');
+    // (Heist-Con's plan, booths and badge only look; its recruits, who stand at their spots, talk)
+    const heist = ['heistplan', 'heistbooth', 'heistbadge', 'heister-a1', 'heister-b1'].map((id) => relabel(spotPrompt(id), { done: ['heistcon'] }).verb);
+    expect(heist).toEqual(['Look', 'Look', 'Look', 'Talk', 'Talk']);
+    expect(relabel(spotPrompt('claim-planet'), { done: ['pluto'] }).verb).toBe('Look');
+    expect(relabel(spotPrompt('gcog-nw'), { done: ['gearworld'] }).verb).toBe('Look');
+    expect(relabel(spotPrompt('zeepcells'), { done: ['microverse'] }).verb).toBe('Look');
+    // someone who isn't one of the game's things talks either way
+    for (const done of [[], ['heistcon']]) expect(relabel(spotPrompt('miles'), { done })).toMatchObject({ verb: 'Talk' });
+    expect(relabel(spotPrompt('flippynips'), { done: ['pluto'] }).verb).toBe('Talk');
+    expect(relabel(spotPrompt('gearhead'), { done: ['gearworld'] }).verb).toBe('Talk');
+    // (another task done is no matter)
+    expect(relabel(booth, { done: ['heistcon'] })).toBe(booth);
+  });
+
+  it('says a game’s second press takes the thing, once its first has looked it over or heard him', () => {
+    const shop = DESTINATIONS.find((d) => d.id === 'needful').deal;
+    // (cursed: all but the cream; two looks, so the aftershave's chanced blind)
+    const deal = ['typewriter', 'cream', 'aftershave'].reduce((g, use) => stepDeal(g, { use }), newDeal({ items: shop.items, bad: ['typewriter', 'aftershave', 'shopclock', 'shopmirror'], need: 1, looks: 2 }));
+    expect(deal.seen).toEqual({ typewriter: 'bad', cream: 'good', aftershave: 'blind' });
+    const at = (id, play) => relabel(spotPrompt(id), play).verb;
+    expect(['cream', 'aftershave', 'typewriter', 'shopclock'].map((id) => at(id, { deal }))).toEqual(['Take', 'Take', 'Look', 'Look over']);
+    // (not looked at, it's as it is; done, it only looks)
+    const clock = spotPrompt('shopclock');
+    expect(relabel(clock, { deal })).toBe(clock);
+    expect(at('cream', { deal, done: ['needful'] })).toBe('Look');
+    // Pluto's claims: one weighed true is told the king; one told, or a lie weighed, only looks
+    const claims = DESTINATIONS.find((d) => d.id === 'pluto').deal;
+    const weighed = (uses) => uses.reduce((g, use) => stepDeal(g, { use }), newDeal({ items: claims.items, bad: claims.bad, need: 2, looks: 2 }));
+    expect(at('claim-moons', { deal: weighed(['claim-moons']) })).toBe('Tell the king');
+    expect(at('claim-moons', { deal: weighed(['claim-moons', 'claim-moons']) })).toBe('Look');
+    expect(at('claim-growing', { deal: weighed(['claim-growing']) })).toBe('Look');
+    expect(at('claim-planet', { deal: weighed(['claim-moons']) })).toBe('Weigh up');
+    // the Jerryboree: a Jerry heard is taken by the next press; one ruled out, or not yet heard, talks
+    const jerrys = DESTINATIONS.find((d) => d.id === 'jerryboree').find;
+    const asked = (uses) => uses.reduce((g, use) => stepFind(g, { use }, 0), newFind({ items: jerrys.items, ours: 'jerryreal', s: 45, cost: 15 }));
+    expect(at('jerrytv', { find: asked(['jerrytv']) })).toBe('Take him');
+    expect(at('jerrytv', { find: asked(['jerrytv', 'jerrytv']) })).toBe('Talk');
+    expect(at('jerryrobe', { find: asked(['jerrytv']) })).toBe('Talk');
+    expect(at('jerrytv', { find: asked(['jerrytv']), done: ['jerryboree'] })).toBe('Talk');
+    // (a game not under way, lost or not begun, takes nothing)
+    expect(at('cream', { deal: { ...deal, phase: 'lost' } })).toBe('Look over');
+    expect(at('jerrytv', { find: { ...asked(['jerrytv']), phase: 'lost' } })).toBe('Talk');
+  });
+
+  it('reads the game a prompt’s at, for relabel: the deal’s snapshot at one of its things, the find’s at a Jerry', () => {
+    const calls = [];
+    const act = (area, name) => {
+      calls.push([area, name]);
+      return { phase: 'run', name };
+    };
+    expect(playOf(spotPrompt('cream'), act)).toEqual({ deal: { phase: 'run', name: 'deal' } });
+    expect(playOf(spotPrompt('claim-moons'), act)).toEqual({ deal: { phase: 'run', name: 'deal' } });
+    expect(playOf(spotPrompt('jerrytv'), act)).toEqual({ find: { phase: 'run', name: 'find' } });
+    expect(calls).toEqual([
+      ['needful', 'deal'],
+      ['pluto', 'deal'],
+      ['jerryboree', 'find'],
+    ]);
+    // (anything else asks nothing)
+    for (const p of [spotPrompt('needful'), spotPrompt('cablebooth'), prompt(LINKS[0]), null]) expect(playOf(p, act)).toEqual({});
+    expect(calls).toHaveLength(3);
+    // (a place with no stage yet says nothing)
+    expect(playOf(spotPrompt('cream'), () => undefined)).toEqual({ deal: null });
   });
 
   it('reaches every area, for others online (the places past the portal are out to z 4425)', () => {
@@ -156,6 +242,12 @@ describe('C-137: the planets’ things to do, left to the planets', () => {
     expect(p).toMatchObject({ count: here.length, total: TASKS.length, next: null });
     expect(p.objective).toMatch(/planets.*Rick and Morty sector/);
     expect(p.objective).not.toMatch(/!/);
+    // (it names what's left: the four on the gun only while they are)
+    expect(p.objective).toBe('Everything here’s done. The rest are on the planets in the Rick and Morty sector of the universe map: the Purge Planet, Snake Planet, Nuptia 4, the Immortality Field Resort and Cronenberg World, and Bird World, Gear World, Pluto and Planet Squanch, which are on the portal gun too.');
+    const four = progress([...here, 'birdworld', 'gearworld', 'pluto', 'squanch'], { skip: PLANET_TASKS });
+    expect(four.objective).toBe('Everything here’s done. The rest are on the planets in the Rick and Morty sector of the universe map: the Purge Planet, Snake Planet, Nuptia 4, the Immortality Field Resort and Cronenberg World.');
+    const one = progress([...here, 'gearworld', 'pluto', 'squanch', 'purge', 'snakeplanet', 'nuptia', 'resort', 'cronenberg'], { skip: PLANET_TASKS });
+    expect(one.objective).toBe('Everything here’s done. The rest are on the planets in the Rick and Morty sector of the universe map: Bird World, which is on the portal gun too.');
     // what's skipped and left isn't on a planet: only that this place is done
     expect(progress(TASKS.slice(1).map((t) => t.id), { skip: ['cable'] }).objective).toBe('Everything here’s done.');
     // and all of it done is all done, skipped or not

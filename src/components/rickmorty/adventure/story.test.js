@@ -175,15 +175,15 @@ describe('the adventure’s story', () => {
   });
 
   it('says which episode opens a place', () => {
-    expect(lockNote('vat')).toBe('Opens after episode 5, “Heat”.');
-    expect(lockNote('jerryboree')).toBe('Opens after episode 6, “Bad deals”.');
-    expect(lockNote('cablestudio')).toBe('Opens after episode 7, “The Jerry problem”.');
-    expect(lockNote('fantasy')).toBe('Opens after episode 8, “Prime time”.');
-    expect(lockNote('citadel')).toBe('Opens after episode 9, “Fairy tales”.');
-    for (const id of ['birdworld', 'gearworld', 'pluto', 'squanch']) expect(lockNote(id), id).toBe('Opens after episode 10, “The Citadel”.');
-    for (const id of ['heistcon', 'vindicators']) expect(lockNote(id), id).toBe('Opens after episode 11, “The sector”.');
-    for (const id of ['blooddome', 'evilrick']) expect(lockNote(id), id).toBe('Opens after episode 12, “Big score”.');
-    expect(lockNote('annex')).toBe('Opens after episode 1, “Wiped”.');
+    expect(lockNote('vat')).toBe('Opens after episode 5, “Heat”. Free roam, in Things to do, opens it now.');
+    expect(lockNote('jerryboree')).toBe('Opens after episode 6, “Bad deals”. Free roam, in Things to do, opens it now.');
+    expect(lockNote('cablestudio')).toBe('Opens after episode 7, “The Jerry problem”. Free roam, in Things to do, opens it now.');
+    expect(lockNote('fantasy')).toBe('Opens after episode 8, “Prime time”. Free roam, in Things to do, opens it now.');
+    expect(lockNote('citadel')).toBe('Opens after episode 9, “Fairy tales”. Free roam, in Things to do, opens it now.');
+    for (const id of ['birdworld', 'gearworld', 'pluto', 'squanch']) expect(lockNote(id), id).toBe('Opens after episode 10, “The Citadel”. Free roam, in Things to do, opens it now.');
+    for (const id of ['heistcon', 'vindicators']) expect(lockNote(id), id).toBe('Opens after episode 11, “The sector”. Free roam, in Things to do, opens it now.');
+    for (const id of ['blooddome', 'evilrick']) expect(lockNote(id), id).toBe('Opens after episode 12, “Big score”. Free roam, in Things to do, opens it now.');
+    expect(lockNote('annex')).toBe('Opens after episode 1, “Wiped”. Free roam, in Things to do, opens it now.');
     expect(lockNote('customs')).toBe(null);
     expect(lockNote('nope')).toBe(null);
   });

@@ -35,12 +35,13 @@ export const GARAGE_BACK = { x: -301.2, z: 101.4, face: 0 };
 // `who`) when they do; its spots tell the stage (`power-take`, `power-give`),
 // which steps it (./stage.js).
 // `deal`: the place run on the deal kind (../games/deal.js): { task, items,
-// bad, need, looks, who, lost, words? }: things for sale (`items`, its own
-// spots), `bad` of them cursed (a count, dealt afresh each run, or the ids);
-// a thing's first use looks it over (`looks` of them), its second takes it;
-// `need` taken with no curse is the task, a cursed one taken is `lost`, said
-// by `who`; `words`, the HUD's (the deal's own if not given). Each thing's
-// spot tells the stage (`deal-<id>`), which steps it.
+// bad, need, looks, who, lost, take, words? }: things for sale (`items`, its
+// own spots), `bad` of them cursed (a count, dealt afresh each run, or the
+// ids); a thing's first use looks it over (`looks` of them), its second takes
+// it (`take`, its prompt's verb once it's been looked over); `need` taken
+// with no curse is the task, a cursed one taken is `lost`, said by `who`;
+// `words`, the HUD's, every one of the deal's (the deal's own if not given).
+// Each thing's spot tells the stage (`deal-<id>`), which steps it.
 // `freeze`: the place run on the freeze kind (../games/freeze.js): { task,
 // spot, who, lost, unlock }: from Morty's first step the people with
 // `ai.lookout` turn their backs and look by turns; `spot` is where he jumps
@@ -48,14 +49,15 @@ export const GARAGE_BACK = { x: -301.2, z: 101.4, face: 0 };
 // in when their backs aren't turned, is `lost` (said by `who`, if anyone);
 // played dead long enough, the task, and `unlock`, its achievement.
 // `find`: the place run on the find kind (../games/find.js): { task, items,
-// ours?, tells, s, cost, who, lost, unlock }: its people to pick from
+// ours?, tells, s, cost, take, who, lost, unlock }: its people to pick from
 // (`items`, each a person with a spot of their own), ours among them (dealt
 // afresh each run, or fixed); a candidate's first use talks to him and the
 // HUD says what he does (`tells`: `ours`, and one for each of the rest), his
-// second takes him; the clock (`s`) runs from the first talk; ours taken is
-// the task, and `unlock` its achievement; another costs `cost` seconds; out
-// of time is `lost`, said by `who`. Each candidate's spot tells the stage
-// (`find-<id>`), which steps it.
+// second takes him (`take`, his prompt's verb once he's been heard); the
+// clock (`s`) runs from the first talk; ours taken is the task, and `unlock`
+// its achievement; another costs `cost` seconds; out of time is `lost`, said
+// by `who`. Each candidate's spot tells the stage (`find-<id>`), which steps
+// it.
 // `sequence`: the place run on the sequence kind (../games/sequence.js): {
 // task, start?, early?, items, order?, need, s, who, lost, unlock, hunt?,
 // spotted?, words? }: its sets (`items`, each a spot of its own), `need` of

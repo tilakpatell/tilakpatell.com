@@ -71,13 +71,15 @@ export function caughtNote(caught) {
 // onShow })` (C-137's toast slot: after the line that's up has been read),
 // and its card through `open(n)` as that line goes up, not before it (a card
 // with no line, at once). What it caught up on goes first, and the line once
-// that's been read.
-export function showNews(news, say, open) {
+// that's been read. Given the `out`, each toast carries it (`t.out`): a page
+// that leaves while one still waits keeps that for the next to say.
+export function showNews(news, say, open, out = null) {
   const card = news.card != null ? () => open(news.card) : undefined;
   if (!news.say.length) return card?.();
-  const lines = () => news.say.forEach((t, i) => say(t, { after: true, onShow: i === news.say.length - 1 ? card : undefined }));
+  const put = (t, o) => say(out ? { ...t, out } : t, o);
+  const lines = () => news.say.forEach((t, i) => put(t, { after: true, onShow: i === news.say.length - 1 ? card : undefined }));
   const note = caughtNote(news.caught ?? []);
-  if (note) say({ kind: 'say', who: null, text: note }, { after: true, onShow: lines });
+  if (note) put({ kind: 'say', who: null, text: note }, { after: true, onShow: lines });
   else lines();
 }
 
@@ -103,13 +105,25 @@ export function markedTask(state, next, { here = null, ...opts } = {}) {
   return part?.type === 'win' ? { id: part.game } : null;
 }
 
+// The Checklist's lit row (C-137's Things to do): the story's task while its
+// step waits on one of the rows, else the checklist's own next (a game won,
+// or the gun put back, isn't a row)
+export function listNext(state, next, rows, opts) {
+  const m = markedTask(state, next, opts);
+  return m && rows.some((r) => r.id === m.id) ? m : next;
+}
+
+// The tab Things to do opens on: the Story's while there's a story to follow,
+// the Checklist's once it's over
+export const listTab = (state, { episodes = EPISODES } = {}) => (state.episode >= episodes.length ? 'checklist' : 'story');
+
 // The dial's places, each with its lock: null when it's open, else the
 // episode that opens it.
 export const dialItems = (items, state) => items.map((d) => ({ ...d, locked: dialOpen(state, d.id) ? null : lockNote(d.id) }));
 
-// The dial's lead: how many coordinates the story has brought home (Free
-// roam opens the dial, but brings none home).
-export const dialLead = (state, total) => `Coordinates home: ${coordinates(state).size} of ${total}`;
+// The dial's lead: how many of its coordinates the story has put on the gun
+// (Customs from the start; Free roam opens the dial, but puts none on it).
+export const dialLead = (state, total) => `Coordinates on the gun: ${coordinates(state).size} of ${total}`;
 
 // Whether a key or a tap passes an episode's card (./EpisodeCard.jsx): a key
 // pressed, not one held down from before it showed (its auto-repeat), or a

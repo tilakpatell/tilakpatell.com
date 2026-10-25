@@ -87,9 +87,11 @@ export async function buildEvilrick(kit) {
     now = t;
     // (the Morty with the eyepatch's achievement, once he's said his piece: on the talk, or a returner's on the visit)
     if (state) S.grant({ task: 'evilmorty', unlock: 'evilmorty' }, (state.done ?? []).includes('evilmorty'), state);
+    // (and once he's down, the pods stay empty: their Mortys freed for good)
+    const over = (state?.done ?? []).includes('evilrick');
     for (const p of pods) {
-      if (p.clone) p.clone.visible = !p.freed;
-      p.tube.visible = !p.freed;
+      if (p.clone) p.clone.visible = !p.freed && !over;
+      p.tube.visible = !p.freed && !over;
     }
     if (leftAt != null) {
       const age = t - leftAt;

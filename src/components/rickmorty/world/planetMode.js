@@ -5,7 +5,7 @@
 // know about the planet, what's next there, and what the HUD says.
 
 import { byId } from '../../universe/universes';
-import { destinationById, isPlanet, planetStart } from './dimensions/destinations';
+import { DIAL, GAME_SPOTS, destinationById, isPlanet, planetStart } from './dimensions/destinations';
 import { TASKS, progress } from './rules';
 
 export const WAY_HOME = 'Back to space';
@@ -34,6 +34,8 @@ export function planetPage(id) {
 
 // a planet's hint, once he's on it: without the landing ('Land on Pluto in
 // the Rick and Morty sector, and step up…' → 'Step up…')
+const GUN = new Set(DIAL.filter((d) => isPlanet(d.id)).map((d) => d.name));
+const onTheGun = (hint) => hint.replace(/^Land on (.+?) in the Rick and Morty sector, (?:and )?/, (all, name) => (GUN.has(name) ? `Dial ${name} on the portal gun (or land on it from the universe map), ${all.endsWith('and ') ? 'and ' : ''}` : all));
 export const hereHint = (hint) => hint.replace(/^Land (?:on|at) .+? in the Rick and Morty sector, (?:and )?/, '').replace(/^./, (c) => c.toUpperCase());
 
 // what's done and what's next, there: everything counts as it does in C-137,
@@ -53,16 +55,45 @@ export const backLink = (planet) => (planet ? { to: `/universe/${planet.id}`, la
 // planet, its own things to do as said there, and one line for the rest
 export function listOf(planet, done = []) {
   const row = (t, hint = t.hint) => ({ id: t.id, name: t.name, hint, done: done.includes(t.id) });
-  if (!planet) return { label: 'Things to do in Dimension C-137', rows: TASKS.map((t) => row(t)), rest: null };
+  // (in C-137 the four planets on the gun are dialled too: their rows say so)
+  if (!planet) return { label: 'Things to do in Dimension C-137', rows: TASKS.map((t) => row(t, onTheGun(t.hint))), rest: null };
   const { count, total } = progress(done);
   return { label: `Things to do on ${inLine(planet.name)}`, rows: planet.tasks.map((t) => row(t, hereHint(t.hint))), rest: `${count} of ${total} done in all, with Dimension C-137’s.` };
 }
 
+// what a press at a game's own spot does now (`done` the tasks done; `deal`
+// and `find` the stage's snapshots, from playOf): once its game's task is
+// done, it only says its line (a look, or a talk where someone stands); a
+// thing seen clean or chanced, or a Jerry heard and not ruled out, is taken
+// by it (the game's own `take`); a thing taken or seen cursed, or a Jerry
+// ruled out, only says its line too; else the spot's own verb
+function verbOf(p, { done, deal, find }) {
+  const g = GAME_SPOTS[p.id];
+  if (!g) return p.verb;
+  if (done.includes(g.task)) return g.rest;
+  if (g.game === 'deal' && deal?.phase === 'run' && deal.seen[p.id]) return deal.taken.includes(p.id) || deal.seen[p.id] === 'bad' ? g.rest : g.take;
+  if (g.game === 'find' && find?.phase === 'run' && find.heard.includes(p.id)) return find.wrong.includes(p.id) ? g.rest : g.take;
+  return p.verb;
+}
+
+// what relabel reads of the game a prompt's at, for its press: the deal's
+// snapshot at one of its things, the find's at one of its people, nothing
+// anywhere else (`act`: the world's api.act)
+export function playOf(p, act) {
+  const g = p?.kind === 'spot' ? GAME_SPOTS[p.id] : null;
+  return g?.take ? { [g.game]: act(g.area, g.game) ?? null } : {};
+}
+
 // the prompt as the HUD shows it: the garage portal naming where it's dialled,
 // a planet's own portal the way back to space, Rick's bench at the story's
-// last step (`bench`) what its press does then; anything else as it is
-export function relabel(p, { planet = null, portal = null, bench = false } = {}) {
+// last step (`bench`) what its press does then, a game's own spot what its
+// press does now (verbOf); anything else as it is
+export function relabel(p, { planet = null, portal = null, bench = false, done = [], deal = null, find = null } = {}) {
   if (bench && p?.kind === 'spot' && p.id === 'dial') return { ...p, name: 'The portal gun, back on Rick’s bench', verb: 'Put it back' };
+  if (p?.kind === 'spot') {
+    const verb = verbOf(p, { done, deal, find });
+    return verb === p.verb ? p : { ...p, verb };
+  }
   if (!p || p.kind !== 'link') return p;
   if (planet && p.id === `${planet.id}-portal`) return { ...p, name: WAY_HOME };
   if (portal && p.id === 'garage-portal') return { ...p, name: portal };

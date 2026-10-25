@@ -2,13 +2,14 @@
 // (../rm-story-check.mjs): Heist-Con's job on a fresh save (the plan and a
 // booth before the crew, the crew alone ticking nothing, home mid-crew and
 // mid-job, a wrong booth, one lifted again, a catch by the cat burglar, the
-// keynote run out, then the job), and Rick's rooms on the Vindicators' ship
+// keynote run out, then the job, its last booth lifted as the cat burglar
+// catches him), and Rick's rooms on the Vindicators' ship
 // played through their overlay (a room by keys, a wrong pick by click, Esc
 // mid-trial, the rest by clicks), the episode's end; a returner whose old
 // crew ticked Heist-Con; and one who did the Vindicators first. Each ends on
 // episode 13's card.
 /* global window, document */
-import { check, use, reads, at, opens, toast, playTo, game, later, warpUse, caught, spotAt, wayInOf, goalIs, noLink, meter, meterSays, warp, hunting, inArea, openOnCard, cardFor, cardOnLine, dial, home, notDone, ticked, done, isDone, achieved, PLACES, N, SECTOR, SCORE, EVIL, ROOMS } from './helpers.mjs';
+import { check, use, reads, at, opens, toast, playTo, game, later, warpUse, caught, spotAt, wayInOf, goalIs, noLink, meter, meterSays, warp, hunting, inArea, openOnCard, cardFor, cardOnLine, dial, home, notDone, ticked, done, isDone, achieved, promptIs, PLACES, N, SECTOR, SCORE, EVIL, ROOMS } from './helpers.mjs';
 
 const H = PLACES.dest('heistcon');
 const JOB = H.sequence;
@@ -52,6 +53,24 @@ const lampsAre = (page, want, what) =>
 const lit = (on) => Object.fromEntries(JOB.items.map((id) => [id, on.includes(id) ? 1 : 0.15]));
 const noMeter = async (page, what) => check((await meter(page, TITLE).count()) === 0, `${what} the job’s meter showed`);
 const nobodyHunting = async (page, what) => check((await hunting(page, 'heistcon')).length === 0, `${what} the crew hunted him`);
+// a recruit `m` metres or more from their spot, off after him
+const leftHome = (page, id, m) => {
+  const s = PLACES.spot('heistcon', id);
+  return page
+    .waitForFunction(
+      ([id, x, z, m]) => {
+        const n = window.__C137__.api.act('heistcon', 'npcs').find((o) => o.id === id);
+        return n && Math.hypot(n.x - x, n.z - z) >= m;
+      },
+      [id, s.x, s.z, m],
+      { timeout: 10000, polling: 50 },
+    )
+    .catch(() => {
+      throw new Error(`${id} never left their spot to hunt him`);
+    });
+};
+// what's by Morty now, a spot's or a link's id
+const nearNow = (page) => page.evaluate(() => window.__C137__.sim.near?.id ?? null);
 const crewHunting = (page) =>
   page.waitForFunction(() => JSON.stringify(window.__C137__.api.act('heistcon', 'npcs').filter((n) => n.hunting).map((n) => n.id).sort()) === '["heister-a1","heister-b1"]', null, { timeout: 5000, polling: 50 }).catch(() => {
     throw new Error('Miles’s crew didn’t both come after him');
@@ -120,6 +139,9 @@ export const SCORE_CHECKS = {
     for (const id of CREW) {
       await goalIs(page, id, 'signing the crew');
       await press(page, id);
+      // (signed: gone from reach till a catch, the clock or the way home)
+      await later(page, 0.3);
+      check((await nearNow(page)) !== id, `${id} stayed in reach once signed`);
     }
     await notDone(page, 'heistcon', 'the badge and the crew alone ticked Heist-Con');
     await jobIs(page, { ready: true }, 'the crew didn’t ready the job');
@@ -143,6 +165,11 @@ export const SCORE_CHECKS = {
     await start(page);
     await toast(page, JOB.spotted);
     await crewHunting(page);
+    // (the cat burglar off after him: her spot, signed, offers no 'Recruit' as he passes it)
+    await leftHome(page, 'heister-b1', 6);
+    await warp(page, 'heistcon', ...spotAt('heistcon', 'heister-b1'));
+    await later(page, 0.3);
+    check((await nearNow(page)) !== 'heister-b1', 'the cat burglar’s spot offered a recruit while she hunted him');
     await home(page, 'heistcon');
     await dial(page, 'heistcon');
     await later(page, 1);
@@ -191,10 +218,25 @@ export const SCORE_CHECKS = {
     await toast(page, JOB.lost);
     await caught(page, wayInOf('heistcon'));
 
-    // the job, done: the achievement at last, the crew home, the Vindicators next
-    await lift(page);
-    await isDone(page, 'heistcon', 'the dealt order didn’t win Heist-Con');
+    // the job, done, its last booth lifted in the frame the cat burglar reaches
+    // him: caught, and the win still his; the achievement at last, the crew
+    // home, the Vindicators next
+    await crewUp(page);
+    await start(page);
+    await jobIs(page, { phase: 'run' }, 'the plan didn’t start the job');
+    const dealt = (await job(page)).order;
+    for (const id of dealt.slice(0, -1)) await press(page, id);
+    await crewHunting(page);
+    await page.evaluate((last) => {
+      const c = window.__C137__;
+      const cat = c.api.act('heistcon', 'npcs').find((n) => n.id === 'heister-b1');
+      c.warp('heistcon', cat.x + 0.6, cat.z);
+      c.api.act('heistcon', `sequence-${last}`);
+    }, dealt.at(-1));
+    await toast(page, H.caught);
+    await isDone(page, 'heistcon', 'the last booth lifted as the cat burglar caught him didn’t win Heist-Con');
     await achieved(page, 'heistcon', 'The con is the heist wasn’t earned');
+    await caught(page, wayInOf('heistcon'));
     await later(page, 1);
     await nobodyHunting(page, 'with the job done,');
     await noMeter(page, 'with the job done,');
@@ -265,6 +307,8 @@ export const SCORE_CHECKS = {
       await start(page);
       // (its own line said, and no word of a crew after it)
       await toast(page, H.say.heistplan.text);
+      // (a job done: the plan only says its line, and its prompt says so)
+      await promptIs(page, label('heistplan'), 'Look', 'with the job done,');
       await never(page, JOB.before, 1500, 'the plan asked for a crew for a job already done');
       await jobIs(page, { phase: 'idle' }, 'the plan started a job already done');
       await page.evaluate(() => window.__C137__.complete('vindicators'));

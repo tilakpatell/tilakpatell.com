@@ -2,7 +2,7 @@
 // Roy and Plumbus Smash, the house guests and the sewer run, the Microverse
 // and Anatomy Park.
 /* global window */
-import { BASE, OUT, N, check, done, built, goto, use, place, story, reads, WIPED, ARCADE, GUESTS, SMALL, HEAT, throughPortal, toast, inArea, cardFor, at, opens, shootAt, warpUse, caught, rickallOn, PLACES, homeOf, spotAt, wayInOf, goalIs } from './helpers.mjs';
+import { BASE, OUT, N, check, done, isDone, built, goto, use, place, story, reads, WIPED, ARCADE, GUESTS, SMALL, HEAT, throughPortal, toast, inArea, cardFor, at, opens, shootAt, warp, warpUse, caught, rickallOn, PLACES, homeOf, spotAt, wayInOf, goalIs } from './helpers.mjs';
 
 export const EARLY = {
   // a new visitor plays episode 2: Roy, then Plumbus Smash on the walkway
@@ -216,7 +216,17 @@ export const EARLY = {
     }
     check(found, 'the park map’s four pieces never started the clock');
     if (OUT) await page.screenshot({ path: `${OUT}/episode-4-anatomy.png` });
-    await warpUse(page, 'anatomy', 'anatomy-portal', ...homeOf('anatomy'));
+    // (in at the portal with a tenth of a second on the clock: in time, though the swirl outlasts it)
+    await warp(page, 'anatomy', ...homeOf('anatomy'));
+    await page.waitForFunction(() => window.__C137__.sim.near?.id === 'anatomy-portal', null, { timeout: 20000, polling: 100 }).catch(() => {
+      throw new Error('Morty isn’t by Anatomy Park’s portal home');
+    });
+    await page.evaluate(() => {
+      const s = window.__C137__.sim;
+      s.escape = { ...s.escape, at: s.t - s.escape.s + 0.1 };
+      window.__C137__.act();
+    });
+    await isDone(page, 'anatomy', 'the portal home with a tenth of a second left didn’t count');
     await toast(page, SMALL.outro[0][1]);
     // and on into episode 5: its card, the places episode 4 opened, the next ones still shut
     await cardFor(page, 4);
