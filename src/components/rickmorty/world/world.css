@@ -303,6 +303,24 @@
   .rm-quiz-options { grid-template-columns: 1fr; }
   .rm-cards { grid-template-columns: 1fr; }
 }
+/* a phone held sideways: the stage is the screen under the bar and no taller,
+   so the stick and the buttons are on it; the top row goes compact (the chips
+   in a row beside the map, as small as a phone's), clear of the thumbs, and
+   the toast hangs under it, letting taps through to the buttons */
+@media (pointer: coarse) and (max-height: 500px) {
+  .rm-world-stage { height: calc(100svh - var(--nav-h)); min-height: 0; }
+  .rm-brand { gap: 0.35rem; }
+  .rm-title { font-size: 1.4rem; }
+  .rm-objective { padding: 0.4rem 0.6rem; font-size: 0.76rem; }
+  .rm-side { grid-auto-flow: column; align-items: start; }
+  .rm-map canvas { width: 124px; height: 84px; }
+  .rm-map figcaption { display: none; }
+  .rm-chip { min-height: 36px; padding: 0 0.6rem; font-size: 0.76rem; }
+  .rm-chip span { display: none; }
+  .rm-prompt { bottom: calc(132px + var(--rm-pad-b)); }
+  .rm-hint { bottom: calc(138px + var(--rm-pad-b)); font-size: 0.76rem; }
+  .rm-toast { top: calc(var(--rm-under, 7rem) + 0.5rem); pointer-events: none; }
+}
 @media (min-width: 640px) {
   /* the house and the garage, with the most in them, in the wider column */
   .rm-cards { grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr); }

@@ -2,9 +2,9 @@
 // from the street to Customs and back, the dial's lock, the ways home, Free
 // roam, a returner, the Citadel, a planet landed on, and the toys ticking
 // when they're played.
-/* global window, StorageEvent */
+/* global window, document, StorageEvent */
 import { READY } from '../../src/components/rickmorty/adventure/episodes.js';
-import { BASE, OUT, N, check, done, c137, built, goto, use, place, story, reads, WIPED, ARCADE, throughPortal, gun, toast, inArea, game, arriveOf, standOn, PLACES, CITADEL_LINE, citadelUp, citadelReads, warp, goalIs, dial, warpUse, spotAt, home } from './helpers.mjs';
+import { BASE, OUT, N, check, done, c137, built, goto, use, place, story, reads, WIPED, ARCADE, throughPortal, gun, toast, inArea, game, arriveOf, standOn, PLACES, CITADEL_LINE, citadelUp, citadelReads, warp, goalIs, dial, warpUse, spotAt, home, cardOnLine, cardFor, achieved } from './helpers.mjs';
 
 export const BASICS = {
   // another tab's ticks: kept when this one ticks, and this one's list
@@ -32,6 +32,65 @@ export const BASICS = {
     await built(page);
     check((await done(page)).includes('posters'), 'the posters, all read, didn’t count once the page was left at once');
   },
+  // on a phone (390 × 664: a browser's own bars taken), episode 2's card
+  // comes up with episode 1's closing line, and not over it
+  'c137-phone': Object.assign(
+    async (page) => {
+      await page.setViewportSize({ width: 390, height: 664 });
+      await c137(page);
+      await page.evaluate(() => window.__C137__.complete('customs'));
+      await cardOnLine(page, WIPED.outro[0][1]);
+      await cardFor(page, 1);
+    },
+    { seed: { 'tp-rm-story': { v: 1, data: { episode: 0, step: 3, got: [], wins: [], freeRoam: false } }, 'tp-c137-done': ['diner', 'basement', 'mindblowers'] } },
+  ),
+  // a place whose task is done (here before its achievement could be earned:
+  // an old save) hands the achievement over on the next visit
+  'achieve-later': Object.assign(
+    async (page) => {
+      await c137(page);
+      await dial(page, 'storytrain');
+      await achieved(page, 'storytrain', 'the Story Train, done before, didn’t hand over its achievement');
+    },
+    { seed: { 'tp-c137-done': ['storytrain'] } },
+  ),
+  // a phone held sideways (844 × 390: a browser's own bars taken): the stick
+  // and the buttons on screen, and the top row clear of them
+  'c137-landscape': Object.assign(
+    async (page) => {
+      await c137(page);
+      await page.locator('.rm-stick').waitFor({ timeout: 10000 });
+      const at = await page.evaluate(() => {
+        const box = (el) => el && (({ top, bottom, left, right }) => ({ top: Math.round(top), bottom: Math.round(bottom), left: Math.round(left), right: Math.round(right) }))(el.getBoundingClientRect());
+        const under = (sel) => Array.from(document.querySelectorAll(sel), box);
+        return { h: window.innerHeight, w: window.innerWidth, thumbs: [...under('.rm-hud-bottom .rm-stick'), ...under('.rm-hud-bottom .rm-pad button')], top: [...under('.rm-hud-top .rm-brand'), ...under('.rm-hud-top .rm-side')] };
+      });
+      check(at.thumbs.length >= 2, `sideways, the stick and buttons are ${JSON.stringify(at.thumbs)}`);
+      for (const t of at.thumbs) check(t.top >= 0 && t.bottom <= at.h && t.right <= at.w, `sideways, a thumb’s control is off the screen (${JSON.stringify(t)} in ${at.w} × ${at.h})`);
+      for (const r of at.top) for (const t of at.thumbs) check(!(r.top < t.bottom && t.top < r.bottom && r.left < t.right && t.left < r.right), `sideways, the top row (${JSON.stringify(r)}) runs into a thumb’s control (${JSON.stringify(t)})`);
+    },
+    { context: { viewport: { width: 844, height: 390 }, hasTouch: true, isMobile: true } },
+  ),
+  // Customs' alarm: the pads' swirls ahead of him shut while it's on, so the
+  // only portal open is the way home behind him; open again on his next visit
+  'customs-alarm': Object.assign(
+    async (page) => {
+      await c137(page);
+      const padsAre = (open, when) =>
+        page.waitForFunction((o) => window.__C137__.api.act('customs', 'pads').every((v) => v === o), open, { timeout: 10000, polling: 100 }).catch(async () => {
+          throw new Error(`${when} the pads are ${JSON.stringify(await page.evaluate(() => window.__C137__.api.act('customs', 'pads')))}`);
+        });
+      await dial(page, 'customs');
+      await padsAre(1, 'before the alarm');
+      await warpUse(page, 'customs', 'seeds', ...spotAt('customs', 'seeds'));
+      await warpUse(page, 'customs', 'scanner', ...spotAt('customs', 'scanner'));
+      await padsAre(0, 'with the alarm on');
+      await home(page, 'customs');
+      await dial(page, 'customs');
+      await padsAre(1, 'back in Customs after the alarm');
+    },
+    { seed: { 'tp-rm-story': { v: 1, data: { episode: 0, step: 3, got: [], wins: [], freeRoam: false } }, 'tp-c137-done': ['diner', 'basement', 'mindblowers'] } },
+  ),
   // a new visitor plays episode 1 from the street to Customs and back
   async 'episode-1'(page) {
     // the card: episode 1, as the world comes on, gone at the next key

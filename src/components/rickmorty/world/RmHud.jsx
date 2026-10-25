@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import RmEarnNote from '../RmEarnNote';
 import { PowerBar } from '../../universe/shared/powerBar';
 import { Link as RouterLink } from 'react-router-dom';
-import { RiArrowDownLine, RiArrowLeftLine, RiArrowUpLine, RiCheckLine, RiCloseLine, RiCrosshair2Line, RiEmotionLaughLine, RiEyeLine, RiHeart3Line, RiHome4Line, RiListCheck2, RiFlashlightLine, RiLiveLine, RiPlantLine, RiSafe2Line, RiSearchEyeLine, RiSettings3Line, RiShieldLine, RiShirtLine, RiTimerLine, RiToolsLine, RiTyphoonLine, RiVipCrownLine, RiVipDiamondLine } from 'react-icons/ri';
+import { RiArrowDownLine, RiArrowLeftLine, RiArrowUpLine, RiCheckLine, RiCloseLine, RiCrosshair2Line, RiEmotionLaughLine, RiEyeLine, RiGroupLine, RiHeart3Line, RiHome4Line, RiListCheck2, RiFlashlightLine, RiLiveLine, RiPlantLine, RiSafe2Line, RiSearchEyeLine, RiSettings3Line, RiShieldLine, RiShirtLine, RiTimerLine, RiToolsLine, RiTyphoonLine, RiVipCrownLine, RiVipDiamondLine } from 'react-icons/ri';
 import { EMOTES, wheelAngle } from '../../../lib/emote';
 import { local } from '../../../lib/hooks';
 import { Arms, Cluster, Prompt, Reticle, Stick, TouchButton, Vitals, createFlightCluster, reticleState } from '../../../runtime/hud';
@@ -675,17 +675,20 @@ function Ending({ end, onAgain, onLeave }) {
 }
 
 // Others online in the street: how many, or a way to see them (going online
-// is the site's own switch, with your callsign, as on the universe map).
-function OtherMortys({ trav, where }) {
+// is the site's own switch, with your callsign, as on the universe map). Its
+// icon and name stay on a phone, where a chip's words go.
+export function OtherMortys({ trav, where }) {
   if (!trav.available) return null;
   if (!trav.on)
     return (
-      <button type="button" className="rm-chip" onClick={trav.join} title={`Go online, and see everyone else ${where} as a Morty from another dimension`}>
+      <button type="button" className="rm-chip" onClick={trav.join} title={`Go online, and see everyone else ${where} as a Morty from another dimension`} aria-label={`See other Mortys: go online, and see everyone else ${where} as a Morty from another dimension`}>
+        <RiGroupLine aria-hidden="true" />
         <span>See other Mortys</span>
       </button>
     );
   return (
-    <span className="rm-chip" title={`Everyone else online ${where} shows as a Morty from another dimension: they can’t touch your things to do, nor you theirs`}>
+    <span className="rm-chip" role="img" title={`Everyone else online ${where} shows as a Morty from another dimension: they can’t touch your things to do, nor you theirs`} aria-label={`${trav.count} ${trav.count === 1 ? 'other Morty' : 'other Mortys'} ${where}`}>
+      <RiGroupLine aria-hidden="true" />
       <b>{trav.count}</b>
       <span>{trav.count === 1 ? 'other Morty' : 'other Mortys'} here</span>
     </span>
