@@ -63,7 +63,8 @@ import {
 import { newFedShip, newShipVoice, onTail, shipSays, stepFedShip } from './ship';
 import { DESTINATIONS, DIAL, destinationById, isPlanet, isWayHome, linkTarget, portalTarget, readDial, writeDial } from './dimensions/destinations';
 import { useAdventure } from '../adventure/useAdventure';
-import { dialItems, dialLead, leaveHold, markedTask, newsOf, objectiveLine } from '../adventure/hud';
+import { EPISODES } from '../adventure/episodes';
+import { dialItems, dialLead, leaveHold, markedTask, newsOf, objectiveLine, showNews } from '../adventure/hud';
 import { arriveAt } from '../adventure/ways';
 import { backLink, boundOf, inLine, planetOf, planetProgress, relabel } from './planetMode';
 import { dialFirst, dialledNote, isGunKey, portalName } from './portalGun';
@@ -351,26 +352,24 @@ export default function RmWorld({ start = null, onLeave = null, frozen = false, 
   const [open, setOpen] = useState(null);
   const openRef = useRef(null);
   const [gl, setGl] = useState('loading'); // loading | on | failed | lost
-  const { toast, say, due } = useRmToast();
+  const { toast, say, due, reading } = useRmToast();
   const pending = useRef([]); // tasks done while something's open over the page, told on the way out
   const api = useRef(null);
 
   // the adventure told what's happened (../adventure/), and what it says
-  // back: an episode's closing line, and the next one's card (a new
-  // visitor's first, once C-137's world is on). While something's open over
-  // the page what it says waits, and is said as that closes.
+  // back: an episode's closing line, and the next one's card as that line
+  // goes up (a new visitor's first, once C-137's world is on). While
+  // something's open over the page what it says waits, and is said as that
+  // closes.
   const { feed, intro, takeUnsaid } = useAdventure();
   const [card, setCard] = useState(null);
   const closeCard = useCallback(() => setCard(null), []);
   const held = useRef([]);
-  const show = useCallback(
-    (out) => {
-      const news = newsOf(out);
-      news.say.forEach((t) => say(t, { after: true }));
-      if (news.card != null) setCard(news.card);
-    },
-    [say],
-  );
+  const openCard = useCallback((n) => {
+    setCard(n);
+    if (n === EPISODES.length) sound('showMe'); // (the story's end card: the show's chord)
+  }, []);
+  const show = useCallback((out) => showNews(newsOf(out), say, openCard), [say, openCard]);
   const tell = useCallback(
     (e) => {
       const out = feed(e);
@@ -464,7 +463,7 @@ export default function RmWorld({ start = null, onLeave = null, frozen = false, 
   return (
     <section className="rm-world" aria-labelledby="rm-world-title" data-mode={world ? '3d' : 'cards'}>
       {world ? (
-        <World api={api} done={done} open={open} openPlace={openPlace} complete={complete} unlock={unlock} gl={gl} setGl={setGl} toast={toast} say={say} due={due} planet={planet} onLeave={onLeave} earn={earn} earned={earned} frozen={frozen} onHangar={onHangar} cruiser={cruiser} loadout={loadout} skillFx={skillFx} powerPicks={powerPicks} tell={tell} card={card} closeCard={closeCard} />
+        <World api={api} done={done} open={open} openPlace={openPlace} complete={complete} unlock={unlock} gl={gl} setGl={setGl} toast={toast} say={say} due={due} reading={reading} planet={planet} onLeave={onLeave} earn={earn} earned={earned} frozen={frozen} onHangar={onHangar} cruiser={cruiser} loadout={loadout} skillFx={skillFx} powerPicks={powerPicks} tell={tell} card={card} closeCard={closeCard} />
       ) : (
         <Cards done={done} openPlace={openPlace} three={three} gl={gl} toast={toast} retry={() => setGl('loading')} planet={planet} />
       )}
@@ -479,7 +478,7 @@ export default function RmWorld({ start = null, onLeave = null, frozen = false, 
 // hence the reach)
 const ROOM = { bound: boundOf(AREAS), motion: true };
 
-function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast, say, due, planet, onLeave, earn, earned, frozen, onHangar, cruiser, loadout, skillFx, powerPicks, tell, card, closeCard }) {
+function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast, say, due, reading, planet, onLeave, earn, earned, frozen, onHangar, cruiser, loadout, skillFx, powerPicks, tell, card, closeCard }) {
   // (the cruiser's numbers, read by the frame loop)
   const fitted = useMemo(() => cruiserOf(cruiser), [cruiser]);
   const fittedRef = useRef(fitted);
@@ -554,7 +553,7 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
   doneRef.current = done;
   const [hud, setHud] = useState({ area: (planet ?? home ?? START).area, room: null, flying: false, landing: false, near: null, moved: false, alt: 0, kmh: 0 });
   // (on a sector planet, dialled or landed on, its part of the story's `all`)
-  const objective = objectiveLine(story.objective, prog, { planet, here: hud.area, state: story.state });
+  const objective = objectiveLine(story.objective, prog, { planet, here: hud.area, state: story.state, ended: card === EPISODES.length });
   const markRef = useRef(null);
   markRef.current = planet ? prog.next : markedTask(story.state, prog.next, { here: hud.area });
   const hudKey = useRef('');
@@ -1139,8 +1138,10 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
         }, FADE_MS);
       } else if (name === 'bark') {
         if (s.t - (s.barkAt ?? -1e9) < 6) return;
-        // (nor over what someone's saying to him while it's still being said)
+        // (nor over what someone's saying to him while it's still being said,
+        // nor over a line on the toast still being read: an episode's closing one)
         if (s.talk && s.talk.area === s.area && s.t - s.talk.at < s.talk.hold) return;
+        if (reading()) return;
         s.barkAt = s.t;
         say({ kind: 'say', who: e.name ?? SAY[e.who]?.who ?? null, text: e.text });
       } else if (name === 'miss') sound('ouch');
@@ -1197,7 +1198,7 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
         } else api.current?.play('hit', { layer: 'auto' });
       }
     },
-    [api, say, complete, unlock, later, loadShots],
+    [api, say, reading, complete, unlock, later, loadShots],
   );
   boardRef.current = board;
   // Morty's shot in a duel (F): a bolt at the hunter if he's in the cone

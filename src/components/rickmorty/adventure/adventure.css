@@ -46,6 +46,13 @@
 .rm-episode-line { font: 600 1rem/1.45 var(--font-sans); }
 .rm-episode-line b { color: var(--rm-lime, #c9ff5a); }
 @keyframes rm-episode-in { from { opacity: 0; transform: translate(-50%, -46%) scale(0.96); } }
+/* on a phone the toast hangs mid-stage, under the top row: the card goes up
+   top, over that row for its few seconds, so the closing line it comes with
+   is read beside it, not under it */
+@media (max-width: 639px) {
+  .rm-episode { top: 0.75rem; transform: translateX(-50%); animation-name: rm-episode-top; }
+}
+@keyframes rm-episode-top { from { opacity: 0; transform: translate(-50%, 0.5rem) scale(0.96); } }
 @media (prefers-reduced-motion: reduce) {
   .rm-episode { animation: none; }
 }

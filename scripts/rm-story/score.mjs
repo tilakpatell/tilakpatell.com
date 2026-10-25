@@ -8,7 +8,7 @@
 // crew ticked Heist-Con; and one who did the Vindicators first. Each ends on
 // episode 13's card.
 /* global window, document */
-import { check, use, reads, at, opens, toast, playTo, game, later, warpUse, caught, spotAt, wayInOf, goalIs, noLink, meter, meterSays, warp, hunting, inArea, openOnCard, cardFor, dial, home, notDone, ticked, done, isDone, achieved, PLACES, N, SECTOR, SCORE, EVIL, ROOMS } from './helpers.mjs';
+import { check, use, reads, at, opens, toast, playTo, game, later, warpUse, caught, spotAt, wayInOf, goalIs, noLink, meter, meterSays, warp, hunting, inArea, openOnCard, cardFor, cardOnLine, dial, home, notDone, ticked, done, isDone, achieved, PLACES, N, SECTOR, SCORE, EVIL, ROOMS } from './helpers.mjs';
 
 const H = PLACES.dest('heistcon');
 const JOB = H.sequence;
@@ -66,7 +66,7 @@ const lift = async (page) => {
 };
 // the episode over: its closing line and episode 13's card, every place open
 const over = async (page, when) => {
-  await toast(page, SCORE.outro[0][1]);
+  await cardOnLine(page, SCORE.outro[0][1]);
   await cardFor(page, 12);
   await at(page, 12, 0, when);
   await opens(page, PLACES.dial, true, when);

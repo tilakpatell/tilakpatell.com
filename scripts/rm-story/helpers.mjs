@@ -113,8 +113,8 @@ export const gun = async (page) => {
   await page.locator('.rm-dial-box').waitFor({ timeout: 10000 });
 };
 export const toast = (page, text) =>
-  page.locator('.rm-toast', { hasText: text }).waitFor({ timeout: 10000 }).catch(() => {
-    throw new Error(`no toast saying “${text}”`);
+  page.locator('.rm-toast', { hasText: text }).waitFor({ timeout: 10000 }).catch(async () => {
+    throw new Error(`no toast saying “${text}” (it says “${await page.locator('.rm-toast').first().textContent({ timeout: 500 }).catch(() => 'nothing')}”)`);
   });
 // Morty in `area`, and it built
 export const inArea = (page, area) =>
@@ -135,6 +135,21 @@ export async function cardFor(page, i) {
   check((await card.count()) === 1, `episode ${i + 1}’s card went at a held key’s repeat`);
   await page.keyboard.press('Shift');
   await card.waitFor({ state: 'detached', timeout: 5000 });
+}
+// an episode's card come up with the closing line it follows, not before
+// that line nor over it (then cardFor's checks)
+export async function cardOnLine(page, text) {
+  await page.locator('.rm-episode').waitFor({ timeout: 20000 }).catch(() => {
+    throw new Error(`no card after “${text}”`);
+  });
+  const at = await page.evaluate((t) => {
+    const line = Array.from(document.querySelectorAll('.rm-toast')).find((n) => n.textContent.includes(t));
+    const a = document.querySelector('.rm-episode').getBoundingClientRect();
+    const b = line?.getBoundingClientRect();
+    return { line: Boolean(line), over: Boolean(b) && a.top < b.bottom && b.top < a.bottom && a.left < b.right && b.left < a.right };
+  }, text);
+  check(at.line, `the card came up before its closing line “${text}”`);
+  check(!at.over, `the card is over its closing line “${text}”`);
 }
 // a page of the site opened afresh at `hash` on episode i's card (a story
 // not begun), the card checked and passed, and the world built behind it

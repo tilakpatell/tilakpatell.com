@@ -3,7 +3,8 @@ import { progress } from '../world/rules';
 import { EPISODES } from './episodes';
 import { fresh } from './story';
 import { DIAL } from '../world/dimensions/destinations';
-import { SAID_MS, dialItems, dialLead, leaveHold, markedTask, newsOf, objectiveLine, passesCard } from './hud';
+import { createToastSlot, readMs } from '../world/toastSlot';
+import { SAID_MS, STORY_DONE, caughtNote, dialItems, dialLead, leaveHold, markedTask, newsOf, objectiveLine, passesCard, showNews } from './hud';
 
 describe('what the HUD shows of the story', () => {
   it('reads the story’s step first, then the checklist’s next', () => {
@@ -11,6 +12,13 @@ describe('what the HUD shows of the story', () => {
     expect(objectiveLine({ text: 'Find the hatch.', to: null }, prog)).toEqual({ text: 'Find the hatch.', to: null });
     expect(objectiveLine({ text: 'Dial the Citadel.', to: '/c-137/citadel' }, prog)).toEqual({ text: 'Dial the Citadel.', to: '/c-137/citadel' });
     expect(objectiveLine(null, prog)).toEqual({ text: prog.next.hint, to: null });
+  });
+
+  it('holds the story’s own last word while its end card is up, then the checklist’s next', () => {
+    const prog = progress([]);
+    expect(STORY_DONE).toBe('That’s the whole story: the Checklist tab has the rest.');
+    expect(objectiveLine(null, prog, { ended: true })).toEqual({ text: STORY_DONE, to: null });
+    expect(objectiveLine(null, prog, {})).toEqual({ text: prog.objective, to: null });
   });
 
   it('links the checklist’s closing line to the map, in C-137 only', () => {
@@ -73,11 +81,11 @@ describe('what the HUD shows of the story', () => {
   });
 
   it('raises an episode’s closing line as a toast, and the next built episode’s card', () => {
-    expect(newsOf([{ type: 'step', episode: 0, step: 1 }])).toEqual({ say: [], card: null });
+    expect(newsOf([{ type: 'step', episode: 0, step: 1 }])).toEqual({ say: [], card: null, caught: [] });
     const [who, text] = EPISODES[0].outro[0];
-    expect(newsOf([{ type: 'done', episode: 0 }, { type: 'episode', episode: 1 }])).toEqual({ say: [{ kind: 'say', who, text }], card: 1 });
-    expect(newsOf([{ type: 'done', episode: 12 }, { type: 'end' }]).say[0].text).toBe(EPISODES[12].outro[0][1]);
-    expect(newsOf([])).toEqual({ say: [], card: null });
+    expect(newsOf([{ type: 'done', episode: 0 }, { type: 'episode', episode: 1 }])).toEqual({ say: [{ kind: 'say', who, text }], card: 1, caught: [] });
+    expect(newsOf([{ type: 'done', episode: 12 }, { type: 'end' }])).toEqual({ say: [{ kind: 'say', who: EPISODES[12].outro[0][0], text: EPISODES[12].outro[0][1] }], card: EPISODES.length, caught: [] });
+    expect(newsOf([])).toEqual({ say: [], card: null, caught: [] });
   });
 
   it('holds a page that’s leaving long enough for an episode’s closing line, and no longer for anything else', () => {
@@ -91,7 +99,83 @@ describe('what the HUD shows of the story', () => {
   it('says only the last closing line, and shows no card for an episode already over', () => {
     const out = [{ type: 'done', episode: 0 }, { type: 'episode', episode: 1 }, { type: 'step', episode: 1, step: 1 }, { type: 'done', episode: 1 }];
     const [who, text] = EPISODES[1].outro[0];
-    expect(newsOf(out)).toEqual({ say: [{ kind: 'say', who, text }], card: null });
+    expect(newsOf(out)).toEqual({ say: [{ kind: 'say', who, text }], card: null, caught: [0] });
+  });
+
+  it('names the episodes an out ended before its last one: caught up, from before', () => {
+    // (a returner beats the cabinet with Wong, the sewer, the Microverse and Anatomy Park done: episodes 2, 3 and 4 end)
+    const out = [1, 2, 3].flatMap((e) => [{ type: 'done', episode: e }, { type: 'episode', episode: e + 1 }]);
+    const news = newsOf(out);
+    expect(news.caught).toEqual([1, 2]);
+    expect(news.say.map((t) => t.text)).toEqual([EPISODES[3].outro[0][1]]);
+    expect(news.card).toBe(4);
+    expect(caughtNote([1, 2])).toBe('Episodes 2 and 3 done already, from what you’d played before.');
+    expect(caughtNote([3])).toBe('Episode 4 done already, from what you’d played before.');
+    expect(caughtNote([1, 2, 3])).toBe('Episodes 2, 3 and 4 done already, from what you’d played before.');
+    expect(caughtNote([])).toBe(null);
+  });
+
+  it('says what an out caught up on ahead of its closing line, and the line once that’s been read', () => {
+    let now = 0;
+    const timers = [];
+    const shown = [];
+    const slot = createToastSlot({ show: (t) => shown.push([t.kind, t.text, now]), now: () => now, later: (fn, ms) => timers.push({ at: now + ms, fn }), cancel: () => {} });
+    const run = (t) => {
+      for (let due; (due = timers.sort((a, b) => a.at - b.at)[0]) && due.at <= t; ) {
+        timers.shift();
+        now = due.at;
+        due.fn();
+      }
+      now = t;
+    };
+    const cards = [];
+    const out = [1, 2, 3].flatMap((e) => [{ type: 'done', episode: e }, { type: 'episode', episode: e + 1 }]);
+    showNews(newsOf(out), slot.put, (n) => cards.push([n, now]));
+    const note = caughtNote([1, 2]);
+    expect(shown).toEqual([['say', note, 0]]);
+    expect(cards).toEqual([]);
+    run(readMs(note) + 8000);
+    expect(shown).toEqual([
+      ['say', note, 0],
+      ['say', EPISODES[3].outro[0][1], readMs(note)],
+    ]);
+    expect(cards).toEqual([[4, readMs(note)]]);
+  });
+
+  it('opens an episode’s card as the closing line it comes with goes up, not before it', () => {
+    // a clock and its timers, run by hand, and C-137's toast slot on it
+    let now = 0;
+    const timers = [];
+    const slot = createToastSlot({ show: (t) => shown.push([t.text, now]), now: () => now, later: (fn, ms) => timers.push({ at: now + ms, fn }), cancel: () => {} });
+    const run = (t) => {
+      for (let due; (due = timers.sort((a, b) => a.at - b.at)[0]) && due.at <= t; ) {
+        timers.shift();
+        now = due.at;
+        due.fn();
+      }
+      now = t;
+    };
+    const shown = [];
+    const cards = [];
+    const open = (n) => cards.push([n, now]);
+    // (Rick's rooms: the won line's up as the episode ends)
+    const WON = 'A recording of Rick, very drunk: “If you’re hearing this, the Vindicators got me. Go to the bench, Morty.” Rick looks at the floor.';
+    slot.put({ kind: 'say', who: 'Rick', text: WON });
+    run(500);
+    showNews(newsOf([{ type: 'done', episode: 11 }, { type: 'episode', episode: 12 }]), slot.put, open);
+    expect(cards).toEqual([]);
+    run(readMs(WON) - 1);
+    expect(cards).toEqual([]);
+    run(readMs(WON) + 8000);
+    expect(shown.at(-1)).toEqual([EPISODES[11].outro[0][1], readMs(WON)]);
+    expect(cards).toEqual([[12, readMs(WON)]]);
+    // (no closing line: the card at once; no card: the line alone)
+    showNews(newsOf([{ type: 'episode', episode: 1 }]), slot.put, open);
+    expect(cards.at(-1)).toEqual([1, now]);
+    // (the story's end: its card, the one after the last episode, with Rick's last line)
+    showNews(newsOf([{ type: 'done', episode: 12 }, { type: 'end' }]), slot.put, open);
+    expect(cards.at(-1)).toEqual([EPISODES.length, now]);
+    expect(shown.at(-1)[0]).toBe(EPISODES[12].outro[0][1]);
   });
 
   it('marks a hotspot to use, never a talk or a walk in', () => {

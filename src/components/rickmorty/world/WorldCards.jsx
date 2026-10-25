@@ -3,6 +3,7 @@ import { RiArrowLeftLine, RiCheckLine, RiHome4Line } from 'react-icons/ri';
 import { homeLink } from '../adventure/ways';
 import { progress } from './rules';
 import { WAY_HOME, hereHint, inLine } from './planetMode';
+import { toastLife } from './toastSlot';
 
 // The world's title (Dimension C-137, or the planet Morty's landed on) and its
 // toast, which ./RmWorld.jsx's HUD shows too; and without 3D, the places as
@@ -20,11 +21,12 @@ export function Title({ name = null }) {
   );
 }
 
-// a toast: something done, someone talking, or a no
+// a toast: something done, someone talking (fading over its own life: a
+// long line stays up longer), or a no
 export function Toast({ toast }) {
   if (!toast) return null;
   return (
-    <div className="rm-toast" data-kind={toast.kind ?? 'note'} data-bad={toast.bad || undefined} role="status" key={toast.at}>
+    <div className="rm-toast" data-kind={toast.kind ?? 'note'} data-bad={toast.bad || undefined} role="status" key={toast.at} style={toast.kind === 'say' ? { animationDuration: `${toastLife(toast)}ms` } : undefined}>
       {toast.kind === 'done' && (
         <span className="rm-toast-tick" aria-hidden="true">
           <RiCheckLine />

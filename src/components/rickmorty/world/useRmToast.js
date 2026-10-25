@@ -8,9 +8,11 @@ import { lineSaid } from './voicelines';
 // (./voicelines.js, lib/voiced.js) as it goes up; the next thing said,
 // voiced or not, stops it. Each toast comes down when its time's up.
 //
-// useRmToast() → { toast, say(t, { after }), due() } — `after`: wait till the
-// line that's up has been read (a thing done, the story's closing line, a
-// count); `due()`: ms till what waits goes up (a page that's leaving holds for it).
+// useRmToast() → { toast, say(t, { after, onShow }), due(), reading() } —
+// `after`: wait till the line that's up has been read (a thing done, the
+// story's closing line, a count), `onShow` run as it goes up; `due()`: ms till
+// what waits goes up (a page that's leaving holds for it); `reading()`: a line
+// up is still being read (a bark waits).
 export function useRmToast() {
   const [toast, setToast] = useState(null);
   const slot = useRef(null);
@@ -38,5 +40,6 @@ export function useRmToast() {
   }, [toast]);
   const say = useCallback((t, opts) => slot.current.put(t, opts), []);
   const due = useCallback(() => slot.current.due(), []);
-  return { toast, say, due };
+  const reading = useCallback(() => slot.current.reading(), []);
+  return { toast, say, due, reading };
 }

@@ -9,6 +9,8 @@
 import { check, use, reads, at, opens, toast, playTo, later, warpUse, warp, caught, spotAt, wayInOf, goalIs, noLink, hunting, inArea, open, openOnCard, dial, home, notDone, ticked, isDone, achieved, gun, PLACES, EVIL, SCORE, CABLE } from './helpers.mjs';
 
 const [DOME, LAIR, EYEPATCH, BENCH_STEP] = EVIL.steps;
+// the story's last word: the end card's, and the objective's while it's up (adventure/hud.js)
+const STORY_DONE = 'That’s the whole story: the Checklist tab has the rest.';
 // a stand in Rick's garage where the bench (the dial) is the nearest thing
 const BENCH = [-301.75, 100.15, Math.PI];
 export const WHO = { blooddome: 'hemorrhage', evilrick: 'evilrick' };
@@ -122,9 +124,19 @@ async function theEnd(page) {
     return Boolean(r && document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2)?.closest('.rm-toast') === t);
   }, EVIL.outro[0][1]);
   check(top, 'something lay over Rick’s last line');
+  // the story's end card, up with it, and the story's last word kept while it is
+  const end = page.locator('.rm-episode[data-end]');
+  await end.waitFor({ timeout: 5000 }).catch(() => {
+    throw new Error('no end card with Rick’s last line');
+  });
+  check((await end.textContent()).includes(STORY_DONE), `the end card says “${await end.textContent()}”`);
+  await reads(page, STORY_DONE);
   await later(page, 1.5);
   check((await page.locator('.rm-dial-box').count()) === 0, 'the dial opened over Rick’s last line');
   await at(page, 13, 0, 'at the end');
+  // (passed, the checklist's next)
+  await page.keyboard.press('Shift');
+  await end.waitFor({ state: 'detached', timeout: 5000 });
   await reads(page, CABLE);
   await noLink(page, 'at the end');
   await opens(page, PLACES.dial, true, 'at the end');

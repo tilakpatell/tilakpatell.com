@@ -284,7 +284,7 @@ export default function RmHud({
       <DimensionDial open={!!trial} items={trialItems} value={null} onPick={pickTrial} onClose={closeTrial} title={`Rick’s rooms · ${(trial?.room ?? 0) + 1} of ${ROOMS.length}`} lead={trial ? ROOMS[trial.room].prompt : null} foot="↑ ↓ to choose, Enter to pick, Esc to back out" label="Rick’s rooms" />
 
       <Toast toast={toast} />
-      {card != null && <EpisodeCard episode={EPISODES[card]} n={card + 1} onDone={closeCard} />}
+      {card != null && <EpisodeCard episode={EPISODES[card] ?? null} n={card + 1} onDone={closeCard} />}
       {shipLine && hud.area === 'street' && (
         <p className="rm-shipline" role="status" key={shipLine.at}>
           <span className="rm-shipline-eyes" aria-hidden="true">

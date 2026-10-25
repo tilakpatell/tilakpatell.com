@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { EPISODES } from './episodes';
 import EpisodeCard from './EpisodeCard';
+import { STORY_DONE } from './hud';
 
 describe('the episode card', () => {
   it('names the episode and says its first line', () => {
@@ -107,5 +108,13 @@ describe('the episode card', () => {
     expect(html).toContain('Evil Rick');
     expect(html).toContain('<b>Morty</b>');
     expect(html).toContain(EPISODES[12].intro[0][1]);
+  });
+
+  it('after the last episode, is the story’s end', () => {
+    const html = renderToStaticMarkup(<EpisodeCard episode={null} n={EPISODES.length + 1} onDone={() => {}} />);
+    expect(html).toContain('data-end');
+    expect(html).toContain('The end');
+    expect(html).toContain(STORY_DONE);
+    expect(html).not.toContain('Episode 14');
   });
 });

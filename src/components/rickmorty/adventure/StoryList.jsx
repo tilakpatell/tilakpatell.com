@@ -1,5 +1,6 @@
 import { RiCheckLine } from 'react-icons/ri';
 import { EPISODES, READY } from './episodes';
+import { STORY_DONE } from './hud';
 
 // The Story tab of Things to do (M): the episodes built so far, in order, a
 // finished one ticked, the current one with its steps (those done ticked, an
@@ -66,7 +67,7 @@ export default function StoryList({ state, tasks = [], citadel = [], episodes = 
           );
         })}
       </ol>
-      {ready < episodes.length ? <p className="rm-list-rest">More of the story soon.</p> : state.episode >= episodes.length && <p className="rm-list-rest">That’s the whole story: the Checklist tab has the rest.</p>}
+      {ready < episodes.length ? <p className="rm-list-rest">More of the story soon.</p> : state.episode >= episodes.length && <p className="rm-list-rest">{STORY_DONE}</p>}
     </>
   );
 }
