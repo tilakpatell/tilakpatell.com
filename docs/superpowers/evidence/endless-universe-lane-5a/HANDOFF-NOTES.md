@@ -136,3 +136,30 @@ What `src/lib/land/flight/variety.js` gives Tasks 8 to 13, where it differs from
 - X on a world nothing may be built on says “None of yours within 30 m.”: true, but it’s the general line. The HUD never offers X there, so only a visitor who knows the key sees it.
 - `prompt().kept` is sent four times a second, but nothing in `Fly.jsx` or `FlightHud.jsx` reads it. A visitor learns that a world keeps nothing when they press B, not before.
 - For browser checks: with this container’s Chromium (`chromium-1243`), `--use-gl=swiftshader` (the flags `scripts/online-check.mjs` launches with) left `/fly/hoth` at “Coming down over Hoth…” for 15 minutes. `autopilot-check.mjs`’s `--use-angle=swiftshader --enable-unsafe-swiftshader` brought the flight on in 8 s. `online-check.mjs --fly` itself wasn’t run here.
+
+## Task 13: the contact sheet
+
+### Landed
+
+- `scripts/planet-contact-sheet.mjs`: `node scripts/planet-contact-sheet.mjs [--count 24] [--seed 1] [--out lab/planets/contact]`, to the plan. It writes `n-orbit.png` (the map at 512 × 256), `n-ground.png` (the chart’s middle 3 km at 8 m a pixel, lit from the north-west 40° up), `sheet.png` (six to a row, each orbit map at 384 × 192 over its ground, captioned) and `index.json`. It prints `lab/planets/contact: 24 planets`, and exits 1 when it finds fewer than it was asked for. 24 planets took 2 min 34 s here: 5 to 8 s a planet, after about 18 s for Vite to start.
+- `--system E:sx,sz:i` lays out one system’s planets that land, in its order.
+- The draw, the light and the arguments (`KEEP`, `drawPlanets`, `systemPlanets`, `SUN`, `lightOf`, `argsOf`) are exported and tested in `scripts/planet-contact-sheet.test.mjs`: 12 tests on fake sectors, under a second.
+- `ISLAND.files` lists the script and its test, so they go when the flight goes. `node scripts/flight-island.mjs --check` says ok, with 172 files on the island.
+- Where it differs from the lane plan:
+  - `--system` isn’t in the plan. A draw over about 3,700 sectors put no two planets of one system on the sheet. The plan’s first check needs siblings side by side, so they’re laid out on purpose.
+  - The orbit PNGs are written opaque. The map’s alpha is 0 under the water, which would hide the sea’s colour; the colour under it is the water’s.
+  - The light multiplies the colour in linear light, not the sRGB bytes.
+  - The test file isn’t in the plan’s file table.
+- The plan’s four checks, on the default draw (8 rock, 7 ice, 4 desert, 3 forest, 1 lava, 1 ocean; one exotic, a crystal ice world), and on two systems’ sheets, `E:7,7:14` (six ice and an ocean) and `E:-5,-8:6` (six rock). Nothing needed tuning.
+  1. No two siblings read as one planet recoloured. Each has its own land shapes and its own hue.
+  2. Every map shows land. The forest, ocean and lava worlds show their sea or lava, over 21 to 60 % of their texels. Rock, ice and desert worlds have no sea by type.
+  3. No ground is a flat plane. Once each window’s best-fit plane is taken out, 34 to 803 m of relief is left (a standard deviation of 5 to 161 m).
+  4. The orbit map’s colours are the ground’s. Over each 3 km window, the mean of the map’s texels and the mean of the ground’s own colours are within 5 of 255 on every channel, and within 2 on 23 of the 24.
+- Pictures are in `lab/planets/contact/`, `lab/planets/system-ice/` and `lab/planets/system-rock/` (not committed).
+
+### Left
+
+- The palest ice siblings (`E:7,7:14`’s third, sixth and seventh) are near white. They keep the variety’s guaranteed colour distance, but at that lightness a hue gap barely shows. A lower lightness for some of ice’s slots would make the guarantee visible.
+- Siblings of one family and one character share a recipe. `E:-5,-8:6`’s three rock canyon worlds differ in shape and colour but read as one kind of place. More characters per family would widen that.
+- A planet’s chart starts at a gentle spot, so a ground tile shows the plain round its first place. The ice continents and the plateaus look smooth at 8 m a pixel under this light, with 34 to 177 m of rolling relief over 3 km. The flight’s own light, detail and clutter show more of it.
+- `node scripts/stack-census.mjs --check` was already stale on `main`. This script adds one more importer of `sharp` for the census’s next write.
