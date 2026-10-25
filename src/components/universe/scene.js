@@ -748,15 +748,13 @@ export async function create(canvas, ctx) {
   // way (farStars.js): from anywhere, the other worlds are stars. It's the
   // far layer of generated space too, with room for the budget's (farRoom)
   const farStars = createFarStars(map, { places: FAR_STARS.map((p) => ({ ...p, group: planetOf[p.id]?.group ?? deep.groupOf(p.id) ?? null })), skyFar: SKY_FAR, ...farRoom(device()) });
-  // the Expanse past the rim (expanse/scene/expanse.js): asleep inside it;
-  // its floating origin is the runtime's (re-anchored here as it moves); its
-  // far things drawn in that far layer, and what it builds readied as the
-  // rest is (warm), stopped if it's let go first
-  const origin = runtime().origin;
-  origin.reset();
+  // the Expanse round the ship, everywhere (expanse/scene/expanse.js): made
+  // in the runtime's worker pool; its far things drawn in that far layer,
+  // and what it builds readied as the rest is (warm), stopped if it's let
+  // go first
   const expanse = createExpanse(map, {
     universe: typeof ctx.universe === 'bigint' ? ctx.universe : UNIVERSE,
-    origin,
+    workers: ctx.rt.workers ?? null,
     tier,
     detail: device().detail,
     far: farStars,
