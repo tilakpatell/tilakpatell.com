@@ -162,6 +162,21 @@ describe('capitalLook', () => {
     expect(windows.material.color.r).toBeLessThan(0.1);
   });
 
+  it('burns a game material’s engine aft, its nozzles found, and lays no paint or plating over it', () => {
+    const { holder } = ship();
+    holder.remove(...holder.children.filter((o) => /Engine/.test(o.material.name)));
+    const g = new THREE.CylinderGeometry(0.08, 0.08, 0.3, 12).rotateX(Math.PI / 2).translate(0, 0, -2.1);
+    const game = new THREE.MeshStandardMaterial({ name: 'M_StarDestroyer_MainEngine_01_lods|game', map: new THREE.Texture(), roughness: 1 });
+    game.userData.gameHull = true;
+    const engine = new THREE.Mesh(g, game);
+    holder.add(engine);
+    const done = dressCapital(holder, 'destroyer');
+    expect(engine.material.userData.burning).toBe(true);
+    expect(engine.material.userData.plated).toBeUndefined();
+    expect(engine.material.roughness).toBe(1);
+    expect(done.nozzles).toHaveLength(1);
+  });
+
   it('leaves a ship that isn’t a capital as it was', () => {
     const { holder, hull } = ship();
     expect(dressCapital(holder, 'xwing')).toBeNull();

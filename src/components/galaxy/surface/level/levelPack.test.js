@@ -40,6 +40,28 @@ describe('the pack, read', () => {
     expect(tierTexture('tex/t_snow_cs.ktx2', 'ultra', sizes)).toBe('tex/t_snow_cs.256.ktx2');
   });
 
+  it('says which UV set a map is on where it isn’t the first (the game’s two-UV presets)', () => {
+    const doc = {
+      asset: { version: '2.0' },
+      images: [{ uri: '../tex/a_cs.ktx2' }, { uri: '../tex/a__normal.ktx2' }],
+      textures: [{ source: 0 }, { source: 1 }],
+      materials: [{ name: 'm', pbrMetallicRoughness: { baseColorTexture: { index: 0, texCoord: 1 } }, normalTexture: { index: 1 } }],
+    };
+    const json = new TextEncoder().encode(JSON.stringify(doc).padEnd(Math.ceil(JSON.stringify(doc).length / 4) * 4, ' '));
+    const glb = new Uint8Array(20 + json.length);
+    const v = new DataView(glb.buffer);
+    glb.set([0x67, 0x6c, 0x54, 0x46]);
+    v.setUint32(4, 2, true);
+    v.setUint32(8, glb.length, true);
+    v.setUint32(12, json.length, true);
+    v.setUint32(16, 0x4e4f534a, true);
+    glb.set(json, 20);
+    expect(splitTextures(glb.buffer).slots).toEqual([
+      { material: 0, slot: 'map', uri: '../tex/a_cs.ktx2', texCoord: 1 },
+      { material: 0, slot: 'normalMap', uri: '../tex/a__normal.ktx2' },
+    ]);
+  });
+
   it('takes a GLB’s textures out and says which material wanted which map where', () => {
     const doc = {
       asset: { version: '2.0' },

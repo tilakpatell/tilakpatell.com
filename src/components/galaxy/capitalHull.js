@@ -13,13 +13,19 @@
 // in when the ship loads, the rest of the ship as it came.
 //
 // The Star Destroyer's maps: the hull's map (t_stardestroyer_hull_01_cs, its
-// colour, and its ORM's roughness) on UV1; the game's Star Destroyer panel
-// and detail sheets (t_stardestroyerpanels_01, t_stardestroyerdetails_01:
-// the sheets its far Star Destroyers wear, SS_StarDestroyerPanels_01) on
-// UV0, the panels at the UV's own tiling and the details four times finer;
-// each sheet's colour divided by its mean (so the hull's map keeps its own
-// grey) and its normal blended over the panels' (UDN, as
-// lib/three/surface/gameMaterial.js blends a detail).
+// colour, and its ORM's roughness) on UV1; on UV0 the relief of the game's
+// Star Destroyer panel and detail sheets (t_stardestroyerpanels_01,
+// t_stardestroyerdetails_01: the sheets its far Star Destroyers wear,
+// SS_StarDestroyerPanels_01), the panels at the UV's own tiling and the
+// details four times finer, the details' normal blended over the panels'
+// (UDN, as lib/three/surface/gameMaterial.js blends a detail). Not their
+// colour: painted for the far ship, its windows and greebles, magnified
+// over the deck it smeared into streaks and black and white blocks (the
+// game's close hull, SS_StarDestroyer_2UV_Detailmap_02, tiles a panel
+// normal of its own, T_StarDestroyer_PanelTile_01_N, not in the bucket). A
+// hull whose def names the sheets' colour takes it, each by its mean (so
+// the hull's map keeps its own grey). The rest of the Star Destroyer, its
+// eighty parts, is the pack's own: capitalKit.js.
 //
 // The Venator's (SS_ShipShader_PanelTile_01, the kamino pack's maps): no
 // colour map at all, the hull's own map on UV1 a mask (its RGBAUnique,
@@ -80,8 +86,14 @@ export const GAME_HULLS = {
     parts: [{ mesh: `${LEVELS}/sb_endor/meshes/stardestroyer_hull_01_sb_endor_mesh`, own: /^M_Hull_01$/ }],
     lod: { computer: 0, phone: 0 },
     atlas: { colour: tex('sb_endor', 't_stardestroyer_hull_01_cs'), orm: tex('sb_endor', 't_stardestroyer_hull_01_cs__orm_240cdb7c') },
-    panels: { colour: tex('sb_endor', 't_stardestroyerpanels_01_cs'), normal: tex('sb_endor', 't_stardestroyerpanels_01_nw__normal'), mean: [0.795, 0.792, 0.699], tiling: 1 },
-    details: { colour: tex('sb_endor', 't_stardestroyerdetails_01_cs'), normal: tex('sb_endor', 't_stardestroyerdetails_01_nw__normal'), mean: [0.769, 0.768, 0.7], tiling: 4, strength: 0.8 },
+    // (the sheets' relief alone: their colour is the far Star Destroyer's
+    // (SS_StarDestroyerPanels_01, its painted windows and greebles), and
+    // magnified over the deck it smeared into streaks and black and white
+    // blocks; the game's own close hull, SS_StarDestroyer_2UV_Detailmap_02,
+    // tiles its panel normal over the hull's map, T_StarDestroyer_PanelTile_01_N,
+    // which the bucket hasn't got)
+    panels: { colour: null, normal: tex('sb_endor', 't_stardestroyerpanels_01_nw__normal'), tiling: 1 },
+    details: { colour: null, normal: tex('sb_endor', 't_stardestroyerdetails_01_nw__normal'), tiling: 4, strength: 0.8 },
   },
   venator: {
     // ('red', the markings, is bare too, but its own mesh: capitalLook.js paints it)
@@ -274,8 +286,8 @@ const vec3 = (a) => `vec3( ${a.map(f).join(', ')} )`;
 
 // the hull's material: the game's map on UV1, the sheets on UV0 (the
 // panels' normal as three's own normal map, so three works out the frame
-// from UV0's slopes; the details' colour and normal and the panels' colour
-// patched in)
+// from UV0's slopes; the details' normal patched in, and the sheets'
+// colour where a hull's def names it)
 export function hullMaterial(maps, def, { name = 'M_Hull_01' } = {}) {
   const m = new THREE.MeshStandardMaterial({ name: `${name}|game`, color: 0xffffff, map: maps.atlas, roughness: maps.orm ? 1 : 0.55, metalness: 0 });
   m.userData.gameHull = true;
@@ -289,21 +301,24 @@ export function hullMaterial(maps, def, { name = 'M_Hull_01' } = {}) {
   maps.panelsNormal.repeat.setScalar(def.panels.tiling);
   m.normalMap = maps.panelsNormal;
   const ratio = def.details.tiling / def.panels.tiling;
-  patchShaders(m, 'gamehull', (shader) => {
-    shader.uniforms.uGhPanels = { value: maps.panels };
-    shader.uniforms.uGhDetails = { value: maps.details };
-    shader.uniforms.uGhDetailsN = { value: maps.detailsNormal };
-    shader.fragmentShader = shader.fragmentShader
-      .replace('#include <common>', '#include <common>\nuniform sampler2D uGhPanels;\nuniform sampler2D uGhDetails;\nuniform sampler2D uGhDetailsN;')
-      .replace(
+  const colour = Boolean(maps.panels && maps.details);
+  if (!colour && !maps.detailsNormal) return m;
+  patchShaders(m, colour ? 'gamehull' : 'gamehull-relief', (shader) => {
+    shader.uniforms.uGhPanels = { value: maps.panels ?? null };
+    shader.uniforms.uGhDetails = { value: maps.details ?? null };
+    shader.uniforms.uGhDetailsN = { value: maps.detailsNormal ?? null };
+    let fs = shader.fragmentShader.replace('#include <common>', '#include <common>\nuniform sampler2D uGhPanels;\nuniform sampler2D uGhDetails;\nuniform sampler2D uGhDetailsN;');
+    if (colour)
+      fs = fs.replace(
         '#include <map_fragment>',
         `#include <map_fragment>
   // (the sheets over the hull's map, each by its own mean: the map's grey kept)
   vec3 ghPanel = texture2D( uGhPanels, vNormalMapUv ).rgb / ${vec3(def.panels.mean)};
   vec3 ghDetail = texture2D( uGhDetails, vNormalMapUv * ${f(ratio)} ).rgb / ${vec3(def.details.mean)};
   diffuseColor.rgb *= clamp( ghPanel * ghDetail, 0.0, 2.0 );`,
-      )
-      .replace(
+      );
+    if (maps.detailsNormal)
+      fs = fs.replace(
         '#include <normal_fragment_maps>',
         `#ifdef USE_NORMALMAP_TANGENTSPACE
   // (the details' relief over the panels', UDN)
@@ -316,6 +331,7 @@ export function hullMaterial(maps, def, { name = 'M_Hull_01' } = {}) {
 #include <normal_fragment_maps>
 #endif`,
       );
+    shader.fragmentShader = fs;
   });
   return m;
 }
@@ -414,8 +430,11 @@ export function inFrame(geometry, from, to) {
   }
   const m = new THREE.Matrix4().copy(to).invert().multiply(from);
   g.applyMatrix4(m);
-  // (a mirror turns every triangle inside out: its corners put back in order)
+  // (a mirror turns every triangle inside out: its corners put back in order,
+  // and its tangents' handedness)
   if (m.determinant() < 0) {
+    const t = g.getAttribute('tangent');
+    if (t && t.itemSize === 4) for (let i = 0; i < t.count; i++) t.setW(i, -t.getW(i));
     if (!g.index) g.setIndex([...Array(g.getAttribute('position').count).keys()]);
     const index = g.index;
     for (let i = 0; i + 2 < index.count; i += 3) {
@@ -431,7 +450,7 @@ export function inFrame(geometry, from, to) {
 // of them have, as floats, and one index
 export function joined(list) {
   if (list.length === 1) return list[0];
-  const names = ['position', 'normal', 'uv', 'uv1'].filter((n) => list.every((g) => g.getAttribute(n)));
+  const names = ['position', 'normal', 'tangent', 'uv', 'uv1'].filter((n) => list.every((g) => g.getAttribute(n)));
   const count = list.reduce((sum, g) => sum + g.getAttribute('position').count, 0);
   const out = new THREE.BufferGeometry();
   for (const n of names) {
@@ -491,7 +510,7 @@ function packMesh(url, own) {
   return meshes.get(url);
 }
 
-function packMap(path, size, { srgb, aniso, repeat }) {
+export function packMap(path, size, { srgb, aniso, repeat }) {
   const url = `${path}.${size}.ktx2`;
   if (!maps.has(url)) {
     const p = ktx2Loader()
@@ -609,7 +628,10 @@ async function materialOf(def, { detail, phone, aniso, loadTexture }) {
   const got = await Promise.all(Object.entries(wanted).map(([k, v]) => Promise.resolve(v).then((t) => [k, t]))).then(Object.fromEntries);
   // (the hull's own map at the least, where it has one; and the sheets all or none)
   if (painted ? def.combine && !got.combine : !got.atlas) return null;
-  const sheetNames = painted ? ['tilingNormal', 'breakup', ...(def.breakup.normal ? ['breakupNormal'] : [])] : ['panels', 'panelsNormal', 'details', 'detailsNormal'];
+  // (the hull's sheets: those its def names, a colour sheet left out by a hull that has none)
+  const sheetNames = painted
+    ? ['tilingNormal', 'breakup', ...(def.breakup.normal ? ['breakupNormal'] : [])]
+    : [['panels', def.panels.colour], ['panelsNormal', def.panels.normal], ['details', def.details.colour], ['detailsNormal', def.details.normal]].filter(([, path]) => path).map(([k]) => k);
   const maps = { ...got };
   if (!sheetNames.every((k) => maps[k])) for (const k of sheetNames) delete maps[k];
   return painted ? paintMaterial(maps, def) : hullMaterial(maps, def, { name: def.own });

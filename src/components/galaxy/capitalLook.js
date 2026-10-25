@@ -265,8 +265,16 @@ export function dressCapital(holder, kind, { plating = true, size = 2048, lite =
     };
     const one = (m) => {
       if (!m?.isMeshStandardMaterial) return m;
-      // (the game's own hull, capitalHull.js: its maps are the game's, nothing laid over them)
-      if (m.userData.gameHull) return m;
+      // (the game's own hull, capitalHull.js, and a kit's parts, capitalKit.js:
+      // their maps are the game's, nothing laid over them; an engine's
+      // burns aft as every engine does)
+      if (m.userData.gameHull) {
+        if (!ENGINE_NAME.test(m.name)) return m;
+        const e = m.clone();
+        burn(e, unit, colour);
+        engines.push(mesh);
+        return e;
+      }
       // the game's lights and engine glow in one material of their own (the
       // Nebulon-B's `Emissive`, bare as it came: tune() greyed it, and its
       // mask, which lights only its windows and lamps, didn't come through):

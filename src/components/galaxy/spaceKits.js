@@ -14,7 +14,8 @@
 //     turn about y that puts its bow to +z: measured where each kit's
 //     engines are; the Venator's at +z, the rest at −z; and, where it isn't
 //     the kind's, its game hull's row, capitalHull.js)
-//   dressKit(gltf, slug, { detail, phone, aniso, hull, maps }) → Promise<Object3D>
+//   dressKit(gltf, slug, { detail, phone, aniso, hull, maps, parts }) → Promise<Object3D>
+//     (parts: a kit the level pack has whole drawn from its own parts, capitalKit.js)
 //     a copy of the kit, dressed, in its own frame (a kit it has no kind
 //     for, as it came)
 
@@ -22,6 +23,7 @@ import * as THREE from 'three';
 import { budget, device } from '../../lib/device';
 import { cloneScene } from '../../lib/three/gltfCache';
 import { dressGameHull, dressGameMaps } from './capitalHull';
+import { dressGameKit } from './capitalKit';
 import { dressCapital, isCapital } from './capitalLook';
 import { shadowed } from './capitalShadow';
 
@@ -43,13 +45,13 @@ export const KIT_KINDS = {
   'kamino-jedicruiser': ['lightcruiser', 0, 'jedicruiser'],
 };
 
-export async function dressKit(gltf, slug, { detail = device().detail, phone = device().phone, aniso = budget().aniso, hull = dressGameHull, maps = dressGameMaps } = {}) {
+export async function dressKit(gltf, slug, { detail = device().detail, phone = device().phone, aniso = budget().aniso, hull = dressGameHull, maps = dressGameMaps, parts = dressGameKit } = {}) {
   const root = cloneScene(gltf);
   const row = KIT_KINDS[slug];
   if (!row || !isCapital(row[0])) return root;
   const [kind, turn, own = kind] = row;
   const dressing = { detail, phone, aniso };
-  await Promise.all([hull(root, own, dressing), maps(root, kind, dressing)]);
+  await Promise.all([hull(root, own, dressing), maps(root, kind, dressing), parts(root, own, dressing)]);
   // (in the ship's own frame: centred, turned bow to +z, one long)
   root.updateMatrixWorld(true);
   const box = new THREE.Box3().setFromObject(root);

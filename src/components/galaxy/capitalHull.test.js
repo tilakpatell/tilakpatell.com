@@ -32,7 +32,7 @@ const packHull = () => {
 };
 
 describe('capitalHull', () => {
-  it('names the Star Destroyer’s hull in the space level’s pack, its map and the game’s sheets', () => {
+  it('names the Star Destroyer’s hull in the space level’s pack, its map and the sheets’ relief, not their colour', () => {
     const d = GAME_HULLS.destroyer;
     expect(d.material.test('M_Hull_01_lods')).toBe(true);
     expect(d.material.test('M_Hull_lods')).toBe(false);
@@ -40,7 +40,10 @@ describe('capitalHull', () => {
     expect(d.parts[0].mesh).toMatch(/levels\/sb_endor\/meshes\/stardestroyer_hull_01_sb_endor_mesh$/);
     expect(d.lod).toEqual({ computer: 0, phone: 0 });
     expect(d.atlas.colour).toMatch(/t_stardestroyer_hull_01_cs$/);
-    expect(d.panels.colour).toMatch(/t_stardestroyerpanels_01_cs$/);
+    // (the far Star Destroyer's painted sheets: magnified over the deck, streaks and black and white blocks)
+    expect(d.panels.colour).toBeNull();
+    expect(d.details.colour).toBeNull();
+    expect(d.panels.normal).toMatch(/t_stardestroyerpanels_01_nw__normal$/);
     expect(d.details.normal).toMatch(/t_stardestroyerdetails_01_nw__normal$/);
   });
 
@@ -53,7 +56,9 @@ describe('capitalHull', () => {
 
   it('paints the hull’s map on UV1 and lays the sheets on UV0, their colour by their mean and the details’ relief over the panels’', () => {
     const maps = sheets();
-    const m = hullMaterial(maps, GAME_HULLS.destroyer);
+    // (a hull whose def names the sheets' colour)
+    const withColour = { ...GAME_HULLS.destroyer, panels: { ...GAME_HULLS.destroyer.panels, mean: [0.795, 0.792, 0.699] }, details: { ...GAME_HULLS.destroyer.details, mean: [0.769, 0.768, 0.7] } };
+    const m = hullMaterial(maps, withColour);
     expect(m.userData.gameHull).toBe(true);
     expect(m.metalness).toBe(0);
     expect([maps.atlas.channel, maps.orm.channel, maps.panelsNormal.channel]).toEqual([1, 1, 0]);
@@ -64,6 +69,16 @@ describe('capitalHull', () => {
     expect(s.fragmentShader).toMatch(/diffuseColor\.rgb \*= clamp\( ghPanel \* ghDetail, 0\.0, 2\.0 \)/);
     expect(s.fragmentShader).toMatch(/texture2D\( uGhDetails, vNormalMapUv \* 4\.0000 \)/);
     expect(s.fragmentShader).toMatch(/#include <normal_fragment_maps>/); // (three's own, for any other case)
+    expect(s.fragmentShader).toMatch(/mapN = normalize\( vec3\( mapN\.xy \+ ghDn\.xy/);
+  });
+
+  it('lays the sheets’ relief alone on a hull whose def names no colour of theirs, its own program', () => {
+    const maps = { atlas: map(), orm: map(), panelsNormal: map(), detailsNormal: map() };
+    const m = hullMaterial(maps, GAME_HULLS.destroyer);
+    expect(m.normalMap).toBe(maps.panelsNormal);
+    expect(m.customProgramCacheKey()).toBe('|gamehull-relief');
+    const s = compiled(m);
+    expect(s.fragmentShader).not.toMatch(/ghPanel/);
     expect(s.fragmentShader).toMatch(/mapN = normalize\( vec3\( mapN\.xy \+ ghDn\.xy/);
   });
 
@@ -97,7 +112,9 @@ describe('capitalHull', () => {
     expect(part.material).toBe(partMaterial);
     // (the pack's corner at 2 m on x, in the hull's frame of halves, 4)
     expect(hull.geometry.attributes.position.getX(1)).toBeCloseTo(4, 6);
-    expect(asked).toContainEqual(['t_stardestroyerpanels_01_cs', 2048]);
+    // (the sheets' relief at the device's size, and none of their colour)
+    expect(asked).toContainEqual(['t_stardestroyerpanels_01_nw__normal', 2048]);
+    expect(asked.map(([name]) => name)).not.toContain('t_stardestroyerpanels_01_cs');
   });
 
   it('leaves the ship as it came when the pack’s hull or its map can’t be had, and a kind it has none for', async () => {
@@ -327,6 +344,18 @@ describe('capitalHull', () => {
     expect(await dressGameMaps(new THREE.Group().add(kept), 'moncal', { detail: 'low', loadTexture: async () => map() })).toBe(false);
     expect(await dressGameMaps(new THREE.Group().add(kept), 'moncal', { loadTexture: async () => null })).toBe(false);
     expect(kept.material).toBe(cut);
+  });
+
+  it('keeps the parts’ tangents where every part has them, a mirrored part’s handedness turned', () => {
+    const g = packHull().geometry;
+    g.setAttribute('tangent', new THREE.BufferAttribute(new Float32Array([1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1]), 4));
+    const mirrored = inFrame(g, new THREE.Matrix4().makeScale(-1, 1, 1), new THREE.Matrix4());
+    expect(mirrored.getAttribute('tangent').getW(0)).toBe(-1);
+    const both = joined([inFrame(g, new THREE.Matrix4(), new THREE.Matrix4()), mirrored]);
+    expect(both.getAttribute('tangent').count).toBe(6);
+    expect(both.getAttribute('tangent').getW(3)).toBe(-1);
+    // (one without: none, three's own frame from the UVs)
+    expect(joined([g.clone(), packHull().geometry]).getAttribute('tangent')).toBeUndefined();
   });
 
   it('puts a mirrored part’s triangles back the right way out', () => {

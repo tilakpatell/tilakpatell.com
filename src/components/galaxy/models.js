@@ -38,6 +38,7 @@ import { cutting, disposeLooks, partsOf, partSpecs } from './capitalParts';
 import { dressCapital } from './capitalLook';
 import { casting, shadowed } from './capitalShadow';
 import { dressGameHull, dressGameMaps } from './capitalHull';
+import { dressGameKit } from './capitalKit';
 
 // which way each loaded model's nose points as it comes (turned to +z): the
 // game's wherever Battlefront II (2017) has the ship, and the galaxy's own
@@ -467,8 +468,9 @@ export function createModels({ prepare = null, load: fetchModel = loadGLTF, hull
         tune(root);
         // (the game's own hull where the export left it bare: capitalHull.js; as it came if that fails)
         // (and a cut that wears the game's maps already, them at the pack's sizes, with their ORM)
+        // (and a kit the level pack has whole, its parts the pack's own: capitalKit.js)
         const dressing = { detail: device().detail, phone: device().phone, aniso: budget().aniso };
-        await Promise.all([dressGameHull(root, kind, dressing), dressGameMaps(root, kind, dressing)]);
+        await Promise.all([dressGameHull(root, kind, dressing), dressGameMaps(root, kind, dressing), dressGameKit(root, kind, dressing)]);
         if (dead) return;
         const n = normalise(root, def.nose, kind);
         // (a capital's hull plated, its windows lit, its engines burning aft:
