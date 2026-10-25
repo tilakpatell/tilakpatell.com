@@ -96,3 +96,22 @@ What `src/lib/land/flight/variety.js` gives Tasks 8 to 13, where it differs from
 - The accent mixes in at `accentCover × 0.5`, an area mean, as the plan asks. At the mean of its noises the shader draws no accent at all: its patches need the noise above 1 − cover.
 - A 512 × 256 bake takes about 3.5 s. Task 11’s worker keeps that off the main thread, but on `high` a planet waits that long for its first map.
 - Scarif’s window is almost all sea (99.8 % of texels under water). Its islands sit in a sea 40 km wide round the flight’s start.
+
+## Task 11: the bake in a worker, cached in memory
+
+### Landed
+
+- `src/lib/land/flight/orbitMap.worker.js`: given `{ key, spec, width, height }`, it answers `{ key, width, height, rgba, biome }` with both buffers transferred, and ignores `{ type: 'cancel' }`.
+- `src/lib/land/flight/orbitMaps.js`: `ORBIT_WORKER = 'flight-orbit-map'`, `makeOrbitWorker()` and `createOrbitMaps({ workers, make = makeOrbitWorker, cap = 16 }) → { get(spec, tier), peek(spec, tier), stats(), dispose() }`, to the plan. Lane 5b calls `createOrbitMaps({ workers: rt.workers })` once and `get(planetSpecOf(id), tier)`; it answers `{ width, height, rgba, biome }`, the same shape as `bakeOrbitMap`, or null.
+  - A map is keyed `${spec.id}:${width}x${height}`, so `low` and `mid` share one. A chart (`chartedAt`) doesn’t change the key: the map is the whole sphere’s, and `sphereField` doesn’t read `round.at`.
+  - Two asks at once share one bake. It keeps the 16 most recently used, and an ask served from memory or a `peek` counts as a use.
+  - It writes nothing anywhere. A test reads `orbitMaps.js`, `orbitMap.js` and the worker for `localStorage`, `indexedDB`, `rt.store` and `rt.saves`.
+- In Chromium on the dev server (software GL, the page’s real pool and a real module worker), an ocean (`e:3,-2:5:0`) took 1.0 to 1.4 s at 256 × 128, two asks at once shared one bake, and `low` was served from memory. A lava world, Hoth’s plane window and a gas giant took 1.7 to 2.1 s together, and the ocean at 512 × 256 took 3.1 to 4.2 s. Over those seconds the page’s longest gap between frames was 120 to 580 ms (the container was busy with other browsers), never the length of a bake, so the bake is off the main thread. `dispose()` left the pool with no group and the cache empty. There were no page errors. Picture in `lab/orbit-check/` (not committed).
+- Where it differs from the lane plan:
+  - A bake the worker can’t make (no spec, or a ground that throws) is answered with `{ key }` alone, and the worker lives on. Without that a throw would end the worker through the pool’s `onerror`.
+  - `get` never throws or rejects. A missing spec or id, a pool whose `request` throws or rejects, an answer with no map, or an ask after `dispose` each give null. A map that lands after `dispose` isn’t kept.
+
+### Left
+
+- Nothing imports `orbitMaps.js` yet, so `npm run build` doesn’t bundle the worker. It’s the same `new Worker(new URL(…, import.meta.url), { type: 'module' })` form the terrain worker builds with. Lane 5b’s first import of it should be checked in a production build.
+- There’s no `cancel`. A planet that leaves view keeps its bake going, and with one worker the next planet waits behind it. With a 512 × 256 bake taking about 3.5 s, lane 5b may want `get` to pass a priority, or a `cancel(spec, tier)` that calls the pool’s.
