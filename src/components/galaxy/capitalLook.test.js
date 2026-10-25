@@ -110,6 +110,20 @@ describe('capitalLook', () => {
     expect(holder.children.filter((o) => o.userData.glows)).toHaveLength(1);
   });
 
+  it('lights a bare disc of a strong colour at the stern, facing aft, as an engine’s mouth, not a lamp', () => {
+    const { holder } = ship();
+    holder.remove(...holder.children.filter((o) => /Engine/.test(o.material.name)));
+    const g = new THREE.CylinderGeometry(0.08, 0.08, 0.05, 12).rotateX(Math.PI / 2).translate(0, 0, -1.6);
+    const disc = new THREE.Mesh(g, new THREE.MeshStandardMaterial({ name: 'Material.016', color: 0x00c7ff, emissive: 0x00c7ff }));
+    holder.add(disc);
+    const done = dressCapital(holder, 'acclamator');
+    // (its side's engine light, blue-white, not the model's cyan)
+    expect(disc.material.emissive.getHex()).not.toBe(0x00c7ff);
+    expect(disc.material.emissive.r).toBeGreaterThan(0.5);
+    expect(disc.material.emissiveIntensity).toBeGreaterThan(1.2);
+    expect(done.nozzles).toHaveLength(1);
+  });
+
   it('lights the MC80’s own lit windows, which the export gave the hull’s breakup, as small panes', () => {
     const { holder } = ship();
     const windows = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.2, 0.2), new THREE.MeshStandardMaterial({ name: 'MC_80_light_Met', emissive: '#ffffff', emissiveIntensity: 3.2, map: new THREE.Texture() }));

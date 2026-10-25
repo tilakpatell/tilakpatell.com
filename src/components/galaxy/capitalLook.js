@@ -188,9 +188,11 @@ export function nozzlesOf(meshes) {
     const r = Math.max(...pts.map((p) => Math.hypot(p[0] - x, p[1] - y)));
     return [x, y, Math.min(...pts.map((p) => p[2])), r];
   });
+  // (a thin disc's two faces, the Acclamator's engines': one nozzle, its hindmost, not a glow on each)
+  const once = out.filter((o) => !out.some((p) => p !== o && p[2] < o[2] && Math.hypot(p[0] - o[0], p[1] - o[1]) < Math.max(p[3], o[3]) * 0.5));
   // (the biggest first; a sliver or a speck is no nozzle)
-  const big = Math.max(...out.map((o) => o[3]));
-  return out
+  const big = Math.max(...once.map((o) => o[3]));
+  return once
     .filter((o) => o[3] > big * 0.25)
     .sort((p, q) => q[3] - p[3])
     .slice(0, 24);
@@ -244,6 +246,20 @@ export function dressCapital(holder, kind, { plating = true, size = 2048, lite =
   holder.traverse((o) => o.isMesh && meshes.push(o));
   for (const mesh of meshes) {
     const unit = mesh.matrixWorld.clone();
+    // (wholly in the ship's aft quarter, a face of it aft: in the unit frame, the stern's at z −0.5)
+    const aft = () => {
+      const g = mesh.geometry;
+      if (!g.boundingBox) g.computeBoundingBox();
+      return new THREE.Box3().copy(g.boundingBox).applyMatrix4(mesh.matrixWorld).max.z < -0.25 && nozzlesOf([mesh]).length > 0;
+    };
+    const alight = (m) => {
+      const g = m.clone();
+      g.color.setRGB(...colour).multiplyScalar(0.25);
+      g.emissive.setRGB(...colour);
+      g.emissiveIntensity = 1.6;
+      engines.push(mesh);
+      return g;
+    };
     const one = (m) => {
       if (!m?.isMeshStandardMaterial) return m;
       // (the game's own hull, capitalHull.js: its maps are the game's, nothing laid over them)
@@ -304,18 +320,14 @@ export function dressCapital(holder, kind, { plating = true, size = 2048, lite =
       // an engine's own glow, a bare material named for it (the Executor's,
       // the Gozanti's, the GR-75's, whatever colour the model gave it): alight
       // in its side's engine light, and its faces aft the nozzles' glow
-      if (ENGINE_NAME.test(m.name) && !m.map && !m.transparent) {
-        const g = m.clone();
-        g.color.setRGB(...colour).multiplyScalar(0.25);
-        g.emissive.setRGB(...colour);
-        g.emissiveIntensity = 1.6;
-        engines.push(mesh);
-        return g;
-      }
+      if (ENGINE_NAME.test(m.name) && !m.map && !m.transparent) return alight(m);
       // a lamp, glass, black: as it came
       if (m.transparent || LAMP.test(m.name) || BARE_BLACK.test(m.name)) return m;
-      // (a bare one of a strong colour a model didn't name, the Acclamator's
-      // blue ones: a lamp, alight in its colour)
+      // (a bare one of a strong colour a model didn't name at the stern,
+      // facing aft, the Acclamator's blue discs: its engines' mouths, alight
+      // as an engine's own glow, not a flat disc of the model's cyan)
+      if (!m.map && saturation(m.color) > 0.6 && aft()) return alight(m);
+      // (and elsewhere, the Acclamator's blue ones on its tower: a lamp, alight in its colour)
       if (!m.map && saturation(m.color) > 0.6) {
         const l = m.clone();
         l.emissive.copy(m.color);
