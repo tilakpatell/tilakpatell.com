@@ -1,34 +1,51 @@
-// The big things as landmarks: the Maw, the Veil and the Cradle, and the
-// big stars (Ember, Halcyon, the Twins, the Lantern, the home sun, and in
-// the Rick and Morty sector the Curve's sun), drawn on the sky in their true
-// direction at skyFar (deepspace.js's SKY_FAR), so they read from anywhere
-// on the map. Each is drawn at least so big across (`least`: the Maw 4°, a
-// nebula 14°, a star's glare 4°, the Lantern 2.5°), and as it grows past
-// that on the way in, at its true size; past where it's real (`real`: where
-// its true size meets the least, for the Maw and the nebulae; forty of its
-// radii for a star; twenty of its reach for the Lantern) it's all landmark
-// and the real thing is hidden; inside, the real thing; over a fifth either
-// side they crossfade (landK), so nothing pops.
+// The big things as landmarks: the Maw and the big stars (Ember, Halcyon,
+// the Twins, the Lantern, the home sun, and in the Rick and Morty sector the
+// Curve's sun), drawn on the sky in their true direction at skyFar
+// (deepspace.js's SKY_FAR), so they read from anywhere on the map. Each is
+// drawn at least so big across (`least`: the Maw 4°, a star's glare 4°, the
+// Lantern 2.5°), and as it grows past that on the way in, at its true size;
+// past where it's real (`real`: where its true size meets the least, for
+// the Maw; forty of its radii for a star; twenty of its reach for the
+// Lantern) it's all landmark and the real thing is hidden; inside, the real
+// thing; over a fifth either side they crossfade (landK), so nothing pops.
+//
+// The nebulae, the Veil and the Cradle, are places still: aim.js aims at
+// them, farStars.js keeps off them (LANDMARK_IDS) and kOf says where their
+// names show, as it did. But a quad on the sky can't be flown into, so
+// they're drawn by nebula/, fixed in the world, as NEBULAE hands them over.
+// Their rows come last, past the draw's instanceCount, and draw nothing; a
+// landmark never hides their groups.
 //
 // How each looks: a star as galaxy/sky.js draws a system's sun (a white-hot
 // disc in a glare and faint rays, in its colour); the Lantern a blue-white
 // point with two beams sweeping round; the Maw a black shadow, its disk
 // tipped as maw.js's TILT has it (white-blue hot inside to red outside, the
 // side coming toward you brighter, swirling), the far side of it bent up
-// over the top and a thin photon ring; a nebula a cloud painted once into an
-// atlas (warped noise in its own colours, dark dust lanes across it that
-// dim what's behind, a few young stars), each its own cell.
+// over the top and a thin photon ring.
 //
-// The rules (LANDMARKS, drawnAngle, landK) are pure and tested;
-// createLandmarks draws them all as one instanced quad, one draw call,
-// premultiplied (light adds; the Maw's shadow and the dust take away),
-// depth test off, in the opaque list just after the far stars (farStars.js)
-// so anything solid drawn after covers it.
+// Each stands upright in the world, not on the screen (quadAxes): it faces
+// the camera with its up the map's +y as near as it can be, so when the
+// ship rolls it rolls with the stars. Straight overhead or under, the map's
+// +x stands in for +y, and the quad is turned half round if its up would
+// point down. Every look here is the same turned half round, so that never
+// shows; a star's rays may turn once as it crosses into that cap (within
+// 2.6° of straight up or down), the one place the two meet.
 //
-// createLandmarks(parent, { renderer, small, level, skyFar })
+// The rules (LANDMARKS, NEBULAE, drawnAngle, landK, quadAxes) are pure and
+// tested; createLandmarks draws them all as one instanced quad, one draw
+// call, premultiplied (light adds; the Maw's shadow takes away), in the
+// opaque list just after the far stars (farStars.js). It tests depth and
+// writes none, so whatever is in front covers it: a far world's disc, a
+// mesh, the landing's sky on foot.
+//
+// createLandmarks(parent, { skyFar })
 //   → { mesh, update(camera, t, { sector, groups }), kOf(id) → 0 (real) … 1 (landmark) | null, dispose() }
 // `groups(id)` is the real thing's group (deep.js's wonder, or the home
 // sun's), or null; `t` the scene's clock (the Twins go round on it).
+// NEBULAE: [{ id, at, r, colors, seed, form }], nebula/rules.js's checkDesc's
+// shape, deep.js's nebulae in its order.
+// quadAxes(dir) → { right, up }: unit, square to dir (from the camera) and
+// to each other, up's y never under 0.
 
 import * as THREE from 'three';
 import { WONDERS, binaryAt, reachOf } from './deep';
@@ -36,11 +53,13 @@ import { SUN } from './layout';
 import { TILT } from './maw';
 
 const deg = (d) => (d * Math.PI) / 180;
+// (a nebula's least is only where its name hands over now: kOf)
 const LEAST = { hole: deg(4), nebula: deg(14), star: deg(4), pulsar: deg(2.5) };
 const KIND = { star: 0, hole: 1, nebula: 2, pulsar: 3 };
 const STAR_REAL = 40; // a star is real within this many of its radii
 const PULSAR_REAL = 20; // the Lantern within this many of its reach
 const FADE = 0.2; // the crossfade, a fifth either side of real
+const POLE = 0.999; // nearer the map's +y (or −y) than this, a quad's up is taken from +x
 
 // the angle across it's drawn at: its true size, or the least, whichever's bigger
 export const drawnAngle = (r, dist, least) => Math.max(least, 2 * Math.atan(r / Math.max(dist, 1e-6)));
@@ -53,22 +72,25 @@ export function landK(dist, real) {
 const meets = (r, least) => r / Math.tan(least / 2);
 
 const wonder = (id) => WONDERS.find((w) => w.id === id);
+// (each nebula's form, nebula/rules.js's FORMS: the Veil what's left of a
+// star that blew up, the Cradle where stars are born; another, a cloud)
+const FORM = { veil: 'shell', cradle: 'nursery' };
+export const NEBULAE = WONDERS.filter((w) => w.kind === 'nebula').map((w) => ({ id: w.id, at: w.at, r: w.r, colors: w.colors, seed: w.id, form: FORM[w.id] ?? 'cloud' }));
 const star = (w) => ({ id: w.id, kind: 'star', group: w.id, r: w.r, least: LEAST.star, real: w.r * STAR_REAL, colors: [w.color], sector: w.sector ?? 'main' });
 const twins = wonder('twins');
 const maw = wonder('maw');
 const lantern = wonder('lantern');
 export const LANDMARKS = [
   { id: 'maw', kind: 'hole', group: 'maw', r: maw.disk, least: LEAST.hole, real: meets(maw.disk, LEAST.hole), colors: ['#fff3e0', '#ff6a2a'], sector: 'main' },
-  ...['veil', 'cradle'].map((id, cell) => {
-    const w = wonder(id);
-    return { id, kind: 'nebula', group: id, r: w.r, least: LEAST.nebula, real: meets(w.r, LEAST.nebula), colors: w.colors, sector: 'main', cell };
-  }),
   ...['ember', 'halcyon', 'curvesun'].map((id) => star(wonder(id))),
   { id: 'sun', kind: 'star', group: 'sun', r: SUN.r, least: LEAST.star, real: SUN.r * STAR_REAL, colors: ['#ffcf6a'], sector: 'main' },
   { id: 'twins', kind: 'star', group: 'twins', part: 0, r: twins.r, least: LEAST.star, real: twins.r * STAR_REAL, colors: [twins.color], sector: 'main' },
   { id: 'twins', kind: 'star', group: 'twins', part: 1, r: twins.pair.r, least: LEAST.star, real: twins.r * STAR_REAL, colors: [twins.pair.color], sector: 'main' },
   { id: 'lantern', kind: 'pulsar', group: 'lantern', r: lantern.r, least: LEAST.pulsar, real: reachOf(lantern) * PULSAR_REAL, colors: [lantern.color], sector: 'main' },
+  // (last, past the draw: places, not drawn here)
+  ...NEBULAE.map((d) => ({ id: d.id, kind: 'nebula', group: d.id, r: d.r, least: LEAST.nebula, real: meets(d.r, LEAST.nebula), colors: d.colors, sector: 'main' })),
 ];
+const DRAWN = LANDMARKS.filter((l) => l.kind !== 'nebula').length;
 export const LANDMARK_IDS = new Set(LANDMARKS.map((l) => l.id));
 
 // where each is now (the Twins go round each other)
@@ -80,25 +102,29 @@ function centreOf(l, t) {
 // the Maw's disk's normal, in its own (the map's) space
 const MAW_AXIS = new THREE.Vector3(0, 1, 0).applyEuler(new THREE.Euler(...TILT));
 
-const NOISE = /* glsl */ `
-float hash2(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
-float vnoise(vec2 p) {
-  vec2 i = floor(p);
-  vec2 f = fract(p);
-  f = f * f * (3.0 - 2.0 * f);
-  return mix(mix(hash2(i), hash2(i + vec2(1.0, 0.0)), f.x), mix(hash2(i + vec2(0.0, 1.0)), hash2(i + vec2(1.0, 1.0)), f.x), f.y);
+// a quad's right and up, facing along dir: up is the map's +y (or, within
+// POLE of it, its +x) less its part along dir; turned half round if that
+// points down, which keeps it square and facing the camera (right × up is
+// back along dir either way). With no dir to speak of (the camera at its
+// middle, where it isn't drawn), it faces down −z. The vertex shader does
+// this line for line
+const cross = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+const unit = (v) => {
+  const l = Math.hypot(v[0], v[1], v[2]);
+  return [v[0] / l, v[1] / l, v[2] / l];
+};
+export function quadAxes(dir) {
+  const f = Math.hypot(dir[0], dir[1], dir[2]) > 1e-3 ? unit(dir) : [0, 0, -1];
+  const ref = Math.abs(f[1]) > POLE ? [1, 0, 0] : [0, 1, 0];
+  const right = unit(cross(f, ref));
+  const up = cross(right, f);
+  const s = up[1] < 0 ? -1 : 1;
+  return { right: right.map((v) => v * s), up: up.map((v) => v * s) };
 }
-float fbm(vec2 p) {
-  float s = 0.0;
-  float a = 0.5;
-  for (int i = 0; i < 6; i++) {
-    s += a * vnoise(p);
-    p = p * 2.03 + vec2(1.7, 9.2);
-    a *= 0.5;
-  }
-  return s;
-}`;
 
+// (upright in the world: quadAxes, from the camera in the parent's space,
+// uCam; the Maw's axis in that basis as it was in the view's, x right, y
+// up, z toward you, so its fragment code reads it as before)
 const VERT = /* glsl */ `
 attribute vec3 aCenter;
 attribute float aSize;
@@ -106,15 +132,14 @@ attribute float aKind;
 attribute vec3 aCol0;
 attribute vec3 aCol1;
 attribute float aK;
-attribute float aCell;
 attribute vec3 aAxis;
 uniform float uFar;
+uniform vec3 uCam;
 varying vec2 vUv;
 varying float vKind;
 varying vec3 vCol0;
 varying vec3 vCol1;
 varying float vK;
-varying float vCell;
 varying vec3 vAxis;
 void main() {
   vUv = position.xy;
@@ -122,27 +147,30 @@ void main() {
   vCol0 = aCol0;
   vCol1 = aCol1;
   vK = aK;
-  vCell = aCell;
-  vAxis = normalize((modelViewMatrix * vec4(aAxis, 0.0)).xyz);
-  vec4 mv = modelViewMatrix * vec4(aCenter, 1.0);
+  vec3 d = aCenter - uCam;
+  vec3 f = dot(d, d) > 1e-6 ? normalize(d) : vec3(0.0, 0.0, -1.0);
+  vec3 ref = abs(f.y) > ${POLE.toFixed(6)} ? vec3(1.0, 0.0, 0.0) : vec3(0.0, 1.0, 0.0);
+  vec3 right = normalize(cross(f, ref));
+  vec3 up = cross(right, f);
+  float s = up.y < 0.0 ? -1.0 : 1.0;
+  right *= s;
+  up *= s;
+  vAxis = vec3(dot(aAxis, right), dot(aAxis, up), -dot(aAxis, f));
   float extent = uFar * tan(aSize * 0.5);
-  mv.xy += position.xy * extent;
-  gl_Position = aK > 0.0 ? projectionMatrix * mv : vec4(2.0, 2.0, 2.0, 1.0);
+  vec3 corner = aCenter + (right * position.x + up * position.y) * extent;
+  gl_Position = aK > 0.0 ? projectionMatrix * modelViewMatrix * vec4(corner, 1.0) : vec4(2.0, 2.0, 2.0, 1.0);
   // (never cut by the far plane: on foot it's at the landing's sky,
   // footScene's far(), which the landmarks are well past)
   if (aK > 0.0) gl_Position.z = min(gl_Position.z, gl_Position.w * 0.999999);
 }`;
 
 const FRAG = /* glsl */ `
-uniform sampler2D uAtlas;
-uniform float uHasAtlas;
 uniform float uTime;
 varying vec2 vUv;
 varying float vKind;
 varying vec3 vCol0;
 varying vec3 vCol1;
 varying float vK;
-varying float vCell;
 varying vec3 vAxis;
 // a big sun, from far off (galaxy/sky.js's, made to carry across the map):
 // a white-hot disc in a wide glare of its colour, with long faint rays
@@ -184,13 +212,6 @@ void main() {
     vec3 light = disk + hot * arc + vCol0 * photon * 1.6;
     float edge = smoothstep(1.0, 0.85, r);
     c = vec4(light * edge, shadow * (1.0 - near * ring));
-  } else if (vKind < 2.5) {
-    // a nebula: its cell of the atlas (light, and the dust's dimming)
-    if (uHasAtlas > 0.5) {
-      vec2 cell = vec2((uv.x * 0.5 + 0.5 + vCell) * 0.5, uv.y * 0.5 + 0.5);
-      vec4 t = texture2D(uAtlas, cell);
-      c = vec4(t.rgb, t.a * 0.6);
-    }
   } else {
     // the Lantern: a point in a glare, two beams sweeping round
     float a = uTime * 1.6;
@@ -203,50 +224,17 @@ void main() {
   gl_FragColor = c * vK;
 }`;
 
-// the nebulae, painted once: each cell's light (rgb) and its dust (a)
-const PAINT_VERT = 'varying vec2 vUv; void main() { vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }';
-const PAINT_FRAG = /* glsl */ `
-uniform vec3 uCol[6];
-varying vec2 vUv;
-${NOISE}
-void main() {
-  float cell = vUv.x < 0.5 ? 0.0 : 1.0;
-  vec2 p = vec2(fract(vUv.x * 2.0), vUv.y) * 2.0 - 1.0;
-  vec3 c0 = cell < 0.5 ? uCol[0] : uCol[3];
-  vec3 c1 = cell < 0.5 ? uCol[1] : uCol[4];
-  vec3 c2 = cell < 0.5 ? uCol[2] : uCol[5];
-  vec2 s = p * 2.2 + cell * 17.3;
-  vec2 q = vec2(fbm(s), fbm(s + vec2(5.2, 1.3))) - 0.5;
-  vec2 w = s + q * 2.4;
-  float gas = fbm(w);
-  float rr = length(p + q * 0.3);
-  float m = exp(-rr * rr * 1.3) * (1.0 - smoothstep(0.78, 1.0, length(p)));
-  float body = smoothstep(0.22, 0.8, gas * (0.6 + 0.8 * m)) * m;
-  float mixc = fbm(w * 1.7 + 3.1);
-  vec3 col = mix(c0, c1, smoothstep(0.35, 0.65, mixc));
-  col = mix(col, c2, smoothstep(0.6, 0.85, fbm(w * 2.3 + 8.0)) * 0.6);
-  col = mix(col, vec3(dot(col, vec3(0.45))), body * body * 0.35);
-  float dust = smoothstep(0.55, 0.78, fbm(w * 3.1 + vec2(11.0, 4.0))) * m;
-  vec3 light = col * body * 0.75 * (1.0 - dust * 0.8) + c0 * m * 0.05;
-  // a few young stars in the thick of it
-  vec2 g = floor(vUv * vec2(512.0, 256.0));
-  float st = step(0.9985, hash2(g + cell * 91.0)) * body;
-  light += vec3(1.4, 1.35, 1.25) * st;
-  gl_FragColor = vec4(light, dust * 0.9);
-}`;
-
-// the atlas's cell size, by the detail level (lib/device)
-const cellSize = ({ small, level }) => (!small && (level === 'high' || level === 'ultra') ? 1024 : 512);
-
-export function createLandmarks(parent, { renderer = null, small = false, level = null, skyFar }) {
+export function createLandmarks(parent, { skyFar }) {
+  // (every row has its attributes, so a row's index reads the same; only
+  // those before the nebulae are drawn)
   const n = LANDMARKS.length;
   const quad = new THREE.PlaneGeometry(2, 2);
   const geo = new THREE.InstancedBufferGeometry();
   geo.index = quad.index;
   geo.setAttribute('position', quad.attributes.position);
-  geo.instanceCount = n;
+  geo.instanceCount = DRAWN;
   const inst = (size) => new THREE.InstancedBufferAttribute(new Float32Array(n * size), size).setUsage(THREE.DynamicDrawUsage);
-  const A = { aCenter: inst(3), aSize: inst(1), aKind: inst(1), aCol0: inst(3), aCol1: inst(3), aK: inst(1), aCell: inst(1), aAxis: inst(3) };
+  const A = { aCenter: inst(3), aSize: inst(1), aKind: inst(1), aCol0: inst(3), aCol1: inst(3), aK: inst(1), aAxis: inst(3) };
   for (const [k, a] of Object.entries(A)) geo.setAttribute(k, a);
   const col = new THREE.Color();
   LANDMARKS.forEach((l, i) => {
@@ -255,46 +243,19 @@ export function createLandmarks(parent, { renderer = null, small = false, level 
     A.aCol0.setXYZ(i, col.r, col.g, col.b);
     col.set(l.colors[1] ?? l.colors[0]).convertSRGBToLinear();
     A.aCol1.setXYZ(i, col.r, col.g, col.b);
-    A.aCell.setX(i, l.cell ?? 0);
     A.aAxis.setXYZ(i, MAW_AXIS.x, MAW_AXIS.y, MAW_AXIS.z);
   });
-
-  // the nebulae's atlas, painted once (with no renderer, as in Node, none:
-  // the nebulae aren't drawn)
-  let atlas = null;
-  if (renderer) {
-    const size = cellSize({ small, level });
-    atlas = new THREE.WebGLRenderTarget(size * 2, size, { type: THREE.UnsignedByteType, generateMipmaps: true, minFilter: THREE.LinearMipmapLinearFilter });
-    const neb = LANDMARKS.filter((l) => l.kind === 'nebula');
-    const cols = neb.flatMap((l) => [0, 1, 2].map((k) => new THREE.Color(l.colors[k] ?? l.colors[0]).convertSRGBToLinear()));
-    const paint = new THREE.ShaderMaterial({ vertexShader: PAINT_VERT, fragmentShader: PAINT_FRAG, uniforms: { uCol: { value: cols } }, depthTest: false, depthWrite: false });
-    const scene = new THREE.Scene();
-    scene.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), paint));
-    const was = { target: renderer.getRenderTarget(), toneMapping: renderer.toneMapping, autoClear: renderer.autoClear };
-    try {
-      renderer.toneMapping = THREE.NoToneMapping;
-      renderer.autoClear = true;
-      renderer.setRenderTarget(atlas);
-      renderer.render(scene, new THREE.Camera());
-    } finally {
-      renderer.setRenderTarget(was.target);
-      renderer.toneMapping = was.toneMapping;
-      renderer.autoClear = was.autoClear;
-      scene.children[0].geometry.dispose();
-      paint.dispose();
-    }
-  }
 
   const mat = new THREE.ShaderMaterial({
     vertexShader: VERT,
     fragmentShader: FRAG,
-    uniforms: { uFar: { value: skyFar }, uAtlas: { value: atlas?.texture ?? null }, uHasAtlas: { value: atlas ? 1 : 0 }, uTime: { value: 0 } },
-    // premultiplied: light adds, the shadow and the dust take away what's behind
+    uniforms: { uFar: { value: skyFar }, uCam: { value: new THREE.Vector3() }, uTime: { value: 0 } },
+    // premultiplied: light adds, the shadow takes away what's behind
     blending: THREE.CustomBlending,
     blendSrc: THREE.OneFactor,
     blendDst: THREE.OneMinusSrcAlphaFactor,
     transparent: false,
-    depthTest: false,
+    depthTest: true,
     depthWrite: false,
   });
   const mesh = new THREE.Mesh(geo, mat);
@@ -305,7 +266,7 @@ export function createLandmarks(parent, { renderer = null, small = false, level 
 
   const hidden = new Map(); // group → whether this hid it (only its own undone)
   const ks = LANDMARKS.map(() => 1);
-  const camAt = new THREE.Vector3();
+  const camAt = mat.uniforms.uCam.value; // (the camera in the parent's space)
   return {
     mesh,
     update(camera, t = 0, { sector = 'main', groups = () => null } = {}) {
@@ -325,10 +286,16 @@ export function createLandmarks(parent, { renderer = null, small = false, level 
         const s = dist > 1e-6 ? skyFar / dist : 0;
         A.aCenter.setXYZ(i, camAt.x + dx * s, camAt.y + dy * s, camAt.z + dz * s);
         A.aSize.setX(i, drawnAngle(l.r, dist, l.least));
-        A.aK.setX(i, k);
-        // the real thing: hidden while it's all landmark, or in another sector
-        const hide = !here || k >= 1;
-        hideGroup.set(l.group, (hideGroup.get(l.group) ?? true) && hide);
+        if (i < DRAWN) {
+          A.aK.setX(i, k);
+          // the real thing: hidden while it's all landmark, or in another sector
+          const hide = !here || k >= 1;
+          hideGroup.set(l.group, (hideGroup.get(l.group) ?? true) && hide);
+        } else {
+          // (a nebula: its k is its name's alone; it's nebula/'s to draw,
+          // and its group is left as it is)
+          A.aK.setX(i, 0);
+        }
       });
       for (const [id, hide] of hideGroup) {
         const g = groups(id);
@@ -352,7 +319,6 @@ export function createLandmarks(parent, { renderer = null, small = false, level 
       geo.dispose();
       quad.dispose();
       mat.dispose();
-      atlas?.dispose();
     },
   };
 }

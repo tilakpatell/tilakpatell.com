@@ -780,9 +780,9 @@ export async function create(canvas, ctx) {
   // and every place past where it's real drawn as a star instead, the
   // galaxy's way (farStars.js): from anywhere, the other worlds are stars
   const farStars = createFarStars(map, { places: FAR_STARS.map((p) => ({ ...p, group: planetOf[p.id]?.group ?? deep.groupOf(p.id) ?? null })), skyFar: SKY_FAR });
-  // and the big things, the Maw, the nebulae and the big stars, as landmarks
-  // on the sky, at least so big across from anywhere (landmarks.js)
-  const landmarks = createLandmarks(map, { renderer, small, level: device().detail, skyFar: SKY_FAR });
+  // and the big things, the Maw and the big stars, as landmarks on the sky,
+  // upright in the world, at least so big across from anywhere (landmarks.js)
+  const landmarks = createLandmarks(map, { skyFar: SKY_FAR });
   const landmarkGroup = (id) => deep.groupOf(id) ?? (id === 'sun' ? sun.group : null);
   // the aim (aim.js): while flying, the star the nose is on (the way the
   // reticle is from the eye, the ship's nose six units ahead), in this
