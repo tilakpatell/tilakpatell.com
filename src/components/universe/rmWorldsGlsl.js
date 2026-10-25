@@ -310,9 +310,23 @@ vec3 rmSurface(vec3 p, float t, float night, inout vec3 glow, inout float rough)
 
   // Cronenberg World: the Earth Rick left behind, its continents gone to
   // flesh, pink and bruised and sickly green, veined and lumpy, in a murky
-  // sea; the land breathing, its veins throbbing, survivors' fires at night
+  // sea; the land breathing, its veins throbbing, survivors' fires at night.
+  // Its coasts are the real Earth's, C-137's own (RM_LAND: the map's
+  // cronenberg-land, softened about two degrees either side, read as how
+  // far in from the coast a point is), else blobs where the lands are
   cronenberg: `
 vec3 rmSurface(vec3 p, float t, float night, inout vec3 glow, inout float rough) {
+#ifdef RM_LAND
+  // (the map's layout, sphere.mjs's: u round from the -x side, v up; read
+  // at its own level, so the seam where u wraps round draws no line)
+  vec3 d = normalize(p);
+  vec2 uv = vec2(fract(atan(d.z, -d.x) / 6.2831853 + 1.0), 1.0 - acos(clamp(d.y, -1.0, 1.0)) / 3.1415927);
+  // (a coast blurred by s reads (m - 0.5) / 0.4 s in from it, near enough:
+  // s is 0.037 radians, so e is in radians, as the blobs' is)
+  float e = 0.092 * (textureLod(uRmLand, uv, 0.0).r - 0.5);
+  // (the coasts made lumpy, as the show would draw them, and the land breathing in and out)
+  e += 0.006 + 0.04 * (rmShape(p * 6.0 + 51.0) - 0.5) + 0.012 * sin(t * 0.55);
+#else
   // Earth's lands, near enough: latitude, longitude, reach (degrees)
   const vec3 LAND[32] = vec3[32](
     vec3(54.0, -102.0, 16.0), vec3(40.0, -97.0, 13.0), vec3(38.0, -82.0, 8.0), vec3(64.0, -122.0, 12.0),
@@ -333,6 +347,7 @@ vec3 rmSurface(vec3 p, float t, float night, inout vec3 glow, inout float rough)
   }
   // (coasts the show would draw, and the land breathing in and out)
   e += 0.03 + 0.15 * (rmShape(p * 3.0 + 51.0) - 0.5) + 0.012 * sin(t * 0.55);
+#endif
   float land = step(0.0, e);
   float m = rmShape(p * 2.4 + 13.0);
   vec3 col = vec3(0.93, 0.6, 0.58);

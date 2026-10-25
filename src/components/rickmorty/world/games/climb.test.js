@@ -226,3 +226,63 @@ describe('the climb kind: up the stairs while they keep still, and on to the top
     expect(climb({ perks: { stun: 1, slow: 1 } })).toEqual(climb());
   });
 });
+
+// Bird World's: things to pick up (some up the ledges), and the climb won when they're all picked
+describe('a climb with things to pick up', () => {
+  const PICKS = ['grass', 'up-top'];
+  const picking = (o = {}) => newClimb({ ledges: LEDGES, stairs: STAIRS, top: null, foot: null, picks: PICKS, ...o });
+
+  it('is never won with nothing to win: no top and nothing to pick up', () => {
+    let g = newClimb({ ledges: LEDGES, stairs: STAIRS, top: null, foot: null });
+    g = stepClimb(g, on('landing'));
+    expect(g.phase).toBe('run');
+    // (off the ledge into the air, and down: the null top is no win)
+    g = stepClimb(g, air());
+    g = wait(g, 1, ground());
+    expect(g.phase).toBe('run');
+  });
+
+  it('picks each thing once, starts on the first pick, and is won on the last', () => {
+    let g = picking();
+    expect(g.picks).toEqual(PICKS);
+    expect(g.picked).toEqual([]);
+    g = stepClimb(g, { ...ground(), pick: 'grass' });
+    expect(g.phase).toBe('run');
+    expect(g.events).toEqual([{ type: 'start' }, { type: 'pick', id: 'grass' }]);
+    expect(g.picked).toEqual(['grass']);
+    // (a pick again, or one that isn't the climb's: nothing)
+    g = stepClimb(g, { ...ground(), pick: 'grass' });
+    g = stepClimb(g, { ...ground(), pick: 'nope' });
+    expect(g.picked).toEqual(['grass']);
+    expect(g.events).toEqual([]);
+    // (standing on the top ledge is no win when there's no top)
+    g = stepClimb(g, on('crown'));
+    expect(g.phase).toBe('run');
+    g = stepClimb(g, { ...on('crown'), pick: 'up-top' });
+    expect(g.phase).toBe('won');
+    expect(g.events).toEqual([{ type: 'pick', id: 'up-top' }, { type: 'won' }]);
+  });
+
+  it('is still lost on a stair while it bites, whatever was picked', () => {
+    let g = stepClimb(picking(), { ...ground(), pick: 'grass' });
+    g = wait(g, TUNING.still + TUNING.shiver + 0.1, on('g1-low'));
+    expect(g.phase).toBe('lost');
+    expect(g.picked).toEqual(['grass']);
+  });
+
+  it('reads the meter from the first: how many found, and the mood of a stair underfoot', () => {
+    const g = picking();
+    expect(climbReadout(g)).toEqual({ on: true, vitals: { value: 0, max: 100, low: false }, line: WORDS.found(0, 2) });
+    const one = stepClimb(g, { ...ground(), pick: 'grass' });
+    expect(climbReadout(one)).toEqual({ on: true, vitals: { value: 50, max: 100, low: false }, line: WORDS.found(1, 2) });
+    // on a stair: its mood (shivering is low)
+    const shaking = wait(one, TUNING.still + 0.1, on('g1-low'));
+    expect(climbReadout(shaking)).toEqual({ on: true, vitals: { value: 50, max: 100, low: true }, line: WORDS.shiver });
+    // the place's own words
+    const words = { ...WORDS, found: (n, of) => `${n}/${of} crystals` };
+    expect(climbReadout(one, words).line).toBe('1/2 crystals');
+    expect(WORDS.found(3, 5)).toBe('3 of 5 found');
+    // and off once it's over
+    expect(climbReadout(stepClimb(one, { ...ground(), pick: 'up-top' })).on).toBe(false);
+  });
+});

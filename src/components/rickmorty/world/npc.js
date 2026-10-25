@@ -58,13 +58,14 @@ export function createNpcs({ id, area: A, solids = [], words = {}, others = null
   //         given up past `lose`; `always`: from the start), and tells RmWorld 'caught'
   //         (state.emit) within catchR, with `line` or the place's `caught`; `until`: a
   //         task that, done, ends it
-  //         duel: { hp, task, won? }: a fight instead of a catch (./duel.js): within reach he
+  //         duel: { hp, mortyHp?, task, won?, unlock? }: a fight instead of a catch (./duel.js): within reach he
   //         strikes (the 'punch' clip; RmWorld's 'strike' takes a point off Morty), and
   //         Morty's shots take his: the area's 'fire' action (F in RmWorld) says where
   //         to aim, the bolt flies (../rmShots.js) against 'bodies', and 'hit' is
   //         told when one lands; at nought he
-  //         falls (the 'fall' clip), stays down, and `task` is done ('done'), with `won`
-  //         said. The duel is told to RmWorld as 'duel' { hp, max } as it goes.
+  //         falls (the 'fall' clip), stays down for the page load (never set on Morty again, nor is his
+  //         place: it hunts no more), and `task` is done ('done'), with `won` said; `unlock` its
+  //         achievement, handed over by the place's stage once `task` is done. The duel is told to RmWorld as 'duel' { hp, max } as it goes.
   //   lookout: true        turned by the place's game (lookout(mode): the vat's
   //         freeze, ./games/freeze.js): its back to the room ('away'), at Morty
   //         with its head on him ('look'), started at him once ('seen'); no word
@@ -119,7 +120,9 @@ export function createNpcs({ id, area: A, solids = [], words = {}, others = null
 
   // a step towards `to` for `n`, round the solids, the others, whoever
   // stands about and (unless it's after him) Morty (context steering,
-  // lib/ai/steer.js): where it's heading, or null if it's stuck
+  // lib/ai/steer.js): where it's heading, or null if it's stuck. A hunter
+  // only minds the solids nearer than Morty: a counter at his back is no
+  // wall between them (it would mask every way to him, and he'd never be caught)
   const steerTo = (n, to, speed, dt, { round = true } = {}) => {
     const g = n.c.group;
     const from = { x: g.position.x, z: g.position.z };
@@ -128,7 +131,8 @@ export function createNpcs({ id, area: A, solids = [], words = {}, others = null
     ctx.danger.fill(0);
     seek(ctx, from, to, 1);
     const vel = { x: Math.cos(n.heading ?? 0) * speed, z: -Math.sin(n.heading ?? 0) * speed };
-    for (const b of blocks) avoid(ctx, from, vel, b, 0.45, 2.5);
+    const toT = Math.hypot(to.x - from.x, to.z - from.z);
+    for (const b of blocks) if (round || Math.hypot(b.at.x - from.x, b.at.z - from.z) - b.r < toT) avoid(ctx, from, vel, b, 0.45, 2.5);
     for (const b of crowd.posts) avoid(ctx, from, vel, b, 0.35, 1.5);
     if (round && crowd.morty) avoid(ctx, from, vel, crowd.morty, 0.35, 1.5);
     separate(
@@ -176,7 +180,7 @@ export function createNpcs({ id, area: A, solids = [], words = {}, others = null
     const h = ai.hunt;
     const huntOver = h?.until && done.includes(h.until);
     if (h && !huntOver) {
-      if (!n.hunting && (hunting || h.always || (h.near != null && toM < h.near))) {
+      if (!n.hunting && !n.dead && (hunting || h.always || (h.near != null && toM < h.near))) {
         n.hunting = true;
         n.searchUntil = 0;
         // (one who's spotted him on his own says so: RmWorld's word and sound)
@@ -290,7 +294,8 @@ export function createNpcs({ id, area: A, solids = [], words = {}, others = null
       else if (talking || say?.look) look ??= eyes;
     }
     let barked = false;
-    if (ai.bark && m && !turned && toM < ai.bark.r && t > (n.barkAt ?? -1e9) + (ai.bark.every ?? 14) && !state.fading) {
+    // (not while the place's hunters are after him: what's said of the hunt stays up to be read; not from the ground)
+    if (ai.bark && m && !n.dead && !turned && !hunting && toM < ai.bark.r && t > (n.barkAt ?? -1e9) + (ai.bark.every ?? 14) && !state.fading) {
       n.barkAt = t;
       n.barkN = (n.barkN ?? -1) + 1;
       const text = ai.bark.lines[n.barkN % ai.bark.lines.length];
@@ -356,10 +361,10 @@ export function createNpcs({ id, area: A, solids = [], words = {}, others = null
   const step = (n, t, dt, state) => stepNpc(n, t, dt, state);
   // where everyone is, for the QA scripts
   const list = () => npcs.map((n) => ({ id: n.id, x: +n.c.group.position.x.toFixed(1), z: +n.c.group.position.z.toFixed(1), hunting: n.hunting, visible: n.c.group.visible, hp: n.duel?.hp ?? null, dead: Boolean(n.dead) }));
-  // the place's hunters, after Morty (or not)
+  // the place's hunters, after Morty (or not; never while its duel's hunter is down: the fight was the thing)
   const hunt = (on = true) => {
-    hunting = on;
-    if (!on) for (const n of npcs) n.hunting = false;
+    hunting = on && !npcs.some((n) => n.dead);
+    if (!hunting) for (const n of npcs) n.hunting = false;
   };
   // the duel's hunter, while he's after Morty and up
   const duellist = () => npcs.find((n) => n.ai.hunt?.duel && n.hunting && !n.dead && n.c.group.visible) ?? null;

@@ -80,7 +80,7 @@ The front door is a map of the site: the portfolio’s pages are stations round 
 | [Avengers HQ](https://tilakpatell.com/avengers) | Marvel | Swing the compound as Spider-Man, fly the armour, win the Stones back |
 | [Albuquerque](https://tilakpatell.com/albuquerque) | Breaking Bad | Walt’s Aztek, a handbrake that drifts, a town that grows with him |
 | [Scranton](https://tilakpatell.com/scranton) | The Office | A week at Dunder Mifflin as Jim, in seven jobs |
-| [Dimension C-137](https://tilakpatell.com/c-137) | Rick and Morty | The Smiths’ street, a portal gun to the show’s places and [the Citadel](https://tilakpatell.com/c-137/citadel) |
+| [Dimension C-137](https://tilakpatell.com/c-137) | Rick and Morty | The Smiths’ street, and a story in thirteen episodes that opens the portal gun’s thirty-two places, [the Citadel](https://tilakpatell.com/c-137/citadel) among them |
 | [Invincible](https://tilakpatell.com/invincible) | Invincible | The Graysons’ whole city to fly as Mark, up to the Moon and Mars |
 | [The Caribbean](https://tilakpatell.com/caribbean) | Pirates of the Caribbean | *Dead Man’s Tide* at the Black Pearl’s helm |
 | [Dot Matrix](https://tilakpatell.com/dot-matrix) | Gaming | A Game Boy island, a [Super Mario 64](https://tilakpatell.com/dot-matrix/64) tribute and a [Minecraft](https://tilakpatell.com/dot-matrix/minecraft) one |

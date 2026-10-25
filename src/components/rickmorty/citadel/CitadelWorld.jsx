@@ -4,7 +4,8 @@ import { audioContext } from '../../../lib/audio';
 import { use3D } from '../../../lib/gpu';
 import { local, useInView, useMediaQuery, usePageVisible } from '../../../lib/hooks';
 import { WorldHost, useWorld } from '../../../runtime';
-import { readPad, typing } from '../../games/pad';
+import { Objective } from '../../../runtime/hud';
+import { readPad, stirs, typing } from '../../games/pad';
 import { Bubble, Convo, QuestList, Stick } from '../../middleearth/towns/TownHud';
 import { keyDown, keyUp, moveOf } from '../../middleearth/towns/keys';
 import { drawMap } from '../../middleearth/towns/map';
@@ -29,6 +30,11 @@ import { useLooks } from '../wardrobe/useLooks';
 import './citadel.css';
 import RmEarnNote from '../RmEarnNote';
 import { useAdventure } from '../adventure/useAdventure';
+import { EPISODES } from '../adventure/episodes';
+import EpisodeCard from '../adventure/EpisodeCard';
+import { newsOf } from '../adventure/hud';
+import { ENTER, asksCard, atDoor, storyLead } from './storyline';
+import { useUnder } from './useUnder';
 import { useRmEarn } from '../useRmEarn';
 import { seedsOf } from '../earn';
 import GuideCue from '../../guide/GuideCue';
@@ -41,7 +47,8 @@ import citadelModule from './module';
 // the Council, Vote Morty, and getting to the cruiser). The concourse is
 // in ./layout.js, the story in ./story.js, the drawing in ./scene.js;
 // this is the walking, the HUD, the talk, the herd, the line and the Cop
-// Ricks. Without 3D, the scenes are listed as cards.
+// Ricks, and the story's step over the line and an episode's card
+// (../adventure/, ./storyline.js). Without 3D, the scenes are listed as cards.
 
 const DONE = 'tp-citadel-done';
 const AT = 'tp-citadel-at';
@@ -113,12 +120,28 @@ export default function CitadelWorld({ onLeave, leaveLabel = 'Back to C-137', fr
   const { unlock } = useAchievements();
   // (a quest done pays into the one wallet, once: useRmEarn's ledger knows what the save had)
   const { earn, note: earned } = useRmEarn(() => seedsOf('citadel', done));
-  // the Rick and Morty adventure (../adventure/) told it's here, and each step
-  // the Citadel takes (outside the updater, which React may run twice)
-  const { feed } = useAdventure();
+  // the Rick and Morty adventure (../adventure/) told it's here (again if the
+  // story comes to its door while it's open: a tab, a jump), and each step the
+  // Citadel takes (outside the updater, which React may run twice); what it says
+  // back waits, added to (StrictMode feeds twice, the second to nothing)
+  const { feed, state: storyAt, keepUnsaid } = useAdventure();
+  const [news, setNews] = useState([]);
+  const newsRef = useRef(news);
+  newsRef.current = news;
+  const tell = useCallback(
+    (e) => {
+      const out = feed(e);
+      if (out.length) setNews((n) => [...n, ...out]);
+    },
+    [feed],
+  );
+  const heardNews = useCallback((k) => setNews((n) => n.slice(k)), []);
+  const door = atDoor(storyAt);
   useEffect(() => {
-    feed({ type: 'enter', area: 'page:/c-137/citadel' });
-  }, [feed]);
+    tell(ENTER);
+  }, [tell, door]);
+  // (left before it was said: Rick out by the way home under his feet; C-137 says it)
+  useEffect(() => () => newsRef.current.length && keepUnsaid(newsRef.current), [keepUnsaid]);
   const complete = useCallback(
     (id) => {
       const taken = !doneRef.current.includes(id) && citadelProgress([...doneRef.current, id]).done.includes(id);
@@ -130,15 +153,15 @@ export default function CitadelWorld({ onLeave, leaveLabel = 'Back to C-137', fr
       });
       earn('citadel', id);
       if (SEAL[id]) unlock(SEAL[id]);
-      if (taken) feed({ type: 'citadel', id });
+      if (taken) tell({ type: 'citadel', id });
     },
-    [unlock, earn, feed],
+    [unlock, earn, tell],
   );
   const world = three.on && gl !== 'failed' && gl !== 'lost';
   return (
     <section className="shire-world citadel-world" aria-labelledby="citadel-title" data-mode={world ? '3d' : 'cards'}>
       <RmEarnNote note={earned} />
-      {world ? <World prog={prog} done={done} complete={complete} gl={gl} setGl={setGl} onLeave={onLeave} leaveLabel={leaveLabel} frozen={frozen} onHangar={onHangar} /> : <Cards prog={prog} three={three} gl={gl} retry={() => setGl('loading')} />}
+      {world ? <World prog={prog} done={done} complete={complete} gl={gl} setGl={setGl} onLeave={onLeave} leaveLabel={leaveLabel} frozen={frozen} onHangar={onHangar} news={news} heardNews={heardNews} /> : <Cards prog={prog} three={three} gl={gl} retry={() => setGl('loading')} />}
     </section>
   );
 }
@@ -146,7 +169,7 @@ export default function CitadelWorld({ onLeave, leaveLabel = 'Back to C-137', fr
 // others online on the concourse (middleearth/towns/useTravellers), as Ricks from other dimensions
 const ROOM = { bound: 160, motion: true };
 
-function World({ prog, done, complete, gl, setGl, onLeave, leaveLabel, frozen, onHangar }) {
+function World({ prog, done, complete, gl, setGl, onLeave, leaveLabel, frozen, onHangar, news, heardNews }) {
   const touch = useMediaQuery('(hover: none) and (pointer: coarse)');
   const trav = useTravellers('citadel', gl === 'on', ROOM);
   const [box, inView] = useInView({ rootMargin: '0px', threshold: 0.3 });
@@ -205,7 +228,7 @@ function World({ prog, done, complete, gl, setGl, onLeave, leaveLabel, frozen, o
   }, []);
   useEffect(() => {
     if (!toast) return undefined;
-    const t = setTimeout(() => setToast(null), 4600);
+    const t = setTimeout(() => setToast(null), toast.name ? 5600 : 4600); // (a story line stays up as long as C-137 keeps one)
     return () => clearTimeout(t);
   }, [toast]);
 
@@ -235,7 +258,7 @@ function World({ prog, done, complete, gl, setGl, onLeave, leaveLabel, frozen, o
     a.tune?.(); // (behind ?debug: the shake's numbers)
     a.setLooks?.(looksRef.current); // (a look picked while it loaded)
     // (cue: something for the people to react to, as the world would say it: { type: 'seen', id } …)
-    if (import.meta.env.DEV) window.__CITADEL__ = { api: a, sim: sim.current, complete, down: () => liftRef.current?.down(true), up: () => liftRef.current?.up(), cue: (c) => sim.current?.cues.push(c), emote: (id) => sim.current && (sim.current.emote = { id, at: sim.current.t }) }; // for the QA scripts
+    if (import.meta.env.DEV) window.__CITADEL__ = { api: a, sim: sim.current, complete, enter: (id) => enterRef.current?.(id), down: () => liftRef.current?.down(true), up: () => liftRef.current?.up(), cue: (c) => sim.current?.cues.push(c), emote: (id) => sim.current && (sim.current.emote = { id, at: sim.current.t }) }; // for the QA scripts
     setGl('on');
     // left in Mortytown last time: back down the lift
     if (sim.current.autoDown) {
@@ -259,6 +282,7 @@ function World({ prog, done, complete, gl, setGl, onLeave, leaveLabel, frozen, o
       s.air?.stop();
       s.siren?.stop();
       api.current = null;
+      if (import.meta.env.DEV && window.__CITADEL__?.sim === s) delete window.__CITADEL__; // (gone with its page)
     };
   }, []);
 
@@ -266,6 +290,36 @@ function World({ prog, done, complete, gl, setGl, onLeave, leaveLabel, frozen, o
   const showing = usePageVisible();
   const live = gl === 'on' && inView && showing && !frozen;
   const hasHangar = Boolean(onHangar);
+  // where the top row ends, for the toast on a phone: under it however tall the line runs (./citadel.css)
+  const topRow = useRef(null);
+  useUnder(topRow, '--citadel-under', hud.mode === 'walk');
+
+  // the story (../adventure/): the visit's episode card, asked for once the world's
+  // live (seen, not timed out in a hidden tab) and only in an episode with a step
+  // here (asking takes it: ./storyline.js); the world holds while it's up
+  const story = useAdventure();
+  const { intro } = story;
+  const [card, setCard] = useState(null);
+  const closeCard = useCallback(() => setCard(null), []);
+  const cardRef = useRef(card);
+  cardRef.current = card;
+  const asks = asksCard(story.state);
+  useEffect(() => {
+    if (!live || !asks) return;
+    const n = intro();
+    if (n != null) setCard(n);
+  }, [live, asks, intro]);
+  // what the story said back, once the world's live and the toast before it
+  // has gone (the scene's own ending first): an episode's closing line, named
+  // and kept up as long as C-137 keeps one, and the next one's card
+  useEffect(() => {
+    if (!news.length || !live || toast) return;
+    const said = newsOf(news);
+    heardNews(news.length);
+    const line = said.say.at(-1);
+    if (line) setToast({ text: line.text, name: line.who, at: Date.now() });
+    if (said.card != null) setCard(said.card);
+  }, [news, live, toast, heardNews]);
 
   // the concourse's hum, while it's on screen
   useEffect(() => {
@@ -327,6 +381,7 @@ function World({ prog, done, complete, gl, setGl, onLeave, leaveLabel, frozen, o
   // ── the lift down to Mortytown, and back up ──
   // (Mortytown is built the first time: the lift waits for it)
   const liftRef = useRef(null);
+  const enterRef = useRef(null); // (for the QA scripts' hook: E at a spot)
   const [townLoading, setTownLoading] = useState(false);
   const goDown = useCallback(
     async () => {
@@ -446,6 +501,7 @@ function World({ prog, done, complete, gl, setGl, onLeave, leaveLabel, frozen, o
     },
     [onLeave, say, later, complete, outside, goDown, goUp],
   );
+  enterRef.current = enter;
 
   // a reply picked, or on to the next line
   const talkOnward = useCallback(
@@ -694,13 +750,15 @@ function World({ prog, done, complete, gl, setGl, onLeave, leaveLabel, frozen, o
     const s = sim.current;
     const p = progRef.current;
     const fast = import.meta.env.DEV ? (s.speedup ?? 1) : 1;
-    const dt = Math.min(0.05, ms / 1000) * fast;
+    const still = cardRef.current != null; // (an episode's card is up: drawn, but no clock, herd, line, Cop Rick or Loco moves on, nor does he)
+    const dt = still ? 0 : Math.min(0.05, ms / 1000) * fast;
     s.t += dt;
     const k = s.keys;
     const held = (name) => k.has(name);
     const raw = readPad();
     const before = s.padBefore ?? {};
     s.padBefore = raw ?? {};
+    if (still && stirs(raw, before)) closeCard(); // (a pad's press or push is the first move too)
     const pad = wardrobeRef.current ? null : raw; // (the wardrobe's open over him: the pad's for it)
     const pressed = (b) => pad?.[b] && !before[b];
     const red = p.mood === 'red';
@@ -778,7 +836,7 @@ function World({ prog, done, complete, gl, setGl, onLeave, leaveLabel, frozen, o
     // the Cop Ricks, on red alert
     s.chased = false;
     if (red) {
-      const ev = stepWatchers(s.watchers, s.h, dt, COPS, { colliders: COLLIDERS, walls: WALLS, ring: false, push: pushCop, active: s.mode === 'walk' });
+      const ev = stepWatchers(s.watchers, s.h, dt, COPS, { colliders: COLLIDERS, walls: WALLS, ring: false, push: pushCop, active: s.mode === 'walk' && !still });
       for (const e of ev) {
         if (e.type === 'seen') {
           a.fx('seen');
@@ -799,7 +857,7 @@ function World({ prog, done, complete, gl, setGl, onLeave, leaveLabel, frozen, o
     if (s.escapeT != null) s.escapeT += dt;
 
     // the Locos, down in Mortytown
-    if (s.where === 'mortytown' && s.mode === 'walk' && huntOpen(p)) {
+    if (s.where === 'mortytown' && s.mode === 'walk' && huntOpen(p) && !still) {
       const pushLoco = (x, z, r) => townWalker.push(x, z, r);
       for (const e of stepHunt(s.hunt, s.h, dt, { push: pushLoco })) {
         if (e.type === 'found') {
@@ -1055,6 +1113,7 @@ function World({ prog, done, complete, gl, setGl, onLeave, leaveLabel, frozen, o
   const locosNow = huntOpen(prog);
   const townObjective = !locosNow ? (done.includes('locos') ? 'Mortytown’s quiet, for tonight. The lift up is at the west end.' : 'Mortytown. Cop Morty will have a job for you once the day care’s sorted. The lift up is at the west end.') : hud.following ? 'Walk them to Cop Morty, outside Morty Mart. At a walk: run, and they’ll slink off.' : 'Find the Locos. They hide where a Morty hides: down an alley, behind a bin.';
   const objective = inTown ? townObjective : red && hud.chased ? 'Run! Get out of his sight: round the core, behind a kiosk or a planter.' : herding ? 'Herd the Mortys back through the gate, into the pen: come at them from the far side.' : prog.objective;
+  const lead = storyLead(story.state, { town: inTown }); // (the story's step over the line, while it's one played here)
   return (
     <div ref={box} className="shire-stage citadel-stage" data-touch={touch || undefined} data-mode={mode} data-mood={prog.mood} data-room={inside ? hud.room : undefined}>
       <WorldHost world={view} className="shire-canvas citadel-canvas" data-on={gl === 'on' || undefined} onPointerDown={onPointer} onPointerMove={onPointer} onPointerUp={onPointer} onPointerCancel={onPointer} onContextMenu={(e) => e.preventDefault()} />
@@ -1062,14 +1121,12 @@ function World({ prog, done, complete, gl, setGl, onLeave, leaveLabel, frozen, o
       {townLoading && <p className="shire-loading">Taking the lift down to Mortytown…</p>}
 
       {walking && (
-        <div className="shire-hud shire-hud-top">
+        <div ref={topRow} className="shire-hud shire-hud-top">
           <div className="shire-brand">
             <h1 id="citadel-title" className="shire-title">
               {inTown ? 'Mortytown' : 'The Citadel of Ricks'}
             </h1>
-            <p className="shire-objective" aria-live="polite">
-              <span aria-hidden="true">◆</span> {objective}
-            </p>
+            <Objective className="shire-objective" glyph="◆" text={<>{lead && <b className="citadel-objective-story">{lead}</b>}{objective}</>} />
           </div>
           <div className="shire-side">
             <canvas ref={map} className="shire-map" width="150" height="150" aria-hidden="true" />
@@ -1116,10 +1173,12 @@ function World({ prog, done, complete, gl, setGl, onLeave, leaveLabel, frozen, o
       {!walking && <h1 id="citadel-title" className="sr-only">The Citadel of Ricks</h1>}
 
       {toast && (
-        <p className="shire-toast" data-bad={toast.bad || undefined} role="status" key={toast.at}>
-          {toast.text}
+        <p className="shire-toast" data-bad={toast.bad || undefined} data-story={toast.name ? '' : undefined} role="status" key={toast.at}>
+          {toast.name && <b>{toast.name}</b>} {toast.text}
         </p>
       )}
+
+      {card != null && <EpisodeCard episode={EPISODES[card]} n={card + 1} onDone={closeCard} />}
 
       {bubble && walking && <Bubble ref={bubbleRef} name={bubble.name} line={bubble.line} />}
 

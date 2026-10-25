@@ -2,6 +2,7 @@
 // grammar as rigs (the design’s §4.2). Pure.
 //
 //   pose(ctx) → { at, lookAt, fov, roll, dof }
+//   fovFor(fov, aspect) → the vertical field a frame that shape is drawn at: narrower than NARROW, wider, so it sees as far across
 //     ctx: { rig, params, lead: { at, heading }, tangent, metres, look: { yaw, pitch },
 //            mode, reduced, heightAt(x, z) → y, t (seconds in the rig) }
 //   ease(from, to, k) → pose      (the blend between two rigs’ poses, k already eased)
@@ -14,6 +15,15 @@
 export const RIGS = ['follow', 'lead', 'side', 'low', 'crane', 'wide', 'seat', 'ride'];
 export const LOOK_LIMIT = { yaw: 0.96, pitch: 0.44, seat: 0.35 }; // ±55°, ±25°, ±20°
 export const FOV = { walk: 50, seat: 38, eagle: 62 };
+// the narrowest frame a rig's field is written for: a phone held upright
+// (390 × 844, 0.46) saw ±12° across at the walk's 50°, and the follow's
+// lead, ten degrees off its aim, stood at the frame's edge or past it
+export const NARROW = 0.6;
+export function fovFor(fov, aspect) {
+  if (!(aspect > 0) || aspect >= NARROW) return fov;
+  const half = Math.atan(Math.tan((fov * Math.PI) / 360) * NARROW);
+  return (2 * Math.atan(Math.tan(half) / aspect) * 180) / Math.PI;
+}
 export const ABOVE_GROUND = 0.4; // m over the ground at least (the module holds the camera there too, after its ease and its boom)
 const EYE = 1; // m: the height on a walker the rigs look at
 const LOW_TILT = (20 * Math.PI) / 180;

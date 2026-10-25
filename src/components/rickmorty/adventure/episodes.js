@@ -1,6 +1,7 @@
 // The Rick and Morty adventure's thirteen episodes, as data. A Federation raid
 // wiped the coordinates in Rick's portal gun; each episode wins some back, and
-// the last ends at Evil Rick's lair with every one home.
+// the last goes through Evil Rick's lair and ends with the gun back on Rick's
+// bench, every one home.
 //
 // An episode is { id, title, intro, steps, outro, unlocks }: the lines that
 // open and close it ([who, text]), the steps it waits for in order, and the
@@ -16,9 +17,9 @@
 //
 // READY says how many episodes, from the first, are built: past the last
 // ready one the dial is open, so nobody waits on one that isn't there. Each
-// phase raises it by one. Pure: story.js plays these.
+// phase raised it by one, to all thirteen. Pure: story.js plays these.
 
-export const READY = 9;
+export const READY = 13;
 export const START = ['customs'];
 export const WINS = ['cabinet', 'chase'];
 export const STEP_TYPES = ['task', 'win', 'enter', 'talk', 'use', 'citadel', 'all'];
@@ -148,10 +149,10 @@ export const EPISODES = [
         type: 'all',
         text: 'Four sets are out on the sector’s planets. Dial each one.',
         steps: [
-          task('birdworld', 'Bird World: the crystals in the grass.', 'birdworld'),
-          task('gearworld', 'Gear World: the city’s cogs.', 'gearworld'),
-          task('pluto', 'Pluto: tell the king what he wants to hear.', 'pluto'),
-          task('squanch', 'Planet Squanch: get out in time.', 'squanch'),
+          task('birdworld', 'Bird World: pick up the crystals in the grass and on the clay towers’ tops.', 'birdworld'),
+          task('gearworld', 'Gear World: wind the city’s cogs in order while the gear police hunt you.', 'gearworld'),
+          task('pluto', 'Pluto: tell the king what he wants to hear, and only the true parts.', 'pluto'),
+          task('squanch', 'Planet Squanch: raise a glass at the wedding, then get back to the portal in time.', 'squanch'),
         ],
       },
     ],

@@ -7,12 +7,18 @@
 // played to an episode's start, a catch seen through, Morty stood on a
 // ledge, time waited out on the game's own clock; and where a place
 // through the portal has its way in, its portal home and its spots, read
-// from its data (./places.mjs). Kept apart from the scenarios so no file
-// passes 800 lines.
+// from its data (./places.mjs); and at the Citadel (window.__CITADEL__), its
+// page up, its line read (the story's step over its own) and its toast
+// waited for; a place dialled from the garage and home through its own
+// portal, a task not done after a while, the Story tab's ticks; and Rick's
+// rooms on the Vindicators' ship, as their rules have them. Kept apart from
+// the scenarios so no file passes 800 lines.
 import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { EPISODES } from '../../src/components/rickmorty/adventure/episodes.js';
-import { home, loadPlaces, stand, wayIn } from './places.mjs';
+import { home as homeAt, loadPlaces, stand, wayIn } from './places.mjs';
+
+export { ROOMS } from '../../src/components/rickmorty/world/dimensions/vindicatorsRules.js';
 
 export const BASE = process.env.BASE ?? 'http://127.0.0.1:5197';
 export const OUT = process.env.OUT ?? null;
@@ -28,7 +34,7 @@ export const arriveOf = (area) => {
   return [a.x, a.z, a.face];
 };
 export const wayInOf = (area) => wayIn(PLACES.dest(area));
-export const homeOf = (area) => home(PLACES.dest(area));
+export const homeOf = (area) => homeAt(PLACES.dest(area));
 
 export const exe = [
   process.env.CHROME,
@@ -75,6 +81,11 @@ export async function reads(page, text) {
     throw new Error(`the objective reads “${await page.locator('.rm-hud .rm-objective').first().textContent()}”, not “${text}”`);
   });
 }
+// the objective line is a link, to `hash`
+export async function linksTo(page, hash) {
+  const to = await page.evaluate(() => document.querySelector('.rm-hud .rm-objective-link')?.getAttribute('href') ?? null);
+  check(to?.endsWith(hash), `the objective line doesn’t link to ${hash} (${to})`);
+}
 export const WIPED = EPISODES[0];
 export const ARCADE = EPISODES[1];
 export const GUESTS = EPISODES[2];
@@ -84,6 +95,14 @@ export const DEALS = EPISODES[5];
 export const JERRY = EPISODES[6];
 export const PRIME = EPISODES[7];
 export const FAIRY = EPISODES[8];
+export const CITADEL = EPISODES[9];
+export const SECTOR = EPISODES[10];
+export const SCORE = EPISODES[11];
+export const EVIL = EPISODES[12];
+// the checklist's next once the built episodes are over
+export const CABLE = 'Go into the Smith house and put interdimensional cable on the TV.';
+// (a label in the middle of a line, as a place's words have it)
+export const low = (l) => l[0].toLowerCase() + l.slice(1);
 // Morty by the garage portal, stepped through it, and stood where it took him
 export async function throughPortal(page) {
   await goto(page, 'garage', -302.3, 101.4, Math.PI);
@@ -112,6 +131,15 @@ export async function cardFor(page, i) {
   check(said.includes(`Episode ${i + 1}`) && said.includes(EPISODES[i].title) && said.includes(EPISODES[i].intro[0][1]), `episode ${i + 1}’s card says “${said}”`);
   await page.keyboard.press('Shift');
   await card.waitFor({ state: 'detached', timeout: 5000 });
+}
+// a page of the site opened afresh at `hash` on episode i's card (a story
+// not begun), the card checked and passed, and the world built behind it
+export async function openOnCard(page, hash, i) {
+  await page.goto(`${BASE}/${hash}`, { waitUntil: 'domcontentloaded' });
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await page.locator('.rm-episode').waitFor({ timeout: 600000 });
+  await cardFor(page, i);
+  await built(page);
 }
 // the story at episode e's step s
 export async function at(page, e, s, when) {
@@ -159,7 +187,11 @@ export const chasing = (page, phase, what) =>
     throw new Error(what);
   });
 // a new visitor's first card passed, and the story played to episode `e`'s
-// start through the hooks (`wins` fed first), each card on the way checked
+// start through the hooks (`wins` fed first, an `all`'s parts each a task),
+// each card on the way checked. The Citadel's episode is played as a visitor
+// who made its escape before walking in: the escape kept, the walk in fed,
+// and the visit opened afresh on the next card (its closing line is the
+// Citadel's own scenarios' to check).
 export async function playTo(page, e, wins = []) {
   await page.goto(`${BASE}/#/c-137`, { waitUntil: 'domcontentloaded' });
   await page.locator('.rm-episode').waitFor({ timeout: 600000 });
@@ -168,10 +200,57 @@ export async function playTo(page, e, wins = []) {
   await built(page);
   for (const game of wins) await page.evaluate((game) => window.__RMSTORY__.feed({ type: 'win', game }), game);
   for (let i = 0; i < e; i++) {
-    for (const step of EPISODES[i].steps) if (step.type === 'task') await page.evaluate((id) => window.__C137__.complete(id), step.id);
+    const steps = EPISODES[i].steps.flatMap((s) => (s.type === 'all' ? s.steps : [s]));
+    if (steps.some((s) => s.type === 'citadel')) {
+      await page.evaluate(() => {
+        window.localStorage.setItem('tp-citadel-done', JSON.stringify(['daycare', 'wafers', 'council', 'votemorty', 'citadelout']));
+        window.__RMSTORY__.feed({ type: 'enter', area: 'page:/c-137/citadel' });
+      });
+      await page.reload({ waitUntil: 'domcontentloaded' });
+      await page.locator('.rm-episode').waitFor({ timeout: 600000 });
+      await cardFor(page, i + 1);
+      await built(page);
+      continue;
+    }
+    for (const step of steps) if (step.type === 'task') await page.evaluate((id) => window.__C137__.complete(id), step.id);
     await toast(page, EPISODES[i].outro[0][1]);
     await cardFor(page, i + 1);
   }
+}
+// dialled from the garage, and through its portal
+export async function dial(page, id) {
+  check((await page.evaluate((id) => window.__C137__.dial(id), id)) === id, `the dial wouldn’t take ${id}`);
+  await throughPortal(page);
+  await inArea(page, id);
+}
+// home through the place's own portal
+export const home = async (page, id) => {
+  await warpUse(page, id, `${id}-portal`, ...homeOf(id));
+  await inArea(page, 'garage');
+};
+// a task done, and an achievement earned
+export const isDone = (page, id, what) =>
+  page.waitForFunction((id) => JSON.parse(localStorage.getItem('tp-c137-done') ?? '[]').includes(id), id, { timeout: 30000, polling: 100 }).catch(() => {
+    throw new Error(what);
+  });
+export const achieved = (page, id, what) =>
+  page.waitForFunction((id) => JSON.parse(localStorage.getItem('tp-achievements') ?? '[]').includes(id), id, { timeout: 30000, polling: 250 }).catch(() => {
+    throw new Error(what);
+  });
+// a task not done after a few seconds of the game's own time
+export const notDone = async (page, id, what) => {
+  await later(page, 3.5);
+  check(!(await done(page)).includes(id), what);
+};
+// the Story tab: a step, or an `all`'s part, ticked
+export async function ticked(page, text) {
+  await page.keyboard.press('m');
+  const list = page.locator('#rm-list');
+  await list.waitFor({ timeout: 10000 });
+  const n = await list.locator('li[data-done]', { hasText: text }).count();
+  await page.keyboard.press('m');
+  await list.waitFor({ state: 'detached', timeout: 5000 });
+  return n > 0;
 }
 // a place's game, as its stage has it (Needful Things' deal, the vat's freeze, the Jerryboree's find)
 export const game = (page, area, what) => page.evaluate(([a, w]) => window.__C137__.api.act(a, w), [area, what]);
@@ -189,4 +268,75 @@ export async function later(page, s) {
   const t0 = await page.evaluate(() => window.__C137__.sim.t);
   await page.waitForFunction((t) => window.__C137__.sim.t >= t, t0 + s, { timeout: 120000, polling: 16 });
 }
+// the map's marker (the sim's `goal`): a link's or a spot's id
+export const goalIs = (page, id, where) =>
+  page.waitForFunction((id) => window.__C137__.sim.goal?.id === id, id, { timeout: 15000, polling: 100 }).catch(async () => {
+    throw new Error(`${where} the marker’s on ${await page.evaluate(() => window.__C137__.sim.goal?.id ?? null)}, not ${id}`);
+  });
+// the objective line isn't a link
+export const noLink = async (page, where) => check((await page.locator('.rm-hud .rm-objective-link').count()) === 0, `${where} the line is a link`);
+// a place's meter, by its title, and its line
+export const meter = (page, title) => page.locator(`.rm-cluster[aria-label="${title}"][data-on]`);
+export const meterSays = (page, title, text) =>
+  page.waitForFunction(([t, s]) => document.querySelector(`.rm-cluster[aria-label="${t}"][data-on]`)?.textContent.includes(s), [title, text], { timeout: 15000, polling: 100 }).catch(async () => {
+    throw new Error(`the meter reads “${await meter(page, title).first().textContent().catch(() => '(none)')}”, not “${text}”`);
+  });
+// Morty moved within a place, its game going on
+export const warp = (page, area, x, z, face = N) => page.evaluate(([a, x, z, f]) => window.__C137__.warp(a, x, z, f), [area, x, z, face]);
+// a place's hunters after him now
+export const hunting = (page, area) => page.evaluate((a) => window.__C137__.api.act(a, 'npcs').filter((n) => n.hunting).map((n) => n.id), area);
+// a page of the site opened afresh at `hash` (a hash change alone keeps the
+// last page's world tearing down under the next one's dev hook)
+export async function open(page, hash) {
+  await page.goto(`${BASE}/${hash}`, { waitUntil: 'domcontentloaded' });
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await built(page);
+}
 export const rickallOn = (page) => page.waitForFunction(() => window.__C137__.sim.rickall?.phase === 'on', null, { timeout: 300000, polling: 250 });
+
+// the Citadel's own line for the scenes made (its next scene's, or the one for when it's all done), as its data has it
+export const CITADEL_LINE = PLACES.citadel;
+// the Citadel's page up: its 3D world built, scrolled into view (it's only live in view) and drawing frames
+export async function citadelUp(page) {
+  await page.waitForFunction(() => window.__CITADEL__?.api || document.querySelector('.citadel-world')?.dataset.mode === 'cards', null, { timeout: 600000, polling: 1000 });
+  check(await page.evaluate(() => Boolean(window.__CITADEL__?.api)), 'the Citadel’s 3D world didn’t start');
+  await page.evaluate(() => document.querySelector('.citadel-world')?.scrollIntoView({ block: 'start' }));
+  const f0 = await page.evaluate(() => window.__CITADEL__.sim.frame);
+  await page.waitForFunction((f) => window.__CITADEL__?.sim.frame > f + 2, f0, { timeout: 120000, polling: 100 }).catch(() => {
+    throw new Error('the Citadel isn’t drawing');
+  });
+}
+// the Citadel's line: the story's step over it (or null), its own words, and whether it links anywhere
+export const citadelLine = (page) =>
+  page.evaluate(() => {
+    const o = document.querySelector('.citadel-stage .shire-objective');
+    if (!o) return null;
+    const lead = o.querySelector('.citadel-objective-story');
+    const own = o.cloneNode(true);
+    own.querySelector('.citadel-objective-story')?.remove();
+    return { story: lead?.textContent.trim() ?? null, text: own.textContent.replace('◆', '').trim(), link: Boolean(o.querySelector('a')) };
+  });
+export async function citadelReads(page, story, text) {
+  await page.waitForFunction(
+    ([story, text]) => {
+      const o = document.querySelector('.citadel-stage .shire-objective');
+      if (!o || o.querySelector('a')) return false;
+      const lead = o.querySelector('.citadel-objective-story')?.textContent.trim() ?? null;
+      const own = o.cloneNode(true);
+      own.querySelector('.citadel-objective-story')?.remove();
+      return lead === story && own.textContent.replace('◆', '').trim() === text;
+    },
+    [story, text],
+    { timeout: 10000 },
+  ).catch(async () => {
+    throw new Error(`the Citadel’s line reads ${JSON.stringify(await citadelLine(page))}, not ${JSON.stringify({ story, text, link: false })}`);
+  });
+}
+// the Citadel's toast saying `text`, and who says it when that's named
+export async function citadelToast(page, text, name = null) {
+  const t = page.locator('.citadel-stage .shire-toast', { hasText: text });
+  await t.waitFor({ timeout: 15000 }).catch(() => {
+    throw new Error(`no toast at the Citadel saying “${text}”`);
+  });
+  if (name) check((await t.locator('b').first().textContent().catch(() => null))?.trim() === name, `the toast “${text}” isn’t ${name}’s`);
+}

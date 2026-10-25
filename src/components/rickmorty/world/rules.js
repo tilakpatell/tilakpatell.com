@@ -814,8 +814,9 @@ export const HOTSPOTS = [
   // the destinations' people and things (./dimensions/destinations.js)
   ...DESTINATIONS.flatMap((d) => d.hotspots),
 ];
-// (`done`: a hotspot whose `until` is done is gone; left out, they all count)
-export const nearHotspot = (area, x, z, done) => nearest(done ? HOTSPOTS.filter((h) => present(h, done)) : HOTSPOTS, area, x, z);
+// (`done`: a hotspot whose `until` is done is gone; left out, they all count.
+// `gone(id)`: one gone for now, a crystal picked up)
+export const nearHotspot = (area, x, z, done, gone = null) => nearest(done || gone ? HOTSPOTS.filter((h) => (!done || present(h, done)) && !gone?.(h.id)) : HOTSPOTS, area, x, z);
 
 // ── walking ──
 
@@ -1074,7 +1075,7 @@ export const TASKS = [
   { id: 'portal', name: 'Go through the portal', hint: 'The portal gun is on Rick’s bench in the garage (or its button up top, from anywhere): dial a dimension, then step through the portal on the west wall.' },
   { id: 'basement', name: 'Find Rick’s secret lab', hint: 'There’s a hatch in the garage floor.' },
   { id: 'mindblowers', name: 'Watch Morty’s Mind Blowers', hint: 'Through the door in Rick’s clone lab, sit in the chair.' },
-  { id: 'roy', name: 'Play Roy', hint: 'Find Blips and Chitz on the other side of the portal, and put the headset on at the Roy cabinet.' },
+  { id: 'roy', name: 'Play Roy', hint: 'Dial Blips and Chitz on the portal gun, go through the portal and put the headset on at the Roy cabinet.' },
   { id: 'roy55', name: 'Outlive Morty’s 55', hint: 'Play Roy again and live past Morty’s 55.' },
   { id: 'rickall', name: 'Survive Total Rickall', hint: 'There’s an egg on the Smiths’ living-room bookcase that nobody remembers buying.' },
   { id: 'wong', name: 'Go to family therapy', hint: 'Dr. Wong’s office is in the house next to Shoney’s, up the street. Rick says it’s for Jerry.' },
@@ -1103,7 +1104,7 @@ export const MEMORIES = [
 export const MEMORY_COLORS = { blue: '#52d6ff', purple: '#b47cff', red: '#ff4d5e', pink: '#ff8fd0' };
 
 // the planets' things to do, done on the planets themselves (landed on from
-// the universe map): the small ones'; a big planet's are retired with TASKS'
+// the universe map, or for the sector's four dialled too): the small ones'; a big planet's are retired with TASKS'
 export const PLANET_TASKS = new Set(DESTINATIONS.filter((d) => isPlanet(d.id) && !isBigPlanet(d.id)).flatMap((d) => d.tasks.map((t) => t.id)));
 
 // What's done and what's next. `done` is the ids finished, in any order.
@@ -1114,7 +1115,7 @@ export function progress(done = [], { skip = [] } = {}) {
   const finished = TASKS.filter((t) => done.includes(t.id));
   const left = TASKS.filter((t) => !done.includes(t.id));
   const next = left.find((t) => !passed.has(t.id)) ?? null;
-  const rest = left.every((t) => PLANET_TASKS.has(t.id)) ? 'Everything here’s done. The rest are on the planets in the Rick and Morty sector of the universe map.' : 'Everything here’s done.';
+  const rest = left.every((t) => PLANET_TASKS.has(t.id)) ? 'Everything here’s done. The rest are on the planets in the Rick and Morty sector of the universe map (Bird World, Gear World, Pluto and Planet Squanch are on the portal gun too).' : 'Everything here’s done.';
   return { done: finished.map((t) => t.id), count: finished.length, total: TASKS.length, next, objective: next ? next.hint : left.length ? rest : 'Everything’s done. Wubba lubba dub dub.' };
 }
 

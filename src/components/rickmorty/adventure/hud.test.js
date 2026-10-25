@@ -3,7 +3,7 @@ import { progress } from '../world/rules';
 import { EPISODES } from './episodes';
 import { fresh } from './story';
 import { DIAL } from '../world/dimensions/destinations';
-import { dialItems, dialLead, markedTask, newsOf, objectiveLine } from './hud';
+import { SAID_MS, dialItems, dialLead, leaveHold, markedTask, newsOf, objectiveLine } from './hud';
 
 describe('what the HUD shows of the story', () => {
   it('reads the story’s step first, then the checklist’s next', () => {
@@ -14,7 +14,7 @@ describe('what the HUD shows of the story', () => {
   });
 
   it('links the checklist’s closing line to the map, in C-137 only', () => {
-    const rest = { next: null, count: 50, total: 54, objective: 'Everything here’s done. The rest are on the planets in the Rick and Morty sector of the universe map.' };
+    const rest = { next: null, count: 50, total: 54, objective: 'Everything here’s done. The rest are on the planets in the Rick and Morty sector of the universe map (Bird World, Gear World, Pluto and Planet Squanch are on the portal gun too).' };
     expect(objectiveLine(null, rest)).toEqual({ text: rest.objective, to: '/universe' });
     const all = { next: null, count: 54, total: 54, objective: 'Everything’s done. Wubba lubba dub dub.' };
     expect(objectiveLine(null, all).to).toBe('/universe');
@@ -29,12 +29,47 @@ describe('what the HUD shows of the story', () => {
     expect(objectiveLine(wiped, own, { planet: { id: 'birdworld' }, state: fresh() })).toEqual({ text: 'Knock at Birdperson’s door.', to: null });
     // in C-137 it's the story's
     expect(objectiveLine(wiped, own, { state: fresh() })).toEqual(wiped);
-    // the sector's `all`: on a planet whose part is still to do, the story's line; once that part's done, the planet's own
+    // the sector's `all`: on a planet whose part is still to do, that part's line; once that part's done, the planet's own
     const sector = EPISODES.findIndex((e) => e.id === 'sector');
     const at = { ...fresh(), episode: sector, got: [] };
     const line = { text: EPISODES[sector].steps[0].text, to: null };
-    expect(objectiveLine(line, own, { planet: { id: 'birdworld' }, state: at, ready: 13 })).toEqual(line);
+    expect(objectiveLine(line, own, { planet: { id: 'birdworld' }, state: at, ready: 13 })).toEqual({ text: EPISODES[sector].steps[0].steps[0].text, to: null });
     expect(objectiveLine(line, own, { planet: { id: 'birdworld' }, state: { ...at, got: [0] }, ready: 13 }).text).toBe('Knock at Birdperson’s door.');
+  });
+
+  it('reads the sector part of the planet Morty’s on, dialled or landed on, and the episode’s line elsewhere', () => {
+    const sector = EPISODES.findIndex((e) => e.id === 'sector');
+    const own = { next: null, count: 0, total: 54, objective: 'Everything here’s done.' };
+    const at = { ...fresh(), episode: sector, got: [] };
+    const line = { text: 'Four sets are out on the sector’s planets. Dial each one.', to: null };
+    expect(EPISODES[sector].steps[0].text).toBe(line.text);
+    // (dialled from C-137: where he is says which)
+    expect(objectiveLine(line, own, { here: 'garage', state: at, ready: 13 })).toEqual(line);
+    expect(['birdworld', 'gearworld', 'pluto', 'squanch'].map((here) => objectiveLine(line, own, { here, state: at, ready: 13 }))).toEqual([
+      { text: 'Bird World: pick up the crystals in the grass and on the clay towers’ tops.', to: null },
+      { text: 'Gear World: wind the city’s cogs in order while the gear police hunt you.', to: null },
+      { text: 'Pluto: tell the king what he wants to hear, and only the true parts.', to: null },
+      { text: 'Planet Squanch: raise a glass at the wedding, then get back to the portal in time.', to: null },
+    ]);
+    // (a dialled planet whose part is done: the episode's line again)
+    expect(objectiveLine(line, own, { here: 'pluto', state: { ...at, got: [2] }, ready: 13 })).toEqual(line);
+    // (landed on from the map: the planet's page says which, wherever `here` is)
+    expect(objectiveLine(line, own, { planet: { id: 'squanch' }, here: 'squanch', state: at, ready: 13 }).text).toBe('Planet Squanch: raise a glass at the wedding, then get back to the portal in time.');
+    // (with no story, the checklist's line, as ever)
+    expect(objectiveLine(null, own, { here: 'pluto', state: at, ready: 13 })).toEqual({ text: own.objective, to: '/universe' });
+  });
+
+  it('points the marker at the sector part of the planet Morty’s on, else the first part still to do', () => {
+    const sector = EPISODES.findIndex((e) => e.id === 'sector');
+    const at = { ...fresh(), episode: sector, got: [] };
+    const next = progress([]).next;
+    expect(markedTask(at, next, { ready: 13 })).toEqual({ id: 'birdworld' });
+    expect(markedTask(at, next, { here: 'garage', ready: 13 })).toEqual({ id: 'birdworld' });
+    expect(markedTask(at, next, { here: 'pluto', ready: 13 })).toEqual({ id: 'pluto' });
+    expect(markedTask({ ...at, got: [0] }, next, { here: 'squanch', ready: 13 })).toEqual({ id: 'squanch' });
+    // (its part done: the first still to do, whose way from here is the planet's portal)
+    expect(markedTask({ ...at, got: [2] }, next, { here: 'pluto', ready: 13 })).toEqual({ id: 'birdworld' });
+    expect(markedTask({ ...at, got: [0, 2] }, next, { here: 'pluto', ready: 13 })).toEqual({ id: 'gearworld' });
   });
 
   it('raises an episode’s closing line as a toast, and the next built episode’s card', () => {
@@ -45,18 +80,45 @@ describe('what the HUD shows of the story', () => {
     expect(newsOf([])).toEqual({ say: [], card: null });
   });
 
+  it('holds a page that’s leaving long enough for an episode’s closing line, and no longer for anything else', () => {
+    expect(SAID_MS).toBe(4000);
+    expect(leaveHold([{ type: 'step', episode: 10, step: 0 }, { type: 'done', episode: 10 }, { type: 'episode', episode: 11 }])).toBe(4000);
+    expect(leaveHold([{ type: 'step', episode: 10, step: 0 }])).toBe(0);
+    expect(leaveHold([{ type: 'episode', episode: 11 }])).toBe(0);
+    expect(leaveHold([])).toBe(0);
+  });
+
   it('says only the last closing line, and shows no card for an episode already over', () => {
     const out = [{ type: 'done', episode: 0 }, { type: 'episode', episode: 1 }, { type: 'step', episode: 1, step: 1 }, { type: 'done', episode: 1 }];
     const [who, text] = EPISODES[1].outro[0];
     expect(newsOf(out)).toEqual({ say: [{ kind: 'say', who, text }], card: null });
   });
 
+  it('marks a hotspot to use, never a talk or a walk in', () => {
+    const next = { id: 'cable' };
+    const episodes = [{ id: 'x', title: 'X', intro: [], outro: [], unlocks: [], steps: [{ type: 'use', id: 'dial', text: 'Put it back.' }, { type: 'talk', who: 'rick', text: 'Talk.' }, { type: 'enter', area: 'garage', text: 'Go in.' }] }];
+    expect([0, 1, 2].map((step) => markedTask({ ...fresh(), step }, next, { episodes, ready: 1 }))).toEqual([{ id: 'dial' }, null, null]);
+    // (episode 13's last step: the gun back on Rick's bench, every coordinate home already)
+    expect(markedTask({ ...fresh(), episode: 12, step: 3 }, next, { ready: 13 })).toEqual({ id: 'dial' });
+    expect(dialLead({ ...fresh(), episode: 13 }, DIAL.length)).toBe('Coordinates home: 32 of 32');
+    expect(dialItems(DIAL, { ...fresh(), episode: 13 }).every((d) => d.locked === null)).toBe(true);
+  });
+
   it('points the map’s marker at the story’s task, else the checklist’s next', () => {
     const next = progress([]).next;
     expect(markedTask(fresh(), next)).toEqual({ id: 'diner' });
     expect(markedTask({ ...fresh(), step: 3 }, next)).toEqual({ id: 'customs' });
-    // past the last ready episode: the checklist's
-    expect(markedTask({ ...fresh(), episode: 9 }, next)).toBe(next);
+    // past the last ready episode: the checklist's (episode 12 done, with 13 not built; the story's end)
+    expect(markedTask({ ...fresh(), episode: 12 }, next, { ready: 12 })).toBe(next);
+    expect(markedTask({ ...fresh(), episode: 13 }, next)).toBe(next);
+    // episode 13: the Blood Dome, Evil Rick, the Morty with the eyepatch, then Rick's bench
+    ['blooddome', 'evilrick', 'evilmorty', 'dial'].forEach((id, step) => expect(markedTask({ ...fresh(), episode: 12, step }, next)).toEqual({ id }));
+    // episode 12: Heist-Con, then the Vindicators
+    ['heistcon', 'vindicators'].forEach((id, step) => expect(markedTask({ ...fresh(), episode: 11, step }, next)).toEqual({ id }));
+    // episode 11: the sector's first planet still to do
+    expect(markedTask({ ...fresh(), episode: 10 }, next)).toEqual({ id: 'birdworld' });
+    // episode 10: both steps the Citadel's page (the line's a link there): nothing to point at
+    [0, 1].forEach((step) => expect(markedTask({ ...fresh(), episode: 9, step }, next)).toBe(null));
     // episode 9: Fantasy World, then Froopyland
     ['fantasy', 'froopyland'].forEach((id, step) => expect(markedTask({ ...fresh(), episode: 8, step }, next)).toEqual({ id }));
     // episode 8: the cable studio, then Get Schwifty
@@ -87,9 +149,9 @@ describe('what the HUD shows of the story', () => {
     expect(items.find((d) => d.id === 'customs')).toEqual({ ...DIAL.find((d) => d.id === 'customs'), locked: null });
     expect(items.find((d) => d.id === 'vat').locked).toBe('Opens after episode 5, “Heat”.');
     expect(items.filter((d) => !d.locked).map((d) => d.id)).toEqual(['customs']);
-    // free roam, or past the last built episode: nothing locked
+    // free roam, or episode 12 done: nothing locked
     expect(dialItems(DIAL, { ...fresh(), freeRoam: true }).every((d) => d.locked === null)).toBe(true);
-    expect(dialItems(DIAL, { ...fresh(), episode: 9 }).every((d) => d.locked === null)).toBe(true);
+    expect(dialItems(DIAL, { ...fresh(), episode: 12 }).every((d) => d.locked === null)).toBe(true);
     // after episode 1, its places, and the next episode's still shut
     const one = dialItems(DIAL, { ...fresh(), episode: 1 });
     expect(one.filter((d) => !d.locked).map((d) => d.id)).toEqual(['annex', 'customs', 'meeseeksgolf']);
@@ -122,6 +184,25 @@ describe('what the HUD shows of the story', () => {
     const eight = dialItems(DIAL, { ...fresh(), episode: 8 });
     expect(eight.filter((d) => !d.locked).map((d) => d.id)).toEqual(['annex', 'customs', 'fantasy', 'microverse', 'anatomy', 'needful', 'jerryboree', 'simulation', 'storytrain', 'fortress', 'froopyland', 'nimbus', 'gromflomites', 'gloopynoops', 'schwifty', 'prison', 'cablestudio', 'dream', 'agency', 'meeseeksgolf', 'vat', 'dim35c']);
     for (const id of ['citadel', 'frundles']) expect(eight.find((d) => d.id === id).locked).toBe('Opens after episode 9, “Fairy tales”.');
+    // after episode 9: those, the Citadel and Frundles; the sector's four wait on episode 10
+    const nine = dialItems(DIAL, { ...fresh(), episode: 9 });
+    const opened = new Set([...eight.filter((d) => !d.locked).map((d) => d.id), 'citadel', 'frundles']);
+    expect(opened.size).toBe(24);
+    expect(nine.filter((d) => !d.locked).map((d) => d.id)).toEqual(DIAL.map((d) => d.id).filter((id) => opened.has(id)));
+    for (const id of ['birdworld', 'gearworld', 'pluto', 'squanch']) expect(nine.find((d) => d.id === id).locked).toBe('Opens after episode 10, “The Citadel”.');
+    // after episode 10: those and the sector's four; Heist-Con and the Vindicators wait on episode 11, the last two on episode 12
+    const ten = dialItems(DIAL, { ...fresh(), episode: 10 });
+    const sector = new Set([...opened, 'birdworld', 'gearworld', 'pluto', 'squanch']);
+    expect(sector.size).toBe(28);
+    expect(ten.filter((d) => !d.locked).map((d) => d.id)).toEqual(DIAL.map((d) => d.id).filter((id) => sector.has(id)));
+    for (const id of ['heistcon', 'vindicators']) expect(ten.find((d) => d.id === id).locked).toBe('Opens after episode 11, “The sector”.');
+    for (const id of ['blooddome', 'evilrick']) expect(ten.find((d) => d.id === id).locked).toBe('Opens after episode 12, “Big score”.');
+    // after episode 11: those, Heist-Con and the Vindicators; the last two still wait on episode 12
+    const eleven = dialItems(DIAL, { ...fresh(), episode: 11 });
+    const big = new Set([...sector, 'heistcon', 'vindicators']);
+    expect(big.size).toBe(30);
+    expect(eleven.filter((d) => !d.locked).map((d) => d.id)).toEqual(DIAL.map((d) => d.id).filter((id) => big.has(id)));
+    for (const id of ['blooddome', 'evilrick']) expect(eleven.find((d) => d.id === id).locked).toBe('Opens after episode 12, “Big score”.');
   });
 
   it('counts the coordinates home on the dial', () => {
@@ -134,7 +215,10 @@ describe('what the HUD shows of the story', () => {
     expect(dialLead({ ...fresh(), episode: 6 }, DIAL.length)).toBe('Coordinates home: 16 of 32');
     expect(dialLead({ ...fresh(), episode: 7 }, DIAL.length)).toBe('Coordinates home: 19 of 32');
     expect(dialLead({ ...fresh(), episode: 8 }, DIAL.length)).toBe('Coordinates home: 22 of 32');
-    expect(dialLead({ ...fresh(), episode: 9 }, DIAL.length)).toBe('Coordinates home: 32 of 32');
+    expect(dialLead({ ...fresh(), episode: 9 }, DIAL.length)).toBe('Coordinates home: 24 of 32');
+    expect(dialLead({ ...fresh(), episode: 10 }, DIAL.length)).toBe('Coordinates home: 28 of 32');
+    expect(dialLead({ ...fresh(), episode: 11 }, DIAL.length)).toBe('Coordinates home: 30 of 32');
+    expect(dialLead({ ...fresh(), episode: 12 }, DIAL.length)).toBe('Coordinates home: 32 of 32');
     // (free roam opens the dial, but brings no coordinates home)
     expect(dialLead({ ...fresh(), freeRoam: true }, DIAL.length)).toBe('Coordinates home: 1 of 32');
   });

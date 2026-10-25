@@ -27,6 +27,10 @@
 //     `rise` over the land, gold with a field’s light and dark, its x0 edge
 //     (the lane’s, under the clumps there) dropping to the ground; faces up
 //     whichever way x runs (a few thousand triangles where clumps would be millions)
+//   inReach([z0, z1], at, reach) → whether the ride `at` metres into the
+//     stage is within `reach` of that stretch of it: a scene hides what is
+//     drawn there beyond it (Hobbiton’s corn, two hundred metres up the lane
+//     from Bag End, was a sixth of the first frame’s triangles)
 //   waterOn(land, i) → (x, z) → the height of the land’s i-th river’s water
 //     there, or null off it: what carries a boat
 //   lampPools(lamps, heightAt, { radius, colour, strength, toward }) → { mesh, set(amount), dispose }:
@@ -94,6 +98,11 @@ export function merged(parts, material, name) {
 
 const SHARED = ['position', 'normal', 'uv', 'color', 'aRole'];
 
+export const inReach = ([z0, z1], at, reach) => at >= z0 - reach && at <= z1 + reach;
+
+// the layer a band’s shadow is cast from: the sun’s cameras see it (module.js), the view never does
+export const CASTS = 29;
+
 export const BAND = 60; // m along z: a merged mesh of statics spans no more than this
 
 export function mergeStatics(root, { keep = [], band = BAND } = {}) {
@@ -105,7 +114,7 @@ export function mergeStatics(root, { keep = [], band = BAND } = {}) {
   const gone = [];
   // (a hidden part, or one under a hidden group, is left as it is: a scene may show it)
   root.traverseVisible((o) => {
-    if (!o.isMesh || o.isInstancedMesh || o.isSkinnedMesh || kept.has(o) || Array.isArray(o.material)) return;
+    if (!o.isMesh || o.isInstancedMesh || o.isSkinnedMesh || o.userData.casts || kept.has(o) || Array.isArray(o.material)) return;
     let g = o.geometry.index ? o.geometry.toNonIndexed() : o.geometry.clone();
     for (const name of Object.keys(g.attributes)) if (!SHARED.includes(name)) g.deleteAttribute(name);
     g.morphAttributes = {};
@@ -123,17 +132,42 @@ export function mergeStatics(root, { keep = [], band = BAND } = {}) {
     gone.push(o);
   });
   for (const o of gone) o.removeFromParent();
+  const casters = new Map(); // band and face → the positions that cast there
   for (const [material, by] of buckets)
     for (const { geos, cast, receive } of by.values()) {
       const mesh = new THREE.Mesh(geos.length > 1 ? mergeGeometries(geos) : geos[0], material);
       mesh.name = `${root.name || 'statics'}:${material.name || material.type}`;
-      mesh.castShadow = cast;
+      // (an opaque material’s shadow is its shape alone: cast with its band’s, one draw a cascade)
+      const alone = material.transparent || material.alphaTest > 0 || material.alphaMap || material.alphaHash || material.opacityNode || material.alphaTestNode || material.castShadowNode || material.positionNode;
+      // (in half bands: a cascade takes a caster whole once any of it is in its fit)
+      if (cast && !alone)
+        for (const part of geos) {
+          const k = `${band > 0 ? Math.floor((2 * part.boundingSphere.center.z) / band) : 0}|${material.side}|${material.shadowSide}`;
+          if (!casters.has(k)) casters.set(k, { side: material.side, shadowSide: material.shadowSide, geos: [] });
+          const g = new THREE.BufferGeometry();
+          g.setAttribute('position', part.attributes.position.clone());
+          casters.get(k).geos.push(g);
+        }
+      mesh.castShadow = cast && Boolean(alone);
       mesh.receiveShadow = receive;
       // (what doesn't move stands solid: solids.js's grid is filled from it)
       mesh.userData.solid = true;
       root.add(mesh);
       if (geos.length > 1) for (const g of geos) g.dispose();
     }
+  for (const { side, shadowSide, geos } of casters.values()) {
+    const material = new THREE.MeshBasicMaterial({ side, colorWrite: false });
+    material.shadowSide = shadowSide;
+    const mesh = new THREE.Mesh(geos.length > 1 ? mergeGeometries(geos) : geos[0], material);
+    if (geos.length > 1) for (const g of geos) g.dispose();
+    mesh.geometry.computeBoundingSphere();
+    mesh.name = `${root.name || 'statics'}:casts`;
+    mesh.castShadow = true;
+    mesh.receiveShadow = false;
+    mesh.layers.set(CASTS);
+    mesh.userData.casts = true;
+    root.add(mesh);
+  }
   return root;
 }
 

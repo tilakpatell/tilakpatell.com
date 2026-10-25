@@ -1,27 +1,36 @@
 // What the HUD shows of the story, worked out apart from the drawing so
-// RmWorld only calls it: the objective line, what an event's out says, the
-// task the map's marker points at, and the dial's locks. Pure.
+// RmWorld and the Citadel only call it: the objective line, what an event's
+// out says (and how long a page leaving holds for it), the task the map's
+// marker points at, and the dial's locks. Pure.
 
 import { EPISODES } from './episodes';
 import { coordinates, current, dialOpen, lockNote } from './story';
 
 // The objective line: the story's step while there is one, else the
-// checklist's next. On a planet landed on from the map, the story's step only
-// when it's on that planet (an `all`'s part still to do there): anything else
-// can't be done there, so the planet's own line. In C-137, once nothing's
-// next, the checklist's closing line is the way on: the universe map (a
-// planet's own line has its portal).
-export function objectiveLine(story, prog, { planet = null, state = null, ...opts } = {}) {
+// checklist's next. On a planet with an `all`'s part still to do there (the
+// one landed on from the map, or the one Morty's on, `here`), that part's own
+// line. On a planet landed on, the story's step only when it's there:
+// anything else can't be done there, so the planet's own line. In C-137, once
+// nothing's next, the checklist's closing line is the way on: the universe
+// map (a planet's own line has its portal).
+export function objectiveLine(story, prog, { planet = null, here = null, state = null, ...opts } = {}) {
+  const part = story && partsOf(state, opts).find((s) => s.place === (planet?.id ?? here));
+  if (part) return { text: part.text, to: null };
   if (story && (!planet || placesOf(state, opts).includes(planet.id))) return story;
   return { text: prog.objective, to: !planet && !prog.next ? '/universe' : null };
+}
+
+// an `all`'s parts still to do (none for any other step)
+function partsOf(state, opts) {
+  const at = state && current(state, opts);
+  return at?.step.type === 'all' ? at.step.steps.filter((_, i) => !state.got.includes(i)) : [];
 }
 
 // the dial places the story's step is waiting on (an `all`'s parts still to do)
 function placesOf(state, opts) {
   const at = state && current(state, opts);
   if (!at) return [];
-  const { step } = at;
-  return (step.type === 'all' ? step.steps.filter((_, i) => !state.got.includes(i)) : [step]).map((s) => s.place).filter(Boolean);
+  return (at.step.type === 'all' ? partsOf(state, opts) : [at.step]).map((s) => s.place).filter(Boolean);
 }
 
 // What an out says: an episode done is its closing line, as a toast (the
@@ -41,16 +50,25 @@ export function newsOf(out, { episodes = EPISODES } = {}) {
   return { say, card };
 }
 
-// What the map's marker points at: the story's task, or the game it's to
-// win, while its step waits on one (an `all`'s first part still to do);
-// nothing when its step is something else; the checklist's next once the
-// built episodes are done. (RmWorld's GOAL says where each is.)
-export function markedTask(state, next, opts) {
+// How long a page that's leaving holds for what an out says: an episode's
+// closing line, long enough to be read before the fade covers it (the
+// escape that ends an episode on a planet's own page); nothing else holds.
+export const SAID_MS = 4000;
+export const leaveHold = (out) => (newsOf(out).say.length ? SAID_MS : 0);
+
+// What the map's marker points at: the story's task, the game it's to win,
+// or the hotspot it's to use (Rick's bench), while its step waits on one (an
+// `all`'s part on the planet Morty's on, `here`, else its first still to do);
+// nothing when its step is something else (walking in somewhere); the
+// checklist's next once the built episodes are done. (RmWorld's GOAL says where each is.)
+export function markedTask(state, next, { here = null, ...opts } = {}) {
   const at = current(state, opts);
   if (!at) return next;
   const { step } = at;
-  const part = step.type === 'all' ? step.steps.find((_, i) => !state.got.includes(i)) : step;
-  if (part?.type === 'task') return { id: part.id };
+  // (an `all`: the part on the planet he's on, else its first still to do)
+  const left = partsOf(state, opts);
+  const part = step.type === 'all' ? (left.find((s) => here && s.place === here) ?? left[0]) : step;
+  if (part?.type === 'task' || part?.type === 'use') return { id: part.id };
   return part?.type === 'win' ? { id: part.game } : null;
 }
 

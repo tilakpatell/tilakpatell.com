@@ -7,7 +7,8 @@
 // freed one by one (the area's 'freed1'…'freed3'); all three freed
 // ('collected'), Evil Rick comes for Morty, and the fight is stage.js's duel
 // (./duel.js). Spoken to after, Evil Morty leaves through a yellow portal
-// ('leave').
+// ('leave'), and his achievement is handed over once his task's done (the
+// stage's `grant`: a returner's on the visit).
 
 import * as THREE from 'three';
 import { BALL, BOX, fitText } from '../interiors/shell';
@@ -84,6 +85,8 @@ export async function buildEvilrick(kit) {
   let now = 0;
   const area = S.done(LIGHT, (t, dt, state, camera) => {
     now = t;
+    // (the Morty with the eyepatch's achievement, once he's said his piece: on the talk, or a returner's on the visit)
+    if (state) S.grant({ task: 'evilmorty', unlock: 'evilmorty' }, (state.done ?? []).includes('evilmorty'), state);
     for (const p of pods) {
       if (p.clone) p.clone.visible = !p.freed;
       p.tube.visible = !p.freed;

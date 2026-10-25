@@ -2,9 +2,9 @@
 // from the street to Customs and back, the dial's lock, the ways home, Free
 // roam, a returner, the Citadel, a planet landed on, and the toys ticking
 // when they're played.
-/* global window, document */
+/* global window */
 import { READY } from '../../src/components/rickmorty/adventure/episodes.js';
-import { BASE, OUT, N, check, done, c137, built, goto, use, place, story, reads, WIPED, ARCADE, throughPortal, gun, toast, inArea, game, arriveOf, standOn, PLACES } from './helpers.mjs';
+import { BASE, OUT, N, check, done, c137, built, goto, use, place, story, reads, WIPED, ARCADE, throughPortal, gun, toast, inArea, game, arriveOf, standOn, PLACES, CITADEL_LINE, citadelUp, citadelReads } from './helpers.mjs';
 
 export const BASICS = {
   // a new visitor plays episode 1 from the street to Customs and back
@@ -68,7 +68,7 @@ export const BASICS = {
   // to the garage, and a planet landed on from the map has a way home
   async ways(page) {
     await c137(page);
-    await page.evaluate((n) => window.__RMSTORY__.jump(n), READY); // (past the built episodes: every place open)
+    await page.evaluate((n) => window.__RMSTORY__.jump(n), READY); // (the story's end: every place open)
     check((await page.evaluate(() => window.__C137__.dial('citadel'))) === 'citadel', 'the dial wouldn’t take the Citadel');
     await throughPortal(page);
     await page.waitForFunction(() => window.location.hash.startsWith('#/c-137/citadel'), null, { timeout: 20000 }).catch(() => {
@@ -147,21 +147,25 @@ export const BASICS = {
     },
     { seed: { 'tp-c137-done': ['cable', 'vat', 'jerryboree', 'cablestudio', 'fantasy'] } },
   ),
-  // the Citadel tells the story where it is and what's done there (episode 10
-  // isn't built yet, so on Free roam nothing moves), and its steps still save
+  // the Citadel tells the story where it is and what's done there (a
+  // returner on Free roam, whose story is at episode 1: nothing moves, no
+  // card and its own line), and its steps still save
   citadel: Object.assign(
     async (page, errors) => {
       await page.goto(`${BASE}/#/c-137/citadel`, { waitUntil: 'domcontentloaded' });
-      await page.waitForFunction(() => window.__CITADEL__?.api || document.querySelector('.citadel-world')?.dataset.mode === 'cards', null, { timeout: 600000, polling: 1000 });
-      check(await page.evaluate(() => Boolean(window.__CITADEL__?.api)), 'the Citadel’s 3D world didn’t start');
+      await citadelUp(page);
       check(await page.evaluate(() => Boolean(window.__RMSTORY__)), 'the Citadel doesn’t read the story');
       const s = await story(page);
       check(s.freeRoam && s.episode === 0 && s.step === 0, `entering the Citadel moved the story to ${s.episode}.${s.step}`);
+      await page.waitForTimeout(1500);
+      check((await page.locator('.rm-episode').count()) === 0, 'a card showed at the Citadel on Free roam');
+      await citadelReads(page, null, CITADEL_LINE([]));
       const before = errors.length;
       await page.evaluate(() => window.__CITADEL__.complete('daycare'));
       await page.waitForFunction(() => JSON.parse(localStorage.getItem('tp-citadel-done') ?? '[]').includes('daycare'), null, { timeout: 5000 }).catch(() => {
         throw new Error('the Citadel didn’t keep the day care done');
       });
+      await citadelReads(page, null, CITADEL_LINE(['daycare']));
       await page.waitForTimeout(1000);
       check(errors.length === before, `errors after a Citadel step: ${errors.slice(before, before + 3).join('; ')}`);
     },

@@ -114,7 +114,7 @@ export const ACHIEVEMENTS = {
   froopyland: { name: 'The ABC’s of Beth', desc: 'Found Tommy in Froopyland, past the Froopylanders' },
   nimbus: { name: 'He controls the police', desc: 'Approached Mr. Nimbus on his beach, past the Atlantean guard' },
   gromflomites: { name: 'Oh boy, here I go', desc: 'Opened Fart’s cell in the Gromflomite base without a guard seeing' },
-  heistcon: { name: 'The con is the heist', desc: 'Took a badge and recruited a crew for Miles Knightly at Heist-Con' },
+  heistcon: { name: 'The con is the heist', desc: 'Lifted all four booths at Heist-Con for Miles Knightly before the clock ran out' },
   snakeplanet: { name: 'Hsss', desc: 'Reached the snake rocket on Snake Planet without being bitten' },
   nuptia: { name: 'Love, scanned', desc: 'Took the test on Nuptia 4, and kept clear of the mythologs' },
   gloopynoops: { name: 'Visiting hours', desc: 'Visited Shrimply Pibbles at St. Gloopy Noops' },

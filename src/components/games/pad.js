@@ -61,5 +61,9 @@ export function edges(now, before) {
   return out;
 }
 
+// A press since the last frame, or a stick off rest: the pad's first move
+// (an episode's card goes at it, as at a key: rickmorty/adventure/EpisodeCard.jsx)
+export const stirs = (now, before) => Boolean(now) && (Object.keys(edges(now, before)).length > 0 || Boolean(now.lx || now.ly || now.rx || now.ry));
+
 // Whether a key press belongs to a text field (where the game keeps out).
 export const typing = (t) => t instanceof HTMLElement && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName));

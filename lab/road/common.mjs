@@ -9,7 +9,7 @@ export const BASE = process.env.BASE ?? 'http://localhost:5173';
 export const STAGE_IDS = ['hobbiton', 'shire-edge', 'bree', 'weathertop', 'ford', 'rivendell', 'caradhras', 'moria', 'lorien', 'anduin', 'marshes', 'ithilien', 'cirith-ungol', 'gorgoroth', 'minas-tirith', 'havens'];
 
 export async function browser() {
-  const exe = process.env.CHROME ?? readdirSync('/opt/pw-browsers').filter((n) => /^chromium-\d+$/.test(n)).map((n) => `/opt/pw-browsers/${n}/chrome-linux/chrome`).find(existsSync);
+  const exe = process.env.CHROME ?? readdirSync('/opt/pw-browsers').filter((n) => /^chromium-\d+$/.test(n)).flatMap((n) => [`/opt/pw-browsers/${n}/chrome-linux/chrome`, `/opt/pw-browsers/${n}/chrome-linux64/chrome`]).find(existsSync);
   // (GPU=webgpu: WebGPU on Dawn's SwiftShader adapter, the owner's own backend, in software;
   // without Vulkan on SwiftShader too the device is lost within seconds, "A valid external
   // Instance reference no longer exists")
