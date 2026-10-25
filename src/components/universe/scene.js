@@ -2388,7 +2388,7 @@ export async function create(canvas, ctx) {
   const jitter = () => Math.random() * 2 - 1;
   // a heavy round away, homing on whatever the guns have locked
   const launch = (at, d, speed, w, g) => {
-    rounds.launch(at, d, speed, { life: AIM.life * w.life, punch: (g.punch ?? 1) * w.punch, damage: w.damage, homing: w.homing, target: state.lockTarget });
+    rounds.launch(at, d, speed, { life: AIM.life * w.life, punch: (g.punch ?? 1) * w.punch, damage: w.damage, homing: w.homing, targetId: state.lockTarget?.id ?? null });
     state.kick = Math.max(state.kick, 0.4);
   };
 
@@ -2769,7 +2769,7 @@ export async function create(canvas, ctx) {
     return Boolean(hit);
   };
   const missileGone = (m) => boom(m, m.position.clone());
-  const moveMissiles = (dt) => rounds.fly(dt, missileHit, missileGone);
+  const moveMissiles = (dt) => rounds.fly(dt, missileHit, missileGone, sight.find);
 
   // the Citadel's state while you're near it; written only when something
   // in it changes, which is told by its numbers (each frame's string to

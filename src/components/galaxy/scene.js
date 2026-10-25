@@ -1049,7 +1049,7 @@ export async function create(canvas, ctx) {
     let v = [dir[0] * speed, dir[1] * speed, dir[2] * speed];
     if (w.unique) v = unique.fire(arm.id, shotAt, dir, speed, w, punch);
     else if (w.heavy) {
-      rounds.launch(shotAt, dir, speed, { life: AIM.life * w.life, punch, damage: w.damage, homing: w.homing, target: state.lockTarget });
+      rounds.launch(shotAt, dir, speed, { life: AIM.life * w.life, punch, damage: w.damage, homing: w.homing, targetId: state.lockTarget?.id ?? null });
       state.kick = Math.max(state.kick, 0.4);
     } else {
       guns.fire(shotAt, fan(dir, w.count, w.cone, jitter), speed, { life: AIM.life * w.life, punch, damage: w.damage, scale: g.bolt * w.scale });
@@ -2364,7 +2364,7 @@ export async function create(canvas, ctx) {
     const crashBusy = crashFx.update(dt, camera);
     const fxBusy = pops.update(dt, camera) || crashBusy;
     const adventuring = adventure(dt, t);
-    const rounding = rounds.fly(dt, roundHit, roundGone);
+    const rounding = rounds.fly(dt, roundHit, roundGone, sight.find);
     const shooting = moveBolts(dt) || rounding;
     armory?.update(dt);
     // the speed: dust streaming past, the picture rushing out from the ship

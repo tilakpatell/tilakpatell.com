@@ -6,6 +6,7 @@
 // wall, not a ship to snap into, so it's met where it's met. Pure, tested.
 //
 //   RAILS                             seconds of straight run before it homes
+//   homeOn(d, find) → d.target         its target looked up by id (find: the scene's sight.find): gone, null, and it flies straight
 //   steerRound(d, at, dt, scratch)    d.v turned onto d.target.at (in place)
 //   nearTarget(d, at) → boolean       right by its target: a step to its middle meets it
 
@@ -13,6 +14,14 @@ import { steer } from './guns';
 
 export const RAILS = 0.12;
 const REACH = 0.35; // (how far past a target's size it snaps in)
+
+// the target a round was launched at, found by its id each step: a hunter shot
+// down is gone from the scene's foes, so the round flies on straight, and one
+// back (out of hiding) is homed on again
+export function homeOn(d, find) {
+  d.target = d.targetId == null ? null : find(d.targetId);
+  return d.target;
+}
 
 // `d`: { v: [x, y, z], homing (rad/s), target: { at: { x, y, z } } | null, age (s) };
 // `at`: where the round is; `scratch`: a [0, 0, 0] the caller keeps (nothing made a frame)
