@@ -22,7 +22,8 @@ import { MeshBasicNodeMaterial } from 'three/webgpu';
 import { BAND, C, canopy, disposeBuilt, inReach, merged, mergeStatics, part } from '../parts';
 import { moundTop } from '../../ground';
 import { STAGES } from '../index';
-import { bagEnd, barrelParts, beehiveParts, benchParts, bush, cabbageGeo, cart, dog, flowerBed, greenDragon, hayBaleParts, hedgeGeo, hole, lampParts, mailboxParts, mill, partyTree, parts, pavilion, pumpkinGeo, scarecrowParts, sheep, signpost, washingLine, wheatGeo, wheelbarrowParts } from '../../../shire/build';
+import { bagEnd, barrelParts, beehiveParts, benchParts, bush, cabbageGeo, cart, dog, flowerBed, greenDragon, hayBaleParts, hole, lampParts, mailboxParts, mill, partyTree, parts, pavilion, pumpkinGeo, scarecrowParts, sheep, signpost, washingLine, wheelbarrowParts } from '../../../shire/build';
+import { hedgeBlock, wheatClump } from '../shireLight';
 
 export const SHIRE = 0.68; // the Road’s hobbit (1.05 m) over the chapter’s (1.55)
 // the Hill: a turf dome on terrain.js’s rise, the doors round its foot (the
@@ -217,7 +218,7 @@ export function buildProps({ K, material, heightAt, tier = 'high' }) {
   group.add(stand(bits((bk) => benchParts(bk, K)), heightAt, DRAGON[0] + 4.6, DRAGON[1] + 2.4, R));
 
   // the vegetable patch: cabbages and pumpkins in rows, the scarecrow over them, a wheelbarrow
-  const crops = { cabbage: cabbageGeo(), pumpkin: pumpkinGeo(), wheat: wheatGeo() };
+  const crops = { cabbage: cabbageGeo(), pumpkin: pumpkinGeo(), wheat: wheatClump() };
   for (const [geo, mat, row0] of [[crops.cabbage, K.mats.cabbage, 0], [crops.pumpkin, K.mats.pumpkin, 1]]) {
     const at = [];
     for (let row = row0; row < 6; row += 2) for (let z = PATCH.z[0]; z < PATCH.z[1]; z += 0.9) at.push([PATCH.x[0] + 1 + row * 1.2, z + ((row * 0.37) % 1) * 0.4]);
@@ -262,7 +263,7 @@ export function buildProps({ K, material, heightAt, tier = 'high' }) {
   const blocks = [];
   for (const [side, z0, z1] of HEDGES) for (let z = z0; z < z1; z += 0.95) blocks.push([side * 4.6, z]);
   const along = new THREE.Quaternion().setFromAxisAngle(up, R);
-  const hedgeGeometry = hedgeGeo();
+  const hedgeGeometry = hedgeBlock();
   // (what is drawn only while the ride is near it: a band of hedge or the corn two hundred metres off was triangles for a few pixels)
   const far = [];
   for (const list of banded(blocks, (b) => b[1])) {
