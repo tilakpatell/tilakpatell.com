@@ -14,6 +14,7 @@
 //   galaxy-bolt   the galaxy: a bolt at a TIE dead ahead takes it
 //   unique-pilots the galaxy: the Blue sky cluster at a TIE, never asking the
 //                 other pilots
+//   galaxy-capital the galaxy: a bolt at a Star Destroyer's shield part takes it
 //   reach         seismic charges picked: the lead pip on at 6 out, off at 12
 //   tap           a tap on a character in front of a planet locks on to it, by hand
 //   threats       a character on you, 20 behind: its threat arrow, and no lock
@@ -36,7 +37,7 @@ const flag = (k, d = null) => {
 const url = String(flag('url', 'http://127.0.0.1:5188')).replace(/\/$/, '');
 const line = Number(flag('line', 0));
 const shotDir = flag('shot') ? resolve(flag('shot')) : null;
-const SCENARIOS = ['order', 'crash', 'galaxy-bolt', 'unique-pilots', 'reach', 'tap', 'threats'];
+const SCENARIOS = ['order', 'crash', 'galaxy-bolt', 'unique-pilots', 'galaxy-capital', 'reach', 'tap', 'threats'];
 if (!SCENARIOS.includes(scenario)) throw new Error(`usage: flight-probe.mjs <${SCENARIOS.join('|')}> [--line 0|1|2] [--expect clear] [--shot dir] [--url …]`);
 
 let failed = 0;
@@ -187,6 +188,56 @@ async function uniquePilots(page) {
   say(asked.pilot === 0, `and never the other pilots (${asked.pilot})`);
 }
 
+// a Star Destroyer brought in and the hunters held still, the ship pinned
+// 20 out on +x of its first shield part, nose on; line 0 held 3 s: what of
+// it the bolts hit (again from −x while no part has been hit in 20 s). (The
+// page draws about a frame a second in software with the destroyer here,
+// and a bolt takes some frames to fly 20 out.)
+async function galaxyCapital(page) {
+  const ready = await page.evaluate(() => {
+    const d = window.__galaxyDebug;
+    if (!d.pieces) return 'no set pieces';
+    d.pin({});
+    window.__fp.freeze('__galaxyDebug');
+    return d.pieces.destroyer(d.state.ship, 'destroyer') ? 'ready' : 'no destroyer';
+  });
+  if (ready !== 'ready') return say(false, `the galaxy's capital ship (${ready})`);
+  await page.waitForFunction(() => window.__galaxyDebug.pieces.destroyerHere && window.__galaxyDebug.pieces.targets.length > 0, null, { timeout: 60000 });
+  await page.evaluate(() => {
+    const d = window.__galaxyDebug;
+    const p = d.pieces;
+    window.__capHits = [];
+    d.arms().select(0);
+    if (p.hit.recorded) return;
+    const real = p.hit;
+    const f = (...a) => {
+      const r = real.apply(p, a);
+      if (r) window.__capHits.push(r.type);
+      return r;
+    };
+    f.recorded = true;
+    p.hit = f;
+  });
+  let types = [];
+  for (const side of [1, -1]) {
+    await page.evaluate((k) => {
+      const d = window.__galaxyDebug;
+      const at = d.pieces.targets[0].at;
+      d.pin({ x: at.x + k * 20, y: at.y, z: at.z, heading: (k * Math.PI) / 2, pitch: 0 });
+      d.state.fireBtn = true;
+    }, side);
+    await page.waitForTimeout(3000);
+    await page.evaluate(() => (window.__galaxyDebug.state.fireBtn = false));
+    for (let i = 0; i < 40 && !types.includes('part'); i++) {
+      await page.waitForTimeout(500);
+      types = await page.evaluate(() => [...window.__capHits]);
+    }
+    if (types.includes('part')) break;
+  }
+  await shoot(page, 'galaxy-capital');
+  say(types.includes('part'), `the galaxy's bolt at the capital ship: a shield part takes it (${types.join(', ') || 'nothing hit'})`);
+}
+
 async function reach(page) {
   const fitted = await page.evaluate(async () => {
     await window.__universe().pose('rickmorty');
@@ -269,13 +320,14 @@ async function threats(page) {
   say(got.arrows === 1 && got.lock === null, `Vader 20 behind: one threat arrow, no lock (${got.arrows} arrow${got.arrows === 1 ? '' : 's'}, ${got.lock === null ? 'no lock' : `locked on ${got.lock}`})`);
 }
 
-const galaxy = scenario === 'galaxy-bolt' || scenario === 'unique-pilots';
+const galaxy = scenario === 'galaxy-bolt' || scenario === 'unique-pilots' || scenario === 'galaxy-capital';
 const { browser, page, errors } = galaxy ? await openGalaxy() : await openUniverse();
 try {
   if (scenario === 'order') await order(page);
   if (scenario === 'crash') await crash(page);
   if (scenario === 'galaxy-bolt') await galaxyBolt(page);
   if (scenario === 'unique-pilots') await uniquePilots(page);
+  if (scenario === 'galaxy-capital') await galaxyCapital(page);
   if (scenario === 'reach') await reach(page);
   if (scenario === 'tap') await tap(page);
   if (scenario === 'threats') await threats(page);

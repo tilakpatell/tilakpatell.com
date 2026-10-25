@@ -2350,7 +2350,7 @@ export async function create(canvas, ctx) {
   Object.defineProperty(state, 'space', { get: () => ({ solids: solidsNow, edge: Infinity }) });
   const powers = createGalaxyPowers({ parent: map, reduced, hunters, war: null, bolts: powerBolts, flashes: powerFlashes, crashFx, pops, post: powerPost, state, emit, controls, strike: (...a) => powerStrike(...a), scored: (...a) => powerScored(...a), teleport: (pose) => powerTeleport(pose) });
   // the skill tree's four ship weapons (uniqueArms.js): fired as the guns are, played out beside the powers
-  const unique = createUniqueArms({ parent: map, reduced, hunters, war: null, bolts: powerBolts, flashes: powerFlashes, state, emit, strike: (...a) => uniqueStrike(...a), scored: (...a) => powerScored(...a) });
+  const unique = createUniqueArms({ parent: map, reduced, foes: () => sight.foes, bolts: powerBolts, flashes: powerFlashes, state, emit, strike: (from, to, shot) => guns.strike(from, to, shot, UNIQUE_HITS) });
   // the big one charged by what the guns hit (a power's own hits, `by` it, charge nothing)
   // (a hit at the front is the war's battle's, as the galaxy's are: an objective charges it more, a capital ship's hull and shield nothing)
   const charge = (hh) => powers.gain(chargeFor(hh.war ?? hh, { war: Boolean(hh.war), ace: FACTIONS_ALL[hh.faction]?.ace === hh.kind }), `hunters:${hh.id}`);
@@ -2666,7 +2666,7 @@ export async function create(canvas, ctx) {
   // What a shot meets on its step, in the order the bolts meet them (each
   // source the test and what the hit does; null when it doesn't take it):
   // a bolt's (guns.step), a heavy round's (missileHit) and the skill tree's
-  // arms' (uniqueStrike). A round blasts where it hits (`round`, set while
+  // arms' (UNIQUE_HITS, through guns.strike). A round blasts where it hits (`round`, set while
   // missileHit asks; boom spends it).
   let round = null;
   const shotNormal = (shot) => popDir.set(-shot.v[0], 3, -shot.v[2]).normalize();
@@ -2686,7 +2686,7 @@ export async function create(canvas, ctx) {
   };
   const hunterHits = foeHits((from, to, shot) => hunters?.hit(from, to, shot.punch ?? 1)); // (looked up at each hit)
   const farHits = foeHits((from, to, shot) => farHit(from, to, shot.punch ?? 1));
-  const frontHits = foeHits((from, to, shot) => frontHit(from, to, shot.punch ?? 1));
+  const frontHits = foeHits((from, to, shot) => frontHit(from, to, shot.warPunch ?? shot.punch ?? 1)); // (the cut on its objectives: a unique arm's)
   // another pilot: they're told, and it comes off their shields
   // (or one of the hunters after them: it's theirs, so they're told that too)
   const pilotHits = (from, to, shot) => {
@@ -2742,16 +2742,7 @@ export async function create(canvas, ctx) {
     return mh;
   };
   const BOLT_HITS = [heardHits, hunterHits, farHits, frontHits, pilotHits, citadelHits, capitalHits, removerHits, trafficHits, leviathanHits, rockHits];
-  const UNIQUE_HITS = [hunterHits, farHits, frontHits];
-  // uniqueArms' strike(from, to, punch, opts), as a shot
-  const STILL = [0, 0, 0];
-  const uniqueShot = { punch: 1, damage: undefined, v: STILL, heavy: false, warPunch: 1 };
-  const uniqueStrike = (from, to, punch, { vel = null, warPunch = punch } = {}) => {
-    uniqueShot.punch = punch;
-    uniqueShot.warPunch = warPunch;
-    uniqueShot.v = vel ?? STILL;
-    return guns.strike(from, to, uniqueShot, UNIQUE_HITS);
-  };
+  const UNIQUE_HITS = BOLT_HITS.filter((s) => s !== heardHits && s !== pilotHits && s !== trafficHits); // (pilots: the arsenal spec; traffic: lane 4's)
   // a round's step (rounds.js flies it): true when it's spent
   const missileHit = (m, from, to) => {
     round = m;

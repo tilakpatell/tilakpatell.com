@@ -476,7 +476,7 @@ export async function create(canvas, ctx) {
   // (made before the first frame's shaders are, so its look is made with them)
   const powers = createGalaxyPowers({ parent: scene, reduced, hunters, war, bolts, flashes, crashFx, pops, post, state, emit, controls, strike: (...a) => strike(...a), scored: (...a) => scored(...a), teleport: (pose) => teleport(pose), laser: LASER.rebel });
   // the skill tree's four ship weapons (the universe's uniqueArms.js): fired as the guns are, played out beside the powers
-  const unique = createUniqueArms({ parent: scene, reduced, hunters, war, bolts, flashes, state, emit, strike: (...a) => uniqueStrike(...a), scored: (...a) => scored(...a) });
+  const unique = createUniqueArms({ parent: scene, reduced, foes: () => sight.foes, bolts, flashes, state, emit, strike: (from, to, shot) => guns.strike(from, to, shot, UNIQUE_HITS) });
   const cluster = createCluster(); // (the flight cluster's writer: placeShield)
   // what a kill leaves behind (pickups.js: the rules, pickupFx.js: the drawing); none online, and none survive a jump, a landing or a crash
   const pickups = createPickups();
@@ -1142,19 +1142,18 @@ export async function create(canvas, ctx) {
     const ph = pilots.hit(from, to, punch);
     return ph ? pilotShot(ph, punch, normal, false, damage) : null;
   };
-  // the hit list: strike's (the hunters, the war, then another pilot)
-  const BOLT_HITS = [(from, to, shot) => strike(from, to, shot.punch ?? 1, { vel: shot.v, warPunch: shot.warPunch, damage: shot.damage })];
-  // the skill tree's arms: never a pilot
-  const UNIQUE_HITS = [(from, to, shot) => strike(from, to, shot.punch ?? 1, { vel: shot.v, warPunch: shot.warPunch, damage: shot.damage, pilots: false })];
-  // uniqueArms' strike(from, to, punch, opts), as a shot
-  const STILL = [0, 0, 0];
-  const uniqueShot = { punch: 1, damage: undefined, v: STILL, heavy: false, warPunch: 1 };
-  const uniqueStrike = (from, to, punch, { vel = null, warPunch = punch } = {}) => {
-    uniqueShot.punch = punch;
-    uniqueShot.warPunch = warPunch;
-    uniqueShot.v = vel ?? STILL;
-    return guns.strike(from, to, uniqueShot, UNIQUE_HITS);
+  // the capital ship's parts, as on the universe map
+  const capitalHits = (from, to, shot) => {
+    const ch = pieces?.destroyerHere ? pieces.hit(from, to, shot.punch ?? 1) : null;
+    if (!ch) return null;
+    if (ch.type === 'part' || ch.type === 'bridge') state.hitMark = 1;
+    pops.hit({ point: ch.at, normal: popDir.set(-shot.v[0], 3, -shot.v[2]).normalize(), radius: ch.down ? ch.size * 1.8 : ch.type === 'shielded' ? 0.45 : 0.2 });
+    return ch;
   };
+  // the hit list: the capital ship's parts, then strike's (the hunters, the war, then another pilot)
+  const BOLT_HITS = [capitalHits, (from, to, shot) => strike(from, to, shot.punch ?? 1, { vel: shot.v, warPunch: shot.warPunch, damage: shot.damage })];
+  // the skill tree's arms: never a pilot
+  const UNIQUE_HITS = [capitalHits, (from, to, shot) => strike(from, to, shot.punch ?? 1, { vel: shot.v, warPunch: shot.warPunch, damage: shot.damage, pilots: false })];
   // a hit on another pilot or one of the hunters after them (a shot's, or a
   // ram's: shipsHit), played: they're told
   const pilotShot = (ph, punch, normal, ram = false, damage = undefined) => {
@@ -1667,7 +1666,7 @@ export async function create(canvas, ctx) {
 
   // ── Flying ──
   const tractorPull = new THREE.Vector3();
-  const candBuf = []; // (what the guns can lock on to: the hunters and the other pilots, in one list, kept)
+  const candBuf = []; // (what the guns can lock on to: the hunters, the war’s, the capital ship’s parts and the other pilots, in one list, kept)
   const fly = (dt, t) => {
     if (state.crash) return crashing(dt);
     if (state.jump) {
@@ -1817,16 +1816,19 @@ export async function create(canvas, ctx) {
     // the guns: the lock, the lead, whether a shot would bend onto it
     let cands = hunters?.targets ?? NO_TARGETS;
     const warCands = war?.targets ?? NO_TARGETS;
-    if (pilots.count || warCands.length) {
+    const capitalCands = pieces?.destroyerHere ? pieces.targets : NO_TARGETS; // (the capital ship's shield parts, then its bridge)
+    if (pilots.count || warCands.length || capitalCands.length) {
       candBuf.length = 0;
       for (const c of cands) candBuf.push(c);
       for (const c of warCands) candBuf.push(c);
+      for (const c of capitalCands) candBuf.push(c);
       for (const c of pilots.targets) candBuf.push(c);
       cands = candBuf;
     }
     foeBuf.length = 0; // (every foe, ungated, for the sight's find)
     for (const c of hunters?.targets ?? NO_TARGETS) if (!c.prey) foeBuf.push(c);
     for (const c of warCands) foeBuf.push(c);
+    for (const c of capitalCands) foeBuf.push(c);
     lockWar = warCands;
     shotReach(arms().weapon, ship, sightIn); // (the line picked: its shot's speed and life)
     if (sight.update(ship, cands, dt, sightIn) && state.shown && !document.hidden) lockSound();
@@ -2747,7 +2749,7 @@ export async function create(canvas, ctx) {
       const [fx, fz] = forward(s.heading);
       return pickups.drop({ x: s.x + fx * gap, y: s.y, z: s.z + fz * gap }, { ace: true, kind, shield: state.shield });
     };
-    window.__galaxyDebug = { pickups, drop: dropAhead, THREE, scene, camera, renderer, post, state, models, hunters, pilots, arms, startJump, goTo, flyTo, net: () => net, pin, destroy: () => startDestroyed(), interdiction, finds, interdictor, war, wingmen, effects: () => state.effects, skyStreaks: () => skyStreaks, happen: (id) => state.ship && happen(id, state.ship), powers, power: (slot) => power(slot), charge: () => powers.fill(), ram: (gap = 6, kind = null) => {
+    window.__galaxyDebug = { pickups, pieces, drop: dropAhead, THREE, scene, camera, renderer, post, state, models, hunters, pilots, arms, startJump, goTo, flyTo, net: () => net, pin, destroy: () => startDestroyed(), interdiction, finds, interdictor, war, wingmen, effects: () => state.effects, skyStreaks: () => skyStreaks, happen: (id) => state.ship && happen(id, state.ship), powers, power: (slot) => power(slot), charge: () => powers.fill(), ram: (gap = 6, kind = null) => {
       // one of the system's hunters (or `kind`) put `gap` dead ahead at your height, coming at you, for checking a ram from a browser
       const s = state.ship;
       if (!s || !hunters) return null;
