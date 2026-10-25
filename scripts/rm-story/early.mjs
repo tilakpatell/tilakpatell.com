@@ -2,7 +2,7 @@
 // Roy and Plumbus Smash, the house guests and the sewer run, the Microverse
 // and Anatomy Park.
 /* global window */
-import { BASE, OUT, N, check, done, built, goto, use, place, story, reads, WIPED, ARCADE, GUESTS, SMALL, HEAT, throughPortal, toast, inArea, cardFor, at, opens, shootAt, warpUse, caught, rickallOn, PLACES, homeOf, spotAt, wayInOf } from './helpers.mjs';
+import { BASE, OUT, N, check, done, built, goto, use, place, story, reads, WIPED, ARCADE, GUESTS, SMALL, HEAT, throughPortal, toast, inArea, cardFor, at, opens, shootAt, warpUse, caught, rickallOn, PLACES, homeOf, spotAt, wayInOf, goalIs } from './helpers.mjs';
 
 export const EARLY = {
   // a new visitor plays episode 2: Roy, then Plumbus Smash on the walkway
@@ -120,6 +120,7 @@ export const EARLY = {
     // the sewer: dialled, the hole in the agency's floor, won, and left with a real Esc
     check((await page.evaluate(() => window.__C137__.dial('agency'))) === 'agency', 'the dial wouldn’t take the agency');
     await goto(page, 'agency', ...spotAt('agency', 'sewer', -0.36, 1.7)); // (clear of the guards at the portal's arrival)
+    await goalIs(page, 'sewer', 'in the agency at the sewer step');
     await use(page, 'sewer');
     const hole = place(page, 'sewer');
     const anyway = hole.getByRole('button', { name: 'Play anyway (slow)' });

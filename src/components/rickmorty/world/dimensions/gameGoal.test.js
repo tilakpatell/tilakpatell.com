@@ -3,6 +3,21 @@ import { destinationById } from './destinations';
 import { gameGoal } from './gameGoal';
 
 describe('the map’s marker inside a game', () => {
+  it('follows only the game of the task the story’s marked: in the agency, the sewer step’s marker isn’t Spring Jaguar’s key', () => {
+    const d = destinationById('agency');
+    expect(gameGoal(d, { used: new Set(), task: 'sewer' })).toBe(null);
+    expect(gameGoal(d, { used: new Set(), task: 'agency' })).toBe(d.collect.spots[0]);
+    // (no task: as it always was)
+    expect(gameGoal(d, { used: new Set() })).toBe(d.collect.spots[0]);
+  });
+
+  it('points at an escape’s spot once what it waits on is used: Customs’ scanner, with the seeds taken', () => {
+    const d = destinationById('customs');
+    expect(gameGoal(d, { used: new Set(), task: 'customs' })).toBe(null);
+    expect(gameGoal(d, { used: new Set(['seeds']), task: 'customs' })).toBe('scanner');
+    expect(gameGoal(d, { used: new Set(['seeds']), task: 'customs', done: ['customs'] })).toBe(null);
+  });
+
   it('follows a collect to the next piece not yet found, and stops once it’s done', () => {
     const d = destinationById('anatomy');
     expect(gameGoal(d, { used: new Set() })).toBe(d.collect.spots[0]);

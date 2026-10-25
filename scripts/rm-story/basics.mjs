@@ -4,7 +4,7 @@
 // when they're played.
 /* global window */
 import { READY } from '../../src/components/rickmorty/adventure/episodes.js';
-import { BASE, OUT, N, check, done, c137, built, goto, use, place, story, reads, WIPED, ARCADE, throughPortal, gun, toast, inArea, game, arriveOf, standOn, PLACES, CITADEL_LINE, citadelUp, citadelReads, warp, goalIs } from './helpers.mjs';
+import { BASE, OUT, N, check, done, c137, built, goto, use, place, story, reads, WIPED, ARCADE, throughPortal, gun, toast, inArea, game, arriveOf, standOn, PLACES, CITADEL_LINE, citadelUp, citadelReads, warp, goalIs, dial, warpUse, spotAt, home } from './helpers.mjs';
 
 export const BASICS = {
   // a new visitor plays episode 1 from the street to Customs and back
@@ -32,7 +32,13 @@ export const BASICS = {
       const s = await story(page);
       check(s.episode === 0 && s.step === i + 1, `after ${id} the story is at ${s.episode}.${s.step}`);
     }
-    // the last step: out of Customs with the seeds; the episode's closing line, then episode 2's card
+    // the last step: Customs, the marker on the seeds, then (taken) on the scanner, not the bare table
+    await dial(page, 'customs');
+    await goalIs(page, 'seeds', 'in Customs before the seeds');
+    await warpUse(page, 'customs', 'seeds', ...spotAt('customs', 'seeds'));
+    await goalIs(page, 'scanner', 'in Customs with the seeds');
+    await home(page, 'customs');
+    // out of Customs with the seeds; the episode's closing line, then episode 2's card
     await page.evaluate(() => window.__C137__.complete('customs'));
     await toast(page, WIPED.outro[0][1]);
     await card.waitFor({ timeout: 10000 }).catch(() => {
