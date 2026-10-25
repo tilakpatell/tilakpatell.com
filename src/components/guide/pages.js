@@ -464,6 +464,9 @@ export const PAGES = {
           ['Shift', 'Run'],
           ['Space', 'Let the road walk itself, or stop it'],
           ['Drag', 'Look about'],
+          ['E', 'Do what the card asks (hold it when it says hold)'],
+          ['A, D', 'In turn, when the card asks for a rhythm'],
+          ['T', 'A word with whoever walks beside you'],
           ['Enter', 'Next (with reduced motion), or carry on'],
           ['1 … 9, 0', 'The first ten stages'],
           ['L', 'The last lore card again'],
@@ -474,6 +477,7 @@ export const PAGES = {
     touch: [{ label: 'On the Road', rows: [['Walk', 'Hold to walk on'], ['Run', 'Hold to run'], ['Drag', 'Look about'], ['A dot', 'Go to that stage']] }],
     tips: [
       ['The road walks itself', 'Leave the keys and it walks on, stopping where something happens. Space turns it off and on.'],
+      ['Your part', 'At some moments the road stops and a card asks you to act: press, hold, keep a rhythm or choose a word. Leave it, and the company does it after a while.'],
       ['The stages', 'Each dot along the foot is a stage: press one to go there. A long press or a right click on one you’ve passed opens its lore.'],
       ['Coming back', 'It keeps your place. Come back and it offers to carry on from where you were.'],
     ],
