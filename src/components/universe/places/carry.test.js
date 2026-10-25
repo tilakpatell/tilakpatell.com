@@ -69,15 +69,29 @@ describe('the carry', () => {
     const a = dest(mooned.id);
     const b = dest(mooned.moonList[0].id);
     let f = carryFrames([], a, 0);
-    expect(f).toEqual([{ body: a, k: 1 }]);
+    expect(f).toEqual([{ body: a, k: 1, zone: carryZone(a) }]);
     f = carryFrames(f, b, 0.5);
     expect(f.map((x) => [x.body.id, x.k])).toEqual([
       [a.id, 0.75],
       [b.id, 0.25],
     ]);
     f = carryFrames(f, b, 2);
-    expect(f).toEqual([{ body: b, k: 1 }]);
+    expect(f).toEqual([{ body: b, k: 1, zone: carryZone(b) }]);
     expect(carryFrames(f, null, 2)).toEqual([]);
+  });
+  it('keeps each frame’s zone from when it joined, so a frame works none out', () => {
+    const a = dest(mooned.id);
+    const f = carryFrames([], a, 0);
+    expect(f[0].zone).toEqual(carryZone(a));
+    // (the same place again, a fresh object as a resolve or a refresh makes it: the zone it joined with)
+    const again = carryFrames(f, dest(mooned.id), 0.1);
+    expect(again[0].zone).toBe(f[0].zone);
+    expect(carryFrames(again, dest(mooned.moonList[0].id), 0.1)[1].zone).toEqual(carryZone(dest(mooned.moonList[0].id)));
+    // (carry reads the entry's zone, and works one out only for an entry made by hand)
+    const ship = { ...spawn(null), ...parkPlace(a, [a.at[0] + 5000, a.at[2]], 0) };
+    expect(carry(ship, [{ body: a, k: 1, zone: { inner: 0, outer: 1e-6 } }], 0, 1)).toBe(ship);
+    expect(carry(ship, [{ body: a, k: 1 }], 0, 1)).toEqual(carry(ship, f, 0, 1));
+    expect(carry(ship, f, 0, 1)).not.toBe(ship);
   });
   it('hands over from a planet to its moon with no jolt', () => {
     // (flown in by hand at cruise from the planet's park to the moon's, here changing as the moon's zone takes it)

@@ -15,7 +15,8 @@
 //   (keeps the last 8 sectors it built: its rows are shared with that cache, so treat them as
 //   read-only; a cache miss builds a whole sector synchronously)
 // placeIn(sector, parsed) → the same, on a sector already made (the one parseSpaceId's
-//   parsed id names); it builds nothing
+//   parsed id names); it builds nothing, and a part the sector hasn't got yet (a 2D
+//   sector's lattice and stations, a worker's moons before withMoons) is null, not a throw
 
 import { parseSpaceId, sectorCentre, sectorKey } from '../../../lib/space/address.js';
 import { clearOfKeepOuts, keepOutsNear } from './keepOuts';
@@ -177,16 +178,16 @@ function wonderPlace(sector, n) {
     return i < 0 ? null : { kind: 'station', row: list[i], sector };
   }
   if (n >= THING_BASE) {
-    const i = indexOf(sector.things.slot, n - THING_BASE);
+    const i = indexOf(sector.things?.slot ?? [], n - THING_BASE);
     return i < 0 ? null : { kind: 'thing', row: thingRow(sector, i), sector };
   }
   for (const e of SECTOR_EXTRAS) {
     if (n >= e.base && n < e.base + e.max) {
-      const row = sector.extras[e.list]?.[n - e.base];
+      const row = sector.extras?.[e.list]?.[n - e.base];
       return row ? { kind: 'extra', row, sector } : null;
     }
   }
-  const row = sector.wonders[n];
+  const row = sector.wonders?.[n];
   return row ? { kind: 'wonder', row, sector } : null;
 }
 
@@ -198,12 +199,12 @@ export function placeOf(universe, id) {
 export function placeIn(sector, p) {
   if (!p) return null;
   if (p.wonder !== undefined) return wonderPlace(sector, p.wonder);
-  const system = sector.systems[p.system];
+  const system = sector.systems?.[p.system];
   if (!system) return null;
   if (p.planet === undefined) return { kind: 'system', row: system, sector };
-  const planet = system.planets[p.planet];
+  const planet = system.planets?.[p.planet];
   if (!planet) return null;
   if (p.moon === undefined) return { kind: 'planet', row: planet, sector };
-  const moon = planet.moonList[p.moon];
+  const moon = planet.moonList?.[p.moon];
   return moon ? { kind: 'moon', row: moon, sector } : null;
 }

@@ -14,8 +14,10 @@
 //   = null, build = true } = {}) → Destination | null. sectors is a Map,
 //   read by get(key) and then by each sector's own id among its values (lane
 //   2's chunk grid keys its cells 'cx,cy,cz'), or any iterable of sectors. A
-//   sector found there answers alone: a place it hasn't got isn't there.
-//   Null for anything not there, junk included; it never throws.
+//   sector found there answers alone: a place it hasn't got isn't there,
+//   a part it hasn't made yet included (lane 2's 2D sector has no lattice
+//   or stations, and a worker's has no moons before withMoons). Null for
+//   anything not there, junk included; it never throws.
 // lookupOf(opts) → { place(id) → Destination | null, park(id, from: [x, z])
 //   → Park | null }: resolvePlace with those options, and park.js's
 //   parkPlace at the place's t, in the shape nav.js takes (the nav has the
@@ -51,9 +53,9 @@ export function resolvePlace(id, { universe = UNIVERSE, t = spaceTime(Date.now()
   const sector = sectorIn(sectors, p.key);
   const found = sector ? placeIn(sector, p) : build ? placeOf(universe, canon) : null;
   if (!found) return null;
-  const systems = found.sector.systems;
+  const systems = found.sector.systems ?? [];
   const system = found.kind === 'station' ? systems[found.row.i] : p.system !== undefined ? systems[p.system] : null;
-  const planet = p.moon !== undefined ? system?.planets[p.planet] : null;
+  const planet = p.moon !== undefined ? system?.planets?.[p.planet] : null;
   const card = placeCard({ ...found, system, planet });
   if (!card) return null;
   // (the card first, so nothing of it can stand in for the place's own fields;

@@ -40,6 +40,21 @@ describe('generated ids, and where a place is', () => {
     expect(atTime({ place: 'thing', move: drift, src: { row: rock } }, 5)).toEqual([241005, 500, -118000]);
     expect(atTime({ place: 'thing', move: null, src: { row: rock } }, 5)).toEqual(rock.at);
   });
+  it('writes into an array it’s handed, so a frame’s carry makes none', () => {
+    const drift = (row, t) => [row.at[0] + t, row.at[1], row.at[2]];
+    const places = [
+      [{ place: 'planet', src: { row: planet } }, orbitAt(planet, 77)],
+      [{ place: 'moon', src: { row: moon, planet } }, moonAt(moon, planet, 77)],
+      [{ place: 'thing', move: drift, src: { row: rock } }, [241077, 500, -118000]],
+      [{ place: 'thing', src: { row: rock } }, rock.at],
+    ];
+    for (const [place, want] of places) {
+      const out = [0, 0, 0];
+      expect(atTime(place, 77, out)).toBe(out);
+      expect(out).toEqual(want);
+    }
+    expect(atTime({ place: 'thing', src: {} }, 77, [0, 0, 0])).toBeNull();
+  });
   it('hands back a position of its own, so the generator’s rows stay as they are', () => {
     const at = atTime({ place: 'thing', src: { row: rock } }, 0);
     at[0] = 0;

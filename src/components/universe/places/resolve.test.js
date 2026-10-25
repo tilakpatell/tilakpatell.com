@@ -36,6 +36,17 @@ describe('the resolver', () => {
       expect(resolvePlace(id, { t: 0 }), String(id)).toBeNull();
     }
   });
+  it('is nothing, not a throw, in a sector that hasn’t its lattice, wonders or moons yet', () => {
+    // (lane 2's shapes: the 2D sector the Expanse holds before its one space,
+    // and a worker's sector before withMoons)
+    const bare = { ...s, things: undefined, extras: undefined, stations: undefined, wonders: undefined };
+    const moonless = { ...s, systems: s.systems.map((x) => ({ ...x, planets: x.planets.map((q) => ({ ...q, moonList: undefined })) })) };
+    const thing = thingRow(s, 0).id;
+    for (const id of [thing, 'E:1,0:w0', s.stations[0].id]) expect(resolvePlace(id, { t: 0, sectors: [bare], build: false }), id).toBeNull();
+    expect(resolvePlace(withMoons.moonList[0].id, { t: 0, sectors: [moonless], build: false })).toBeNull();
+    expect(resolvePlace(sys.id, { t: 0, sectors: [{ id: 'E:1,0' }], build: false })).toBeNull();
+    expect(resolvePlace(withMoons.id, { t: 0, sectors: [moonless], build: false })).toMatchObject({ id: withMoons.id, place: 'planet' });
+  });
   it('looks in the sectors it is given before making one, and makes none when told not to', () => {
     const doctored = { ...s, systems: s.systems.map((x, i) => (i === 0 ? { ...x, name: 'Testing' } : x)) };
     expect(resolvePlace('E:1,0:0', { t: 0, sectors: new Map([['E:1,0', doctored]]) }).name).toBe('Testing');
