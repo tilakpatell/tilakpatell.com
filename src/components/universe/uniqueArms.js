@@ -27,6 +27,7 @@
 
 import * as THREE from 'three';
 import { SHIP_FX, burstDirs, chain, dropAt, firstFor, inRing, jagged, pierce, punchAfter } from '../../lib/arms/behaviours';
+import { shotRadius } from '../../lib/combat/contact';
 import { AIM, dirTo, intercept } from './targeting';
 import { isObjective, shotAt } from './shipPowers';
 import { createUniqueFx } from './uniqueFx';
@@ -40,6 +41,8 @@ const BLUE = [0.9, 2.6, 3.6];
 const GREEN = [0.4, 2.6, 0.7];
 const SONIC = [0.8, 1.6, 2.8];
 
+// (an orb meets a ship as a bolt would: contact.js's reach for a shot)
+const orbReach = (t) => shotRadius(t.size ?? 1);
 const apart = (a, b) => Math.hypot(a.x - b.x, a.y - b.y, a.z - b.z);
 const unit = (x, y, z) => {
   const l = Math.hypot(x, y, z) || 1;
@@ -152,7 +155,7 @@ export function createUniqueArms({ parent, hunters, war, bolts, flashes, state, 
       o.x += o.v[0] * dt;
       o.y += o.v[1] * dt;
       o.z += o.v[2] * dt;
-      for (const t of pierce(from, o, list, o.hit)) {
+      for (const t of pierce(from, o, list, o.hit, orbReach)) {
         o.hit.add(t.id ?? t);
         land(t, punchAfter(o.punch, o.n), from);
         o.n += 1;
