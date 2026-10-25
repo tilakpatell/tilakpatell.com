@@ -3,6 +3,7 @@ import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
 import RmWorld from '../components/rickmorty/world/RmWorld';
 import { planetPage } from '../components/rickmorty/world/planetMode';
 import { isBigPlanet } from '../components/rickmorty/world/dimensions/destinations';
+import { homeLink } from '../components/rickmorty/adventure/ways';
 import WorldSwitcher from '../components/worlds/WorldSwitcher';
 import RmEarnNote from '../components/rickmorty/RmEarnNote';
 import HangarAboard from '../components/hangar/HangarAboard';
@@ -34,6 +35,8 @@ export default function RmPlanet() {
   const leave = useCallback(() => navigate(space, { replace: true }), [navigate, space]);
   if (!page) return <Navigate to="/c-137" replace />;
   const big = isBigPlanet(page.id);
+  // (a planet walked into has its Home in the HUD; a whole world's is here)
+  const home = big ? homeLink(page) : null;
   return (
     <div className="relative">
       <h1 className="sr-only">{page.name}</h1>
@@ -55,6 +58,11 @@ export default function RmPlanet() {
           <Link to={space} replace className="btn btn-primary">
             Back to space
           </Link>
+          {home && (
+            <Link to={home.to} state={home.state} className="btn btn-ghost">
+              {home.label}
+            </Link>
+          )}
           <Link to="/" className="btn btn-ghost">
             Back to the site
           </Link>

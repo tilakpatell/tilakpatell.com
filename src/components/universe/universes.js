@@ -301,7 +301,7 @@ export const UNIVERSES = [...CORE, ...FANDOMS];
 // the C-137 game's place of the same id, whose own portal brings you back
 // out here, not to C-137's garage), but for Gazorpazorp, a big planet on the
 // galaxy's surface engine, where the cruiser sets down and takes off again
-// (pages/RmPlanet.jsx). They aren't in UNIVERSES (not in the
+// (`big`, as destinations.js's BIG has it: pages/RmPlanet.jsx). They aren't in UNIVERSES (not in the
 // map's order, the mini-map or the pages' links): a kind of their own,
 // 'moon', found by byId, placed by layout.js on the sector's own spiral (in
 // this order), solid and landable through ship.js's PLANETS and the scene's
@@ -316,6 +316,7 @@ export const MOONS = [
     place: 'Gazorpazorp',
     go: 'Land on',
     to: '/c-137/gazorpazorp',
+    big: true, // (a whole world: the cruiser lands on it, and the card and the nav map say so)
     crew: 'rickmorty',
     swatch: '#e08a5a',
     accent: '#ffb080',

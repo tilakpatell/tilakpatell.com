@@ -1,6 +1,8 @@
 // The ways home, so no Rick and Morty place is a dead end: a planet landed on
-// from the map has a way home to C-137 beside its way back to space, the
-// Citadel's way out goes back where the visitor came from, and C-137 opened
+// from the map has a way home to C-137 beside its way back to space (in the
+// HUD and on the cards of a planet walked into; under Gazorpazorp's world, a
+// whole one with no HUD of C-137's, in its page's footer: pages/RmPlanet.jsx),
+// the Citadel's way out goes back where the visitor came from, and C-137 opened
 // with { arrive: 'garage' } starts Morty by the garage portal (it's the
 // portal he's come back through). Pure.
 

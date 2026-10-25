@@ -3,7 +3,7 @@ import { matchPath } from 'react-router-dom';
 import { describe, expect, it } from 'vitest';
 import { projectById } from '../../data/projects';
 import { WORLDS } from '../worlds/worlds';
-import { PLANETS } from '../rickmorty/world/dimensions/destinations';
+import { BIG, PLANETS } from '../rickmorty/world/dimensions/destinations';
 import { MOONS, MOON_IDS, UNIVERSES, byPath, contrast } from './universes';
 
 const app = readFileSync(new URL('../../App.jsx', import.meta.url), 'utf8');
@@ -61,6 +61,10 @@ describe('the Rick and Morty sector’s planets', () => {
       // (the Citadel has a page of its own there)
       expect(m.id).not.toBe('citadel');
     }
+  });
+
+  it('know which of them is a whole world, as the C-137 game does (the map says how going in goes by it)', () => {
+    expect(MOONS.filter((m) => m.big).map((m) => m.id)).toEqual([...BIG]);
   });
 
   it('know their worlds’ pages, and C-137 its own', () => {
