@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CHART_VIEWS, DESTINATIONS, DRIVES, HYPER, KINDS, TRANSIT, chartAt, legOf, portalBetween, tourIdsIn, viewFor, chartHeading, destinationById, distanceTo, findDestinations, formatDistance, formatTime, shortDistance, hyperState, onChart, findDestination, goalOf, parkFor, parseDrive, riftExit, riftSpot, tourFrom, tripTime, TOUR_IDS } from './nav';
+import { CHART_VIEWS, DESTINATIONS, DRIVES, HYPER, KINDS, TRANSIT, canGo, chartAt, legOf, portalBetween, tourIdsIn, viewFor, chartHeading, destinationById, distanceTo, findDestinations, formatDistance, formatTime, shortDistance, hyperState, onChart, findDestination, goalOf, parkFor, parseDrive, riftExit, riftSpot, tourFrom, tripTime, TOUR_IDS } from './nav';
 import { GOALS, OVERDRIVE, SHIP, SOLIDS, autopilot, inTrench, orbiting, parkAt, spawn, startAt, step } from './ship';
 import { ORDER, SECTORS, sectorOf } from './layout';
 import { portalHit, transit } from './portals';
@@ -7,6 +7,10 @@ import { WONDERS } from './deep';
 import { MAW } from './maw';
 import { byId, MOONS } from './universes';
 import { sunFor } from './lighting';
+import { fullSector, UNIVERSE } from '../expanse/shared/gen';
+import { lookupOf, resolvePlace } from './places/resolve';
+import { parkPlace } from './places/park';
+import { longTrip } from './places/trip';
 
 const inside = (s) => SOLIDS.some((p) => Math.hypot(s.x - p.at[0], s.y - p.at[1], s.z - p.at[2]) < (inTrench(p, s.x, s.y, s.z) ? p.band.floor : p.r) + SHIP.radius - 1e-6);
 const worlds = [...ORDER.filter((id) => byId(id).kind !== 'core'), ...MOONS.map((m) => m.id)];
@@ -422,5 +426,76 @@ describe('across the sectors', () => {
     for (const d of DESTINATIONS.filter((x) => x.sector === 'rickmorty')) expect(onChart(chartAt(d.at[0], d.at[2], v)), d.id).toBe(true);
     // (the main map's places are far off it)
     expect(onChart(chartAt(0, 0, v))).toBe(false);
+  });
+});
+
+describe('generated places', () => {
+  const U = lookupOf({ t: 0 });
+  const s = fullSector(UNIVERSE, 1, 0, 0);
+  const sys = s.systems[0];
+  const home = () => ({ ...spawn('home') });
+  const curve = () => ({ ...spawn(null), x: RM[0], y: 0, z: RM[2] + 500 });
+
+  it('are destinations by any spelling, through the caller’s lookup, never listed', () => {
+    expect(destinationById('e:1,0:0', U)).toMatchObject({ id: sys.id, generated: true, name: sys.name });
+    expect(goalOf('e:1,0,0:0')).toBe(sys.id);
+    expect([canGo(sys.id, U), canGo(`E:1,0:${s.systems.length}`, U), canGo('marvel'), canGo('nope')]).toEqual([true, false, true, false]);
+    expect(DESTINATIONS.some((d) => d.generated)).toBe(false);
+  });
+  it('are nowhere without a lookup, or with one that hasn’t the sector', () => {
+    expect([destinationById(sys.id), canGo(sys.id), tripTime(home(), sys.id, 'super'), parkFor(sys.id, [0, 0])]).toEqual([null, false, null, null]);
+    const none = lookupOf({ t: 0, sectors: new Map(), build: false });
+    expect([destinationById(sys.id, none), canGo(sys.id, none), findDestination(sys.id, none)]).toEqual([null, false, null]);
+  });
+  it('are nothing for an id that isn’t there, or junk, and never throw', () => {
+    for (const id of ['E:1,0:0:99', 'E:1,0:w60', 'E:1,0:w10003', 'beacon:E:1,0:n', '', null, undefined, 42]) {
+      expect([destinationById(id, U), canGo(id, U), parkFor(id, [0, 0], U), tripTime(home(), id, 'hyper', U), distanceTo(home(), id, U), findDestination(id, U)], String(id)).toEqual([null, false, null, null, null, null]);
+    }
+    expect(findDestination(' e:1,0,0:0:1 ', U)).toMatchObject({ id: 'E:1,0:0:1', name: sys.planets[1].name });
+  });
+  it('are parked at, measured, and reached from the Curve by its portal', () => {
+    const d = resolvePlace(sys.id, { t: 0 });
+    expect(parkFor('e:1,0:0', [0, 0], U)).toEqual(parkPlace(d, [0, 0], 0));
+    expect(distanceTo({ x: d.at[0] + d.reach + 5000, y: d.at[1], z: d.at[2] }, sys.id, U)).toBeCloseTo(5000, 6);
+    expect(legOf(home(), sys.id)).toBe(sys.id);
+    expect(legOf(curve(), sys.id)).toBe('rmportal-back');
+    expect(Number.isFinite(distanceTo(curve(), sys.id, U))).toBe(true);
+  });
+  it('take their park from the lookup, so the nav carries none of its own', () => {
+    const P = { x: 1, y: 2, z: 3, heading: 0, offset: [0, 0, 0] };
+    const own = { place: U.place, park: () => P };
+    expect(parkFor(sys.id, [0, 0], own)).toBe(P);
+    expect(tripTime(home(), sys.id, 'super', own)).toBeCloseTo(longTrip(home(), P, 'super'), 9);
+    expect(parkFor(sys.id, [0, 0], { place: U.place })).toBeNull();
+  });
+  it('are timed by the formula, the jump as ever, and never a dash', () => {
+    const far = 'E:5,-3:0';
+    expect(tripTime(home(), far, 'hyper', U)).toBe(HYPER.length);
+    expect(tripTime(home(), far, 'super', U)).toBeCloseTo(longTrip(home(), parkFor(far, [home().x, home().z], U), 'super'), 9);
+    expect(tripTime(home(), `E:1,0:${s.systems.length}`, 'super', U)).toBeNull();
+    expect(tripTime(curve(), sys.id, 'super', U)).toBeGreaterThan(TRANSIT);
+  });
+  it('gives a hand-made place out of the simulation’s reach a time, not null', () => {
+    const out = { ...spawn(null), x: 600000, y: 0, z: 0, heading: 0 };
+    expect(tripTime(out, 'marvel', 'super')).toBeGreaterThan(600000 / 900 - 60);
+  });
+  it('gives a place through the portal a time from out of the simulation’s reach too', () => {
+    const out = { ...spawn(null), x: 600000, y: 0, z: 0, heading: 0 };
+    expect(legOf(out, 'gazorpazorp')).toBe('rmportal');
+    expect(tripTime(out, 'gazorpazorp', 'cruise')).toBeGreaterThan(600000 / 300 - 60);
+  });
+  it('are searched with the places in view, by name, type or id', () => {
+    const more = [resolvePlace(sys.id, { t: 0 }), resolvePlace(sys.planets[0].id, { t: 0 })];
+    expect(findDestinations('all', sys.name, { more }).map((x) => x.id)).toContain(sys.id);
+    expect(findDestinations('star', '', { more }).map((x) => x.id)).toEqual([sys.id]);
+    const gates = DESTINATIONS.filter((d) => d.kind === 'system').map((d) => d.id);
+    expect(findDestinations('system', '', { more }).map((x) => x.id).sort()).toEqual([...gates, sys.id].sort());
+    expect(findDestinations('system', '').map((x) => x.id)).toEqual(gates);
+    expect(findDestinations('all', 'e:1,0:0', { more }).map((x) => x.id)).toContain(sys.id);
+    expect(findDestinations('all', 'e:1,0:1', { more, ...U }).map((x) => x.id)).toEqual(['E:1,0:1']);
+    expect(findDestinations('all', 'resume', { more }).map((x) => x.id)).toEqual(['resume']);
+    expect(findDestinations('all', '', { more: [...more, more[0]] }).filter((x) => x.id === sys.id)).toHaveLength(1);
+    expect(findDestination('e:1,0:0', U)?.id).toBe(sys.id);
+    expect(findDestination(`E:1,0:${s.systems.length}`, U)).toBeNull();
   });
 });

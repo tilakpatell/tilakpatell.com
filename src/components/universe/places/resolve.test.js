@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { UNIVERSE, fullSector, moonAt, orbitAt, thingRow, universeOf } from '../../expanse/shared/gen';
 import { atTime, canonicalPlace, isPlaceId } from './ids';
+import { parkPlace } from './park';
 import { lookupOf, resolvePlace } from './resolve';
 
 const s = fullSector(UNIVERSE, 1, 0, 0);
@@ -45,6 +46,11 @@ describe('the resolver', () => {
     expect(resolvePlace('E:1,0:0', { t: 0, sectors: [doctored], build: false }).name).toBe('Testing');
     expect(lookupOf({ t: 0 }).place('e:1,0:0')).toMatchObject({ id: sys.id, name: sys.name });
     expect(lookupOf({ t: 0, sectors: new Map(), build: false }).place('E:1,0:0')).toBeNull();
+  });
+  it('lends a lookup that parks too, in the shape nav.js takes', () => {
+    expect(lookupOf({ t: 0 }).park('e:1,0:0', [0, 0])).toEqual(parkPlace(resolvePlace(sys.id, { t: 0 }), [0, 0], 0));
+    expect(lookupOf({ t: 0, sectors: new Map(), build: false }).park('E:1,0:0', [0, 0])).toBeNull();
+    expect(lookupOf({ t: 0 }).park('nonsense', [0, 0])).toBeNull();
   });
   it('resolves in the universe it’s given', () => {
     expect(resolvePlace('E:1,0:0', { t: 0, universe: universeOf('marble') }).name).not.toBe(sys.name);

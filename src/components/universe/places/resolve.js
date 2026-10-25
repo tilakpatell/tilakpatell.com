@@ -16,8 +16,10 @@
 //   2's chunk grid keys its cells 'cx,cy,cz'), or any iterable of sectors. A
 //   sector found there answers alone: a place it hasn't got isn't there.
 //   Null for anything not there, junk included; it never throws.
-// lookupOf(opts) → { place(id) → Destination | null }, resolvePlace with
-//   those options, in the shape nav.js takes
+// lookupOf(opts) → { place(id) → Destination | null, park(id, from: [x, z])
+//   → Park | null }: resolvePlace with those options, and park.js's
+//   parkPlace at the place's t, in the shape nav.js takes (the nav has the
+//   park from its caller so the pages that load it don't carry park.js)
 // Destination: the place's card (cards.js's Card) and { id (canonical),
 //   generated: true, place: 'system' | 'planet' | 'moon' | 'station' |
 //   'thing' | 'extra' | 'wonder', at: [x, y, z] (at t), t, move (the card's
@@ -30,6 +32,7 @@ import { parseSpaceId } from '../../../lib/space/address.js';
 import { UNIVERSE, placeIn, placeOf, spaceTime } from '../../expanse/shared/gen';
 import { placeCard } from './cards';
 import { atTime, canonicalPlace } from './ids';
+import { parkPlace } from './park';
 
 function sectorIn(sectors, key) {
   if (!sectors) return null;
@@ -73,4 +76,10 @@ export function resolvePlace(id, { universe = UNIVERSE, t = spaceTime(Date.now()
   return dest;
 }
 
-export const lookupOf = (opts) => ({ place: (id) => resolvePlace(id, opts) });
+export const lookupOf = (opts) => ({
+  place: (id) => resolvePlace(id, opts),
+  park: (id, from) => {
+    const dest = resolvePlace(id, opts);
+    return dest ? parkPlace(dest, from, dest.t) : null;
+  },
+});
