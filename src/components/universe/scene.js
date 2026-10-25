@@ -1697,19 +1697,9 @@ export async function create(canvas, ctx) {
     const r = Math.hypot(phoneTop.x - phoneAt.x, phoneTop.y - phoneAt.y);
     return Math.hypot(px - phoneAt.x, py - phoneAt.y) <= Math.max(r, 22);
   };
-  // a hunter under the point, or near it (they're small and quick): a tap
-  // locks the guns on to the nearest
+  // (a tap's projection, kept: the picks below; a target under the point, or
+  // near it, is the sight's pickAt)
   const tapped = { x: 0, y: 0, z: 0 };
-  const pickHunter = (px, py) => {
-    if (!flying()) return null;
-    let best = null;
-    for (const c of [...(hunters?.targets ?? []), ...pilots.targets]) {
-      toScreen(c.at.x, c.at.y, c.at.z, tapped);
-      const d = Math.hypot(px - tapped.x, py - tapped.y);
-      if (tapped.z > 0.3 && d <= 48 && (!best || d < best.d)) best = { id: c.id, d };
-    }
-    return best?.id ?? null;
-  };
 
   // a trooper under the point, on foot (a click shoots at it)
   const pickTrooper = (px, py) => {
@@ -5636,16 +5626,18 @@ export async function create(canvas, ctx) {
         emit({ type: 'phone', what: 'open' });
         return;
       }
-      const id = pick(x, y);
-      if (id) props.onPick?.(id);
-      else if (flying()) {
-        // a hunter: the guns lock on to it (picked by hand, so it holds a good
-        // while even off the nose); a wonder: the ship flies itself there
-        const hid = pickHunter(x, y);
-        if (hid) {
-          heard();
-          state.lock = { id: hid, out: 0, manual: true };
-        } else {
+      // a target: the guns lock on to it (picked by hand, so it holds a good
+      // while even off the nose), ahead of the planet behind it; not in the
+      // whole-map view, where a tap picks the place
+      const hid = flying() && state.view !== 'map' ? sight.pickAt(x, y, toScreen) : null;
+      if (hid !== null) {
+        heard();
+        state.lock = { id: hid, out: 0, manual: true };
+      } else {
+        const id = pick(x, y);
+        if (id) props.onPick?.(id);
+        else if (flying()) {
+          // a wonder: the ship flies itself there
           const wid = pickWonder(x, y);
           if (wid) navTo(wid);
         }

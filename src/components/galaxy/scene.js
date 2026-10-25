@@ -2535,16 +2535,7 @@ export async function create(canvas, ctx) {
     const r = canvas.getBoundingClientRect();
     return [e.clientX - r.left, e.clientY - r.top];
   };
-  const tapped = { x: 0, y: 0, z: 0 };
-  const pickHunter = (px, py) => {
-    let best = null;
-    for (const c of [...(hunters?.targets ?? []), ...pilots.targets]) {
-      toScreen(c.at.x, c.at.y, c.at.z, tapped);
-      const d = Math.hypot(px - tapped.x, py - tapped.y);
-      if (tapped.z > 0.3 && d <= 48 && (!best || d < best.d)) best = { id: c.id, d };
-    }
-    return best?.id ?? null;
-  };
+  const tapped = { x: 0, y: 0, z: 0 }; // (a tap's projection, kept)
   const pickGoal = (px, py) => {
     let best = null;
     for (const g of state.world?.goals ?? []) {
@@ -2659,8 +2650,8 @@ export async function create(canvas, ctx) {
     endDrag();
     if (d.moved < DRAG && flying()) {
       const [x, y] = localXY(e);
-      const hid = pickHunter(x, y);
-      if (hid) state.lock = { id: hid, out: 0, manual: true };
+      const hid = sight.pickAt(x, y, toScreen); // (any target under the point, or near it: the sight's)
+      if (hid !== null) state.lock = { id: hid, out: 0, manual: true };
       else {
         const gid = pickGoal(x, y);
         if (gid) goTo(gid);

@@ -15,6 +15,7 @@
 //   unique-pilots the galaxy: the Blue sky cluster at a TIE, never asking the
 //                 other pilots
 //   reach         seismic charges picked: the lead pip on at 6 out, off at 12
+//   tap           a tap on a character in front of a planet locks on to it, by hand
 //
 // Each finding is a line, `ok   …` or `FAIL …`; the exit code is how many
 // FAILs. A Chromium: CHROMIUM (CHROME for the galaxy's), else the
@@ -34,7 +35,7 @@ const flag = (k, d = null) => {
 const url = String(flag('url', 'http://127.0.0.1:5188')).replace(/\/$/, '');
 const line = Number(flag('line', 0));
 const shotDir = flag('shot') ? resolve(flag('shot')) : null;
-const SCENARIOS = ['order', 'crash', 'galaxy-bolt', 'unique-pilots', 'reach'];
+const SCENARIOS = ['order', 'crash', 'galaxy-bolt', 'unique-pilots', 'reach', 'tap'];
 if (!SCENARIOS.includes(scenario)) throw new Error(`usage: flight-probe.mjs <${SCENARIOS.join('|')}> [--line 0|1|2] [--expect clear] [--shot dir] [--url …]`);
 
 let failed = 0;
@@ -204,6 +205,40 @@ async function reach(page) {
   }
 }
 
+// Darth Vader held 12 ahead, in front of Middle-earth: where the bracket
+// drew him, a tap, his lock cleared first (the planet's behind him)
+async function tap(page) {
+  const at = await page.evaluate(async () => {
+    const d = window.__universeDebug;
+    const u = window.__universe();
+    await u.pose('middleearth');
+    d.hunters?.clear();
+    d.meetNpc('vader');
+    const n = d.npcs;
+    if (!n.update.stopped) {
+      const real = n.update;
+      const still = (dt, ...rest) => real.call(n, 0, ...rest);
+      still.stopped = true;
+      n.update = still;
+    }
+    const t = n.targets.at(-1);
+    if (!t) return null;
+    const s = d.state.ship;
+    Object.assign(t.at, { x: s.x - Math.sin(s.heading) * 12, y: s.y, z: s.z - Math.cos(s.heading) * 12 });
+    await u.frames(3);
+    const m = /translate3d\(([-\d.]+)px, ([-\d.]+)px/.exec(document.querySelector('.universe-lock')?.style.transform ?? '');
+    d.state.lock = null;
+    await u.frames(1);
+    return m ? { id: t.id, x: Number(m[1]), y: Number(m[2]) } : { id: t.id, x: null };
+  });
+  if (!at || at.x === null) return say(false, `a character to tap (${at ? 'no bracket drawn on him' : 'no character'})`);
+  await page.mouse.click(at.x, at.y);
+  await page.evaluate(() => window.__universe().frames(2));
+  const got = await page.evaluate(() => ({ lock: window.__universe().lock ?? null, manual: Boolean(window.__universeDebug.state.lock?.manual) }));
+  await shoot(page, 'tap');
+  say(got.lock === at.id && got.manual, `a tap on Vader in front of the planet locks on to him, by hand (${got.lock ?? 'no lock'}${got.manual ? ', by hand' : ': not by hand, the planet took the tap'})`);
+}
+
 const galaxy = scenario === 'galaxy-bolt' || scenario === 'unique-pilots';
 const { browser, page, errors } = galaxy ? await openGalaxy() : await openUniverse();
 try {
@@ -212,6 +247,7 @@ try {
   if (scenario === 'galaxy-bolt') await galaxyBolt(page);
   if (scenario === 'unique-pilots') await uniquePilots(page);
   if (scenario === 'reach') await reach(page);
+  if (scenario === 'tap') await tap(page);
 } catch (e) {
   say(false, `${scenario}: ${String(e.message ?? e).split('\n')[0]}`);
 }
