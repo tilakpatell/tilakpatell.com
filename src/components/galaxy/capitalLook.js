@@ -242,6 +242,9 @@ export function dressCapital(holder, kind, { plating = true, size = 2048, lite =
   holder.updateMatrixWorld(true);
   const k = holder.scale.x;
   const length = LENGTH[kind];
+  // (the plating's length and hand, for the parts capitalParts.js builds on
+  // the ship later: plated as a plated hull is, whatever its own maps)
+  if (plating) holder.userData.plating = { length, lite };
   const tint = new THREE.Color(plateTint(kind));
   const colour = engineOf(kind);
   const engines = [];

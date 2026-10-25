@@ -12,7 +12,9 @@
 // Where a model has nothing there to take (a single welded mesh, or a hull
 // with no dome on it), the part is built (`part: 'built'`): a dome for a
 // shield generator, a block with its windows lit for a bridge, a bulb with
-// a glowing ring for a reactor, in the ship's own grey. A battery is the
+// a band round it for a reactor, in the ship's own grey and, where its hull
+// is plated, plated as the hull is (capitalPlating.js's plate, in the ship's
+// own metres: no flat grey placeholder on a hull of panels). A battery is the
 // model's own pieces round it, where it has any, else a turbolaser turret
 // built there (a base, a housing, its two barrels forward), so every
 // battery a bolt can hit is a gun on the hull that can be shot off it.
@@ -34,6 +36,7 @@
 
 import * as THREE from 'three';
 import { SUBSYSTEMS, TURRETS } from '../universe/shared/capitals';
+import { plate } from './capitalPlating';
 
 // what's built where the model has nothing to take, by the subsystem's kind
 const BUILD = { shieldgen: 'dome', bridge: 'block', reactor: 'bulb' };
@@ -201,11 +204,11 @@ const shapes = () =>
   });
 const looks = new Map(); // a kind → its built parts' materials (shared by every copy)
 function looksOf(kind) {
-  if (!looks.has(kind)) looks.set(kind, { hull: new THREE.MeshStandardMaterial({ color: GREY[kind] ?? '#8a8e94', roughness: 0.58, metalness: 0 }), lit: new THREE.MeshBasicMaterial({ color: new THREE.Color(1.1, 1.45, 2.1), toneMapped: false }) });
+  if (!looks.has(kind)) looks.set(kind, { hull: new THREE.MeshStandardMaterial({ color: GREY[kind] ?? '#8a8e94', roughness: 0.58, metalness: 0 }), lit: new THREE.MeshBasicMaterial({ color: new THREE.Color(1.1, 1.45, 2.1), toneMapped: false }), plated: [] });
   return looks.get(kind);
 }
 export function disposeLooks() {
-  for (const l of looks.values()) for (const m of Object.values(l)) m.dispose();
+  for (const l of looks.values()) for (const m of [l.hull, l.lit, ...l.plated]) m.dispose();
   looks.clear();
   if (SHAPES) for (const g of Object.values(SHAPES)) g.dispose();
   SHAPES = null;
@@ -234,8 +237,9 @@ function build(spec, kind, k) {
     add(s.housing, hull, [0, 0.6, 0], [1, 1, 1]);
     for (const x of [-0.3, 0.3]) add(s.barrel, hull, [x, 0.62, 1.1], [1, 1, 1]);
   } else {
+    // (its band the hull's, a raised seam: the films' reactor bulbs have no light round them)
     add(s.bulb, hull, [0, 0.2, 0], [1, 0.72, 1]);
-    add(s.ring, lit, [0, 0.2, 0], [1, 1, 1]);
+    add(s.ring, hull, [0, 0.2, 0], [1, 1, 1]);
     g.children.at(-1).rotation.x = Math.PI / 2;
   }
   // (its middle at the hit's: its foot that far toward the hull)
@@ -246,6 +250,25 @@ function build(spec, kind, k) {
   if (down < 0) g.rotation[spec.build === 'turret' ? 'z' : 'x'] = Math.PI;
   g.position.set(spec.at[0] / k, (spec.at[1] - down * 0.45 * r) / k, spec.at[2] / k);
   return g;
+}
+
+// how the hull was plated (its length and hand, capitalPlating.js's), or null: not plated
+function platingOf(meshes) {
+  for (const mesh of meshes) for (const m of [mesh.material].flat()) if (m?.userData.plating) return m.userData.plating;
+  return null;
+}
+// a built part's meshes plated in the ship's frame (the holder is the ship's, one long, at the origin)
+function platedBuilt(g, kind, { length, lite }) {
+  const { hull, plated } = looksOf(kind);
+  g.updateMatrixWorld(true);
+  g.traverse((o) => {
+    if (!o.isMesh || o.material !== hull) return;
+    const m = hull.clone();
+    // (the detail map the hull's already has: none baked anew for it)
+    plate(m, o.matrixWorld.clone(), length, { size: 0, lite });
+    plated.push(m);
+    o.material = m;
+  });
 }
 
 // (the cut all at once: a test's, the script's)
@@ -301,10 +324,18 @@ export function* cutting(template, kind, specs = partSpecs(kind)) {
   const ids = [];
   // the built ones: the subsystems the model has (next to) nothing for, and
   // a turret for a battery it has no piece at
+  // (plated where the ship's dressing plates, capitalLook.js's word on the
+  // holder, or its hull is: a copy of their grey a mesh, its frame the
+  // ship's, so the plates run on in metres as on the hull)
+  const plating = holder.userData.plating ?? platingOf(meshes);
   for (const spec of specs) {
     const turret = !spec.build && spec.kind === 'battery' && !counts.get(spec.id);
     const built = Boolean(spec.build) || turret;
-    if (built) holder.add(build(turret ? { ...spec, build: 'turret' } : spec, kind, k));
+    if (built) {
+      const g = build(turret ? { ...spec, build: 'turret' } : spec, kind, k);
+      holder.add(g);
+      if (plating) platedBuilt(g, kind, plating);
+    }
     if (built || counts.get(spec.id) > 0) ids.push(spec.id);
   }
   // each mesh in its parts and its three sections

@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
 import { SUBSYSTEMS, TURRETS } from '../universe/shared/capitals';
 import { SECTIONS, componentsOf, cutParts, partSpecs, partsOf, piecesOf, reachOf } from './capitalParts';
+import { plate } from './capitalPlating';
 
 // a ship 1 long as galaxy/models.js fits one: a holder scaled to the unit
 // frame, a hull slab, and on its back a dome of its own (a separate piece)
@@ -118,5 +119,34 @@ describe('capitalParts', () => {
     // (the other the model's own piece: no turret built for it)
     expect(parts.knock('battery-1').every((m) => m.geometry !== turret[0].geometry)).toBe(true);
     expect(cut.children.filter((o) => o.isGroup && o.children.some((m) => m.userData.part === 'battery-1'))).toHaveLength(0);
+  });
+
+  it('plates a built part as its hull is plated, in the ship’s own frame, and lights no ring round a reactor', () => {
+    const plain = cutParts(ship().holder, 'moncal', [{ id: 'reactor', kind: 'reactor', at: [0, -0.06, 0], r: 0.04, build: 'bulb' }]);
+    const bare = partsOf(plain.holder).knock('reactor');
+    // (an unplated hull: its built parts its plain grey, no light on the bulb's band)
+    expect(bare.every((m) => m.material.isMeshStandardMaterial && !m.material.userData.plated)).toBe(true);
+    const { holder, hull } = ship();
+    plate(hull.material, hull.matrixWorld.clone(), 1600, { size: 0, lite: true });
+    const { holder: cut } = cutParts(holder, 'moncal', [{ id: 'reactor', kind: 'reactor', at: [0, -0.06, 0], r: 0.04, build: 'bulb' }]);
+    const built = partsOf(cut).knock('reactor');
+    expect(built.length).toBe(2);
+    for (const m of built) {
+      expect(m.material.userData.plated).toBe(true);
+      expect(m.material.userData.plating).toEqual({ length: 1600, lite: true });
+      expect(m.material.customProgramCacheKey()).toMatch(/plated-lite$/);
+    }
+    // (a hull in its own maps, not plated, where the dressing plates: its built parts plated all the same)
+    const mapped = ship();
+    mapped.holder.userData.plating = { length: 1200, lite: false };
+    const own = partsOf(cutParts(mapped.holder, 'providence', [{ id: 'reactor', kind: 'reactor', at: [0, -0.06, 0], r: 0.04, build: 'bulb' }]).holder).knock('reactor');
+    expect(own.every((m) => m.material.userData.plated && m.material.userData.plating.length === 1200)).toBe(true);
+    // (each its own copy, the plating's frame the mesh's in the ship's)
+    expect(built[0].material).not.toBe(built[1].material);
+    const shader = { uniforms: {}, vertexShader: THREE.ShaderLib.standard.vertexShader, fragmentShader: THREE.ShaderLib.standard.fragmentShader };
+    built[0].material.onBeforeCompile(shader);
+    built[0].updateMatrixWorld(true);
+    expect(shader.uniforms.uUnit.value.equals(built[0].matrixWorld)).toBe(true);
+    expect(shader.uniforms.uLength.value).toBe(1600);
   });
 });

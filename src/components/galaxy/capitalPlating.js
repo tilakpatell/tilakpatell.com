@@ -218,6 +218,8 @@ export function patchShaders(m, key, change) {
 export function plate(m, unit, length, { mapped = false, size = 2048, lite = false } = {}) {
   const detail = detailMap(size);
   m.userData.plated = true;
+  // (the ship's length and the hand it was plated with, for a part built on it later: capitalParts.js)
+  m.userData.plating = { length, lite };
   patchShaders(m, `plated${mapped ? '-mapped' : ''}${lite ? '-lite' : ''}`, (shader) => {
     shader.uniforms.uUnit = { value: unit };
     shader.uniforms.uLength = { value: length };
