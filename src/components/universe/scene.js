@@ -188,7 +188,7 @@ import { readLooks } from '../rickmorty/wardrobe/looks';
 import { BUILT_KINDS, buildTraffic } from './trafficModels';
 import { entrySound, lockSound, shipEngine, wellSound } from './sounds';
 import { AIM, nose } from './targeting';
-import { TRACK_AFTER_SHOT, createSight } from '../../lib/combat/flight/sight';
+import { TRACK_AFTER_SHOT, createSight, shotReach } from '../../lib/combat/flight/sight';
 import { DEFAULTS as CONTROL_DEFAULTS, STICK, dragSteers, keyAxes, keyFlies, stickInput } from './controls';
 import { byId } from './universes';
 import { SIZE as PILOT_SIZE, createPilots } from './online/pilots';
@@ -2297,7 +2297,7 @@ export async function create(canvas, ctx) {
   // the player's targeting (lib/combat/flight/sight.js); foeBuf: every foe, ungated, for its find
   const sight = createSight(state);
   const foeBuf = [];
-  const sightIn = { speed: AIM.bolt, life: AIM.life, help: controls, tracks: (t) => Boolean(hunters?.targets.includes(t)) || performance.now() - state.lastShot < TRACK_AFTER_SHOT, foes: foeBuf };
+  const sightIn = { speed: AIM.bolt, life: AIM.life, help: () => powers.aim(controls()), tracks: (t) => Boolean(hunters?.targets.includes(t)) || performance.now() - state.lastShot < TRACK_AFTER_SHOT, foes: foeBuf };
   const steering = () => {
     const c = controls();
     const m = powers.mods; // (a power's hand on the stick: the death ray's heavy, the corkscrew's quick)
@@ -2912,7 +2912,7 @@ export async function create(canvas, ctx) {
     v.lockText = null;
     v.bracket = undefined;
     v.lead = state.lead;
-    v.life = AIM.life;
+    v.life = sightIn.life;
     // (the ones coming at you that you can't see: the hunters, and a pilot whose shots have been landing on you)
     v.threatsFrom[0] = hunters?.targets ?? null;
     v.threatsFrom[1] = pilots.count ? pilots.targets : null;
@@ -4424,7 +4424,7 @@ export async function create(canvas, ctx) {
     for (const c of hunters?.targets ?? []) if (!c.prey) foeBuf.push(c);
     foeBuf.push(...battleCands, ...(skirmishes?.active ? skirmishes.targets : []), ...(npcs?.targets ?? []), ...capitalCands, ...siegeCands);
     if (meteors.count || mines.count) foeBuf.push(...meteors.targets, ...mines.targets);
-    sightIn.speed = AIM.bolt + Math.max(0, ship.speed);
+    shotReach(arms().weapon, ship, sightIn); // (the line picked: its shot's speed and life)
     if (sight.update(ship, cands, dt, sightIn) && state.shown && !document.hidden) lockSound();
     // and the camera leans a little toward the lock (eased, so a lock coming
     // or going doesn't jolt it)

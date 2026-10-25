@@ -23,11 +23,20 @@
 //     lean(bias, ship, dt, reduced)   the camera's lean toward the lock, eased (bias: [x, y, z])
 //     cands, foes                     the last update's lists
 //   }
+//   shotReach(w, ship, out = {}) → out   a weapon's { speed, life }, for `o`
 
-import { assist, assistAmount, dirTo, intercept, nose, track, trackNudge } from './targeting';
+import { AIM, assist, assistAmount, dirTo, intercept, nose, track, trackNudge } from './targeting';
 
 // milliseconds after a shot the nose follows whatever the guns are on
 export const TRACK_AFTER_SHOT = 1500;
+
+// a weapon's shot as the sight reads it (the scene's `o`, written in place):
+// its speed, the ship's own forward speed added, and its seconds in flight
+export function shotReach(w, ship, out = {}) {
+  out.speed = AIM.bolt * w.speed + Math.max(0, ship.speed);
+  out.life = AIM.life * w.life;
+  return out;
+}
 
 const NONE = Object.freeze([]);
 

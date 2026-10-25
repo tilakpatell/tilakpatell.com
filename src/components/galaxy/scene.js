@@ -105,7 +105,7 @@ import { ENGINES, SHIP_MODELS, buildShip, BUILT } from '../universe/shipModels';
 import { loadModel } from '../universe/planets';
 import { lockSound, shieldSound, shipEngine } from '../universe/sounds';
 import { AIM, nose } from '../../lib/combat/flight/targeting';
-import { TRACK_AFTER_SHOT, createSight } from '../../lib/combat/flight/sight';
+import { TRACK_AFTER_SHOT, createSight, shotReach } from '../../lib/combat/flight/sight';
 import { DEFAULTS as CONTROL_DEFAULTS, STICK, dragSteers, keyAxes, keyFlies, stickInput } from '../universe/controls';
 import { SIZE as PILOT_SIZE, createPilots } from '../universe/online/pilots';
 import { GUARD } from '../universe/online/protocol';
@@ -470,7 +470,7 @@ export async function create(canvas, ctx) {
   const sight = createSight(state);
   const foeBuf = [];
   let lockWar = NO_TARGETS; // (this frame's war list: the nose follows the war's ships too)
-  const sightIn = { speed: AIM.bolt, life: AIM.life, help: controls, tracks: (t) => Boolean(hunters?.targets.includes(t) || lockWar.includes(t)) || performance.now() - state.lastShot < TRACK_AFTER_SHOT, foes: foeBuf };
+  const sightIn = { speed: AIM.bolt, life: AIM.life, help: () => powers.aim(controls()), tracks: (t) => Boolean(hunters?.targets.includes(t) || lockWar.includes(t)) || performance.now() - state.lastShot < TRACK_AFTER_SHOT, foes: foeBuf };
   const flying = () => Boolean(state.ship);
   // the crew's ship powers (powers.js), played out with the scene's own pieces
   // (made before the first frame's shaders are, so its look is made with them)
@@ -1828,7 +1828,7 @@ export async function create(canvas, ctx) {
     for (const c of hunters?.targets ?? NO_TARGETS) if (!c.prey) foeBuf.push(c);
     for (const c of warCands) foeBuf.push(c);
     lockWar = warCands;
-    sightIn.speed = AIM.bolt + Math.max(0, ship.speed);
+    shotReach(arms().weapon, ship, sightIn); // (the line picked: its shot's speed and life)
     if (sight.update(ship, cands, dt, sightIn) && state.shown && !document.hidden) lockSound();
     sight.lean(state.bias, ship, dt, reduced);
 
@@ -2116,7 +2116,7 @@ export async function create(canvas, ctx) {
     v.lockText = null;
     v.bracket = undefined;
     v.lead = state.lead;
-    v.life = AIM.life;
+    v.life = sightIn.life;
     // (the ones coming at you that you can't see: hunters, the war's, and a pilot whose shots have been landing on you)
     v.threatsFrom[0] = hunters?.targets ?? null;
     v.threatsFrom[1] = war?.targets ?? null;
