@@ -109,3 +109,55 @@ Under the plan's 4 ms at mid, a sixtieth of the quarter second between refreshes
 The first call in a fresh process took 40, 192 and 46 ms. Nearly all of it is the lattice things' rows: `thingRow` costs about 20 µs a thing (its name's seed is BigInt work), and a call keeps up to 1,264 of them at mid. Each body's row less where it is (name, look, park, `src`) is made the first time it's kept and kept with the generator's row in a `WeakMap`, so only a sector's first call pays. That is after a load or a jump; at cruise, a quarter second's flight brings a handful of new things into the far plane.
 
 `aimStars` over the same 27 sectors, the nearest 2,000 of 6,877: a median of 1.03 to 2.36 ms.
+
+## PR 3.1's gate
+
+Run on `eu/lane-3` at `851112b3`, Tasks 1 to 9 in, on 2026-10-25, with the container busy (load 13 to 28 on 4 cores during the full test run, other lanes' builds, lint and browser checks running).
+
+| command | outcome |
+| --- | --- |
+| `npm run lint` | green, no warnings (6 min 19 s) |
+| `npm test` | 1,915 files green; 54 files red with 83 tests, every one a timeout (76 "Test timed out in 5000ms") or a time budget (`road/terrain.test.js`'s 250 ms, `bf2017-hulls.test.mjs`'s 100 ms), 1,329 s |
+| the same 54 files again, `npx vitest run --maxWorkers=2 …` | 54 files, 1,263 tests, all green (156 s, load 3 to 9) |
+| `npm run build` | green (6 min 29 s), with `-- --outDir /dev/shm/lane3-gate-dist --emptyOutDir`, since the disk had 1.6 GB free |
+| `node scripts/health.mjs --check --skip build` | within budget |
+| `node scripts/flight-island.mjs --check` | ok: 151 files on the island, 39 marked rows, 62 references |
+
+None of the 54 files is one this lane changed. On `main` at `cc5e2eaf`, the coordinator's full run under a lighter load had one red, `art-mix.test.mjs`, the same timeout. `npm run build`'s `prebuild` rewrote `public/github.json` from the network; it was put back, so the tree is clean.
+
+The PR's own checks: `npx vitest run src/components/universe/places src/components/expanse src/components/universe/nav.test.js src/components/universe/budget.test.js src/components/universe/ship.test.js` is 61 files and 652 tests, all green. Lane 2's `fingerprint.test.js`, `density.test.js` and `space.test.js` are unchanged since `dcf19687` and green: 52 tests, the speed test's ten sectors under its 600 ms.
+
+`health.mjs` after, against before Task 1:
+
+| metric | before Task 1 | after Task 9 | budget |
+| --- | --: | --: | --: |
+| `big-files` | 22 | 22 | 30 |
+| `boundary-breaks` | 481 | 481 | 489 |
+| `cycles` | 5 | 5 | 5 |
+
+`boundary-breaks` and `cycles` before Task 1 are Task 7's numbers above. `big-files` before is from the line counts: no file this lane made or changed crossed 800 lines. The largest new one is `places/around.js`, 369, and `ship.js` was already over, 871 lines to 873 (`PARK_GAP` and `clearOf`).
+
+`src/components/universe/scene.js`: 6,374 lines before and after (`wc -l`). PR 3.1 doesn't touch it.
+
+### Draw calls, triangles and frame times
+
+Nothing on screen changes in PR 3.1, so by the plan it has no browser check: no pose is shot after, and pops aren't measured. The scene doesn't read stations, the cards, the resolver or the tags yet; `nav.js` keeps its answers for the hand-made places (its old tests pass unchanged). The before for the baseline poses is the coordinator's `node scripts/universe-check.mjs --quality all --frames 3` on `main` at `cc5e2eaf` (`lab/universe/{low,mid,high}.json` there; low's first six poses from the stopped run's log). That is `main`, not this branch's base: lane 2's PRs 2.3 and 2.4 are under `eu/lane-3`. Task 10 shoots this branch's own before at `--quality mid`, and Task 15 the full measure after.
+
+| pose | low: calls, triangles | mid: calls, triangles | high: calls, triangles | frame ms, low / mid / high |
+| --- | --: | --: | --: | --: |
+| `overview` | 63, 476,702 | 99, 489,042 | 98, 540,628 | 4,890 / 1,873 / 2,494 |
+| `falcon-sun` | 54, 465,188 | 82, 474,020 | 82, 525,686 | 5,087 / 1,839 / 4,220 |
+| `middleearth-limb` | 24, 8,850 | 39, 37,732 | 39, 106,406 | 1,874 / 1,584 / 3,617 |
+| `rickmorty` | 40, 33,864 | 40, 38,858 | 39, 91,688 | 391 / 1,236 / 1,550 |
+| `gaming` | 26, 10,842 | 43, 45,466 | 40, 59,034 | 1,640 / 3,385 / 3,326 |
+| `caribbean` | 22, 8,834 | 43, 87,492 | 43, 156,166 | 2,765 / 3,148 / 1,599 |
+| `middleearth` | 17, 4,002 | 39, 37,732 | 39, 106,406 | 1,705 / 3,297 / 1,848 |
+| `breakingbad` | 25, 8,850 | 64, 31,930 | 63, 92,994 | 328 / 2,971 / 12 |
+| `office` | 41, 18,242 | 41, 23,236 | 41, 62,606 | 68 / 2,136 / 1,326 |
+| `belt` | 28, 415,134 | 46, 421,298 | 46, 465,860 | 2,841 / 2,851 / 3,698 |
+| `maw` | 27, 8,854 | 43, 74,250 | 43, 77,372 | 2,174 / 1,895 / 790 |
+| `landing-middleearth` | 116, 126,662 | 116, 126,980 | 129, 181,875 | 4,352 / 3,999 / 7,223 |
+| `station` | 69, 456,836 | 69, 459,214 | 69, 510,880 | 2,131 / 5,104 / 3,851 |
+| `far-rim` | 39, 36,198 | 42, 40,598 | 42, 85,160 | 1,147 / 1,490 / 1,047 |
+
+Frame times are the median where the run kept one, else the one frame, in software GL on a shared container, so they say little.
