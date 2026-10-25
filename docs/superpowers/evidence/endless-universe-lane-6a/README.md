@@ -39,7 +39,7 @@ Every one drew the 3D (not the flat map), with no page error and no console erro
 - **High**, against the coordinator’s run of `main` at `cc5e2eaf`, both on the dev server universe-check starts. Nine poses come from a first run on `3cf60b7c` whose browser was closed before it wrote its file (its log kept), and the other five from a second run.
 - **Mid and low**, `main` and the lane at the same time, each on a dev server of its own. The coordinator’s run of `main` is beside them for reference. They aren’t compared with it directly, for the reason below.
 
-Every result is in `universe-check/` beside this file: each run’s JSON as universe-check wrote it (`main-coordinator-*.json` the coordinator’s runs of `main`, `main-*.json` and `lane-*.json` the side-by-side runs), and the log lines of the runs that wrote no JSON (the lane’s first high run, and the lane’s mid overview on the plain server). No pose in any of them had a page error.
+Every result is in `universe-check/` beside this file: each run’s JSON as universe-check wrote it (`main-coordinator-*.json` the coordinator’s runs of `main`; `lane-high-rest.json` the lane’s second high run; `main-mid*.json`, `main-low.json`, `lane-mid*.json` and `lane-low.json` the side-by-side runs), and the lines printed by the runs that wrote none: `lane-high-first-run.txt` (its nine poses, then the browser closed under it at `belt`) and `lane-mid-plain-server-overview.txt` (the lane’s mid overview on the plain server, a run stopped after it). No pose in the JSON had a page error.
 
 In short: where a pose measures the same twice, the lane draws what `main` draws, and where it doesn’t, `main` differs from itself as much as from the lane. Two things make one run differ from another of the same code here:
 
