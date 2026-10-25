@@ -446,3 +446,31 @@ Frame times, `universe-check.mjs --quality mid --frames 3`'s mean and median of 
 | `far-rim` | 1,188, 1,490 | 677, 652 |
 
 They say nothing about a real chip: a frame here is one to five seconds, and how loaded the machine was moves it more than either branch does (the lane is faster at 11 of 14 poses with the same calls and triangles). Inside the rim the Expanse sleeps and draws nothing, so the frame is `main`'s. The probe on a real graphics chip is still owed (the hand-off notes).
+
+## PR 2.5: one space everywhere
+
+### Task 19: sectors made in the worker pool
+
+The sector worker in Chromium (`chromium-1243`), made by the dev server from `scene/sector.worker.js` as a module worker and asked each job in turn. The probe is a scratch script, not in the repo: a page on the dev server makes the worker, posts each job and times its answer, clones each answer on the page once to weigh the page's side of a crossing, and pings itself through a `MessageChannel` to find its longest stall while the worker works. The machine's load was 20 to 23 on 4 cores, so the times are several of Node's (a sector is 47 ms in Node with no load).
+
+| Job | Worker, ms | Clone on the page, ms | Page's longest stall, ms | Systems | Specks |
+|---|---|---|---|---|---|
+| sector `E:1,0`, the worker's first (the dev server transforms its modules) | 42,213 | 6.0 | 645 | 276 | 276 |
+| sector `E:2,-1` | 183 | 10.8 | 17 | 279 | 282 |
+| sector `E:0,0`, the core | 163 | 4.7 | 21 | 113 | 113 |
+| sector `E:1,0` in the pocket universe `word` | 152 | 9.9 | 21 | 268 | 268 |
+| beyond, ring 1 round `0,0,0` | 10,801 | 1.1 | 402 | | 24,600 |
+| beyond, ring 1 round `1,0,0`, a sector over | 2,652 | 2.2 | 39 | | 24,514 |
+| beyond, ring 1 round `0,0,0` again | 60 | 0.9 | 24 | | 24,600 |
+| beyond, ring 2 round `0,0,0` | 19,971 | 1.7 | 325 | | 54,776 |
+
+Every answer crossed whole: the seeds as BigInts, the lattice and the specks as typed arrays handed over, no `moonList` on the wire, and no page error. The long stalls came during the worker's first job and the two long beyond jobs, while the page did nothing but ping, so they are most likely the machine's load (another lane's browser was drawing beside it), not the page's work.
+
+| Check | Result |
+|---|---|
+| `npx vitest run src/components/expanse/gen/job.test.js src/components/expanse/scene/specks.test.js src/components/expanse/scene/sector.worker.test.js` | 3 files, 23 tests passed; the slowest 377 ms |
+| `npx vitest run src/components/expanse/gen src/components/expanse/scene` | 20 files: 229 tests, 225 passed; 4 timed out at 5 s in files Task 19 doesn't touch (`density.test.js`, `space.test.js`' speed test, two in `things.test.js`), which pass run again on their own (3 files, 68 tests) |
+| `npx eslint` on the seven files changed | clean |
+| `npm run build` | built |
+| `node scripts/health.mjs --check --skip build` | within budget |
+| `scene.js` | 6,361 lines before and after: not touched |
