@@ -81,7 +81,7 @@ import { dropTransmission } from '../../lib/three/glass';
 import { gltfStats } from '../../lib/three/gltfCache';
 import { STEPS } from '../../lib/three/pace';
 import { FOV } from '../universe/flight';
-import { createPost } from '../universe/post';
+import { aberrationFor, createPost } from '../universe/post';
 import { createHoloDriver } from './holo/drive';
 import { GLOW, glowAt } from '../universe/battleFx';
 import { bloomGroups } from '../../lib/three/bloom';
@@ -91,6 +91,7 @@ import { sendDetailWith } from './capitalPlating';
 import { warm as warmTextures } from '../../lib/three/textures';
 import { followRatio } from './drawnAt';
 import { houseOn } from '../../lib/three/house';
+import { grainFor } from '../../lib/three/noise';
 import { SHIP, TUNE, autopilot, forward, spawn, step } from '../universe/ship';
 import { REAIM_MS, parkBehind, pilotSpace, reached } from '../universe/pilotGoal';
 import { createHunters } from '../universe/hunters';
@@ -2485,6 +2486,11 @@ export async function create(canvas, ctx) {
         post.rush(k, (camP.x + 1) / 2, (camP.y + 1) / 2);
       }
     } else post.rush(0);
+    // the finish the universe map's frame has and the 2017 game's own has on
+    // (its film grain, a touch of chromatic aberration at the edges: bf2-web's
+    // reading of the retail settings), each by the visitor's video settings
+    post.grain(grainFor({ rush: state.streak, reduced }) * video.grain);
+    post.aberration(aberrationFor({ rush: state.streak, hit: state.hurt, tier }) * video.aberration);
     // out in the open on the sublight drive, the stars stretch a little
     if (!state.jump && flying()) {
       const fast = clamp01((Math.abs(state.ship.speed) - SHIP.boost) / 40);
