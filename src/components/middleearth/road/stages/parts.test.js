@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import * as THREE from 'three';
-import { C, ROLE, disposeBuilt, inReach, lampPools, merged, mergeStatics, part, roleOf, waterOn } from './parts';
+import { C, CASTS, ROLE, disposeBuilt, inReach, lampPools, merged, mergeStatics, part, roleOf, waterOn } from './parts';
 import { landFor } from '../terrain';
 
 const box = (mat, x, uv = true) => {
@@ -73,6 +73,44 @@ describe('mergeStatics, by band', () => {
     }
     mergeStatics(whole, { band: 0 });
     expect(whole.children).toHaveLength(1);
+  });
+});
+
+describe('mergeStatics, the shadow', () => {
+  const cast = (mat, z) => {
+    const b = box(mat, 0);
+    b.position.z = z;
+    b.castShadow = true;
+    return b;
+  };
+  it('a band’s casting statics cast as one mesh the sun’s cameras alone see, whatever their materials', () => {
+    const a = new THREE.MeshBasicMaterial();
+    const b = new THREE.MeshBasicMaterial();
+    const glass = new THREE.MeshBasicMaterial({ transparent: true });
+    const leaf = new THREE.MeshBasicMaterial({ alphaTest: 0.5 });
+    const root = new THREE.Group();
+    root.add(cast(a, 0), cast(b, 10), cast(a, 70), cast(glass, 0), cast(leaf, 0), box(b, 0));
+    mergeStatics(root, { band: 60 });
+    const meshes = [];
+    root.traverse((o) => o.isMesh && meshes.push(o));
+    const casts = meshes.filter((o) => o.userData.casts);
+    // (a band each, positions alone, only on its own layer: the first band's a's box and b's
+    // two, b's lone box merged with its casting one, as a merged mesh cast if any of it did)
+    expect(casts.map((o) => o.geometry.attributes.position.count).sort((x, y) => x - y)).toEqual([36, 108]);
+    for (const o of casts) {
+      expect(o.castShadow).toBe(true);
+      expect(Object.keys(o.geometry.attributes)).toEqual(['position']);
+      expect(o.layers.isEnabled(CASTS)).toBe(true);
+      expect(o.layers.isEnabled(0)).toBe(false);
+      expect(o.userData.solid).toBeFalsy();
+    }
+    // (the drawn statics no longer cast, but what a cut-out or a glass would lose stays its own)
+    expect(meshes.filter((o) => !o.userData.casts && o.castShadow).map((o) => o.material).sort()).toEqual([glass, leaf].sort());
+    // (merged again, the casters are left as they are)
+    mergeStatics(root, { band: 60 });
+    const again = [];
+    root.traverse((o) => o.isMesh && o.userData.casts && again.push(o));
+    expect(again).toHaveLength(2);
   });
 });
 

@@ -78,9 +78,10 @@ function lanes(K, heightAt, tier) {
   const hedge = new THREE.InstancedMesh(hedgeGeo(), K.mats.hedge, blocks.length);
   blocks.forEach(([x, z], i) => hedge.setMatrixAt(i, m.compose(new THREE.Vector3(x, heightAt(x, z) - 0.1, z), along, new THREE.Vector3(1, 0.85 + ((z * 7.1) % 1) * 0.25, 0.9))));
   // the standing crop close to the lane: the chapter’s wheat clumps, thick by the fences
-  // (four rows deep by the fence; one on low, where the scatter’s corn stands behind it)
-  const rows = tier === 'low' ? 1 : 4;
-  const step = tier === 'low' ? 2 : 0.7;
+  // (three rows deep by the fence, the canopy behind them; one on low, where the scatter’s corn
+  // stands behind it; four at 0.7 m were 359,000 triangles, the stage over its 1.2 million)
+  const rows = tier === 'low' ? 1 : 3;
+  const step = tier === 'low' ? 2 : 0.8;
   const clumps = [];
   for (const side of [1, -1]) for (let z = FENCE.z[0]; z < FENCE.z[1]; z += step) for (let k = 0; k < rows; k++) clumps.push([side * (FENCE.x + 0.6 + k * 0.7 + ((z * 3.7 + k) % 1) * 0.4), z + ((k * 0.37) % 1) * 0.6]);
   const wheat = new THREE.InstancedMesh(wheatGeo(), K.mats.wheat, clumps.length);
@@ -97,7 +98,7 @@ function lanes(K, heightAt, tier) {
 
 // the body of the crop behind the near clumps: a canopy a side (parts.js), its lane edge under the clumps
 function cropParts(heightAt, parts) {
-  for (const side of [1, -1]) parts.push(canopy(heightAt, { x: [side * (FENCE.x + 2.6), side * (FENCE.x + 34)], z: [FENCE.z[0] - 4, FENCE.z[1] + 2] }));
+  for (const side of [1, -1]) parts.push(canopy(heightAt, { x: [side * (FENCE.x + 2), side * (FENCE.x + 34)], z: [FENCE.z[0] - 4, FENCE.z[1] + 2] }));
 }
 
 function ferryParts(heightAt, level, parts) {

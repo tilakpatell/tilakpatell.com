@@ -43,6 +43,7 @@ import { STAGES, modeAt, stageById } from './stages/index';
 import { BEATS_OF } from './stages/registry';
 import { createScenes } from './scenes';
 import { createLamps } from './lamps';
+import { CASTS } from './stages/parts';
 import { createDoing } from './doing';
 import { createClear, tooNear } from './clear';
 import { LINES } from './voicelines';
@@ -168,6 +169,10 @@ export default {
       renderer.shadowMap.enabled = true;
       renderer.shadowMap.type = THREE.PCFShadowMap;
       sun.shadow.radius = 1.5;
+      // (and from the stages’ casters, a band’s statics as one shape a cascade, stages/parts.js:
+      // a merged mesh a material a band cast, Hobbiton’s were 127 of a frame’s 230 shadow draws;
+      // the cascades take this camera’s layers, so the casters are cast and never drawn)
+      sun.shadow.camera.layers.enable(CASTS);
       import('../../../lib/three/light/sun')
         .then(async ({ castCascades }) => {
           if (unlit) return;

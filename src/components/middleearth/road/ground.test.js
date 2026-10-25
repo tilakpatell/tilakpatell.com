@@ -82,4 +82,11 @@ describe('patchOver', () => {
     expect(patchOver(30, 48, 44, hill)).toBe(true);
     expect(patchOver(30, 49, 44, hill)).toBe(false);
   });
+  it('by `by` metres at the least, when asked', () => {
+    const hill = { x0: 14, z0: -14, w: 40, d: 40 };
+    expect(patchOver(-7, 0, 44, hill, 11)).toBe(false);
+    expect(patchOver(3, 0, 44, hill, 11)).toBe(true);
+    expect(patchOver(30, 37, 44, hill, 11)).toBe(true);
+    expect(patchOver(30, 38, 44, hill, 11)).toBe(false);
+  });
 });
