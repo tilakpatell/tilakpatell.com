@@ -34,6 +34,11 @@
 // kit frame (the `nose` node the fleet's row turned half round to fly bow
 // first, scripts/bf2017-fleet.mjs).
 //
+// The Arquitens's and the MC80's are the same shader's: the Arquitens's
+// hull from the bucket (sb_fondor, the Republic's sb_kamino: the export kept
+// neither UV set), its mask and sheets with it; the MC80's mask and breakup
+// on the parts it has already.
+//
 // A phone takes the maps smaller (and the Venator's parts a level coarser);
 // the lowest detail the hull's map alone; a failed load leaves the ship as
 // it came (plated, capitalLook.js).
@@ -98,6 +103,41 @@ export const GAME_HULLS = {
     combine: { map: tex('kamino', 't_venatorstardestroyer_hull_01_combine_rgba'), tone: 0.333 },
     tiling: { normal: tex('kamino', 't_venatorstardestroyer_paneltile_02_n'), tiling: 1 },
     breakup: { colour: tex('kamino', 't_venatorstardestroyer_paneltile_01_breakup_02_rgba'), normal: tex('kamino', 't_venatorstardestroyer_paneltile_01_breakup_01_rgba'), mean: [0.465, 0.463, 0.451], tiling: 1, strength: 0.6 },
+  },
+  lightcruiser: {
+    // (the Arquitens: the Venator's shader, its own maps. The war's cut and
+    // the space kits kept the hull without either UV set, a flat grey slab;
+    // the game's hull, from the bucket, keeps both. The kits' anchor, so at
+    // the kit's origin, and the Republic's kit names it so too)
+    material: /^M_ImperialCruiser_PanelTile_01(_lods)?$/,
+    own: 'M_ImperialCruiser_PanelTile_01',
+    parts: [{ mesh: `${LEVELS}/sb_fondor/meshes/imperialcruiser_hull_01_mesh`, own: /^M_ImperialCruiser_PanelTile_01(_lods)?$/ }],
+    // (18,000 triangles; the cut's own is 4,800; its maps no finer than the
+    // Venator's, three and a half times its length)
+    lod: { computer: 1, phone: 2 },
+    have: [256, 512, 1024],
+    // the Empire's grey under the mask (sRGB)
+    paint: '#a2a6ab',
+    combine: { map: tex('sb_fondor', 't_imperialcruiser_hull_01_combine_rgba'), tone: 0.396 },
+    // (its panel sheet keeps a normal's x and y; the breakup at half the
+    // sheet's tiling, the game's BreakUpRGBATiling)
+    tiling: { normal: tex('sb_fondor', 't_imperialcruiser_paneltile_01_n'), tiling: 1, rg: true },
+    breakup: { colour: tex('sb_fondor', 't_imperialcruiser_paneltile_breakup_02_rgba'), normal: tex('sb_fondor', 't_imperialcruiser_paneltile_breakup_01_rgba'), mean: [0.454, 0.455, 0.44], tiling: 0.5, strength: 0.6 },
+  },
+  jedicruiser: {
+    // (the Republic's Arquitens, a kit's (spaceKits.js), not a kind: the same
+    // hull, its own mask and breakup; its sheet and relief byte for byte the
+    // Imperial one's)
+    material: /^M_ImperialCruiser_PanelTile_01(_lods)?$/,
+    own: 'M_ImperialCruiser_PanelTile_01',
+    parts: [{ mesh: `${LEVELS}/sb_kamino/meshes/jedicruiser_hull_01_mesh`, own: /^M_ImperialCruiser_PanelTile_01(_lods)?$/ }],
+    lod: { computer: 1, phone: 2 },
+    have: [256, 512, 1024],
+    // the Republic's paint, the Venator's
+    paint: '#c6c6c2',
+    combine: { map: tex('sb_kamino', 't_jedicruiser_hull_01_combine_rgba'), tone: 0.343 },
+    tiling: { normal: tex('sb_fondor', 't_imperialcruiser_paneltile_01_n'), tiling: 1, rg: true },
+    breakup: { colour: tex('sb_kamino', 't_jedicruiser_paneltile_breakup_02_rgba'), normal: tex('sb_fondor', 't_imperialcruiser_paneltile_breakup_01_rgba'), mean: [0.454, 0.454, 0.44], tiling: 0.5, strength: 0.6 },
   },
   lucrehulk: {
     // (its plates' geometry alone: their maps aren't published, so the
@@ -168,16 +208,20 @@ export const GAME_HULLS = {
     // (the hull's first LOD alone is 293,000 triangles: its third, the whole about 90,000)
     lod: { computer: 2, phone: 3 },
     have: [256, 512, 1024],
-    // the Mon Calamari's grey, a little blue, under the breakup's mottle
-    // (its own mask, t_mc80_hull_01_combine_rgba, and its relief sheets are
-    // in the private bucket only: the MC80's panel sheet the Endor level's
-    // far cruisers wear stands in for its relief)
+    // the Mon Calamari's grey, a little blue, under its own mask (the hull's
+    // organic patchwork, its nodules' too: six of the seven name it) and the
+    // breakup's mottle
     paint: '#a3abb0',
+    combine: { map: tex('sb_endor', 't_mc80_hull_01_combine_rgba'), tone: 0.305 },
+    // (the game's own tiling normal is a fine grain, next to flat at the
+    // hull's scale: the MC80's panel sheet the Endor level's far cruisers
+    // wear stands in for its relief)
     tiling: { normal: tex('endor/deathstar', 't_starcruisermc80panels_01_ns'), tiling: 1, rg: true },
-    // (the breakup the cut carries already, the export's, on the UVs it was made for: its mean the 1,024's, sRGB read linear)
-    // (`hue`, `amount`: a third of its tan and three quarters of its mottle,
-    // or its grime read as rust over a grey hull)
-    breakup: { colour: null, mean: [0.252, 0.194, 0.106], tiling: 1, hue: 0.3, amount: 0.75 },
+    // (the game's breakup and its relief at its BreakUpRGBATiling, a quarter:
+    // its grime streaks across the hull, not repeated every 80 m; `hue`,
+    // `amount`: a third of its tan and three quarters of its mottle, or its
+    // grime read as rust over a grey hull)
+    breakup: { colour: tex('sb_endor', 'mc80_paneltile_breakup_02_rgba'), normal: tex('sb_endor', 'mc80_surfacedetail_02_n'), mean: [0.528, 0.466, 0.349], tiling: 0.25, strength: 0.6, hue: 0.3, amount: 0.75 },
   },
 };
 
@@ -203,6 +247,13 @@ export const GAME_MAPS = {
     colour: tex('sb_droidbattleship', 't_providenceclassdreadnaught_01_cs'),
     normal: tex('sb_droidbattleship', 't_providenceclassdreadnaught_01_nam__normal'),
     orm: tex('sb_droidbattleship', 't_providenceclassdreadnaught_01_nam__orm_977091d1'),
+  },
+  moncal: {
+    // (its lit windows, SS_EmissiveWindows_01, a mesh of their own whose
+    // export gave them the hull's breakup: the game's map of them on UV0, the
+    // cut's own UVs, a tiling sheet of 7 m)
+    material: /^MC_80_light_Met$/,
+    windows: tex('sb_endor', 't_mc80_windows_01_rgba'),
   },
 };
 
@@ -467,6 +518,12 @@ export async function dressGameMaps(root, kind, { detail = 'high', phone = false
   const meshes = [];
   root.traverse((o) => o.isMesh && [o.material].flat().some((m) => def.material.test(m?.name ?? '')) && meshes.push(o));
   if (!meshes.length) return false;
+  if (def.windows) {
+    const map = await loadTexture(def.windows, phone ? 512 : 1024, { aniso, srgb: false, repeat: true });
+    if (!map) return false;
+    swapAll(meshes, def, (m) => windowsMaterial(m, map));
+    return true;
+  }
   const size = sizesFor(detail, phone);
   const [colour, normal, orm] = await Promise.all([
     loadTexture(def.colour, size.atlas, { aniso, srgb: true }),
@@ -474,53 +531,71 @@ export async function dressGameMaps(root, kind, { detail = 'high', phone = false
     loadTexture(def.orm, size.orm, { aniso, srgb: false }),
   ]);
   if (!colour && !normal && !orm) return false;
-  const made = new Map(); // the cut's material → its game one (the meshes share it)
+  swapAll(meshes, def, (m) => {
+    const g = m.clone();
+    g.userData.gameHull = true;
+    if (colour) g.map = colour;
+    if (normal) g.normalMap = normal;
+    if (orm) {
+      g.roughnessMap = orm;
+      g.roughness = 1;
+      g.aoMap = orm;
+    }
+    g.metalness = 0;
+    g.metalnessMap = null;
+    return g;
+  });
+  return true;
+}
+
+// each of the meshes' materials `def` names made over by `make`, once a material (the meshes share it)
+function swapAll(meshes, def, make) {
+  const made = new Map();
   const swap = (m) => {
     if (!m || !def.material.test(m.name ?? '')) return m;
-    if (!made.has(m)) {
-      const g = m.clone();
-      g.userData.gameHull = true;
-      if (colour) g.map = colour;
-      if (normal) g.normalMap = normal;
-      if (orm) {
-        g.roughnessMap = orm;
-        g.roughness = 1;
-        g.aoMap = orm;
-      }
-      g.metalness = 0;
-      g.metalnessMap = null;
-      made.set(m, g);
-    }
+    if (!made.has(m)) made.set(m, make(m));
     return made.get(m);
   };
   for (const mesh of meshes) mesh.material = Array.isArray(mesh.material) ? mesh.material.map(swap) : swap(mesh.material);
-  return true;
+}
+
+// lit windows by the game's map of them (its ColorParallaxEmissiveOpacity:
+// red the frame's grey, green a parallax's height, blue where a pane is lit,
+// alpha the panes cut out): the frame its red, the light its blue, in
+// capitalLook.js's window light; its alpha left whole (the shell sits off
+// the hull, and would open holes in it), its parallax not drawn
+const WINDOW_LIGHT = { colour: [1.0, 0.88, 0.7], intensity: 1.4 };
+export function windowsMaterial(m, map) {
+  const g = m.clone();
+  g.userData.gameHull = true;
+  g.map = null;
+  g.color.setScalar(1);
+  g.emissive.setRGB(...WINDOW_LIGHT.colour);
+  g.emissiveIntensity = WINDOW_LIGHT.intensity;
+  g.emissiveMap = map;
+  g.metalness = 0;
+  g.metalnessMap = null;
+  patchShaders(g, 'gamewindows', (shader) => {
+    shader.fragmentShader = shader.fragmentShader.replace('#include <emissivemap_fragment>', THREE.ShaderChunk.emissivemap_fragment.replace('totalEmissiveRadiance *= emissiveColor.rgb;', 'diffuseColor.rgb *= emissiveColor.r;\n\ttotalEmissiveRadiance *= emissiveColor.b;'));
+  });
+  return g;
 }
 
 // the size of a map the device asks for, among those published (`have`)
 const fit = (want, have) => (!want || !have ? want : (have.filter((n) => n <= want).pop() ?? have[0]));
 
 // a hull's game material: its maps at the device's sizes and the material
-// over them, or null when its own map can't be had (`cutMap`: a sheet the
-// cut carries already, on the wrong UVs, the MC80's breakup)
-async function materialOf(def, { detail, phone, aniso, loadTexture, cutMap = null }) {
+// over them, or null when its own map can't be had
+async function materialOf(def, { detail, phone, aniso, loadTexture }) {
   const want = sizesFor(detail, phone);
   const size = Object.fromEntries(Object.entries(want).map(([k, n]) => [k, fit(n, def.have)]));
   const get = (path, n, opts) => (path && n ? loadTexture(path, n, { aniso, ...opts }) : Promise.resolve(null));
   const painted = Boolean(def.paint);
-  const cut = () => {
-    const t = size.colour ? cutMap : null;
-    if (t && t.wrapS !== THREE.RepeatWrapping) {
-      t.wrapS = t.wrapT = THREE.RepeatWrapping;
-      t.needsUpdate = true;
-    }
-    return Promise.resolve(t);
-  };
   const wanted = painted
     ? {
         combine: def.combine ? get(def.combine.map, size.atlas, { srgb: false }) : null,
         tilingNormal: get(def.tiling.normal, size.normal, { srgb: false, repeat: true }),
-        breakup: def.breakup.colour ? get(def.breakup.colour, size.colour, { srgb: false, repeat: true }) : cut(),
+        breakup: get(def.breakup.colour, size.colour, { srgb: false, repeat: true }),
         breakupNormal: def.breakup.normal ? get(def.breakup.normal, size.normal, { srgb: false, repeat: true }) : null,
       }
     : {
@@ -549,10 +624,9 @@ export async function dressGameHull(root, kind, { detail = 'high', phone = false
   root.traverse((o) => o.isMesh && [o.material].flat().some((m) => def.material.test(m?.name ?? '')) && targets.push(o));
   if (!targets.length) return false;
   const lod = phone ? def.lod.phone : def.lod.computer;
-  const cutMap = [targets[0].material].flat().find((m) => def.material.test(m?.name ?? ''))?.map ?? null;
   const [parts, material] = await Promise.all([
     Promise.all(def.parts.map((p) => loadMesh(`${p.mesh}.lod${lod}.glb`, p.own))),
-    def.keep ? null : materialOf(def, { detail, phone, aniso, loadTexture, cutMap }),
+    def.keep ? null : materialOf(def, { detail, phone, aniso, loadTexture }),
   ]);
   // (every part, or the stand-in would lose what it held; and the game's material, where it has one)
   if (parts.some((p) => !p) || (!def.keep && !material)) return false;
@@ -563,8 +637,7 @@ export async function dressGameHull(root, kind, { detail = 'high', phone = false
 // The space level a battle is fought in (spaceLevel.js) draws the pack's
 // own hulls, the same meshes with both their UVs, and bare: each takes the
 // game's material its kind has on the war's ship (one a kind, shared), so
-// the level's Star Destroyers are the war's. (The MC80's breakup only its
-// cut carries: the level's MC80 its paint alone.)
+// the level's Star Destroyers are the war's.
 export const LEVEL_HULLS = [
   { kind: 'destroyer', material: /^M_Hull_01(_lods)?$/ },
   { kind: 'venator', material: /^M_VenatorStarDestroyer_(Hull_01|ControlTower_01|DetailBack_01)(_lods)?$/ },

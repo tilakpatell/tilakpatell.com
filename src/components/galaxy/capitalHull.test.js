@@ -240,7 +240,7 @@ describe('capitalHull', () => {
     expect(again.children[0].material.userData.gameHull).toBeUndefined();
   });
 
-  it('puts the MC80’s hull and its seven nodules in its stand-in, painted with the breakup the cut carries, on the UVs it was made for', async () => {
+  it('puts the MC80’s hull and its seven nodules in its stand-in, under its own mask, with the game’s breakup at a quarter of the sheet’s tiling', async () => {
     const m = GAME_HULLS.moncal;
     expect(m.material.test('MC_80_Met')).toBe(true);
     expect(m.material.test('MC_80_light_Met')).toBe(false);
@@ -249,8 +249,7 @@ describe('capitalHull', () => {
     const nose = new THREE.Group();
     nose.name = 'nose';
     nose.rotation.y = Math.PI;
-    const breakup = map();
-    const standIn = new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshStandardMaterial({ name: 'MC_80_Met', map: breakup }));
+    const standIn = new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshStandardMaterial({ name: 'MC_80_Met', map: map() }));
     nose.add(standIn);
     root.add(nose);
     const urls = [];
@@ -259,14 +258,75 @@ describe('capitalHull', () => {
     expect(ok).toBe(true);
     expect(urls).toHaveLength(8);
     expect(urls.every((u) => u.endsWith('.lod2.glb'))).toBe(true);
-    expect(asked).toEqual([['t_starcruisermc80panels_01_ns', 1024]]);
+    // (every map at the largest size published, 1,024)
+    expect(asked.sort()).toEqual([['mc80_paneltile_breakup_02_rgba', 1024], ['mc80_surfacedetail_02_n', 1024], ['t_mc80_hull_01_combine_rgba', 1024], ['t_starcruisermc80panels_01_ns', 1024]]);
     const shader = compiled(standIn.material);
-    expect(shader.uniforms.uGhBreak.value).toBe(breakup);
-    expect(breakup.wrapS).toBe(THREE.RepeatWrapping);
-    // (no mask: none of its lines; the panel sheet's z rebuilt from its x and y)
-    expect(shader.fragmentShader).not.toMatch(/ghMask/);
+    expect(shader.fragmentShader).toMatch(/ghMask\.r \/ 0\.3050/);
+    // (the panel sheet's z rebuilt from its x and y; the breakup and its relief at a quarter)
     expect(shader.fragmentShader).toMatch(/mapN\.z = sqrt/);
-    expect(shader.fragmentShader).not.toMatch(/ghBn/);
+    expect(shader.fragmentShader).toMatch(/texture2D\( uGhBreak, vNormalMapUv \* 0\.2500 \)/);
+    expect(shader.fragmentShader).toMatch(/ghBn/);
+  });
+
+  it('gives the Arquitens the game’s hull with both its UV sets, the Empire’s and the Republic’s each in its own paint and mask, their sheets shared', async () => {
+    const [imperial, republic] = [GAME_HULLS.lightcruiser, GAME_HULLS.jedicruiser];
+    // (the war's cut and both kits name the hull alike, the Republic's too)
+    for (const name of ['M_ImperialCruiser_PanelTile_01_lods', 'M_ImperialCruiser_PanelTile_01']) {
+      expect(imperial.material.test(name)).toBe(true);
+      expect(republic.material.test(name)).toBe(true);
+    }
+    expect(imperial.parts[0].mesh).toMatch(/levels\/sb_fondor\/meshes\/imperialcruiser_hull_01_mesh$/);
+    expect(republic.parts[0].mesh).toMatch(/levels\/sb_kamino\/meshes\/jedicruiser_hull_01_mesh$/);
+    expect(republic.combine.map).not.toBe(imperial.combine.map);
+    expect(republic.paint).not.toBe(imperial.paint);
+    expect(republic.tiling.normal).toBe(imperial.tiling.normal);
+    expect(republic.breakup.normal).toBe(imperial.breakup.normal);
+    // (the breakup at half the sheet's tiling, the game's BreakUpRGBATiling)
+    expect(imperial.breakup.tiling).toBe(0.5);
+    const root = new THREE.Group();
+    const standIn = new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshStandardMaterial({ name: 'M_ImperialCruiser_PanelTile_01_lods' }));
+    root.add(standIn);
+    const urls = [];
+    const asked = [];
+    expect(await dressGameHull(root, 'lightcruiser', { detail: 'high', loadMesh: async (url) => (urls.push(url.split('/').pop()), packHull()), loadTexture: async (path, size) => (asked.push([path.split('/').pop(), size]), map()) })).toBe(true);
+    expect(urls).toEqual(['imperialcruiser_hull_01_mesh.lod1.glb']);
+    // (no finer than the Venator's: a computer at high, 1,024)
+    expect(asked).toContainEqual(['t_imperialcruiser_hull_01_combine_rgba', 1024]);
+    expect(asked.every(([, size]) => size <= 1024)).toBe(true);
+    expect(standIn.material.userData.gameHull).toBe(true);
+    expect(standIn.material.color.getHexString()).toBe(new THREE.Color(imperial.paint).getHexString());
+  });
+
+  it('lights the MC80’s windows by the game’s map of them: the frame its red, the light its blue, and the cut’s own relief kept', async () => {
+    const normal = map();
+    const cut = new THREE.MeshStandardMaterial({ name: 'MC_80_light_Met', map: map(), normalMap: normal, emissive: '#ffffff', metalness: 1 });
+    const windows = new THREE.Mesh(new THREE.BoxGeometry(), cut);
+    const hull = new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshStandardMaterial({ name: 'MC_80_Met' }));
+    const root = new THREE.Group().add(windows, hull);
+    const asked = [];
+    expect(await dressGameMaps(root, 'moncal', { loadTexture: async (path, size, opts) => (asked.push([path.split('/').pop(), size, opts.repeat]), map()) })).toBe(true);
+    expect(asked).toEqual([['t_mc80_windows_01_rgba', 1024, true]]);
+    const m = windows.material;
+    expect(m.userData.gameHull).toBe(true);
+    expect(m.map).toBeNull();
+    expect(m.emissiveMap).toBeTruthy();
+    expect(m.normalMap).toBe(normal);
+    expect(m.metalness).toBe(0);
+    // (warm, as capitalLook.js lights its panes)
+    expect(m.emissive.r).toBeGreaterThan(m.emissive.b);
+    const shader = compiled(m);
+    expect(shader.fragmentShader).toMatch(/totalEmissiveRadiance \*= emissiveColor\.b;/);
+    expect(shader.fragmentShader).toMatch(/diffuseColor\.rgb \*= emissiveColor\.r;/);
+    expect(shader.fragmentShader).not.toMatch(/emissiveColor\.rgb;/);
+    expect(hull.material.userData.gameHull).toBeUndefined();
+    // (on a phone, half; the lowest detail and a failed load leave the cut's for capitalLook.js's panes)
+    const phone = [];
+    await dressGameMaps(new THREE.Group().add(new THREE.Mesh(new THREE.BoxGeometry(), cut)), 'moncal', { phone: true, loadTexture: async (path, size) => (phone.push(size), map()) });
+    expect(phone).toEqual([512]);
+    const kept = new THREE.Mesh(new THREE.BoxGeometry(), cut);
+    expect(await dressGameMaps(new THREE.Group().add(kept), 'moncal', { detail: 'low', loadTexture: async () => map() })).toBe(false);
+    expect(await dressGameMaps(new THREE.Group().add(kept), 'moncal', { loadTexture: async () => null })).toBe(false);
+    expect(kept.material).toBe(cut);
   });
 
   it('puts a mirrored part’s triangles back the right way out', () => {

@@ -10,9 +10,10 @@
 // its middle at the origin: models.js's), so the kit is dressed in that
 // frame and handed back as the level stood it.
 //
-//   KIT_KINDS: a kit's slug → [kind, turn] (the war's kind it is, and the
+//   KIT_KINDS: a kit's slug → [kind, turn, hull] (the war's kind it is, the
 //     turn about y that puts its bow to +z: measured where each kit's
-//     engines are; the Venator's at +z, the rest at −z)
+//     engines are; the Venator's at +z, the rest at −z; and, where it isn't
+//     the kind's, its game hull's row, capitalHull.js)
 //   dressKit(gltf, slug, { detail, phone, aniso, hull, maps }) → Promise<Object3D>
 //     a copy of the kit, dressed, in its own frame (a kit it has no kind
 //     for, as it came)
@@ -37,17 +38,18 @@ export const KIT_KINDS = {
   'providenceclassdreadnaught-01': ['providence', Math.PI / 2],
   'corvettecr90-01': ['corvette', 0],
   'fondor-arquitens': ['lightcruiser', 0],
-  // (the Republic's Arquitens, its hull the Imperial one's)
-  'naboo-jedicruiser': ['lightcruiser', 0],
+  // (the Republic's Arquitens: its hull the Imperial one's, in its own paint and mask)
+  'naboo-jedicruiser': ['lightcruiser', 0, 'jedicruiser'],
+  'kamino-jedicruiser': ['lightcruiser', 0, 'jedicruiser'],
 };
 
 export async function dressKit(gltf, slug, { detail = device().detail, phone = device().phone, aniso = budget().aniso, hull = dressGameHull, maps = dressGameMaps } = {}) {
   const root = cloneScene(gltf);
   const row = KIT_KINDS[slug];
   if (!row || !isCapital(row[0])) return root;
-  const [kind, turn] = row;
+  const [kind, turn, own = kind] = row;
   const dressing = { detail, phone, aniso };
-  await Promise.all([hull(root, kind, dressing), maps(root, kind, dressing)]);
+  await Promise.all([hull(root, own, dressing), maps(root, kind, dressing)]);
   // (in the ship's own frame: centred, turned bow to +z, one long)
   root.updateMatrixWorld(true);
   const box = new THREE.Box3().setFromObject(root);

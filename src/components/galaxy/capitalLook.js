@@ -51,8 +51,9 @@ const ENGINE_NAME = /engine|thruster/i;
 const RED = /^red$/i;
 const LIT = /emissive/i;
 // (the windows the game lights with a map of their own, SS_EmissiveWindows_01:
-// the MC80's, a mesh of their own; the map, t_mc80_windows_01_rgba, isn't
-// published, and the export gave them the hull's breakup in its place)
+// the MC80's, a mesh of their own, the export's with the hull's breakup in
+// the map's place. capitalHull.js puts the map on; where it hasn't, the
+// lowest detail or a failed load, small panes)
 const LIT_WINDOWS = /^MC_80_light_Met$/;
 // (the kinds whose own maps are next to flat colour at a ship's size, a few
 // KB each, or one scratched metal tiled over the whole of it: plated over them)

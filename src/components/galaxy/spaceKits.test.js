@@ -30,6 +30,13 @@ describe('spaceKits', () => {
     expect(KIT_KINDS['kamino-venator'][1]).toBeCloseTo(Math.PI, 6);
   });
 
+  it('dresses the Republic’s Arquitens as the war’s, with its own game hull', async () => {
+    const asked = [];
+    const stub = (what) => async (root, kind) => (asked.push([what, kind]), false);
+    for (const slug of ['naboo-jedicruiser', 'kamino-jedicruiser']) await dressKit(kit(), slug, { hull: stub('hull'), maps: stub('maps') });
+    expect(asked).toEqual([['hull', 'jedicruiser'], ['maps', 'lightcruiser'], ['hull', 'jedicruiser'], ['maps', 'lightcruiser']]);
+  });
+
   it('dresses a kit as the war’s ship of its kind, and hands it back where the level stood it', async () => {
     const gltf = kit();
     const asked = [];
