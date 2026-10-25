@@ -142,7 +142,10 @@ describe('generatedSpecOf', () => {
       const s = specOf(r);
       const g = TYPE_LOOK[s.type].ground;
       const p = s.ground.palette;
-      for (const k of ['low', 'high', 'rock', 'accent', 'deep']) expect(p[k], `${r.id} ${k}`).toBe(varietyOf(r).palette[k]);
+      for (const k of ['low', 'high', 'rock', 'deep']) expect(p[k], `${r.id} ${k}`).toBe(varietyOf(r).palette[k]);
+      // (a lava planet's accent is its glow and an ocean's its sea, neither a
+      // colour for patches of ground: theirs keep the template's)
+      expect(p.accent, r.id).toBe(['lava', 'ocean'].includes(s.type) ? g.palette.accent : varietyOf(r).palette.accent);
       expect(p.hLow).toBe((s.water?.level ?? 0) + 2);
       expect(p.hHigh).toBe(Math.min(500, Math.max(60, s.character.peaks * 0.5)));
       expect(s.ground.detail).toBe(g.detail);

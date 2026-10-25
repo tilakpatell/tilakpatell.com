@@ -21,8 +21,9 @@
 // any other spot, a landing's).
 //
 // The look is the template's, recoloured: its ground's palette swapped for
-// the variety's, its low ground just over the water and its high ground at
-// half the peaks; its trees and spires as thick as the flora; an exotic
+// the variety's (but a lava planet's glow and an ocean's sea, its accent,
+// left off the ground), its low ground just over the water and its high
+// ground at half the peaks; its trees and spires as thick as the flora; an exotic
 // planet's own clutter set out on its ground (none on a cloud deck); its fog
 // as thick as its sky's haze.
 //
@@ -99,6 +100,9 @@ export function clutterOf(family, flora, exotic) {
 }
 
 const COLOURS = ['low', 'high', 'rock', 'accent', 'deep'];
+// a lava planet's accent is its glow and an ocean's its sea: neither is a
+// colour for patches of ground, so theirs keep the template's
+const OWN_ACCENT = new Set(['lava', 'ocean']);
 
 // the template's ground, in the variety's colours. A round planet's low
 // ground starts just over its water and its high ground at half its peaks;
@@ -107,7 +111,7 @@ const COLOURS = ['low', 'high', 'rock', 'accent', 'deep'];
 function groundOf(family, colours, water, character) {
   const g = TYPE_LOOK[family].ground;
   const palette = { ...g.palette };
-  for (const k of COLOURS) if (character || k in palette) palette[k] = colours[k];
+  for (const k of COLOURS) if ((character || k in palette) && !(k === 'accent' && OWN_ACCENT.has(family))) palette[k] = colours[k];
   if (character) {
     palette.hLow = (water?.level ?? 0) + 2;
     palette.hHigh = clamp(character.peaks * 0.5, 60, 500);
