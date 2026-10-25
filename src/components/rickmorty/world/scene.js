@@ -46,7 +46,7 @@ import { groundWorld } from '../../../lib/three/groundwork';
 import { defaultLook } from '../wardrobe/looks';
 import { bodyAsset, bodyKind, dress, withWardrobe } from '../wardrobe/wear';
 import { CANS, CREW, TALL, glassDome } from '../cruiser3d';
-import { ARCADE, AREAS, BUILDINGS, CEILING, CRUISER, FURNITURE, HOTSPOTS, LINKS, MORTY, OUTDOOR, ROAD, TREES, behindYaw, supportAt, wallsIn } from './rules';
+import { ARCADE, AREAS, BUILDINGS, CEILING, CRUISER, FURNITURE, HOTSPOTS, LINKS, MORTY, OUTDOOR, ROAD, TREES, behindYaw, camBlocked, supportAt, wallsIn } from './rules';
 import { gentleRamp, kitMaterials } from './kit';
 import { ROAD_Y, STREET_LIGHT, buildStreet } from './street';
 import { ANNEX_LIGHT, ANNEX_SKY, STREET_SKY, SUN_DIR, makeSky } from './sky';
@@ -362,7 +362,8 @@ export async function createRmWorld(rt, { looks = null, track: stages = null } =
   const cam = { at: new THREE.Vector3(), look: new THREE.Vector3(), area: null, flying: null };
   const want = { at: new THREE.Vector3(), look: new THREE.Vector3() };
   // how far from the head to the camera it can go before it's inside a
-  // building or a tree (outdoors), or through a wall or into the furniture
+  // building or a tree (outdoors, and at a place outdoors what stands there:
+  // ./rules.js's camBlocked), or through a wall or into the furniture
   // (indoors), as a share
   const solid = { street: BUILDINGS, annex: [ARCADE] };
   const parked = { x: 0, z: 0, on: false }; // the cruiser, while it stands in the street
@@ -383,10 +384,11 @@ export async function createRmWorld(rt, { looks = null, track: stages = null } =
     return false;
   };
   // what's at (x, y, z): 0 nothing, 1 something, 2 the parked cruiser (which
-  // the camera can rise over), 3 a piece of furniture (which it can swing round)
+  // the camera can rise over), 3 a piece of furniture or a place's trunk,
+  // privy or the like (which it can swing round)
   const blocked = (area, x, y, z) => {
     if ((solid[area] ?? []).some((b) => y < b.roof + 0.5 && Math.abs(x - b.x) < b.w / 2 + 0.35 && Math.abs(z - b.z) < b.d / 2 + 0.35)) return 1;
-    if (inPiece(area, x, y, z)) return 3;
+    if (inPiece(area, x, y, z) || camBlocked(area, x, y, z)) return 3;
     if (area !== 'street') return 0;
     if (TREES.some((tr) => y < 8 * tr.s && Math.hypot(x - tr.x, z - tr.z) < 0.45 * tr.s + 0.35)) return 1;
     if (!parked.on) return 0;

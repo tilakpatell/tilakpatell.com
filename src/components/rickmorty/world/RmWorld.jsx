@@ -51,6 +51,7 @@ import {
   exitCruiser,
   floorAt,
   FLY,
+  hotspotsIn,
   inArea,
   nearHotspot,
   nearLink,
@@ -1859,7 +1860,7 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
       s.npcs = api.current?.act(s.area, 'npcs') ?? null;
       // (kept on the sim, where the checks read it)
       s.goal = goalOf(markRef.current, s, planet, (area, name) => api.current?.act(area, name), doneRef.current, planet ? null : dialRef.current) ?? (s.flying && !planet ? chaseGoal(s.chase) : null);
-      drawMap(map.current, s, s.goal, s.t);
+      drawMap(map.current, s, s.goal, s.t, doneRef.current);
       // (and a place's game, its meter: ./dimensions/stage.js's `meter`)
       const charge = api.current?.act(s.area, 'meter') ?? METER_OFF;
       chargeMeter.place(chargeRef.current, { on: charge.on, vitals: charge.vitals, arms: null });
@@ -2116,7 +2117,7 @@ function streetWindow(at, aspect, wide) {
   return { x0: cx - w / 2, x1: cx + w / 2, z0: cz - h / 2, z1: cz + h / 2 };
 }
 
-function drawMap(c, s, goal, t) {
+function drawMap(c, s, goal, t, done) {
   const g = c?.getContext('2d');
   if (!g) return;
   const W = c.width;
@@ -2253,7 +2254,8 @@ function drawMap(c, s, goal, t) {
       g.lineTo(X(x1), Z(z1));
       g.stroke();
     }
-    for (const h of HOTSPOTS) if (h.area === s.area) disc(h.x, h.z, 2.1 * u, '#c9ff5a');
+    // (as there are to reach: not a crystal picked up, nor one gone with its task)
+    for (const h of hotspotsIn(s.area, done, (id) => PICKS.has(id) && s.used?.has(id))) disc(h.x, h.z, 2.1 * u, '#c9ff5a');
     // the hatch in the garage floor
     if (s.area === 'garage') {
       g.fillStyle = '#3a4046';

@@ -11,8 +11,9 @@
 // page up, its line read (the story's step over its own) and its toast
 // waited for; a place dialled from the garage and home through its own
 // portal, a task not done after a while, the Story tab's ticks, a page
-// opened with a place's people held back; and Rick's rooms on the
-// Vindicators' ship, as their rules have them. Kept apart from
+// opened with a place's people held back, a spot's dot read off the map and
+// the camera turned round Morty; and Rick's rooms on the Vindicators' ship,
+// as their rules have them. Kept apart from
 // the scenarios so no file passes 800 lines.
 import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -293,8 +294,31 @@ export const goalIs = (page, id, where) =>
   page.waitForFunction((id) => window.__C137__.sim.goal?.id === id, id, { timeout: 15000, polling: 100 }).catch(async () => {
     throw new Error(`${where} the marker’s on ${await page.evaluate(() => window.__C137__.sim.goal?.id ?? null)}, not ${id}`);
   });
+// does the map dot a spot at (x, z) in a place? (its lime, where RmWorld's
+// drawMap puts it: the place's box fitted to the canvas, eight map pixels in
+// from its edge, two canvas pixels to one)
+export const dotted = (page, area, x, z) =>
+  page.evaluate(
+    ([A, x, z]) => {
+      const c = document.querySelector('.rm-map canvas');
+      const pad = 8 * 2;
+      const k = Math.min((c.width - pad * 2) / (A.x1 - A.x0), (c.height - pad * 2) / (A.z1 - A.z0));
+      const px = Math.round(c.width / 2 + (x - (A.x0 + A.x1) / 2) * k);
+      const pz = Math.round(c.height / 2 + (z - (A.z0 + A.z1) / 2) * k);
+      const [r, g, b] = c.getContext('2d').getImageData(px, pz, 1, 1).data;
+      return Math.abs(r - 0xc9) < 16 && Math.abs(g - 0xff) < 16 && Math.abs(b - 0x5a) < 16;
+    },
+    [PLACES.dest(area).area, x, z],
+  );
+// the walking camera turned to `yaw` round Morty, as a drag turns it, and
+// where it is once it's settled `s` seconds on
+export async function cameraAt(page, yaw, s = 1) {
+  await page.evaluate((y) => (window.__C137__.sim.yaw = y), yaw);
+  await later(page, s);
+  return page.evaluate(() => ({ ...window.__C137__.api.stage.camera.position }));
+}
 // the objective line isn't a link
-export const noLink = async (page, where) => check((await page.locator('.rm-hud .rm-objective-link').count()) === 0, `${where} the line is a link`);
+export const noLink =async (page, where) => check((await page.locator('.rm-hud .rm-objective-link').count()) === 0, `${where} the line is a link`);
 // a place's meter, by its title, and its line
 export const meter = (page, title) => page.locator(`.rm-cluster[aria-label="${title}"][data-on]`);
 export const meterSays = (page, title, text) =>
