@@ -7,17 +7,21 @@
 //   id: sectorKey, sx, sy, sz, seed, origin: [x, y, z],
 //   systems (addBodies'd; legacy first on sy 0, then appended; systems[i].i === i),
 //   wonders (today's on the middle layer, [] elsewhere),
+//   stations (stations.js's, one system in three; made whether or not things is),
 //   things (a ThingSet, empty when things is false), extras ({ [list]: rows }),
 //   beacons (today's on the middle layer, the same rule at the sector's height elsewhere),
 //   legacy: { systems, wonders } (where the appended part begins) }
-// placeOf(universe, id) → { kind: 'system' | 'planet' | 'moon' | 'wonder' | 'thing' | 'extra', row, sector } | null
+// placeOf(universe, id) → { kind: 'system' | 'planet' | 'moon' | 'station' | 'wonder' | 'thing' | 'extra', row, sector } | null
 //   (keeps the last 8 sectors it built: its rows are shared with that cache, so treat them as
 //   read-only; a cache miss builds a whole sector synchronously)
+// placeIn(sector, parsed) → the same, on a sector already made (the one parseSpaceId's
+//   parsed id names); it builds nothing
 
 import { parseSpaceId, sectorCentre, sectorKey } from '../../../lib/space/address.js';
 import { clearOfKeepOuts, keepOutsNear } from './keepOuts';
 import { hash64, int, range, rngOf, sectorSeedOf, systemSeed } from './seed';
 import { beaconsOf, makeSector } from './sector';
+import { STATION_BASE, stationsOf } from './stations';
 import { addBodies, localFactions, systemAt } from './systems';
 import { factionBand } from './tables';
 import { SECTOR_EXTRAS, THING_BASE, thingRow, thingsOf } from './things';
@@ -127,6 +131,7 @@ export function fullSector(universe, sx, sy, sz, { things = true } = {}) {
   sector.legacy = { systems: sector.systems.length, wonders: sector.wonders.length };
   const outs = keepOutsNear(sx, sy, sz);
   appendSystems(sector, outs);
+  sector.stations = stationsOf(sector);
   if (things) {
     const made = thingsOf({ sx, sy, sz, origin, seed, systems: sector.systems, wonders: sector.wonders, outs }, SECTOR_EXTRAS);
     sector.things = made.things;
@@ -149,22 +154,30 @@ function sectorFor(universe, p) {
   return s;
 }
 
-// the slot a lattice wonder number names, among the sorted slots that hold something
-function indexOfSlot(slots, slot) {
+// where key(list[i]) is k, in a list sorted by key: the slot a lattice wonder number
+// names among the slots that hold something, or the station a system's number names
+function indexOf(list, k, key = (v) => v) {
   let lo = 0;
-  let hi = slots.length - 1;
+  let hi = list.length - 1;
   while (lo <= hi) {
     const mid = (lo + hi) >> 1;
-    if (slots[mid] === slot) return mid;
-    if (slots[mid] < slot) lo = mid + 1;
+    const at = key(list[mid]);
+    if (at === k) return mid;
+    if (at < k) lo = mid + 1;
     else hi = mid - 1;
   }
   return -1;
 }
 
 function wonderPlace(sector, n) {
+  // (first: every station number is past THING_BASE too)
+  if (n >= STATION_BASE) {
+    const list = sector.stations ?? [];
+    const i = indexOf(list, n - STATION_BASE, (st) => st.i);
+    return i < 0 ? null : { kind: 'station', row: list[i], sector };
+  }
   if (n >= THING_BASE) {
-    const i = indexOfSlot(sector.things.slot, n - THING_BASE);
+    const i = indexOf(sector.things.slot, n - THING_BASE);
     return i < 0 ? null : { kind: 'thing', row: thingRow(sector, i), sector };
   }
   for (const e of SECTOR_EXTRAS) {
@@ -179,8 +192,11 @@ function wonderPlace(sector, n) {
 
 export function placeOf(universe, id) {
   const p = parseSpaceId(id);
+  return p ? placeIn(sectorFor(universe, p), p) : null;
+}
+
+export function placeIn(sector, p) {
   if (!p) return null;
-  const sector = sectorFor(universe, p);
   if (p.wonder !== undefined) return wonderPlace(sector, p.wonder);
   const system = sector.systems[p.system];
   if (!system) return null;
