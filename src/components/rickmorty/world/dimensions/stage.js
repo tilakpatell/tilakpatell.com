@@ -30,7 +30,7 @@ import { freezeEyes, freezeNews, freezeReadout, jumpSplashes, moving, newFreeze,
 import { findNews, findReadout, newFind, pickOurs, stepFind } from '../games/find';
 import { litSets, newSequence, runningOrder, sequenceNews, sequenceReadout, stepSequence } from '../games/sequence';
 import { climbNews, climbReadout, moods, newClimb, poseTime, stairPose, stepClimb } from '../games/climb';
-import { newCheer, stepCheer } from '../games/cheer';
+import { cheerTask, newCheer, stepCheer } from '../games/cheer';
 import { TRIS, WORLDS } from './worlds';
 import { BLOCKS } from './blocks';
 import { outskirtsOf } from './outskirts';
@@ -329,7 +329,7 @@ export function stage(kit, id, { ground, groundTile = 4, floor, floorTile = 2, w
   const rh = d.rhythm;
   const du = d.people.find((p) => p.ai?.hunt?.duel)?.ai.hunt.duel ?? null; // (a duel's: its `unlock` handed over once its task's done)
   const ach = d.achieve ? { task: d.achieve, unlock: d.achieve } : null; // (a task's own, however it's done: place.js's `achieve`)
-  const gameTask = (d.power ?? d.deal ?? d.freeze ?? d.find ?? d.sequence ?? d.climb ?? rh)?.task ?? null;
+  const gameTask = cheerTask(d); // (its game's, or its duel's: ../games/cheer.js)
   let cheer = newCheer();
 
   // (calmed: its people home, and its game started afresh)

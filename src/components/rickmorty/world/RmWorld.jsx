@@ -61,7 +61,7 @@ import {
   stepMorty,
 } from './rules';
 import { newFedShip, newShipVoice, onTail, shipSays, stepFedShip } from './ship';
-import { DESTINATIONS, DIAL, destinationById, isPlanet, isWayHome, linkTarget, portalTarget, readDial, writeDial } from './dimensions/destinations';
+import { DESTINATIONS, DIAL, DUEL_PLACES, destinationById, isPlanet, isWayHome, linkTarget, portalTarget, readDial, writeDial } from './dimensions/destinations';
 import { useAdventure } from '../adventure/useAdventure';
 import { EPISODES } from '../adventure/episodes';
 import { dialItems, dialLead, leaveHold, markedTask, newsOf, objectiveLine, showNews } from '../adventure/hud';
@@ -228,6 +228,7 @@ function goalOf(next, s, planet = null, act = null, done = [], dialled = null) {
   if (!next || (planet && s.escape?.area === planet.id)) return planet ? PROMPT[`link:${planet.id}-portal`].link : null;
   // (a place's clock running: its portal home, whatever's next)
   if (s.escape?.area === s.area && PROMPT[`link:${s.area}-portal`]) return PROMPT[`link:${s.area}-portal`].link;
+  if (s.duel) return null; // (in a fight: it comes to him)
   if (!GOAL[next.id]) return null; // (a game the map has no spot for)
   const [to, key] = GOAL[next.id];
   if (isPlanet(to) && to !== s.area && !DIALLED.has(to)) return null;
@@ -928,6 +929,7 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
           }
         }
         stopRickall(); // (a trip anywhere is the end of Total Rickall)
+        if (DUEL_PLACES.has(l.to)) loadShots(); // (the bolts, ready before the fight's first F)
         s.area = l.to;
         tell({ type: 'enter', area: s.area });
         s.m = newMorty(l.arrive);
@@ -963,7 +965,7 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
         setFade(null);
       }, climb ? CLIMB_MS : FADE_MS);
     },
-    [api, complete, unlock, later, stopRickall, planet, onLeave, tell, dialOpen, navigate, due],
+    [api, complete, unlock, later, stopRickall, planet, onLeave, tell, dialOpen, navigate, due, loadShots],
   );
   const boardRef = useRef(null);
   const board = useCallback(() => {
@@ -1227,8 +1229,9 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
       if (r.down) {
         sound('splat');
         earn('duel');
+        // (his line first, the thing done waiting behind it till it's read)
+        if (r.won) say({ kind: 'say', ...r.won });
         if (r.task) complete(r.task);
-        if (r.won) later(() => say({ kind: 'say', ...r.won }), 900);
         later(() => {
           s.duel = null;
           setDuel(null);
@@ -1287,6 +1290,8 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
         // into the cruiser, and the street's fight (./streetFight.js)
         board: () => boardRef.current(),
         fight: () => fightRef.current,
+        // whether Morty's bolts have loaded (a duel's place loads them as he gets there)
+        shotsReady: () => Boolean(shots.current),
         // the portal gun's dial, set as the stand in the garage sets it
         dial(id) {
           writeDial(id);

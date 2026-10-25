@@ -4,7 +4,7 @@ import { newDeal, stepDeal } from '../games/deal';
 import { gameGoal } from './gameGoal';
 import { ACHIEVEMENTS } from '../../../Achievements';
 import { KEYS } from '../../../hangar/skills/tree';
-import { DEST_COL, DESTINATIONS, DIAL, GARAGE_BACK, PLANETS, destArea, destinationById, isBigPlanet, isPlanet, isWayHome, linkTarget, pageOf, planetStart, portalTarget, validArrive } from './destinations';
+import { DEST_COL, DESTINATIONS, DIAL, DUEL_PLACES, GARAGE_BACK, PLANETS, destArea, destinationById, isBigPlanet, isPlanet, isWayHome, linkTarget, pageOf, planetStart, portalTarget, validArrive } from './destinations';
 
 const inside = (a, x, z, pad = 0) => x >= a.x0 + pad && x <= a.x1 - pad && z >= a.z0 + pad && z <= a.z1 - pad;
 const overlap = (a, b) => a.x0 < b.x1 && b.x0 < a.x1 && a.z0 < b.z1 && b.z0 < a.z1;
@@ -32,6 +32,9 @@ describe('the destinations', () => {
     expect(destinationById('gromflomites').tasks[0].hint).not.toMatch(/crates/);
     // (Evil Rick's spot is a line he says: Talk, as anyone who says one)
     expect(destinationById('evilrick').hotspots.find((h) => h.id === 'evilrick').verb).toBe('Talk');
+  });
+  it('know the places with a duel, whose bolts load as Morty gets there', () => {
+    expect([...DUEL_PLACES].sort()).toEqual(['blooddome', 'evilrick']);
   });
   it('name every Rick and Morty achievement differently', () => {
     const names = KEYS.rickmorty.map((k) => ACHIEVEMENTS[k].name);

@@ -63,6 +63,8 @@ export const DIAL = [
   ...['birdworld', 'gearworld', 'pluto', 'squanch'].map((id) => row(destinationById(id))),
 ];
 export const DIAL_KEY = 'tp-rm-dial';
+// the places with a duel (a hunter's `hunt.duel`): Morty's bolts load as he gets there
+export const DUEL_PLACES = new Set(DESTINATIONS.filter((d) => d.people.some((p) => p.ai?.hunt?.duel)).map((d) => d.id));
 // a dial place that's a page of its own (the Citadel), not an area of C-137's
 export const pageOf = (id) => DIAL.find((d) => d.id === id)?.to ?? null;
 // where the garage portal opens: the dial if it's on the dial and open (the

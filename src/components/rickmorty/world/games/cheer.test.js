@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { CHEER, newCheer, stepCheer } from './cheer';
+import { CHEER, newCheer, stepCheer, cheerTask } from './cheer';
+import { destinationById } from '../dimensions/destinations';
 import { hopOf } from '../dimensions/crowdPose';
 import { WORLDS } from '../dimensions/worlds';
 
@@ -40,5 +41,14 @@ describe('a crowd cheering its place’s game won', () => {
     expect(steps(cheered, true, 101, 200).hops).toEqual([]);
     const fresh = steps(newCheer(), false, 0, 0).c;
     expect(steps(fresh, true, 1, 40).hops.slice(0, 3)).toEqual([0.1, 1.6, 3.1]);
+  });
+});
+
+describe('whose win a place’s crowd cheers', () => {
+  it('is its game’s, a duel’s too: the Blood Dome’s and the lair’s', () => {
+    expect(cheerTask(destinationById('blooddome'))).toBe('blooddome');
+    expect(cheerTask(destinationById('evilrick'))).toBe('evilrick');
+    expect(cheerTask(destinationById('cablestudio'))).toBe('cablestudio');
+    expect(cheerTask(destinationById('storytrain'))).toBe(null);
   });
 });

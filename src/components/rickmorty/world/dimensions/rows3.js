@@ -13,16 +13,16 @@ export const ROWS = [
     ceiling: 10,
     people: [
       // Evil Rick at his console till the Mortys are freed; then he comes for Morty, and the fight is the thing (its achievement handed over by the stage once he's down)
-      { id: 'evilrick', dx: 0, dz: -12, face: S, ai: { watch: 12, bark: { r: 9, every: 14, lines: ['Another Morty. I’ve got hundreds. What’s one more?', 'Your Rick thinks he’s the smartest man in the universe. He isn’t even the smartest in this room.'] }, hunt: { speed: 2.4, catchR: 1.6, duel: { hp: 6, mortyHp: 3, task: 'evilrick', unlock: 'evilrick', won: { who: 'Evil Rick', text: 'He goes down by his own console, and his eye flickers. A receiver, behind the ear. He was never the one in charge.' } }, line: 'Evil Rick’s fist finds your jaw. “Sit down, Morty. There’s a slot in the dome with your name on it.” You come round by the door.' } } },
+      { id: 'evilrick', dx: 0, dz: -12, face: S, ai: { watch: 12, bark: { r: 9, every: 14, lines: ['Another Morty. I’ve got hundreds. What’s one more?', 'Your Rick thinks he’s the smartest man in the universe. He isn’t even the smartest in this room.'] }, hunt: { speed: 2.4, catchR: 1.6, duel: { hp: 7, mortyHp: 3, task: 'evilrick', unlock: 'evilrick', won: { who: 'Evil Rick', text: 'He goes down by his own console, and his eye flickers. A receiver, behind the ear. He was never the one in charge.' } }, line: 'Evil Rick’s fist finds your jaw. “Sit down, Morty. There’s a slot in the dome with your name on it.” You come round by the door.' } } },
       // Evil Morty, sitting in his chair at the back with his arms crossed, till he's spoken to; he talks only once Evil Rick is down (his spot's `after`), and his achievement is the builder's to hand over
       { id: 'evilmorty', dx: 14, dz: -14, face: W, until: 'evilmorty', ai: { clip: 'sitcross', bark: { r: 6, every: 18, lines: ['(He watches you fight. He doesn’t get up.)', '(He says nothing. He’s counting something.)'] } } },
     ],
     // (the dome's Mortys in their pods are placed by the builder, which frees them one by one)
     spots: [
-      { id: 'pod1', dx: -15.4, dz: -8, label: 'A Morty in a pod', verb: 'Free', r: 1.4 },
-      { id: 'pod2', dx: -15.4, dz: -2, label: 'A Morty in a pod', verb: 'Free', r: 1.4 },
-      { id: 'pod3', dx: -15.4, dz: 4, label: 'A Morty in a pod', verb: 'Free', r: 1.4 },
-      { id: 'evilrick', dx: 0, dz: -10.4, label: 'Evil Rick', verb: 'Talk', r: 1.6 },
+      { id: 'pod1', dx: -15.4, dz: -8, label: 'A Morty in a pod', verb: 'Free', r: 1.4, until: 'evilrick' },
+      { id: 'pod2', dx: -15.4, dz: -2, label: 'A Morty in a pod', verb: 'Free', r: 1.4, until: 'evilrick' },
+      { id: 'pod3', dx: -15.4, dz: 4, label: 'A Morty in a pod', verb: 'Free', r: 1.4, until: 'evilrick' },
+      { id: 'evilrick', dx: 0, dz: -10.4, label: 'Evil Rick', verb: 'Talk', r: 1.6, until: 'evilrick' },
       { id: 'evilmorty', dx: 12.4, dz: -14, label: 'A Morty with an eyepatch', verb: 'Talk', r: 1.6, until: 'evilmorty', after: 'evilrick' },
       { id: 'domewall', dx: 0, dz: -16, label: 'The dome', verb: 'Look', r: 2.4 },
       { id: 'scarconsole', dx: 4, dz: -12.4, label: 'His console', verb: 'Look', r: 1.6 },
@@ -128,7 +128,7 @@ export const ROWS = [
       { kind: 'armothy', dx: 14, dz: -14, face: S, ai: { watch: 8, bark: { r: 5, every: 16, lines: ['(It flexes. It has no mouth. It is very clear what it means.)'] } } },
     ],
     spots: [
-      { id: 'ring', dx: 0, dz: -2, label: 'The ring', verb: 'Step in', r: 2 },
+      { id: 'ring', dx: 0, dz: -2, label: 'The ring', verb: 'Step in', r: 2, until: 'blooddome' },
       { id: 'bsummer', dx: -10, dz: -4, label: 'Summer', verb: 'Talk', r: 1.6 },
       { id: 'armothy', dx: 14, dz: -11.4, label: 'Armothy', verb: 'Look', r: 1.8 },
       { id: 'bloodsign', dx: 0, dz: 14, label: 'A sign', verb: 'Read', r: 1.8 },

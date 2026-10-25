@@ -253,6 +253,10 @@ export const EVIL_CHECKS = {
     async (page) => {
       await openOnCard(page, '#/c-137', 12);
       await dial(page, 'blooddome');
+      // (his bolts loaded as he gets there: the fight's first F isn't lost)
+      await page.waitForFunction(() => window.__C137__.shotsReady(), null, { timeout: 10000, polling: 100 }).catch(() => {
+        throw new Error('the bolts weren’t loaded on arrival at a duel’s place');
+      });
       const ring = spotAt('blooddome', 'ring');
       await warpUse(page, 'blooddome', 'ring', ...ring);
       await fightOn(page, 'blooddome');
@@ -266,7 +270,15 @@ export const EVIL_CHECKS = {
       await dial(page, 'blooddome');
       check((await him(page, 'blooddome')).hp == null, 'Hemorrhage wasn’t whole again after a flight');
       await warpUse(page, 'blooddome', 'ring', ...ring);
+      // (his line first, then the thing done, once that's read)
+      const said = page.locator('.rm-toast', { hasText: huntOf('blooddome').duel.won.text }).waitFor({ timeout: 60000 });
       await win(page, 'blooddome');
+      await said.catch(() => {
+        throw new Error('Hemorrhage’s won line wasn’t said');
+      });
+      await page.locator('.rm-toast[data-kind="done"]').waitFor({ timeout: 20000 }).catch(() => {
+        throw new Error('the done toast didn’t follow Hemorrhage’s won line');
+      });
       await achieved(page, 'blooddome', 'A man now wasn’t earned');
       await at(page, 12, 1, 'after the win');
       // (his place hunts no more: the ring's own act, then a revisit)
@@ -276,8 +288,10 @@ export const EVIL_CHECKS = {
       await page.locator('.rm-fight').waitFor({ state: 'detached', timeout: 6000 });
       await home(page, 'blooddome');
       await dial(page, 'blooddome');
-      await warpUse(page, 'blooddome', 'ring', ...ring);
+      // (the ring's gone with the fight: nothing to step into)
+      await warp(page, 'blooddome', ...ring);
       await later(page, 1);
+      check((await page.evaluate(() => window.__C137__.sim.near?.id ?? null)) !== 'ring', 'the ring still offered a fight after the win');
       check((await hunting(page, 'blooddome')).length === 0 && (await him(page, 'blooddome')).dead, 'Hemorrhage came back from the dead');
       await noFight(page, 'at the ring after the win,');
     },
@@ -298,6 +312,9 @@ export const EVIL_CHECKS = {
         for (const id of ['pod1', 'pod2', 'pod3']) await warpUse(page, 'evilrick', id, ...spotAt('evilrick', id, Math.PI));
       };
       await pods();
+      // (mid-fight the marker points nowhere: the fight comes to him)
+      await fightOn(page, 'evilrick');
+      check((await page.evaluate(() => window.__C137__.sim.goal)) == null, 'mid-fight the marker points somewhere');
       await lose(page, 'evilrick');
       await goalIs(page, 'pod1', 'after a loss');
       await warp(page, 'evilrick', ...spotAt('evilrick', 'pod1', Math.PI));
