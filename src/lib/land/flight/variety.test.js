@@ -2,7 +2,7 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { CHARACTERS, TERRAIN } from './characters';
 import { FAMILIES, SLOT_JITTER, colourDistance, dominantOf, paletteOf, varietyOf } from './variety';
-import { SEEDED_EXPANSE, TYPE_LOOK } from './planetTables';
+import { SEEDED_EXPANSE, TYPE_LOOK, waterColourOf } from './planetTables';
 import { randomSystems } from './fixtures/generated';
 
 const templateDominant = (type) => dominantOf(TYPE_LOOK[type].palette);
@@ -67,6 +67,15 @@ describe('varietyOf', () => {
     for (const sys of ['e:1,0:1', 'e:1,0:2']) for (let j = 3; j < 7; j++) for (const type of ['rock', 'ice', 'desert', 'forest', 'lava', 'ocean', 'gas']) {
       const v = varietyOf({ id: `${sys}:${j}`, name: 'X', type, seed: String(1000n + BigInt(j)), system: { faction: null, traffic: 0, hazard: null } });
       for (const [id, t] of seededIn(sys)) expect(colourDistance(v.dominant, templateDominant(t)), `${sys}:${j} ${type} · ${id}`).toBeGreaterThanOrEqual(1);
+    }
+  });
+
+  it('keeps a generated planet clear of a seeded ocean’s sea, as the flight draws it', () => {
+    // a generated ocean is seen by its water, so a seeded one is held by its sea too
+    const sea = dominantOf(null, { colour: waterColourOf(TYPE_LOOK.ocean.water, TYPE_LOOK.ocean.palette.accent) });
+    for (const sys of ['e:1,0:1', 'e:1,0:2']) for (let j = 3; j < 7; j++) for (const type of Object.keys(FAMILIES)) {
+      const v = varietyOf({ id: `${sys}:${j}`, type, seed: String(3000n + BigInt(j)) });
+      expect(colourDistance(drawn(v), sea), `${sys}:${j} ${type}`).toBeGreaterThanOrEqual(1);
     }
   });
 

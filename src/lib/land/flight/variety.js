@@ -15,15 +15,16 @@
 // the system's id), read at the planet's index (a moon's by its index round
 // its planet). A system that holds seeded planets (the roster's, which keep
 // their templates' looks) gives them its first indices and its other planets
-// only the slots clear of their colours. The palette is drawn round the slot
-// nudged by up to SLOT_JITTER, and the dominant colour is read back from the
-// palette (dominantOf): the mix of `low` and `high`, or an ocean planet's
-// water. '#rrggbb' moves that mix off the aim, by degrees of hue on a pale or
-// a dark planet; where it would carry it out past the jitter, the palette is
-// drawn round the slot's own colour, which every family's saturation keeps
-// inside. So the colours a visitor sees hold the guarantee: two siblings at
-// least 1 apart by colourDistance, and a generated planet at least that far
-// from a seeded sibling's template.
+// only the slots clear of their colours (a seeded ocean's sand and its sea
+// both). The palette is drawn round the slot nudged by up to SLOT_JITTER,
+// and the dominant colour is read back from the palette (dominantOf): the
+// mix of `low` and `high`, or an ocean planet's water. '#rrggbb' moves that
+// mix off the aim, by degrees of hue on a pale or a dark planet; where it
+// would carry it out past the jitter, the palette is drawn round the slot's
+// own colour, which every family's saturation keeps inside. So the colours a
+// visitor sees hold the guarantee: two siblings at least 1 apart by
+// colourDistance, and a generated planet at least that far from a seeded
+// sibling's template.
 //
 // Pure: plain data in and out, so it crosses to a worker.
 //
@@ -55,7 +56,7 @@ import { TERRAIN } from './characters.js';
 import { canonicalId } from './expanse.js';
 import { fold } from './fnl.js';
 import { hash64 } from './hash.js';
-import { SEEDED_EXPANSE, TYPE_LOOK, familyOf } from './planetTables.js';
+import { SEEDED_EXPANSE, TYPE_LOOK, familyOf, waterColourOf } from './planetTables.js';
 
 // ── colours ──
 
@@ -132,12 +133,14 @@ export const FAMILIES = Object.freeze({
 export const SLOT_JITTER = Object.freeze({ hue: 2, light: 0.01 });
 const JITTER = Math.hypot(SLOT_JITTER.hue / 15, SLOT_JITTER.light / 0.08);
 
-// each seeded type's template colour, as the roster's seeded planets wear it.
-// (A seeded ocean's is its sand's for now: its sea's colour is the flight's
-// water.js's until that moves into planetTables. Then a seeded ocean is to be
-// held by its water, dominantOf(palette, { colour }), as a generated one is;
-// three ocean slots sit within 1 + 2·jitter of that sea.)
-const TEMPLATE = Object.fromEntries(Object.entries(TYPE_LOOK).map(([type, look]) => [type, dominantOf(look.palette)]));
+// each seeded type's template colours, as the roster's seeded planets wear
+// them: the mix of its ground, and a seeded ocean's sea as well, in the
+// colour the flight draws the sheet in (waterColourOf), as a generated
+// ocean is seen by its water. (Four ocean slots sit within 1 + 2·jitter of
+// that sea, so a seeded system's generated oceans take the other four.)
+const TEMPLATE = Object.fromEntries(
+  Object.entries(TYPE_LOOK).map(([type, look]) => [type, [dominantOf(look.palette), ...(type === 'ocean' ? [dominantOf(null, { colour: waterColourOf(look.water, look.palette.accent) })] : [])]]),
+);
 const systemOf = (id) => id.slice(0, Math.max(0, id.lastIndexOf(':')));
 
 const shuffled = (n, r) => {
@@ -156,7 +159,7 @@ const shuffled = (n, r) => {
 function slotOf(fam, key, index) {
   const { slots } = FAMILIES[fam];
   const seededHere = SEEDED_EXPANSE.filter(([id]) => systemOf(id) === key);
-  const clear = slots.filter((s) => seededHere.every(([, type]) => colourDistance(s, TEMPLATE[type]) >= 1 + 2 * JITTER));
+  const clear = slots.filter((s) => seededHere.every(([, type]) => TEMPLATE[type].every((c) => colourDistance(s, c) >= 1 + 2 * JITTER)));
   const list = clear.length ? clear : slots;
   const perm = shuffled(list.length, seeded(fold(hash64('slots', key))));
   return list[perm[Math.max(0, index - seededHere.length) % list.length]];
