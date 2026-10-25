@@ -16,6 +16,7 @@
 //                 other pilots
 //   reach         seismic charges picked: the lead pip on at 6 out, off at 12
 //   tap           a tap on a character in front of a planet locks on to it, by hand
+//   threats       a character on you, 20 behind: its threat arrow, and no lock
 //
 // Each finding is a line, `ok   …` or `FAIL …`; the exit code is how many
 // FAILs. A Chromium: CHROMIUM (CHROME for the galaxy's), else the
@@ -35,7 +36,7 @@ const flag = (k, d = null) => {
 const url = String(flag('url', 'http://127.0.0.1:5188')).replace(/\/$/, '');
 const line = Number(flag('line', 0));
 const shotDir = flag('shot') ? resolve(flag('shot')) : null;
-const SCENARIOS = ['order', 'crash', 'galaxy-bolt', 'unique-pilots', 'reach', 'tap'];
+const SCENARIOS = ['order', 'crash', 'galaxy-bolt', 'unique-pilots', 'reach', 'tap', 'threats'];
 if (!SCENARIOS.includes(scenario)) throw new Error(`usage: flight-probe.mjs <${SCENARIOS.join('|')}> [--line 0|1|2] [--expect clear] [--shot dir] [--url …]`);
 
 let failed = 0;
@@ -239,6 +240,35 @@ async function tap(page) {
   say(got.lock === at.id && got.manual, `a tap on Vader in front of the planet locks on to him, by hand (${got.lock ?? 'no lock'}${got.manual ? ', by hand' : ': not by hand, the planet took the tap'})`);
 }
 
+// Darth Vader held 20 behind at the far rim, the hunters gone: his threat
+// arrow (he's on you), and no lock (he's behind)
+async function threats(page) {
+  const got = await page.evaluate(async () => {
+    const d = window.__universeDebug;
+    const u = window.__universe();
+    await u.pose('far-rim');
+    d.hunters?.clear();
+    d.meetNpc('vader');
+    const n = d.npcs;
+    if (!n.update.stopped) {
+      const real = n.update;
+      const still = (dt, ...rest) => real.call(n, 0, ...rest);
+      still.stopped = true;
+      n.update = still;
+    }
+    const t = n.targets.at(-1);
+    if (!t) return null;
+    const s = d.state.ship;
+    Object.assign(t.at, { x: s.x + Math.sin(s.heading) * 20, y: s.y, z: s.z + Math.cos(s.heading) * 20 });
+    d.state.lock = null;
+    await u.frames(3);
+    return { arrows: document.querySelectorAll('.universe-threat[data-on]').length, lock: u.lock ?? null };
+  });
+  await shoot(page, 'threats');
+  if (!got) return say(false, 'a character behind (no character)');
+  say(got.arrows === 1 && got.lock === null, `Vader 20 behind: one threat arrow, no lock (${got.arrows} arrow${got.arrows === 1 ? '' : 's'}, ${got.lock === null ? 'no lock' : `locked on ${got.lock}`})`);
+}
+
 const galaxy = scenario === 'galaxy-bolt' || scenario === 'unique-pilots';
 const { browser, page, errors } = galaxy ? await openGalaxy() : await openUniverse();
 try {
@@ -248,6 +278,7 @@ try {
   if (scenario === 'unique-pilots') await uniquePilots(page);
   if (scenario === 'reach') await reach(page);
   if (scenario === 'tap') await tap(page);
+  if (scenario === 'threats') await threats(page);
 } catch (e) {
   say(false, `${scenario}: ${String(e.message ?? e).split('\n')[0]}`);
 }

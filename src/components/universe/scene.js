@@ -2829,7 +2829,7 @@ export async function create(canvas, ctx) {
   // the two agree: nav.js)
   const frame = createFrame();
   const flightHud = createFlightHud({ distText: shortDistance });
-  const hudIn = { on: false, gun: false, foot: false, ship: null, hot: false, hit: false, kill: false, static: false, rect: null, tanHalf: 1, h: 1, lock: null, lockName: '', lockText: null, bracket: undefined, lead: null, life: AIM.life, threatsFrom: [null, null], mates: null, to: null, goal: null, navMin: 34, navMax: 260 };
+  const hudIn = { on: false, gun: false, foot: false, ship: null, hot: false, hit: false, kill: false, static: false, rect: null, tanHalf: 1, h: 1, lock: null, lockName: '', lockText: null, bracket: undefined, lead: null, life: AIM.life, cands: [], mates: null, to: null, goal: null, navMin: 34, navMax: 260 };
   const toIn = { id: null, name: '', at: null }; // (the pilot flown to, among the mates' arrows)
   const navIn = { at: null, reach: 0, way: false, name: '', text: null }; // (the way to go in flight)
   const footBack = { at: [0, 0, 0], reach: 0, way: false, name: '', text: '', dist: 0 }; // (on foot, the way back to the ship)
@@ -2903,9 +2903,8 @@ export async function create(canvas, ctx) {
     v.bracket = undefined;
     v.lead = state.lead;
     v.life = sightIn.life;
-    // (the ones coming at you that you can't see: the hunters, and a pilot whose shots have been landing on you)
-    v.threatsFrom[0] = hunters?.targets ?? null;
-    v.threatsFrom[1] = pilots.count ? pilots.targets : null;
+    // (the ones coming at you that you can't see: any target on you, hunter, the front's, a character, a pilot whose shots have been landing)
+    v.cands = sight.cands;
     // (your allies off the screen, and the pilot you're flying to, ally or not)
     v.mates = pilots.count ? pilots.mates : null;
     v.to = null;

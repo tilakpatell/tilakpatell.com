@@ -20,7 +20,7 @@
 //          lock ({ id, at, size, hp?, hpMax?, dist? } | null), lockName, lockText (null: the
 //          distance in the map's unit), bracket ({ k, min, max }: BRACKET by default),
 //          lead ({ x, y, z, t } | null), life (a shot's seconds: the pip's reach),
-//          threatsFrom ([list | null]: each list's candidates with a threat), mates (list | null),
+//          cands (this frame's targets: each with a threat gets an arrow), mates (list | null),
 //          to ({ id, name, at } | null: the pilot flown to), goal ({ at: [x, y, z], reach, way,
 //          name, text, dist? } | null), navMin (34 by default), navMax }
 //   distText(d)  a distance as the HUD writes it: a tenth under ten, whole past it
@@ -142,7 +142,7 @@ export function fillFlight(frame, v, project) {
     frame.mates.n = 0;
     from = s;
     if (v.on && s) {
-      for (const l of v.threatsFrom ?? NONE) if (l) for (const c of l) if (c.threat && c.id !== t?.id) list.push(c);
+      for (const c of v.cands ?? NONE) if (c.threat && c.id !== t?.id) list.push(c);
       arrows(frame.threats, THREATS, v.rect, project, false);
       if (v.mates) {
         for (const c of v.mates) list.push(c);

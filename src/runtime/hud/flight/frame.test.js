@@ -4,7 +4,7 @@ import { createFrame, fillFlight } from './frame.js';
 const project = (x, y, z, out) => ((out.x = x), (out.y = y), (out.z = z), out);
 const P = (x, y, z) => ({ x, y, z });
 const SHIP = { x: 720, y: 450, z: 0, heading: Math.PI / 2, pitch: 0 };
-const view = (o = {}) => ({ on: true, gun: true, foot: false, ship: SHIP, hot: false, hit: false, kill: false, static: false, rect: { x: 0, y: 0, w: 1440, h: 900 }, tanHalf: 0.5, h: 900, lock: null, lockName: '', lockText: null, lead: null, life: 0.85, threatsFrom: [], mates: null, to: null, goal: null, navMax: 260, ...o });
+const view = (o = {}) => ({ on: true, gun: true, foot: false, ship: SHIP, hot: false, hit: false, kill: false, static: false, rect: { x: 0, y: 0, w: 1440, h: 900 }, tanHalf: 0.5, h: 900, lock: null, lockName: '', lockText: null, lead: null, life: 0.85, cands: [], mates: null, to: null, goal: null, navMax: 260, ...o });
 const fill = (o) => fillFlight(createFrame(), view(o), project);
 const r6 = (n) => n.toFixed(6);
 const LOCK = { id: 'h1', at: P(700, 400, 50), size: 2, hp: 2, hpMax: 3 };
@@ -26,7 +26,7 @@ describe('the flight HUD’s record', () => {
     expect(fill({ lead: LEAD }).lead.on).toBe(false);
   });
   it('arrows the threats off the screen, nearest first, at most 3, leaving out the lock and the calm', () => {
-    const f = fill({ lock: { ...F, size: 1 }, threatsFrom: [[A, B, C, E], null, [D, F, G]] });
+    const f = fill({ lock: { ...F, size: 1 }, cands: [A, B, C, E, D, F, G] });
     expect([f.threats.n, f.threats.at.map(({ x, y, z }) => [x, y, z])]).toEqual([3, [[720, 450, -50], [-300, 450, 10], [2000, 450, 10]]]);
   });
   it('arrows the mates off the screen, the pilot flown to among them, at most 4', () => {
@@ -44,15 +44,24 @@ describe('the flight HUD’s record', () => {
     expect([f.nav.r, f.nav.dist, f.nav.text]).toEqual([40, 35.2, '35 m']);
   });
   it('shows nothing while on is false', () => {
-    const f = fill({ on: false, lock: LOCK, lead: LEAD, goal: GOAL, threatsFrom: [[A]], mates: MATES });
+    const f = fill({ on: false, lock: LOCK, lead: LEAD, goal: GOAL, cands: [A], mates: MATES });
     expect([f.reticle.on, f.lock.on, f.lead.on, f.threats.n, f.mates.n, f.nav.on]).toEqual([false, false, false, 0, 0, false]);
   });
   it('fills the same records every frame, and hands the arrows’ back after a walk', () => {
     const f = createFrame();
     const parts = () => [f.reticle, f.lock, f.lead, f.nav, f.threats, f.mates, f.threats.at[0], f.mates.at[3]];
     const kept = parts();
-    for (let i = 0; i < 100; i++) fillFlight(f, view({ lock: LOCK, lead: LEAD, goal: GOAL, threatsFrom: [[A, B, D]], mates: MATES }), project);
+    for (let i = 0; i < 100; i++) fillFlight(f, view({ lock: LOCK, lead: LEAD, goal: GOAL, cands: [A, B, D], mates: MATES }), project);
     [FOOT, {}].forEach((o) => fillFlight(f, view(o), project));
     parts().forEach((r, i) => expect(r).toBe(kept[i]));
+  });
+});
+
+describe('the threat arrows', () => {
+  it('gives every candidate with a threat an arrow: a front fighter behind with threat 1', () => {
+    const front = { id: 'f1', at: P(720, 450, -20), kind: 'tie', threat: 1 };
+    const f = fill({ cands: [{ id: 'r1', at: P(720, 450, -10) }, { id: 's1', at: P(720, 450, -15), threat: 0 }, front] });
+    expect(f.threats.n).toBe(1);
+    expect(f.threats.at[0]).toEqual({ x: 720, y: 450, z: -20 });
   });
 });

@@ -2078,7 +2078,7 @@ export async function create(canvas, ctx) {
   // hudIn each frame, flightHud.js writing it where the page put its markup)
   const frame = createFrame();
   const flightHud = createFlightHud({ distText });
-  const hudIn = { on: false, gun: false, foot: false, ship: null, hot: false, hit: false, kill: false, static: false, rect: null, tanHalf: 1, h: 1, lock: null, lockName: '', lockText: null, bracket: undefined, lead: null, life: AIM.life, threatsFrom: [null, null, null], mates: null, to: null, goal: null, navMin: 34, navMax: 260 };
+  const hudIn = { on: false, gun: false, foot: false, ship: null, hot: false, hit: false, kill: false, static: false, rect: null, tanHalf: 1, h: 1, lock: null, lockName: '', lockText: null, bracket: undefined, lead: null, life: AIM.life, cands: [], mates: null, to: null, goal: null, navMin: 34, navMax: 260 };
   const toIn = { id: null, name: '', at: null }; // (the pilot flown to, among the mates' arrows)
   // The HUD's goal for the plotted course: its name, light-years and bearing, worked out when the course or the system changes (the key),
   // its `at` moved with the ship each frame. "· J" only where there's a key to press.
@@ -2117,10 +2117,8 @@ export async function create(canvas, ctx) {
     v.bracket = undefined;
     v.lead = state.lead;
     v.life = sightIn.life;
-    // (the ones coming at you that you can't see: hunters, the war's, and a pilot whose shots have been landing on you)
-    v.threatsFrom[0] = hunters?.targets ?? null;
-    v.threatsFrom[1] = war?.targets ?? null;
-    v.threatsFrom[2] = pilots.count ? pilots.targets : null;
+    // (the ones coming at you that you can't see: any target on you, hunters, the war's, a pilot whose shots have been landing)
+    v.cands = sight.cands;
     // (your allies off the screen, and the pilot you're flying to, ally or not)
     v.mates = pilots.count ? pilots.mates : null;
     v.to = null;
