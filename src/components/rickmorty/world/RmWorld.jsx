@@ -6,7 +6,7 @@ import { useAchievements } from '../../Achievements';
 import { WorldHost, useWorld } from '../../../runtime';
 import { audioContext } from '../../../lib/audio';
 import { use3D } from '../../../lib/gpu';
-import { local, useInView, useMediaQuery } from '../../../lib/hooks';
+import { local, useInView, useMediaQuery, usePageVisible } from '../../../lib/hooks';
 import GpuGate from '../../games/GpuGate';
 import { readPad, typing } from '../../games/pad';
 import { keyDown, keyUp } from '../../middleearth/towns/keys';
@@ -353,13 +353,13 @@ export default function RmWorld({ start = null, onLeave = null, frozen = false, 
   const [open, setOpen] = useState(null);
   const openRef = useRef(null);
   const [gl, setGl] = useState('loading'); // loading | on | failed | lost
-  const { toast, say, due, reading } = useRmToast();
+  const { toast, say, due, pending: waiting, drop: dropWaiting, reading } = useRmToast();
   const pending = useRef([]); // tasks done while something's open over the page, told on the way out
   const api = useRef(null);
 
   // the adventure told what's happened (../adventure/), and what it says
   // back: an episode's closing line, and the next one's card as that line
-  // goes up (a new visitor's first, once C-137's world is on). While
+  // goes up (a new visitor's first, once C-137's world is live). While
   // something's open over the page what it says waits, and is said as that
   // closes.
   const { feed, intro, takeUnsaid } = useAdventure();
@@ -370,7 +370,7 @@ export default function RmWorld({ start = null, onLeave = null, frozen = false, 
     setCard(n);
     if (n === EPISODES.length) sound('showMe'); // (the story's end card: the show's chord)
   }, []);
-  const show = useCallback((out) => showNews(newsOf(out), say, openCard), [say, openCard]);
+  const show = useCallback((out) => showNews(newsOf(out), say, openCard, out), [say, openCard]);
   const tell = useCallback(
     (e) => {
       const out = feed(e);
@@ -380,12 +380,12 @@ export default function RmWorld({ start = null, onLeave = null, frozen = false, 
     },
     [feed, show],
   );
-  useEffect(() => {
-    if (gl !== 'on' || planet) return;
-    const n = intro();
+  // (World's, once the world's live and seen: C-137's card for the visit, and on every page what one left unsaid)
+  const onLive = useCallback(() => {
+    const n = planet ? null : intro();
     if (n != null) setCard(n);
-    show(takeUnsaid()); // (what the Citadel left before it could say it)
-  }, [gl, planet, intro, show, takeUnsaid]);
+    show(takeUnsaid()); // (what the Citadel, or a planet's page, left before it could say it)
+  }, [planet, intro, show, takeUnsaid]);
   const tellDone = useCallback((ids) => {
     const names = ids.map((id) => TASKS.find((t) => t.id === id)?.name).filter(Boolean);
     const p = progress(doneRef.current);
@@ -464,7 +464,7 @@ export default function RmWorld({ start = null, onLeave = null, frozen = false, 
   return (
     <section className="rm-world" aria-labelledby="rm-world-title" data-mode={world ? '3d' : 'cards'}>
       {world ? (
-        <World api={api} done={done} open={open} openPlace={openPlace} complete={complete} unlock={unlock} gl={gl} setGl={setGl} toast={toast} say={say} due={due} reading={reading} planet={planet} onLeave={onLeave} earn={earn} earned={earned} frozen={frozen} onHangar={onHangar} cruiser={cruiser} loadout={loadout} skillFx={skillFx} powerPicks={powerPicks} tell={tell} card={card} closeCard={closeCard} />
+        <World api={api} done={done} open={open} openPlace={openPlace} complete={complete} unlock={unlock} gl={gl} setGl={setGl} toast={toast} say={say} due={due} waiting={waiting} dropWaiting={dropWaiting} reading={reading} planet={planet} onLeave={onLeave} earn={earn} earned={earned} frozen={frozen} onHangar={onHangar} cruiser={cruiser} loadout={loadout} skillFx={skillFx} powerPicks={powerPicks} tell={tell} card={card} closeCard={closeCard} onLive={onLive} />
       ) : (
         <Cards done={done} openPlace={openPlace} three={three} gl={gl} toast={toast} retry={() => setGl('loading')} planet={planet} />
       )}
@@ -479,7 +479,7 @@ export default function RmWorld({ start = null, onLeave = null, frozen = false, 
 // hence the reach)
 const ROOM = { bound: boundOf(AREAS), motion: true };
 
-function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast, say, due, reading, planet, onLeave, earn, earned, frozen, onHangar, cruiser, loadout, skillFx, powerPicks, tell, card, closeCard }) {
+function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast, say, due, waiting, dropWaiting, reading, planet, onLeave, earn, earned, frozen, onHangar, cruiser, loadout, skillFx, powerPicks, tell, card, closeCard, onLive }) {
   // (the cruiser's numbers, read by the frame loop)
   const fitted = useMemo(() => cruiserOf(cruiser), [cruiser]);
   const fittedRef = useRef(fitted);
@@ -547,7 +547,7 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
   progRef.current = prog;
   // the story's objective first, and its task for the map's marker (C-137's; a planet keeps its own)
   const story = useAdventure();
-  const { dialOpen, lockNote } = story;
+  const { dialOpen, lockNote, keepUnsaid } = story;
   // (the same list while the story stands still, so the dial keeps its place in it)
   const dialList = useMemo(() => dialItems(DIAL, story.state), [story.state]);
   const doneRef = useRef(done);
@@ -888,6 +888,9 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
         const out = made ? complete(e.task) : null;
         if (made) unlock(e.task);
         const leave = () => {
+          // (the story's line still waiting behind another goes with him, for the next page to say)
+          keepUnsaid(waiting()?.out ?? []);
+          dropWaiting();
           setFade('portal');
           sound('portalOpen');
           later(onLeave, FADE_MS + (made ? 900 : 0));
@@ -967,7 +970,7 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
         setFade(null);
       }, climb ? CLIMB_MS : FADE_MS);
     },
-    [api, complete, unlock, later, stopRickall, planet, onLeave, tell, dialOpen, navigate, due, loadShots],
+    [api, complete, unlock, later, stopRickall, planet, onLeave, tell, dialOpen, navigate, due, waiting, dropWaiting, keepUnsaid, loadShots],
   );
   const boardRef = useRef(null);
   const board = useCallback(() => {
@@ -1375,6 +1378,11 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
   // open over it (closing the effect lets go of every key held)
   const live = gl === 'on' && inView && !open && !frozen;
   const hasHangar = Boolean(onHangar);
+  // (and seen, not in a hidden tab: the visit's card and what a page left unsaid, as the Citadel waits for its own)
+  const showing = usePageVisible();
+  useEffect(() => {
+    if (live && showing) onLive();
+  }, [live, showing, onLive]);
   useEffect(() => {
     if (!live) return undefined;
     const s = sim.current;

@@ -71,13 +71,15 @@ export function caughtNote(caught) {
 // onShow })` (C-137's toast slot: after the line that's up has been read),
 // and its card through `open(n)` as that line goes up, not before it (a card
 // with no line, at once). What it caught up on goes first, and the line once
-// that's been read.
-export function showNews(news, say, open) {
+// that's been read. Given the `out`, each toast carries it (`t.out`): a page
+// that leaves while one still waits keeps that for the next to say.
+export function showNews(news, say, open, out = null) {
   const card = news.card != null ? () => open(news.card) : undefined;
   if (!news.say.length) return card?.();
-  const lines = () => news.say.forEach((t, i) => say(t, { after: true, onShow: i === news.say.length - 1 ? card : undefined }));
+  const put = (t, o) => say(out ? { ...t, out } : t, o);
+  const lines = () => news.say.forEach((t, i) => put(t, { after: true, onShow: i === news.say.length - 1 ? card : undefined }));
   const note = caughtNote(news.caught ?? []);
-  if (note) say({ kind: 'say', who: null, text: note }, { after: true, onShow: lines });
+  if (note) put({ kind: 'say', who: null, text: note }, { after: true, onShow: lines });
   else lines();
 }
 

@@ -195,6 +195,30 @@ describe('what the HUD shows of the story', () => {
     expect(shown.at(-1)[0]).toBe(EPISODES[12].outro[0][1]);
   });
 
+  it('puts the out on each toast its news puts, for a page that leaves while one still waits', () => {
+    // (a slot that puts each up at once)
+    const put = [];
+    const say = (t, o) => {
+      put.push(t);
+      o?.onShow?.();
+    };
+    const out = [{ type: 'done', episode: 10 }, { type: 'episode', episode: 11 }];
+    showNews(newsOf(out), say, () => {}, out);
+    expect(put).toEqual([{ kind: 'say', who: EPISODES[10].outro[0][0], text: EPISODES[10].outro[0][1], out }]);
+    // (a note of what it caught up on, and the line after it)
+    put.length = 0;
+    const caught = [1, 2].flatMap((e) => [{ type: 'done', episode: e }, { type: 'episode', episode: e + 1 }]);
+    showNews(newsOf(caught), say, () => {}, caught);
+    expect(put).toEqual([
+      { kind: 'say', who: null, text: caughtNote([1]), out: caught },
+      { kind: 'say', who: EPISODES[2].outro[0][0], text: EPISODES[2].outro[0][1], out: caught },
+    ]);
+    // (no out given: the toasts as they were)
+    put.length = 0;
+    showNews(newsOf(out), say, () => {});
+    expect(put).toEqual([{ kind: 'say', who: EPISODES[10].outro[0][0], text: EPISODES[10].outro[0][1] }]);
+  });
+
   it('marks a hotspot to use, never a talk or a walk in', () => {
     const next = { id: 'cable' };
     const episodes = [{ id: 'x', title: 'X', intro: [], outro: [], unlocks: [], steps: [{ type: 'use', id: 'dial', text: 'Put it back.' }, { type: 'talk', who: 'rick', text: 'Talk.' }, { type: 'enter', area: 'garage', text: 'Go in.' }] }];

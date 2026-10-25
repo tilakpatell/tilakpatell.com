@@ -1,5 +1,6 @@
 // The browser check's first scenarios (../rm-story-check.mjs): episode 1
-// from the street to Customs and back, the dial's lock, the ways home, Free
+// from the street to Customs and back (and its card kept for a visitor who
+// scrolled away while it loaded), the dial's lock, the ways home, Free
 // roam, a returner, the Citadel, a planet landed on, and the toys ticking
 // when they're played.
 /* global window, document, StorageEvent */
@@ -161,6 +162,23 @@ export const BASICS = {
     for (const id of ['annex', 'meeseeksgolf']) check(await page.evaluate((id) => window.__RMSTORY__.dialOpen(id), id), `${id} isn’t open after episode 1`);
     for (const id of ['agency', 'vat']) check(!(await page.evaluate((id) => window.__RMSTORY__.dialOpen(id), id)), `${id} is open after episode 1`);
     await reads(page, ARCADE.steps[0].text);
+  },
+  // a new visitor who scrolls down to Portal panic while the street loads:
+  // episode 1's card waits till the world's seen, not shown out of view and
+  // gone by the time they're back
+  async 'episode-1-away'(page) {
+    await page.goto(`${BASE}/#/c-137`, { waitUntil: 'domcontentloaded' });
+    await page.locator('#portal-panic').waitFor({ timeout: 60000 });
+    await page.evaluate(() => document.getElementById('portal-panic').scrollIntoView({ block: 'start' }));
+    check(!(await page.evaluate(() => Boolean(window.__C137__?.goto))), 'the world was on before the page could scroll away from it');
+    await page.waitForFunction(() => window.__C137__?.goto, null, { timeout: 600000, polling: 1000 });
+    // (longer than the card's own seven seconds)
+    await page.waitForTimeout(8000);
+    check((await page.locator('.rm-episode').count()) === 0, 'episode 1’s card showed with the world out of view');
+    await page.evaluate(() => document.querySelector('.rm-world')?.scrollIntoView({ block: 'start' }));
+    await cardFor(page, 0);
+    await built(page);
+    await reads(page, WIPED.steps[0].text);
   },
   // a new visitor's dial: Customs open, the rest dimmed with the episode that
   // opens them; a locked pick says so and changes nothing; a dial left set to

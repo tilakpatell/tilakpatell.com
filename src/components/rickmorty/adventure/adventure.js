@@ -44,11 +44,16 @@ export function createAdventure({ saves, read, episodes, ready }) {
   const returner = k.tasks.length > 0 || k.citadel.length > 0;
   const made = !valid(stored, book);
   const opened = made ? fresh({ returner }) : stored; // (as the visit found it, before the catch-up)
-  let state = feed(opened, { type: 'none' }, { ...book, known: k }).state;
+  const caught = feed(opened, { type: 'none' }, { ...book, known: k });
+  let state = caught.state;
   saves.set(STORY_KEY, state);
+  const loaded = state.episode; // (the episode the visit loaded at, caught up)
 
   let asked = false;
-  let unsaid = []; // (what a page left before it could say it: the next to show the story says it)
+  // what a page left before it could say it: the next to show the story says
+  // it. A stored story save's catch-up starts it (an episode it ends, its
+  // closing line); a new save's, or one on Free roam, says nothing.
+  let unsaid = !made && !opened.freeRoam ? [...caught.out] : [];
   const listeners = new Set();
   const tell = () => {
     for (const fn of listeners) fn();
@@ -70,21 +75,25 @@ export function createAdventure({ saves, read, episodes, ready }) {
     started: made && !returner,
     // the episode whose card opens this visit, the first time it's asked: the
     // one the story's at, when it's built and wasn't begun as the visit opened
-    // (the catch-up may have done a step of it since); on Free roam there's none
+    // (the catch-up may have done a step of it since), and still the one the
+    // visit loaded at (one reached since, in another tab or by a page's own
+    // news, had its card there); on Free roam there's none
     intro() {
       if (asked) return null;
       asked = true;
       const begun = (s) => s.step > 0 || s.got.length > 0;
-      return !state.freeRoam && current(state, book) && (!begun(state) || !begun(opened)) ? state.episode : null;
+      return !state.freeRoam && state.episode === loaded && current(state, book) && (!begun(state) || !begun(opened)) ? state.episode : null;
     },
     get: () => state,
     // what the story said back that a page left before it could say (the
-    // Citadel left mid-toast), kept for the next page to say, and taken once
+    // Citadel left mid-toast), kept for the next page to say, and taken once:
+    // a card for an episode the story has moved past since goes, its closing
+    // line stays
     keepUnsaid(out) {
       unsaid = [...unsaid, ...out];
     },
     takeUnsaid() {
-      const out = unsaid;
+      const out = unsaid.filter((o) => o.type !== 'episode' || o.episode >= state.episode);
       unsaid = [];
       return out;
     },
