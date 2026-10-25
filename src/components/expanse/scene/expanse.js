@@ -47,7 +47,8 @@
 //   workers: the page's pool (runtime/workers.js's, rt.workers), its pools
 //   defined here (gen/job.js's POOLS); none, and the sector the ship is in
 //   is made in process the frame it's asked, and nothing round it (Node's
-//   way: making the 3 × 3 × 3 on the main thread is what the pool is for)
+//   way: making the 3 × 3 × 3 on the main thread is what the pool is for),
+//   the last KEPT so made kept for the next
 //   far: the far layer to draw in (universe/farStars.js's, in the parent's
 //   space, made with farRoom's room and updated before this each frame);
 //   none, and it makes its own under the parent the first frame it's asked to
@@ -103,6 +104,18 @@ const SECTOR_MOST = 330; // the most stars a sector holds (gen: 24 of its own, 3
 const HALF = SECTOR / 2;
 const NONE = [];
 const NO_POPS = Object.freeze({ count: 0, px: 0 });
+const KEPT = 8; // sectors made in process, kept (read-only: shared by every Expanse made so)
+
+// a sector job's answer made in process, the last few kept
+const kept = new Map();
+function inProcess(msg) {
+  let answer = kept.get(msg.key);
+  if (answer) kept.delete(msg.key);
+  else answer = sectorJob(msg).answer;
+  kept.set(msg.key, answer);
+  if (kept.size > KEPT) kept.delete(kept.keys().next().value);
+  return answer;
+}
 
 // the sectors in ring r (98, 218), and the rings a budget draws
 const shellOf = (r) => (2 * r + 3) ** 3 - (2 * r + 1) ** 3;
@@ -193,7 +206,7 @@ export function createExpanse(parent, { universe = UNIVERSE, workers = null, far
     const take = (answer) => {
       if (asked.get(msg.key) === job) landed.push([msg.key, job, answer]);
     };
-    if (!pool) return take(sectorJob(msg).answer);
+    if (!pool) return take(inProcess(msg));
     let p;
     try {
       p = pool.request(name, msg);
@@ -248,12 +261,19 @@ export function createExpanse(parent, { universe = UNIVERSE, workers = null, far
     const drawn = make(sector, { tier, reduced });
     root.add(drawn.group);
     const e = { id: sector.id, cell: job.cell, sector, stars: answer.stars, drawn, slot: -1, shown: false };
+    const L = layerOf();
+    const swap = Boolean(was?.shown);
+    // (made again with no slot free: into the one it had)
+    if (was && was.slot >= 0 && !L.free.length) {
+      e.slot = was.slot;
+      was.slot = -1;
+      was.shown = false;
+    }
     held.set(job.key, e);
     byId.set(e.id, sector);
     relist();
-    const L = layerOf();
     if (putSlot(e) >= 0) {
-      if (was?.shown) {
+      if (swap) {
         // (made again: swapped for what it was, in one frame)
         L.far.showSlots([e.slot]);
         e.shown = true;

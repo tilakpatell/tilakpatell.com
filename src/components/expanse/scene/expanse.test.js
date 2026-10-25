@@ -410,6 +410,26 @@ describe('the Expanse, everywhere', () => {
     ex.dispose();
   });
 
+  it('makes a sector again into the slot it had when none is free, shown again in the same update', async () => {
+    // (a far layer of 27 slots and the ring's: every one taken by the core's 3 × 3 × 3)
+    const { pool, far, ex } = expanseOf({ budget: { ...MID, nearSlots: 27 } });
+    const ringsAt = (f) => [...f.shown].filter((i) => i >= 27);
+    expect(await until(ex, [0, 0, 0], () => pool.held.size === 0 && ex.loaded().length === 27 && ringsAt(far).length === 1)).toBe(true);
+    const slotOf = () => [...far.shown].find((i) => far.slots.get(i).key === 'E:1,0');
+    const was = slotOf();
+    pool.late = true;
+    ex.reload('E:1,0');
+    await frame(ex, [0, 0, 0]);
+    const sets = far.sets.length;
+    pool.answer(pool.next());
+    await settle();
+    await frame(ex, [0, 0, 0]);
+    expect(slotOf()).toBe(was);
+    expect(far.sets.slice(sets).map(([i]) => i)).toEqual([was]);
+    expect([...far.shown].filter((i) => i < 27)).toHaveLength(27);
+    ex.dispose();
+  });
+
   it('finds the system nearest a point among what it holds', async () => {
     const { pool, far, ex } = expanseOf();
     expect(await until(ex, [0, 0, 0], whole(pool, far, [0, 0, 0]))).toBe(true);
@@ -442,7 +462,12 @@ describe('the Expanse, everywhere', () => {
     expect(ex.loaded()).toEqual(['E:1,0']);
     expect(nearShown(far)).toEqual(['E:1,0']);
     expect(ringsShown(far)).toEqual([]);
+    // (and keeps the last few it made, so another made there takes the same)
+    const again = createExpanse(new THREE.Group(), { far: fakeFar(), tier: 'mid' });
+    again.update({ ship: { x: SECTOR, y: 0, z: 0, heading: 0 }, camera: cam3, t: 0, dt: 1 / 60 });
+    expect(again.sectors().get('E:1,0')).toBe(ex.sectors().get('E:1,0'));
     ex.dispose();
+    again.dispose();
   });
 });
 
