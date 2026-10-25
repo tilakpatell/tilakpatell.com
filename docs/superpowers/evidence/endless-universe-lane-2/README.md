@@ -316,3 +316,85 @@ Inside the rim the Expanse sleeps, and asleep nothing of this task runs: `create
 | `far-rim` | 42, 38,232 | 42, 38,220 |
 
 They sit inside low's own spread from run to run (above: `main` against `main` moves by more), and `far-rim`, where the rim's line is, is the same picture as `main`'s but for the engine's glow (5,058 of 921,600 pixels over 8). Task 17 shoots all ten with the clock stopped, at every tier, once it's wired.
+
+### Task 17: solids, light and wiring
+
+`18952195` on `eu/lane-2`. The Expanse lends `stars()`, `solids()`, `setStep(step, floor)` and `pops()`; the scene makes its far layer first, with room for the budget's (`farRoom`), and hands it to the Expanse with `prepare` (the scene's `warm()`, now with `alive()` through `precompile`) and `now`; lighting takes `expanse.stars()`, the step and the autopilot take `expanse.solids()`, and `paceTo` passes the step on. The stations' orbits moved out to `universe/stationOrbits.js`, and the scene takes the Expanse through a new face, `expanse/shared/space.js`. `scene.js` is 6,374 lines before and 6,361 after. Health: boundary breaks 481 to 479 (the scene's two reaches into the Expanse go through the face), GLSL sites 614 before and after.
+
+A crash into a generated body came back by the home sun: the way back out looked for the body in `SOLIDS` alone and fell back to the sun. It now looks in the frame's solids too, where the body is now.
+
+New tests, none replaced: `expanse.test.js` 8 to 15 (the light, the solids, the body builder, the step before and after it wakes, pops, the far layer's room), `ship.test.js` one (a ship flown at a generated planet where its orbit has it, the Expanse round it and the planet going round, bumps it at 2 and crashes at 40, the planet's `E:` id on each, never inside it), `stationOrbits.test.js` one, `renderer.test.js` one (`precompile` stops when `alive()` says no), and each face's names.
+
+#### The gate
+
+Run in the lane's worktree at `18952195`, on 2026-10-24 and 25, with other lanes' browser checks running beside it (a load average of 8 to 10):
+
+| command | outcome |
+| --- | --- |
+| `npm run lint` | clean |
+| `npm test` | 1,952 files passed, 7 failed: six 5 s timeouts and one timing ratio, none in a file this task touches (`imports.test.js`, `art-mix.test.mjs`, `caribbean/tide/rules.test.js`, `rickmorty/world/rules.test.js`, `mapRaster.test.js`, `galaxy/surface/missions/blast.test.js`, `rivendell/layout.test.js`). Run again alone, four pass; `imports.test.js`, `blast.test.js` and `art-mix.test.mjs` take 4 to 7 s under that load and pass with a longer timeout. `art-mix` times out on `main`'s logged run too. `src/components/universe`, `src/components/expanse` and `src/lib/three` alone: 453 files, 4,524 tests passed. |
+| `npm run build` | built (it refreshes `public/github.json`; put back, not committed) |
+| `node scripts/health.mjs --check --skip build` | within budget; the flight island 151 files, 39 marked rows, 62 references |
+| `node scripts/autopilot-check.mjs --only smoke --routes /universe,/fly/hoth --quality mid` | everything green: the nine core pages, `/universe` (102 s) and `/fly/hoth` |
+
+#### The baseline poses, at mid
+
+At mid only, not the plan's three tiers: the coordinator measures every tier once, every lane together, at the end of wave 1. `universe-check.mjs --quality mid --frames 3` (the clock running), against `main`'s at `cc5e2eaf` (`/home/user/wt/main/lab/universe/mid.json`):
+
+| pose | `main`: calls, triangles | lane: calls, triangles |
+| --- | --- | --- |
+| `overview` | 99, 489,042 | 99, 489,042 |
+| `falcon-sun` | 82, 474,020 | 82, 474,020 |
+| `middleearth-limb` | 39, 37,732 | 39, 37,732 |
+| `rickmorty` | 40, 38,858 | 40, 38,858 |
+| `gaming` | 43, 45,466 | 43, 45,466 |
+| `caribbean` | 43, 87,492 | 43, 87,492 |
+| `middleearth` | 39, 37,732 | 39, 37,732 |
+| `breakingbad` | 64, 31,930 | 64, 31,930 |
+| `office` | 41, 23,236 | 41, 23,236 |
+| `belt` | 46, 421,298 | 46, 421,298 |
+| `maw` | 43, 74,250 | 43, 74,250 |
+| `landing-middleearth` | 116, 126,980 | 71, 23,252 |
+| `station` | 69, 459,214 | 69, 459,214 |
+| `far-rim` | 42, 40,598 | 42, 40,602 |
+
+The landing comes down wherever Middle-earth has turned to (the hand-off notes say why), and `far-rim`'s 4 triangles are the run's: with the clock stopped it is 42 and 40,598, as `main`'s. The six poses `main` has stills of at mid, shot with the clock stopped (the PR 2.3 gate's way), 1280 × 720, against those stills; pixels over 8 (of 255), out of 921,600:
+
+| pose | over 8 (largest) | calls, triangles |
+| --- | --: | --- |
+| `overview` | 0 (5) | 99, 488,962 |
+| `falcon-sun` | 2 (49) * | 81, 473,940 |
+| `belt` | 1,618 (116) † | 46, 421,298 |
+| `station` | 0 (5) | 69, 459,214 |
+| `far-rim` | 0 (5) | 42, 40,598 |
+| `middleearth-limb` | 28,039 (air) | 39, 37,732 |
+
+- \* The one speck at (1085, 657), as at Task 14.
+- (air): PR 2.3's mend, the planet's air drawn round its limb (above).
+- † The Graveyard's name, in one box at the frame's left edge (0, 332 to 127, 371): `main` has it, the lane hasn't. It isn't this task's: the lane at `ebfb2307`, before it, is the same to within 1 pixel (1,627), and at `099a843e`, Task 14's last, it matches `main` (0 over 8). Nor is it a drawing change: `deepspace.js` eases a name by the scene's clock, and with the clock stopped every frame after the first moves it by nothing, so the still keeps whether the name was wanted on the page's first frame (whether the ship was flying yet, its nose and the far layer's `kOf` before its first update), which goes by how long the page took to load. With the clock running the name isn't drawn at this pose on either branch. Calls and triangles are equal.
+
+#### Past the rim: drawn for real
+
+`lab/t17/check.mjs` (not committed): the dev server in headless Chromium (software GL, 960 × 540, mid), a pose held so the ship's flying, then the ship and a held view moved past the rim. `travel('e:1,0:0:0')` isn't a goal yet (lane 3 makes the generated places somewhere to go), so the check puts the ship there itself. With the view held the orbits are held at t = 0; unheld they run on the wall clock.
+
+| check | result |
+| --- | --- |
+| the gas giant `E:1,0:0:0` (radius 87) built and shown | in 36 s, its three moons each exactly where `moonAt` has them (0 off) |
+| the ringed rock `E:1,0:1:2` (radius 40) | its ring at the planet (0 off), radii 58.88 to 75.98 as its `ringBand`, faded in whole |
+| in from 40,000 to 3 radii of the ringed rock, 547 frames (120 a frame to 3,000, then 15), `expanse.pops()` asked every frame | no pop at all (count 0, 0 px) |
+| the Expanse's own time a frame on that flight | 1.03 ms on average, 22.6 ms at most, 17 frames over 8 ms |
+| unheld, the gas giant a minute apart (67.7 s) | it moved 43.8 units (0.65 a second, as its orbit has it), its mesh and its solid where `orbitAt` has them each time (0.003 and 0.005 off) |
+| a crash forced into it (the ship 1 past its surface at 40, nose on its middle) | the crash plays under its id, the ship comes back 12 past the surface (93 from its middle when looked at, the planet having come on), facing away, and the page stays where it was (`#/universe`) |
+| page errors | none |
+
+The console's errors are the seven 403s of the dev server refusing files through the linked `node_modules` (the fonts, three's basis transcoder), and its warnings the frame guard's on the PMREM generator's shaders, made off-frame when the key light's star changes; `main` has the same eight on its held views. While the gas giant's system was made, the Expanse's own time was over 4 ms in 15 of 22 frames and 268 ms at most, in this software browser beside other lanes' checks: the first frame makes a sector as it wakes (156 ms), then a body is made whole each frame (5 to 101 ms), and the largest, the last, is most likely the system's readying (`warm` compiles its first slice of shaders in the frame it's called).
+
+Before and after, the same held views (t = 0), `main` on its own dev server:
+
+| view | `main`: calls, triangles | lane: calls, triangles |
+| --- | --- | --- |
+| 4 radii off the gas giant | 41, 76,902 | 35, 67,598 |
+| 3.2 radii off the ringed rock | 40, 25,606 | 32, 19,790 |
+| 30 radii off it, looking at its star | 37, 4,074 | 30, 5,550 |
+
+On `main` the gas giant has no moons and the rock no ring, and the giant is lit from the wrong side (sectors.js lit it in the map's axes); on the lane both have theirs, lit from their star. Fewer calls: the stars and wonders past the far plane are slots of the one far layer, not a `Points` a sector.
