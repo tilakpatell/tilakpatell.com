@@ -68,7 +68,7 @@ export const BASICS = {
   // to the garage, and a planet landed on from the map has a way home
   async ways(page) {
     await c137(page);
-    await page.evaluate((n) => window.__RMSTORY__.jump(n), READY); // (past the built episodes: every place open)
+    await page.evaluate((n) => window.__RMSTORY__.jump(n), READY); // (the story's end: every place open)
     check((await page.evaluate(() => window.__C137__.dial('citadel'))) === 'citadel', 'the dial wouldn’t take the Citadel');
     await throughPortal(page);
     await page.waitForFunction(() => window.location.hash.startsWith('#/c-137/citadel'), null, { timeout: 20000 }).catch(() => {

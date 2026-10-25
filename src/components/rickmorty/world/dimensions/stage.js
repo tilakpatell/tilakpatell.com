@@ -11,7 +11,7 @@
 // stage(kit, id, opts) → { R, d, A, cx, cz, P(dx, dz) (a spot in the world
 // from the place's middle), figure(kind, at), people(), done(light, update),
 // hunt(on), calm(), power({ glow }), freeze({ splash }), sequence({ lamps }), climb({ stairs }),
-// taken(), picked() } (and the NPC behaviour below: anyone
+// taken(), picked(), grant(game, done, state) } (and the NPC behaviour below: anyone
 // placed with `ai`; and a place run on power, below; whichever game a place
 // runs, its `meter` action is the HUD's readout of it: ../games/meter.js)
 
@@ -124,7 +124,8 @@ export function stage(kit, id, { ground, groundTile = 4, floor, floorTile = 2, w
   };
   // and a place's achievement handed over once while its task is done (done
   // before its game was built: the vat's, the cable studio's; or won over the
-  // page: Get Schwifty's), said as a win
+  // page: Get Schwifty's; or a duel's, won or done before: its hunter's
+  // `hunt.duel`), said as a win
   const granted = new Set();
   const grant = ({ task, unlock = null }, done, state) => {
     if (!done || !unlock || granted.has(task) || state.fading) return;
@@ -325,6 +326,7 @@ export function stage(kit, id, { ground, groundTile = 4, floor, floorTile = 2, w
   // a while from the frame the game's task is done (the show's, once it
   // closes), started afresh whenever the place calms ──
   const rh = d.rhythm;
+  const du = d.people.find((p) => p.ai?.hunt?.duel)?.ai.hunt.duel ?? null; // (a duel's: its `unlock` handed over once its task's done)
   const gameTask = (d.power ?? d.deal ?? d.freeze ?? d.find ?? d.sequence ?? d.climb ?? rh)?.task ?? null;
   let cheer = newCheer();
 
@@ -427,6 +429,7 @@ export function stage(kit, id, { ground, groundTile = 4, floor, floorTile = 2, w
         if (airing && state && cast) sequencing(dt, state);
         if (ascent && state && cast) climbing(t, dt, state);
         if (rh && state) grant(rh, (state.done ?? []).includes(rh.task), state);
+        if (du && state) grant(du, (state.done ?? []).includes(du.task), state);
         if (round && gameTask && state) {
           cheer = stepCheer(cheer, { done: (state.done ?? []).includes(gameTask), t });
           if (cheer.hop) round.actions.hop();
@@ -516,6 +519,6 @@ export function stage(kit, id, { ground, groundTile = 4, floor, floorTile = 2, w
   };
   // (`taken()`: what a deal's had off the shelves this run, for the builder to take away;
   // `picked()`: what a climb's had picked up this run, Bird World's crystals, for it to hide)
-  return { R, d, A, cx, cz, P, figure, people, done, hunt: N.hunt, npcs: N.npcs, calm, power: (o) => (glow = o.glow ?? null), freeze: (o) => (splash = o.splash ?? null), sequence: (o) => (lamps = o.lamps ?? null), climb: (o) => (stairs = o.stairs ?? null), taken: () => deal?.taken ?? [], picked: () => ascent?.picked ?? [] };
+  return { R, d, A, cx, cz, P, figure, people, done, hunt: N.hunt, npcs: N.npcs, calm, power: (o) => (glow = o.glow ?? null), freeze: (o) => (splash = o.splash ?? null), sequence: (o) => (lamps = o.lamps ?? null), climb: (o) => (stairs = o.stairs ?? null), taken: () => deal?.taken ?? [], picked: () => ascent?.picked ?? [], grant };
 
 }

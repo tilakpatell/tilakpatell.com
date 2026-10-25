@@ -98,6 +98,7 @@ export const FAIRY = EPISODES[8];
 export const CITADEL = EPISODES[9];
 export const SECTOR = EPISODES[10];
 export const SCORE = EPISODES[11];
+export const EVIL = EPISODES[12];
 // the checklist's next once the built episodes are over
 export const CABLE = 'Go into the Smith house and put interdimensional cable on the TV.';
 // (a label in the middle of a line, as a place's words have it)
@@ -227,6 +228,15 @@ export const home = async (page, id) => {
   await warpUse(page, id, `${id}-portal`, ...homeOf(id));
   await inArea(page, 'garage');
 };
+// a task done, and an achievement earned
+export const isDone = (page, id, what) =>
+  page.waitForFunction((id) => JSON.parse(localStorage.getItem('tp-c137-done') ?? '[]').includes(id), id, { timeout: 30000, polling: 100 }).catch(() => {
+    throw new Error(what);
+  });
+export const achieved = (page, id, what) =>
+  page.waitForFunction((id) => JSON.parse(localStorage.getItem('tp-achievements') ?? '[]').includes(id), id, { timeout: 30000, polling: 250 }).catch(() => {
+    throw new Error(what);
+  });
 // a task not done after a few seconds of the game's own time
 export const notDone = async (page, id, what) => {
   await later(page, 3.5);

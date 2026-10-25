@@ -1,6 +1,6 @@
 # The Rick and Morty adventure: the plan's index
 
-> **For agentic workers:** this is the index. Each phase has its own task-by-task plan, written when the phase starts (from the spec and what the phases before it landed), at `docs/superpowers/plans/2026-10-19-rm-adventure-p<N>-<slug>.md`. A phase's plan goes once its work is merged (P0's to P10's have; P11's is `2026-10-19-rm-adventure-p11-big-score.md`). REQUIRED SUB-SKILL for a phase plan: superpowers:subagent-driven-development or superpowers:executing-plans.
+> **For agentic workers:** this is the index. Each phase has its own task-by-task plan, written when the phase starts (from the spec and what the phases before it landed), at `docs/superpowers/plans/2026-10-19-rm-adventure-p<N>-<slug>.md`. A phase's plan goes once its work is merged (P0's to P11's have; P12's is `2026-10-19-rm-adventure-p12-evil-rick.md`). REQUIRED SUB-SKILL for a phase plan: superpowers:subagent-driven-development or superpowers:executing-plans.
 
 **Spec:** `docs/superpowers/specs/2026-10-19-rm-adventure-design.md`
 
@@ -35,7 +35,7 @@
 
 ## The gate before P13
 
-P13 starts only when the owner's currency work is on `main`. Its plan opens by reading what landed (`git log --oneline -- src/components/universe/economy.js src/components/universe/EconomyProvider.jsx` and any new wallet module) and writes `purse.js` against it. Until then, P1 to P12 go on; their kinds take `perks` with every value at zero (spec, section 5).
+P13 starts only when the owner's currency work is on `main`. Its plan opens by reading what landed (`git log --oneline -- src/components/universe/economy.js src/components/universe/EconomyProvider.jsx` and any new wallet module) and writes `purse.js` against it. Until then, P1 to P12 go on; their kinds take `perks` with every value at zero (spec, section 5). That log shows 57da9c70d (2026-10-23, Free roam's jobs on the galaxy's worlds: `jobDone` in `economy.js`'s `EARN`), which is the galaxy's, not the owner's currency.
 
 ## Not touched by any phase
 

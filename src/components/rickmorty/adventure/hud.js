@@ -56,11 +56,11 @@ export function newsOf(out, { episodes = EPISODES } = {}) {
 export const SAID_MS = 4000;
 export const leaveHold = (out) => (newsOf(out).say.length ? SAID_MS : 0);
 
-// What the map's marker points at: the story's task, or the game it's to
-// win, while its step waits on one (an `all`'s part on the planet Morty's on,
-// `here`, else its first still to do);
-// nothing when its step is something else; the checklist's next once the
-// built episodes are done. (RmWorld's GOAL says where each is.)
+// What the map's marker points at: the story's task, the game it's to win,
+// or the hotspot it's to use (Rick's bench), while its step waits on one (an
+// `all`'s part on the planet Morty's on, `here`, else its first still to do);
+// nothing when its step is something else (walking in somewhere); the
+// checklist's next once the built episodes are done. (RmWorld's GOAL says where each is.)
 export function markedTask(state, next, { here = null, ...opts } = {}) {
   const at = current(state, opts);
   if (!at) return next;
@@ -68,7 +68,7 @@ export function markedTask(state, next, { here = null, ...opts } = {}) {
   // (an `all`: the part on the planet he's on, else its first still to do)
   const left = partsOf(state, opts);
   const part = step.type === 'all' ? (left.find((s) => here && s.place === here) ?? left[0]) : step;
-  if (part?.type === 'task') return { id: part.id };
+  if (part?.type === 'task' || part?.type === 'use') return { id: part.id };
   return part?.type === 'win' ? { id: part.game } : null;
 }
 

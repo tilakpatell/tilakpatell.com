@@ -9,9 +9,10 @@ const stepsOf = (e) => e.steps.flatMap((s) => (s.type === 'all' ? [s, ...s.steps
 const allSteps = () => EPISODES.flatMap(stepsOf);
 
 describe('the adventure’s episodes', () => {
-  it('has thirteen episodes, the first twelve ready', () => {
+  it('has thirteen episodes, every one ready', () => {
     expect(EPISODES).toHaveLength(13);
-    expect(READY).toBe(12);
+    expect(READY).toBe(13);
+    expect(READY).toBe(EPISODES.length);
     expect(new Set(EPISODES.map((e) => e.id)).size).toBe(13);
   });
 

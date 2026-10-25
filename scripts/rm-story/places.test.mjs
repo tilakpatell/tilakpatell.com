@@ -25,6 +25,8 @@ const USED = {
   birdworld: ['bcrystal-path', 'bcrystal-trees', 'bcrystal-east', 'bcrystal-west', 'bcrystal-grass'],
   heistcon: ['heistbadge', 'heister-b1', 'heister-a1', 'heistplan', 'heistbooth', 'heisthire', 'heistskull', 'heistcars'],
   vindicators: ['saw'],
+  blooddome: ['ring'],
+  evilrick: ['pod1', 'pod2', 'pod3', 'evilmorty'],
 };
 
 describe('where the browser check stands Morty', () => {

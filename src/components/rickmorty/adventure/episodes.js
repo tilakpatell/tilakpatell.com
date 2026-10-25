@@ -16,9 +16,9 @@
 //
 // READY says how many episodes, from the first, are built: past the last
 // ready one the dial is open, so nobody waits on one that isn't there. Each
-// phase raises it by one. Pure: story.js plays these.
+// phase raised it by one, to all thirteen. Pure: story.js plays these.
 
-export const READY = 12;
+export const READY = 13;
 export const START = ['customs'];
 export const WINS = ['cabinet', 'chase'];
 export const STEP_TYPES = ['task', 'win', 'enter', 'talk', 'use', 'citadel', 'all'];

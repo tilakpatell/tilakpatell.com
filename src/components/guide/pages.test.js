@@ -58,7 +58,7 @@ describe('which guide a page gets', () => {
     expect(tip?.[1]).toMatch(/Stair Goblins/);
     expect(tip?.[1]).toMatch(/beanstalk/);
     expect(tip?.[1]).toMatch(/shivers/);
-    expect(C137.tips.slice(-5).map(([where]) => where)).toEqual(['Fantasy World', 'Bird World', 'Gear World', 'Pluto', 'Heist-Con']);
+    expect(C137.tips.slice(-7).map(([where]) => where)).toEqual(['Fantasy World', 'Bird World', 'Gear World', 'Pluto', 'Heist-Con', 'The Blood Dome', 'Evil Rick’s lair']);
     expect(C137.keys.flatMap((g) => g.rows).some(([k, what]) => /Space/.test(k) && /jump/i.test(what))).toBe(true);
   });
 
@@ -81,6 +81,13 @@ describe('which guide a page gets', () => {
     const tip = C137.tips.find(([where]) => where === 'Heist-Con')?.[1] ?? '';
     for (const words of [/badge/, /muscle and a cat burglar/, /Heistotron’s plan/, /order/, /wrong booth/, /watch your crew/, /back at the door/]) expect(tip).toMatch(words);
     expect(tip).not.toMatch(/!/);
+  });
+
+  it('tips episode 13’s fights on C-137’s page: the ring and the pods, facing him, and the Morty with the eyepatch after', () => {
+    const tip = (where) => C137.tips.find(([w]) => w === where)?.[1] ?? '';
+    for (const words of [/ring/, /the way Morty faces/, /Tab/, /Lock/, /back at the portal/]) expect(tip('The Blood Dome')).toMatch(words);
+    for (const words of [/three Mortys/, /pods/, /back at the door/, /plugged in again/, /eyepatch/]) expect(tip('Evil Rick’s lair')).toMatch(words);
+    for (const where of ['The Blood Dome', 'Evil Rick’s lair']) expect(tip(where), where).not.toMatch(/!|['"]|hearts|\d/);
   });
 
   it('tips a planet page’s games: each a meter, and a loss only back to the portal', () => {
