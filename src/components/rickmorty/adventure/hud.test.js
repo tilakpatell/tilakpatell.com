@@ -14,7 +14,7 @@ describe('what the HUD shows of the story', () => {
   });
 
   it('links the checklist’s closing line to the map, in C-137 only', () => {
-    const rest = { next: null, count: 50, total: 54, objective: 'Everything here’s done. The rest are on the planets in the Rick and Morty sector of the universe map.' };
+    const rest = { next: null, count: 50, total: 54, objective: 'Everything here’s done. The rest are on the planets in the Rick and Morty sector of the universe map (Bird World, Gear World, Pluto and Planet Squanch are on the portal gun too).' };
     expect(objectiveLine(null, rest)).toEqual({ text: rest.objective, to: '/universe' });
     const all = { next: null, count: 54, total: 54, objective: 'Everything’s done. Wubba lubba dub dub.' };
     expect(objectiveLine(null, all).to).toBe('/universe');

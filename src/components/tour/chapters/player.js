@@ -75,7 +75,7 @@ export const WALKED = [
   }),
   walk('c137', '/c-137', 'Dimension C-137', {
     title: 'The portal gun',
-    text: 'The Smiths’ street as Morty, with Rick’s cruiser outside. The dial has thirty-six destinations, each with a micro-quest, and the games are Portal Panic, Total Rickall, the Meeseeks box and Roy.',
+    text: 'The Smiths’ street as Morty, with Rick’s cruiser outside. A story in thirteen episodes opens the portal gun’s thirty-two places, each with something to do, and the games are Portal panic, Total Rickall, Plumbus Smash, Get Schwifty, the sewer run and Roy.',
   }),
   walk('albuquerque', '/albuquerque', 'Albuquerque', {
     at: 'hud',

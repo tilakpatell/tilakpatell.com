@@ -21,7 +21,7 @@ export const ABOUT = {
   '/scranton': 'Dunder Mifflin in 3D, as Jim: put the stapler in Jell-O, carry Kevin’s chili, and get through the week to a Dundie.',
   '/cybertron': 'Iacon at war, to walk and drive as Optimus: transform any time, take the missions, and join the Autobots or the Decepticons.',
   '/albuquerque': 'Drive round town in Walt’s Aztek. Places open up as Walt’s career grows, each with its own game.',
-  '/c-137': 'The Smiths’ street in 3D, as Morty: dial the portal gun to twenty-six places from the show, or take Rick’s cruiser up.',
+  '/c-137': 'The Smiths’ street in 3D, as Morty: dial the portal gun to thirty-two places from the show, or take Rick’s cruiser up.',
   '/c-137/citadel': 'The Citadel of Ricks, as Rick C-137. Round up the day care’s Mortys, stack Simple Rick’s wafers, face the Council, then vote on election day.',
   '/dot-matrix': 'A Game Boy island: find the eight cartridges hidden round it, each a project of mine, and play the giant Game Boy.',
   '/dot-matrix/64': 'A Super Mario 64 tribute: Peach’s castle and Bob-omb Ridge, rebuilt in the browser. Triple jump, throw King Bob-omb, find Power Stars.',

@@ -7,6 +7,9 @@ import { ABOUT } from './abouts';
 import { C137 } from './c137';
 import { BRIEFED } from '../tour/brief';
 import { BRIEFS } from '../tour/briefs';
+import { WALKED } from '../tour/chapters/player';
+import { DIAL } from '../rickmorty/world/dimensions/destinations';
+import { EPISODES } from '../rickmorty/adventure/episodes';
 
 describe('which guide a page gets', () => {
   it('finds a page by its own path', () => {
@@ -213,5 +216,34 @@ describe('the line on what a world is (abouts.js)', () => {
 
   it('opens each world’s basics', () => {
     for (const key of BRIEFED) expect(BRIEFS[key].find((s) => s.id === 'hello').text.startsWith(ABOUT[key]), key).toBe(true);
+  });
+});
+
+// a count as the copy writes it, one to ninety-nine in words
+const ONES = ['', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen'];
+const TENS = ['', '', 'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety'];
+const spell = (n) => (n < 20 ? ONES[n] : TENS[Math.floor(n / 10)] + (n % 10 ? `-${ONES[n % 10]}` : ''));
+
+describe('what C-137’s copy says of the portal gun and the story', () => {
+  it('counts the dial’s places as the dial has them, everywhere it’s told', () => {
+    const told = {
+      about: ABOUT['/c-137'],
+      tip: C137.tips.find(([where]) => where === 'The portal gun')?.[1] ?? '',
+      tour: WALKED.find((w) => w.id === 'walk-c137').stops[0].text,
+      brief: BRIEFS['/c-137'].find((s) => s.id === 'goal').text,
+    };
+    for (const [where, text] of Object.entries(told)) {
+      expect(text, where).toContain(`${spell(DIAL.length)} places`);
+      expect(text, where).not.toMatch(/thirty-six|twenty-six places/);
+    }
+  });
+
+  it('tells the story on C-137’s page, before the places’ own tips: the episodes, the Story tab, Free roam', () => {
+    const at = C137.tips.findIndex(([where]) => where === 'The story');
+    expect(at).toBeGreaterThan(-1);
+    expect(at).toBeLessThan(C137.tips.findIndex(([where]) => where === 'Fantasy World'));
+    expect(C137.tips[at][1]).toContain(`${spell(EPISODES.length)} episodes`);
+    expect(C137.tips[at][1]).toMatch(/Story tab/);
+    expect(C137.tips[at][1]).toMatch(/Free roam/);
   });
 });
