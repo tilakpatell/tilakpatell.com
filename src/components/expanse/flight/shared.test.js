@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { SHARED_KEYS, createSharedWorld } from './shared';
 import { TERRAIN_VERSION } from '../../../lib/land/flight/planetSpec';
 import { BOLT, TURRET } from './turretRules';
@@ -70,10 +70,11 @@ const hoth = { id: 'hoth', pois: [{ id: 'echo-base', name: 'Echo Base', at: [120
 const low = (extra = {}) => ({ x: 0, y: 20, z: 0, pitch: 0, yaw: 0, roll: 0, speed: 60, ...extra });
 const snap = (pressed = [], held = []) => ({ pressed: new Set(pressed), action: (name) => held.includes(name) });
 
-function world({ durable = true, loader = fakeLoader(), online = fakeOnline(), groundAt = () => 0, spec = hoth } = {}) {
+function world({ durable = true, loader = fakeLoader(), online = fakeOnline(), groundAt = () => 0, spec = hoth, signIn = async () => 'me' } = {}) {
   const draw = fakeDraw();
   const told = [];
   let respawned = 0;
+  let loaders = 0;
   const shared = createSharedWorld({
     parent: null,
     spec,
@@ -82,14 +83,14 @@ function world({ durable = true, loader = fakeLoader(), online = fakeOnline(), g
     tell: (type, data) => told.push([type, data]),
     respawn: () => respawned++,
     durable: durable ? {} : null,
-    makeLoader: () => loader,
+    makeLoader: () => (loaders++, loader),
     makeOnline: () => online,
-    signIn: async () => 'me',
+    signIn,
     ...draw,
   });
   shared.join('Alpha');
   const toasts = () => told.filter(([t]) => t === 'toast').map(([, d]) => d.text);
-  return { shared, loader, online, draw, told, toasts, respawns: () => respawned };
+  return { shared, loader, online, draw, told, toasts, respawns: () => respawned, loaders: () => loaders };
 }
 
 describe('the shared world’s keys', () => {
@@ -153,6 +154,62 @@ describe('building', () => {
     expect(w.loader.removed).toEqual([ID]);
     expect(w.online.sent).toContainEqual(['gone', ID]);
     expect(w.draw.structures.has(ID)).toBe(false);
+  });
+});
+
+// every planet and moon past the fifty (lib/land/flight/generated.js): its
+// ground is the generator's alone, so nothing is kept on it or read for it
+describe('a world nothing may be built on', () => {
+  const generated = { id: 'e:3,-2:0:1', pois: [], buildable: false };
+
+  it('says so, and places nothing, kept or not', async () => {
+    for (const durable of [true, false]) {
+      const w = world({ spec: generated, durable });
+      await flush();
+      w.shared.step(0.016, low(), snap(['KeyB']));
+      await flush();
+      expect(w.loader.placed).toHaveLength(0);
+      expect(w.toasts()).toEqual(['Nothing can be built on this world.']);
+      expect(w.draw.structures.size).toBe(0);
+    }
+  });
+
+  it('says so on a cloud deck too', async () => {
+    const w = world({ spec: { ...generated, id: 'e:3,-2:5:4', soft: true } });
+    await flush();
+    w.shared.step(0.016, low(), snap(['KeyB']));
+    await flush();
+    expect(w.toasts()).toEqual(['Nothing can be built on this world.']);
+  });
+
+  it('never reaches the durable world: no loader, no sign-in, nothing held', async () => {
+    const signIn = vi.fn(async () => 'me');
+    const w = world({ spec: generated, signIn });
+    await flush();
+    w.shared.step(0.016, low(), snap());
+    expect(w.loaders()).toBe(0);
+    expect(signIn).not.toHaveBeenCalled();
+    expect(w.loader.updates).toBe(0);
+    expect(w.shared.prompt(low())).toMatchObject({ build: false, unbuild: false, kept: false });
+    expect(w.shared.built()).toEqual([]);
+  });
+
+  it('has nothing for X to take down', async () => {
+    const w = world({ spec: generated });
+    await flush();
+    w.shared.step(0.016, low(), snap(['KeyB']));
+    await flush();
+    w.shared.step(0.016, low(), snap(['KeyX']));
+    await flush();
+    expect(w.loader.removed).toEqual([]);
+    expect(w.toasts().at(-1)).toMatch(/^None of yours within/);
+  });
+
+  it('keeps the room: shots still go out', async () => {
+    const w = world({ spec: generated });
+    await flush();
+    w.shared.step(0.016, low(), snap([], ['fire']));
+    expect(w.online.sent.some(([t]) => t === 'shot')).toBe(true);
   });
 });
 
