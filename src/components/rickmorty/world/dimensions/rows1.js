@@ -2,6 +2,12 @@
 
 import { E, N, S, W, place } from './place';
 import { BEANSTALK } from './beanstalk';
+import { CLAY_TOWERS } from './claytowers';
+
+// (Bird World's crystals up on the clay towers' tops: ./claytowers.js)
+const TOP = CLAY_TOWERS.spots;
+// (a label in the middle of a line: Gear World's cogs)
+const low = (l) => l[0].toLowerCase() + l.slice(1);
 
 export const ROWS = [
   place(0, {
@@ -166,24 +172,38 @@ export const ROWS = [
       { id: 'unity', dx: 10, dz: -3, label: 'Unity', verb: 'Talk' },
       { id: 'door', dx: 1.4, dz: -11.4, label: 'Birdperson’s door', verb: 'Knock' },
       { id: 'crystals', dx: -12, dz: 4, label: 'The crystals', verb: 'Look', r: 2 },
+      // the crystals to pick up, in the order the map points at them (the climb, below)
+      { id: 'bcrystal-path', dx: 6, dz: 9, label: 'A crystal by the path', verb: 'Pick up', until: 'birdworld' },
+      { id: 'bcrystal-trees', dx: 24, dz: 14, label: 'A crystal by the trees', verb: 'Pick up', until: 'birdworld' },
+      { id: 'bcrystal-east', ...TOP['bcrystal-east'], label: 'The crystal on the east tower', verb: 'Pick up', r: 1, until: 'birdworld' },
+      { id: 'bcrystal-west', ...TOP['bcrystal-west'], label: 'The crystal on the west tower', verb: 'Pick up', r: 1, until: 'birdworld' },
+      { id: 'bcrystal-grass', dx: -24, dz: 8, label: 'A crystal in the long grass', verb: 'Pick up', until: 'birdworld' },
     ],
     solids: [
       { id: 'house', dx: 0, dz: -16, r: 4 },
-      { id: 'tower-a', dx: -22, dz: -15, r: 4 },
-      { id: 'tower-b', dx: 20, dz: -17, r: 4.5 },
+      // the clay towers: their drums, tops and trunks (./claytowers.js)
+      ...CLAY_TOWERS.solids,
       { id: 'tree-a', dx: -16, dz: 10, r: 1.2 },
       { id: 'tree-b', dx: 18, dz: 6, r: 1.2 },
       { id: 'crystals', dx: -12, dz: 6, r: 1.2 },
     ],
-    tasks: [{ id: 'birdworld', name: 'Visit Birdperson at home', hint: 'Land on Bird World in the Rick and Morty sector, and knock at Birdperson’s door.' }],
+    tasks: [{ id: 'birdworld', name: 'Pick up Bird World’s crystals', hint: 'Land on Bird World in the Rick and Morty sector, and pick up the crystals round Birdperson’s house: three in the grass, and one up each clay tower, where the clay crumbles.' }],
     say: {
       bbirdperson: { who: 'Birdperson', text: 'Morty. In my culture, this is the time of greeting. Welcome to my home.' },
       phoenixperson: { who: 'Phoenixperson', text: 'Birdperson is gone. There is only Phoenixperson now.' },
       unity: { who: 'Unity', text: 'Rick isn’t here? Good. I came to see Birdperson. We all get a little lonely, Morty.' },
       door: { who: null, text: 'Birdperson’s house. He doesn’t lock it. Nobody on Bird World does.' },
       crystals: { who: null, text: 'The crystals hum when you walk past them. It’s nice.' },
+      'bcrystal-path': { who: null, text: 'It hums in your hand and goes quiet in your pocket.' },
+      'bcrystal-trees': { who: null, text: 'A crystal the size of your fist, buzzing like a phone on silent.' },
+      'bcrystal-east': { who: null, text: 'The highest crystal on Bird World, still warm from the clay.' },
+      'bcrystal-west': { who: null, text: 'Grown right out of the clay up here, and it comes away clean.' },
+      'bcrystal-grass': { who: null, text: 'It sings one note as you lift it, and the grass leans after it.' },
     },
-    done: { door: 'birdworld' },
+    // the crystals picked up, every one, up the clay where it crumbles: the climb (../games/climb.js)
+    climb: { task: 'birdworld', top: null, foot: null, spot: null, picks: ['bcrystal-path', 'bcrystal-trees', 'bcrystal-east', 'bcrystal-west', 'bcrystal-grass'], stairs: CLAY_TOWERS.stairs, who: null, lost: 'The clay crumbled under you: a drum that cracks is about to go.', fell: 'A long way down, but the grass is soft.', words: { still: 'The clay’s holding: up you go', shiver: 'It’s cracking: off it before it crumbles', bite: 'It’s crumbling: wait till it holds', up: (m) => `${m} m up the clay`, found: (n, of) => `${n} of ${of} crystals found` }, meter: { title: 'Bird World’s crystals', label: 'Crystals', icon: 'gem' }, unlock: null },
+    goal: 'bcrystal-path',
+    // (the achievement stays on the knock)
     unlock: { door: 'birdworld' },
     kinds: ['birdperson', 'phoenixperson', 'unity', 'birdperson-house'],
   }),
@@ -370,8 +390,9 @@ export const ROWS = [
       shopclock: { who: null, text: 'A clock that gains an hour whenever you’re happy and loses two when you’re not.' },
       shopmirror: { who: null, text: 'A mirror that shows you a little better looking and a lot lonelier.' },
     },
-    // (the game: five free things, a curse on all but one, dealt afresh each run: ../games/deal.js)
-    deal: { task: 'needful', items: ['typewriter', 'aftershave', 'cream', 'shopclock', 'shopmirror'], bad: 4, need: 1, looks: 3, who: 'needful', lost: 'Cursed, I’m afraid: back to the door with you, and choose again.' },
+    // (the game: five free things, a curse on all but one, dealt afresh each run: ../games/deal.js;
+    // every thing's line tells of a cost, so the clean one's look says to take it whatever its line says)
+    deal: { task: 'needful', items: ['typewriter', 'aftershave', 'cream', 'shopclock', 'shopmirror'], bad: 4, need: 1, looks: 3, who: 'needful', lost: 'Cursed, I’m afraid: back to the door with you, and choose again.', take: 'Take', words: { good: 'No curse on that one, whatever it says: once more to take it', bad: 'That one’s cursed: leave it be', blind: 'No looks left: once more to chance it', taken: (n, need) => `Taken ${n} of ${need}` } },
     goal: 'needful',
     unlock: { needful: 'needful' },
     kinds: ['needful'],
@@ -439,6 +460,7 @@ export const ROWS = [
       tells: { ours: 'He offers you an apple', jerryreal: 'He looks round for Beth', jerrytv: 'He turns back to his programme', jerrygown: 'He takes his own pulse', jerrytux: 'He straightens his bow tie', jerrytrack: 'He offers you a pear', jerryrobe: 'He ties his robe tighter' },
       s: 45,
       cost: 15,
+      take: 'Take him',
       who: 'receptionist',
       lost: 'Pick-up’s closed: back to the door, and find the right one this time.',
       unlock: 'jerryboree',
@@ -509,6 +531,11 @@ export const ROWS = [
       { id: 'flippynips', dx: 0, dz: -12, label: 'King Flippy Nips', verb: 'Talk' },
       { id: 'podium', dx: 0, dz: -7.6, label: 'The podium', verb: 'Speak' },
       { id: 'scroopy', dx: 11, dz: -2, label: 'Scroopy Noopers', verb: 'Talk' },
+      // the claims on the palace's banners, west to east (the deal, below)
+      { id: 'claim-growing', dx: -5.4, dz: -13.2, label: 'Pluto is growing', verb: 'Weigh up', r: 1.2 },
+      { id: 'claim-moons', dx: -2.2, dz: -13.2, label: 'Pluto has two moons', verb: 'Weigh up', r: 1.2 },
+      { id: 'claim-mines', dx: 2.2, dz: -13.2, label: 'Pluto has no mines', verb: 'Weigh up', r: 1.2 },
+      { id: 'claim-planet', dx: 5.4, dz: -13.2, label: 'Pluto is a planet', verb: 'Weigh up', r: 1.2 },
     ],
     solids: [
       { id: 'palace', dx: 0, dz: -19, w: 14, d: 8 },
@@ -518,13 +545,22 @@ export const ROWS = [
       { id: 'house-b', dx: -22, dz: 7, r: 3 },
       { id: 'house-c', dx: 21, dz: 8, r: 3 },
     ],
-    tasks: [{ id: 'pluto', name: 'Tell Pluto it’s a planet', hint: 'Land on Pluto in the Rick and Morty sector, and step up to the king’s podium.' }],
+    tasks: [{ id: 'pluto', name: 'Tell the king what’s true', hint: 'Land on Pluto in the Rick and Morty sector, and tell the king only the claims on his palace that are true: weigh up two at most, and Scroopy calls out a lie.' }],
     say: {
       flippynips: { who: 'King Flippy Nips', text: 'Pluto is a planet! The scientists say so. The scientists who work for me say so.' },
       podium: { who: null, text: 'You step up to the podium. “Pluto is a planet.” They cheer for a long, long time.' },
       scroopy: { who: 'Scroopy Noopers', text: 'Pluto’s shrinking, kid. They’re mining the core. Nobody wants to hear it.' },
+      'claim-growing': { who: null, text: 'Scroopy’s sign across the plain says otherwise, in red.' },
+      'claim-moons': { who: null, text: 'Two moons hang low over the palace, and the king has them counted every night.' },
+      'claim-mines': { who: null, text: 'Out past the plain the mine wheels are turning, all night long.' },
+      'claim-planet': { who: null, text: 'The king’s favourite, and the crowd mouths along before you’ve said it.' },
     },
-    done: { podium: 'pluto' },
+    // the claims weighed up (two checks) and told the king (../games/deal.js):
+    // the two true ones told is the task, a lie told is Scroopy's to call out
+    deal: { task: 'pluto', items: ['claim-growing', 'claim-moons', 'claim-mines', 'claim-planet'], bad: ['claim-growing', 'claim-mines'], need: 2, looks: 2, who: 'scroopy', lost: 'That’s a lie, kid, and the whole plain heard it: back to the portal with you.', take: 'Tell the king', words: { good: 'True: once more to tell the king', bad: 'Not true: leave it out', blind: 'No checks left: once more to chance it', taken: (n, need) => `Told the king ${n} of ${need}` }, meter: { title: 'The king’s ear', label: 'Checks', icon: 'crown' } },
+    // (the map's own point, once the game has nothing left to mark: the king, never a claim)
+    goal: 'flippynips',
+    // (the achievement stays on the podium)
     unlock: { podium: 'pluto' },
     kinds: ['flippynips', 'scroopy', 'plutonian-a', 'plutonian-b'],
   }),
@@ -536,7 +572,12 @@ export const ROWS = [
     deep: 50,
     wide: 70,
     sky: { top: 0x6a4a2a, mid: 0xc98a4a, low: 0xf2d39a, sun: 0xfff0c8, clouds: 1, moons: 0 },
-    people: [{ id: 'gearhead', dx: -7, dz: -7.2, face: S }],
+    people: [
+      { id: 'gearhead', dx: -7, dz: -7.2, face: S },
+      // the gear police, on their beats till the city turns (the sequence's `hunt`)
+      { id: 'gpolice-a', who: 'gromflomite', dx: -12, dz: 1, face: E, ai: { watch: 8, wander: [[-12, 1], [-5, -1], [-12, 4]], speed: 0.9, pause: 3, hunt: { speed: 2.6, catchR: 1.2, until: 'gearworld' } } },
+      { id: 'gpolice-b', who: 'gromflomite', dx: 12, dz: 0, face: W, ai: { watch: 8, wander: [[12, 0], [5, -2], [12, 3]], speed: 0.9, pause: 3, hunt: { speed: 2.8, catchR: 1.2, until: 'gearworld' } } },
+    ],
     extras: [
       { kind: 'gearperson-a', dx: 3, dz: -2, face: 2.4, ai: { wander: [[3, -2], [6, 3], [0, 5]], speed: 0.9, pause: 3 } },
       { kind: 'gearperson-b', dx: 12, dz: 2, face: W, ai: { wander: [[12, 2], [15, -3], [9, -4]], speed: 0.9, pause: 3 } },
@@ -545,7 +586,12 @@ export const ROWS = [
     ],
     spots: [
       { id: 'gearhead', dx: -7, dz: -7.2, label: 'Gearhead', verb: 'Talk' },
-      { id: 'cogs', dx: 9, dz: -8, label: 'The city’s gears', verb: 'Look', r: 2.5 },
+      // the cogs to wind, one by each tower of gears and the great wheel
+      { id: 'cogs', dx: 9, dz: -8, label: 'The great wheel', verb: 'Wind', r: 2.5 },
+      { id: 'gcog-nw', dx: -16, dz: -9, label: 'The north-west cogs', verb: 'Wind' },
+      { id: 'gcog-ne', dx: 15.5, dz: -10, label: 'The north-east cogs', verb: 'Wind' },
+      { id: 'gcog-se', dx: 17.5, dz: 5, label: 'The south-east cogs', verb: 'Wind' },
+      { id: 'gcog-sw', dx: -17.5, dz: 6, label: 'The south-west cogs', verb: 'Wind' },
     ],
     solids: [
       { id: 'shop', dx: -7, dz: -11.5, w: 8, d: 5 },
@@ -555,14 +601,26 @@ export const ROWS = [
       { id: 'tower-c', dx: 23, dz: 7, r: 4 },
       { id: 'tower-d', dx: -23, dz: 8, r: 4 },
     ],
-    tasks: [{ id: 'gearworld', name: 'Visit Gearhead', hint: 'Land on Gear World in the Rick and Morty sector, and say hello to Gearhead at his shop.' }],
+    tasks: [{ id: 'gearworld', name: 'Wind Gear World’s cogs', hint: 'Land on Gear World in the Rick and Morty sector, and wind the city’s cogs in the order the meter gives before the city runs down, with the gear police after you.' }],
     say: {
       gearhead: { who: 'Gearhead', text: 'Morty! Rick’s my best friend. Rick’s everyone’s best friend. That’s the problem with Rick.' },
       cogs: { who: null, text: 'The whole city turns. If one gear stops, everyone hears about it.' },
+      'gcog-nw': { who: null, text: 'A brass crank as tall as you, at the foot of a tower of gears.' },
+      'gcog-ne': { who: null, text: 'The tallest tower’s crank, worn smooth by gear people’s hands.' },
+      'gcog-se': { who: null, text: 'It clanks round once and the whole stack wakes up.' },
+      'gcog-sw': { who: null, text: 'The shortest tower’s crank, and the stiffest in the city.' },
+      // (the police's names, for a catch's word)
+      'gpolice-a': { who: 'A gear cop', text: 'A gear cop on his beat, in Federation blue.' },
+      'gpolice-b': { who: 'A gear cop', text: 'A gear cop by the square, watching who touches the cogs.' },
     },
-    done: { gearhead: 'gearworld' },
+    // the city's cogs wound in a running order dealt each run, the clock from
+    // the first one, the police after him while it runs (../games/sequence.js)
+    sequence: { task: 'gearworld', items: ['cogs', 'gcog-nw', 'gcog-ne', 'gcog-se', 'gcog-sw'], need: 4, s: 45, hunt: true, who: null, lost: 'The city ran down before every cog was wound: back to the portal, and wind them again.', spotted: 'The gear police heard the city turn, and they’re coming for you.', words: { next: (l, on, n) => `${on} of ${n} wound: next, ${low(l)}`, dark: (l) => `Wrong cog, and the city’s jammed: start again with ${low(l)}`, again: (l) => `That one’s turning already: next, ${low(l)}` }, meter: { title: 'The city’s cogs', label: 'Time', icon: 'cog' }, unlock: null },
+    caught: 'He clamps a hand on your shoulder and marches you back to the portal, and every cog stops.',
+    goal: 'cogs',
+    // (the achievement stays on Gearhead's hello)
     unlock: { gearhead: 'gearworld' },
-    kinds: ['gearhead', 'gearperson-a', 'gearperson-b'],
+    kinds: ['gearhead', 'gearperson-a', 'gearperson-b', 'gromflomite'],
   }),
   place(12, {
     id: 'vindicators',

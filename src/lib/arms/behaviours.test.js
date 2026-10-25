@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { HAND_FX, SHIP_FX, beamTicks, blastOf, burstDirs, chain, chargeOf, climbOf, dropAt, firstFor, inRing, jagged, pierce, punchAfter, throwOf } from './behaviours';
+import { shotRadius } from '../combat/contact';
+import { HAND_FX, SHIP_FX, beamTicks, blastOf, burstDirs, chain, chargeOf, climbOf, dropAt, firstFor, inRing, jagged, orbsInFlight, pierce, punchAfter, throwOf } from './behaviours';
 import { WEAPONS } from './hand';
+import { WEAPONS as SHIP_WEAPONS } from './ship';
 
 const at = (x, y = 0, z = 0) => ({ x, y, z });
 const ship = (id, x, y = 0, z = 0, size = 1) => ({ id, at: at(x, y, z), size });
@@ -117,5 +119,15 @@ describe('the repulsor gauntlet', () => {
     expect(v.vx).toBeCloseTo(6);
     expect(v.vz).toBeCloseTo(8);
     expect(v.vy).toBe(2);
+  });
+});
+
+describe('dark matter (B9)', () => {
+  it('pierce as a bolt given shotRadius; the most orbs in flight', () => {
+    const passing = ship('a', 5, 0.3, 0, 0.5);
+    expect(pierce(at(0), at(10), [passing], new Set())).toEqual([]);
+    expect(pierce(at(0), at(10), [passing], new Set(), (t) => shotRadius(t.size))).toEqual([passing]);
+    expect(orbsInFlight(SHIP_WEAPONS.darkmatter, 0.12, { life: 0.85 })).toBe(5);
+    expect(orbsInFlight(SHIP_WEAPONS.darkmatter, 0.12, { shots: 1, life: 0.85 })).toBe(10);
   });
 });

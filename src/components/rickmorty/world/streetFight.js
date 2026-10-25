@@ -39,6 +39,7 @@
 
 import { SHIP_FX, burstDirs } from '../../../lib/arms/behaviours';
 import { createBolts } from '../../../lib/combat/bolt';
+import { CADENCE } from '../../../lib/combat/flight/guns';
 import { armsView, createArmory, createPowerTiles, fan, picksFor, steer } from '../../universe/shared/flying';
 import { PATROL, calm, hitPatrol, newPatrol, patrolShot, provoke, stepPatrol } from './patrolRules';
 import { createStreetPowers } from './streetPowers';
@@ -51,7 +52,7 @@ export const FIGHT = {
   reach: 45, // how far the guns turn onto the patrol from
   turn: 1.4, // and how far off the nose (radians)
   bolt: 60, // m/s, a blaster bolt's (the line's own speed times this)
-  cadence: 0.19, // seconds between blaster shots (the cruiser's, armsTabRules.js's)
+  cadence: CADENCE.cruiser, // seconds between blaster shots (the cruiser's: lib/combat/flight/guns.js)
   body: { cruiser: 1.7, patrol: 2.4 }, // their sizes, for a hit
   ringRate: 0.45, // radians a second the patrol goes round its ring
   colour: '#9dff4a',

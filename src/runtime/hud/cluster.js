@@ -79,6 +79,15 @@ export function createAbilitiesWriter() {
   return { place: (root, list) => write(root, list) };
 }
 
+// the cluster's parts under its root (found apart from place: a function
+// that makes closures over its own arguments makes a record for them on
+// every call, made or not)
+function partsOf(root) {
+  const q = (c) => root?.querySelector(c) ?? null;
+  const all = (c) => (root ? [...root.querySelectorAll(c)] : []);
+  return { root, vitals: q('.hud-vitals'), vitalsN: q('.hud-vitals-n'), arms: q('.hud-arms'), name: q('.hud-arms-name'), lines: all('.hud-arms-line'), pips: all('.hud-arms-pip'), heat: q('.hud-arms-heat'), abilities: q('.hud-abilities') };
+}
+
 export function createFlightCluster() {
   const writeAbilities = abilitiesWriter();
   let els = { root: null };
@@ -91,9 +100,7 @@ export function createFlightCluster() {
   return {
     place(root, v) {
       if (root !== els.root) {
-        const q = (c) => root?.querySelector(c) ?? null;
-        const all = (c) => (root ? [...root.querySelectorAll(c)] : []);
-        els = { root, vitals: q('.hud-vitals'), vitalsN: q('.hud-vitals-n'), arms: q('.hud-arms'), name: q('.hud-arms-name'), lines: all('.hud-arms-line'), pips: all('.hud-arms-pip'), heat: q('.hud-arms-heat'), abilities: q('.hud-abilities') };
+        els = partsOf(root);
         was.clear();
       }
       if (!root) return;

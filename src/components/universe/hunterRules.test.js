@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { hullOf } from '../../lib/combat/hulls';
+import { shotRadius } from '../../lib/combat/contact';
 import { BOMB, FACTIONS, FIGHT, HOLDOFF, HUNTER_KINDS, HUNTER_SENSES, LOSE, NAMES, SHIP_R, TRAITS, blocked, clearOf, createHunt, entryPoint, fightSpeed, hitRadius, packPlan, shipVelocity, slotsFor, turnRate, turnRateAt, turnToward } from './hunterRules';
 import { KINDS as GALAXY_KINDS, FACTIONS as GALAXY_FACTIONS } from '../galaxy/hunted';
 import { PACE, SHIP } from './ship';
@@ -566,6 +567,10 @@ describe('shooting them', () => {
     const past = (off) => hunt.hit({ x: h.pos.x - 3, y: h.pos.y + off, z: h.pos.z }, { x: h.pos.x + 3, y: h.pos.y + off, z: h.pos.z }, 1);
     expect(past(r + 0.02)).toBeNull();
     expect(past(r - 0.02)).toMatchObject({ down: true });
+  });
+
+  it('hitRadius is the bolt’s shotRadius of the kind’s size, for every kind', () => {
+    for (const type of Object.values(HUNTER_KINDS)) expect(hitRadius(type)).toBe(shotRadius(type.size));
   });
 
   it('takes a hit told to it by number (another pilot’s shot), and nothing for one it doesn’t have', () => {

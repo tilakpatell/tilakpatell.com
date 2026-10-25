@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { EPISODES } from './episodes';
 import EpisodeCard from './EpisodeCard';
+import { STORY_DONE } from './hud';
 
 describe('the episode card', () => {
   it('names the episode and says its first line', () => {
@@ -75,5 +76,45 @@ describe('the episode card', () => {
     expect(html).toContain('Fairy tales');
     expect(html).toContain('<b>Rick</b>');
     expect(html).toContain(EPISODES[8].intro[0][1]);
+  });
+
+  it('names episode 10 too', () => {
+    const html = renderToStaticMarkup(<EpisodeCard episode={EPISODES[9]} n={10} onDone={() => {}} />);
+    expect(html).toContain('Episode 10');
+    expect(html).toContain('The Citadel');
+    expect(html).toContain('<b>Rick</b>');
+    expect(html).toContain(EPISODES[9].intro[0][1]);
+  });
+
+  it('names episode 11 too', () => {
+    const html = renderToStaticMarkup(<EpisodeCard episode={EPISODES[10]} n={11} onDone={() => {}} />);
+    expect(html).toContain('Episode 11');
+    expect(html).toContain('The sector');
+    expect(html).toContain('<b>Rick</b>');
+    expect(html).toContain(EPISODES[10].intro[0][1]);
+  });
+
+  it('names episode 12 too', () => {
+    const html = renderToStaticMarkup(<EpisodeCard episode={EPISODES[11]} n={12} onDone={() => {}} />);
+    expect(html).toContain('Episode 12');
+    expect(html).toContain('Big score');
+    expect(html).toContain('<b>Rick</b>');
+    expect(html).toContain(EPISODES[11].intro[0][1]);
+  });
+
+  it('names episode 13 too', () => {
+    const html = renderToStaticMarkup(<EpisodeCard episode={EPISODES[12]} n={13} onDone={() => {}} />);
+    expect(html).toContain('Episode 13');
+    expect(html).toContain('Evil Rick');
+    expect(html).toContain('<b>Morty</b>');
+    expect(html).toContain(EPISODES[12].intro[0][1]);
+  });
+
+  it('after the last episode, is the story’s end', () => {
+    const html = renderToStaticMarkup(<EpisodeCard episode={null} n={EPISODES.length + 1} onDone={() => {}} />);
+    expect(html).toContain('data-end');
+    expect(html).toContain('The end');
+    expect(html).toContain(STORY_DONE);
+    expect(html).not.toContain('Episode 14');
   });
 });

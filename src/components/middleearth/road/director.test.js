@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { FOV, LOOK_LIMIT, RIGS, ease, pose, settleLook } from './director';
+import { FOV, LOOK_LIMIT, NARROW, RIGS, ease, fovFor, pose, settleLook } from './director';
 
 // a lead at the origin walking +z, the land flat at 0
 const base = (o = {}) => ({ rig: 'follow', params: {}, lead: { at: [0, 0, 0], heading: 0 }, tangent: [0, 0, 1], metres: 0, look: { yaw: 0, pitch: 0 }, mode: 'walk', reduced: false, heightAt: () => 0, t: 0, ...o });
@@ -118,5 +118,20 @@ describe('the director: the film’s grammar as camera rigs', () => {
     const p = pose(base({ rig: 'crane', params: { seconds: 4, top: 12, lookAt: [20, 3, 30] }, t: 4 }));
     expect(p.lookAt).toEqual([20, 3, 30]);
     expect(p.at[1]).toBeCloseTo(12, 5);
+  });
+});
+
+describe('fovFor', () => {
+  const across = (fov, aspect) => (2 * Math.atan(Math.tan((fov * Math.PI) / 360) * aspect) * 180) / Math.PI;
+  it('a frame as wide as NARROW or wider keeps the rig’s field', () => {
+    expect(fovFor(50, 1.6)).toBe(50);
+    expect(fovFor(50, NARROW)).toBe(50);
+  });
+  it('a narrower one, a phone held upright, opens upward so it still sees as far across', () => {
+    const phone = 390 / 844;
+    expect(fovFor(50, phone)).toBeGreaterThan(50);
+    expect(across(fovFor(50, phone), phone)).toBeCloseTo(across(50, NARROW), 6);
+    // (the follow's lead, about ten degrees off its aim, stands inside the frame with room)
+    expect(across(fovFor(FOV.walk, phone), phone) / 2).toBeGreaterThan(14);
   });
 });

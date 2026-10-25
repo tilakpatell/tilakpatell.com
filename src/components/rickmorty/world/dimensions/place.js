@@ -35,12 +35,13 @@ export const GARAGE_BACK = { x: -301.2, z: 101.4, face: 0 };
 // `who`) when they do; its spots tell the stage (`power-take`, `power-give`),
 // which steps it (./stage.js).
 // `deal`: the place run on the deal kind (../games/deal.js): { task, items,
-// bad, need, looks, who, lost, words? }: things for sale (`items`, its own
-// spots), `bad` of them cursed (a count, dealt afresh each run, or the ids);
-// a thing's first use looks it over (`looks` of them), its second takes it;
-// `need` taken with no curse is the task, a cursed one taken is `lost`, said
-// by `who`; `words`, the HUD's (the deal's own if not given). Each thing's
-// spot tells the stage (`deal-<id>`), which steps it.
+// bad, need, looks, who, lost, take, words? }: things for sale (`items`, its
+// own spots), `bad` of them cursed (a count, dealt afresh each run, or the
+// ids); a thing's first use looks it over (`looks` of them), its second takes
+// it (`take`, its prompt's verb once it's been looked over); `need` taken
+// with no curse is the task, a cursed one taken is `lost`, said by `who`;
+// `words`, the HUD's, every one of the deal's (the deal's own if not given).
+// Each thing's spot tells the stage (`deal-<id>`), which steps it.
 // `freeze`: the place run on the freeze kind (../games/freeze.js): { task,
 // spot, who, lost, unlock }: from Morty's first step the people with
 // `ai.lookout` turn their backs and look by turns; `spot` is where he jumps
@@ -48,44 +49,57 @@ export const GARAGE_BACK = { x: -301.2, z: 101.4, face: 0 };
 // in when their backs aren't turned, is `lost` (said by `who`, if anyone);
 // played dead long enough, the task, and `unlock`, its achievement.
 // `find`: the place run on the find kind (../games/find.js): { task, items,
-// ours?, tells, s, cost, who, lost, unlock }: its people to pick from
+// ours?, tells, s, cost, take, who, lost, unlock }: its people to pick from
 // (`items`, each a person with a spot of their own), ours among them (dealt
 // afresh each run, or fixed); a candidate's first use talks to him and the
 // HUD says what he does (`tells`: `ours`, and one for each of the rest), his
-// second takes him; the clock (`s`) runs from the first talk; ours taken is
-// the task, and `unlock` its achievement; another costs `cost` seconds; out
-// of time is `lost`, said by `who`. Each candidate's spot tells the stage
-// (`find-<id>`), which steps it.
+// second takes him (`take`, his prompt's verb once he's been heard); the
+// clock (`s`) runs from the first talk; ours taken is the task, and `unlock`
+// its achievement; another costs `cost` seconds; out of time is `lost`, said
+// by `who`. Each candidate's spot tells the stage (`find-<id>`), which steps
+// it.
 // `sequence`: the place run on the sequence kind (../games/sequence.js): {
-// task, start?, early?, items, order?, need, s, who, lost, unlock }: its sets
-// (`items`, each a spot of its own), `need` of them in a running order (dealt
-// afresh each run, or fixed), each switched on in its turn; a wrong one turns
-// them all dark again; the clock (`s`) runs from the `start` spot (or, with
-// none, the first set used; a set used before it says `early`); every one on is the task, and `unlock` its
-// achievement; out of time is `lost`, said by `who`. Each set's spot tells the
-// stage (`sequence-<id>`), and the start spot `sequence-start`.
+// task, start?, early?, items, order?, need, s, who, lost, unlock, hunt?,
+// spotted?, words? }: its sets (`items`, each a spot of its own), `need` of
+// them in a running order (dealt afresh each run, or fixed), each switched on
+// in its turn; a wrong one turns them all dark again; the clock (`s`) runs
+// from the `start` spot (or, with none, the first set used; a set used before
+// it says `early`); every one on is the task, and `unlock` its achievement;
+// out of time is `lost`, said by `who`; with `hunt`, the place's hunters are
+// after him while the clock runs (`spotted` said as it starts); `words`, the
+// HUD's. Each set's spot tells the stage (`sequence-<id>`), and the start
+// spot `sequence-start`. `before?`: with the place's `collect` `start`ed
+// (sharing the task, ticking nothing), the countdown waits for it, and the
+// start spot says `before` till then.
 // `rhythm`: the place's song on the rhythm kind (../games/rhythm.js), played
 // over the page from its `spot` (RmWorld's PLACES opens ../games/Schwifty.jsx
 // there): { task, spot, unlock }: the song won is the task, `unlock` its
 // achievement, handed over by the stage once the task's done.
 // `climb`: the place run on the climb kind (../games/climb.js): { task, top,
-// foot, spot, stairs, who, lost, fell, unlock }: its solids with `ledge: true`
-// (and their `top`) are stood on however high, one hop at a time
-// (../rules.js); `stairs` ([{ id, steps }], each a flight of those ledges)
-// bite by turns, and a tread stood on while its stair bites is `lost`, said
-// by `who`; standing on `top` is the task, and `unlock` its achievement; a
-// fall from high is said (`fell`); `foot` and `spot` are the spots the map
-// points at before he's up and once he is. A spot may carry its `y`, the
-// height it stands at (its pin floats there).
+// foot, spot, picks?, stairs, who, lost, fell, words?, unlock }: its solids
+// with `ledge: true` (and their `top`) are stood on however high, one hop at
+// a time (../rules.js); `stairs` ([{ id, steps }], each a flight of those
+// ledges) bite by turns, and a tread stood on while its stair bites is
+// `lost`, said by `who`; standing on `top` (and every one of `picks` picked
+// up, each a spot of its own, or those alone with no top) is the task, and
+// `unlock` its achievement; a fall from high is said (`fell`); `foot` and
+// `spot` are the spots the map points at before he's up and once he is;
+// `words`, the HUD's. Each pick's spot tells the stage (`climb-pick-<id>`).
+// A spot may carry its `y`, the height it stands at (its pin floats there).
+// Any of these games may carry its `meter` ({ title, label, icon }): what the
+// HUD's readout of it is called (../games/meter.js's meterOf).
 // `caught`: what's said when one of the place's hunters catches Morty
 // (stage.js's NPC behaviour); he's put back at the way in. `spotted`: what's
 // said when one of them sees him and starts (a hunter's own `hunt.spotted`
 // wins).
+// `achieve`: one of the place's tasks whose achievement (of the same id) is
+// handed over once it's done, however it's done (a talk, a collect: stage.js's
+// grant), fresh or done before.
 // A person or one of the crowd may carry `ai` (stage.js): `wander` points in
 // metres from the middle (turned into the world's here), `watch`, `bark`,
 // `hunt`. Anyone who roams is marked so, and isn't in the way.
 const roams = (ai) => Boolean(ai?.wander || ai?.hunt);
-export function place(i, { id, name, note, kind, deep, wide, sky, ceiling, people = [], extras = [], spots = [], solids = [], tasks = [], say = {}, done = {}, unlock = {}, acts = {}, escape = null, goal = null, collect = null, power = null, deal = null, freeze = null, find = null, sequence = null, rhythm = null, climb = null, caught = null, spotted = null, kinds = [] }) {
+export function place(i, { id, name, note, kind, deep, wide, sky, ceiling, people = [], extras = [], spots = [], solids = [], tasks = [], say = {}, done = {}, unlock = {}, acts = {}, escape = null, goal = null, collect = null, power = null, deal = null, freeze = null, find = null, sequence = null, rhythm = null, climb = null, caught = null, spotted = null, achieve = null, kinds = [] }) {
   const area = destArea(i, deep, wide);
   const cx = DEST_X;
   const cz = destZ(i);
@@ -113,9 +127,10 @@ export function place(i, { id, name, note, kind, deep, wide, sky, ceiling, peopl
     say,
     done,
     unlock,
-    acts: { ...acts, ...(power && { [power.from]: 'power-take', [power.to]: 'power-give' }), ...(deal && Object.fromEntries(deal.items.map((s) => [s, `deal-${s}`]))), ...(freeze && { [freeze.spot]: 'freeze-in' }), ...(find && Object.fromEntries(find.items.map((s) => [s, `find-${s}`]))), ...(sequence && { ...Object.fromEntries(sequence.items.map((s) => [s, `sequence-${s}`])), ...(sequence.start && { [sequence.start]: 'sequence-start' }) }) },
+    acts: { ...acts, ...(power && { [power.from]: 'power-take', [power.to]: 'power-give' }), ...(deal && Object.fromEntries(deal.items.map((s) => [s, `deal-${s}`]))), ...(freeze && { [freeze.spot]: 'freeze-in' }), ...(find && Object.fromEntries(find.items.map((s) => [s, `find-${s}`]))), ...(sequence && { ...Object.fromEntries(sequence.items.map((s) => [s, `sequence-${s}`])), ...(sequence.start && { [sequence.start]: 'sequence-start' }) }), ...(climb?.picks && Object.fromEntries(climb.picks.map((s) => [s, `climb-pick-${s}`]))) },
     escape,
     goal,
+    achieve,
     collect,
     power,
     deal,

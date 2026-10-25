@@ -12,18 +12,18 @@ export const ROWS = [
     wide: 44,
     ceiling: 10,
     people: [
-      // Evil Rick at his console till the Mortys are freed; then he comes for Morty, and the fight is the thing
-      { id: 'evilrick', dx: 0, dz: -12, face: S, ai: { watch: 12, bark: { r: 9, every: 14, lines: ['Another Morty. I’ve got hundreds. What’s one more?', 'Your Rick thinks he’s the smartest man in the universe. He isn’t even the smartest in this room.'] }, hunt: { speed: 2.4, catchR: 1.6, duel: { hp: 6, mortyHp: 3, task: 'evilrick', won: { who: 'Evil Rick', text: 'He goes down by his own console, and his eye flickers. A receiver, behind the ear. He was never the one in charge.' } }, line: 'Evil Rick’s fist finds your jaw. “Sit down, Morty. There’s a slot in the dome with your name on it.” You come round by the door.' } } },
-      // Evil Morty, sitting in his chair at the back with his arms crossed, till he's spoken to
+      // Evil Rick at his console till the Mortys are freed; then he comes for Morty, and the fight is the thing (its achievement handed over by the stage once he's down)
+      { id: 'evilrick', dx: 0, dz: -12, face: S, ai: { watch: 12, bark: { r: 9, every: 14, lines: ['Another Morty. I’ve got hundreds. What’s one more?', 'Your Rick thinks he’s the smartest man in the universe. He isn’t even the smartest in this room.'] }, hunt: { speed: 2.4, catchR: 1.6, duel: { hp: 7, mortyHp: 3, task: 'evilrick', unlock: 'evilrick', won: { who: 'Evil Rick', text: 'He goes down by his own console, and his eye flickers. A receiver, behind the ear. He was never the one in charge.' } }, line: 'Evil Rick’s fist finds your jaw. “Sit down, Morty. There’s a slot in the dome with your name on it.” You come round by the door.' } } },
+      // Evil Morty, sitting in his chair at the back with his arms crossed, till he's spoken to; he talks only once Evil Rick is down (his spot's `after`), and his achievement is the builder's to hand over
       { id: 'evilmorty', dx: 14, dz: -14, face: W, until: 'evilmorty', ai: { clip: 'sitcross', bark: { r: 6, every: 18, lines: ['(He watches you fight. He doesn’t get up.)', '(He says nothing. He’s counting something.)'] } } },
     ],
     // (the dome's Mortys in their pods are placed by the builder, which frees them one by one)
     spots: [
-      { id: 'pod1', dx: -15.4, dz: -8, label: 'A Morty in a pod', verb: 'Free', r: 1.4 },
-      { id: 'pod2', dx: -15.4, dz: -2, label: 'A Morty in a pod', verb: 'Free', r: 1.4 },
-      { id: 'pod3', dx: -15.4, dz: 4, label: 'A Morty in a pod', verb: 'Free', r: 1.4 },
-      { id: 'evilrick', dx: 0, dz: -10.4, label: 'Evil Rick', verb: 'Face him', r: 1.6 },
-      { id: 'evilmorty', dx: 12.4, dz: -14, label: 'A Morty with an eyepatch', verb: 'Talk', r: 1.6, until: 'evilmorty' },
+      { id: 'pod1', dx: -15.4, dz: -8, label: 'A Morty in a pod', verb: 'Free', r: 1.4, until: 'evilrick' },
+      { id: 'pod2', dx: -15.4, dz: -2, label: 'A Morty in a pod', verb: 'Free', r: 1.4, until: 'evilrick' },
+      { id: 'pod3', dx: -15.4, dz: 4, label: 'A Morty in a pod', verb: 'Free', r: 1.4, until: 'evilrick' },
+      { id: 'evilrick', dx: 0, dz: -10.4, label: 'Evil Rick', verb: 'Talk', r: 1.6, until: 'evilrick' },
+      { id: 'evilmorty', dx: 12.4, dz: -14, label: 'A Morty with an eyepatch', verb: 'Talk', r: 1.6, until: 'evilmorty', after: 'evilrick' },
       { id: 'domewall', dx: 0, dz: -16, label: 'The dome', verb: 'Look', r: 2.4 },
       { id: 'scarconsole', dx: 4, dz: -12.4, label: 'His console', verb: 'Look', r: 1.6 },
     ],
@@ -58,6 +58,7 @@ export const ROWS = [
   }),
   place(26, {
     id: 'cronenberg',
+    achieve: 'cronenberg',
     name: 'Cronenberg World',
     note: 'The dimension Rick and Morty left behind, after the love potion. Everyone’s a Cronenberg now, except the Smiths who stayed.',
     kind: 'outdoor',
@@ -116,7 +117,7 @@ export const ROWS = [
     wide: 70,
     sky: { top: 0x6a3a1a, mid: 0xd88a4a, low: 0xffd8a0, sun: 0xffe8c0, clouds: 0, moons: 0 },
     people: [
-      { id: 'hemorrhage', dx: 0, dz: -8, face: S, ai: { watch: 12, bark: { r: 10, every: 14, lines: ['Who wants to go in the Blood Dome? Who wants to be a man?', 'The ring is the law. The law is the ring.'] }, hunt: { speed: 2.3, catchR: 1.7, duel: { hp: 5, mortyHp: 3, task: 'blooddome', won: { who: 'Hemorrhage', text: 'He drops to one knee and pulls the helmet off. Underneath, a tired bald man. “Fine,” he says. “You’re a man. Go and tell your sister.”' } }, line: 'Hemorrhage’s gauntlet puts you on the sand. “Not a man yet,” he says, not unkindly, and the Death Stalkers carry you back to the gate.' } } },
+      { id: 'hemorrhage', dx: 0, dz: -8, face: S, ai: { watch: 12, bark: { r: 10, every: 14, lines: ['Who wants to go in the Blood Dome? Who wants to be a man?', 'The ring is the law. The law is the ring.'] }, hunt: { speed: 2.3, catchR: 1.7, duel: { hp: 7, mortyHp: 3, task: 'blooddome', unlock: 'blooddome', won: { who: 'Hemorrhage', text: 'He drops to one knee and pulls the helmet off. Underneath, a tired bald man. “Fine,” he says. “You’re a man. Go and tell your sister.”' } }, line: 'Hemorrhage’s gauntlet puts you on the sand. “Not a man yet,” he says, not unkindly, and the Death Stalkers carry you back to the gate.' } } },
       { id: 'bsummer', who: 'summer', dx: -10, dz: -4, face: E, ai: { watch: 8, bark: { r: 5, every: 15, lines: ['Morty! Oh my god, this place is amazing. I killed a guy. It was fine.', 'If you fight him, don’t stand still. That’s the whole trick.'] } } },
     ],
     extras: [
@@ -127,7 +128,7 @@ export const ROWS = [
       { kind: 'armothy', dx: 14, dz: -14, face: S, ai: { watch: 8, bark: { r: 5, every: 16, lines: ['(It flexes. It has no mouth. It is very clear what it means.)'] } } },
     ],
     spots: [
-      { id: 'ring', dx: 0, dz: -2, label: 'The ring', verb: 'Step in', r: 2 },
+      { id: 'ring', dx: 0, dz: -2, label: 'The ring', verb: 'Step in', r: 2, until: 'blooddome' },
       { id: 'bsummer', dx: -10, dz: -4, label: 'Summer', verb: 'Talk', r: 1.6 },
       { id: 'armothy', dx: 14, dz: -11.4, label: 'Armothy', verb: 'Look', r: 1.8 },
       { id: 'bloodsign', dx: 0, dz: 14, label: 'A sign', verb: 'Read', r: 1.8 },
@@ -155,6 +156,7 @@ export const ROWS = [
   }),
   place(28, {
     id: 'prison',
+    achieve: 'prison',
     name: 'The Federation prison',
     note: 'Where the Galactic Federation keeps Rick, in the Brainalyzer, telling Cornvelious Daniel about the Szechuan sauce.',
     kind: 'room',
@@ -188,7 +190,7 @@ export const ROWS = [
       { id: 'crate-b', dx: 10, dz: -12, w: 2, d: 2 },
       { id: 'cells', dx: -18.6, dz: 12, w: 1.2, d: 10 },
     ],
-    tasks: [{ id: 'prison', name: 'Spring Rick from the Brainalyzer', hint: 'Dial the Federation prison on the portal gun, throw both green switches, and unstrap Rick without a guard seeing you. The pillars and crates are cover.' }],
+    tasks: [{ id: 'prison', name: 'Spring Rick from the Brainalyzer', hint: 'Dial the Federation prison on the portal gun, throw both green switches, and unstrap Rick without a guard catching you. The pillars and crates are cover.' }],
     say: {
       switch1: { who: null, text: 'A green switch. You throw it. Half the lights go out, and on the far wall a lock sings.' },
       switch2: { who: null, text: 'The other green switch. The rest of the lights go out and the Brainalyzer’s clamps click open. Rick says “Finally.”' },
@@ -261,6 +263,7 @@ export const ROWS = [
   }),
   place(30, {
     id: 'dream',
+    achieve: 'dream',
     name: 'Mr. Goldenfold’s dream',
     note: 'Inside Mr. Goldenfold’s head, three dreams down. Mrs. Pancakes is here, and so is Scary Terry.',
     kind: 'room',
@@ -300,6 +303,7 @@ export const ROWS = [
   }),
   place(31, {
     id: 'agency',
+    achieve: 'agency',
     name: 'The agency',
     note: 'The embassy where Pickle Rick fought his way out and met Jaguar. The guards are still jumpy.',
     kind: 'room',
@@ -336,7 +340,7 @@ export const ROWS = [
       { id: 'hole', dx: -16, dz: 14, r: 1.2 },
     ],
     tasks: [
-      { id: 'agency', name: 'Spring Jaguar', hint: 'Dial the agency on the portal gun, take the key off its hook, and unlock Jaguar’s cell without a guard seeing you. Pickle Rick is on the desk, being no help at all.' },
+      { id: 'agency', name: 'Spring Jaguar', hint: 'Dial the agency on the portal gun, take the key off its hook, and unlock Jaguar’s cell without a guard catching you. Pickle Rick is on the desk, being no help at all.' },
       { id: 'sewer', name: 'Run the sewer as Pickle Rick', hint: 'At the agency, go down the hole in the floor by the rats. Dodge the grates, squash the rats, pick up screws, and make the far drain.' },
     ],
     say: {
@@ -435,6 +439,7 @@ export const ROWS = [
   }),
   place(34, {
     id: 'dim35c',
+    achieve: 'dim35c',
     name: 'Dimension 35-C',
     note: 'The pilot’s forest of Mega Trees, where the seeds grow. Rick wanted them bad enough to send Morty up a tree.',
     kind: 'outdoor',

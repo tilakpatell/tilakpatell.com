@@ -1423,15 +1423,28 @@ describe('C-137: the things to touch', () => {
     expect(nearHotspot('house', cable.x + 1.5, cable.z)).toBe(null);
   });
 
-  it('lets Morty stand close enough to every hotspot, and walk there from the way in', () => {
-    // (the town round the street's, out to its hedges, ./town/plan.test.js walks to)
-    for (const h of HOTSPOTS.filter((o) => !o.town)) {
-      let found = false;
-      for (let dx = -h.r; dx <= h.r && !found; dx += 0.1) for (let dz = -h.r; dz <= h.r && !found; dz += 0.1) if (Math.hypot(dx, dz) <= h.r - 0.1 && free(h.area, h.x + dx, h.z + dz)) found = true;
-      expect(found, `${h.id} can be stood at`).toBe(true);
-      expect(canWalk(h.area, startOf(h.area), h, h.r - 0.1, { motorcade: !!h.until }), `${h.id} can be walked to`).toBe(true);
-    }
+  it('leaves out a spot gone for now (a crystal picked up), and only that one', () => {
+    const c = HOTSPOTS.find((h) => h.id === 'bcrystal-path');
+    expect(nearHotspot(c.area, c.x, c.z, []).id).toBe('bcrystal-path');
+    expect(nearHotspot(c.area, c.x, c.z, [], (id) => id === 'bcrystal-path')).toBe(null);
+    expect(nearHotspot(c.area, c.x, c.z, [], (id) => id === 'bcrystal-trees').id).toBe('bcrystal-path');
+    expect(nearHotspot(c.area, c.x, c.z, undefined, (id) => id === 'bcrystal-path')).toBe(null);
+    // (and gone for good once its task's done)
+    expect(nearHotspot(c.area, c.x, c.z, ['birdworld'])).toBe(null);
   });
+
+  // (the town round the street's, out to its hedges, ./town/plan.test.js walks to;
+  // a place's spots in a test of their own, so each runs well inside its limit)
+  for (const area of [...new Set(HOTSPOTS.filter((o) => !o.town).map((h) => h.area))]) {
+    it(`lets Morty stand close enough to every hotspot in ${area}, and walk there from the way in`, () => {
+      for (const h of HOTSPOTS.filter((o) => !o.town && o.area === area)) {
+        let found = false;
+        for (let dx = -h.r; dx <= h.r && !found; dx += 0.1) for (let dz = -h.r; dz <= h.r && !found; dz += 0.1) if (Math.hypot(dx, dz) <= h.r - 0.1 && free(h.area, h.x + dx, h.z + dz)) found = true;
+        expect(found, `${h.id} can be stood at`).toBe(true);
+        expect(canWalk(h.area, startOf(h.area), h, h.r - 0.1, { motorcade: !!h.until }), `${h.id} can be walked to`).toBe(true);
+      }
+    });
+  }
 
   it('lets Morty walk from the way in to the way out of every room', () => {
     for (const id of ROOM_IDS) expect(canWalk(id, link(WAY_IN[id]).arrive, link(WAY_OUT[id]), link(WAY_OUT[id]).r), id).toBe(true);

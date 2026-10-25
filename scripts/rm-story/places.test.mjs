@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { destinationById } from '../../src/components/rickmorty/world/dimensions/destinations';
 import { home, ledgeOf, stand, wayIn } from './places.mjs';
+import { ROOMS } from '../../src/components/rickmorty/world/dimensions/vindicatorsRules.js';
 
 const N = Math.PI / 2;
 const near = (got, want) => want.forEach((v, i) => expect(got[i]).toBeCloseTo(v, 6));
@@ -19,6 +20,14 @@ const USED = {
   schwifty: ['mic'],
   fantasy: ['goblins', 'giants'],
   froopyland: ['tommy'],
+  pluto: ['podium', 'claim-growing', 'claim-moons', 'claim-mines', 'claim-planet'],
+  gearworld: ['gearhead', 'cogs', 'gcog-nw', 'gcog-ne', 'gcog-se', 'gcog-sw'],
+  birdworld: ['door', 'bcrystal-path', 'bcrystal-trees', 'bcrystal-east', 'bcrystal-west', 'bcrystal-grass'],
+  squanch: ['toast'],
+  heistcon: ['heistbadge', 'heister-b1', 'heister-a1', 'heistplan', 'heistbooth', 'heisthire', 'heistskull', 'heistcars'],
+  vindicators: ['saw'],
+  blooddome: ['ring'],
+  evilrick: ['pod1', 'pod2', 'pod3', 'evilmorty'],
 };
 
 describe('where the browser check stands Morty', () => {
@@ -43,6 +52,7 @@ describe('where the browser check stands Morty', () => {
     expect(z).toBeCloseTo(1288.88, 2);
     expect(top).toBe(2.3);
     expect(ledgeOf(destinationById('fantasy'), 'beanstalk')[2]).toBe(20.9);
+    expect(ledgeOf(destinationById('birdworld'), 'tower-b')[2]).toBe(9.6);
     // (a solid that isn't a ledge, or no solid at all: said so)
     expect(() => ledgeOf(destinationById('fantasy'), 'tavern')).toThrow(/fantasy has no ledge tavern/);
     expect(() => ledgeOf(destinationById('fantasy'), 'nope')).toThrow(/fantasy has no ledge nope/);
@@ -53,5 +63,12 @@ describe('where the browser check stands Morty', () => {
       const spots = destinationById(area).hotspots.map((h) => h.id);
       for (const id of ids) expect(spots, `${area} has no ${id}`).toContain(id);
     }
+  });
+});
+
+describe('Rick’s rooms, as the check plays them', () => {
+  // (the check picks each room's right answer by its flag, so the flags are pinned here, room by room)
+  it('has the acid lever, footsteps and Noob-Noob as the answers', () => {
+    expect(ROOMS.map((r) => r.choices.find((c) => c.right).id)).toEqual(['acid', 'footsteps', 'noobnoob']);
   });
 });

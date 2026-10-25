@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { local, useReducedMotion } from '../../lib/hooks';
+import { RiShieldLine } from 'react-icons/ri';
+import { local, useMediaQuery, useReducedMotion } from '../../lib/hooks';
 import { WorldHost, useWorld } from '../../runtime';
 import galaxyModule from './module';
 import { CONTROLS_KEY, readControls } from '../universe/controls';
@@ -8,6 +9,8 @@ import Hangar from '../universe/Hangar';
 import { SYSTEMS, goalsOf, lightYears, systemById } from './systems';
 import { placesOf } from './places';
 import '../universe/universe.css';
+import './flight.css';
+import '../../lib/bf2017/fonts.css';
 import GuideCue from '../guide/GuideCue';
 import { letHandedGo } from '../hyperspace3d/timeline';
 import { letsJumpGo } from './jumpIn';
@@ -15,8 +18,9 @@ import WarHud from './WarHud';
 import StarfighterHud from './StarfighterHud';
 import LoadingVeil from '../worlds/LoadingVeil';
 import BattleEnd from './BattleEnd';
-import FlightCluster from './FlightCluster';
 import KeysCard from './KeysCard';
+import { FlightHud, GameIcon } from '../../runtime/hud';
+import { PowerBar } from '../universe/shared/powerBar';
 
 // The galaxy's 3D view (scene.js, a world module on the world runtime:
 // ./module.js) and everything over it:
@@ -25,8 +29,9 @@ import KeysCard from './KeysCard';
 // them (a click jumps you there) and, with the nose on one, the button to
 // jump to it, the other pilots' callsigns, the targeting HUD and the stick ring
 // (the universe map's own, UniverseMap.jsx's classes, the scene moves them),
-// the flight cluster (FlightCluster.jsx: radar, deflectors, speed, kills,
-// target and the crew's powers), the touch buttons, the flight settings and a line on how to
+// the flight HUD (the HUD kit's FlightHud, the universe map's own: the
+// radar, the shields, speed, kills, the target and the crew's powers in the
+// cluster, the pickups' effects over it, the overlay), the touch buttons, the flight settings and a line on how to
 // fly until you do, the Shipyard's button beside the settings' (its yard is the
 // page's: Galaxy.jsx), and the war's battle on here in a line (WarHud.jsx) with
 // its end card when it's decided (BattleEnd.jsx).
@@ -39,9 +44,7 @@ export default function GalaxyView({ system, here, handle, holo = null, ship, lo
   const [aim, setAim] = useState(null); // the star the nose is on
   const tags = useRef(null);
   const stick = useRef(null);
-  const cluster = useRef(null); // (the flight cluster: deflectors, speed, kills, the target; the scene writes it)
-  const radar = useRef(null); // (its radar's canvas)
-  const buffs = useRef(null); // (and the row of effects over it)
+  const buffs = useRef(null); // (the row of effects over it)
   const powers = useRef(null); // (the crew's ship powers' bar, inside it: the scene writes that too)
   const hud = useRef(null);
   const [flown, setFlown] = useState(false);
@@ -67,6 +70,7 @@ export default function GalaxyView({ system, here, handle, holo = null, ship, lo
   const events = useRef(onEvent);
   events.current = onEvent;
   const reduced = useReducedMotion();
+  const coarse = useMediaQuery('(pointer: coarse)'); // (a touch screen: the powers are round buttons in the thumbs' grid)
   const { host, on, meant, rt, progress } = useWorld(galaxyModule, {
     props: {
       system,
@@ -81,8 +85,6 @@ export default function GalaxyView({ system, here, handle, holo = null, ship, lo
       labels,
       stars,
       stick,
-      cluster,
-      radar,
       buffs,
       powers,
       hud,
@@ -111,27 +113,6 @@ export default function GalaxyView({ system, here, handle, holo = null, ship, lo
   // (the war's battle here as the scene has it, for the line over the galaxy and its end card)
   const warInfo = useCallback(() => (rt?.current?.module === galaxyModule ? (rt.current.world.scene?.warInfo?.() ?? null) : null), [rt]);
   useEffect(() => setFlown(false), [ship]);
-
-  // The cluster's height on the map (--fc-h), for what sits over it (the jump button, the keys card): it grows when the row wraps in a
-  // narrow window. Layout, not a HUD number: the browser tells it when it changes. (On a touch screen the row has no box of its own: 0.)
-  useEffect(() => {
-    const root = cluster.current;
-    const map = root?.parentElement;
-    if (!root || !map || typeof ResizeObserver !== 'function') return undefined;
-    const row = root.querySelector('.hud-cluster-row');
-    const fit = () => {
-      const h = row.offsetHeight + (buffs.current?.offsetHeight ? buffs.current.offsetHeight + 6 : 0);
-      map.style.setProperty('--fc-h', `${h}px`);
-    };
-    const watch = new ResizeObserver(fit);
-    watch.observe(row);
-    if (buffs.current) watch.observe(buffs.current);
-    fit();
-    return () => {
-      watch.disconnect();
-      map.style.removeProperty('--fc-h');
-    };
-  }, [ship, on]);
 
   // The universe map's jump in holds its tunnel for the galaxy
   // (hyperspace3d/timeline.js's handJump): let go once the galaxy has drawn,
@@ -184,24 +165,22 @@ export default function GalaxyView({ system, here, handle, holo = null, ship, lo
   const closeKeys = useCallback(() => (setFlown(true), setKeysOpen(false)), []);
   const toggleKeys = () => (showKeys ? closeKeys() : setKeysOpen(true));
 
-  const hold = (down) => (e) => (e.preventDefault(), view.current?.boost?.(down));
-  const trigger = (down) => (e) => (e.preventDefault(), view.current?.fire?.(down));
-  const climb = (way) => (e) => (e.preventDefault(), view.current?.climb?.(way));
-  const climbButton = (way, label) => (
-    <button type="button" className="universe-climb" aria-label={label} onPointerDown={climb(way)} onPointerUp={climb(0)} onPointerCancel={climb(0)} onPointerLeave={climb(0)} onContextMenu={(e) => e.preventDefault()}>
-      <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
-        <path d={way > 0 ? 'M5 15l7-7 7 7' : 'M5 9l7 7 7-7'} fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-    </button>
-  );
+  // the touch buttons (FlightHud's grid, as the universe map's: the held ones keep the finger till it lifts)
+  const buttons = {
+    fire: (x) => view.current?.fire?.(x),
+    boost: (x) => view.current?.boost?.(x),
+    climb: (x) => view.current?.climb?.(x),
+    view: () => view.current?.seat?.(),
+    weapon: () => view.current?.weapon?.(), // (the next line of the armoury, as the universe map's: a keyboard has R and 1 2 3)
+  };
+  // the one jump button: the star the nose is on, else the course plotted (a touch screen's: it has no J)
+  const jumpTo = aimed ? { className: 'galaxy-jumpbtn', name: aimed.name, accent: aimed.accent, onPress: () => jump(aimed.id) } : courseSys ? { className: 'galaxy-jumpbtn', name: courseSys.name, accent: courseSys.accent, course: true, onPress: () => jump(courseSys.id) } : null;
 
   return (
     <WorldHost world={{ host }} className="universe-map galaxy-map" data-ship={ship || undefined}>
       {meant ? (
         <>
           <LoadingVeil className="universe-loading" shown={!on} progress={progress.value} step={progress.step} title="Plotting a course to a galaxy far, far away" />
-          {on && oath && <WarHud sys={here} oath={oath} front={warInfo} />}
-          {on && <StarfighterHud front={warInfo} />}
           {on && oath && <BattleEnd front={warInfo} />}
           <ul className="universe-labels galaxy-labels" aria-label="In this system">
             {goals.map((g) => (
@@ -247,78 +226,34 @@ export default function GalaxyView({ system, here, handle, holo = null, ship, lo
             </ul>
           )}
           <div ref={tags} className="universe-tags" aria-hidden="true" />
+          {on && (
+            <FlightHud
+              flying={Boolean(ship)}
+              hudRef={hud}
+              stickRef={stick}
+              vitalsIcon={<RiShieldLine className="fc-shield-icon" aria-hidden="true" />}
+              speedIcon={<GameIcon name="hud:speed" className="fc-speed-icon" />}
+              over={<div ref={buffs} className="fc-buffs" aria-hidden="true" />}
+              // (the crew's powers: in the cluster, or round buttons in the thumbs' grid on a touch screen)
+              powers={!coarse && <PowerBar ship={ship} reduced={reduced} barRef={powers} onPress={onPower} placement="cluster" picks={powerPicks} carry={skillFx?.carry} />}
+              thumbs={coarse && <PowerBar ship={ship} reduced={reduced} barRef={powers} onPress={onPower} picks={powerPicks} carry={skillFx?.carry} />}
+              overlay={
+                <>
+                  {oath && <WarHud sys={here} oath={oath} front={warInfo} />}
+                  <StarfighterHud front={warInfo} />
+                </>
+              }
+              after={
+                <button type="button" className="galaxy-mapbtn" onClick={onMap}>
+                  Galaxy map
+                </button>
+              }
+              jump={jumpTo}
+              controls={buttons}
+            />
+          )}
           {ship && on && (
             <>
-              <div ref={stick} className="universe-stick" aria-hidden="true">
-                <span />
-              </div>
-              <FlightCluster rootRef={cluster} ship={ship} reduced={reduced} powersRef={powers} onPower={onPower} radarRef={radar} buffsRef={buffs} picks={powerPicks} carry={skillFx?.carry} />
-              <div ref={hud} className="universe-hud" aria-hidden="true">
-                <span className="universe-reticle" />
-                <span className="universe-lock">
-                  <i />
-                  <i />
-                  <i />
-                  <i />
-                  <b className="universe-lock-name" />
-                  <b className="universe-lock-dist" />
-                  <b className="universe-lock-hp" />
-                </span>
-                <span className="universe-threat" />
-                <span className="universe-threat" />
-                <span className="universe-threat" />
-                <span className="universe-mate">
-                  <b className="universe-mate-name" />
-                </span>
-                <span className="universe-mate">
-                  <b className="universe-mate-name" />
-                </span>
-                <span className="universe-mate">
-                  <b className="universe-mate-name" />
-                </span>
-                <span className="universe-mate">
-                  <b className="universe-mate-name" />
-                </span>
-                <span className="universe-lead" />
-                <span className="universe-nav">
-                  <i />
-                  <b className="universe-nav-name" />
-                  <b className="universe-nav-dist" />
-                </span>
-              </div>
-              <div className="universe-climbs">
-                {climbButton(1, 'Nose up')}
-                {climbButton(-1, 'Nose down')}
-              </div>
-              <button type="button" className="universe-view" onPointerDown={(e) => (e.preventDefault(), view.current?.seat?.())} onContextMenu={(e) => e.preventDefault()}>
-                View
-              </button>
-              {/* the next line of the armoury, as the universe map's (a keyboard has R and 1 2 3) */}
-              <button type="button" className="universe-weapon" onPointerDown={(e) => (e.preventDefault(), view.current?.weapon?.())} onContextMenu={(e) => e.preventDefault()}>
-                Weapon
-              </button>
-              <button type="button" className="universe-fire" onPointerDown={trigger(true)} onPointerUp={trigger(false)} onPointerCancel={trigger(false)} onPointerLeave={trigger(false)} onLostPointerCapture={trigger(false)} onContextMenu={(e) => e.preventDefault()}>
-                Fire
-              </button>
-              <button type="button" className="universe-boost" onPointerDown={hold(true)} onPointerUp={hold(false)} onPointerCancel={hold(false)} onPointerLeave={hold(false)} onContextMenu={(e) => e.preventDefault()}>
-                Boost
-              </button>
-              <button type="button" className="galaxy-mapbtn" onClick={onMap}>
-                Galaxy map
-              </button>
-              {aimed && (
-                <button type="button" className="galaxy-jumpbtn" onClick={() => jump(aimed.id)} style={{ '--star': aimed.accent }}>
-                  <span className="galaxy-jumpbtn-k" aria-hidden="true">
-                    J
-                  </span>
-                  Jump to {aimed.name}
-                </button>
-              )}
-              {!aimed && courseSys && (
-                <button type="button" className="galaxy-jumpbtn" data-course="" onClick={() => jump(courseSys.id)} style={{ '--star': courseSys.accent }}>
-                  Jump to {courseSys.name}
-                </button>
-              )}
               <FlightSettings controls={controls} onChange={setControls} open={settingsOpen} onOpen={openSettings} />
               {onHangar && <Hangar open={hangar} onOpen={onHangar} />}
               <button type="button" className="galaxy-keysbtn" onClick={toggleKeys} aria-expanded={showKeys}>

@@ -113,6 +113,17 @@ describe('the lock', () => {
     expect(follow(ship, [behind], lock, AIM.loseManual + 0.2)).toBeNull();
   });
 
+  it('keeps a lock picked by hand past 78 for its grace; one the guns picked goes at once', () => {
+    const far = hunter('a', [0, 0, -79]); // (past AIM.range × 1.3, 78)
+    const lock = { id: 'a', out: 0, manual: true };
+    expect(track(ship, [far], lock, 1 / 60)).toEqual({ id: 'a', out: 1 / 60, manual: true });
+    expect(follow(ship, [far], lock, AIM.loseManual - 0.2)?.id).toBe('a');
+    expect(follow(ship, [far], lock, AIM.loseManual + 0.2)).toBeNull();
+    // (back in before it runs out: the clock reset)
+    expect(track(ship, [hunter('a', [0, 0, -20])], follow(ship, [far], lock, 2), 1 / 60)).toEqual({ id: 'a', out: 0, manual: true });
+    expect(track(ship, [far], { id: 'a', out: 0 }, 1 / 60)).toBeNull();
+  });
+
   it('cycles the other way round too', () => {
     const cands = [hunter('a', [0, 0, -20]), hunter('b', [5, 0, -20]), hunter('c', [-9, 0, -20])];
     let lock = track(ship, cands, null, 1 / 60);
@@ -225,23 +236,32 @@ describe('the help onto the lead', () => {
 describe('the edge of the screen', () => {
   const rect = { x: 0, y: 100, w: 1000, h: 600 };
 
+  // (the thing's projected point: screen px, and its depth in front of the camera; the middle here is 500, 400)
   it('puts a marker on the border, in from the edge, on the line out to the thing', () => {
-    const right = edgeOf(500, 0, rect);
+    const right = edgeOf({ x: 1000, y: 400, z: 5 }, rect);
     expect(right).toEqual({ x: 1000 - 28, y: 400, angle: 0 });
-    const up = edgeOf(0, -300, rect);
+    const up = edgeOf({ x: 500, y: 100, z: 5 }, rect);
     expect(up.x).toBe(500);
     expect(up.y).toBe(100 + 28);
     expect(up.angle).toBeCloseTo(-Math.PI / 2, 6);
-    const corner = edgeOf(300, 300, rect);
+    const corner = edgeOf({ x: 800, y: 700, z: 5 }, rect);
     expect(corner.y).toBeCloseTo(400 + 272, 6);
     expect(corner.x).toBeCloseTo(772, 6);
   });
 
+  it('turns the way round for a thing behind the camera, which projects through the middle', () => {
+    const behind = edgeOf({ x: 1000, y: 400, z: -5 }, rect);
+    expect(behind.x).toBe(28);
+    expect(behind.y).toBe(400);
+    expect(Math.abs(behind.angle)).toBeCloseTo(Math.PI, 6);
+  });
+
   it('knows what is on the screen', () => {
-    expect(onScreen(500, 400, 10, rect)).toBe(true);
-    expect(onScreen(500, 400, -1, rect)).toBe(false); // behind the camera
-    expect(onScreen(5, 400, 10, rect)).toBe(false); // too near the edge
-    expect(onScreen(500, 690, 10, rect)).toBe(false);
+    expect(onScreen({ x: 500, y: 400, z: 10 }, rect)).toBe(true);
+    expect(onScreen({ x: 500, y: 400, z: -1 }, rect)).toBe(false); // behind the camera
+    expect(onScreen({ x: 5, y: 400, z: 10 }, rect)).toBe(false); // too near the edge
+    expect(onScreen({ x: 500, y: 690, z: 10 }, rect)).toBe(false);
+    expect(onScreen({ x: 500, y: 690, z: 10 }, rect, 5)).toBe(true); // a margin of its own
   });
 });
 
@@ -330,5 +350,27 @@ describe('the nose following the lock', () => {
     expect(trackNudge(s, [3, 1, -20], 1, { turn: -0.01, climb: 0.01 })).toEqual(n);
     const withIt = trackNudge(s, [3, 1, -20], 1, { turn: 1, climb: 1 });
     expect(withIt).toEqual(n);
+  });
+});
+
+describe('out records', () => {
+  it('fills an out record when given one', () => {
+    const o = [9, 9, 9];
+    expect(nose({ heading: 0, pitch: 0 }, o)).toBe(o);
+    expect(o).toEqual([-0, 0, -1]);
+    const e = { x: 0, y: 0, angle: 0 };
+    expect(edgeOf({ x: 101, y: 50, z: 1 }, { x: 0, y: 0, w: 200, h: 100 }, 28, e)).toBe(e);
+    expect(e).toEqual({ x: 172, y: 50, angle: 0 });
+  });
+});
+
+describe('the T ring', () => {
+  const [a, b, d] = [hunter('a', [0, 0, -20]), hunter('b', [5, 0, -20]), hunter('d', [2, 0, -30])];
+  const facing = (t) => ({ ...ship, heading: aimAngles(dirTo(ship, t.at)).heading }); // (the nose on it)
+  it('drops the gone, appends the new, never re-sorts', () => {
+    const ring = ['a', 'b', 'c']; // (c gone since the last press, d new)
+    let lock = { id: 'b', out: 0, manual: true };
+    const ids = [facing(b), facing(d), ship].map((s, i) => (lock = track(s, [a, b, d], lock, 1 / 60, { cycle: [true, true, -1][i], ring })).id);
+    expect([ids, ring]).toEqual([['d', 'a', 'd'], ['a', 'b', 'd']]);
   });
 });

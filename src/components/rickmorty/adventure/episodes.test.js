@@ -9,9 +9,10 @@ const stepsOf = (e) => e.steps.flatMap((s) => (s.type === 'all' ? [s, ...s.steps
 const allSteps = () => EPISODES.flatMap(stepsOf);
 
 describe('the adventure’s episodes', () => {
-  it('has thirteen episodes, the first nine ready', () => {
+  it('has thirteen episodes, every one ready', () => {
     expect(EPISODES).toHaveLength(13);
-    expect(READY).toBe(9);
+    expect(READY).toBe(13);
+    expect(READY).toBe(EPISODES.length);
     expect(new Set(EPISODES.map((e) => e.id)).size).toBe(13);
   });
 
@@ -29,6 +30,26 @@ describe('the adventure’s episodes', () => {
       expect(s.text.length).toBeGreaterThan(10);
       expect(s.text).not.toMatch(/!/);
     }
+  });
+
+  it('says what each step needs: the portal back from a place with a clock, the running order, the first move', () => {
+    for (const s of allSteps()) {
+      const d = s.type === 'task' && DESTINATIONS.find((x) => x.tasks.some((t) => t.id === s.id));
+      if (d && (d.escape || d.collect?.escape)) expect(s.text, s.id).toMatch(/portal/);
+    }
+    const step = (id) => allSteps().find((s) => s.id === id).text;
+    expect(step('cablestudio')).not.toMatch(/every channel/);
+    expect(step('cablestudio')).toMatch(/running order/);
+    expect(step('heistcon')).toMatch(/crew/);
+    expect(step('evilrick')).toMatch(/pods/);
+    // (seen is a hunt, not a catch)
+    expect(step('gromflomites')).not.toMatch(/seeing you/);
+  });
+
+  it('says how to tell our Jerry at the Jerryboree, in its step', () => {
+    const step = allSteps().find((s) => s.id === 'jerryboree');
+    const ours = DESTINATIONS.find((d) => d.id === 'jerryboree').find.tells.ours; // ('He offers you an apple')
+    expect(step.text.toLowerCase()).toContain(ours.toLowerCase().replace(/^he /, ''));
   });
 
   it('sends a step to the dial place its task is in', () => {
@@ -73,7 +94,7 @@ describe('the adventure’s episodes', () => {
     expect(wiped.title).toBe('Wiped');
     expect(wiped.steps.map((s) => s.id)).toEqual(['diner', 'basement', 'mindblowers', 'customs']);
     expect(wiped.unlocks).toEqual(['annex', 'meeseeksgolf']);
-    expect(wiped.steps[0].text).toBe('A Federation agent is in a booth at Shoney’s, up the street. Find out what the raid took.');
+    expect(wiped.steps[0].text).toBe('A Federation agent is in a booth at Shoney’s, up the street. Hear what the Federation wants.');
   });
 
   it('goes on with Arcade money: Roy, then a walkway cabinet’s target', () => {
@@ -81,6 +102,8 @@ describe('the adventure’s episodes', () => {
     expect(arcade.title).toBe('Arcade money');
     expect(arcade.steps.map((s) => s.id ?? s.game)).toEqual(['roy', 'cabinet']);
     expect(arcade.steps[1]).toMatchObject({ type: 'win', game: 'cabinet', place: 'annex' });
+    // (which cabinet: the one that plays)
+    expect(arcade.steps[1].text).toContain('Plumbus Smash');
     expect(arcade.unlocks).toEqual(['agency', 'simulation']);
   });
 
@@ -145,5 +168,37 @@ describe('the adventure’s episodes', () => {
     expect(fairy.steps[0]).toMatchObject({ type: 'task', id: 'fantasy', place: 'fantasy' });
     expect(fairy.steps[1]).toMatchObject({ type: 'task', id: 'froopyland', place: 'froopyland' });
     expect(fairy.unlocks).toEqual(['citadel', 'frundles']);
+  });
+
+  it('goes on with The Citadel: dial it, then out past the Cop Ricks', () => {
+    const citadel = EPISODES[9];
+    expect(citadel.title).toBe('The Citadel');
+    expect(citadel.steps.map((s) => s.type)).toEqual(['enter', 'citadel']);
+    expect(citadel.steps[0]).toMatchObject({ type: 'enter', area: 'page:/c-137/citadel', place: 'citadel' });
+    expect(citadel.steps[1]).toMatchObject({ type: 'citadel', id: 'citadelout' });
+    expect(citadel.unlocks).toEqual(['birdworld', 'gearworld', 'pluto', 'squanch']);
+  });
+
+  it('goes on with The sector: its four planets in any order', () => {
+    const sector = EPISODES[10];
+    expect(sector.title).toBe('The sector');
+    expect(sector.steps).toHaveLength(1);
+    expect(sector.steps[0].type).toBe('all');
+    expect(sector.steps[0].steps.map((s) => [s.type, s.id, s.place])).toEqual([
+      ['task', 'birdworld', 'birdworld'],
+      ['task', 'gearworld', 'gearworld'],
+      ['task', 'pluto', 'pluto'],
+      ['task', 'squanch', 'squanch'],
+    ]);
+    expect(sector.unlocks).toEqual(['heistcon', 'vindicators']);
+  });
+
+  it('goes on with Big score: Heist-Con, then the Vindicators', () => {
+    const big = EPISODES[11];
+    expect(big.title).toBe('Big score');
+    expect(big.steps.map((s) => s.id)).toEqual(['heistcon', 'vindicators']);
+    expect(big.steps[0]).toMatchObject({ type: 'task', id: 'heistcon', place: 'heistcon' });
+    expect(big.steps[1]).toMatchObject({ type: 'task', id: 'vindicators', place: 'vindicators' });
+    expect(big.unlocks).toEqual(['blooddome', 'evilrick']);
   });
 });

@@ -88,12 +88,18 @@ export function feed(state, event, opts = {}) {
   return { state: s, out };
 }
 
+// where a step is played when that's a page of its own (the objective's link
+// from C-137): an enter-a-page step's page, and the Citadel's steps, its page
+export const CITADEL_PAGE = '/c-137/citadel';
+export function stepPage(step) {
+  if (step.type === 'enter' && step.area.startsWith('page:')) return step.area.slice('page:'.length);
+  return step.type === 'citadel' ? CITADEL_PAGE : null;
+}
+
 // the objective line, and the page it's on when it's on another
 export function objective(state, opts) {
   const at = current(state, opts);
-  if (!at) return null;
-  const { area } = at.step;
-  return { text: at.step.text, to: at.step.type === 'enter' && area.startsWith('page:') ? area.slice('page:'.length) : null };
+  return at ? { text: at.step.text, to: stepPage(at.step) } : null;
 }
 
 // the dial places the story has opened: the start, each finished episode's,
@@ -106,9 +112,17 @@ export function coordinates(state, opts) {
 
 export const dialOpen = (state, id, opts) => state.freeRoam || coordinates(state, opts).has(id);
 
-// what a locked place says on the dial
+// whether the dial places played (`places`) reach past what the story has
+// opened: played when an older story, its last built episode done, had every
+// place open
+export const reachesPast = (state, places, opts) => {
+  const open = coordinates(state, opts);
+  return places.some((p) => !open.has(p));
+};
+
+// what a locked place says on the dial, and the way to it now
 export function lockNote(id, opts) {
   const { episodes } = book(opts);
   const i = episodes.findIndex((e) => e.unlocks.includes(id));
-  return i < 0 ? null : `Opens after episode ${i + 1}, “${episodes[i].title}”.`;
+  return i < 0 ? null : `Opens after episode ${i + 1}, “${episodes[i].title}”. Free roam, in Things to do, opens it now.`;
 }

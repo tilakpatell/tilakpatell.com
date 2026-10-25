@@ -61,7 +61,7 @@
 import { DEEP, DEEP_SOLIDS, WONDERS, driveOpen, easeOpen, gapAlong, openness, reachOf, trenchBand } from './deep';
 import { BODIES, HOME_RADIUS, POSITIONS, REACH, SECTORS, SECTOR_RADIUS, SUN, sectorById, sectorOf, sectorOut } from './layout';
 import { MAW } from './maw';
-import { NOSE, UP, axisAngle, conj, fromAngles, mul, normalize, rotate, toAngles, turnToward } from './orient';
+import { NOSE, UP, axisAngle, conj, forward, fromAngles, mul, normalize, rotate, toAngles, turnToward } from './orient';
 import { byId } from './universes';
 import { sunFor } from './lighting';
 import { REGIONS } from './regions';
@@ -264,7 +264,7 @@ export const turnAt = (speed) => {
 
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const wrap = (a) => Math.atan2(Math.sin(a), Math.cos(a)); // to −π…π
-export const forward = (h) => [-Math.sin(h), -Math.cos(h)];
+export { forward };
 // the way the ship's nose points (and so the way it's flying), a unit vector
 export const noseOf = (s) => rotate(fromAngles(s.heading, s.pitch || 0, s.bank || 0), NOSE);
 // the heading that points along (dx, dz)

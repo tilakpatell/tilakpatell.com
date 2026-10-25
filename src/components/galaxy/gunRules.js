@@ -4,8 +4,8 @@
 // the weapon's own; and a line's pace, the ship's own (its cadence, under
 // the pickups) times the weapon's. Pure, tested.
 //
-//   shotPunch(w, g, gun) → hits on a hunter one shot is worth
+//   shotPunch(w, g, gun) → hits on a hunter one shot is worth (lib/combat/flight/guns.js's)
 //   lineCadence(base, w) → seconds between this line's shots
 
-export const shotPunch = (w, g, gun) => (g?.punch ?? 1) * (gun?.punch ?? 1) * (w?.punch ?? 1);
+export { shotPunch } from '../../lib/combat/flight/guns'; // (both maps': lib/combat/flight/guns.js)
 export const lineCadence = (base, w) => base * (w?.cadence ?? 1);

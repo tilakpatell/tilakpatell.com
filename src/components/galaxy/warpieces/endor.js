@@ -32,7 +32,7 @@
 //   markers(live), dispose() }
 
 import * as THREE from 'three';
-import { sweptHit } from '../../universe/targeting';
+import { sweptHit } from '../../../lib/combat/flight/targeting';
 import { GCW, seeded } from '../gcw';
 import { tunnelPath } from '../tunnel';
 import { createRun } from './run';

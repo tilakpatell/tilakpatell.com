@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { local, storage } from '../lib/hooks';
+import { keptOver } from '../lib/kept';
 import { useTheme } from '../theme/ThemeProvider';
 import { FAN_THEMES, THEMES, THEME_ORDER } from '../theme/themes';
 import { partsUnlockedBy } from './universe/outfit';
@@ -114,7 +115,7 @@ export const ACHIEVEMENTS = {
   froopyland: { name: 'The ABC’s of Beth', desc: 'Found Tommy in Froopyland, past the Froopylanders' },
   nimbus: { name: 'He controls the police', desc: 'Approached Mr. Nimbus on his beach, past the Atlantean guard' },
   gromflomites: { name: 'Oh boy, here I go', desc: 'Opened Fart’s cell in the Gromflomite base without a guard seeing' },
-  heistcon: { name: 'The con is the heist', desc: 'Took a badge and recruited a crew for Miles Knightly at Heist-Con' },
+  heistcon: { name: 'The con is the heist', desc: 'Lifted all four booths at Heist-Con for Miles Knightly before the clock ran out' },
   snakeplanet: { name: 'Hsss', desc: 'Reached the snake rocket on Snake Planet without being bitten' },
   nuptia: { name: 'Love, scanned', desc: 'Took the test on Nuptia 4, and kept clear of the mythologs' },
   gloopynoops: { name: 'Visiting hours', desc: 'Visited Shrimply Pibbles at St. Gloopy Noops' },
@@ -160,7 +161,7 @@ export const ACHIEVEMENTS = {
   votemorty: { name: 'Vote Morty', desc: 'Voted in the Citadel’s election (Candidate Morty won anyway)' },
   citadelout: { name: 'Get to the cruiser', desc: 'Got past Evil Morty’s Cop Ricks to the cruiser' },
   locos: { name: 'The Mortytown Locos', desc: 'Walked all three Locos to Cop Morty, outside Morty Mart' },
-  citadelfall: { name: 'Wubba lubba dub dub', desc: 'Helped bring down the Citadel of Ricks from the universe map' },
+  citadelfall: { name: 'The Citadel falls', desc: 'Helped bring down the Citadel of Ricks from the universe map' },
   remover: { name: 'It removes planets', desc: 'Shot down the Federation’s NX-5 Planet Remover before it fired' },
   rifted: { name: 'Through the rift', desc: 'Flew into a rift on the universe map and came out somewhere else' },
   grandtour: { name: 'Seen it all', desc: 'Toured every station, world and wonder on the universe map' },
@@ -352,7 +353,8 @@ export function AchievementProvider({ children }) {
   const unlock = useCallback(
     (id) => {
       if (!ACHIEVEMENTS[id] || unlockedRef.current.includes(id)) return;
-      const next = [...unlockedRef.current, id];
+      // (kept over what another tab's kept since, not over this page's copy)
+      const next = keptOver(local.get(KEY, []), unlockedRef.current, [id], (k) => Boolean(ACHIEVEMENTS[k]));
       unlockedRef.current = next;
       setUnlocked(next);
       local.set(KEY, next);

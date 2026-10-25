@@ -17,6 +17,12 @@ export const ACCENT = '#8dff5a';
 
 export const isBigPlanet = (id) => Object.hasOwn(PLANET_SITES, id);
 
+// a planet's places that are achievements once found ({ planet: { place:
+// achievement } }: Gazorpazorp's gate was C-137's, before the surface took
+// the planet over), and the ones `found` has earned
+export const PLANET_ACHIEVE = { gazorpazorp: { gate: 'gazorp' } };
+export const planetAchievements = (id, found) => found.map((p) => PLANET_ACHIEVE[id]?.[p]).filter(Boolean);
+
 export function planetSite(id) {
   if (!isBigPlanet(id)) return null;
   const raw = PLANET_SITES[id];

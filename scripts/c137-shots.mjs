@@ -87,6 +87,12 @@ export const VIEWS = {
   purge: { area: 'purge', at: [-400, 1816, N], cam: [0, 0.2] },
   pluto: { area: 'pluto', at: [-400, 1916, N], cam: [0, 0.2] },
   gearworld: { area: 'gearworld', at: [-400, 2016, N], cam: [0, 0.2] },
+  // the sector's games: on the east clay tower's top beside its trunk, over the
+  // clearing (its canopy clear of the camera); Gear World's square, facing the
+  // great wheel; and Pluto's palace, facing the claims on its banners
+  claytower: { area: 'birdworld', at: [-379.15, 1183.85, (-3 * Math.PI) / 4], y: 9.6, cam: [0, 0.2] },
+  gearsquare: { area: 'gearworld', at: [-400, 2006, 1.107], cam: [0, 0.25] },
+  palace: { area: 'pluto', at: [-400, 1892, N], cam: [0, 0.2] },
   vindicators: { area: 'vindicators', at: [-400, 2105.4, N], cam: [0, 0.3] },
   // in the middle of the hall, turned to the long window on the stars, its planet and moon
   vindicatorsout: { area: 'vindicators', at: [-398, 2100, 0], cam: [0, 0.05] },
@@ -119,6 +125,8 @@ export const VIEWS = {
   arcade: { area: 'arcade', at: [-295.5, 300, 0], cam: [0, 0.25] },
   // the agency, west of the hole in its floor and facing it: the sewer run's way in
   agencyhole: { area: 'agency', at: [-417.6, 4011.4, -1.02], cam: [0, 0.3] },
+  // Heist-Con from Heistotron's plan, looking south over the booths, their alarms and the crew
+  heistplan: { area: 'heistcon', at: [-394, 2790.2, -N], cam: [0, 0.35] },
 };
 
 const names = process.argv.slice(2);

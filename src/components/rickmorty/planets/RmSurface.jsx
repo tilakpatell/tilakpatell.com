@@ -7,7 +7,8 @@ import { voiceFor } from '../../galaxy/surface/voicelines';
 import { useOnline } from '../../universe/online/useOnline';
 import { wayOut } from '../../worlds/worlds';
 import { Bubble, Exit, Hud, Menu, Objective, Prompt, QuestList, Toast, othersText } from '../../../runtime/hud';
-import { ACCENT, planetMission, planetSite } from '.';
+import { useAchievements } from '../../Achievements';
+import { ACCENT, planetAchievements, planetMission, planetSite } from '.';
 import { readBests, readDone, readFound, writeBest, writeDone, writeFound } from './saves';
 import { RIDES } from '../../galaxy/surface/rides';
 import { PROPS as GALAXY_PROPS, SCATTER as GALAXY_SCATTER } from '../../galaxy/surface/props';
@@ -63,6 +64,12 @@ export default function RmSurface({ id, onLeave, frozen = false, onHangar = null
   const doneNow = useRef(done);
   // (a place found and a quest done pay into the one wallet, once each)
   const { earn, note: earned } = useRmEarn(() => [...seedsOf('found', found, id), ...seedsOf('quest', done, id)]);
+  // (and a place that's an achievement earns it as it's found, or on landing
+  // for a save that found it before: ./index.js's PLANET_ACHIEVE)
+  const { unlock } = useAchievements();
+  useEffect(() => {
+    for (const a of planetAchievements(id, found)) unlock(a);
+  }, [id, found, unlock]);
   const [phase, setPhase] = useState('landing');
   const [prompt, setPrompt] = useState(null);
   const [here, setHere] = useState(null);

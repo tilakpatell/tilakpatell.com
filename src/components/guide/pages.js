@@ -464,6 +464,9 @@ export const PAGES = {
           ['Shift', 'Run'],
           ['Space', 'Let the road walk itself, or stop it'],
           ['Drag', 'Look about'],
+          ['E', 'Do what the card asks (hold it when it says hold)'],
+          ['A, D', 'In turn, when the card asks for a rhythm'],
+          ['T', 'A word with whoever walks beside you'],
           ['Enter', 'Next (with reduced motion), or carry on'],
           ['1 … 9, 0', 'The first ten stages'],
           ['L', 'The last lore card again'],
@@ -474,6 +477,7 @@ export const PAGES = {
     touch: [{ label: 'On the Road', rows: [['Walk', 'Hold to walk on'], ['Run', 'Hold to run'], ['Drag', 'Look about'], ['A dot', 'Go to that stage']] }],
     tips: [
       ['The road walks itself', 'Leave the keys and it walks on, stopping where something happens. Space turns it off and on.'],
+      ['Your part', 'At some moments the road stops and a card asks you to act: press, hold, keep a rhythm or choose a word. Leave it, and the company does it after a while.'],
       ['The stages', 'Each dot along the foot is a stage: press one to go there. A long press or a right click on one you’ve passed opens its lore.'],
       ['Coming back', 'It keeps your place. Come back and it offers to carry on from where you were.'],
     ],
@@ -617,6 +621,7 @@ export const PAGES = {
       ['Run', 'Some of the people here come for you. Caught, you’re back where you came in.'],
       ['Rides', 'Where the cruiser set down there’s something to ride: the rock sled on Gazorpazorp. E at it gets on; a hover rides over water as well as sand.'],
       ['A minute', 'On Planet Squanch and the Purge Planet, once it goes wrong, get back through the portal inside a minute.'],
+      ['The games', 'Bird World, Gear World and Pluto each have a game, with its meter in the corner: the crystals, the city’s cogs, the king’s ear. Lose and you’re back at the portal to try again.'],
       ['The list', 'On a planet you walked into, what you do counts on Dimension C-137’s list of things to do too.'],
     ],
   },
@@ -630,6 +635,7 @@ export const PAGES = {
       ['The Council', 'Answer the way C-137 would. Grovelling gets you held in contempt.'],
       ['Election day', 'Once the first three are done: hear out three voters, then vote at Candidate Morty’s booth.'],
       ['Red alert', 'The Cop Ricks see in a cone and hear you running. The core, the kiosks and the planters hide you; the benches don’t. Get to the hangar.'],
+      ['The story', 'The Citadel is episode 10 of the story: its step heads the line at the top, and getting away in the cruiser ends it.'],
     ],
   },
   '/dot-matrix': {

@@ -37,7 +37,7 @@ describe('the adventure’s store', () => {
     expect(a.dialOpen('customs')).toBe(true);
     expect(a.dialOpen('vat')).toBe(false);
     expect(a.objective().text).toMatch(/^A Federation agent is in a booth at Shoney’s/);
-    expect(a.lockNote('vat')).toBe('Opens after episode 5, “Heat”.');
+    expect(a.lockNote('vat')).toBe('Opens after episode 5, “Heat”. Free roam, in Things to do, opens it now.');
     expect([...a.coordinates()]).toEqual(['customs']);
   });
 
@@ -51,13 +51,36 @@ describe('the adventure’s store', () => {
     expect(createAdventure({ saves, read: { tasks: () => [], citadel: () => ['daycare'] } }).get().freeRoam).toBe(true);
   });
 
-  it('keeps the story in tp-rm-story, version 1', () => {
+  it('keeps the story in tp-rm-story, version 2', () => {
     createAdventure({ saves, read: none }).feed({ type: 'task', id: 'diner' });
-    expect(JSON.parse(store.getItem('tp-rm-story'))).toMatchObject({ v: 1, data: { step: 1 } });
+    expect(JSON.parse(store.getItem('tp-rm-story'))).toMatchObject({ v: 2, data: { step: 1 } });
     // and the next visit takes it up where it was, not as a new visitor
     const again = createAdventure({ saves, read: none });
     expect(again.started).toBe(false);
     expect(again.get()).toMatchObject({ episode: 0, step: 1 });
+  });
+
+  it('puts a version-1 save on Free roam when what it played reaches past what its story has opened, once', () => {
+    // (finished episode 1 when it was the last built, every place open, and played the vat)
+    const played = { tasks: () => ['diner', 'basement', 'mindblowers', 'customs', 'vat'], citadel: () => [] };
+    store.setItem(STORY_KEY, JSON.stringify({ v: 1, data: { ...fresh(), episode: 1, step: 0 } }));
+    const a = createAdventure({ saves, read: played });
+    expect(a.get()).toMatchObject({ episode: 1, step: 0, freeRoam: true });
+    expect(a.dialOpen('vat')).toBe(true);
+    expect(JSON.parse(store.getItem(STORY_KEY)).v).toBe(2);
+    // (switched off, it stays off: the move's made once)
+    a.setFreeRoam(false);
+    expect(createAdventure({ saves, read: played }).get().freeRoam).toBe(false);
+  });
+
+  it('leaves a version-1 save whose places played are all ones its story has opened as it was', () => {
+    store.setItem(STORY_KEY, JSON.stringify({ v: 1, data: { ...fresh(), episode: 1, step: 0 } }));
+    const a = createAdventure({ saves, read: { tasks: () => ['diner', 'customs', 'meeseeksgolf', 'cable'], citadel: () => [] } });
+    expect(a.get()).toMatchObject({ episode: 1, step: 0, freeRoam: false });
+    expect(a.dialOpen('vat')).toBe(false);
+    // (a planet the universe map lands on too, or the Citadel, isn't only the dial's: no Free roam for those)
+    store.setItem(STORY_KEY, JSON.stringify({ v: 1, data: { ...fresh(), episode: 1, step: 0 } }));
+    expect(createAdventure({ saves, read: { tasks: () => ['birdworld', 'squanch'], citadel: () => ['daycare'] } }).get().freeRoam).toBe(false);
   });
 
   it('starts again on a broken save', () => {
@@ -152,11 +175,82 @@ describe('the adventure’s store', () => {
     expect(a.dialOpen('froopyland')).toBe(true);
     expect(a.dialOpen('citadel')).toBe(false); // (episode 9 is built too)
     a.jump(9);
-    expect(a.dialOpen('citadel')).toBe(true); // (past the last ready episode)
+    expect(a.dialOpen('citadel')).toBe(true);
+    expect(a.dialOpen('frundles')).toBe(true);
+    expect(a.dialOpen('birdworld')).toBe(false); // (episode 10 is built too)
+    a.jump(10);
+    expect(a.dialOpen('birdworld')).toBe(true);
+    expect(a.dialOpen('heistcon')).toBe(false); // (episode 11 is built too)
+    a.jump(11);
+    expect(a.dialOpen('heistcon')).toBe(true);
+    expect(a.dialOpen('blooddome')).toBe(false); // (episode 12 is built too)
+    a.jump(12);
+    expect(a.dialOpen('blooddome')).toBe(true); // (episode 12 done)
+    a.jump(13);
+    expect(a.get().episode).toBe(13); // (the story's end)
+    expect(a.dialOpen('evilrick')).toBe(true);
     a.jump(99);
-    expect(a.get().episode).toBe(9);
+    expect(a.get().episode).toBe(13);
     a.reset();
     expect(a.get()).toEqual(fresh());
+  });
+
+  it('keeps what a page left before it could say it, for the next to say once', () => {
+    // (the Citadel left mid-toast, its episode's closing line still to say: C-137 says it)
+    const a = createAdventure({ saves, read: none });
+    expect(a.takeUnsaid()).toEqual([]);
+    a.keepUnsaid([{ type: 'done', episode: 9 }]);
+    a.keepUnsaid([]);
+    a.keepUnsaid([{ type: 'episode', episode: 10 }]);
+    expect(a.takeUnsaid()).toEqual([
+      { type: 'done', episode: 9 },
+      { type: 'episode', episode: 10 },
+    ]);
+    expect(a.takeUnsaid()).toEqual([]);
+  });
+
+  it('takeUnsaid drops an episode card the story has moved past and keeps the done lines', () => {
+    // (the Citadel left episode 10's line and episode 11's card; C-137 takes them once the story's at episode 12)
+    const a = createAdventure({ saves, read: none });
+    a.jump(10);
+    a.keepUnsaid([
+      { type: 'done', episode: 9 },
+      { type: 'episode', episode: 10 },
+    ]);
+    a.jump(11);
+    expect(a.takeUnsaid()).toEqual([{ type: 'done', episode: 9 }]);
+    // (a card for the episode the story's at is kept)
+    a.keepUnsaid([
+      { type: 'done', episode: 10 },
+      { type: 'episode', episode: 11 },
+    ]);
+    expect(a.takeUnsaid()).toEqual([
+      { type: 'done', episode: 10 },
+      { type: 'episode', episode: 11 },
+    ]);
+  });
+
+  it('a stored 2.0 save with rickall, wong and sewer known keeps episode 3’s closing line for takeUnsaid; a new returner with episode 1’s tasks done has nothing unsaid', () => {
+    // (the catch-up at load ends episode 3: the first page to show the story says its line, and episode 4's card is the visit's)
+    store.setItem(STORY_KEY, JSON.stringify({ v: 2, data: { ...fresh(), episode: 2, step: 0 } }));
+    const caught = createAdventure({ saves, read: { tasks: () => ['rickall', 'wong', 'sewer'], citadel: () => [] } });
+    expect(caught.get()).toMatchObject({ episode: 3, step: 0, freeRoam: false });
+    expect(caught.takeUnsaid()).toEqual([
+      { type: 'step', episode: 2, step: 1 },
+      { type: 'step', episode: 2, step: 2 },
+      { type: 'done', episode: 2 },
+      { type: 'episode', episode: 3 },
+    ]);
+    expect(caught.takeUnsaid()).toEqual([]);
+    expect(caught.intro()).toBe(3);
+    // (a returner starts on Free roam, where no card shows and nothing's said of what the catch-up passed)
+    store.removeItem(STORY_KEY);
+    const returner = createAdventure({ saves, read: { tasks: () => ['diner', 'basement', 'mindblowers', 'customs'], citadel: () => [] } });
+    expect(returner.get()).toMatchObject({ episode: 1, step: 0, freeRoam: true });
+    expect(returner.takeUnsaid()).toEqual([]);
+    // (nor of a stored save on Free roam)
+    store.setItem(STORY_KEY, JSON.stringify({ v: 2, data: { ...fresh(), episode: 2, step: 0, freeRoam: true } }));
+    expect(createAdventure({ saves, read: { tasks: () => ['rickall', 'wong', 'sewer'], citadel: () => [] } }).takeUnsaid()).toEqual([]);
   });
 
   it('opens a visit with the card of the episode it starts on, once', () => {
@@ -172,12 +266,35 @@ describe('the adventure’s store', () => {
     // part-way through one, past the built ones, or on free roam: none
     at({ episode: 1, step: 1 });
     expect(createAdventure({ saves, read: none }).intro()).toBe(null);
-    at({ episode: 9, step: 0 });
-    expect(createAdventure({ saves, read: none }).intro()).toBe(null);
+    at({ episode: 12, step: 0 });
+    expect(createAdventure({ saves, read: none, ready: 12 }).intro()).toBe(null);
+    expect(createAdventure({ saves, read: none }).intro()).toBe(12); // (episode 13's card: it's built now)
+    at({ episode: 13, step: 0 });
+    expect(createAdventure({ saves, read: none }).intro()).toBe(null); // (the end)
     at({ episode: 1, step: 0, freeRoam: true });
     expect(createAdventure({ saves, read: none }).intro()).toBe(null);
     store.removeItem(STORY_KEY);
     expect(createAdventure({ saves, read: { tasks: () => ['cable'], citadel: () => [] } }).intro()).toBe(null);
+  });
+
+  it('a card for an episode reached under the page isn’t the visit’s card', () => {
+    // (opened at episode 10's door; another tab carries the story on to episode 11, whose card it showed)
+    const at = (data) => store.setItem(STORY_KEY, JSON.stringify({ v: 2, data: { ...fresh(), ...data } }));
+    at({ episode: 9, step: 0 });
+    const tab = createAdventure({ saves, read: none });
+    const other = JSON.stringify({ v: 2, data: { ...fresh(), episode: 10, step: 0 } });
+    store.setItem(STORY_KEY, other);
+    fakeWin.storage({ key: STORY_KEY, newValue: other });
+    expect(tab.get()).toMatchObject({ episode: 10, step: 0 });
+    expect(tab.intro()).toBe(null);
+    // (or the page's own news: Customs ends episode 1 there, and its card came with the closing line)
+    at({ episode: 0, step: 3 });
+    const done = ['diner', 'basement', 'mindblowers'];
+    const own = createAdventure({ saves, read: { tasks: () => done, citadel: () => [] } });
+    done.push('customs');
+    expect(own.feed({ type: 'task', id: 'customs' }).map((o) => o.type)).toContain('episode');
+    expect(own.get()).toMatchObject({ episode: 1, step: 0 });
+    expect(own.intro()).toBe(null);
   });
 
   it('shows the card of an episode the visit catches up into, though a step of it was done before', () => {
@@ -199,7 +316,7 @@ describe('the adventure’s store', () => {
     const caught = createAdventure({ saves, read: knowing(['rickall']) });
     expect(caught.get()).toMatchObject({ episode: 2, step: 1 });
     expect(caught.intro()).toBe(2);
-    // all three done already: episode 3 finishes as the visit loads, with no card (said nowhere: the hand-off names it)
+    // all three done already: episode 3 finishes as the visit loads (its closing line kept for the first page to say)
     at({ episode: 2, step: 0 });
     const all = createAdventure({ saves, read: knowing(['rickall', 'wong', 'sewer']) });
     expect(all.get()).toMatchObject({ episode: 3, step: 0 });
@@ -324,10 +441,83 @@ describe('the adventure’s store', () => {
     const found = createAdventure({ saves, read: knowing(['froopyland']) });
     expect(found.get()).toMatchObject({ episode: 8, step: 0 });
     expect(found.intro()).toBe(8);
-    // both: episode 9 finishes as the visit loads, with no card (episode 10 isn't built)
+    // both: episode 9 finishes as the visit loads
     at({ episode: 8, step: 0 });
     const both = createAdventure({ saves, read: knowing(['fantasy', 'froopyland']) });
     expect(both.get()).toMatchObject({ episode: 9, step: 0 });
-    expect(both.intro()).toBe(null);
+    expect(both.intro()).toBe(9); // (episode 10's card: it's built now)
+  });
+
+  it('opens episode 10 for a visitor who finished episode 9 before it was built', () => {
+    const at = (data) => store.setItem(STORY_KEY, JSON.stringify({ v: 1, data: { ...fresh(), ...data } }));
+    at({ episode: 9, step: 0 });
+    expect(createAdventure({ saves, read: none }).intro()).toBe(9);
+    // the Citadel's escape made already: still at its door (walking in is never caught up), with episode 10's card
+    at({ episode: 9, step: 0 });
+    const out = createAdventure({ saves, read: { tasks: () => [], citadel: () => ['daycare', 'wafers', 'council', 'votemorty', 'citadelout'] } });
+    expect(out.get()).toMatchObject({ episode: 9, step: 0 });
+    expect(out.intro()).toBe(9);
+  });
+
+  it('opens episode 11 for a visitor who finished episode 10 before it was built', () => {
+    const at = (data) => store.setItem(STORY_KEY, JSON.stringify({ v: 1, data: { ...fresh(), ...data } }));
+    const knowing = (tasks) => ({ tasks: () => tasks, citadel: () => [] });
+    at({ episode: 10, step: 0 });
+    expect(createAdventure({ saves, read: none }).intro()).toBe(10);
+    // a planet's task done already (the old knock, hello, podium or escape): its part passed at once, the card still shown
+    at({ episode: 10, step: 0 });
+    const one = createAdventure({ saves, read: knowing(['pluto']) });
+    expect(one.get()).toMatchObject({ episode: 10, step: 0, got: [2] });
+    expect(one.intro()).toBe(10);
+    // all four: episode 11 finishes as the visit loads
+    at({ episode: 10, step: 0 });
+    const all = createAdventure({ saves, read: knowing(['birdworld', 'gearworld', 'pluto', 'squanch']) });
+    expect(all.get()).toMatchObject({ episode: 11, step: 0 });
+    expect(all.intro()).toBe(11); // (episode 12's card: it's built now)
+  });
+
+  it('opens episode 12 for a visitor who finished episode 11 before it was built', () => {
+    const at = (data) => store.setItem(STORY_KEY, JSON.stringify({ v: 1, data: { ...fresh(), ...data } }));
+    const knowing = (tasks) => ({ tasks: () => tasks, citadel: () => [] });
+    at({ episode: 11, step: 0 });
+    expect(createAdventure({ saves, read: none }).intro()).toBe(11);
+    // Heist-Con done already (its old crew): caught up to the Vindicators, still episode 12's card
+    at({ episode: 11, step: 0 });
+    const crewed = createAdventure({ saves, read: knowing(['heistcon']) });
+    expect(crewed.get()).toMatchObject({ episode: 11, step: 1 });
+    expect(crewed.intro()).toBe(11);
+    // the Vindicators done already, Heist-Con not: it waits at Heist-Con, with episode 12's card
+    at({ episode: 11, step: 0 });
+    const roomed = createAdventure({ saves, read: knowing(['vindicators']) });
+    expect(roomed.get()).toMatchObject({ episode: 11, step: 0 });
+    expect(roomed.intro()).toBe(11);
+    // both: episode 12 finishes as the visit loads, with no card while episode 13 isn't built
+    at({ episode: 11, step: 0 });
+    const old = createAdventure({ saves, read: knowing(['heistcon', 'vindicators']), ready: 12 });
+    expect(old.get()).toMatchObject({ episode: 12, step: 0 });
+    expect(old.intro()).toBe(null);
+    at({ episode: 11, step: 0 });
+    const both = createAdventure({ saves, read: knowing(['heistcon', 'vindicators']) });
+    expect(both.get()).toMatchObject({ episode: 12, step: 0 });
+    expect(both.intro()).toBe(12); // (episode 13's card: it's built now)
+  });
+
+  it('opens episode 13 for a visitor who finished episode 12 before it was built', () => {
+    const at = (data) => store.setItem(STORY_KEY, JSON.stringify({ v: 1, data: { ...fresh(), ...data } }));
+    const knowing = (tasks) => ({ tasks: () => tasks, citadel: () => [] });
+    for (const [tasks, step] of [
+      [[], 0],
+      [['blooddome'], 1],
+      [['blooddome', 'evilrick', 'evilmorty'], 3],
+      [['evilmorty'], 0],
+      [['evilrick', 'evilmorty'], 0],
+    ]) {
+      at({ episode: 12, step: 0 });
+      const a = createAdventure({ saves, read: knowing(tasks) });
+      expect(a.get(), tasks.join()).toMatchObject({ episode: 12, step });
+      expect(a.intro(), tasks.join()).toBe(12);
+    }
+    at({ episode: 12, step: 0, freeRoam: true });
+    expect(createAdventure({ saves, read: none }).intro()).toBe(null);
   });
 });

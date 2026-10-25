@@ -1,5 +1,6 @@
 /* The Rick and Morty adventure on C-137's HUD (world/world.css's tokens:
-   --rm-ink, --rm-glass, --rm-gold). */
+   --rm-ink, --rm-glass, --rm-gold), and its card on the Citadel's too (in
+   ../citadel/citadel.css's colours). */
 
 /* the objective line, when the step is on another page: a link. The HUD takes
    no pointer events, so the link takes them back, and the whole chip is its
@@ -37,7 +38,7 @@
 .rm-list .rm-story-all { flex-direction: column; gap: 0.2rem; }
 
 /* an episode's card, as it starts: in the middle of the stage, under the
-   portal's fade, on C-137's glass (no blur), letting taps through to the world */
+   portal's fade, on the page's glass (no blur), letting taps through to the world */
 .rm-episode { position: absolute; left: 50%; top: 50%; z-index: 5; display: grid; justify-items: center; gap: 0.45rem; width: min(26rem, calc(100% - 2rem)); padding: 1.1rem 1.3rem 1.25rem; border: 3px solid var(--rm-ink, #1b1424); border-radius: 18px; background: var(--rm-glass, rgba(27, 20, 36, 0.86)); color: #fff; text-align: center; box-shadow: 0 6px 0 rgba(27, 20, 36, 0.6), inset 0 0 0 1px rgba(201, 255, 90, 0.35); transform: translate(-50%, -50%); pointer-events: none; animation: rm-episode-in 0.3s ease-out both; }
 .rm-episode p { margin: 0; }
 .rm-episode-n { color: rgba(255, 255, 255, 0.78); font: 700 0.74rem/1 var(--font-sans); letter-spacing: 0.12em; text-transform: uppercase; }
@@ -45,6 +46,13 @@
 .rm-episode-line { font: 600 1rem/1.45 var(--font-sans); }
 .rm-episode-line b { color: var(--rm-lime, #c9ff5a); }
 @keyframes rm-episode-in { from { opacity: 0; transform: translate(-50%, -46%) scale(0.96); } }
+/* on a phone the toast hangs mid-stage, under the top row: the card goes up
+   top, over that row for its few seconds, so the closing line it comes with
+   is read beside it, not under it */
+@media (max-width: 639px) {
+  .rm-episode { top: 0.75rem; transform: translateX(-50%); animation-name: rm-episode-top; }
+}
+@keyframes rm-episode-top { from { opacity: 0; transform: translate(-50%, 0.5rem) scale(0.96); } }
 @media (prefers-reduced-motion: reduce) {
   .rm-episode { animation: none; }
 }

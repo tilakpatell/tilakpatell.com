@@ -638,3 +638,98 @@ Looked at and right: Bree's gate and the Pony, the Green Dragon and the Party Fi
 - Moria's and Minas Tirith's chapters no longer ask `toNonIndexed` of geometry that already is.
 
 **And**: a jump (the ribbon, a stage's key) tells the page where the ride is in the same frame. It no longer waits for the next quarter second's progress.
+
+## R7, the numbers at every stage (2026-10-25)
+
+Every stage measured against the design’s goals (§2) after R7’s mends, in the container on `nodes-webgl` (SwiftShader). **The WebGPU rows are the owner’s laptop and desktop and are left empty**; nothing here is an estimate of them.
+
+### Each stage, high and low (`node lab/road/measure.mjs`, `QUALITY=high` and `low`)
+
+Each stage opened by its address in a fresh 1440 × 900 window, 6 s for the walkers to arrive, then one frame’s `renderer.info.render`: the scene and the sun’s cascades together. The assets are what that stage fetched from cold, alone; the UI is the share of the window under the Road’s own parts.
+
+| stage | draws high | triangles high | draws low | triangles low | assets MB (cold) | UI share |
+| --- | --- | --- | --- | --- | --- | --- |
+| hobbiton | 268 | 1,124,284 | 163 | 338,156 | 9.6 | 14.8 % (its title card up) |
+| shire-edge | 247 | 845,643 | 116 | 155,608 | 7.8 | 12.9 % |
+| bree | 295 | 1,020,600 | 161 | 210,279 | 8.9 | 12.8 % |
+| weathertop | 151 | 1,005,072 | 73 | 164,347 | 10.2 | 12.8 % |
+| ford | 110 | 627,753 | 57 | 97,211 | 11.8 | 14.7 % (its title card up) |
+| rivendell | 152 | 943,878 | 96 | 192,159 | 8.2 | 12.8 % |
+| caradhras | 46 | 350,085 | 58 | 112,580 | 4.6 | 12.8 % |
+| moria | 78 | 291,780 | 62 | 82,221 | 4.3 | 12.8 % |
+| lorien | 157 | 905,293 | 89 | 231,040 | 11.0 | 12.9 % |
+| anduin | 111 | 554,213 | 64 | 150,265 | 7.6 | 12.9 % |
+| marshes | 46 | 591,001 | 64 | 164,533 | 4.7 | 13.0 % |
+| ithilien | 94 | 737,953 | 89 | 128,235 | 9.3 | 12.7 % |
+| cirith-ungol | 121 | 306,289 | 56 | 69,443 | 5.3 | 12.9 % |
+| gorgoroth | 85 | 356,031 | 79 | 182,407 | 8.7 | 12.8 % |
+| minas-tirith | 142 | 668,928 | 116 | 259,121 | 5.5 | 11.6 % |
+| havens | 56 | 588,459 | 36 | 139,312 | 7.3 | 12.9 % |
+
+- **Draws**: 295 at most on high (against 350), 163 on low (against 200).
+- **Triangles**: 1,124,284 at most on high (against 1,200,000), 338,156 on low (against 400,000).
+- A single frame swings by a fifth as the scatter and the figures come in (Bree read 131 draws on one run and 295 on another; Hobbiton 1.00 to 1.17 million). The table is one run, every stage in it under.
+- **Before R7** on high: Hobbiton 368 draws and 1,538,722 triangles, the Shire’s edge 1,227,011; on low, Hobbiton 481 k and the Havens 418 k. What brought them under:
+  - *A band’s statics cast as one shape* (`stages/parts.js`’s `mergeStatics` and `CASTS`): the cascades drew every merged mesh a material a band, 127 of Hobbiton’s 230 shadow draws in one frame. Each half band’s opaque casters are now one positions-only mesh on a layer only the sun’s cameras see (`module.js` enables it on the light’s shadow camera, which the cascades clone), and the drawn meshes stop casting. Every stage built from merged statics gained: Rivendell 256 → 152 draws, Moria 115 → 78.
+  - *The Hill’s grass only over the Hill* (`ground.js`’s `patchOver`): the mounds’ patch of blades was the field’s count again, 187,500 triangles, drawn wherever the camera stood. It is drawn while a quarter of it lies over the mounds.
+  - *Hobbiton’s far corn and hedges* (`parts.js`’s `inReach`, the hedges within 120 m and the corn’s clumps within 100 m of the ride; the solids grid still takes them, `userData.far`).
+  - *The Shire’s wheat and hedge lighter* (`stages/shireLight.js`, the same size and colour at half the triangles or less) and the Shire’s edge’s clumps three rows deep at 0.8 m, the canopy brought in under them: 712 clumps were 359,000 triangles.
+  - *The Havens’ sea in 5 m rows*: the Gulf’s still sheet at 2 m was 361,000 of a low frame’s 418,000.
+- **The UI**: 11.6 to 13.0 % walking on a desktop (against 14), since the ribbon is at most 56 rem and centred (it was the stage’s width of glass, 9 % of a 1440 screen). The two over are the stage’s opening title card in its first seconds: at Hobbiton 7.6 % of the window, the Ford’s tale as long.
+- **The one page error** each row counted is three’s notice that WebGPU is missing in the container (“running under WebGL2 backend”), not a fault.
+
+### The ride (`clock.test.js`’s ledger, on auto)
+
+1,797 s from Bag End to the Havens (the design’s 20 to 30 minutes), every stage between 90 and 140 s (60 to 150):
+
+| stage | m | holds s | s on auto | stage | m | holds s | s on auto |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| hobbiton | 220 | 30 | 118 | lorien | 150 | 34 | 94 |
+| shire-edge | 175 | 34 | 104 | anduin | 170 | 42 | 110 |
+| bree | 150 | 30 | 90 | marshes | 150 | 42 | 102 |
+| weathertop | 165 | 46 | 112 | ithilien | 160 | 62 | 126 |
+| ford | 200 | 32 | 112 | cirith-ungol | 150 | 42 | 102 |
+| rivendell | 155 | 54 | 116 | gorgoroth | 180 | 60 | 132 |
+| caradhras | 170 | 47 | 115 | minas-tirith | 160 | 34 | 98 |
+| moria | 180 | 54 | 126 | havens | 290 | 24 | 140 |
+
+The deeds’ waits are the visitor’s and are not counted.
+
+### The download (`node lab/road/measure-ride.mjs`, high)
+
+One window opened at Bag End and carried stage by stage to the Havens by the world’s own jump, each stage held 10 s once current, every file counted once:
+
+| stage | MB fetched | MB so far | stage | MB fetched | MB so far |
+| --- | --- | --- | --- | --- | --- |
+| hobbiton (the boot) | 7.1 | 7.1 | lorien | 1.4 | 20.9 |
+| shire-edge | 2.3 | 9.5 | anduin | 1.0 | 21.9 |
+| bree | 2.0 | 11.5 | marshes | 0.0 | 21.9 |
+| weathertop | 2.8 | 14.3 | ithilien | 0.0 | 21.9 |
+| ford | 2.9 | 17.2 | cirith-ungol | 1.7 | 23.5 |
+| rivendell | 0.0 | 17.2 | gorgoroth | 1.4 | 24.9 |
+| caradhras | 0.4 | 17.6 | minas-tirith | 0.2 | 25.1 |
+| moria | 1.8 | 19.4 | havens | 1.0 | 26.1 |
+
+- **The boot slice** 7.1 MB (against 8); **the whole ride** 26.1 MB (against 45). `WORLD_MB['/middle-earth/road']` and the module’s `mb` are 27 (the spine’s guess was 8).
+- A stage that fetched nothing had its files fetched with its neighbour, a stage ahead. The table’s cold column above is larger, each stage there fetching its neighbours and the cast from nothing.
+- The first ride measure read 11.7 MB: a new address in the same window left the ride at Bree, and `measure-ride.mjs` jumps by `goTo` now.
+
+### The probe (`scripts/perf-probe.mjs road`)
+
+`#/middle-earth/road?at=moria`, the world up, 4 s settled, then the road walking itself; `GPU=webgl`, the container’s Chromium (SwiftShader). Low at 1440 × 900; High timed out there after 300 s of the canvas being resized in software (the first frame’s textures) and was taken at 960 × 600.
+
+| route | machine | drawn on | quality | ready s | fps | p50 ms | worst 1 % ms | main ms | GPU ms | draws | programs | late pipelines |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| road | container | nodes-webgl | low | 41.9 | 1 | 37.4 | 15106.7 | 15.8 | - | 149 | 51 | 19 |
+| road | container | nodes-webgl | high (960 × 600) | 175.7 | 55.2 | 17.9 | 27.3 | 16.2 | - | 242 | 72 | 0 |
+| road | owner’s laptop | webgpu | high | | | | | | | | | |
+| road | owner’s desktop | webgpu | high | | | | | | | | | |
+
+The frame times are the software rasteriser’s. Low’s worst frames are shaders linked in the frame as the next stage came (one held `getProgramParameter` for 970 ms): the 19 late pipelines. Compiling each stage off the frame as `lands.js` finishes it is still the mend, the R2 note’s.
+
+### The phone, and reduced motion
+
+- **Four stages on a phone** (390 × 844; `shots/hobbiton-phone.webp`, `moria-phone.webp`, `lorien-phone.webp`, `havens-phone.webp`): the ribbon one row of dots with no overlap (the 44 px dots overlapped before the ribbon’s width was fixed), Walk, Run and Talk in the thumbs. Walking, the UI is the ribbon (7.9 %), the brand and the Menu: about a tenth. A stage’s opening title card takes 15 % of a phone for its first seconds (Hobbiton’s first-ride card 24 %), over the design’s 22 % with the ribbon while it is up.
+- **The company on a phone**: at the walk’s 50° a portrait frame saw ±12° across and the follow’s lead, ten degrees off its aim, stood at the edge or out of it. The director’s `fovFor` opens a frame narrower than 0.6 upward (58° on this phone), and in Lothlórien all eight stand inside it, Frodo at two thirds of the half-width (`lorien-phone.webp`). Hobbiton’s opening placed shot still has Frodo just off the right of a phone’s frame until he walks into it.
+- **Reduced motion** (`prefers-reduced-motion` emulated): the ride stands still (the clock at the same metre over ten seconds), the prompt is “Enter · Next”, and Enter steps to the next mark (at Bree, to the gate’s deed). A phone had no Next: the thumbs are Walk and a big Next there now, and the prompt’s click is Next too (the world’s `next()`).
+- In the lab a figure takes longer to load than a stage: a picture taken in the first seconds can have no company in it. The phone pictures were taken once the figures were in.

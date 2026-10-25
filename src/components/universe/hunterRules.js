@@ -76,6 +76,7 @@
 import { intercept, nose, sweptHit } from './targeting';
 import { segmentHit } from '../../lib/combat/hulls';
 import { hunterPose } from '../../lib/combat/pose';
+import { shotRadius } from '../../lib/combat/contact';
 import { factionsOf, kindsOf, namesOf } from './sides';
 import { PACE } from './ship';
 import { belief, createSenses, sense } from '../../lib/ai/perception';
@@ -196,7 +197,7 @@ export function fightSpeed(type, yourSpeed, gap) {
 // How near a shot must pass a kind's middle to hit it (a touch more than
 // its size: the guns are forgiving). Here, and for the hunters after
 // another pilot (online/pilots.js), so a shot counts the same either way
-export const hitRadius = (type) => type.size * 0.9 + 0.12;
+export const hitRadius = (type) => shotRadius(type.size); // (the bolt's rule)
 
 // How good a pilot is (a pack's `skill`, difficulty.js's tiers): of its
 // kind's lead and scatter, of the time between its shots and before its

@@ -451,6 +451,13 @@ export const BRIEFS = {
       text: 'Leave the keys and it walks on at a walk, stopping where something happens. Space turns it off and on.',
       keys: [['Space', 'Let the road walk']],
     },
+    {
+      id: 'deeds',
+      title: 'Your part',
+      text: 'At some moments the road stops and a card asks you to act: press, hold, keep a rhythm or choose a word. T has a word with whoever walks beside you.',
+      keys: [['E', 'Do it'], ['A, D', 'A rhythm, in turn'], ['T', 'Talk']],
+      touch: [['Do it', 'The card’s button']],
+    },
     help('the Road'),
   ],
   '/middle-earth/place': [
@@ -620,7 +627,7 @@ export const BRIEFS = {
     {
       id: 'walk',
       title: 'Walking',
-      text: 'The Smiths’ house, the school and Blips and Chitz are along the street.',
+      text: 'The Smiths’ house, Rick’s garage, the school, Shoney’s and Dr. Wong’s office are along the street; Rick’s portal in the garage goes wherever his gun is dialled.',
       keys: [...WALK, ['Space', 'Jump']],
       touch: WALK_TOUCH,
     },
@@ -638,7 +645,7 @@ export const BRIEFS = {
     {
       id: 'goal',
       title: 'Where to start',
-      text: 'The portal gun’s on Rick’s bench in the garage: dial Blips and Chitz or one of twenty-six places from the show, then step through the portal on the west wall. Or take the cruiser up (E by it). The show’s planets are on the universe map: land on one and you’re in it.',
+      text: 'The story starts at Shoney’s, up the street: the line at the top says what’s next, and each episode opens more of the portal gun’s thirty-two places (Free roam, in Things to do, opens them all). The gun’s on Rick’s bench in the garage, its portal on the west wall. Or take the cruiser up (E by it). The show’s planets are on the universe map: land on one and you’re in it.',
       keys: [
         ['E', 'The portal gun, at Rick’s bench'],
         ['P', 'The portal gun, from anywhere'],

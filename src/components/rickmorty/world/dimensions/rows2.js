@@ -2,6 +2,8 @@
 
 import { E, N, S, W, place } from './place';
 
+const low = (l) => l[0].toLowerCase() + l.slice(1);
+
 export const ROWS = [
   place(13, {
     id: 'simulation',
@@ -54,6 +56,7 @@ export const ROWS = [
   }),
   place(14, {
     id: 'storytrain',
+    achieve: 'storytrain',
     name: 'The Story Train',
     note: 'A carriage on the Story Train, the anthology going past the windows. Someone wants to see your ticket.',
     kind: 'room',
@@ -90,6 +93,7 @@ export const ROWS = [
   }),
   place(15, {
     id: 'fortress',
+    achieve: 'fortress',
     name: 'Rick Prime’s fortress',
     note: 'A cold hangar of Rick Prime’s, somewhere out past the Central Finite Curve. The Omega Device is here.',
     kind: 'room',
@@ -172,6 +176,7 @@ export const ROWS = [
   }),
   place(17, {
     id: 'nimbus',
+    achieve: 'nimbus',
     name: 'Mr. Nimbus’s beach',
     note: 'The shore where the land meets the sea. Mr. Nimbus controls the police, and he’s expecting Rick.',
     kind: 'outdoor',
@@ -211,6 +216,7 @@ export const ROWS = [
   }),
   place(18, {
     id: 'gromflomites',
+    achieve: 'gromflomites',
     name: 'The Gromflomite base',
     note: 'Where the Federation keeps Fart, the being Krombopulos Michael was paid to kill. Guards on every walkway.',
     kind: 'room',
@@ -240,7 +246,7 @@ export const ROWS = [
       { id: 'crate-e', dx: 12, dz: 6, w: 2, d: 2 },
       { id: 'lockers', dx: -18.6, dz: -2, w: 1.2, d: 8 },
     ],
-    tasks: [{ id: 'gromflomites', name: 'Open Fart’s cell', hint: 'Dial the Gromflomite base on the portal gun, and reach the cell at the far end without a guard seeing you. Use the crates.' }],
+    tasks: [{ id: 'gromflomites', name: 'Open Fart’s cell', hint: 'Dial the Gromflomite base on the portal gun, and reach the cell at the far end without a guard catching you.' }],
     say: {
       kmichael: { who: 'Krombopulos Michael', text: 'Oh boy. Hi, Morty. Don’t mind me, I’m just here to kill a guy. A gas, technically. Look, if you got the cell open for me I’d be real grateful. I’d owe you a killing.' },
       fartcell: { who: 'Fart', text: 'The lock sings a note and the door slides. “Thank you, Morty.” Across the room, Krombopulos Michael says “Oh boy” and is already running.' },
@@ -263,8 +269,8 @@ export const ROWS = [
     ceiling: 8,
     people: [
       { id: 'miles', dx: -8, dz: -8, face: S, ai: { watch: 9, bark: { r: 6, every: 16, lines: ['You look like a kid who could be a crew member. Everybody’s somebody’s crew member.', 'The heist of the century, and it’s this: the heist is the con. The con is the heist.'] } } },
-      { id: 'heister-a1', who: 'heister-a', dx: 6, dz: 2, face: W, ai: { wander: [[6, 2], [12, 6], [4, 8]], speed: 0.8, pause: 4 } },
-      { id: 'heister-b1', who: 'heister-b', dx: -12, dz: 4, face: E, ai: { wander: [[-12, 4], [-6, 8], [-15, 9]], speed: 0.9, pause: 3 } },
+      { id: 'heister-a1', who: 'heister-a', dx: 6, dz: 2, face: W, ai: { wander: [[6, 2], [7.6, 2.8], [6.8, 3.8]], speed: 0.8, pause: 4, hunt: { speed: 2.6, catchR: 1.2, until: 'heistcon' } } },
+      { id: 'heister-b1', who: 'heister-b', dx: -7, dz: 3, face: E, ai: { wander: [[-7, 3], [-8.6, 3.8], [-7.8, 4.8]], speed: 0.9, pause: 3, hunt: { speed: 2.8, catchR: 1.2, until: 'heistcon' } } },
     ],
     extras: [
       { kind: 'heister-a', dx: 14, dz: -6, face: W, ai: { wander: [[14, -6], [10, -2], [16, 0]], speed: 0.7, pause: 5 } },
@@ -275,11 +281,15 @@ export const ROWS = [
     ],
     spots: [
       { id: 'miles', dx: -8, dz: -6.4, label: 'Miles Knightly', verb: 'Talk' },
-      { id: 'heister-a1', dx: 6, dz: 2, label: 'A heister', verb: 'Recruit', r: 1.6 },
-      { id: 'heister-b1', dx: -12, dz: 4, label: 'A cat burglar', verb: 'Recruit', r: 1.6 },
+      { id: 'heister-a1', dx: 6, dz: 2, label: 'A muscle', verb: 'Recruit', r: 1.6 },
+      { id: 'heister-b1', dx: -7, dz: 3, label: 'A cat burglar', verb: 'Recruit', r: 1.6 },
       { id: 'heistotron', dx: 0, dz: -9, label: 'Heistotron', verb: 'Look', r: 2 },
-      { id: 'heistbooth', dx: 14, dz: 10, label: 'A booth', verb: 'Look', r: 1.8 },
+      { id: 'heistbooth', dx: 14, dz: 10, label: 'The gadget booth', verb: 'Lift', r: 1.8 },
       { id: 'heistbadge', dx: -8, dz: 11.4, label: 'The badge table', verb: 'Take a badge', r: 1.6 },
+      { id: 'heistplan', dx: 6, dz: -10.6, label: 'Heistotron’s plan', verb: 'Start the job', r: 1.8 },
+      { id: 'heisthire', dx: -14, dz: 10, label: 'The hiring booth', verb: 'Lift', r: 1.8 },
+      { id: 'heistskull', dx: 14.6, dz: -10, label: 'The skull booth', verb: 'Lift', r: 1.8 },
+      { id: 'heistcars', dx: -14.6, dz: -10, label: 'The getaway booth', verb: 'Lift', r: 1.8 },
     ],
     solids: [
       { id: 'stage', dx: 0, dz: -14, w: 14, d: 4 },
@@ -289,21 +299,49 @@ export const ROWS = [
       { id: 'booth-d', dx: -17, dz: -10, w: 2, d: 4 },
       { id: 'badges', dx: -8, dz: 13, w: 3, d: 1 },
     ],
-    tasks: [{ id: 'heistcon', name: 'Assemble a crew', hint: 'Dial Heist-Con on the portal gun, take a badge, and recruit two heisters for Miles Knightly.' }],
+    tasks: [{ id: 'heistcon', name: 'Run the job at Heist-Con', hint: 'Dial Heist-Con on the portal gun, take a badge and recruit a muscle and a cat burglar for Miles Knightly, then start the job at Heistotron’s plan and lift from the four booths in the order the meter gives before the keynote ends, with your own crew after you.' }],
     say: {
       miles: { who: 'Miles Knightly', text: '“Kid. You in?” He doesn’t wait. “Get me a muscle and a cat burglar and we’ve got the start of something. Then we double-cross everyone. That’s the job.”' },
-      'heister-a1': { who: 'A heister', text: '“Muscle? Sure. I lift things. Sometimes they’re safes.” He hands you a card. It just says MUSCLE.' },
+      'heister-a1': { who: 'A muscle', text: '“Muscle? Sure. I lift things. Sometimes they’re safes.” He hands you a card. It just says MUSCLE.' },
       'heister-b1': { who: 'A cat burglar', text: '“Lasers, vents, roofs. I’m in if Knightly’s in. Tell him I want a bigger cut than last time.”' },
       heistotron: { who: null, text: 'Heistotron. A robot built to plan heists. Rick built it to beat Miles, then it heisted Rick’s plan to heist it. It’s giving the keynote.' },
       heistbooth: { who: null, text: 'A booth selling grappling hooks, glass cutters and a book called “Your Crew And You”. Everything is stolen as you watch.' },
       heistbadge: { who: null, text: 'A badge: HELLO MY NAME IS and a blank. You write MORTY, and somebody steals the pen.' },
+      heistplan: { who: null, text: 'Heistotron’s plan for the hall, taped to the edge of the stage: four booths circled in red, in an order of its own.' },
+      heisthire: { who: null, text: 'A board of crews for hire, and Miles Knightly’s name is scrawled across every card on it.' },
+      heistskull: { who: null, text: 'A crystal skull in a glass case, and the Zigerion minding it keeps a spare under the counter.' },
+      heistcars: { who: null, text: 'Getaway cars sold from a brochure, and somebody has left a set of keys on the counter.' },
     },
-    collect: { task: 'heistcon', spots: ['heistbadge', 'heister-a1', 'heister-b1'] },
-    goal: 'heistbadge',
+    // the crew first, which ticks nothing and opens the job (../games/sequence.js' `ready`); then the
+    // booths lifted in an order dealt each run, with the crew turned on him
+    collect: { task: 'heistcon', spots: ['heistbadge', 'heister-b1', 'heister-a1'], start: true },
+    sequence: {
+      task: 'heistcon',
+      start: 'heistplan',
+      items: ['heistbooth', 'heisthire', 'heistskull', 'heistcars'],
+      need: 4,
+      s: 45,
+      hunt: true,
+      who: null,
+      unlock: 'heistcon',
+      before: 'Miles won’t start the job without his crew: take a badge, then recruit a muscle and a cat burglar.',
+      early: 'The job hasn’t started yet: start it at Heistotron’s plan by the stage.',
+      spotted: 'Heistotron’s plan was a double-cross: it’s hypnotised your crew, and they’re coming for you.',
+      lost: 'The keynote ends and the lights come up before the job’s done: back to the door, and get Miles a crew again.',
+      words: {
+        next: (l, on, n) => `${on} of ${n} lifted: next, ${low(l)}`,
+        dark: (l) => `Wrong booth, and the Zigerions take it all back: start again with ${low(l)}`,
+        again: (l) => `That one’s lifted already: next, ${low(l)}`,
+      },
+      meter: { title: 'The job', label: 'Time', icon: 'safe' },
+    },
+    caught: 'Glassy-eyed, the recruit you signed up for Miles marches you back to the door and tears up your badge.',
+    goal: 'heistplan',
     kinds: ['miles', 'heister-a', 'heister-b', 'heistotron'],
   }),
   place(20, {
     id: 'snakeplanet',
+    achieve: 'snakeplanet',
     name: 'Snake Planet',
     note: 'A planet of snakes, with a space programme. Everything here is a snake, and most of them bite.',
     kind: 'outdoor',
@@ -346,6 +384,7 @@ export const ROWS = [
   }),
   place(21, {
     id: 'nuptia',
+    achieve: 'nuptia',
     name: 'Nuptia 4',
     note: 'The couples’ retreat on a cliff over the clouds. The machine reads what you think of each other, and makes it.',
     kind: 'outdoor',
@@ -449,6 +488,7 @@ export const ROWS = [
   }),
   place(23, {
     id: 'resort',
+    achieve: 'resort',
     name: 'The Immortality Field Resort',
     note: 'A resort where nobody can die, inside the field. Risotto Groupon runs it, and he has plans for Rick.',
     kind: 'outdoor',
@@ -500,6 +540,7 @@ export const ROWS = [
     sky: { top: 0x1a1a4a, mid: 0x4a3a8a, low: 0xd86a4a, sun: 0xffb060, clouds: 0, moons: 0 },
     people: [{ id: 'watert', dx: -4, dz: -12, face: S, ai: { watch: 10, bark: { r: 6, every: 15, lines: ['You here to play, little man? The heads want a song. Give the heads a song.', 'My father was a block of ice. I became water. We all become something.'] } } }],
     extras: [
+      // (the head calls for a song, and its verdicts too: recorded in its own voice, as the show's end card shows them, ../games/Schwifty.jsx)
       { kind: 'cromulon', dx: 0, dz: -60, face: S, y: 10, h: 24, ai: { watch: 80, bark: { r: 70, every: 20, lines: ['SHOW ME WHAT YOU GOT.', 'I LIKE WHAT YOU GOT. GOOD JOB.', 'DISQUALIFIED.'] } } },
       { kind: 'cromulon', dx: -40, dz: -56, face: S + 0.3, y: 10, h: 24 },
       { kind: 'cromulon', dx: 40, dz: -58, face: S - 0.3, y: 10, h: 24 },

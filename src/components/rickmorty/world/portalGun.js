@@ -8,6 +8,12 @@
 import { DIAL, portalTarget } from './dimensions/destinations';
 import { inLine } from './planetMode';
 
+// whether the gun wants dialling before the garage portal takes Morty to `area`,
+// `dialled` where it's set (the dial's 'annex' is Blips and Chitz, its arcade
+// inside it); false for anywhere the portal doesn't go
+const dialFor = (area) => (area === 'arcade' || area === 'annex' ? 'annex' : DIAL.some((d) => d.id === area) ? area : null);
+export const dialFirst = (area, dialled) => dialFor(area) != null && dialFor(area) !== dialled;
+
 // the place the dial's set to, by name ('annex', or an old or unknown setting, is Blips and Chitz)
 export const dialledName = (dial) => DIAL.find((d) => d.id === portalTarget(dial)).name;
 
@@ -16,6 +22,10 @@ export const portalName = (dial) => `Through the portal to ${inLine(dialledName(
 
 // what's said once it's dialled: where the portal is, if Morty isn't by it
 export const dialledNote = (dial, area) => `Dialled to ${inLine(dialledName(dial))}. ${area === 'garage' ? 'Step through the portal.' : 'The portal’s on the west wall of Rick’s garage.'}`;
+
+// what follows Rick's line in the garage (Blips and Chitz is through the
+// portal, he says) when the portal's dialled somewhere else: where it goes
+export const rickAside = (who, dial) => (who === 'rick' && dial !== 'annex' ? dialledNote(dial, 'garage') : null);
 
 // P, pressed (not held, and not with Ctrl, Cmd or Alt): the gun
 export const isGunKey = (e) => (e.code === 'KeyP' || (!e.code && (e.key === 'p' || e.key === 'P'))) && !e.repeat && !e.metaKey && !e.ctrlKey && !e.altKey;

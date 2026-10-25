@@ -233,6 +233,16 @@ describe('the face’s wiring: keys, events, the save', () => {
     expect(rt.emitted.some((e) => e.type === 'end')).toBe(false);
   });
 
+  it('under reduced motion the page’s Next (a touch, a click) steps as Enter does, once a press', async () => {
+    const world = await road.create(fakeRt(), { at: null, reduced: true });
+    world.attached();
+    world.next();
+    world.step(1 / 60, snap());
+    expect(world.s).toBeCloseTo(sOf(STAGES, 'hobbiton', 40), 9);
+    world.step(1 / 60, snap());
+    expect(world.s).toBeCloseTo(sOf(STAGES, 'hobbiton', 40), 9);
+  });
+
   it('while the resume card waits nothing walks, and under reduced motion Enter carries on', async () => {
     const rt = fakeRt();
     rt.saves.set('tp-road', { v: 1, s: sOf(STAGES, 'moria', 10), ridden: false, at: 0 });

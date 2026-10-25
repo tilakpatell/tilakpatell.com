@@ -14,7 +14,7 @@ import { askBrief } from '../tour/brief';
 import LoadingVeil from '../worlds/LoadingVeil';
 import { RiShieldLine } from 'react-icons/ri';
 import PowerBar from './PowerBar';
-import { Abilities, Arms, Cluster, Prompt, Reticle, TouchButton, Vitals } from '../../runtime/hud';
+import { Abilities, FlightHud, Prompt, Reticle } from '../../runtime/hud';
 import { PROMPT as LOOK_PROMPT } from '../../runtime/look';
 
 // The map: the 3D scene (scene.js and planets.js, a world module on the
@@ -49,13 +49,9 @@ export default function UniverseMap({ selected, onSelect, onOpen, handle, frozen
   const labels = useRef({});
   const tags = useRef(null);
   const stick = useRef(null);
-  const alt = useRef(null);
-  const cluster = useRef(null); // the flight cluster: shields and arms in a ship, health on foot (the HUD kit's: clusterView.js)
   const abilitiesEl = useRef(null); // the crew member's abilities on foot, as a touch screen's buttons (in the cluster on a desktop)
   const powers = useRef(null); // the crew's two powers' tiles in it (PowerBar.jsx; the scene writes them: powers.js)
-  const thumbs = useRef(null); // the touch buttons, one grid under the right thumb (the powers in it on a touch screen)
   const touch = useMediaQuery('(pointer: coarse)');
-  const wantedEl = useRef(null); // (the law's stars and the bounty on you: wanted.js)
   const { economy } = useEconomy({ ask: false }); // (the wallet a bounty's paid off from)
   const hud = useRef(null);
   const siegeEl = useRef(null); // the Citadel's siege (siege.js)
@@ -112,11 +108,8 @@ export default function UniverseMap({ selected, onSelect, onOpen, handle, frozen
       controls,
       labels,
       stick,
-      alt,
-      cluster,
       abilities: abilitiesEl,
       powers,
-      wanted: wantedEl,
       wallet: economy,
       hud,
       siege: siegeEl,
@@ -176,48 +169,6 @@ export default function UniverseMap({ selected, onSelect, onOpen, handle, frozen
   useEffect(() => {
     if (ship && on) askBrief('/universe/fly');
   }, [ship, on]);
-  // The cluster's height on the map (--hud-cluster-h), for the prompt, the
-  // way in and the jump button over it: layout, not a HUD number, so the
-  // browser says when it changes (as the galaxy's --fc-h). (On a touch
-  // screen the row has no box of its own: 0.)
-  useEffect(() => {
-    const root = cluster.current;
-    const map = root?.parentElement;
-    const row = root?.querySelector('.hud-cluster-row');
-    if (!row || !map || typeof ResizeObserver !== 'function') return undefined;
-    const fit = () => map.style.setProperty('--hud-cluster-h', `${row.offsetHeight}px`);
-    const watch = new ResizeObserver(fit);
-    watch.observe(row);
-    fit();
-    return () => {
-      watch.disconnect();
-      map.style.removeProperty('--hud-cluster-h');
-    };
-  }, [ship, on]);
-  // The thumbs' size (--thumbs-h, --thumbs-w) on the page, for what sits
-  // over them on a touch screen: the prompt, the jump, the way in and what
-  // you've just earned (the page's EarnNote), and the first-flight hint
-  // beside them. Measured, as the cluster's height is; nothing on a desktop,
-  // where the grid has no box of its own.
-  useEffect(() => {
-    const deck = thumbs.current;
-    const page = deck?.closest('.universe-page') ?? deck?.parentElement;
-    if (!deck || !page || typeof ResizeObserver !== 'function') return undefined;
-    // (and the scene measures the open part again: held upright, it stops over them)
-    const fit = () => {
-      page.style.setProperty('--thumbs-h', `${deck.offsetHeight}px`);
-      page.style.setProperty('--thumbs-w', `${deck.offsetWidth}px`);
-      view.current?.refit?.();
-    };
-    const watch = new ResizeObserver(fit);
-    watch.observe(deck);
-    fit();
-    return () => {
-      watch.disconnect();
-      page.style.removeProperty('--thumbs-h');
-      page.style.removeProperty('--thumbs-w');
-    };
-  }, [ship, on, view]);
   useEffect(() => {
     if (!arrive) return undefined;
     const t = setTimeout(() => setArrive(null), 6500);
@@ -256,27 +207,15 @@ export default function UniverseMap({ selected, onSelect, onOpen, handle, frozen
     labels.current[to]?.focus();
   };
 
-  // (the held ones are the kit's TouchButton: it keeps the finger till it
-  // lifts, so a thumb that drifts off Fire or Boost doesn't let go of it)
-  const hold = (down) => (e) => {
-    if (down) e.preventDefault();
-    view.current?.boost?.(down);
+  // the touch buttons (FlightHud's grid: the held ones keep the finger till it lifts, so a thumb that drifts off doesn't let go)
+  const buttons = {
+    fire: (x) => view.current?.fire?.(x),
+    boost: (x) => view.current?.boost?.(x),
+    climb: (x) => view.current?.climb?.(x),
+    view: onFoot ? () => view.current?.swap?.() : () => view.current?.seat?.(),
+    weapon: onFoot ? null : () => view.current?.weapon?.(),
   };
-  const trigger = (down) => (e) => {
-    if (down) e.preventDefault();
-    view.current?.fire?.(down);
-  };
-  const climb = (way) => (e) => {
-    if (way) e.preventDefault();
-    view.current?.climb?.(way);
-  };
-  const climbButton = (way, label) => (
-    <TouchButton size={52} className="universe-climb" aria-label={label} onPress={climb(way)} onRelease={climb(0)}>
-      <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
-        <path d={way > 0 ? 'M5 15l7-7 7 7' : 'M5 9l7 7 7-7'} fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-    </TouchButton>
-  );
+  const refit = () => view.current?.refit?.(); // (the grid's size changed: the scene measures the open map again)
 
   return (
     <WorldHost world={{ host }} className="universe-map" data-ship={ship || undefined} data-foot={onFoot || undefined}>
@@ -330,137 +269,68 @@ export default function UniverseMap({ selected, onSelect, onOpen, handle, frozen
           </div>
           {ship && on && (
             <>
-              <div ref={stick} className="universe-stick" aria-hidden="true">
-                <span />
-              </div>
-              <div ref={alt} className="universe-alt" aria-hidden="true">
-                <span className="universe-alt-mark" />
-              </div>
-              {/* the flight cluster, bottom centre, as the galaxy has it: the shields and the line picked (health on foot) */}
-              <Cluster rootRef={cluster} className="universe-cluster" label={onFoot ? 'On foot' : 'Flight'}>
-                <Vitals label={onFoot ? 'Health' : 'Shields'} icon={<RiShieldLine aria-hidden="true" />} />
-                <Arms keys />
-                {/* on foot: your crew member's two abilities, G and V (the scene writes their names and cooldowns); a touch screen's are buttons in the thumbs, below */}
-                {onFoot && !touch && <Abilities slots={FOOT_ABILITIES} />}
-                {/* (a touch screen's are round buttons in the thumbs' grid, below) */}
-                {!onFoot && !touch && <PowerBar ship={ship} reduced={reduced} barRef={powers} onPress={(slot) => view.current?.power?.(slot)} placement="cluster" picks={powerPicks} carry={skillFx?.carry} />}
-              </Cluster>
-              <div ref={wantedEl} className="universe-wanted" aria-hidden="true">
-                <span className="universe-wanted-stars">
-                  <i />
-                  <i />
-                  <i />
-                  <i />
-                  <i />
-                </span>
-                <b className="universe-wanted-word" />
-                <b className="universe-wanted-bounty" />
-              </div>
-              <div ref={hud} className="universe-hud" aria-hidden="true">
-                <span className="universe-reticle" />
-                {/* on foot, the kit's crosshair in the middle: the shot goes down the camera's ray (footAim.js) */}
-                <Reticle className="universe-foot-reticle" state={onFoot ? reticle : null} />
-                <span className="universe-lock">
-                  <i />
-                  <i />
-                  <i />
-                  <i />
-                  <b className="universe-lock-name" />
-                  <b className="universe-lock-dist" />
-                  <b className="universe-lock-hp" />
-                </span>
-                <span className="universe-threat" />
-                <span className="universe-threat" />
-                <span className="universe-threat" />
-                <span className="universe-mate">
-                  <b className="universe-mate-name" />
-                </span>
-                <span className="universe-mate">
-                  <b className="universe-mate-name" />
-                </span>
-                <span className="universe-mate">
-                  <b className="universe-mate-name" />
-                </span>
-                <span className="universe-mate">
-                  <b className="universe-mate-name" />
-                </span>
-                <span className="universe-lead" />
-                <span className="universe-nav">
-                  <i />
-                  <b className="universe-nav-name" />
-                  <b className="universe-nav-dist" />
-                </span>
-              </div>
-              <div ref={siegeEl} className="universe-siege" role="status">
-                <b>The Citadel</b>
-                <span className="universe-siege-state" />
-              </div>
-              <p ref={prompt} className="universe-prompt" aria-live="polite" />
-              {/* the star the nose is on, to jump to: J, or this (a touch screen's way) */}
-              {!onFoot && ship && aim && (
-                <button type="button" className="universe-jump" onClick={() => view.current?.travel?.(aim.id, 'hyper')}>
-                  <span className="universe-jump-label">Jump to {aim.name ?? 'it'}</span>
-                  <kbd aria-hidden="true">J</kbd>
-                </button>
-              )}
-              {/* (hidden until the crew are down on a planet with a world: the scene says when, and what it's called) */}
-              <button ref={enterBtn} type="button" className="universe-wayin" hidden onClick={() => view.current?.enter?.()}>
-                <span className="universe-wayin-label" />
-                <kbd className="universe-wayin-key" aria-hidden="true">
-                  Enter
-                </kbd>
-              </button>
-              {/* The thumbs: every touch button in one grid in the right
-                  thumb's corner (laid out by universe.css, wider and lower
-                  with the phone on its side), the left of the screen left
-                  free to drag the ship about. No box of its own on a
-                  desktop, where only the portal gun shows. */}
-              <div ref={thumbs} className="universe-thumbs">
-                {!onFoot && touch && <PowerBar ship={ship} reduced={reduced} barRef={powers} onPress={(slot) => view.current?.power?.(slot)} picks={powerPicks} carry={skillFx?.carry} />}
-                {onFoot && touch && <Abilities slots={FOOT_ABILITIES} rootRef={abilitiesEl} onPress={(slot, down) => view.current?.ability?.(slot, down)} />}
-                {/* Rick's portal gun, in any ship: a portal ahead, to his dimension or home (gunPortal.js) */}
-                {!onFoot && (
-                  <button type="button" className="universe-portalgun" onPointerDown={(e) => (e.preventDefault(), view.current?.portalGun?.())} onContextMenu={(e) => e.preventDefault()} title="Rick’s portal gun: a portal ahead, to his dimension (or home)">
-                    <i className="universe-portalgun-swirl" aria-hidden="true" />
-                    <span className="universe-portalgun-label">Portal</span>
-                    <kbd aria-hidden="true">P</kbd>
-                  </button>
-                )}
-                <div className="universe-climbs">
-                  {climbButton(1, onFoot ? 'Jump' : 'Nose up')}
-                  {!onFoot && climbButton(-1, 'Nose down')}
-                </div>
-                {onFoot ? (
-                  <button type="button" className="universe-view" onPointerDown={(e) => (e.preventDefault(), view.current?.swap?.())} onContextMenu={(e) => e.preventDefault()}>
-                    Switch
-                  </button>
-                ) : (
-                  <button type="button" className="universe-view" onPointerDown={(e) => (e.preventDefault(), view.current?.seat?.())} onContextMenu={(e) => e.preventDefault()}>
-                    View
-                  </button>
-                )}
-                {onFoot && (
-                  <button type="button" className="universe-out" onPointerDown={(e) => (e.preventDefault(), view.current?.out?.())} onContextMenu={(e) => e.preventDefault()}>
-                    Board
-                  </button>
-                )}
-                {!onFoot && !landable && phoneNear && (
-                  <button type="button" className="universe-out" onClick={() => events.current?.({ type: 'phone', what: 'open' })}>
-                    Phone
-                  </button>
-                )}
-                {!onFoot && (
-                  <button type="button" className="universe-weapon" onPointerDown={(e) => (e.preventDefault(), view.current?.weapon?.())} onContextMenu={(e) => e.preventDefault()}>
-                    Weapon
-                  </button>
-                )}
-                <TouchButton className="universe-fire" onPress={trigger(true)} onRelease={trigger(false)}>
-                  Fire
-                </TouchButton>
-                <TouchButton size={76} className="universe-boost" onPress={hold(true)} onRelease={hold(false)}>
-                  {onFoot ? 'Run' : 'Boost'}
-                </TouchButton>
-              </div>
+              {/* the flight HUD, the galaxy's own (the HUD kit's FlightHud): the stick's ring, the altitude, the cluster bottom
+                  centre (the radar, the shields, the speed and the kills, the line picked, the target; health on foot), the law's
+                  strip and the overlay, with the Citadel's siege, the prompt and the way in after it; the jump button; and the
+                  thumbs' grid (the world's own buttons first: the powers or abilities, the portal gun, the way out, the phone) */}
+              <FlightHud
+                hudRef={hud}
+                crosshair={<Reticle className="universe-foot-reticle" state={onFoot ? reticle : null} />}
+                stickRef={stick}
+                className="universe-cluster"
+                foot={onFoot}
+                vitalsIcon={<RiShieldLine aria-hidden="true" />}
+                armsKeys
+                // (a touch screen's powers and abilities are round buttons in the thumbs' grid)
+                powers={!onFoot && !touch && <PowerBar ship={ship} reduced={reduced} barRef={powers} onPress={(slot) => view.current?.power?.(slot)} placement="cluster" picks={powerPicks} carry={skillFx?.carry} />}
+                // (on foot: your crew member's two abilities, G and V; the scene writes their names and cooldowns)
+                row={onFoot && !touch && <Abilities slots={FOOT_ABILITIES} />}
+                overlay={
+                  <div ref={siegeEl} className="universe-siege" role="status">
+                    <b>The Citadel</b>
+                    <span className="universe-siege-state" />
+                  </div>
+                }
+                after={
+                  <>
+                    <p ref={prompt} className="universe-prompt" aria-live="polite" />
+                    {/* (hidden until the crew are down on a planet with a world: the scene says when, and what it's called) */}
+                    <button ref={enterBtn} type="button" className="universe-wayin" hidden onClick={() => view.current?.enter?.()}>
+                      <span className="universe-wayin-label" />
+                      <kbd className="universe-wayin-key" aria-hidden="true">
+                        Enter
+                      </kbd>
+                    </button>
+                  </>
+                }
+                jump={!onFoot && aim ? { className: 'universe-jump', name: aim.name ?? 'it', onPress: () => view.current?.travel?.(aim.id, 'hyper') } : null}
+                controls={buttons}
+                onThumbsFit={refit}
+                thumbs={
+                  <>
+                    {!onFoot && touch && <PowerBar ship={ship} reduced={reduced} barRef={powers} onPress={(slot) => view.current?.power?.(slot)} picks={powerPicks} carry={skillFx?.carry} />}
+                    {onFoot && touch && <Abilities slots={FOOT_ABILITIES} rootRef={abilitiesEl} onPress={(slot, down) => view.current?.ability?.(slot, down)} />}
+                    {/* Rick's portal gun, in any ship: a portal ahead, to his dimension or home (gunPortal.js) */}
+                    {!onFoot && (
+                      <button type="button" className="universe-portalgun" onPointerDown={(e) => (e.preventDefault(), view.current?.portalGun?.())} onContextMenu={(e) => e.preventDefault()} title="Rick’s portal gun: a portal ahead, to his dimension (or home)">
+                        <i className="universe-portalgun-swirl" aria-hidden="true" />
+                        <span className="universe-portalgun-label">Portal</span>
+                        <kbd aria-hidden="true">P</kbd>
+                      </button>
+                    )}
+                    {onFoot && (
+                      <button type="button" className="universe-out" onPointerDown={(e) => (e.preventDefault(), view.current?.out?.())} onContextMenu={(e) => e.preventDefault()}>
+                        Board
+                      </button>
+                    )}
+                    {!onFoot && !landable && phoneNear && (
+                      <button type="button" className="universe-out" onClick={() => events.current?.({ type: 'phone', what: 'open' })}>
+                        Phone
+                      </button>
+                    )}
+                  </>
+                }
+              />
               {arrive && (
                 <div className="universe-arrive" key={arrive.at} role="status">
                   <p className="universe-arrive-title">{arrive.title}</p>

@@ -1,11 +1,32 @@
 import { describe, expect, it } from 'vitest';
 import { HOTSPOTS, LINKS, TASKS, nearHotspot, nearLink } from './rules';
 import { DIAL, linkTarget } from './dimensions/destinations';
-import { dialledName, dialledNote, firstHint, isGunKey, portalName } from './portalGun';
+import { dialFirst, dialledName, dialledNote, firstHint, isGunKey, portalName, rickAside } from './portalGun';
 
 const garagePortal = LINKS.find((l) => l.id === 'garage-portal');
 
 describe('C-137: the portal gun', () => {
+  it('has Rick’s aside name where the portal really goes, after his line that Blips and Chitz is through it', () => {
+    expect(rickAside('rick', 'customs')).toBe('Dialled to Interdimensional Customs. Step through the portal.');
+    expect(rickAside('rick', 'annex')).toBe(null);
+    expect(rickAside('jerry', 'customs')).toBe(null);
+  });
+
+  it('wants the gun dialled first when the garage portal is set somewhere else than where the step is', () => {
+    expect(dialFirst('needful', 'gromflomites')).toBe(true);
+    expect(dialFirst('needful', 'needful')).toBe(false);
+    // (Blips and Chitz is the dial's 'annex', its arcade inside it)
+    expect(dialFirst('arcade', 'annex')).toBe(false);
+    expect(dialFirst('annex', 'customs')).toBe(true);
+    expect(dialFirst('arcade', 'customs')).toBe(true);
+    // (the sector's four and the Citadel are on the dial too)
+    expect(dialFirst('squanch', 'birdworld')).toBe(true);
+    expect(dialFirst('citadel', 'citadel')).toBe(false);
+    // (somewhere the garage portal doesn't go: nothing to dial)
+    expect(dialFirst('house', 'customs')).toBe(false);
+    expect(dialFirst('gazorpazorp', 'customs')).toBe(false);
+  });
+
   it('names where the garage portal is dialled, as the trip through it does', () => {
     for (const d of DIAL.slice(1)) {
       expect(dialledName(d.id)).toBe(d.name);

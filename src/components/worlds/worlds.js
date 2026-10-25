@@ -31,7 +31,7 @@ export const WORLD_MB = {
   '/fly': 22,
   // planet flight: end
   '/deathstar/inside': 6, // aboard the station: the first room's kit and textures at phone size, and the cast it starts with (people, guns, the borrowed clips) (3.8 MB measured 2026-10-21 at a phone's mid, lane C3, the cast on the game's bodies: 2.7 before; a Rebel's story start, the Falcon's crew on the heroes' light cuts, fetches 16.7 MB of models where it was 5.4, past this row's first room)
-  '/middle-earth/road': 8, // the Road: a guess until the measure (lab/road/measure.mjs, the Road’s Task 10) reads it from a ride
+  '/middle-earth/road': 27, // the Road ridden end to end on high, every file once: 26.1 MB, the boot 7.1 (lab/road/measure-ride.mjs, 2026-10-25)
   '/middle-earth': 1, // the Red Book is drawn in code; Gandalf through its window is the cast’s model and its three clips, 0.52 MB, fetched the first time the window is looked through (the map hub’s two places are under a tenth of an MB)
   '/music': 7, // the music planet's courtyard: its instruments, chhatri, lamps and gaddi (Meshy models), sandstone, a dusk sky
   '/dot-matrix': 1, // drawn in code

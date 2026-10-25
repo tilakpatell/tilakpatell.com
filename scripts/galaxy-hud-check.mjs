@@ -1,4 +1,4 @@
-/* global window, document */
+/* global window, document, getComputedStyle */
 // A browser check of the galaxy's flight HUD (galaxy/FlightCluster.jsx, cluster.js, radar.js, radarDraw.js, KeysCard.jsx; the
 // course on the HUD: pages/Galaxy.jsx and scene.js). With the dev server up (npx vite --port 5188 --host 127.0.0.1, or BASE= for
 // another), and after the galaxy map check's parts (galaxy-map-check/lib.mjs: the browser, the check line):
@@ -23,16 +23,19 @@
 //     alignment and gone once the jump is committed (galaxy-hud-check/pickups.mjs)
 //   hangar: the Shipyard's button beside the flight settings', H and Escape, the yard shut under the galaxy map and mid-jump, twin
 //     cannons fitted and flying (the guns' cadence), kept under the universe map's keys (galaxy-hud-check/hangar.mjs)
+//   difficulty: flown at Outlaw, the hunters read it and the shields come back at its rate; with reduced motion (no hunters),
+//     no page errors (galaxy-hud-check/difficulty.mjs)
 // Prints a line per check, ok or FAIL, and exits 1 on any FAIL. Shots are in OUT (hud-<size>.png, hud-<size>-keys.png).
 import { writeFileSync } from 'node:fs';
 import { browser, check, problems, out } from './galaxy-map-check/lib.mjs';
 import { hold, open as baseOpen, settle, smallText } from './galaxy-hud-check/lib.mjs';
 import { pickups } from './galaxy-hud-check/pickups.mjs';
 import { hangar } from './galaxy-hud-check/hangar.mjs';
+import { difficulty } from './galaxy-hud-check/difficulty.mjs';
 
 // (a galaxy at Tatooine, flown in an X-wing, nothing else open, the first-flight keys card up: lib.mjs's, with a touch screen's rules on after)
 const open = async (viewport, touch) => {
-  const opened = await baseOpen(viewport);
+  const opened = await baseOpen(viewport, { touch });
   if (touch) await asTouch(opened.page);
   return opened;
 };
@@ -266,8 +269,9 @@ async function run(viewport, touch) {
       }, slot);
       say(no.denied && no.word.length > 0, `a press on a power that isn't ready (${slot}) is refused and says why (${no.word})`);
     }
-    const n = await G(() => ({ shield: document.querySelector('.hud-vitals-n')?.textContent, kills: document.querySelector('.fc-kills-n')?.textContent, speed: document.querySelector('.fc-speed-n')?.textContent }));
-    say(/^\d+%$/.test(n.shield ?? ''), `the deflectors read a percentage (${n.shield})`);
+    const n = await G(() => ({ shield: document.querySelector('.hud-vitals-n')?.textContent, kills: document.querySelector('.fc-kills-n')?.textContent, speed: document.querySelector('.fc-speed-n')?.textContent, word: document.querySelector('.fc-ship .hud-label')?.textContent }));
+    say(n.word === 'Shields', `the vitals say Shields (${n.word})`);
+    say(/^\d+%$/.test(n.shield ?? ''), `the shields read a percentage (${n.shield})`);
     say(/^\d+$/.test(n.kills ?? ''), `and the kills a number (${n.kills})`);
     await page.screenshot({ path: `${out}/hud-${file}${touch ? '-touch' : ''}.png` });
     await page.keyboard.up('w');
@@ -279,6 +283,9 @@ async function run(viewport, touch) {
     const chipped = await boxes(page);
     const chips = chipped.filter((b) => b.name === 'chip');
     say(chips.length === 3, `three effects are three chips (${chips.length})`);
+    // (the chips' row and the cluster's place are the galaxy's own sheet: galaxy/flight.css, which GalaxyView brings)
+    const sheet = await G(() => ({ row: getComputedStyle(document.querySelector('.fc-buffs')).display, left: getComputedStyle(document.querySelector('.galaxy-page')).getPropertyValue('--fc-left').trim() }));
+    say(sheet.row === 'flex' && sheet.left === '176px', `the chips and the jump button take the galaxy’s sheet (${sheet.row}, ${sheet.left})`);
     const mchips = meets(chipped, tall);
     say(mchips.length === 0, `and they meet nothing${mchips.length ? ` (${mchips.join(', ')})` : ''}`);
     const outChip = chips.filter((b) => b.l < -0.5 || b.t < -0.5 || b.r > viewport.width + 0.5 || b.b > viewport.height + 0.5);
@@ -286,6 +293,20 @@ async function run(viewport, touch) {
     await page.screenshot({ path: `${out}/hud-${file}${touch ? '-touch' : ''}-chips.png` });
     await G(() => window.__galaxyDebug.pickups.clear());
     await settle(page, 300);
+
+    // (a touch screen) Fire, pressed and the thumb drifting off it, still fires till it lifts
+    if (touch) {
+      const b = await page.locator('.universe-fire').boundingBox();
+      await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2);
+      await page.mouse.down();
+      await page.mouse.move(b.x + b.width / 2 - 90, b.y + b.height / 2 - 60, { steps: 6 });
+      await settle(page, 300);
+      const held = await G(() => window.__galaxyDebug.state.fireBtn);
+      await page.mouse.up();
+      await settle(page, 100);
+      const after = await G(() => window.__galaxyDebug.state.fireBtn);
+      say(held && after === false, `Fire holds as the thumb drifts (${held}, ${after})`);
+    }
 
     // the radar: drawn, with the battle's allies on it
     const px = await radarPixels(page);
@@ -296,6 +317,11 @@ async function run(viewport, touch) {
     await page.evaluate(() => document.activeElement?.blur?.());
     await page.keyboard.press('t');
     await settle(page, 500);
+    // (the lock's bracket, where it's drawn: its words, and the way-to-go's, at the HUD's floor)
+    if (await G(() => Boolean(document.querySelector('.universe-lock[data-on]')))) {
+      const small = await smallText(page, '.universe-hud');
+      say(small.length === 0, `the lock’s words are 0.7 rem at least${small.length ? `: ${small.join(', ')}` : ''}`);
+    }
     if (!touch && viewport.width > 1100) {
       const name = await G(() => document.querySelector('.fc-target-name')?.textContent ?? '');
       say(name.length > 0, `T locks a target and the cluster names it (${name})`);
@@ -407,13 +433,14 @@ async function run(viewport, touch) {
 }
 
 const stopped = (size, e) => check(false, `${size}: the check stopped: ${String(e.message).split('\n')[0]}`);
-const SIZES = [[1440, 900], [1280, 720], [1366, 657], [1152, 720], [900, 700], [390, 844, true], [375, 667, true]];
+const SIZES = [[1440, 900], [1280, 720], [1366, 657], [1152, 720], [900, 700], [390, 844, true], [375, 667, true], [844, 390, true]];
 const only = process.env.SIZES?.split(',');
 // (`pickups` as the argument runs that scenario alone, galaxy-hud-check/pickups.mjs; none runs the flight HUD's sizes)
 const scenario = process.argv[2];
 if (scenario === 'pickups') await pickups().catch((e) => stopped('pickups', e));
 else if (scenario === 'hangar') await hangar().catch((e) => stopped('hangar', e));
-else if (scenario) check(false, `no scenario called ${scenario} (pickups, hangar)`);
+else if (scenario === 'difficulty') await difficulty().catch((e) => stopped('difficulty', e));
+else if (scenario) check(false, `no scenario called ${scenario} (pickups, hangar, difficulty)`);
 else
   for (const [width, height, touch = false] of SIZES) {
     if (only && !only.includes(`${width}x${height}`)) continue;

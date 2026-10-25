@@ -18,7 +18,8 @@
 import * as THREE from 'three';
 import { MeshBasicNodeMaterial } from 'three/webgpu';
 import { C, canopy, disposeBuilt, merged, part } from '../parts';
-import { barn, barrelParts, cabbageGeo, fencePostGeo, fenceRailGeo, hayBaleParts, hedgeGeo, lanternParts, mergeAll, mushroomParts, parts, pumpkinGeo, rootTree, scarecrowParts, signpost, wheatGeo, wheelbarrowParts } from '../../../shire/build';
+import { barn, barrelParts, cabbageGeo, fencePostGeo, fenceRailGeo, hayBaleParts, lanternParts, mergeAll, mushroomParts, parts, pumpkinGeo, rootTree, scarecrowParts, signpost, wheatGeo, wheelbarrowParts } from '../../../shire/build';
+import { hedgeBlock, wheatClump } from '../shireLight';
 
 export const SHIRE = 0.68; // the Road’s hobbit (1.05 m) over the chapter’s (1.55)
 export const GAP = [4.2, 24]; // the fence’s gap, where Merry and Pippin came through
@@ -75,15 +76,16 @@ function lanes(K, heightAt, tier) {
   rail.setMatrixAt(rails.length, m.compose(new THREE.Vector3(GAP[0] - 0.4, heightAt(GAP[0], GAP[1]) - 0.15, GAP[1] - 0.6), broke, new THREE.Vector3(FENCE.step * 0.9, SHIRE, SHIRE)));
   const blocks = [];
   for (const [z0, z1] of HEDGES) for (const side of [1, -1]) for (let z = z0; z < z1; z += 0.95) blocks.push([side * 4.8, z]);
-  const hedge = new THREE.InstancedMesh(hedgeGeo(), K.mats.hedge, blocks.length);
+  const hedge = new THREE.InstancedMesh(hedgeBlock(), K.mats.hedge, blocks.length);
   blocks.forEach(([x, z], i) => hedge.setMatrixAt(i, m.compose(new THREE.Vector3(x, heightAt(x, z) - 0.1, z), along, new THREE.Vector3(1, 0.85 + ((z * 7.1) % 1) * 0.25, 0.9))));
   // the standing crop close to the lane: the chapter’s wheat clumps, thick by the fences
-  // (four rows deep by the fence; one on low, where the scatter’s corn stands behind it)
-  const rows = tier === 'low' ? 1 : 4;
-  const step = tier === 'low' ? 2 : 0.7;
+  // (three rows deep by the fence, the canopy behind them; one on low, where the scatter’s corn
+  // stands behind it; four at 0.7 m were 359,000 triangles, the stage over its 1.2 million)
+  const rows = tier === 'low' ? 1 : 3;
+  const step = tier === 'low' ? 2 : 0.8;
   const clumps = [];
   for (const side of [1, -1]) for (let z = FENCE.z[0]; z < FENCE.z[1]; z += step) for (let k = 0; k < rows; k++) clumps.push([side * (FENCE.x + 0.6 + k * 0.7 + ((z * 3.7 + k) % 1) * 0.4), z + ((k * 0.37) % 1) * 0.6]);
-  const wheat = new THREE.InstancedMesh(wheatGeo(), K.mats.wheat, clumps.length);
+  const wheat = new THREE.InstancedMesh(wheatClump(), K.mats.wheat, clumps.length);
   clumps.forEach(([x, z], i) => wheat.setMatrixAt(i, m.compose(new THREE.Vector3(x, heightAt(x, z), z), q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), (x * 13 + z) % 6.28), new THREE.Vector3(0.9, 0.85 + ((x * z) % 1) * 0.3, 0.9))));
   for (const mesh of [post, rail, hedge, wheat]) {
     // (the wheat takes the fences’ and hedges’ shade but casts none: its own fell
@@ -97,7 +99,7 @@ function lanes(K, heightAt, tier) {
 
 // the body of the crop behind the near clumps: a canopy a side (parts.js), its lane edge under the clumps
 function cropParts(heightAt, parts) {
-  for (const side of [1, -1]) parts.push(canopy(heightAt, { x: [side * (FENCE.x + 2.6), side * (FENCE.x + 34)], z: [FENCE.z[0] - 4, FENCE.z[1] + 2] }));
+  for (const side of [1, -1]) parts.push(canopy(heightAt, { x: [side * (FENCE.x + 2), side * (FENCE.x + 34)], z: [FENCE.z[0] - 4, FENCE.z[1] + 2] }));
 }
 
 function ferryParts(heightAt, level, parts) {
