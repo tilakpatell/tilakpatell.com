@@ -74,3 +74,25 @@ What `src/lib/land/flight/variety.js` gives Tasks 8 to 13, where it differs from
 ### Left
 
 - The two new kit files add about 0.68 MB to the flight’s install pack (`spaceship.glb` 187 KB, `tree.glb` 493 KB). `WORLD_MB['/fly']` is measured over the fifty’s landmark files (`landmarkFiles.test.js`), so it doesn’t count a generated planet’s places.
+
+## Task 10: the orbit map
+
+### Landed
+
+- `src/lib/land/flight/orbitMap.js`: `ORBIT_MAP_SIZE`, `orbitMapSize(tier)` (mid’s for a tier it doesn’t know), `PLANE_WINDOW = 40000`, `groundColour(spec, { h, slope }) → { rgb, water }` and `bakeOrbitMap(spec, { width, height }) → { width, height, rgba, biome }`, to the plan. The rule is `groundLook.js`’s at the mean of its noises, mixed in linear light and written as sRGB bytes; the water is `water.js`’s sheet over it. A round planet reads `sphereField(spec).sample`, a gas or ringed giant is banded, and any other plane is a window of its plane round the flight’s start.
+- `orbitMap.test.js` holds each texel of four generated planets to `planetField(chartedAt(spec, dir))` at the chart’s middle, byte for byte (colour, alpha and biome), as the plan asks. It also holds the seeded thirteen’s and the named worlds’ texels to their plane’s window, the same way.
+- `planetTables.js` now exports three’s sRGB curves, `linearOf(hex)` and `byteOf(linear)`, and `waterLinearOf(water, accent)`: the sheet’s colour in linear light. `waterColourOf` is that colour written as bytes, unchanged, and `water.test.js` still holds it to `water.js`.
+- Where it differs from the lane plan:
+  - A gas giant’s band count is drawn from its own salt (`SALT.bands`). Its noise is `noise3For(seed, …)`, as the plan has it. Its colours are `spec.palette`’s: a generated giant’s variety, or Bespin’s own. A cloud deck’s ground palette has no accent for the storms.
+  - The water’s colour is mixed in floats, as `water.js`’s material holds it. It isn’t rounded to `waterColourOf`’s `#rrggbb` first.
+  - `bakeOrbitMap` gives null for no spec. A size that isn’t a whole number from 1 to 4,096 falls back to 256 × 128, so a bad ask never throws.
+- Timings are from Node, taken while other lanes’ browsers ran. A round planet takes 0.8 to 1.2 s at 256 × 128 and 3.3 to 3.8 s at 512 × 256. A plane window takes 0.5 to 0.9 s and 1.7 to 3.3 s. A gas giant takes 0.1 s and 0.3 to 0.4 s. Pictures are in `lab/planets/task10/` (not committed).
+
+### Left
+
+- The map is point-sampled, as the plan’s texel test asks: a texel is the ground at its middle, its slope read over 8 m. A texel spans 180 to 740 m at the equator, so on rough ground the rock colour lands on scattered texels.
+  - It shows as salt and pepper over the map: 11.5 % of a ridged rock world’s texels and 6.6 % of a mesa desert’s. On Hoth’s window it shows as thin lines along the ridges.
+  - It is the ground’s colour at those points, but it is aliasing. Lane 5b could mip or blur the texture. Or a later change could average the slope over the texel, though that would end the exact texel test on purpose.
+- The accent mixes in at `accentCover × 0.5`, an area mean, as the plan asks. At the mean of its noises the shader draws no accent at all: its patches need the noise above 1 − cover.
+- A 512 × 256 bake takes about 3.5 s. Task 11’s worker keeps that off the main thread, but on `high` a planet waits that long for its first map.
+- Scarif’s window is almost all sea (99.8 % of texels under water). Its islands sit in a sea 40 km wide round the flight’s start.
