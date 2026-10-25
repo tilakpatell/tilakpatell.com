@@ -273,7 +273,9 @@ export function buildProps({ K, material, heightAt, tier = 'high' }) {
     hedge.castShadow = true;
     group.add(hedge);
     hedge.userData.far = true;
-    far.push({ mesh: hedge, z: [list[0][1], list[list.length - 1][1]], reach: REACH.hedge });
+    // (a band holds both sides' runs, in HEDGES' order, not z's)
+    const zs = list.map(([, z]) => z);
+    far.push({ mesh: hedge, z: [Math.min(...zs), Math.max(...zs)], reach: REACH.hedge });
   }
 
   // the corn at the field’s edge, either side of the lane: the chapter’s

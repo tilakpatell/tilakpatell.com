@@ -138,7 +138,7 @@ export function mergeStatics(root, { keep = [], band = BAND } = {}) {
       const mesh = new THREE.Mesh(geos.length > 1 ? mergeGeometries(geos) : geos[0], material);
       mesh.name = `${root.name || 'statics'}:${material.name || material.type}`;
       // (an opaque material’s shadow is its shape alone: cast with its band’s, one draw a cascade)
-      const alone = material.transparent || material.alphaTest > 0 || material.alphaMap || material.castShadowNode || material.positionNode;
+      const alone = material.transparent || material.alphaTest > 0 || material.alphaMap || material.alphaHash || material.opacityNode || material.alphaTestNode || material.castShadowNode || material.positionNode;
       // (in half bands: a cascade takes a caster whole once any of it is in its fit)
       if (cast && !alone)
         for (const part of geos) {
