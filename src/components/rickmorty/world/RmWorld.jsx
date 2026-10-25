@@ -67,7 +67,7 @@ import { EPISODES } from '../adventure/episodes';
 import { dialItems, dialLead, leaveHold, markedTask, newsOf, objectiveLine, showNews } from '../adventure/hud';
 import { arriveAt } from '../adventure/ways';
 import { backLink, boundOf, inLine, planetOf, planetProgress, relabel } from './planetMode';
-import { dialFirst, dialledNote, isGunKey, portalName } from './portalGun';
+import { dialFirst, dialledNote, isGunKey, portalName, rickAside } from './portalGun';
 import Cards from './WorldCards';
 import RmHud from './RmHud';
 import { useRmEarn } from '../useRmEarn';
@@ -1066,6 +1066,9 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
       const line = early ? e.before : SAY[n.id];
       // (a jump into a freeze's vat that'll be caught says nothing of its own: the catch is what's said)
       if (!(FREEZE_SPOTS.has(n.id) && api.current?.act(s.area, 'freeze-takes') === false)) say({ kind: 'say', ...line });
+      // (Rick says Blips and Chitz is through the portal: where it goes now, once that's read)
+      const aside = !early && rickAside(n.id, portalTarget(dialRef.current, dialOpen));
+      if (aside) say({ kind: 'note', text: aside }, { after: true });
       (s.used ??= new Set()).add(n.id);
       // someone to talk to: their head turns to him and their hands go while
       // the line plays (state.talk), his head on them; a wave from him first,
@@ -1105,7 +1108,7 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
       }
       if (TALK_UNLOCK[n.id]) later(() => unlock(TALK_UNLOCK[n.id]), TALK_MS);
     }
-  }, [api, go, board, openPlace, openDial, say, complete, unlock, playMemory, shipTalk, later, startRickall, tellRickall, tell]);
+  }, [api, go, board, openPlace, openDial, say, complete, unlock, playMemory, shipTalk, later, startRickall, tellRickall, tell, dialOpen]);
   // what a place's people do to Morty (stage.js's NPC behaviour, through the
   // render state's emit): caught, he's put back at the way in with what the
   // catcher said, and the place settles; a bark is a line said in passing

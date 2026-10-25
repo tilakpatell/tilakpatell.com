@@ -1,11 +1,17 @@
 import { describe, expect, it } from 'vitest';
 import { HOTSPOTS, LINKS, TASKS, nearHotspot, nearLink } from './rules';
 import { DIAL, linkTarget } from './dimensions/destinations';
-import { dialFirst, dialledName, dialledNote, firstHint, isGunKey, portalName } from './portalGun';
+import { dialFirst, dialledName, dialledNote, firstHint, isGunKey, portalName, rickAside } from './portalGun';
 
 const garagePortal = LINKS.find((l) => l.id === 'garage-portal');
 
 describe('C-137: the portal gun', () => {
+  it('has Rick’s aside name where the portal really goes, after his line that Blips and Chitz is through it', () => {
+    expect(rickAside('rick', 'customs')).toBe('Dialled to Interdimensional Customs. Step through the portal.');
+    expect(rickAside('rick', 'annex')).toBe(null);
+    expect(rickAside('jerry', 'customs')).toBe(null);
+  });
+
   it('wants the gun dialled first when the garage portal is set somewhere else than where the step is', () => {
     expect(dialFirst('needful', 'gromflomites')).toBe(true);
     expect(dialFirst('needful', 'needful')).toBe(false);

@@ -44,6 +44,20 @@ export const BASICS = {
     },
     { seed: { 'tp-rm-story': { v: 1, data: { episode: 0, step: 3, got: [], wins: [], freeRoam: false } }, 'tp-c137-done': ['diner', 'basement', 'mindblowers'] } },
   ),
+  // Rick says Blips and Chitz is through the portal; dialled elsewhere, what
+  // follows his line (once it's read) says where it goes
+  'rick-aside': Object.assign(
+    async (page) => {
+      await c137(page);
+      check((await page.evaluate(() => window.__C137__.dial('customs'))) === 'customs', 'the dial wouldn’t take Customs');
+      const rick = await page.evaluate(async () => (await import('/src/components/rickmorty/world/rules.js')).HOTSPOTS.find((h) => h.id === 'rick'));
+      await goto(page, 'garage', rick.x + 0.6, rick.z, Math.PI);
+      await use(page, 'rick');
+      await toast(page, 'Blips and Chitz is through there');
+      await toast(page, 'Dialled to Interdimensional Customs. Step through the portal.');
+    },
+    { seed: { 'tp-c137-done': ['cable'] } },
+  ),
   // a place whose task is done (here before its achievement could be earned:
   // an old save) hands the achievement over on the next visit
   'achieve-later': Object.assign(
@@ -148,9 +162,9 @@ export const BASICS = {
     check((await rows.count()) === 32, `the dial has ${await rows.count()} places, not 32`);
     check((await page.locator('.rm-dial-row[data-locked]').count()) === 31, 'the dial doesn’t have 31 places locked');
     check(!(await rows.filter({ hasText: 'Interdimensional Customs' }).getAttribute('data-locked')), 'Customs is locked');
-    check((await page.locator('.rm-dial-lead').textContent()) === 'Coordinates home: 1 of 32', 'the dial doesn’t count the coordinates home');
+    check((await page.locator('.rm-dial-lead').textContent()) === 'Coordinates on the gun: 1 of 32', 'the dial doesn’t count the coordinates home');
     await rows.filter({ hasText: 'vat of acid' }).click();
-    await toast(page, 'Opens after episode 5, “Heat”.');
+    await toast(page, 'Opens after episode 5, “Heat”. Free roam, in Things to do, opens it now.');
     check((await page.evaluate(() => localStorage.getItem('tp-rm-dial'))) !== 'vat', 'a locked pick set the dial');
     await page.evaluate(() => localStorage.setItem('tp-rm-dial', 'vat'));
     await throughPortal(page);

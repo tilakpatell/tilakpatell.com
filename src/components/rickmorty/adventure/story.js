@@ -120,9 +120,9 @@ export const reachesPast = (state, places, opts) => {
   return places.some((p) => !open.has(p));
 };
 
-// what a locked place says on the dial
+// what a locked place says on the dial, and the way to it now
 export function lockNote(id, opts) {
   const { episodes } = book(opts);
   const i = episodes.findIndex((e) => e.unlocks.includes(id));
-  return i < 0 ? null : `Opens after episode ${i + 1}, “${episodes[i].title}”.`;
+  return i < 0 ? null : `Opens after episode ${i + 1}, “${episodes[i].title}”. Free roam, in Things to do, opens it now.`;
 }

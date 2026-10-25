@@ -37,7 +37,7 @@ describe('the adventure’s store', () => {
     expect(a.dialOpen('customs')).toBe(true);
     expect(a.dialOpen('vat')).toBe(false);
     expect(a.objective().text).toMatch(/^A Federation agent is in a booth at Shoney’s/);
-    expect(a.lockNote('vat')).toBe('Opens after episode 5, “Heat”.');
+    expect(a.lockNote('vat')).toBe('Opens after episode 5, “Heat”. Free roam, in Things to do, opens it now.');
     expect([...a.coordinates()]).toEqual(['customs']);
   });
 

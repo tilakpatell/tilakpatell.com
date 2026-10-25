@@ -236,7 +236,7 @@ export const EVIL_CHECKS = {
     await list.waitFor({ state: 'detached', timeout: 5000 });
     await gun(page);
     const n = PLACES.dial.length;
-    check((await page.locator('.rm-dial-box').textContent()).includes(`Coordinates home: ${n} of ${n}`), 'the dial doesn’t read every coordinate home');
+    check((await page.locator('.rm-dial-box').textContent()).includes(`Coordinates on the gun: ${n} of ${n}`), 'the dial doesn’t read every coordinate home');
     await page.keyboard.press('Escape');
     await page.locator('.rm-dial-box').waitFor({ state: 'detached', timeout: 5000 });
     await use(page, 'dial');

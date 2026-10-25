@@ -107,9 +107,9 @@ export function markedTask(state, next, { here = null, ...opts } = {}) {
 // episode that opens it.
 export const dialItems = (items, state) => items.map((d) => ({ ...d, locked: dialOpen(state, d.id) ? null : lockNote(d.id) }));
 
-// The dial's lead: how many coordinates the story has brought home (Free
-// roam opens the dial, but brings none home).
-export const dialLead = (state, total) => `Coordinates home: ${coordinates(state).size} of ${total}`;
+// The dial's lead: how many of its coordinates the story has put on the gun
+// (Customs from the start; Free roam opens the dial, but puts none on it).
+export const dialLead = (state, total) => `Coordinates on the gun: ${coordinates(state).size} of ${total}`;
 
 // Whether a key or a tap passes an episode's card (./EpisodeCard.jsx): a key
 // pressed, not one held down from before it showed (its auto-repeat), or a
