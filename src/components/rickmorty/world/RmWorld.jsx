@@ -1157,8 +1157,8 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
         say({ kind: 'say', who: e.name ?? SAY[e.who]?.who ?? null, text: e.text });
       } else if (name === 'miss') sound('ouch');
       else if (name === 'note') {
-        // what the street's stone said as it landed, and Morty's throw
-        say({ kind: 'note', text: e.text, bad: e.bad });
+        // what the street's stone said as it landed, and Morty's throw (`after`: behind the line that's up, a duellist who didn't load)
+        say({ kind: 'note', text: e.text, bad: e.bad }, { after: e.after });
         if (e.sound) sound(e.sound);
       } else if (name === 'throw') api.current?.play('wave', { layer: 'upper' });
       else if (name === 'done') {

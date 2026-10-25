@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { EPISODES } from '../adventure/episodes';
 import { fresh } from '../adventure/story';
-import { ENTER, asksCard, atDoor, storyLead } from './storyline';
+import { ENTER, asksCard, atDoor, sayNews, storyLead } from './storyline';
 
 const at = (episode, step, more = {}) => ({ ...fresh(), episode, step, ...more });
 
@@ -31,6 +31,17 @@ describe('what the Citadel tells of the story', () => {
     for (const s of [at(9, 0), at(8, 1), fresh(), at(10, 0)]) expect(storyLead(s)).toBe(null);
     // free roam doesn't change the line, as in C-137
     expect(storyLead(at(9, 1, { freeRoam: true }))).toBe(EPISODES[9].steps[1].text);
+  });
+
+  it('says an episode’s closing line first, and keeps the next card behind it till the line’s gone', () => {
+    // (the escape ends episode 10: Morty's line now, episode 11's card back in the queue, not over the line)
+    const [who, text] = EPISODES[9].outro[0];
+    expect(sayNews([{ type: 'done', episode: 9 }, { type: 'episode', episode: 10 }])).toEqual({ line: { kind: 'say', who, text }, card: null, keep: [{ type: 'episode', episode: 10 }] });
+    // what it kept, said once the toast's gone: the card alone
+    expect(sayNews([{ type: 'episode', episode: 10 }])).toEqual({ line: null, card: 10, keep: [] });
+    // a line with no card, and the story's end card behind the last line
+    expect(sayNews([{ type: 'done', episode: 9 }]).keep).toEqual([]);
+    expect(sayNews([{ type: 'done', episode: 12 }, { type: 'end' }])).toMatchObject({ card: null, keep: [{ type: 'end' }] });
   });
 });
 

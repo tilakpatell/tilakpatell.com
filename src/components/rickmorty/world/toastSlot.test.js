@@ -124,6 +124,26 @@ describe('the toast slot', () => {
     expect(two.shown.at(-1)).toEqual({ ...DONE, at: 4000 + READ });
   });
 
+  it('a note Morty puts up isn’t covered at once by the toast that was waiting', () => {
+    // (the President's line, its done toast behind it, and the dial's note put up meanwhile)
+    const c = clock();
+    const { slot, shown } = slotOn(c);
+    const NOTE = { kind: 'note', text: 'Dialled to Interdimensional Customs. The portal’s on the west wall, in the garage.' };
+    slot.put(REVEAL);
+    c.to(3200);
+    slot.put(DONE, { after: true });
+    c.to(READ - 1000);
+    slot.put(NOTE);
+    const read = Math.min(readMs(NOTE.text), toastLife(NOTE));
+    c.to(READ - 1000 + read - 1);
+    expect(shown.map((t) => t.kind)).toEqual(['say', 'note']);
+    expect(readFor(shown.at(-1), READ - 1000)).toBe(read);
+    c.to(READ - 1000 + read);
+    expect(shown.at(-1)).toEqual({ ...DONE, at: READ - 1000 + read });
+    // (with nothing waiting, a note's no read of its own: what's put after it goes straight up)
+    expect(readFor({ ...NOTE, at: 0 }, 0)).toBe(0);
+  });
+
   it('puts what waits up at once with nothing being read: nothing up, a note, a line gone', () => {
     const c = clock();
     const { slot, shown } = slotOn(c);

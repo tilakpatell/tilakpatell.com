@@ -67,8 +67,11 @@ describe('the map’s marker inside a game', () => {
     const [a, b] = d.find.items;
     expect(gameGoal(d, { find: { phase: 'idle', heard: [], wrong: [] } })).toBe(a);
     expect(gameGoal(d, { find: { phase: 'run', heard: [a], wrong: [] } })).toBe(b);
-    // all heard: the first not ruled out
-    expect(gameGoal(d, { find: { phase: 'run', heard: [...d.find.items], wrong: [a] } })).toBe(b);
+    // all heard: no candidate (ours is dealt at random, so the next not ruled
+    // out is a guess), and the map rests on the desk, the place's goal
+    expect(gameGoal(d, { find: { phase: 'run', heard: [...d.find.items], wrong: [a] } })).toBe(null);
+    expect(gameGoal(d, { find: { phase: 'run', heard: [...d.find.items], wrong: [] } })).toBe(null);
+    expect(d.goal).toBe('receptionist');
   });
 
   it('points at a thing found clean to take, else the next not looked over', () => {

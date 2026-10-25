@@ -9,7 +9,8 @@
 // through the portal has its way in, its portal home and its spots, read
 // from its data (./places.mjs); and at the Citadel (window.__CITADEL__), its
 // page up, its line read (the story's step over its own) and its toast
-// waited for; a place dialled from the garage and home through its own
+// waited for, and the next card after its closing line; a place dialled
+// from the garage and home through its own
 // portal, a task not done after a while, the Story tab's ticks, a page
 // opened with a place's people held back, a spot's dot read off the map and
 // the camera turned round Morty; and Rick's rooms on the Vindicators' ship,
@@ -424,4 +425,24 @@ export async function citadelToast(page, text, name = null) {
     throw new Error(`no toast at the Citadel saying “${text}”`);
   });
   if (name) check((await t.locator('b').first().textContent().catch(() => null))?.trim() === name, `the toast “${text}” isn’t ${name}’s`);
+}
+// the next episode's card at the Citadel once the closing line it comes
+// with has gone, never over it (the world holds under a card; then cardFor's
+// checks)
+export async function citadelCardAfter(page, text) {
+  const seen = await page
+    .waitForFunction(
+      (t) => {
+        const line = Array.from(document.querySelectorAll('.citadel-stage .shire-toast')).some((n) => n.textContent.includes(t));
+        const card = Boolean(document.querySelector('.rm-episode'));
+        return card ? (line ? 'over' : 'after') : !line && 'gone';
+      },
+      text,
+      { timeout: 20000, polling: 50 },
+    )
+    .then((h) => h.jsonValue())
+    .catch(() => {
+      throw new Error(`the closing line “${text}” stayed up`);
+    });
+  check(seen !== 'over', `the next episode’s card came up over its closing line “${text}”`);
 }
