@@ -7,7 +7,7 @@
 // screenshots for the ship's log.
 //
 //   node scripts/autopilot-check.mjs [--routes /avengers,/galaxy/hoth/surface] [--shots 0012]
-//     [--before] [--skip lint,test,build,smoke] [--only smoke] [--phone] [--quality high|mid|low]
+//     [--before] [--skip lint,test,build,smoke] [--only smoke] [--phone] [--viewport 844x390] [--quality high|mid|low]
 //     [--settle 8000] [--chromium /path/to/chrome]
 //
 // The core pages are always checked; --routes adds the ones a change touched
@@ -55,6 +55,8 @@ const toShoot = list(args.routes).slice(0, 2);
 const shots = typeof args.shots === 'string' ? args.shots.padStart(4, '0') : null;
 const before = Boolean(args.before);
 const phone = Boolean(args.phone);
+// (--viewport 844x390: the page at that size, its shots not resized; with --phone, touch too)
+const sized = typeof args.viewport === 'string' ? args.viewport.split('x').map(Number) : null;
 const quality = ['high', 'mid', 'low'].includes(args.quality) ? args.quality : 'high';
 const settle = Number(args.settle) || 8000;
 if (shots && !toShoot.length) console.log('note: --shots without --routes photographs nothing; say which routes changed');
@@ -156,7 +158,7 @@ if (runs('smoke')) {
   }
   const GATE = /Walk the tribute/;
   const browser = await chromium.launch({ executablePath: exe, args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', '--enable-webgl', '--js-flags=--max-old-space-size=4096'] });
-  const viewport = phone ? { width: 390, height: 844 } : { width: 1440, height: 900 };
+  const viewport = sized ? { width: sized[0], height: sized[1] } : phone ? { width: 390, height: 844 } : { width: 1440, height: 900 };
   if (shots) await mkdir(join(ROOT, 'public/changes'), { recursive: true });
   let letter = 0;
   for (const route of routes) {
@@ -194,7 +196,7 @@ if (runs('smoke')) {
         const png = await page.screenshot({ type: 'png', timeout: 120000 });
         const name = `${shots}-${before ? 'before' : 'ab'[letter]}.webp`;
         letter++;
-        await writeFile(join(ROOT, 'public/changes', name), await sharp(png).resize(960, 600, { fit: 'cover', position: 'top' }).webp({ quality: 78 }).toBuffer());
+        await writeFile(join(ROOT, 'public/changes', name), await (sized ? sharp(png) : sharp(png).resize(960, 600, { fit: 'cover', position: 'top' })).webp({ quality: 78 }).toBuffer());
         note = ` → public/changes/${name}`;
       }
     } catch (e) {

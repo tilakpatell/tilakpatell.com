@@ -8,6 +8,8 @@
 //     [--near off] (without the planets' near maps and finer spheres, nearMaps.js: what they cost, measured on one tree)
 //     [--dpr 2] (the screen's device pixels to a CSS one: 1 by default; post.js's finish draws a 2× screen otherwise than a 1×)
 //     [--level 3] (the pace's step held at each pose, runtime/quality.js's setLevel: what a weak chip's calibration lands on)
+//     [--lock] (a TIE put ahead and locked by hand at each flying pose, scripts/lib/flight-probes.mjs: the bracket,
+//       the lead and the reticle drawn; the overlay's marks in the report and <pose>.hud.webp, the shot with the HUD)
 //
 // It starts the dev server (the poses are a DEV hook, `window.__universe().pose`,
 // which a production build leaves out) unless --url names one, opens
@@ -24,10 +26,11 @@ import { mkdir, readdir, writeFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { createServer } from 'node:net';
-import { dirname, join } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright-core';
 import sharp from 'sharp';
+import { lockSpot, pageScript } from './lib/flight-probes.mjs';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const POSES = ['overview', 'falcon-sun', 'middleearth-limb', 'rickmorty', 'gaming', 'caribbean', 'middleearth', 'breakingbad', 'office', 'belt', 'maw', 'landing-middleearth', 'station', 'far-rim'];
@@ -50,7 +53,7 @@ const DPR = Number(args.dpr) > 0 ? Number(args.dpr) : 1;
 const LEVEL = args.level === undefined ? null : Math.max(0, Math.floor(Number(args.level)));
 for (const t of tiers) if (!TIERS.includes(t)) throw new Error(`no tier ${t} (high, mid, low or all)`);
 for (const p of poses) if (!POSES.includes(p)) throw new Error(`no pose ${p} (${POSES.join(', ')})`);
-const outFor = (tier) => (args.baseline ? join(ROOT, 'lab/universe/baseline', tier) : args.out && tiers.length === 1 ? join(ROOT, args.out) : join(ROOT, 'lab/universe', tier));
+const outFor = (tier) => (args.baseline ? join(ROOT, 'lab/universe/baseline', tier) : args.out && tiers.length === 1 ? resolve(ROOT, args.out) : join(ROOT, 'lab/universe', tier));
 
 // ── the server: the dev server, as autopilot-check.mjs starts its preview ──
 const freePort = () =>
@@ -188,6 +191,14 @@ for (const tier of tiers) {
       }
       // the grain moves frame to frame; the shots and their metrics shouldn't (post.js: checkpoint 1)
       await page.evaluate(() => window.__universeDebug.post?.grain?.(0));
+      // (a hunter held in the guns' lock, so the bracket is in the picture: a pose clears the lock)
+      let lock = null;
+      if (args.lock) {
+        await page.addScriptTag({ content: pageScript() });
+        const ship = await page.evaluate(() => window.__universeDebug.state.ship);
+        lock = await page.evaluate((at) => window.__fp.forceLock(at), lockSpot(ship));
+        await page.evaluate(() => window.__universe().frames(2));
+      }
       const numbers = await page.evaluate(async (n) => {
         const { renderer } = window.__universeDebug;
         const u = window.__universe();
@@ -230,13 +241,28 @@ for (const tier of tiers) {
       // (loudly, so a change to how the map mounts can't blank the shots unseen again)
       if (!seen.inPage || !seen.drawn || seen.opacity < 0.99) throw new Error(`the map's canvas isn't the one on screen (${JSON.stringify(seen)})`);
       await page.evaluate(() => window.__universe().frames(2));
+      if (lock?.id !== undefined) {
+        if (!(await page.evaluate((id) => window.__fp.lockHeld(id), lock.id))) throw new Error(`the lock on ${lock.id} wasn't held`);
+        lock.held = true;
+      }
       const png = await page.screenshot({ type: 'png', timeout: 180000 });
+      let marks = null;
+      if (args.lock) {
+        marks = await page.evaluate(() => window.__fp.overlay());
+        await page.evaluate(() => {
+          const style = document.createElement('style');
+          style.textContent = '.universe-hud, .universe-hud * { visibility: visible !important; }';
+          document.head.append(style);
+        });
+        const hud = await page.screenshot({ type: 'png', timeout: 180000 });
+        await writeFile(join(out, `${name}.hud.webp`), await sharp(hud).webp({ quality: 88 }).toBuffer());
+      }
       const raw = await sharp(png).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
       const metrics = pixelMetrics({ data: raw.data, width: raw.info.width, height: raw.info.height });
       await writeFile(join(out, `${name}.webp`), await sharp(png).webp({ quality: 88 }).toBuffer());
-      report.poses[name] = { ...numbers, metrics, errors: [...new Set(errors)].slice(0, 5) };
+      report.poses[name] = { ...numbers, metrics, ...(args.lock ? { lock, overlay: marks } : {}), errors: [...new Set(errors)].slice(0, 5) };
       if (metrics.dominantColorShare > 0.98) fail(`${tier} ${name}: the canvas is blank (${metrics.dominantColorShare} one colour)`);
-      console.log(`ok   ${tier.padEnd(4)} ${name.padEnd(20)} calls ${String(numbers.calls).padStart(4)}  tris ${String(numbers.triangles).padStart(8)}  ${String(numbers.frameMs).padStart(6)} ms  entropy ${metrics.colorEntropyBits}  edges ${metrics.edgeDensity}  contrast ${metrics.luminance.contrast}${numbers.shipPx ? `  ship ${numbers.shipPx.w} × ${numbers.shipPx.h} px` : ''}  (${((Date.now() - t0) / 1000).toFixed(0)} s)`);
+      console.log(`ok   ${tier.padEnd(4)} ${name.padEnd(20)} calls ${String(numbers.calls).padStart(4)}  tris ${String(numbers.triangles).padStart(8)}  ${String(numbers.frameMs).padStart(6)} ms  entropy ${metrics.colorEntropyBits}  edges ${metrics.edgeDensity}  contrast ${metrics.luminance.contrast}${numbers.shipPx ? `  ship ${numbers.shipPx.w} × ${numbers.shipPx.h} px` : ''}${args.lock ? `  lock ${lock?.held ? 'held' : lock?.skipped ?? 'none'}` : ''}  (${((Date.now() - t0) / 1000).toFixed(0)} s)`);
     } catch (e) {
       report.poses[name] = { error: String(e.message ?? e).split('\n')[0], errors: [...new Set(errors)].slice(0, 5) };
       fail(`${tier} ${name}: ${report.poses[name].error}`);
