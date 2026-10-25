@@ -4999,6 +4999,7 @@ export async function create(canvas, ctx) {
     // (the planets' ground detail goes at the pace's step 2, their real air for
     // the old halo and their clouds' shadows at 3, and they come back)
     for (const p of planets) p.setLevel(at.step);
+    deep.nebulae.setLevel(at.step); // (fewer steps near: nebula/budget.js's nebulaAtStep)
     return at;
   };
   function render(ms, now) {

@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
 import { createNebulae } from './index';
 import { GAS } from './shaders';
-import { nebulaBudget } from './budget';
+import { nebulaAtStep, nebulaBudget } from './budget';
 import { FOG_NEAR, FORMS, fogLayers } from './rules';
 import { LOOK } from '../look';
 import { reservedIn } from '../__fixtures__/glsl';
@@ -102,6 +102,23 @@ describe('the nebulae’s renderer', () => {
     expect(clouds(n).geometry.instanceCount).toBe(1 + nebulaBudget('high').stars);
     n.update(cam([0, 0, 60000], [0, 0, -1]));
     expect(clouds(n).geometry.instanceCount).toBe(1);
+  });
+
+  it('marches fewer steps at a softer quality step, and as many again at the sharpest', () => {
+    const { n } = made('high');
+    n.add({ ...VEIL, at: [0, 0, -1500] }); // (within 4 radii: near)
+    const c = cam([0, 0, 0], [0, 0, -1]);
+    const steps = (level) => {
+      if (level !== undefined) n.setLevel(level);
+      n.update(c);
+      return attr(n, 'aShape', 0)[1];
+    };
+    expect(steps()).toBe(nebulaBudget('high').nearSteps);
+    expect(steps(4)).toBe(nebulaAtStep(nebulaBudget('high'), 4).nearSteps);
+    expect(steps(4)).toBeLessThan(nebulaBudget('high').nearSteps);
+    expect(steps(0)).toBe(nebulaBudget('high').nearSteps);
+    n.dispose();
+    expect(() => n.setLevel(2)).not.toThrow();
   });
 
   it('forgives handles: twice, stale, the same id twice, after dispose', () => {

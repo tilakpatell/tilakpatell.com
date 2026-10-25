@@ -4,7 +4,7 @@
 // stars, and grows as you come in. All of them and their young stars are one
 // draw (shaders.js); the fog round the ship inside one is a second (fog.js).
 //
-// createNebulae({ renderer, tier }) → { group, add, remove, update, inside, dispose }
+// createNebulae({ renderer, tier }) → { group, add, remove, update, inside, setLevel, dispose }
 //   group             'nebulae', for the caller to add under the map; the
 //                     camera is read in the map's space through it. It holds
 //                     'nebula-clouds' and 'nebula-fog', made here and hidden
@@ -19,6 +19,8 @@
 //                     with time)
 //   inside(position) → { id, depth } | null: the deepest cloud a point in the
 //                     map's space is in (rules.js's insideOf)
+//   setLevel(step)    lib/three/pace's quality step: fewer steps near at a
+//                     softer one (budget.js's nebulaAtStep), from the next update
 //   dispose()         leaves the parent and frees what it made
 //
 // Each frame every cloud is placed from the camera in doubles (rules.js's
@@ -46,7 +48,7 @@
 //   aShape   (form, steps, a star's size, 1 when drawn in)
 
 import * as THREE from 'three';
-import { nebulaBudget } from './budget';
+import { nebulaAtStep, nebulaBudget } from './budget';
 import { FOG_NEAR, FORMS, FORM_INDEX, LIMIT, checkDesc, detailAt, fogLayers, insideOf, placement, seedOf, stepsAt, youngStars } from './rules';
 import { noiseVolume } from './volume';
 import { CLOUD_FRAG, CLOUD_VERT } from './shaders';
@@ -139,6 +141,7 @@ function makeClouds(row, volume) {
 
 export function createNebulae({ renderer = null, tier = 'mid' } = {}) {
   const row = nebulaBudget(tier);
+  let paced = row; // (the row at the quality step: its steps alone)
   const group = new THREE.Group();
   group.name = 'nebulae';
   const volume = makeVolume(row.volume, renderer);
@@ -261,7 +264,7 @@ export function createNebulae({ renderer = null, tier = 'mid' } = {}) {
       // another round the eye past the ship, where its quad is (the fog
       // holds none of its gas)
       const start = clear && at.dist < e.desc.r ? (e.desc.id === deep.id ? clear : FOG_NEAR) * at.scale : 0;
-      put(0, at.centre, at.radius, at.dist, detail, start, e.colours, e.seed, [e.form, stepsAt(detail, row), 0, drawnIn]);
+      put(0, at.centre, at.radius, at.dist, detail, start, e.colours, e.seed, [e.form, stepsAt(detail, paced), 0, drawnIn]);
       if (!(detail > 0)) continue;
       // its young stars, right after it, eased in by its level
       for (const s of e.stars) {
@@ -294,5 +297,9 @@ export function createNebulae({ renderer = null, tier = 'mid' } = {}) {
     live = null;
   };
 
-  return { group, add, remove, update, inside, dispose };
+  const setLevel = (step) => {
+    paced = nebulaAtStep(row, step);
+  };
+
+  return { group, add, remove, update, inside, setLevel, dispose };
 }
