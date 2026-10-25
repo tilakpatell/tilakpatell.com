@@ -16,10 +16,8 @@
 //
 // TYPE_LOOK: { [planet type]: LOOKS id }, MOON_LOOK: { [moon type]: LOOKS
 //   id }, lookColour(id) → a look's colour as a whole ('#rrggbb')
-// WONDER: { [kind]: how it looks }; WONDER_SPECK: a wonder's speck's radius,
-//   a share of its size (where it's real goes by it: levels.js's realAt)
-// slotOf(sector) → { centre, at, color, r, count, key }: farStars' setSlot's,
-//   its stars and then its wonders, from the sector's middle
+// WONDER, WONDER_SPECK, slotOf: specks.js's (pure, so the sector worker
+//   makes a sector's specks too), lent here as they always were
 // createSector(sector) → { group, sector, update(t, dt, camera), reanchor(at), dispose(), count() }
 //   The caller puts the group under a root at `at` and calls reanchor(at) whenever `at` moves.
 
@@ -27,6 +25,9 @@ import * as THREE from 'three';
 import { LOOKS } from '../../galaxy/shared/bodies';
 import { rngOf } from '../gen/seed';
 import { FAR, levelWeights, realAt } from './levels';
+import { WONDER, WONDER_SPECK } from './specks';
+
+export { WONDER, WONDER_SPECK, slotOf } from './specks';
 
 export const TYPE_LOOK = {
   rock: 'moon-dust',
@@ -42,14 +43,6 @@ export const MOON_LOOK = { icy: 'hoth', rocky: 'moon-grey' };
 // (its swatch: what a disc of it is drawn in, far off)
 export const lookColour = (id) => (LOOKS[id] ?? LOOKS['moon-grey']).swatch;
 
-// how a wonder looks as a speck, and as itself
-export const WONDER = {
-  nebula: { color: '#b48cff' },
-  pulsar: { color: '#b8f4ff', r: 0.15 },
-  derelict: { color: '#7a808c', r: 0.12, dark: '#2a2d33' },
-  rogue: { color: '#6b5a50', r: 0.5, dark: '#1e1a18' },
-};
-export const WONDER_SPECK = 0.4;
 const PUFFS = 48; // a nebula's
 
 // shared by every sector, never disposed
@@ -126,32 +119,6 @@ function fading(mat) {
   mat.blendDst = mat.blendDstAlpha = THREE.OneFactor;
   mat.blendAlpha = 1;
   return mat;
-}
-
-// a hex colour's bytes, into `out` at `i`
-const bytesInto = (hex, out, i) => {
-  const n = parseInt(hex.slice(1), 16);
-  out[i] = (n >> 16) & 255;
-  out[i + 1] = (n >> 8) & 255;
-  out[i + 2] = n & 255;
-};
-
-export function slotOf(sector) {
-  const o = sector.origin;
-  const n = sector.systems.length + sector.wonders.length;
-  const at = new Float32Array(n * 3);
-  const color = new Uint8Array(n * 3);
-  const r = new Float32Array(n);
-  const put = (i, p, hex, size) => {
-    at[i * 3] = p[0] - o[0];
-    at[i * 3 + 1] = p[1] - o[1];
-    at[i * 3 + 2] = p[2] - o[2];
-    bytesInto(hex, color, i * 3);
-    r[i] = size;
-  };
-  sector.systems.forEach((s, i) => put(i, s.at, s.star.color, s.star.size));
-  sector.wonders.forEach((w, j) => put(sector.systems.length + j, w.at, (WONDER[w.kind] ?? WONDER.rogue).color, w.size * WONDER_SPECK));
-  return { centre: [...o], at, color, r, count: n, key: sector.id };
 }
 
 export function createSector(sector) {

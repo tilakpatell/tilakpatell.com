@@ -6,6 +6,11 @@
 // in a frame centred on the middle sector, moved to it relative to the
 // floating origin, as sectors.js's do.
 //
+// It is the rim's field, made on the main thread, and it goes with the rim:
+// once expanse.js asks the worker for the rings beyond (gen/job.js's
+// beyondKeys and beyondJob) and draws them in the far layer, nothing calls
+// this, and it and its tests go.
+//
 // beyondPlaces(universe, sx, sz, { inner = 1, outer = 3 }) → [{ id, at (map), r, color }]
 //   every system in a sector inner < d ≤ outer from (sx, sz)
 // createStarfield(parent, { skyFar = SKY_FAR })
