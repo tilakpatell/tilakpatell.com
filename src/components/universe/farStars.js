@@ -33,7 +33,8 @@
 //     speck's place is worked out on the chip, from its slot's centre (from
 //     the camera, in doubles, each update) and where it is in the slot. Past
 //     the far plane it is a speck on the sky, in its colour, falling off as
-//     the square (speckBright); within it, it gives way to its disc. Every
+//     the square (speckBright); within it (or within where the discs'
+//     budget ends, setDiscEdge, if that's nearer), it gives way to its disc. Every
 //     speck fades to nothing at the edge it's given (setEdge: the levels'
 //     beyondFade, as far as what's loaded reaches from the camera), so
 //     nothing comes or goes there at once as the slots change.
@@ -57,7 +58,7 @@
 // createFarStars(parent, { places: [{ id, at, reach | r, color, sector?, station?, group? }], skyFar, slots = [], discs = 0 })
 //   → { points, update(camera, dt, { focus, sector }), kOf(id) → 0 (real) … 1 (far),
 //       setSlot(i, slot), showSlots(list), hideSlots(list), fadeSlot(i, seconds),
-//       setEdge(edge), discs: { begin(), push(…), end() }, pops() → { count, px }, dispose() }
+//       setEdge(edge), setDiscEdge(edge), discs: { begin(), push(…), end() }, pops() → { count, px }, dispose() }
 // `at` is in the parent's space (the map's), and the points are added to it.
 // `slots` is each slot's size in specks; `discs` how many discs it draws.
 //   setSlot(i, { centre: [x, y, z], at: Float32Array, color: Uint8Array, r: Float32Array, count, key? })
@@ -71,6 +72,9 @@
 //   setEdge(edge): every speck faded to nothing at `edge` from the camera,
 //     from 0.8 of it (levels.js's beyondFade); none (Infinity, as it starts)
 //     and nothing fades
+//   setDiscEdge(edge): where a speck gives way to its disc: the discs'
+//     budget's edge (discs.js's edge()), never past the far plane, as it is
+//     till it's told
 //   discs.push(x, y, z, r, cr, cg, cb, lx, ly, lz, alpha, id?) between begin()
 //     and end(), a frame: where (the parent's space), its radius, its
 //     colour (the working space's, as a THREE.Color's), the way to its
@@ -161,6 +165,7 @@ const VERT = /* glsl */ `
   uniform float uTime;
   uniform float uSkyFar;
   uniform float uEdge;
+  uniform float uDiscs;
   uniform vec4 uSlot[SLOTS];
   varying vec3 vColor;
   varying float vK;
@@ -205,7 +210,7 @@ const VERT = /* glsl */ `
       at = rel * (uSkyFar / d);
       px = PX_LEAST + PX_MORE * b;
       vColor = mix(aColor, vec3(1.0), TO_WHITE) * (LIFT + LIFT_MORE * b);
-      vK = aSize > 0.0 ? slot.w * (1.0 - inside(d, FAR)) * inside(d, uEdge) : 0.0;
+      vK = aSize > 0.0 ? slot.w * (1.0 - inside(d, min(uDiscs, FAR))) * inside(d, uEdge) : 0.0;
       vBright = b;
     } else if (aSlot > -1.5) {
       // a disc: its true size (levels.js's discPx), in the page's pixels
@@ -316,7 +321,7 @@ export function createFarStars(parent, { places, skyFar, slots = [], discs = 0 }
     vertexShader: VERT,
     fragmentShader: FRAG,
     defines: { SLOTS: Math.max(1, S) },
-    uniforms: { uDpr: { value: 1 }, uHeight: { value: FRAME_H }, uTime: { value: 0 }, uSkyFar: { value: skyFar }, uEdge: { value: NO_EDGE }, uSlot: { value: U } },
+    uniforms: { uDpr: { value: 1 }, uHeight: { value: FRAME_H }, uTime: { value: 0 }, uSkyFar: { value: skyFar }, uEdge: { value: NO_EDGE }, uDiscs: { value: FAR }, uSlot: { value: U } },
     blending: THREE.CustomBlending,
     blendEquation: THREE.AddEquation,
     blendSrc: THREE.OneFactor,
@@ -374,7 +379,7 @@ export function createFarStars(parent, { places, skyFar, slots = [], discs = 0 }
   let edge = Infinity;
   const tint = new THREE.Color();
   const weights = { full: 0, disc: 0, speck: 0 };
-  const NONE = { reach: 0 };
+  const DISCS = { reach: 0, far: FAR }; // (where a speck gives way to its disc)
   const placeSlot = (i) => U[i].set(sCentre[i * 3] - camAt.x, sCentre[i * 3 + 1] - camAt.y, sCentre[i * 3 + 2] - camAt.z, sAlpha[i]);
   const slotIn = (i) => {
     if (!(i >= 0 && i < S)) throw new RangeError(`no slot ${i} of ${S}`);
@@ -393,7 +398,7 @@ export function createFarStars(parent, { places, skyFar, slots = [], discs = 0 }
     for (let v = slotAt[i], end = v + sCount[i]; v < end; v++) {
       if (!(R[v] > 0)) continue;
       const d = Math.hypot(U[i].x + P[v * 3], U[i].y + P[v * 3 + 1], U[i].z + P[v * 3 + 2]);
-      if (sAlpha[i] * levelWeights(d, NONE, weights).speck * beyondFade(d, edge) > 0.5) most = Math.max(most, starPx(speckBright(d, R[v])) * mat.uniforms.uDpr.value);
+      if (sAlpha[i] * levelWeights(d, DISCS, weights).speck * beyondFade(d, edge) > 0.5) most = Math.max(most, starPx(speckBright(d, R[v])) * mat.uniforms.uDpr.value);
     }
     return most;
   };
@@ -633,6 +638,10 @@ export function createFarStars(parent, { places, skyFar, slots = [], discs = 0 }
         sRate[i] = 0;
         U[i].w = 1;
       }
+    },
+    setDiscEdge(e) {
+      DISCS.far = e >= 0 ? Math.min(FAR, e) : FAR;
+      mat.uniforms.uDiscs.value = DISCS.far;
     },
     setEdge(e) {
       edge = e >= 0 ? e : 0;

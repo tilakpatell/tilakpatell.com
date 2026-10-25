@@ -250,6 +250,20 @@ describe('the discs, fed', () => {
 });
 
 describe('the budget', () => {
+  it('says where its edge is, the far plane while everything within it fits, for the specks to come in there', () => {
+    const sector = field();
+    const all = createDiscs(fakeFar(), { budget: { discs: 1000 } });
+    expect(all.edge()).toBe(FAR); // (none fed yet)
+    all.feed([sector], [0, 0, 0], 0);
+    expect(all.edge()).toBe(FAR);
+    // twenty kept: the edge is the nearest left out, the twenty-first
+    const some = createDiscs(fakeFar(), { budget: { discs: 20 } });
+    some.feed([sector], [0, 0, 0], 0);
+    const d = sector.systems.map((x) => dist(x.at, [0, 0, 0])).sort((a, b) => a - b);
+    expect(some.edge()).toBeCloseTo(d[20], 6);
+    expect(some.edge()).toBeLessThan(FAR);
+  });
+
   it('draws no more than it allows, and never pops at its edge: a disc comes and goes at nothing', () => {
     const sector = field();
     const within = sector.systems.filter((s) => dist(s.at, [0, 0, 0]) < FAR).length;

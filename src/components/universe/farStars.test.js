@@ -447,9 +447,24 @@ describe('the edge of what’s loaded', () => {
     expect(u.value).toBe(0);
     // (on the chip: a speck's share times the levels' beyondFade, inside(d, uEdge))
     const v = stars.points.material.vertexShader;
-    expect(v).toMatch(/vK = aSize > 0\.0 \? slot\.w \* \(1\.0 - inside\(d, FAR\)\) \* inside\(d, uEdge\) : 0\.0;/);
+    expect(v).toMatch(/vK = aSize > 0\.0 \? slot\.w \* \(1\.0 - inside\(d, min\(uDiscs, FAR\)\)\) \* inside\(d, uEdge\) : 0\.0;/);
     // (and a disc or a place takes none of it)
     expect(v.match(/uEdge/g)).toHaveLength(2);
+    stars.dispose();
+  });
+});
+
+describe('where the discs end', () => {
+  it('gives a speck way to its disc where the discs’ budget ends, the far plane till it’s told one, and never past it', () => {
+    const stars = createFarStars(new THREE.Group(), { places: [], skyFar: 24000, slots: [4] });
+    const u = stars.points.material.uniforms.uDiscs;
+    expect(u.value).toBe(FAR);
+    stars.setDiscEdge(30000);
+    expect(u.value).toBe(30000);
+    stars.setDiscEdge(60000);
+    expect(u.value).toBe(FAR);
+    stars.setDiscEdge(Number.NaN);
+    expect(u.value).toBe(FAR);
     stars.dispose();
   });
 });
@@ -579,6 +594,25 @@ describe('pops (dev)', () => {
     stars.setSlot(0, { ...slotOf([0, 0, -100000], [ONE]), key: ['beyond:2', 'E:9,9'] });
     stars.hideSlots([2]);
     stars.showSlots([0]);
+    stars.update(cam);
+    expect(stars.pops().count).toBe(1);
+    stars.dispose();
+  });
+
+  it('counts a speck past where the discs end as all speck', () => {
+    // (40,000 off, short of the far plane's last fifth: under half a speck, while the discs reach it)
+    const stars = createFarStars(new THREE.Group(), { places: [], skyFar: 24000, slots: [4, 4] });
+    const cam = camAt(0, 0, 0);
+    stars.update(cam);
+    stars.points.onBeforeRender(stubRenderer);
+    stars.pops();
+    stars.setSlot(0, { ...slotOf([0, 0, -40000], [ONE]), key: 'a' });
+    stars.showSlots([0]);
+    stars.update(cam);
+    expect(stars.pops()).toEqual({ count: 0, px: 0 });
+    stars.setDiscEdge(30000);
+    stars.setSlot(1, { ...slotOf([0, 0, -40000], [ONE]), key: 'b' });
+    stars.showSlots([1]);
     stars.update(cam);
     expect(stars.pops().count).toBe(1);
     stars.dispose();

@@ -9,6 +9,7 @@ import { orbitAt, spaceTime } from '../gen/orbits';
 import { makeSector } from '../gen/sector';
 import { UNIVERSE } from '../gen/seed';
 import { addBodies } from '../gen/systems';
+import { FAR } from './levels';
 import { createNear, strengthOf } from './near';
 import { starsOf } from './specks';
 import { universeBudget } from '../../universe/shared/far';
@@ -32,6 +33,7 @@ function fakeFar() {
     fades: [],
     sets: [], // every setSlot, in order: [slot, what]
     edges: [],
+    discEdges: [],
     frames: [],
     rows: null,
     setSlot(i, slot) {
@@ -51,6 +53,9 @@ function fakeFar() {
     },
     setEdge(e) {
       far.edges.push(e);
+    },
+    setDiscEdge(e) {
+      far.discEdges.push(e);
     },
     discs: {
       begin() {
@@ -581,6 +586,18 @@ describe('the Expanse’s levels', () => {
     atSys(ex, 200);
     expect(far.frames.at(-1).length).toBe(whole);
     expect(steps).toEqual([3, 0]);
+  });
+
+  it('tells the far layer where its discs end, so the specks come in there', () => {
+    const far = fakeFar();
+    const ex = createExpanse(new THREE.Group(), { make: fakes().make, far, build: fakeBuild, tier: 'high' });
+    atSys(ex, 2);
+    expect(far.discEdges.at(-1)).toBe(FAR);
+    ex.setStep(3, true);
+    atSys(ex, 200);
+    expect(far.discEdges.at(-1)).toBeLessThan(FAR);
+    expect(far.discEdges.at(-1)).toBeGreaterThan(0);
+    ex.dispose();
   });
 
   it('takes a step before its first frame, and its discs keep to it', () => {

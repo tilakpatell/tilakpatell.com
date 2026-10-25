@@ -18,9 +18,9 @@
 // (sectors.js); its stars and wonders as a slot of specks in the far layer,
 // past the far plane, and each ring beyond in a slot of its own; within the
 // far plane its stars, planets, moons and wonders as discs (discs.js), fed
-// every frame; and the nearest systems built whole (near.js). Planets and
-// moons go round on the shared clock (orbits.js's spaceTime of the wall
-// time it's given).
+// every frame, the specks coming in where their budget ends; and the
+// nearest systems built whole (near.js). Planets and moons go round on the
+// shared clock (orbits.js's spaceTime of the wall time it's given).
 //
 // The centre drawn. The far layer draws one centre's 3 × 3 × 3 and rings,
 // whole. Once the ship is SWAP_PAST into the next sector (so one sitting on
@@ -407,6 +407,7 @@ export function createExpanse(parent, { universe = UNIVERSE, workers = null, far
     if (layer) {
       layer.far.discs.begin();
       layer.far.discs.end();
+      layer.far.setDiscEdge?.(Infinity);
       if (layer.own) layer.own.points.visible = false;
     }
     grid.reset();
@@ -472,6 +473,8 @@ export function createExpanse(parent, { universe = UNIVERSE, workers = null, far
     const ts = spaceTime(now);
     near.update(systems, cam, ts, camera, t);
     L.discs.feed(sectorList, cam, ts);
+    // (the specks come in where the discs' budget ends)
+    L.far.setDiscEdge?.(L.discs.edge());
   }
 
   return {

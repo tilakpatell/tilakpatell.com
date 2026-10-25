@@ -33,7 +33,7 @@
 //   of the first n candidates (four numbers each: where, and the radius),
 //   the indices within far + r of cam, the nearest max kept (a tie to the
 //   lower index), far to near; written into `out` when it's long enough
-// createDiscs(far, { budget, built }) → { feed(sectors, cam, t), setBudget(budget) }
+// createDiscs(far, { budget, built }) → { feed(sectors, cam, t), setBudget(budget), edge() }
 //   far: the far layer; budget: universe/budget.js's row (its `discs`);
 //   built: () → the systems built in full (near.js's built()): their ids,
 //   an array or a set, each given up by its own reach; or a map of each id
@@ -44,6 +44,9 @@
 //   map's) and the shared clock in seconds (orbits.js's spaceTime). It
 //   allocates nothing for a body.
 //   setBudget(budget): a new row, from the pace's step
+//   edge(): where its budget ends as of the last feed, the far plane while
+//   all within it fit (or none's been fed): where the far layer's specks
+//   come in (farStars' setDiscEdge), so nothing's missing between the two
 
 import * as THREE from 'three';
 import { moonAt, orbitAt } from '../gen/orbits';
@@ -253,5 +256,6 @@ export function createDiscs(far, { budget, built = null }) {
     setBudget(next) {
       max = next.discs;
     },
+    edge: () => (edge < 0 ? FAR : edge),
   };
 }
