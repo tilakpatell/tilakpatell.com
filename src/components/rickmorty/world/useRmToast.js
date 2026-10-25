@@ -14,8 +14,8 @@ import { lineSaid } from './voicelines';
 // story's closing line, a count), `onShow` run as it goes up; `due()`: ms till
 // what waits goes up (a page that's leaving holds for it); `pending()`: what
 // waits, and `drop()` drops it (a planet's page that leaves with the story's
-// line still waiting keeps it for the next page); `reading()`: a line up is
-// still being read (a bark waits).
+// line still waiting keeps it for the next page); `reading()`: a line up (or
+// a note held while something waits) is still being read (a bark waits).
 export function useRmToast() {
   const [toast, setToast] = useState(null);
   const slot = useRef(null);

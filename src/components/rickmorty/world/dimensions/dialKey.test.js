@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { dialKey, dialPad } from './dialKey';
+import { TOUCH_FOOT, dialKey, dialPad } from './dialKey';
 
 describe('C-137: the portal gun’s dial, by key', () => {
   it('moves with the arrows (or W and S), held down or not', () => {
@@ -35,5 +35,16 @@ describe('C-137: the portal gun’s dial, by key', () => {
     expect(dialPad({ ...up, ly: 0.8 }, { ...up, ly: 0.9 })).toEqual([]);
     expect(dialPad(null, up)).toEqual([]);
     for (const key of ['ArrowDown', 'ArrowUp', 'Enter', 'Escape']) expect(dialKey({ key }), key).not.toBeNull();
+  });
+});
+
+describe('C-137: the portal gun’s dial, on a touch screen', () => {
+  it('has a foot that names no key, for the gun and for Rick’s rooms', () => {
+    // (a tap picks a row; the × at the top puts it away)
+    expect(TOUCH_FOOT).toEqual({ gun: 'Tap a place to set the dial, or × to put the gun down', rooms: 'Tap one to pick it, or × to back out' });
+    for (const foot of Object.values(TOUCH_FOOT)) {
+      expect(foot).not.toMatch(/[↑↓]|\b(?:Enter|Esc|E|P)\b/);
+      expect(foot).not.toMatch(/!|'|—/);
+    }
   });
 });

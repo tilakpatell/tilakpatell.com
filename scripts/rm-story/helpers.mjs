@@ -9,10 +9,12 @@
 // through the portal has its way in, its portal home and its spots, read
 // from its data (./places.mjs); and at the Citadel (window.__CITADEL__), its
 // page up, its line read (the story's step over its own) and its toast
-// waited for; a place dialled from the garage and home through its own
+// waited for, and the next card after its closing line; a place dialled
+// from the garage and home through its own
 // portal, a task not done after a while, the Story tab's ticks, a page
-// opened with a place's people held back; and Rick's rooms on the
-// Vindicators' ship, as their rules have them. Kept apart from
+// opened with a place's people held back, a spot's dot read off the map and
+// the camera turned round Morty; and Rick's rooms on the Vindicators' ship,
+// as their rules have them. Kept apart from
 // the scenarios so no file passes 800 lines.
 import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -59,12 +61,12 @@ export async function built(page) {
   await page.waitForFunction(() => window.__C137__?.goto || document.querySelector('.rm-world')?.dataset.mode === 'cards', null, { timeout: 600000, polling: 1000 });
   check(await page.evaluate(() => Boolean(window.__C137__?.goto)), 'the 3D world didn’t start');
   await page.evaluate(() => document.querySelector('.rm-world')?.scrollIntoView({ block: 'start' }));
-  await page.waitForFunction(() => window.__C137__.ready(), null, { timeout: 300000, polling: 250 });
+  await page.waitForFunction(() => window.__C137__?.ready?.(), null, { timeout: 300000, polling: 250 });
 }
 // Morty sent somewhere, as a door sends him, and stood till it's built
 export async function goto(page, area, x, z, face = N) {
   check(await page.evaluate(([a, x, z, f]) => window.__C137__.goto(a, x, z, f), [area, x, z, face]), `Morty wouldn’t go to ${area}`);
-  await page.waitForFunction(() => window.__C137__.ready(), null, { timeout: 300000, polling: 250 });
+  await page.waitForFunction(() => window.__C137__?.ready?.(), null, { timeout: 300000, polling: 250 });
 }
 // E at a hotspot, once he's by it
 export async function use(page, id) {
@@ -120,7 +122,7 @@ export const toast = (page, text) =>
   });
 // Morty in `area`, and it built
 export const inArea = (page, area) =>
-  page.waitForFunction((a) => window.__C137__?.sim?.area === a && window.__C137__.ready(), area, { timeout: 300000, polling: 250 }).catch(async () => {
+  page.waitForFunction((a) => window.__C137__?.sim?.area === a && window.__C137__?.ready?.(), area, { timeout: 300000, polling: 250 }).catch(async () => {
     throw new Error(`Morty isn’t in ${area} (he’s in ${await page.evaluate(() => window.__C137__?.sim?.area)})`);
   });
 // episode i's card: its number, title and first line, gone at the next key
@@ -290,12 +292,36 @@ export async function later(page, s) {
   await page.waitForFunction((t) => window.__C137__.sim.t >= t, t0 + s, { timeout: 120000, polling: 16 });
 }
 // the map's marker (the sim's `goal`): a link's or a spot's id
+// (null: no marker; the sim's goal is worked out every third frame, so it's waited for, never read once)
 export const goalIs = (page, id, where) =>
-  page.waitForFunction((id) => window.__C137__.sim.goal?.id === id, id, { timeout: 15000, polling: 100 }).catch(async () => {
+  page.waitForFunction((id) => (window.__C137__.sim.goal?.id ?? null) === id, id, { timeout: 15000, polling: 100 }).catch(async () => {
     throw new Error(`${where} the marker’s on ${await page.evaluate(() => window.__C137__.sim.goal?.id ?? null)}, not ${id}`);
   });
+// does the map dot a spot at (x, z) in a place? (its lime, where RmWorld's
+// drawMap puts it: the place's box fitted to the canvas, eight map pixels in
+// from its edge, two canvas pixels to one)
+export const dotted = (page, area, x, z) =>
+  page.evaluate(
+    ([A, x, z]) => {
+      const c = document.querySelector('.rm-map canvas');
+      const pad = 8 * 2;
+      const k = Math.min((c.width - pad * 2) / (A.x1 - A.x0), (c.height - pad * 2) / (A.z1 - A.z0));
+      const px = Math.round(c.width / 2 + (x - (A.x0 + A.x1) / 2) * k);
+      const pz = Math.round(c.height / 2 + (z - (A.z0 + A.z1) / 2) * k);
+      const [r, g, b] = c.getContext('2d').getImageData(px, pz, 1, 1).data;
+      return Math.abs(r - 0xc9) < 16 && Math.abs(g - 0xff) < 16 && Math.abs(b - 0x5a) < 16;
+    },
+    [PLACES.dest(area).area, x, z],
+  );
+// the walking camera turned to `yaw` round Morty, as a drag turns it, and
+// where it is once it's settled `s` seconds on
+export async function cameraAt(page, yaw, s = 1) {
+  await page.evaluate((y) => (window.__C137__.sim.yaw = y), yaw);
+  await later(page, s);
+  return page.evaluate(() => ({ ...window.__C137__.api.stage.camera.position }));
+}
 // the objective line isn't a link
-export const noLink = async (page, where) => check((await page.locator('.rm-hud .rm-objective-link').count()) === 0, `${where} the line is a link`);
+export const noLink =async (page, where) => check((await page.locator('.rm-hud .rm-objective-link').count()) === 0, `${where} the line is a link`);
 // a place's meter, by its title, and its line
 export const meter = (page, title) => page.locator(`.rm-cluster[aria-label="${title}"][data-on]`);
 export const meterSays = (page, title, text) =>
@@ -338,7 +364,8 @@ export async function openHeld(page, hash, area, names) {
   const asked = (url) => names.some((n) => new RegExp(`/${n}(-[a-z]+)?\\.glb$`).test(url.pathname));
   const hold = async (route) => {
     await held;
-    await route.continue();
+    // (one the reload dropped, or the unroute below let through first, is settled already)
+    await route.continue().catch(() => {});
   };
   await page.route(asked, hold);
   await page.goto(`${BASE}/${hash}`, { waitUntil: 'domcontentloaded' });
@@ -400,4 +427,24 @@ export async function citadelToast(page, text, name = null) {
     throw new Error(`no toast at the Citadel saying “${text}”`);
   });
   if (name) check((await t.locator('b').first().textContent().catch(() => null))?.trim() === name, `the toast “${text}” isn’t ${name}’s`);
+}
+// the next episode's card at the Citadel once the closing line it comes
+// with has gone, never over it (the world holds under a card; then cardFor's
+// checks)
+export async function citadelCardAfter(page, text) {
+  const seen = await page
+    .waitForFunction(
+      (t) => {
+        const line = Array.from(document.querySelectorAll('.citadel-stage .shire-toast')).some((n) => n.textContent.includes(t));
+        const card = Boolean(document.querySelector('.rm-episode'));
+        return card ? (line ? 'over' : 'after') : !line && 'gone';
+      },
+      text,
+      { timeout: 20000, polling: 50 },
+    )
+    .then((h) => h.jsonValue())
+    .catch(() => {
+      throw new Error(`the closing line “${text}” stayed up`);
+    });
+  check(seen !== 'over', `the next episode’s card came up over its closing line “${text}”`);
 }

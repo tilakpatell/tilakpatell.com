@@ -5,7 +5,7 @@ import { useFrameLoop, useMediaQuery } from '../../../../lib/hooks';
 import { readPad } from '../../../games/pad';
 import { SAY } from '../say';
 import { CABINETS, TUNING, newCabinet, stepCabinet } from './cabinet';
-import { drawn, keyFor } from './cabinetPlay';
+import { drawn, keyFor, padChutes, padEdges, padFor } from './cabinetPlay';
 import './cabinet.css';
 
 // A walkway cabinet at Blips and Chitz, played: Plumbus Smash on the
@@ -58,7 +58,7 @@ export default function Cabinet({ game = 'cabinet2', onWin, onLeave }) {
   settledRef.current = settled;
   const dropEls = useRef(new Map()); // a plumbus's id → its element
   const shown = useRef(drawn(run.current));
-  const padWas = useRef({});
+  const padWas = useRef(null); // (null till the first frame: a button already down then is no press)
   const won = useRef(onWin);
   won.current = onWin;
 
@@ -125,13 +125,13 @@ export default function Cabinet({ game = 'cabinet2', onWin, onLeave }) {
   useEffect(() => {
     const down = (e) => {
       if (e.metaKey || e.ctrlKey || e.altKey) return;
-      const act = keyFor(phaseRef.current, e.key, !settledRef.current);
+      const act = keyFor(phaseRef.current, e.key, !settledRef.current, e.repeat);
       if (act == null) return;
       e.preventDefault();
       if (act === 'pause') setPhase('paused');
       else if (act === 'play') setPhase('play');
       else if (act === 'leave') leave();
-      else if (act.smash != null && !e.repeat) presses.current.push(act.smash);
+      else if (act.smash != null) presses.current.push(act.smash);
     };
     window.addEventListener('keydown', down);
     return () => window.removeEventListener('keydown', down);
@@ -147,24 +147,17 @@ export default function Cabinet({ game = 'cabinet2', onWin, onLeave }) {
   const tick = useCallback(
     (ms) => {
       const pad = readPad();
-      const was = padWas.current;
+      const pressed = padEdges(pad, padWas.current);
       padWas.current = pad ?? {};
-      const edge = (k) => pad?.[k] && !was[k];
       const p = phaseRef.current;
-      if (p === 'intro') {
-        if (edge('a')) start();
-        else if (edge('b')) leave();
-        return;
-      }
-      if (p === 'won' || p === 'lost') {
-        if (!settledRef.current) return;
-        if (edge('a')) again();
-        else if (edge('b')) leave();
-        return;
-      }
-      if (edge('start')) setPhase(p === 'play' ? 'paused' : 'play');
-      if (p !== 'play') return;
-      ['left', 'down', 'right'].forEach((k, lane) => edge(k) && presses.current.push(lane));
+      const act = padFor(p, pressed, !settledRef.current);
+      if (act === 'start') start();
+      else if (act === 'again') again();
+      else if (act === 'leave') leave();
+      else if (act === 'pause') setPhase('paused');
+      else if (act === 'play') setPhase('play');
+      if (p !== 'play' || act === 'pause') return;
+      presses.current.push(...padChutes(pressed));
       acc.current += Math.min(0.1, ms / 1000);
       const steps = [];
       while (acc.current >= STEP && steps.length < MAX_STEPS) {

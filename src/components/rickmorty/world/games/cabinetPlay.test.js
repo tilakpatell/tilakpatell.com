@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { newCabinet, stepCabinet } from './cabinet';
-import { drawn, keyFor } from './cabinetPlay';
+import { drawn, keyFor, padChutes, padEdges, padFor } from './cabinetPlay';
 
 describe('the cabinet’s keys', () => {
   it('smashes a chute and pauses while playing', () => {
@@ -21,6 +21,42 @@ describe('the cabinet’s keys', () => {
   it('holds every key on an end card that has only just come up', () => {
     for (const phase of ['won', 'lost']) for (const key of ['Escape', 'Enter', ' ', 'ArrowLeft']) expect(keyFor(phase, key, true), `${phase} ${key}`).toBe('hold');
     expect(keyFor('lost', 'Enter')).toBe(null);
+  });
+
+  it('a held key’s repeat is a hold, not a leave', () => {
+    // (a held Esc pauses, then its repeat would leave and lose the run)
+    expect(keyFor('paused', 'Escape', false, true)).toBe('hold');
+    expect(keyFor('play', 'Escape', false, true)).toBe('hold');
+    expect(keyFor('paused', 'p', false, true)).toBe('hold');
+    expect(keyFor('play', 'ArrowLeft', false, true)).toBe('hold');
+    // (a key that does nothing still does nothing)
+    expect(keyFor('intro', 'ArrowDown', false, true)).toBe(null);
+  });
+});
+
+describe('the cabinet on a controller', () => {
+  it('takes no button already down as it opens: the A that opened it doesn’t start the run', () => {
+    expect(padEdges({ a: true }, null)).toEqual({});
+    expect(padFor('intro', padEdges({ a: true }, null))).toBe(null);
+    expect(padFor('intro', padEdges({ a: true }, { a: false }))).toBe('start');
+    expect(padFor('intro', { b: true })).toBe('leave');
+  });
+
+  it('leaves the pause card on B, where Start or A plays on', () => {
+    expect(padFor('play', { start: true })).toBe('pause');
+    expect(padFor('paused', { b: true })).toBe('leave');
+    expect(padFor('paused', { a: true })).toBe('play');
+    expect(padFor('paused', { start: true })).toBe('play');
+    // (an end card: A again, B away, nothing while it settles)
+    expect(padFor('lost', { a: true })).toBe('again');
+    expect(padFor('won', { b: true })).toBe('leave');
+    expect(padFor('won', { a: true }, true)).toBe('hold');
+  });
+
+  it('smashes its three chutes with the d-pad’s left, down and right', () => {
+    expect(padChutes({ left: true, right: true })).toEqual([0, 2]);
+    expect(padChutes({ down: true })).toEqual([1]);
+    expect(padChutes({ up: true })).toEqual([]);
   });
 });
 

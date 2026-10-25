@@ -15,7 +15,7 @@ import Face from './Faces';
 import { useTouring } from '../tour/useTouring';
 import ModelCredits from '../ModelCredits';
 import { CopyButton } from '../ui';
-import { ABOUT, PICK_A_SHIP } from './words';
+import { ABOUT, PICK_A_SHIP, moonWay } from './words';
 
 // Beside the map (a bottom sheet on a phone). With nothing selected: the
 // ships to fly (or how to fly the one you're in, and what it's fitted with
@@ -27,15 +27,16 @@ import { ABOUT, PICK_A_SHIP } from './words';
 // `onNav` opens the nav map (NavMap.jsx): everywhere, and how to get there.
 
 // A moon of the Rick and Morty sector's own card: a place from the show,
-// and going in takes you into it (not the crew's card, whose portal gun toy
-// and way to C-137 aren't the way into this one).
-function MoonCard({ moon }) {
+// and how going in goes, walked into or a whole world (words.js's moonWay;
+// not the crew's card, whose portal gun toy and way to C-137 aren't the way
+// into this one).
+export function MoonCard({ moon }) {
   return (
     <li className="fun-card">
       <div className="flex flex-1 flex-col p-5 sm:p-6">
         <h3 className="stretch-semi text-xl font-semibold text-ink">{moon.label}</h3>
         <p className="mt-1 text-sm text-muted">Rick and Morty</p>
-        <p className="mt-3 text-[0.95rem] leading-relaxed text-body">A planet from the show. Land on it and you’re straight into it, on foot as Morty, with something to do there; its own portal brings you back out to space.</p>
+        <p className="mt-3 text-[0.95rem] leading-relaxed text-body">A planet from the show. {moonWay(moon)}</p>
       </div>
     </li>
   );

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { RiCloseLine } from 'react-icons/ri';
+import { RiCloseLine, RiPauseLine } from 'react-icons/ri';
 import '@fontsource/luckiest-guy/400.css';
 import { useFrameLoop, useMediaQuery, useReducedMotion } from '../../../../lib/hooks';
 import { readPad } from '../../../games/pad';
@@ -33,6 +33,23 @@ const clip = (id) => import('../../../../lib/clips').then((c) => c.playClip(id),
 // a note's place down its lane: y 0 at the top, 1 on the line (36 px above the lane's foot)
 const top = (y) => `calc((100% - 36px) * ${y.toFixed(4)} - 12px)`;
 
+// the corner: Leave, in every phase, and on a touch screen while the song
+// plays Pause beside it (a keyboard has Esc and P, a controller Start)
+export function Corner({ phase, touch, onPause, onLeave }) {
+  return (
+    <div className="schwifty-corner">
+      {touch && phase === 'play' && (
+        <button type="button" className="btn btn-ghost btn-sm schwifty-pause" onClick={onPause}>
+          <RiPauseLine aria-hidden="true" /> Pause
+        </button>
+      )}
+      <button type="button" className="btn btn-ghost btn-sm schwifty-leave" onClick={onLeave}>
+        <RiCloseLine aria-hidden="true" /> Leave
+      </button>
+    </div>
+  );
+}
+
 export default function Schwifty({ onWin, onLeave }) {
   const line = SAY.mic?.text;
   const touch = useMediaQuery('(pointer: coarse)');
@@ -60,6 +77,7 @@ export default function Schwifty({ onWin, onLeave }) {
   won.current = onWin;
 
   const leave = useCallback(() => onLeave?.(), [onLeave]);
+  const pause = useCallback(() => phaseRef.current === 'play' && setPhase('paused'), []);
   const start = useCallback(() => {
     if (phaseRef.current === 'intro') clip('showMe');
     setPhase('play');
@@ -228,9 +246,7 @@ export default function Schwifty({ onWin, onLeave }) {
   const coming = inView(view);
   return (
     <div className="schwifty" role="group" aria-label="Get Schwifty" data-owns-escape="" data-phase={phase} data-calm={calm || undefined}>
-      <button type="button" className="btn btn-ghost btn-sm schwifty-leave" onClick={leave}>
-        <RiCloseLine aria-hidden="true" /> Leave
-      </button>
+      <Corner phase={phase} touch={touch} onPause={pause} onLeave={leave} />
       <div className="schwifty-stage">
         <div className="schwifty-hud">
           <span className="schwifty-heads-name">The heads</span>

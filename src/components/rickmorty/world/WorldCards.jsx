@@ -61,12 +61,14 @@ export default function Cards({ done, openPlace, three, gl, toast, retry, planet
         <div>
           <Title name={planet?.name} />
           <p className="lead mt-4 max-w-[60ch]">{planet ? `A planet in the Rick and Morty sector of the universe map. ${planet.note}` : 'Rick and Morty’s neighbourhood: the Smith house, Rick’s garage lab, Harry Herpson High, and through the portal, Blips and Chitz.'}</p>
+          {/* (the cards reach a handful of the toys: the rest needs the 3D) */}
+          {!planet && <p className="mt-3 max-w-[60ch] text-sm text-muted">The story, Rick’s portal gun and most of the things to do are in the 3D world.</p>}
         </div>
         <p className="rm-cards-count">
           <b>{prog.count}</b> of {prog.total} things done
         </p>
       </div>
-      {three.can && (
+      {three.can ? (
         <p className="mt-3 flex flex-wrap items-center gap-3 text-sm text-muted">
           {gl === 'lost'
             ? `The graphics chip reset, so here’s ${here} as ${as}.`
@@ -86,6 +88,9 @@ export default function Cards({ done, openPlace, three, gl, toast, retry, planet
             {three.on ? 'Try 3D again' : three.held ? 'Load the 3D' : 'Turn 3D on'}
           </button>
         </p>
+      ) : (
+        // (no WebGL at all: nothing to turn on)
+        <p className="mt-3 text-sm text-muted">{`This browser has no 3D graphics, so here’s ${here} as ${as}.`}</p>
       )}
       <div className="rm-cards-toast">
         <Toast toast={toast} />

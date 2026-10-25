@@ -326,14 +326,28 @@ export function stage(kit, id, { ground, groundTile = 4, floor, floorTile = 2, w
   // a while from the frame the game's task is done (the show's, once it
   // closes), started afresh whenever the place calms ──
   const rh = d.rhythm;
-  const du = d.people.find((p) => p.ai?.hunt?.duel)?.ai.hunt.duel ?? null; // (a duel's: its `unlock` handed over once its task's done)
+  const duellist = d.people.find((p) => p.ai?.hunt?.duel) ?? null;
+  const du = duellist?.ai.hunt.duel ?? null; // (a duel's: its `unlock` handed over once its task's done)
   const ach = d.achieve ? { task: d.achieve, unlock: d.achieve } : null; // (a task's own, however it's done: place.js's `achieve`)
   const gameTask = cheerTask(d); // (its game's, or its duel's: ../games/cheer.js)
   let cheer = newCheer();
 
+  // ── the place's hunters after Morty (`hunt(on)`: the ring stepped into,
+  // the last pod freed). A duel called with no duellist stood, his model not
+  // loaded, has nobody to come: he's told to reload, once, after the line
+  // that called him (checked once the cast's in: one still on its way may
+  // yet come; and never once the duel's won) ──
+  const unloaded = duellist && `${d.say[duellist.id]?.who ?? nameOf(duellist.who ?? duellist.id)} didn’t load: reload the page for the fight.`;
+  let called = false;
+  const hunt = (on = true) => {
+    N.hunt(on);
+    called = on && Boolean(du);
+  };
+
   // (calmed: its people home, and its game started afresh)
   const calm = () => {
     N.calm();
+    called = false;
     if (pw) {
       run = fresh();
       asked = {};
@@ -434,6 +448,11 @@ export function stage(kit, id, { ground, groundTile = 4, floor, floorTile = 2, w
         if (ascent && state && cast) climbing(t, dt, state);
         if (rh && state) grant(rh, (state.done ?? []).includes(rh.task), state);
         if (du && state) grant(du, (state.done ?? []).includes(du.task), state);
+        // (a duel called with nobody to come: said once the cast's in, behind what's being said)
+        if (called && cast && state) {
+          called = false;
+          if (!(state.done ?? []).includes(du.task) && !N.npcs.some((n) => n.ai.hunt?.duel)) state.emit?.('note', { area: id, text: unloaded, after: true });
+        }
         if (ach && state) grant(ach, (state.done ?? []).includes(ach.task), state);
         if (round && gameTask && state) {
           cheer = stepCheer(cheer, { done: (state.done ?? []).includes(gameTask), t });
@@ -524,6 +543,6 @@ export function stage(kit, id, { ground, groundTile = 4, floor, floorTile = 2, w
   };
   // (`taken()`: what a deal's had off the shelves this run, for the builder to take away;
   // `picked()`: what a climb's had picked up this run, Bird World's crystals, for it to hide)
-  return { R, d, A, cx, cz, P, figure, people, done, hunt: N.hunt, npcs: N.npcs, calm, power: (o) => (glow = o.glow ?? null), freeze: (o) => (splash = o.splash ?? null), sequence: (o) => (lamps = o.lamps ?? null), climb: (o) => (stairs = o.stairs ?? null), taken: () => deal?.taken ?? [], picked: () => ascent?.picked ?? [], grant };
+  return { R, d, A, cx, cz, P, figure, people, done, hunt, npcs: N.npcs, calm, power: (o) => (glow = o.glow ?? null), freeze: (o) => (splash = o.splash ?? null), sequence: (o) => (lamps = o.lamps ?? null), climb: (o) => (stairs = o.stairs ?? null), taken: () => deal?.taken ?? [], picked: () => ascent?.picked ?? [], grant };
 
 }

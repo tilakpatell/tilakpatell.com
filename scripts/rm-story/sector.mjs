@@ -4,9 +4,10 @@
 // returner whose old ticks pass their parts, whose games rest, and whose
 // last escape on Planet Squanch's own page holds for Morty's line; and
 // Pluto's own page left with that line still waiting, the next page saying
-// it. Either way the sector ends on episode 12's card.
+// it. Either way the sector ends on episode 12's card. And on a phone, a
+// place's meter clear of the prompt card.
 /* global window, document */
-import { OUT, check, use, built, inArea, reads, story, at, opens, toast, playTo, game, standOn, later, warpUse, caught, spotAt, wayInOf, homeOf, goalIs, noLink, meter, meterSays, warp, hunting, open, openHeld, openOnCard, cardFor, dial, home, notDone, ticked, low, promptIs, PLACES, CITADEL, SECTOR, SCORE } from './helpers.mjs';
+import { OUT, check, use, built, inArea, reads, story, at, opens, toast, playTo, game, standOn, later, warpUse, caught, spotAt, wayInOf, homeOf, goalIs, noLink, meter, meterSays, warp, hunting, open, openHeld, openOnCard, cardFor, dial, home, notDone, ticked, low, promptIs, dotted, cameraAt, PLACES, CITADEL, SECTOR, SCORE } from './helpers.mjs';
 
 const [BIRD, GEAR, PLUTO, SQUANCH] = SECTOR.steps[0].steps;
 const COGS = PLACES.dest('gearworld').sequence.items;
@@ -15,11 +16,19 @@ const drawnAre = (page, ids, where) =>
   page.waitForFunction((ids) => JSON.stringify(window.__C137__.api.act('birdworld', 'crystals')) === JSON.stringify(ids), ids, { timeout: 10000, polling: 100 }).catch(async () => {
     throw new Error(`${where} the crystals drawn are ${JSON.stringify(await page.evaluate(() => window.__C137__.api.act('birdworld', 'crystals')))}`);
   });
+// how near a post comes to the line from a to b, across the ground
+const gapTo = (p, a, b) => {
+  const dx = b.x - a.x;
+  const dz = b.z - a.z;
+  const t = Math.max(0, Math.min(1, ((p.x - a.x) * dx + (p.z - a.z) * dz) / (dx * dx + dz * dz || 1)));
+  return Math.hypot(p.x - a.x - t * dx, p.z - a.z - t * dz);
+};
 export const SECTOR_CHECKS = {
   // a new visitor plays episode 11: each planet dialled from the garage, its
   // part the line there and its game the marker; Bird World's crystals (a
   // pick up, a crumble and the picks back, then all five, two up the
-  // towers), Gear World's cogs (a wrong one, a gear cop's catch, the city run
+  // towers, the map's dots going with them and the camera kept round a
+  // tower's trunk), Gear World's cogs (a wrong one, a gear cop's catch, the city run
   // down, then the dealt order), Pluto's claims (a lie told blind, then the
   // two true ones) and Squanch's escape, the last part, home to C-137
   async 'episode-11'(page) {
@@ -55,6 +64,12 @@ export const SECTOR_CHECKS = {
     const FIVE = PLACES.dest('birdworld').climb.picks;
     await drawnAre(page, FIVE.slice(1), 'with the path’s crystal picked up,');
     const path = PLACES.spot('birdworld', 'bcrystal-path');
+    // and gone from the map: no dot where it was, the next one's still there (Morty off by the door, his arrow with him)
+    await warp(page, 'birdworld', ...spotAt('birdworld', 'door'));
+    await later(page, 0.3);
+    const trees = PLACES.spot('birdworld', 'bcrystal-trees');
+    check(!(await dotted(page, 'birdworld', path.x, path.z)), 'the map still dots a crystal picked up');
+    check(await dotted(page, 'birdworld', trees.x, trees.z), 'the map lost a crystal still to pick up');
     await warp(page, 'birdworld', path.x, path.z);
     await later(page, 0.5);
     check((await page.evaluate(() => window.__C137__.sim.near?.id)) !== 'bcrystal-path', 'a crystal picked up could be picked up again');
@@ -78,6 +93,12 @@ export const SECTOR_CHECKS = {
       const c = PLACES.spot('birdworld', id);
       await standOn(page, 'birdworld', tower, { dx: c.x - tx, dz: c.z - tz });
       if (OUT && id === 'bcrystal-east') await page.screenshot({ path: `${OUT}/episode-11-claytower.png` });
+      // (on the west tower's top, the camera turned to the trunk behind him: it swings round it, so he's in sight)
+      if (id === 'bcrystal-west') {
+        const trunk = PLACES.dest('birdworld').solids.find((o) => o.id === 'tower-a-trunk');
+        const cam = await cameraAt(page, Math.atan2(trunk.x - c.x, trunk.z - c.z));
+        check(gapTo(trunk, c, cam) > trunk.r, `the camera sat behind the west tower’s trunk, at ${cam.x.toFixed(2)}, ${cam.z.toFixed(2)}`);
+      }
       await use(page, id);
     }
     await page.waitForFunction(() => JSON.parse(window.localStorage.getItem('tp-c137-done') ?? '[]').includes('birdworld'), null, { timeout: 30000, polling: 100 }).catch(() => {
@@ -87,6 +108,11 @@ export const SECTOR_CHECKS = {
     check(await ticked(page, BIRD.text), 'the Story tab doesn’t tick Bird World');
     await reads(page, SECTOR.steps[0].text);
     await goalIs(page, 'birdworld-portal', 'on Bird World, done');
+    // (and the map with them: no crystal dotted but the one he's stood by)
+    for (const id of ['bcrystal-path', 'bcrystal-trees', 'bcrystal-grass', 'bcrystal-east']) {
+      const c = PLACES.spot('birdworld', id);
+      check(!(await dotted(page, 'birdworld', c.x, c.z)), `with Bird World won, the map still dots ${id}`);
+    }
     await home(page, 'birdworld');
 
     // Gear World: the marker on the first cog, Gearhead's hello ticks nothing
@@ -237,6 +263,27 @@ export const SECTOR_CHECKS = {
       check((await page.locator('.rm-toast', { hasText: SECTOR.outro[0][1] }).count()) === 0, 'Morty’s line was said again in C-137');
     },
     { seed: { 'tp-rm-story': { v: 1, data: { episode: 10, step: 0, got: [], wins: ['cabinet', 'chase'], freeRoam: false } }, 'tp-c137-done': ['birdworld', 'gearworld', 'pluto'] } },
+  ),
+  // on a phone with a home bar (390 × 664, its 34 px inset), a place's meter
+  // stays clear of the prompt card at a spot: Bird World's, there from the
+  // start, by Birdperson's door
+  'sector-phone': Object.assign(
+    async (page) => {
+      await open(page, '#/c-137/birdworld');
+      // (the home bar's inset, as a phone's env(safe-area-inset-bottom) gives it: Playwright's touch emulation has none)
+      await page.evaluate(() => document.documentElement.style.setProperty('--hud-safe-b', '34px'));
+      await meterSays(page, 'Bird World’s crystals', '0 of 5 crystals found');
+      await warp(page, 'birdworld', ...spotAt('birdworld', 'door'));
+      await page.locator('.rm-prompt[data-kind="spot"]').waitFor({ timeout: 10000 });
+      await page.waitForTimeout(400); // (its rise in)
+      const at = await page.evaluate(() => {
+        const a = document.querySelector('.rm-cluster.rm-meter[data-on] .hud-vitals-block').getBoundingClientRect();
+        const b = document.querySelector('.rm-prompt').getBoundingClientRect();
+        return { over: a.top < b.bottom && b.top < a.bottom && a.left < b.right && b.left < a.right, meter: Math.round(a.bottom), prompt: Math.round(b.top) };
+      });
+      check(!at.over, `on a phone the meter (to ${at.meter}) is over the prompt card (from ${at.prompt})`);
+    },
+    { seed: { 'tp-rm-story': { v: 1, data: { episode: 10, step: 0, got: [], wins: ['cabinet', 'chase'], freeRoam: false } } }, context: { viewport: { width: 390, height: 664 }, hasTouch: true, isMobile: true } },
   ),
   // Pluto's own page the sector's last part: the two true claims told and its
   // portal pressed while the king's line is still being read, Morty's line

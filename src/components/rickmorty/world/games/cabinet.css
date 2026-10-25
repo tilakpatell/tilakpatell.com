@@ -21,6 +21,12 @@
   right: max(16px, env(safe-area-inset-right));
   z-index: 2;
 }
+/* (a finger's 44 px on a touch screen, as the show's: the small button is the only way out mid-run) */
+@media (pointer: coarse) {
+  .cabinet-leave {
+    min-height: 44px;
+  }
+}
 
 /* the screen: a bezel, the HUD across its top, the three chutes below */
 .cabinet-screen {

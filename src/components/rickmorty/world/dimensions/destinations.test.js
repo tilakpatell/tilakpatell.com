@@ -587,6 +587,13 @@ describe('Heist-Con', () => {
       }
     }
   });
+  it('has no extra in a recruit’s kind, so the only heisters about are the two to recruit', () => {
+    const recruits = new Set(h.people.filter((p) => p.ai?.hunt).map((p) => p.who));
+    expect([...recruits]).toEqual(['heister-a', 'heister-b']);
+    expect(h.extras.filter((e) => recruits.has(e.kind)).map((e) => [e.kind, e.dx, e.dz])).toEqual([]);
+    // (Heistotron giving the keynote stays)
+    expect(h.extras.map((e) => e.kind)).toEqual(['heistotron']);
+  });
 });
 
 describe('a place that runs on a climb', () => {

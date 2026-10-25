@@ -67,6 +67,23 @@ describe('where there is to go', () => {
     expect(findDestinations('station', 'nebula')).toEqual([]);
   });
 
+  it('Gazorpazorp’s about says the cruiser sets down, and the walked-into planets’ that Morty goes in by their portal', () => {
+    const about = destinationById('gazorpazorp').about;
+    expect(about).toMatch(/the cruiser sets down/);
+    expect(about).toMatch(/climb out as Rick/);
+    expect(about).toMatch(/take off/);
+    expect(about).not.toMatch(/on foot as Morty|portal/);
+    for (const m of MOONS.filter((x) => x.id !== 'gazorpazorp')) {
+      expect(destinationById(m.id).about, m.id).toMatch(/on foot as Morty/);
+      expect(destinationById(m.id).about, m.id).toMatch(/portal/);
+    }
+    // (the sector's the Rick and Morty sector, and the quotes are curly)
+    for (const m of MOONS) {
+      expect(destinationById(m.id).about, m.id).toMatch(/the Rick and Morty sector/);
+      expect(destinationById(m.id).about, m.id).not.toMatch(/['"]/);
+    }
+  });
+
   it('parks at the edge of the Maw’s pull, never in it, and off everything else', () => {
     const p = parkFor(MAW.id, [0, 0]);
     expect(Math.hypot(p.x - MAW.at[0], p.z - MAW.at[2])).toBeLessThan(MAW.reach);

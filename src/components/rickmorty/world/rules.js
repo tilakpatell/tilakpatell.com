@@ -750,6 +750,32 @@ export const WALLS = {
 export const collidersIn = (area, { motorcade = false } = {}) => (motorcade && area === 'street' ? [...COLLIDERS.street, ...MOTORCADE] : COLLIDERS[area]);
 export const wallsIn = (area) => WALLS[area];
 
+// What's in the walking camera's way at an outdoor place (scene.js's
+// clearance asks, and swings round it): its solids, not its people, each a
+// little bigger, as the rooms' furniture is there. One with a `top` is in
+// the way up to it, one that says how tall it's drawn (`h`: a well, a table,
+// lower than the camera rides) up to that, and the rest at any height (a
+// trunk, a house). A room's camera is in close under its ceiling, past
+// furniture that carries no height, so its solids aren't asked.
+const CAM_PAD = 0.3;
+const CAM_SOLIDS = Object.fromEntries(
+  DESTINATIONS.filter((d) => d.kind === 'outdoor').map((d) => [
+    d.id,
+    d.solids.map((o) => ({ x: o.x, z: o.z, y: (o.top ?? o.h ?? Infinity) + CAM_PAD, ...(o.r != null ? { r: o.r + CAM_PAD } : { hw: o.w / 2 + CAM_PAD, hd: o.d / 2 + CAM_PAD, c: Math.cos(o.turn ?? 0), s: Math.sin(o.turn ?? 0) }) })),
+  ]),
+);
+export function camBlocked(area, x, y, z) {
+  const list = CAM_SOLIDS[area];
+  if (!list) return false;
+  for (const o of list) {
+    if (y > o.y) continue;
+    const dx = x - o.x;
+    const dz = z - o.z;
+    if (o.r != null ? dx * dx + dz * dz < o.r * o.r : Math.abs(dx * o.c - dz * o.s) < o.hw && Math.abs(dx * o.s + dz * o.c) < o.hd) return true;
+  }
+  return false;
+}
+
 // ── the things to touch ──
 
 const spot = (id, area, x, z, label, verb, more) => ({ id, area, x, z, r: 1.4, label, verb, ...more });
@@ -814,9 +840,11 @@ export const HOTSPOTS = [
   // the destinations' people and things (./dimensions/destinations.js)
   ...DESTINATIONS.flatMap((d) => d.hotspots),
 ];
-// (`done`: a hotspot whose `until` is done is gone; left out, they all count.
+// An area's hotspots, as there are to reach and to dot on the map (`done`: a
+// hotspot whose `until` is done is gone; left out, they all count.
 // `gone(id)`: one gone for now, a crystal picked up)
-export const nearHotspot = (area, x, z, done, gone = null) => nearest(done || gone ? HOTSPOTS.filter((h) => (!done || present(h, done)) && !gone?.(h.id)) : HOTSPOTS, area, x, z);
+export const hotspotsIn = (area, done, gone = null) => HOTSPOTS.filter((h) => h.area === area && (!done || present(h, done)) && !gone?.(h.id));
+export const nearHotspot = (area, x, z, done, gone = null) => nearest(done || gone ? hotspotsIn(area, done, gone) : HOTSPOTS, area, x, z);
 
 // ── walking ──
 
@@ -1107,10 +1135,15 @@ export const MEMORY_COLORS = { blue: '#52d6ff', purple: '#b47cff', red: '#ff4d5e
 // the universe map, or for the sector's four dialled too): the small ones'; a big planet's are retired with TASKS'
 export const PLANET_TASKS = new Set(DESTINATIONS.filter((d) => isPlanet(d.id) && !isBigPlanet(d.id)).flatMap((d) => d.tasks.map((t) => t.id)));
 
+// a thing to do's hint as this player's told it: on a touch screen, a row
+// whose hint names a key (F, E) has its buttons' words too (`touch`)
+export const hintOf = (t, touch = false) => (touch && t.touch) || t.hint;
+
 // What's done and what's next. `done` is the ids finished, in any order.
 // `skip` (ids, or a Set) is passed over when picking what's next, but still
-// counts: C-137 skips PLANET_TASKS.
-export function progress(done = [], { skip = [] } = {}) {
+// counts: C-137 skips PLANET_TASKS. On `touch`, what's next is said with its
+// buttons (hintOf).
+export function progress(done = [], { skip = [], touch = false } = {}) {
   const passed = new Set(skip);
   const finished = TASKS.filter((t) => done.includes(t.id));
   const left = TASKS.filter((t) => !done.includes(t.id));
@@ -1123,7 +1156,7 @@ export function progress(done = [], { skip = [] } = {}) {
   const named = (ds) => ds.map((d) => d.name.replace(/^The /, 'the ')).reduce((s, n, i, a) => (i ? `${s}${i === a.length - 1 ? ' and ' : ', '}${n}` : n), '');
   const onGun = gun.length ? `${named(gun)}, which ${gun.length === 1 ? 'is' : 'are'} on the portal gun too` : '';
   const rest = left.every((t) => PLANET_TASKS.has(t.id)) ? `Everything here’s done. The rest are on the planets in the Rick and Morty sector of the universe map: ${[named(map), onGun].filter(Boolean).join(', and ')}.` : 'Everything here’s done.';
-  return { done: finished.map((t) => t.id), count: finished.length, total: TASKS.length, next, objective: next ? next.hint : left.length ? rest : 'Everything’s done. Wubba lubba dub dub.' };
+  return { done: finished.map((t) => t.id), count: finished.length, total: TASKS.length, next, objective: next ? hintOf(next, touch) : left.length ? rest : 'Everything’s done. Wubba lubba dub dub.' };
 }
 
 // ── the pop quiz ──

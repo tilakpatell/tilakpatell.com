@@ -35,6 +35,16 @@ const waitFor = (page, fn, arg, what, timeout = 5000) =>
   page.waitForFunction(fn, arg, { timeout, polling: 50 }).catch(() => {
     throw new Error(what);
   });
+// a press in the sewer run, held till the run shows it's taken it: the run reads the pad a frame at a
+// time, and a software renderer's frame can outlast a tap (C-137's world under it isn't reading, so
+// padPress's wait for it can't tell); then two frames for the run to read it let go
+const twoFrames = (page) => page.evaluate(() => new Promise((r) => window.requestAnimationFrame(() => window.requestAnimationFrame(r))));
+async function sewerPress(page, name, taken, what) {
+  const set = (on) => page.evaluate(([i, on]) => (window.__PAD__.buttons[i] = { pressed: on, value: on ? 1 : 0 }), [BUTTON[name], on]);
+  await set(true);
+  await waitFor(page, taken, null, what, 15000).finally(() => set(false));
+  await twoFrames(page).catch(() => {});
+}
 
 export const PAD_CHECKS = {
   async 'pad-walk'(page) {
@@ -109,14 +119,11 @@ export const PAD_CHECKS = {
       });
       if (await anyway.count()) await anyway.click();
       await waitFor(page, () => window.__SEWER__?.phase === 'intro', null, 'the sewer run’s first card didn’t show', 120000);
-      await padPress(page, 'a');
-      await waitFor(page, () => window.__SEWER__?.phase === 'play', null, 'A didn’t roll');
-      await padPress(page, 'start');
-      await waitFor(page, () => window.__SEWER__?.phase === 'paused', null, 'Start didn’t pause');
-      await padPress(page, 'b');
-      await hole.waitFor({ state: 'detached', timeout: 10000 }).catch(() => {
-        throw new Error('B didn’t go back up the hole');
-      });
+      // (the run's loop starts with the card, its first frame taking what's down as held from before: two frames on, it's reading)
+      await twoFrames(page);
+      await sewerPress(page, 'a', () => window.__SEWER__?.phase === 'play', 'A didn’t roll');
+      await sewerPress(page, 'start', () => window.__SEWER__?.phase === 'paused', 'Start didn’t pause');
+      await sewerPress(page, 'b', () => !window.document.querySelector('.sewer'), 'B didn’t go back up the hole');
     },
     { seed: { 'tp-rm-story': { v: 1, data: { episode: 0, step: 0, got: [], wins: [], freeRoam: true } } } },
   ),

@@ -95,8 +95,8 @@ export const ROWS = [
       { id: 'tree-c', dx: -25, dz: 4, r: 2.6 },
       { id: 'arch-west', dx: 4, dz: -12.6, r: 0.3 },
       { id: 'arch-east', dx: 8, dz: -12.6, r: 0.3 },
-      { id: 'table', dx: 16, dz: -3.4, w: 5, d: 1.2 },
-      { id: 'suckulents', dx: -19, dz: 11, r: 1.4 },
+      { id: 'table', dx: 16, dz: -3.4, w: 5, d: 1.2, h: 0.82 },
+      { id: 'suckulents', dx: -19, dz: 11, r: 1.4, h: 1.8 },
     ],
     tasks: [{ id: 'squanch', name: 'Survive Birdperson’s wedding', hint: 'Land on Planet Squanch in the Rick and Morty sector, raise a glass at the wedding, and get back through the portal when the Federation arrives.' }],
     say: {
@@ -185,7 +185,7 @@ export const ROWS = [
       ...CLAY_TOWERS.solids,
       { id: 'tree-a', dx: -16, dz: 10, r: 1.2 },
       { id: 'tree-b', dx: 18, dz: 6, r: 1.2 },
-      { id: 'crystals', dx: -12, dz: 6, r: 1.2 },
+      { id: 'crystals', dx: -12, dz: 6, r: 1.2, h: 2.1 },
     ],
     tasks: [{ id: 'birdworld', name: 'Pick up Bird World’s crystals', hint: 'Land on Bird World in the Rick and Morty sector, and pick up the crystals round Birdperson’s house: three in the grass, and one up each clay tower, where the clay crumbles.' }],
     say: {
@@ -230,8 +230,8 @@ export const ROWS = [
     ],
     solids: [
       { id: 'tavern', dx: -6, dz: -19, w: 11, d: 9 },
-      { id: 'well', dx: 5, dz: -1.4, r: 1.1 },
-      { id: 'privy', dx: -15.6, dz: -3.5, w: 1.7, d: 1.7 },
+      { id: 'well', dx: 5, dz: -1.4, r: 1.1, h: 2.9 },
+      { id: 'privy', dx: -15.6, dz: -3.5, w: 1.7, d: 1.7, h: 2.9 },
       { id: 'giant', dx: 16, dz: -20, r: 2.6 },
       { id: 'cottage-a', dx: -25, dz: -6, w: 7, d: 6 },
       { id: 'cottage-b', dx: -25, dz: 8, w: 7, d: 6 },
@@ -490,7 +490,7 @@ export const ROWS = [
       { id: 'siren', dx: -11, dz: -12, label: 'The purge siren', verb: 'Pull' },
     ],
     solids: [
-      { id: 'well', dx: 3, dz: -3.4, r: 1.1 },
+      { id: 'well', dx: 3, dz: -3.4, r: 1.1, h: 2.1 },
       { id: 'siren', dx: -11, dz: -13.4, r: 0.4 },
       { id: 'cottage-a', dx: -22, dz: -10, w: 7, d: 6 },
       { id: 'cottage-b', dx: -22, dz: 6, w: 7, d: 6 },
@@ -539,8 +539,8 @@ export const ROWS = [
     ],
     solids: [
       { id: 'palace', dx: 0, dz: -19, w: 14, d: 8 },
-      { id: 'podium', dx: 0, dz: -9.2, w: 1.2, d: 0.8 },
-      { id: 'sign', dx: 12.6, dz: -2, w: 0.3, d: 1.6 },
+      { id: 'podium', dx: 0, dz: -9.2, w: 1.2, d: 0.8, h: 1.5 },
+      { id: 'sign', dx: 12.6, dz: -2, w: 0.3, d: 1.6, h: 2.4 },
       { id: 'house-a', dx: -20, dz: -8, r: 3 },
       { id: 'house-b', dx: -22, dz: 7, r: 3 },
       { id: 'house-c', dx: 21, dz: 8, r: 3 },

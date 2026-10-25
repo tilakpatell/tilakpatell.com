@@ -133,3 +133,7 @@
     font-size: 12px;
   }
 }
+/* a finger's 44 px on a touch screen (RULES UI 2), as the show's Leave and the cabinet's */
+@media (pointer: coarse) {
+  .sewer-leave { min-height: 44px; }
+}

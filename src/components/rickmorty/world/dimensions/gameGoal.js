@@ -1,8 +1,9 @@
 // Where the map's marker points inside a place whose game is under way, so
 // it follows the game rather than staying on where the game began: the next
 // piece of a collect not yet found, the Microverse's cells or its console
-// by whether Morty's carrying one, the next Jerry not yet talked to, a thing
-// in the shop found clean to take or else the next not yet looked over, the
+// by whether Morty's carrying one, the next Jerry not yet talked to (none
+// once all are: the place's own goal), a thing in the shop found clean to
+// take or else the next not yet looked over, the
 // control booth till the countdown's started and then the next set on, the
 // stairs' foot till Morty's up on a ledge and then the giants at the top (or,
 // a climb with things to pick up, the next not yet picked), and an escape's
@@ -30,8 +31,9 @@ export function gameGoal(d, { used = new Set(), done = [], task = null, power = 
   if (pw && power && mine(pw.task) && power.phase !== 'lost') return power.carrying ? pw.to : pw.from;
   const fd = d.find;
   if (fd && find && mine(fd.task) && find.phase !== 'lost') {
-    // (never ours on purpose: the first not yet heard, then the first heard and not yet ruled out)
-    return fd.items.find((id) => !find.heard.includes(id)) ?? fd.items.find((id) => !find.wrong.includes(id)) ?? null;
+    // (never ours on purpose: the first not yet heard; all heard, none, so the
+    // map rests on the place's goal, the desk: the next not ruled out would be a guess)
+    return fd.items.find((id) => !find.heard.includes(id)) ?? null;
   }
   const dl = d.deal;
   if (dl && deal && mine(dl.task) && deal.phase !== 'lost') {

@@ -47,6 +47,20 @@ describe('a place’s hunters at its game', () => {
     }
   });
 
+  it('runs him down in Heist-Con’s rope lanes, so the lanes are no place to hide during the job', () => {
+    // (the ropes are drawn only: steered with no path to follow, a recruit
+    // pressed to a rope's far side would never get round one that stopped him)
+    const d = destinationById('heistcon');
+    const free = [
+      [0, 0],
+      [3.3, 0],
+      [-3.3, 0],
+      [3.3, 4],
+      [-3.3, -4],
+    ].filter(([dx, dz]) => !caughtAt(d, d.centre.x + dx, d.centre.z + dz));
+    expect(free, 'never caught at').toEqual([]);
+  });
+
   it('runs him down wherever he stands to wind one of Gear World’s cogs', () => {
     const d = destinationById('gearworld');
     for (const id of d.sequence.items) {

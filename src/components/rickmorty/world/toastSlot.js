@@ -11,17 +11,19 @@
 //   toastLife(t) → how long `t` stays up (ms): a line said, long enough that
 //     its fade (from 88% of it: world.css's rm-toast) starts once it's read.
 //   readFor(t, now) → ms till `t` has been read: a line said, its readMs, at
-//     most as long as it's up; anything else, nought.
+//     most as long as it's up; one held (`hold`, ms), that long; anything
+//     else, nought.
 //   createToastSlot({ show, hide, now, later, cancel }) → { put(t, { after, onShow }), due(), pending(), reading(), clear() }
 //     `show(t)` puts `t` (stamped `at`) up, and `hide(t)` takes it down at the
 //     end of its own life, never one put up since; `after`: wait till what's up has
 //     been read; `onShow()`: run as `t` goes up. One waits at a time: a later
 //     one takes its place (and the onShow of what it put behind runs as it
-//     goes up), and it waits on behind a line said meanwhile. `due()`: ms
-//     till what waits goes up (nought with nothing waiting). `pending()`:
-//     what waits (null with nothing waiting: a planet's page that leaves
-//     keeps the story's line for the next). `reading()`: whether a line
-//     that's up is still being read (a passer-by's bark waits for it).
+//     goes up), and it waits on behind a line said meanwhile, or behind a
+//     note put up meanwhile for that note's read (`hold`). `due()`: ms till
+//     what waits goes up (nought with nothing waiting). `pending()`: what
+//     waits (null with nothing waiting: a planet's page that leaves keeps
+//     the story's line for the next). `reading()`: whether a line (or a note
+//     held) that's up is still being read (a passer-by's bark waits for it).
 //     `clear()` drops what waits.
 
 export const TOAST_MS = { say: 5600, sayMost: 14000, bad: 3400, other: 4400 };
@@ -32,6 +34,7 @@ export const readMs = (text) => Math.round(Math.max(1.6, 0.8 + (typeof text === 
 export const toastLife = (t) => (t.kind === 'say' ? Math.min(TOAST_MS.sayMost, Math.max(TOAST_MS.say, Math.ceil(readMs(t.text) / FADE_AT))) : t.bad ? TOAST_MS.bad : TOAST_MS.other);
 
 export function readFor(t, now) {
+  if (t?.hold != null) return Math.max(0, t.at + t.hold - now);
   if (t?.kind !== 'say') return 0;
   return Math.max(0, t.at + Math.min(readMs(t.text), toastLife(t)) - now);
 }
@@ -67,7 +70,8 @@ export function createToastSlot({ show, hide = () => {}, now = () => performance
   };
   return {
     put(t, { after = false, onShow } = {}) {
-      if (!after) return put(t, onShow ? [onShow] : []);
+      // (what Morty does himself while something waits: a note gets its read before that goes up over it)
+      if (!after) return put(waiting && t.kind !== 'say' ? { ...t, hold: Math.min(readMs(t.text), toastLife(t)) } : t, onShow ? [onShow] : []);
       waiting = t;
       if (onShow) told.push(onShow);
       if (timer == null) next();

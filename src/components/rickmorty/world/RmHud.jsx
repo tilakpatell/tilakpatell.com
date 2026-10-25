@@ -11,6 +11,7 @@ import { PROMPT as LOOK_PROMPT } from '../../../runtime/look';
 import GuideCue from '../../guide/GuideCue';
 import Wardrobe from '../wardrobe/Wardrobe';
 import DimensionDial from './dimensions/DimensionDial';
+import { TOUCH_FOOT } from './dimensions/dialKey';
 import { ROOMS } from './dimensions/vindicatorsRules';
 import { destinationById } from './dimensions/destinations';
 import { METER, meterOf } from './games/meter';
@@ -127,7 +128,8 @@ export default function RmHud({
   // Where the top row ends (the taller of the title's column and the map's),
   // measured, for what hangs under it on a phone (./world.css --rm-under):
   // the toast and the cruiser's caption sit just under it however tall the
-  // objective or the chips make it, never over them.
+  // objective or the chips make it, never over them. And where the title's
+  // column alone ends (--rm-under-l), for the toast on a wider screen.
   const top = useRef(null);
   // (the game the place Morty's in runs, if any: its meter's name)
   // (in the street, its one meter is the stone's at the park's pond)
@@ -151,6 +153,8 @@ export default function RmHud({
       const from = stage.getBoundingClientRect().top;
       const bottom = Math.max(0, ...Array.from(row.children, (n) => n.getBoundingClientRect().bottom - from));
       stage.style.setProperty('--rm-under', `${Math.round(bottom)}px`);
+      const left = row.querySelector('.rm-brand');
+      if (left) stage.style.setProperty('--rm-under-l', `${Math.round(left.getBoundingClientRect().bottom - from)}px`);
     };
     fit();
     const ro = typeof ResizeObserver === 'function' ? new ResizeObserver(fit) : null;
@@ -158,6 +162,24 @@ export default function RmHud({
     for (const n of row.children) ro?.observe(n);
     return () => ro?.disconnect();
   }, []);
+  // And the prompt card's height while it's up (nought when it's not), for a
+  // place's meter over it on a phone (./world.css --rm-prompt-h): a name on
+  // two lines, or the E key's button in a narrow window, makes it taller
+  const prompt = useRef(null);
+  const prompting = gl === 'on' && Boolean(here);
+  useLayoutEffect(() => {
+    const card = prompt.current;
+    const stage = top.current?.parentElement;
+    if (!stage || !card) return undefined;
+    const fit = () => stage.style.setProperty('--rm-prompt-h', `${Math.round(card.getBoundingClientRect().height)}px`);
+    fit();
+    const ro = typeof ResizeObserver === 'function' ? new ResizeObserver(fit) : null;
+    ro?.observe(card);
+    return () => {
+      ro?.disconnect();
+      stage.style.setProperty('--rm-prompt-h', '0px');
+    };
+  }, [prompting]);
   // (a planet landed on from the map: back to space, or home to C-137's garage)
   const home = homeLink(planet);
   const back1 = (
@@ -270,19 +292,14 @@ export default function RmHud({
               {!touch && <kbd>C</kbd>}
             </button>
           )}
-          {!planet && !game && !duel && !hud.flying && (
-            <button type="button" className="rm-chip" onClick={openDial} aria-haspopup="dialog" aria-label="Portal gun: pick where Rick’s garage portal goes">
-              <RiTyphoonLine aria-hidden="true" />
-              <span>Portal gun</span>
-              {!touch && <kbd>P</kbd>}
-            </button>
-          )}
+          {!planet && !game && !duel && !hud.flying && <GunChip touch={touch} onOpen={openDial} />}
           <OtherMortys trav={trav} where={planet ? 'here' : 'in the street'} />
         </div>
       </div>
       <Wardrobe open={wardrobe} onClose={closeWardrobe} looks={looks} onLook={setLook} who="morty" />
-      <DimensionDial open={dialing} items={dialItems} lead={dialLead} value={dialValue} onPick={pickDial} onClose={closeDial} />
-      <DimensionDial open={!!trial} items={trialItems} value={null} onPick={pickTrial} onClose={closeTrial} title={`Rick’s rooms · ${(trial?.room ?? 0) + 1} of ${ROOMS.length}`} lead={trial ? ROOMS[trial.room].prompt : null} foot="↑ ↓ to choose, Enter to pick, Esc to back out" label="Rick’s rooms" />
+      {/* (on touch the feet say tap, not the keys: ./dimensions/dialKey.js) */}
+      <DimensionDial open={dialing} items={dialItems} lead={dialLead} value={dialValue} onPick={pickDial} onClose={closeDial} foot={touch ? TOUCH_FOOT.gun : undefined} />
+      <DimensionDial open={!!trial} items={trialItems} value={null} onPick={pickTrial} onClose={closeTrial} title={`Rick’s rooms · ${(trial?.room ?? 0) + 1} of ${ROOMS.length}`} lead={trial ? ROOMS[trial.room].prompt : null} foot={touch ? TOUCH_FOOT.rooms : '↑ ↓ to choose, Enter to pick, Esc to back out'} label="Rick’s rooms" />
 
       <Toast toast={toast} />
       {card != null && <EpisodeCard episode={EPISODES[card] ?? null} n={card + 1} onDone={closeCard} />}
@@ -309,7 +326,7 @@ export default function RmHud({
       )}
 
       {gl === 'on' && here && (
-        <div className="rm-prompt" data-kind={here.kind}>
+        <div ref={prompt} className="rm-prompt" data-kind={here.kind}>
           <p className="rm-prompt-name">{here.name}</p>
           {!touch && (
             <button type="button" className="rm-btn" onClick={act}>
@@ -532,7 +549,7 @@ export default function RmHud({
         )}
       </div>
 
-      {list && <ThingsToDo box={listBox} prog={prog} done={done} onClose={closeList} back={back} planet={planet} here={hud.area} />}
+      {list && <ThingsToDo box={listBox} prog={prog} done={done} onClose={closeList} back={back} planet={planet} here={hud.area} touch={touch} />}
     </>
   );
 }
@@ -558,9 +575,10 @@ function EmoteWheel({ hover, touch, onPick, onClose }) {
 
 // The list (M), in two tabs: the story so far (../adventure/StoryList.jsx),
 // and every thing to do, ticked when it's done, with where to go for the rest
-// (on a planet, its own and a line for the rest: ./planetMode.js's listOf);
-// then the cruiser's voice, and Free roam (every place on the dial open).
-function ThingsToDo({ box, prog, done, onClose, back, planet, here }) {
+// (on a planet, its own and a line for the rest: ./planetMode.js's listOf;
+// on touch, the rows that name a key say their buttons); then the cruiser's
+// voice, and Free roam (every place on the dial open).
+function ThingsToDo({ box, prog, done, onClose, back, planet, here, touch }) {
   const [voice, setVoice] = useState(shipVoiceOn);
   const story = useAdventure();
   // (the Story tab while there's a story to follow, the Checklist once it's over)
@@ -568,7 +586,7 @@ function ThingsToDo({ box, prog, done, onClose, back, planet, here }) {
   const over = listTab(story.state) === 'checklist';
   // (the Citadel's scenes made, to tick its step if made before it came up)
   const [citadel] = useState(() => local.get('tp-citadel-done', []));
-  const { label, rows, rest } = listOf(planet, done);
+  const { label, rows, rest } = listOf(planet, done, { touch });
   const home = homeLink(planet);
   return (
     <div ref={box} className="rm-list" id="rm-list" role="region" aria-label={label}>
@@ -676,6 +694,19 @@ function Ending({ end, onAgain, onLeave }) {
         </button>
       </div>
     </div>
+  );
+}
+
+// The portal gun's chip: it opens the dial. On a phone held upright, where a
+// chip's words go (world.css), it keeps its own: the first hint and the guide
+// name it.
+export function GunChip({ touch, onOpen }) {
+  return (
+    <button type="button" className="rm-chip rm-chip-gun" onClick={onOpen} aria-haspopup="dialog" aria-label="Portal gun: pick where Rick’s garage portal goes">
+      <RiTyphoonLine aria-hidden="true" />
+      <span>Portal gun</span>
+      {!touch && <kbd>P</kbd>}
+    </button>
   );
 }
 

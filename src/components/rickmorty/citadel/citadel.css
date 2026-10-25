@@ -62,6 +62,11 @@
   /* under the top row, measured (./CitadelWorld.jsx: the title and its line, or
      the map and its chips, whichever is taller), however tall they run */
   .citadel-stage[data-mode='walk'] .shire-toast { top: calc(var(--citadel-under, 11.5rem) + 0.5rem); }
+  /* the herd's meter in the side column: its bar under its label and time,
+     so the column stays about the chips' width and the title and its line
+     keep their room beside it */
+  .citadel-stage .shire-meter { flex-wrap: wrap; row-gap: 0.35rem; }
+  .citadel-stage .shire-meter-bar { order: 1; flex-basis: 100%; min-width: 0; }
 }
 
 /* no chapter bar over the top here, as Middle-earth has */

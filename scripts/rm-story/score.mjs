@@ -63,7 +63,8 @@ const leftHome = (page, id, m) => {
         return n && Math.hypot(n.x - x, n.z - z) >= m;
       },
       [id, s.x, s.z, m],
-      { timeout: 10000, polling: 50 },
+      // (6 m is about 2 s of the game's; a software renderer under load gives fewer of those a second)
+      { timeout: 30000, polling: 50 },
     )
     .catch(() => {
       throw new Error(`${id} never left their spot to hunt him`);
@@ -220,13 +221,18 @@ export const SCORE_CHECKS = {
 
     // the job, done, its last booth lifted in the frame the cat burglar reaches
     // him: caught, and the win still his; the achievement at last, the crew
-    // home, the Vindicators next
+    // home, the Vindicators next. (A hunter catches him once in three of the
+    // game's seconds: with slow frames her catch above can be fewer back, so
+    // three go by first, with nobody after him)
+    await later(page, 3.5);
     await crewUp(page);
     await start(page);
     await jobIs(page, { phase: 'run' }, 'the plan didn’t start the job');
     const dealt = (await job(page)).order;
     for (const id of dealt.slice(0, -1)) await press(page, id);
     await crewHunting(page);
+    // (in the one update: the people step before the place's game, so she catches him and then the
+    // lift wins, as `dimensions/stage.test.js` has it)
     await page.evaluate((last) => {
       const c = window.__C137__;
       const cat = c.api.act('heistcon', 'npcs').find((n) => n.id === 'heister-b1');

@@ -122,6 +122,7 @@ export function place(i, { id, name, note, kind, deep, wide, sky, ceiling, peopl
     extras: extras.map((e) => w(e)),
     hotspots: spots.map((s) => ({ r: 1.4, ...w(s), area: id })),
     // what can't be walked through: { id, dx, dz, w, d } boxes and { id, dx, dz, r } posts
+    // (`h`: how tall it's drawn, where that's lower than the walking camera rides: ../rules.js's camBlocked)
     solids: solids.map((s) => w(s)),
     tasks,
     say,
