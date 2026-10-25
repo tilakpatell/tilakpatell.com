@@ -1,7 +1,8 @@
 // Where the ship parks at a generated place, and how far off. Pure (no React,
-// DOM or three.js). The nav imports it, and so every page that loads the nav
-// does too, so it takes only the ship, the ids and the expanse's light face:
-// never the generator or the resolver.
+// DOM or three.js). The nav has it through its caller's lookup (resolve.js's
+// lookupOf, the scene's places), not by import, so the pages that load the
+// nav don't carry it. All the same it takes only the ship, the ids and the
+// expanse's light face: never the generator or the resolver.
 //
 // A planet or moon is parked at reach + 4 (PARK_GAP.near), a system, a
 // thing or a wonder at reach + 16 (PARK_GAP.deep), level with its middle
