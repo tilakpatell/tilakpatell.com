@@ -147,6 +147,7 @@ export const EDGE = DEEP.edge;
 const ORBIT_IN = 8; // past a planet's reach: closer than this, you're at it
 const ORBIT_OUT = 14; // and you've left once you're this far
 const PARK = 4; // where autopilot stops, past the planet's reach
+export const PARK_GAP = { near: PARK, deep: PARK * 4, in: ORBIT_IN, out: ORBIT_OUT }; // these, and the deep stop, for a generated place (places/park.js)
 
 export const PLANETS = BODIES.map((id) => {
   const u = byId(id);
@@ -696,11 +697,12 @@ const NO_SOLIDS = [];
 // its middle (as wide as it is at the stop's height, as the autopilot reads
 // a solid), to a unit past where the autopilot steers clear of it (so it
 // can settle there); facing the way it did. The stop itself when none has.
+export const clearOf = (r) => r + SHIP.radius + Math.max(1, r * 0.3) + 1; // how far off a moving solid's middle a stop is left be
 export function clearPark(park, moving) {
   let p = park;
   for (const o of moving) {
     const py = p.y ?? SHIP.height;
-    const need = o.r + SHIP.radius + Math.max(1, o.r * 0.3) + 1;
+    const need = clearOf(o.r);
     const dy = py - o.at[1];
     const rr = need * need - dy * dy;
     if (rr <= 0) continue;
