@@ -1,0 +1,591 @@
+{
+  "tier": "mid",
+  "viewport": [
+    1280,
+    720
+  ],
+  "dpr": 1,
+  "level": null,
+  "poses": {
+    "overview": {
+      "calls": 97,
+      "triangles": 488958,
+      "shipPx": {
+        "w": 0,
+        "h": 0,
+        "box": [
+          468,
+          601,
+          468,
+          602
+        ]
+      },
+      "drawn": {
+        "canvas": 1,
+        "scene": 1,
+        "finish": {
+          "up": false,
+          "samples": 2,
+          "cap": null
+        }
+      },
+      "frameMs": 5658.2,
+      "frameMsMedian": 5288.2,
+      "memory": {
+        "geometries": 641,
+        "textures": 239
+      },
+      "metrics": {
+        "colorBuckets": 129,
+        "colorEntropyBits": 3.18,
+        "edgeDensity": 0.06,
+        "luminance": {
+          "mean": 28.1,
+          "p5": 6.2,
+          "p95": 84.1,
+          "contrast": 77.9
+        },
+        "dominantColorShare": 0.373
+      },
+      "errors": []
+    },
+    "falcon-sun": {
+      "calls": 80,
+      "triangles": 473936,
+      "shipPx": {
+        "w": 293,
+        "h": 142,
+        "box": [
+          312,
+          317,
+          605,
+          459
+        ]
+      },
+      "drawn": {
+        "canvas": 1,
+        "scene": 1,
+        "finish": {
+          "up": false,
+          "samples": 2,
+          "cap": null
+        }
+      },
+      "frameMs": 5548.4,
+      "frameMsMedian": 5869.1,
+      "memory": {
+        "geometries": 388,
+        "textures": 146
+      },
+      "metrics": {
+        "colorBuckets": 323,
+        "colorEntropyBits": 6.72,
+        "edgeDensity": 0.229,
+        "luminance": {
+          "mean": 126.5,
+          "p5": 49,
+          "p95": 206.3,
+          "contrast": 157.2
+        },
+        "dominantColorShare": 0.038
+      },
+      "errors": []
+    },
+    "middleearth-limb": {
+      "calls": 39,
+      "triangles": 37728,
+      "shipPx": {
+        "w": 100,
+        "h": 42,
+        "box": [
+          418,
+          499,
+          519,
+          541
+        ]
+      },
+      "drawn": {
+        "canvas": 1,
+        "scene": 1,
+        "finish": {
+          "up": false,
+          "samples": 2,
+          "cap": null
+        }
+      },
+      "frameMs": 5385.4,
+      "frameMsMedian": 5050,
+      "memory": {
+        "geometries": 388,
+        "textures": 146
+      },
+      "metrics": {
+        "colorBuckets": 240,
+        "colorEntropyBits": 6,
+        "edgeDensity": 0.152,
+        "luminance": {
+          "mean": 68.5,
+          "p5": 25,
+          "p95": 131.8,
+          "contrast": 106.8
+        },
+        "dominantColorShare": 0.08
+      },
+      "errors": []
+    },
+    "rickmorty": {
+      "calls": 40,
+      "triangles": 38854,
+      "shipPx": {
+        "w": 100,
+        "h": 41,
+        "box": [
+          418,
+          492,
+          519,
+          533
+        ]
+      },
+      "drawn": {
+        "canvas": 1,
+        "scene": 1,
+        "finish": {
+          "up": false,
+          "samples": 2,
+          "cap": null
+        }
+      },
+      "frameMs": 4247.5,
+      "frameMsMedian": 5513.4,
+      "memory": {
+        "geometries": 389,
+        "textures": 147
+      },
+      "metrics": {
+        "colorBuckets": 623,
+        "colorEntropyBits": 5.77,
+        "edgeDensity": 0.157,
+        "luminance": {
+          "mean": 72.5,
+          "p5": 20.3,
+          "p95": 177.5,
+          "contrast": 157.2
+        },
+        "dominantColorShare": 0.1
+      },
+      "errors": []
+    },
+    "gaming": {
+      "calls": 42,
+      "triangles": 45462,
+      "shipPx": {
+        "w": 100,
+        "h": 43,
+        "box": [
+          418,
+          502,
+          519,
+          544
+        ]
+      },
+      "drawn": {
+        "canvas": 1,
+        "scene": 1,
+        "finish": {
+          "up": false,
+          "samples": 2,
+          "cap": null
+        }
+      },
+      "frameMs": 3435,
+      "frameMsMedian": 3581.3,
+      "memory": {
+        "geometries": 391,
+        "textures": 149
+      },
+      "metrics": {
+        "colorBuckets": 161,
+        "colorEntropyBits": 4.78,
+        "edgeDensity": 0.1,
+        "luminance": {
+          "mean": 59.7,
+          "p5": 19.3,
+          "p95": 132.1,
+          "contrast": 112.8
+        },
+        "dominantColorShare": 0.111
+      },
+      "errors": []
+    },
+    "caribbean": {
+      "calls": 43,
+      "triangles": 87488,
+      "shipPx": {
+        "w": 100,
+        "h": 41,
+        "box": [
+          418,
+          492,
+          519,
+          533
+        ]
+      },
+      "drawn": {
+        "canvas": 1,
+        "scene": 1,
+        "finish": {
+          "up": false,
+          "samples": 2,
+          "cap": null
+        }
+      },
+      "frameMs": 3393,
+      "frameMsMedian": 3890.7,
+      "memory": {
+        "geometries": 389,
+        "textures": 149
+      },
+      "metrics": {
+        "colorBuckets": 224,
+        "colorEntropyBits": 4.91,
+        "edgeDensity": 0.131,
+        "luminance": {
+          "mean": 52.3,
+          "p5": 18.1,
+          "p95": 110.2,
+          "contrast": 92.1
+        },
+        "dominantColorShare": 0.121
+      },
+      "errors": []
+    },
+    "middleearth": {
+      "calls": 39,
+      "triangles": 37728,
+      "shipPx": {
+        "w": 100,
+        "h": 42,
+        "box": [
+          418,
+          494,
+          519,
+          535
+        ]
+      },
+      "drawn": {
+        "canvas": 1,
+        "scene": 1,
+        "finish": {
+          "up": false,
+          "samples": 2,
+          "cap": null
+        }
+      },
+      "frameMs": 3870.4,
+      "frameMsMedian": 3752.7,
+      "memory": {
+        "geometries": 388,
+        "textures": 146
+      },
+      "metrics": {
+        "colorBuckets": 242,
+        "colorEntropyBits": 5.13,
+        "edgeDensity": 0.138,
+        "luminance": {
+          "mean": 58.1,
+          "p5": 22.3,
+          "p95": 107.1,
+          "contrast": 84.8
+        },
+        "dominantColorShare": 0.113
+      },
+      "errors": []
+    },
+    "breakingbad": {
+      "calls": 64,
+      "triangles": 31926,
+      "shipPx": {
+        "w": 100,
+        "h": 42,
+        "box": [
+          418,
+          500,
+          519,
+          543
+        ]
+      },
+      "drawn": {
+        "canvas": 1,
+        "scene": 1,
+        "finish": {
+          "up": false,
+          "samples": 2,
+          "cap": null
+        }
+      },
+      "frameMs": 4298,
+      "frameMsMedian": 4544.5,
+      "memory": {
+        "geometries": 389,
+        "textures": 147
+      },
+      "metrics": {
+        "colorBuckets": 239,
+        "colorEntropyBits": 5.12,
+        "edgeDensity": 0.132,
+        "luminance": {
+          "mean": 73.3,
+          "p5": 19.1,
+          "p95": 170.9,
+          "contrast": 151.8
+        },
+        "dominantColorShare": 0.123
+      },
+      "errors": []
+    },
+    "office": {
+      "calls": 40,
+      "triangles": 23232,
+      "shipPx": {
+        "w": 100,
+        "h": 41,
+        "box": [
+          418,
+          492,
+          519,
+          533
+        ]
+      },
+      "drawn": {
+        "canvas": 1,
+        "scene": 1,
+        "finish": {
+          "up": false,
+          "samples": 2,
+          "cap": null
+        }
+      },
+      "frameMs": 1659.6,
+      "frameMsMedian": 1954.2,
+      "memory": {
+        "geometries": 388,
+        "textures": 146
+      },
+      "metrics": {
+        "colorBuckets": 254,
+        "colorEntropyBits": 5.79,
+        "edgeDensity": 0.088,
+        "luminance": {
+          "mean": 98.6,
+          "p5": 28.7,
+          "p95": 187,
+          "contrast": 158.3
+        },
+        "dominantColorShare": 0.058
+      },
+      "errors": []
+    },
+    "belt": {
+      "calls": 45,
+      "triangles": 421294,
+      "shipPx": {
+        "w": 154,
+        "h": 82,
+        "box": [
+          392,
+          594,
+          546,
+          676
+        ]
+      },
+      "drawn": {
+        "canvas": 1,
+        "scene": 1,
+        "finish": {
+          "up": false,
+          "samples": 2,
+          "cap": null
+        }
+      },
+      "frameMs": 1991.9,
+      "frameMsMedian": 1957.6,
+      "memory": {
+        "geometries": 388,
+        "textures": 146
+      },
+      "metrics": {
+        "colorBuckets": 103,
+        "colorEntropyBits": 4.84,
+        "edgeDensity": 0.29,
+        "luminance": {
+          "mean": 65.8,
+          "p5": 27.7,
+          "p95": 113.3,
+          "contrast": 85.6
+        },
+        "dominantColorShare": 0.131
+      },
+      "errors": []
+    },
+    "maw": {
+      "calls": 43,
+      "triangles": 74246,
+      "shipPx": {
+        "w": 154,
+        "h": 70,
+        "box": [
+          392,
+          529,
+          546,
+          599
+        ]
+      },
+      "drawn": {
+        "canvas": 1,
+        "scene": 1,
+        "finish": {
+          "up": false,
+          "samples": 2,
+          "cap": null
+        }
+      },
+      "frameMs": 1338,
+      "frameMsMedian": 1291.3,
+      "memory": {
+        "geometries": 388,
+        "textures": 146
+      },
+      "metrics": {
+        "colorBuckets": 172,
+        "colorEntropyBits": 4.6,
+        "edgeDensity": 0.073,
+        "luminance": {
+          "mean": 57.6,
+          "p5": 0,
+          "p95": 105.8,
+          "contrast": 105.8
+        },
+        "dominantColorShare": 0.112
+      },
+      "errors": []
+    },
+    "landing-middleearth": {
+      "calls": 142,
+      "triangles": 138084,
+      "shipPx": null,
+      "drawn": {
+        "canvas": 1,
+        "scene": 1,
+        "finish": {
+          "up": false,
+          "samples": 2,
+          "cap": null
+        }
+      },
+      "frameMs": 5085,
+      "frameMsMedian": 6684.9,
+      "memory": {
+        "geometries": 553,
+        "textures": 180
+      },
+      "metrics": {
+        "colorBuckets": 183,
+        "colorEntropyBits": 4.11,
+        "edgeDensity": 0.063,
+        "luminance": {
+          "mean": 79.7,
+          "p5": 27.9,
+          "p95": 212.4,
+          "contrast": 184.4
+        },
+        "dominantColorShare": 0.335
+      },
+      "errors": []
+    },
+    "station": {
+      "calls": 68,
+      "triangles": 459210,
+      "shipPx": {
+        "w": 154,
+        "h": 76,
+        "box": [
+          392,
+          545,
+          546,
+          621
+        ]
+      },
+      "drawn": {
+        "canvas": 1,
+        "scene": 1,
+        "finish": {
+          "up": false,
+          "samples": 2,
+          "cap": null
+        }
+      },
+      "frameMs": 2528.6,
+      "frameMsMedian": 2199.1,
+      "memory": {
+        "geometries": 388,
+        "textures": 146
+      },
+      "metrics": {
+        "colorBuckets": 386,
+        "colorEntropyBits": 7.45,
+        "edgeDensity": 0.334,
+        "luminance": {
+          "mean": 138.6,
+          "p5": 72,
+          "p95": 208.6,
+          "contrast": 136.6
+        },
+        "dominantColorShare": 0.02
+      },
+      "errors": []
+    },
+    "far-rim": {
+      "calls": 41,
+      "triangles": 40594,
+      "shipPx": {
+        "w": 153,
+        "h": 76,
+        "box": [
+          392,
+          533,
+          545,
+          608
+        ]
+      },
+      "drawn": {
+        "canvas": 1,
+        "scene": 1,
+        "finish": {
+          "up": false,
+          "samples": 2,
+          "cap": null
+        }
+      },
+      "frameMs": 1329.6,
+      "frameMsMedian": 1348.1,
+      "memory": {
+        "geometries": 388,
+        "textures": 146
+      },
+      "metrics": {
+        "colorBuckets": 74,
+        "colorEntropyBits": 4.2,
+        "edgeDensity": 0.022,
+        "luminance": {
+          "mean": 64.6,
+          "p5": 26.2,
+          "p95": 109.7,
+          "contrast": 83.6
+        },
+        "dominantColorShare": 0.133
+      },
+      "errors": []
+    }
+  },
+  "note": "universe-check --quality mid --frames 3 at the gate (5b0814b5); breakingbad from its re-run (the first timed out waiting for the canvas under load)"
+}

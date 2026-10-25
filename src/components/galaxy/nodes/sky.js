@@ -25,9 +25,10 @@
 // - A texture slot can't be empty in TSL, so uSky and uPano hold a stand-in
 //   until there's one; their `.value` reads null till then, as before.
 //
-// createSky({ small, level, renderer, beacons }) → { group, setSystem(system), bake(renderer),
+// createSky({ small, level, renderer, beacons, clouds }) → { group, setSystem(system), bake(renderer),
 //   prepare(renderer) → Promise, update(camera, t), focus(id), beacons, sunDirs,
-//   setRatio(r), dispose() }; nebulaeOf(sys), bakeSize({ small, level }), starCount({ small, level })
+//   setRatio(r), dispose() }; nebulaeOf(sys), bakeSize({ small, level }), starCount({ small, level });
+//   `clouds: false` as ../sky.js has it: the nebulae worked out but baked black
 
 import * as THREE from 'three';
 import { CubeRenderTarget, MeshBasicNodeMaterial } from 'three/webgpu';
@@ -385,7 +386,7 @@ export const bakeSize = ({ small = false, level = null } = {}) => (small ? 512 :
 const STAR_COUNT = { ultra: 12000, high: 12000, mid: 7000, low: 3000 };
 export const starCount = ({ small = false, level = null } = {}) => (small ? 3000 : (STAR_COUNT[level] ?? TODAY));
 
-export function createSky({ small = false, level = null, renderer = null, beacons: showBeacons = true } = {}) {
+export function createSky({ small = false, level = null, renderer = null, beacons: showBeacons = true, clouds = true } = {}) {
   const group = new THREE.Group();
   group.renderOrder = -20;
   const made = [];
@@ -499,7 +500,7 @@ export function createSky({ small = false, level = null, renderer = null, beacon
       u.uSeed.value = rand() * 40;
       nebulaeFrom(sys, rand, showBeacons).forEach((nb, i) => {
         u.uNebDir.value[i].set(...nb.dir);
-        u.uNebCol.value[i].set(nb.color);
+        u.uNebCol.value[i].set(clouds ? nb.color : 0x000000);
         u.uNebShape.value[i].set(nb.size, nb.warp);
       });
       // the stars: half anywhere, the rest along the band, thickest toward the core
