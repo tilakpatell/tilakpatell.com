@@ -24,10 +24,14 @@
          way it flies; ?views=close, a fighter's eye on its plating and its
          engines). ?kind=destroyer&quality=high&w=640&h=360&break=gen-port,bridge
          (`break`: those parts torn off first, galaxy/capitalParts.js; `split`:
-         it broken up and that many seconds on) -->
+         it broken up and that many seconds on; `hits=1`: the battle's own hit
+         volumes over it, universe/wars.js's SUBSYSTEMS and TURRETS, drawn
+         through the hull: the shield generators red, the bridge magenta, the
+         reactor orange, the batteries yellow) -->
     <script type="module">
       import * as THREE from 'three';
       import { houseOn } from '/src/lib/three/house.js';
+      import { SUBSYSTEMS, TURRETS } from '/src/components/universe/wars.js';
       import { MODELS, createModels } from '/src/components/galaxy/models.js';
       import { LENGTH } from '/src/components/galaxy/capitalLook.js';
       import { detailMap } from '/src/components/galaxy/capitalPlating.js';
@@ -98,6 +102,22 @@
         scene.add(f.holder);
         house.adopt(f.holder);
         fighter = f;
+      }
+      // (?hits=1: each hit volume a sphere of its reach, in the ship's frame, one long, bow to +z)
+      if (q.get('hits') === '1') {
+        const COLOUR = { shieldgen: '#ff3030', bridge: '#ff30ff', reactor: '#ff8000' };
+        const ball = (at, r, colour) => {
+          const geo = new THREE.SphereGeometry(r, 20, 12);
+          for (const mat of [new THREE.MeshBasicMaterial({ color: colour, transparent: true, opacity: 0.45, depthTest: false }), new THREE.MeshBasicMaterial({ color: colour, wireframe: true, depthTest: false })]) {
+            const m = new THREE.Mesh(geo, mat);
+            m.position.set(...at);
+            m.renderOrder = 10;
+            scene.add(m);
+          }
+        };
+        for (const s of SUBSYSTEMS[kind] ?? []) ball(s.at, s.r, COLOUR[s.kind] ?? '#ffffff');
+        // (a battery's reach in the battle: 0.012 of the ship's length, battleCapitals.js)
+        for (const t of TURRETS[kind] ?? []) ball(t, 0.012, '#ffe000');
       }
       house.adopt(slot.holder);
       house.follow?.();
