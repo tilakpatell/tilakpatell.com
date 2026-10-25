@@ -87,3 +87,30 @@ Node can’t compile GLSL, so the landmarks were drawn alone in headless Chromiu
 - `wc -l src/components/universe/scene.js`: 6,374, unchanged. The landmarks call lost its `renderer`, `small` and `level`; the comment stayed two lines.
 - `glsl-sites`: 616 after Tasks 4 and 5, now 615. The atlas’s paint material is gone.
 - `big-files`: 22, unchanged.
+
+## Task 8: deep space and the sky, wired
+
+Deep space owns the one renderer (`nebula/`) and hands it the Veil and the Cradle; the puffs, their texture, the young stars’ `Points` and their four shaders are gone. The map’s sky is `mapSky.js`, baked with `clouds: false`. `paceTo` tells the renderer the quality step (`setLevel`), which the index plan had handed on to lane 2.
+
+### Looked at
+
+The map at mid in headless Chromium (software GL), 1280 × 720, through `lab/lane1-t8/look.mjs` (git-ignored): the ship held as a pose holds it, the camera set where asked, six frames, then the renderer read and a shot taken.
+
+- **The programs link before the first frame.** Both nebula materials had a program, ready and with no diagnostics, at the warm-up (47 s in), before the canvas’s first frame (117 s). `gl.getError()` 0 at both places; no program unrunnable.
+- **The console:** no shader error and no page error. The rest is what it was: the fonts’ 403s (the worktree’s `node_modules` is a link outside vite’s allow list) and frameGuard’s off-frame notes, none of them about the nebulae (theirs would name `nebula-clouds` or `nebula-fog`).
+
+![The Veil from 2,600 out and 400 up, mid](task8-veil.webp)
+
+`task8-veil.webp`: the Veil from 2,600 out and 400 up: a broken shell, violet and cyan, its young stars in it, its name over it. 33 instances in the one draw (the cloud and mid’s 32 young stars); 58 calls, 482,628 triangles for the frame.
+
+![Inside the Cradle, 60 from its middle, looking away from it, mid](task8-cradle.webp)
+
+`task8-cradle.webp`: inside the Cradle, 60 from its middle: its green and blue gas round the ship, the fog shown (mid’s 3 layers), the Maw and a sun through it. 41 calls, 71,048 triangles.
+
+These are two places of the lane’s own, not the baseline poses, so they have no before; Task 10’s poses and Task 11’s measure give the numbers beside `main`’s.
+
+### The counts after Task 8
+
+- `wc -l src/components/universe/scene.js`: 6,374 before, 6,349 after (the sky block out to `mapSky.js`, −26; the step in `paceTo`, +1).
+- `glsl-sites`: 615, unchanged. Deep space’s materials are all made by its one `shader()` helper, so its puffs and sparks were never sites of their own.
+- `big-files`: 22, unchanged. `deepspace.js` is 1,300 lines, from 1,490; `deepspaceShaders.js` 747, from 827.
