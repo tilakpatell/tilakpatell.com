@@ -12,18 +12,25 @@
 //
 //   node scripts/desktop/bf2017-textures.mjs [--dry] [--only fx/decals] [--limit N] [--no-pr]
 //
+// With the uploader's record here (the desktop's), a texture the ledger has
+// as used and the record never sent goes too: the ledger counts a map a used
+// model binds as used by that model's consumer whether or not its file went
+// up, so a map no pass sent is in no bucket and no pack (the Lucrehulk's hull
+// maps and the Star Destroyer's panel normal, 2026-10-25), and nothing but
+// this asks for it.
+//
 // The dry run says how many of them have an owner waiting (scripts/lib/
 // bf2017-owners.mjs) once they land, and how many would land unowned: the
 // coverage check fails on an unowned row, so those need a lane first.
 
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { gunzipSync } from 'node:zlib';
 import { isSequel } from '../lib/bf2017-manifest.mjs';
 import { ownerOf } from '../lib/bf2017-coverage.mjs';
 import { LANES, OWNERS } from '../lib/bf2017-owners.mjs';
-import { encodeAndUpload, encodeClass, jsonLines, ledgerAgain, runCli, textureIndexFile } from './bf2017-desk.mjs';
+import { encodeAndUpload, encodeClass, jsonLines, ktxOf, ledgerAgain, runCli, textureIndexFile } from './bf2017-desk.mjs';
 import { atlasKind } from './bf2017-atlases.mjs';
 
 export const LEDGER = 'docs/superpowers/evidence/bf2017-coverage/ledger.json.gz';
@@ -31,8 +38,28 @@ export const MAX = 2048;
 
 export const ledgerRows = (root) => JSON.parse(gunzipSync(readFileSync(join(root, LEDGER))).toString('utf8'));
 
-// The rows to send: not uploaded, textures, not an atlas, not the sequel era's.
-export const wanted = (rows) => rows.filter((r) => r.state === 'not-uploaded' && r.part === 'textures' && !atlasKind(r.name) && !isSequel(r.name));
+// The rows to send: not uploaded, textures, not an atlas, not the sequel
+// era's; and a used one the uploader never sent, where `unsent` can say
+export const wanted = (rows, { unsent = null } = {}) =>
+  rows.filter((r) => r.part === 'textures' && !atlasKind(r.name) && !isSequel(r.name) && (r.state === 'not-uploaded' || (r.state === 'used' && Boolean(unsent?.(r.name)))));
+
+// Whether the uploader's record (web_opt/upload_state.tsv: a bucket path
+// under web/ a line, then its bytes) lacks a texture's file, its KTX2 or
+// itself, by its name in the index; null where there's no record or index
+export function unsentBy(state, index) {
+  if (!state || !index) return null;
+  const sent = new Set(
+    state
+      .split('\n')
+      .filter(Boolean)
+      .map((l) => l.split('\t')[0].trim().replace(/^web\//, '').toLowerCase()),
+  );
+  const files = new Map(index.map((t) => [t.name.toLowerCase(), t.file]));
+  return (name) => {
+    const file = files.get(name.toLowerCase());
+    return Boolean(file) && !sent.has(ktxOf(file).toLowerCase()) && !sent.has(file.toLowerCase());
+  };
+}
 
 // Each wanted row with its file in the index, or why it has none; and the
 // lane that takes it once it lands (null: it would land unowned).
@@ -63,16 +90,22 @@ export const spec = {
     { name: "the bucket's keys", keys: true, fix: "R2_ACCESS_KEY_ID and R2_SECRET_ACCESS_KEY (R2's S3 keys) in the runner's .env (~\\actions-runner\\.env), then restart the runner" },
   ],
   async plan({ root, d }) {
-    const rows = wanted(ledgerRows(root));
     const file = textureIndexFile(d, root);
-    const items = withFiles(rows, file ? jsonLines(file) : null);
+    const index = file ? jsonLines(file) : null;
+    const record = join(d.webOpt, 'upload_state.tsv');
+    const unsent = unsentBy(existsSync(record) ? readFileSync(record, 'utf8') : null, index);
+    const ledger = ledgerRows(root);
+    const rows = wanted(ledger, { unsent });
+    const items = withFiles(rows, index);
+    const usedUnsent = rows.filter((r) => r.state === 'used').length;
     const unowned = items.filter((i) => !i.owner).length;
     const merged = new Set(LANES.filter((l) => l.merged).map((l) => l.lane));
     const stale = items.filter((i) => merged.has(i.owner));
     return {
       items,
       notes: [
-        `${rows.length} rows not uploaded (${LEDGER}, less the atlases and the sequel era's)`,
+        `${rows.length - usedUnsent} rows not uploaded (${LEDGER}, less the atlases and the sequel era's)`,
+        unsent ? `${usedUnsent} used by a pack's model and never sent (the uploader's record has no file of them)` : "no uploader's record here (web_opt/upload_state.tsv): the used maps it never sent are found on the desktop",
         file ? `${items.filter((i) => i.file).length} have a file in the index (${file}); ${items.filter((i) => !i.file).length} have none` : 'no texture index here (web/textures.jsonl): the files are found on the desktop',
         `once uploaded: ${items.length - unowned} owned (${countBy(items.filter((i) => i.owner), 'owner')
           .slice(0, 6)

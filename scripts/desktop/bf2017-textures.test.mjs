@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { REPO } from './lib.mjs';
 import { encodeClass, ktxOf, main } from './bf2017-desk.mjs';
-import { countBy, ledgerRows, spec, wanted, withFiles } from './bf2017-textures.mjs';
+import { countBy, ledgerRows, spec, unsentBy, wanted, withFiles } from './bf2017-textures.mjs';
 
 const ledger = [
   { part: 'textures', name: 'A3/FX/Decals/VolumeDecals/Textures/DecalCracksVardos_02_CS', state: 'not-uploaded', by: 'D' },
@@ -17,6 +17,22 @@ const ledger = [
 describe('the textures job', () => {
   it("takes the not-uploaded textures, not the atlases (the atlases job's) nor the sequel era's", () => {
     expect(wanted(ledger).map((r) => r.name)).toEqual(['A3/FX/Decals/VolumeDecals/Textures/DecalCracksVardos_02_CS']);
+  });
+
+  it('takes a used map the uploader never sent, by its record, and none without one', () => {
+    const index = [
+      { name: 'Objects/Props/T_Crate_C', file: 'textures/objects/props/t_crate_c.png' },
+      { name: 'Objects/Props/T_Barrel_C', file: 'textures/objects/props/t_barrel_c.png' },
+    ];
+    const rows = [...ledger, { part: 'textures', name: 'Objects/Props/T_Barrel_C', state: 'used', by: 'x' }];
+    // (the barrel's KTX2 in the record, the crate's not)
+    const unsent = unsentBy('web/textures/objects/props/t_barrel_c.ktx2\t1234\n', index);
+    expect(unsent('Objects/Props/T_Crate_C')).toBe(true);
+    expect(unsent('Objects/Props/t_barrel_c')).toBe(false);
+    expect(unsent('Objects/Props/T_Nowhere_C')).toBe(false);
+    expect(wanted(rows, { unsent }).map((r) => r.name)).toEqual(['A3/FX/Decals/VolumeDecals/Textures/DecalCracksVardos_02_CS', 'Objects/Props/T_Crate_C']);
+    expect(unsentBy(null, index)).toBeNull();
+    expect(wanted(rows).map((r) => r.name)).toEqual(['A3/FX/Decals/VolumeDecals/Textures/DecalCracksVardos_02_CS']);
   });
 
   it("finds each one's file and class, and the lane waiting for it", () => {
