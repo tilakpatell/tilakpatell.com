@@ -18,6 +18,8 @@
 //
 //   WORLDS → worlds, in the roster's order (galaxy, sector, fandom)
 //   PLANE_CLIMATE → the climate noise a plane planet's biomes are placed by
+//   WATER_LOOKS[kind] → { color, roughness, opacity, glow? }: a water sheet's look
+//   waterColourOf(water, accent) → '#rrggbb' the sheet is drawn in, or null (no sheet)
 //   TYPE_BIOMES[type] → an Expanse planet's biomes; TYPE_LOOK[type] → { palette, clutter, soft }
 //   SEEDED_EXPANSE → the roster's thirteen Expanse planets, [id, type], in its order
 //   MOON_FAMILY[moon type] → the planet type a moon is made as; familyOf(type) → a body's family
@@ -598,6 +600,30 @@ export const WORLDS = [...GALAXY, ...SECTOR, ...FANDOM];
 
 // the noise a plane planet's climate square is read from (biomes.js)
 export const PLANE_CLIMATE = { frequency: 0.00025, warp: 400 };
+
+// A water sheet's look by its kind, as expanse/flight/water.js draws it (a
+// kind left out, Bespin's clouds, has no sheet). Its colour is the water's
+// own where it has one (a generated planet's sea), else its kind's, moved
+// 0.15 toward the planet's accent in linear light, as three's Color.lerp
+// mixes in its working space: waterColourOf says the '#rrggbb' that comes to.
+export const WATER_LOOKS = {
+  sea: { color: '#1f5a6e', roughness: 0.12, opacity: 0.86 },
+  lake: { color: '#2a4f5a', roughness: 0.16, opacity: 0.9 },
+  swamp: { color: '#2e3322', roughness: 0.35, opacity: 0.95 },
+  lava: { color: '#3a0c02', roughness: 0.6, opacity: 1, glow: '#ff4a0a' },
+};
+
+// (three's own sRGB curves, constant for constant, so the bytes agree)
+const toLinear = (c) => (c < 0.04045 ? c * 0.0773993808 : Math.pow(c * 0.9478672986 + 0.0521327014, 2.4));
+const toSrgb = (c) => (c < 0.0031308 ? c * 12.92 : 1.055 * Math.pow(c, 0.41666) - 0.055);
+const linearOf = (hex) => [1, 3, 5].map((i) => toLinear(parseInt(hex.slice(i, i + 2), 16) / 255));
+export function waterColourOf(water, accent) {
+  const look = water && Object.hasOwn(WATER_LOOKS, water.kind) ? WATER_LOOKS[water.kind] : null;
+  if (!look) return null;
+  const a = linearOf(water.colour ?? look.color);
+  const b = linearOf(accent);
+  return `#${a.map((v, i) => Math.round(Math.min(255, Math.max(0, toSrgb(v + (b[i] - v) * 0.15) * 255))).toString(16).padStart(2, '0')).join('')}`;
+}
 
 // ── the Expanse's generated planets, by type: the galaxy's worlds as templates, the names stripped ──
 const template = (id) => GALAXY.find((w) => w.id === id);

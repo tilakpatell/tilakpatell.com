@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ROUND_ROUGH, TYPE_BIOMES, roundBiomes } from './planetTables';
+import { ROUND_ROUGH, TYPE_BIOMES, WATER_LOOKS, roundBiomes, waterColourOf } from './planetTables';
 
 const ROUND = ['ice', 'desert', 'forest', 'lava', 'ocean', 'rock'];
 
@@ -20,5 +20,27 @@ describe('roundBiomes', () => {
     expect(a[0].at).not.toBe(TYPE_BIOMES.ice[0].at);
     expect(a[0].at).not.toBe(b[0].at);
     expect(JSON.parse(JSON.stringify(a))).toEqual(a);
+  });
+});
+
+describe('the water sheets', () => {
+  it('look as the flight drew them, by kind', () => {
+    expect(WATER_LOOKS).toEqual({
+      sea: { color: '#1f5a6e', roughness: 0.12, opacity: 0.86 },
+      lake: { color: '#2a4f5a', roughness: 0.16, opacity: 0.9 },
+      swamp: { color: '#2e3322', roughness: 0.35, opacity: 0.95 },
+      lava: { color: '#3a0c02', roughness: 0.6, opacity: 1, glow: '#ff4a0a' },
+    });
+  });
+
+  it('are drawn in the water’s own colour or its kind’s, a little toward the accent', () => {
+    expect(waterColourOf({ kind: 'sea', level: 0 }, '#1f5a6e')).toBe('#1f5a6e');
+    expect(waterColourOf({ kind: 'sea', level: 0, colour: '#204060' }, '#204060')).toBe('#204060');
+    // (a mix in linear light lands nearer the brighter end than half the bytes would)
+    const [r, g, b] = [1, 3, 5].map((i) => parseInt(waterColourOf({ kind: 'lava', level: 0, colour: '#000000' }, '#ffffff').slice(i, i + 2), 16));
+    expect([r, g, b].every((v) => v === r)).toBe(true);
+    expect(r).toBeGreaterThan(Math.round(0.15 * 255));
+    expect(waterColourOf({ kind: 'sea', level: 0 }, '#3ad0c8')).toMatch(/^#[0-9a-f]{6}$/);
+    for (const w of [null, undefined, { kind: 'clouds', level: -380 }]) expect(waterColourOf(w, '#ffffff'), String(w?.kind)).toBeNull();
   });
 });

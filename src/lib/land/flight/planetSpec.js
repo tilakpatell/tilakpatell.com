@@ -19,8 +19,8 @@
 // Only the fifty are built on (the endless universe's spec): a named world
 // and the thirteen seeded Expanse planets (SEEDED_EXPANSE) are the roster,
 // as they were, with ROSTER_EXTRA's fields beside theirs. Any other planet
-// or moon the rows know is made from its family's template for now, and is
-// not to be built on.
+// or moon the rows know is generated.js's, from its row alone: its own
+// variety and, but for a gas giant, a round ground; not to be built on.
 //
 // Pure: no three.js, nothing from a world. An Expanse row is
 // { id (lower case), name, type, seed (the generator's bigint, as a string),
@@ -38,6 +38,7 @@
 
 import { fold } from './fnl.js';
 import { canonicalId, expanseLookup } from './expanse.js';
+import { generatedSpecOf } from './generated.js';
 import { hash64 } from './hash.js';
 import { PLANE_CLIMATE, SEEDED_EXPANSE, TYPE_BIOMES, TYPE_LOOK, WORLDS, expand, familyOf } from './planetTables.js';
 
@@ -107,10 +108,6 @@ export function planetSpecOf(planetId, { expanse = null } = {}) {
   if (!row) return null;
   // the thirteen the roster flies, as they always were
   if (SEEDED.has(id)) return known(row.type) ? { ...specOf({ id, name: row.name, type: row.type, seed: expanseSeed(row) }, templateOf(row.type)), ...ROSTER_EXTRA } : null;
-  const family = familyOf(row.type);
-  if (!known(family)) return null;
-  // (a moon's id is its planet's and its own number)
-  const moon = id.split(':').length === 5;
-  const extra = { ...ROSTER_EXTRA, kind: moon ? 'moon' : 'planet', parent: moon ? id.slice(0, id.lastIndexOf(':')) : null, buildable: false };
-  return { ...specOf({ id, name: row.name, type: family, seed: expanseSeed(row) }, templateOf(family)), ...extra };
+  // any other: generated from its own row, round unless it's a gas giant
+  return generatedSpecOf({ ...row, id }, familyOf(row.type));
 }
