@@ -4425,6 +4425,7 @@ export async function create(canvas, ctx) {
     foeBuf.push(...battleCands, ...(skirmishes?.active ? skirmishes.targets : []), ...(npcs?.targets ?? []), ...capitalCands, ...siegeCands);
     if (meteors.count || mines.count) foeBuf.push(...meteors.targets, ...mines.targets);
     shotReach(arms().weapon, ship, sightIn); // (the line picked: its shot's speed and life)
+    sightIn.quiet = state.view === 'map'; // (no lock drawn there, no tick)
     if (sight.update(ship, cands, dt, sightIn) && state.shown && !document.hidden) lockSound();
     // and the camera leans a little toward the lock (eased, so a lock coming
     // or going doesn't jolt it)

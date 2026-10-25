@@ -77,3 +77,15 @@ describe('the selected weapon', () => {
     expect([sight.inReach(), st.hot]).toEqual([false, false]);
   });
 });
+
+describe('the whole-map view', () => {
+  it('takes the lock with no tick while quiet, and ticks none late', () => {
+    const st = fresh();
+    const sight = createSight(st);
+    const a = T('a', 0, 0, -20);
+    expect(sight.update(ship, [a], DT, feed({ quiet: true }))).toBe(false);
+    expect([st.lock, st.lockTarget]).toEqual([{ id: 'a', out: 0 }, a]);
+    expect(sight.update(ship, [a], DT, feed())).toBe(false);
+    expect(sight.update(ship, [T('b', 1, 0, -15)], DT, feed())).toBe(true);
+  });
+});

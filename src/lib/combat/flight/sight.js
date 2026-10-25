@@ -14,7 +14,8 @@
 //     update(ship, cands, dt, o) → ticked (a new lock this frame: the tick's sound)
 //       cands: this frame's targets ({ id, at, vel, size, threat? }); o, kept by the scene:
 //       { speed (a shot's, the ship's own added), life (its seconds), help() → { assist },
-//         tracks(target) → bool (does the nose follow it), foes? (every foe, ungated, for find) }
+//         tracks(target) → bool (does the nose follow it), foes? (every foe, ungated, for find),
+//         quiet? (no tick: the lock taken where none is drawn, the whole-map view) }
 //     inReach()                       the lead within a shot's life
 //     aim(dir, ship, strength) → dir  a shot's direction, bent onto the lead while in reach
 //     nudge(ship, stick, strength) → { turn, climb } | null   the stick's nudge toward it
@@ -69,7 +70,7 @@ export function createSight(state) {
       state.lead = tgt ? intercept(ship, o.speed, tgt.at, tgt.vel) : null;
       // (hot: a shot now would bend all the way onto it; help is read once the lock is set, as powers.aim reads it)
       state.hot = Boolean(state.lead && state.lead.t <= life && assistAmount(nose(ship), dirTo(ship, state.lead), o.help().assist) >= 1);
-      return Boolean(tgt && tgt.id !== was);
+      return !o.quiet && Boolean(tgt && tgt.id !== was);
     },
     inReach() {
       return Boolean(state.lead && state.lead.t <= life);
