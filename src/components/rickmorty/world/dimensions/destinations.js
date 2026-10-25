@@ -63,6 +63,27 @@ export const DIAL = [
   ...['birdworld', 'gearworld', 'pluto', 'squanch'].map((id) => row(destinationById(id))),
 ];
 export const DIAL_KEY = 'tp-rm-dial';
+// the places with a duel (a hunter's `hunt.duel`): Morty's bolts load as he gets there
+export const DUEL_PLACES = new Set(DESTINATIONS.filter((d) => d.people.some((p) => p.ai?.hunt?.duel)).map((d) => d.id));
+// (a climb's things to pick up, what starts a duel (the Blood Dome's ring, the lair's pods), and the crew a
+// collect `start`s a game with (Heist-Con's badge and recruits, who hunt him once the job's on): gone from
+// reach once used on this visit, back after a catch, the clock or the way home)
+export const PICKS = new Set(DESTINATIONS.flatMap((d) => [...(d.climb?.picks ?? []), ...(d.collect?.start ? d.collect.spots : []), ...(DUEL_PLACES.has(d.id) ? [...Object.keys(d.acts).filter((k) => d.acts[k] === 'fight'), ...(d.collect?.spots ?? [])] : [])]));
+// every game's own spots, by id (the deal's things, the find's people, the sequence's sets and its start,
+// power's two ends, a climb's picks, and the crew a collect `start`s it with): its place, its game, the
+// task that ends it, what the spot's press is once it has (it only says its line then: a look, or a
+// talk where someone stands), and for a deal's thing or a find's person, what the second press does
+// (the game's `take`), for the prompt (../planetMode.js's relabel)
+const gameSpots = (d) =>
+  [
+    ['deal', d.deal?.items],
+    ['find', d.find?.items],
+    ['sequence', d.sequence && [...d.sequence.items, ...(d.sequence.start ? [d.sequence.start] : [])]],
+    ['power', d.power && [d.power.from, d.power.to]],
+    ['climb', d.climb?.picks],
+    ['collect', d.collect?.start && d.collect.spots],
+  ].flatMap(([game, ids]) => (ids ?? []).map((id) => [id, { area: d.id, game, task: d[game].task, rest: d.people.some((p) => p.id === id) ? 'Talk' : 'Look', ...(d[game].take && { take: d[game].take }) }]));
+export const GAME_SPOTS = Object.fromEntries(DESTINATIONS.flatMap(gameSpots));
 // a dial place that's a page of its own (the Citadel), not an area of C-137's
 export const pageOf = (id) => DIAL.find((d) => d.id === id)?.to ?? null;
 // where the garage portal opens: the dial if it's on the dial and open (the

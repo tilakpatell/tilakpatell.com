@@ -112,9 +112,17 @@ export function coordinates(state, opts) {
 
 export const dialOpen = (state, id, opts) => state.freeRoam || coordinates(state, opts).has(id);
 
-// what a locked place says on the dial
+// whether the dial places played (`places`) reach past what the story has
+// opened: played when an older story, its last built episode done, had every
+// place open
+export const reachesPast = (state, places, opts) => {
+  const open = coordinates(state, opts);
+  return places.some((p) => !open.has(p));
+};
+
+// what a locked place says on the dial, and the way to it now
 export function lockNote(id, opts) {
   const { episodes } = book(opts);
   const i = episodes.findIndex((e) => e.unlocks.includes(id));
-  return i < 0 ? null : `Opens after episode ${i + 1}, “${episodes[i].title}”.`;
+  return i < 0 ? null : `Opens after episode ${i + 1}, “${episodes[i].title}”. Free roam, in Things to do, opens it now.`;
 }

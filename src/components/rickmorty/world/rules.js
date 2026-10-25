@@ -18,7 +18,7 @@
 import { seeded } from '../../../lib/seeded';
 import { springStep } from '../../../lib/spring';
 import { makeWalker, pushOut } from '../../middleearth/towns/walker';
-import { DESTINATIONS, GARAGE_BACK, isBigPlanet, isPlanet } from './dimensions/destinations';
+import { DESTINATIONS, DIAL, GARAGE_BACK, isBigPlanet, isPlanet } from './dimensions/destinations';
 import { CROSS, LANE, TOWN, TOWN_PEOPLE, TOWN_ROOFS, TOWN_SOLIDS, TOWN_SPOTS, TOWN_STANDING, TOWN_STEPS, TOWN_TASKS, TOWN_TREES, onRoad } from './town/plan';
 
 export { behindYaw, cameraMove } from '../../middleearth/towns/walker';
@@ -1115,7 +1115,14 @@ export function progress(done = [], { skip = [] } = {}) {
   const finished = TASKS.filter((t) => done.includes(t.id));
   const left = TASKS.filter((t) => !done.includes(t.id));
   const next = left.find((t) => !passed.has(t.id)) ?? null;
-  const rest = left.every((t) => PLANET_TASKS.has(t.id)) ? 'Everything here’s done. The rest are on the planets in the Rick and Morty sector of the universe map (Bird World, Gear World, Pluto and Planet Squanch are on the portal gun too).' : 'Everything here’s done.';
+  // (the planets whose things are left, by name: the map's alone, then the
+  // ones the gun dials too, in the dial's order)
+  const leftOn = (d) => d.tasks.some((x) => left.some((t) => t.id === x.id));
+  const gun = DIAL.map((x) => DESTINATIONS.find((d) => d.id === x.id && isPlanet(d.id))).filter((d) => d && leftOn(d));
+  const map = [...new Set(left.map((t) => DESTINATIONS.find((d) => isPlanet(d.id) && d.tasks.some((x) => x.id === t.id))))].filter((d) => d && !gun.includes(d));
+  const named = (ds) => ds.map((d) => d.name.replace(/^The /, 'the ')).reduce((s, n, i, a) => (i ? `${s}${i === a.length - 1 ? ' and ' : ', '}${n}` : n), '');
+  const onGun = gun.length ? `${named(gun)}, which ${gun.length === 1 ? 'is' : 'are'} on the portal gun too` : '';
+  const rest = left.every((t) => PLANET_TASKS.has(t.id)) ? `Everything here’s done. The rest are on the planets in the Rick and Morty sector of the universe map: ${[named(map), onGun].filter(Boolean).join(', and ')}.` : 'Everything here’s done.';
   return { done: finished.map((t) => t.id), count: finished.length, total: TASKS.length, next, objective: next ? next.hint : left.length ? rest : 'Everything’s done. Wubba lubba dub dub.' };
 }
 

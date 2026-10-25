@@ -37,7 +37,7 @@ describe('the adventure’s store', () => {
     expect(a.dialOpen('customs')).toBe(true);
     expect(a.dialOpen('vat')).toBe(false);
     expect(a.objective().text).toMatch(/^A Federation agent is in a booth at Shoney’s/);
-    expect(a.lockNote('vat')).toBe('Opens after episode 5, “Heat”.');
+    expect(a.lockNote('vat')).toBe('Opens after episode 5, “Heat”. Free roam, in Things to do, opens it now.');
     expect([...a.coordinates()]).toEqual(['customs']);
   });
 
@@ -51,13 +51,36 @@ describe('the adventure’s store', () => {
     expect(createAdventure({ saves, read: { tasks: () => [], citadel: () => ['daycare'] } }).get().freeRoam).toBe(true);
   });
 
-  it('keeps the story in tp-rm-story, version 1', () => {
+  it('keeps the story in tp-rm-story, version 2', () => {
     createAdventure({ saves, read: none }).feed({ type: 'task', id: 'diner' });
-    expect(JSON.parse(store.getItem('tp-rm-story'))).toMatchObject({ v: 1, data: { step: 1 } });
+    expect(JSON.parse(store.getItem('tp-rm-story'))).toMatchObject({ v: 2, data: { step: 1 } });
     // and the next visit takes it up where it was, not as a new visitor
     const again = createAdventure({ saves, read: none });
     expect(again.started).toBe(false);
     expect(again.get()).toMatchObject({ episode: 0, step: 1 });
+  });
+
+  it('puts a version-1 save on Free roam when what it played reaches past what its story has opened, once', () => {
+    // (finished episode 1 when it was the last built, every place open, and played the vat)
+    const played = { tasks: () => ['diner', 'basement', 'mindblowers', 'customs', 'vat'], citadel: () => [] };
+    store.setItem(STORY_KEY, JSON.stringify({ v: 1, data: { ...fresh(), episode: 1, step: 0 } }));
+    const a = createAdventure({ saves, read: played });
+    expect(a.get()).toMatchObject({ episode: 1, step: 0, freeRoam: true });
+    expect(a.dialOpen('vat')).toBe(true);
+    expect(JSON.parse(store.getItem(STORY_KEY)).v).toBe(2);
+    // (switched off, it stays off: the move's made once)
+    a.setFreeRoam(false);
+    expect(createAdventure({ saves, read: played }).get().freeRoam).toBe(false);
+  });
+
+  it('leaves a version-1 save whose places played are all ones its story has opened as it was', () => {
+    store.setItem(STORY_KEY, JSON.stringify({ v: 1, data: { ...fresh(), episode: 1, step: 0 } }));
+    const a = createAdventure({ saves, read: { tasks: () => ['diner', 'customs', 'meeseeksgolf', 'cable'], citadel: () => [] } });
+    expect(a.get()).toMatchObject({ episode: 1, step: 0, freeRoam: false });
+    expect(a.dialOpen('vat')).toBe(false);
+    // (a planet the universe map lands on too, or the Citadel, isn't only the dial's: no Free roam for those)
+    store.setItem(STORY_KEY, JSON.stringify({ v: 1, data: { ...fresh(), episode: 1, step: 0 } }));
+    expect(createAdventure({ saves, read: { tasks: () => ['birdworld', 'squanch'], citadel: () => ['daycare'] } }).get().freeRoam).toBe(false);
   });
 
   it('starts again on a broken save', () => {
@@ -186,6 +209,50 @@ describe('the adventure’s store', () => {
     expect(a.takeUnsaid()).toEqual([]);
   });
 
+  it('takeUnsaid drops an episode card the story has moved past and keeps the done lines', () => {
+    // (the Citadel left episode 10's line and episode 11's card; C-137 takes them once the story's at episode 12)
+    const a = createAdventure({ saves, read: none });
+    a.jump(10);
+    a.keepUnsaid([
+      { type: 'done', episode: 9 },
+      { type: 'episode', episode: 10 },
+    ]);
+    a.jump(11);
+    expect(a.takeUnsaid()).toEqual([{ type: 'done', episode: 9 }]);
+    // (a card for the episode the story's at is kept)
+    a.keepUnsaid([
+      { type: 'done', episode: 10 },
+      { type: 'episode', episode: 11 },
+    ]);
+    expect(a.takeUnsaid()).toEqual([
+      { type: 'done', episode: 10 },
+      { type: 'episode', episode: 11 },
+    ]);
+  });
+
+  it('a stored 2.0 save with rickall, wong and sewer known keeps episode 3’s closing line for takeUnsaid; a new returner with episode 1’s tasks done has nothing unsaid', () => {
+    // (the catch-up at load ends episode 3: the first page to show the story says its line, and episode 4's card is the visit's)
+    store.setItem(STORY_KEY, JSON.stringify({ v: 2, data: { ...fresh(), episode: 2, step: 0 } }));
+    const caught = createAdventure({ saves, read: { tasks: () => ['rickall', 'wong', 'sewer'], citadel: () => [] } });
+    expect(caught.get()).toMatchObject({ episode: 3, step: 0, freeRoam: false });
+    expect(caught.takeUnsaid()).toEqual([
+      { type: 'step', episode: 2, step: 1 },
+      { type: 'step', episode: 2, step: 2 },
+      { type: 'done', episode: 2 },
+      { type: 'episode', episode: 3 },
+    ]);
+    expect(caught.takeUnsaid()).toEqual([]);
+    expect(caught.intro()).toBe(3);
+    // (a returner starts on Free roam, where no card shows and nothing's said of what the catch-up passed)
+    store.removeItem(STORY_KEY);
+    const returner = createAdventure({ saves, read: { tasks: () => ['diner', 'basement', 'mindblowers', 'customs'], citadel: () => [] } });
+    expect(returner.get()).toMatchObject({ episode: 1, step: 0, freeRoam: true });
+    expect(returner.takeUnsaid()).toEqual([]);
+    // (nor of a stored save on Free roam)
+    store.setItem(STORY_KEY, JSON.stringify({ v: 2, data: { ...fresh(), episode: 2, step: 0, freeRoam: true } }));
+    expect(createAdventure({ saves, read: { tasks: () => ['rickall', 'wong', 'sewer'], citadel: () => [] } }).takeUnsaid()).toEqual([]);
+  });
+
   it('opens a visit with the card of the episode it starts on, once', () => {
     const a = createAdventure({ saves, read: none });
     expect(a.intro()).toBe(0);
@@ -210,6 +277,26 @@ describe('the adventure’s store', () => {
     expect(createAdventure({ saves, read: { tasks: () => ['cable'], citadel: () => [] } }).intro()).toBe(null);
   });
 
+  it('a card for an episode reached under the page isn’t the visit’s card', () => {
+    // (opened at episode 10's door; another tab carries the story on to episode 11, whose card it showed)
+    const at = (data) => store.setItem(STORY_KEY, JSON.stringify({ v: 2, data: { ...fresh(), ...data } }));
+    at({ episode: 9, step: 0 });
+    const tab = createAdventure({ saves, read: none });
+    const other = JSON.stringify({ v: 2, data: { ...fresh(), episode: 10, step: 0 } });
+    store.setItem(STORY_KEY, other);
+    fakeWin.storage({ key: STORY_KEY, newValue: other });
+    expect(tab.get()).toMatchObject({ episode: 10, step: 0 });
+    expect(tab.intro()).toBe(null);
+    // (or the page's own news: Customs ends episode 1 there, and its card came with the closing line)
+    at({ episode: 0, step: 3 });
+    const done = ['diner', 'basement', 'mindblowers'];
+    const own = createAdventure({ saves, read: { tasks: () => done, citadel: () => [] } });
+    done.push('customs');
+    expect(own.feed({ type: 'task', id: 'customs' }).map((o) => o.type)).toContain('episode');
+    expect(own.get()).toMatchObject({ episode: 1, step: 0 });
+    expect(own.intro()).toBe(null);
+  });
+
   it('shows the card of an episode the visit catches up into, though a step of it was done before', () => {
     // finished episode 1 before episode 2 was built, and played Roy then: the
     // catch-up moves them on to the cabinet, and they've never seen its card
@@ -229,7 +316,7 @@ describe('the adventure’s store', () => {
     const caught = createAdventure({ saves, read: knowing(['rickall']) });
     expect(caught.get()).toMatchObject({ episode: 2, step: 1 });
     expect(caught.intro()).toBe(2);
-    // all three done already: episode 3 finishes as the visit loads, with no card (said nowhere: the hand-off names it)
+    // all three done already: episode 3 finishes as the visit loads (its closing line kept for the first page to say)
     at({ episode: 2, step: 0 });
     const all = createAdventure({ saves, read: knowing(['rickall', 'wong', 'sewer']) });
     expect(all.get()).toMatchObject({ episode: 3, step: 0 });

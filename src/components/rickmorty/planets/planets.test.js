@@ -6,7 +6,8 @@ import { planetOf, planetProgress } from '../world/planetMode';
 import { MOONS } from '../../universe/universes';
 import { LAYER_TYPES, REACH } from '../../galaxy/surface/terrain';
 import { spawnProblems, standable } from '../../galaxy/surface/sites/validity';
-import { PLANET_SITES, isBigPlanet, planetMission, planetSite } from '.';
+import { PLANET_ACHIEVE, PLANET_SITES, isBigPlanet, planetAchievements, planetMission, planetSite } from '.';
+import { ACHIEVEMENTS } from '../../Achievements';
 import { RM_MODELS } from './catalog';
 import { RM_RIDES } from './rides';
 
@@ -18,6 +19,19 @@ describe('the Rick and Morty sector’s big planets', () => {
       expect(PLANETS, id).toContain(id);
       expect(MOONS.some((m) => m.id === id), id).toBe(true);
     }
+  });
+
+  it('earn a place’s achievement once it’s found: Gazorpazorp’s gate, An exception for a Morty', () => {
+    expect(planetAchievements('gazorpazorp', ['gate'])).toEqual(['gazorp']);
+    expect(ACHIEVEMENTS.gazorp.name).toBe('An exception for a Morty');
+    expect(planetAchievements('gazorpazorp', [])).toEqual([]);
+    expect(planetAchievements('squanch', ['gate'])).toEqual([]);
+    // (every one a site's own place, and an achievement there is)
+    for (const [planet, places] of Object.entries(PLANET_ACHIEVE))
+      for (const [place, a] of Object.entries(places)) {
+        expect(planetSite(planet).places.some((p) => p.id === place), `${planet}: ${place}`).toBe(true);
+        expect(ACHIEVEMENTS[a], a).toBeTruthy();
+      }
   });
 
   it('are the ones C-137 hands over to the surface, and no others', () => {

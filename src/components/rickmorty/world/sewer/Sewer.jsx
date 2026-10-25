@@ -5,6 +5,7 @@ import { useFrameLoop, useMediaQuery } from '../../../../lib/hooks';
 import { readPad } from '../../../games/pad';
 import { createCooldownPress, pressGroups } from '../../../../lib/press';
 import { TUNING, newRun, progress, stepRun } from './rules';
+import { sewerPad } from './sewerPad';
 import './sewer.css';
 
 // Pickle Rick's sewer run, the game under the agency's floor: roll down the
@@ -128,19 +129,19 @@ export default function Sewer({ onLeave, onWin }) {
   }, [onLeave, press]);
 
   // ── the run, stepped ──
-  const held = useRef({});
+  const padWas = useRef(null);
   const tick = useCallback(
     (ms) => {
       const a = api.current;
       if (!a) return;
+      // a controller's presses, on their edges, on the cards as in the run (./sewerPad.js)
+      const pad = readPad();
+      const said = sewerPad(pad, padWas.current, phase);
+      padWas.current = pad;
+      if (said.phase) setPhase(said.phase);
+      if (said.leave && ((phase !== 'won' && phase !== 'lost') || performance.now() - endAt.current > SETTLE_MS)) onLeave(wonRef.current);
+      for (const k of said.press ?? []) press(k);
       if (phase === 'play' && run.current) {
-        // a controller's presses, on their edges
-        const pad = readPad();
-        if (pad) {
-          const now = { left: pad.left, right: pad.right, hop: pad.a, fire: pad.b || pad.x };
-          for (const k of Object.keys(now)) if (now[k] && !held.current[k]) press(k);
-          held.current = now;
-        }
         acc.current += Math.min(0.1, ms / 1000);
         let steps = 0;
         let events = [];
@@ -174,7 +175,7 @@ export default function Sewer({ onLeave, onWin }) {
       }
       a.render(view.current, ms);
     },
-    [phase, hud, press],
+    [phase, hud, press, onLeave],
   );
   useFrameLoop(tick, phase !== 'loading' && phase !== 'failed');
 

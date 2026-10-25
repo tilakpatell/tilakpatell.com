@@ -35,9 +35,21 @@ describe('episode 13’s places', () => {
   it('sets Evil Rick on Morty once the dome’s three Mortys are free: “Close Rick-counters” on the win, given one way', () => {
     const d = destinationById('evilrick');
     expect(d.collect).toEqual({ task: 'evilrick', spots: ['pod1', 'pod2', 'pod3'], start: true });
-    expect(duelOf(d).duel).toMatchObject({ hp: 6, mortyHp: 3, task: 'evilrick', unlock: 'evilrick' });
+    expect(duelOf(d).duel).toMatchObject({ hp: 7, mortyHp: 3, task: 'evilrick', unlock: 'evilrick' });
     expect([d.goal, d.unlock, d.done]).toEqual(['pod1', {}, { evilmorty: 'evilmorty' }]);
     expect(ACHIEVEMENTS.evilrick.name).toBe('Close Rick-counters');
+  });
+
+  it('lets a duel’s spots go once it’s won: the pods and Evil Rick’s, and the ring', () => {
+    const lair = destinationById('evilrick');
+    for (const id of ['pod1', 'pod2', 'pod3', 'evilrick']) {
+      const h = lair.hotspots.find((x) => x.id === id);
+      expect(nearHotspot('evilrick', h.x, h.z, [])?.id, id).toBe(id);
+      expect(nearHotspot('evilrick', h.x, h.z, ['evilrick'])?.id ?? null, id).toBe(null);
+    }
+    const ring = destinationById('blooddome').hotspots.find((x) => x.id === 'ring');
+    expect(nearHotspot('blooddome', ring.x, ring.z, [])?.id).toBe('ring');
+    expect(nearHotspot('blooddome', ring.x, ring.z, ['blooddome'])?.id ?? null).toBe(null);
   });
 
   it('keeps the Morty with the eyepatch’s word till Evil Rick is down, while he sits and watches', () => {

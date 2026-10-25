@@ -9,14 +9,16 @@
 import { check, use, reads, at, opens, toast, playTo, later, warpUse, warp, caught, spotAt, wayInOf, goalIs, noLink, hunting, inArea, open, openOnCard, dial, home, notDone, ticked, isDone, achieved, gun, PLACES, EVIL, SCORE, CABLE } from './helpers.mjs';
 
 const [DOME, LAIR, EYEPATCH, BENCH_STEP] = EVIL.steps;
+// the story's last word: the end card's, and the objective's while it's up (adventure/hud.js)
+const STORY_DONE = 'That’s the whole story: the Checklist tab has the rest.';
 // a stand in Rick's garage where the bench (the dial) is the nearest thing
 const BENCH = [-301.75, 100.15, Math.PI];
-const WHO = { blooddome: 'hemorrhage', evilrick: 'evilrick' };
-const huntOf = (area) => PLACES.dest(area).people.find((p) => p.id === WHO[area]).ai.hunt;
-const him = (page, area) => page.evaluate(([a, w]) => window.__C137__.api.act(a, 'npcs').find((n) => n.id === w), [area, WHO[area]]);
+export const WHO = { blooddome: 'hemorrhage', evilrick: 'evilrick' };
+export const huntOf = (area) => PLACES.dest(area).people.find((p) => p.id === WHO[area]).ai.hunt;
+export const him = (page, area) => page.evaluate(([a, w]) => window.__C137__.api.act(a, 'npcs').find((n) => n.id === w), [area, WHO[area]]);
 const said = (area, id) => PLACES.dest(area).say[id].text;
 // the fight on: its panel up, and the sim's duel his
-const fightOn = (page, area) =>
+export const fightOn = (page, area) =>
   page.waitForFunction((w) => window.__C137__.sim.duel?.who === w && Boolean(document.querySelector('.rm-fight')), WHO[area], { timeout: 15000, polling: 100 }).catch(() => {
     throw new Error(`the fight with ${WHO[area]} didn’t start`);
   });
@@ -27,7 +29,7 @@ const noFight = async (page, when) => {
 // a stand `r` m from him, facing him: from the way in round, the first of
 // eight bearings inside the place, a metre clear of its solids and with
 // none between them (a figure facing f looks along (cos f, −sin f))
-function standOff(area, h, r) {
+export function standOff(area, h, r) {
   const d = PLACES.dest(area);
   const inside = (x, z, m) => d.solids.some((o) => (o.r != null ? Math.hypot(x - o.x, z - o.z) < o.r + m : Math.abs(x - o.x) < o.w / 2 + m && Math.abs(z - o.z) < o.d / 2 + m));
   for (const b of [0, 1, -1, 2, -2, 3, -3, 4].map((k) => (k * Math.PI) / 4)) {
@@ -106,6 +108,12 @@ async function fled(page, area) {
 async function theEnd(page) {
   await goalIs(page, 'dial', 'home with the gun');
   await warp(page, 'garage', ...BENCH);
+  // (at the last step the bench's prompt says what its press does)
+  const prompt = page.locator('.rm-prompt', { hasText: 'The portal gun, back on Rick’s bench' });
+  await prompt.waitFor({ timeout: 10000 }).catch(() => {
+    throw new Error('the bench’s prompt doesn’t say the gun goes back');
+  });
+  check((await prompt.textContent()).includes('Put it back'), `the bench’s prompt reads “${await prompt.textContent()}”`);
   await use(page, 'dial');
   await toast(page, EVIL.outro[0][1]);
   check((await page.locator('.rm-dial-box').count()) === 0, 'the dial opened over Rick’s last line');
@@ -116,9 +124,19 @@ async function theEnd(page) {
     return Boolean(r && document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2)?.closest('.rm-toast') === t);
   }, EVIL.outro[0][1]);
   check(top, 'something lay over Rick’s last line');
+  // the story's end card, up with it, and the story's last word kept while it is
+  const end = page.locator('.rm-episode[data-end]');
+  await end.waitFor({ timeout: 5000 }).catch(() => {
+    throw new Error('no end card with Rick’s last line');
+  });
+  check((await end.textContent()).includes(STORY_DONE), `the end card says “${await end.textContent()}”`);
+  await reads(page, STORY_DONE);
   await later(page, 1.5);
   check((await page.locator('.rm-dial-box').count()) === 0, 'the dial opened over Rick’s last line');
   await at(page, 13, 0, 'at the end');
+  // (passed, the checklist's next)
+  await page.keyboard.press('Shift');
+  await end.waitFor({ state: 'detached', timeout: 5000 });
   await reads(page, CABLE);
   await noLink(page, 'at the end');
   await opens(page, PLACES.dial, true, 'at the end');
@@ -144,7 +162,10 @@ export const EVIL_CHECKS = {
     await tab.waitFor({ state: 'detached', timeout: 10000 });
     await page.evaluate(() => window.__C137__.goto('garage', -302.3, 101.4, Math.PI));
     await inArea(page, 'garage');
-    await goalIs(page, 'garage-portal', 'in the garage');
+    // (the gun set elsewhere: the marker's on it, on the bench; set to the Dome, on the portal)
+    await goalIs(page, 'dial', 'in the garage, the gun set elsewhere');
+    check((await page.evaluate(() => window.__C137__.dial('blooddome'))) === 'blooddome', 'the dial wouldn’t take the Blood Dome');
+    await goalIs(page, 'garage-portal', 'in the garage, the gun set to the Dome');
 
     // the Blood Dome: the ring, the hint, the fight won
     await dial(page, 'blooddome');
@@ -152,7 +173,7 @@ export const EVIL_CHECKS = {
     await warpUse(page, 'blooddome', 'ring', ...spotAt('blooddome', 'ring'));
     await fightOn(page, 'blooddome');
     const hint = await page.locator('.rm-fight').textContent();
-    check(hint.includes('F fires. Keep out of reach.') && hint.includes('Tab locks on'), `the fight’s hint reads “${hint}”`);
+    check(hint.includes('F fires (RT on a pad). Keep out of reach.') && hint.includes('Tab locks on (LT on a pad)'), `the fight’s hint reads “${hint}”`);
     await later(page, 0.3);
     check((await page.evaluate(() => window.__C137__.sim.near?.id ?? null)) !== 'ring', 'the ring stayed in reach mid-fight');
     await win(page, 'blooddome');
@@ -208,6 +229,10 @@ export const EVIL_CHECKS = {
     await page.keyboard.press('m');
     const list = page.locator('#rm-list');
     await list.waitFor({ timeout: 10000 });
+    // (the story over, the list opens on the Checklist, Free roam gone; the Story tab a tap away)
+    check((await list.getByRole('tab', { name: 'Checklist' }).getAttribute('aria-selected')) === 'true', 'after the story the list opens on the Story tab');
+    check((await list.getByText('Free roam').count()) === 0, 'after the story the list still offers Free roam');
+    await list.getByRole('tab', { name: 'Story' }).click();
     check((await list.locator('li.rm-story-ep[data-done]').count()) === 13, 'the Story tab doesn’t tick all thirteen');
     check((await list.locator('.rm-list-rest', { hasText: 'That’s the whole story: the Checklist tab has the rest.' }).count()) === 1, 'the Story tab doesn’t close the story');
     check((await list.getByText('More of the story soon.').count()) === 0, 'the Story tab says there’s more to come');
@@ -215,7 +240,7 @@ export const EVIL_CHECKS = {
     await list.waitFor({ state: 'detached', timeout: 5000 });
     await gun(page);
     const n = PLACES.dial.length;
-    check((await page.locator('.rm-dial-box').textContent()).includes(`Coordinates home: ${n} of ${n}`), 'the dial doesn’t read every coordinate home');
+    check((await page.locator('.rm-dial-box').textContent()).includes(`Coordinates on the gun: ${n} of ${n}`), 'the dial doesn’t read every coordinate home');
     await page.keyboard.press('Escape');
     await page.locator('.rm-dial-box').waitFor({ state: 'detached', timeout: 5000 });
     await use(page, 'dial');
@@ -228,6 +253,10 @@ export const EVIL_CHECKS = {
     async (page) => {
       await openOnCard(page, '#/c-137', 12);
       await dial(page, 'blooddome');
+      // (his bolts loaded as he gets there: the fight's first F isn't lost)
+      await page.waitForFunction(() => window.__C137__.shotsReady(), null, { timeout: 10000, polling: 100 }).catch(() => {
+        throw new Error('the bolts weren’t loaded on arrival at a duel’s place');
+      });
       const ring = spotAt('blooddome', 'ring');
       await warpUse(page, 'blooddome', 'ring', ...ring);
       await fightOn(page, 'blooddome');
@@ -241,7 +270,15 @@ export const EVIL_CHECKS = {
       await dial(page, 'blooddome');
       check((await him(page, 'blooddome')).hp == null, 'Hemorrhage wasn’t whole again after a flight');
       await warpUse(page, 'blooddome', 'ring', ...ring);
+      // (his line first, then the thing done, once that's read)
+      const said = page.locator('.rm-toast', { hasText: huntOf('blooddome').duel.won.text }).waitFor({ timeout: 60000 });
       await win(page, 'blooddome');
+      await said.catch(() => {
+        throw new Error('Hemorrhage’s won line wasn’t said');
+      });
+      await page.locator('.rm-toast[data-kind="done"]').waitFor({ timeout: 20000 }).catch(() => {
+        throw new Error('the done toast didn’t follow Hemorrhage’s won line');
+      });
       await achieved(page, 'blooddome', 'A man now wasn’t earned');
       await at(page, 12, 1, 'after the win');
       // (his place hunts no more: the ring's own act, then a revisit)
@@ -251,8 +288,10 @@ export const EVIL_CHECKS = {
       await page.locator('.rm-fight').waitFor({ state: 'detached', timeout: 6000 });
       await home(page, 'blooddome');
       await dial(page, 'blooddome');
-      await warpUse(page, 'blooddome', 'ring', ...ring);
+      // (the ring's gone with the fight: nothing to step into)
+      await warp(page, 'blooddome', ...ring);
       await later(page, 1);
+      check((await page.evaluate(() => window.__C137__.sim.near?.id ?? null)) !== 'ring', 'the ring still offered a fight after the win');
       check((await hunting(page, 'blooddome')).length === 0 && (await him(page, 'blooddome')).dead, 'Hemorrhage came back from the dead');
       await noFight(page, 'at the ring after the win,');
     },
@@ -273,6 +312,9 @@ export const EVIL_CHECKS = {
         for (const id of ['pod1', 'pod2', 'pod3']) await warpUse(page, 'evilrick', id, ...spotAt('evilrick', id, Math.PI));
       };
       await pods();
+      // (mid-fight the marker points nowhere: the fight comes to him)
+      await fightOn(page, 'evilrick');
+      check((await page.evaluate(() => window.__C137__.sim.goal)) == null, 'mid-fight the marker points somewhere');
       await lose(page, 'evilrick');
       await goalIs(page, 'pod1', 'after a loss');
       await warp(page, 'evilrick', ...spotAt('evilrick', 'pod1', Math.PI));

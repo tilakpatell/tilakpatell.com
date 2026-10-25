@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { TUNING, WORDS, climbNews, climbReadout, moods, newClimb, nextStair, poseTime, stairPose, standingOn, stepClimb } from './climb';
 import { METER_OFF } from './meter';
+import { CLIMB } from '../rules';
 
 // a stair of one tread (g1) and one of two (g2), a landing between, a shoot past them and the top: in world metres
 const LEDGES = [
@@ -107,6 +108,17 @@ describe('the climb kind: up the stairs while they keep still, and on to the top
     const later = wait(climb(), 3.45 + TUNING.lag);
     expect(stairPose(later, 1).mood).toBe('bite');
     expect(stepClimb(later, on('g2-top'), 1 / 60).events.at(-1)).toEqual({ type: 'lost', why: 'bitten', stair: 'g2' });
+  });
+
+  it('standing on a tame stair’s tread at its bite does not lose', () => {
+    // (a stair with no figure, its model never loaded: the place hands it in as tame, unseen and harmless)
+    const biting = wait(climb(), 3.45);
+    expect(stairPose(biting, 0).mood).toBe('bite');
+    const tame = stepClimb(biting, { ...on('g1-low'), tame: ['g1'] }, 1 / 60);
+    expect(tame).toMatchObject({ phase: 'run', on: 'g1-low' });
+    expect(tame.events).toEqual([{ type: 'start' }]);
+    // (another stair tame is no help on this one)
+    expect(stepClimb(biting, { ...on('g1-low'), tame: ['g2'] }, 1 / 60).phase).toBe('lost');
   });
 
   it('says a fall to the ground from four metres or more once, and isn’t lost by it', () => {
@@ -284,5 +296,34 @@ describe('a climb with things to pick up', () => {
     expect(WORDS.found(3, 5)).toBe('3 of 5 found');
     // and off once it's over
     expect(climbReadout(stepClimb(one, { ...ground(), pick: 'up-top' })).on).toBe(false);
+  });
+
+  it('with picks, on the drum below a crumbling stair, names that stair’s mood (its bite too)', () => {
+    // (the landing, 1.2 m: g2's first tread is a hop up and touching it, g1's is below him)
+    const one = stepClimb(picking(), { ...ground(), pick: 'grass' });
+    expect(climbReadout(stepClimb(one, on('landing')))).toEqual({ on: true, vitals: { value: 50, max: 100, low: false }, line: WORDS.still });
+    // g2 a lag behind g1: its shiver, then its bite, while he waits on the landing
+    const shaking = wait(one, TUNING.lag + TUNING.still + 0.1, on('landing'));
+    expect(stairPose(shaking, 1).mood).toBe('shiver');
+    expect(climbReadout(shaking)).toEqual({ on: true, vitals: { value: 50, max: 100, low: true }, line: WORDS.shiver });
+    const biting = wait(one, TUNING.lag + TUNING.still + TUNING.shiver + 0.1, on('landing'));
+    expect(biting.phase).toBe('run');
+    expect(stairPose(biting, 1).mood).toBe('bite');
+    expect(climbReadout(biting)).toEqual({ on: true, vitals: { value: 50, max: 100, low: true }, line: WORDS.bite });
+    // (past the stairs, a hop up from nothing that bites: the count again)
+    expect(climbReadout(stepClimb(one, on('shoot'))).line).toBe(WORDS.found(1, 2));
+    expect(climbReadout(stepClimb(one, on('crown'))).line).toBe(WORDS.found(1, 2));
+    // (a hop up is as high as the walker gets onto anything)
+    expect(TUNING.hop).toBeCloseTo(CLIMB, 9);
+  });
+
+  it('on the ground it still counts the crystals, whatever the stairs are doing', () => {
+    // (not the next stair by height, as Fantasy World's meter has it: that's every stair from the ground)
+    const one = stepClimb(picking(), { ...ground(), pick: 'grass' });
+    for (const s of [0.5, 2.5, 3.45, TUNING.lag + 3.45]) {
+      const g = wait(one, s, ground());
+      expect(g.phase, `${s} s`).toBe('run');
+      expect(climbReadout(g), `${s} s`).toEqual({ on: true, vitals: { value: 50, max: 100, low: false }, line: WORDS.found(1, 2) });
+    }
   });
 });

@@ -32,6 +32,26 @@ describe('the adventure’s episodes', () => {
     }
   });
 
+  it('says what each step needs: the portal back from a place with a clock, the running order, the first move', () => {
+    for (const s of allSteps()) {
+      const d = s.type === 'task' && DESTINATIONS.find((x) => x.tasks.some((t) => t.id === s.id));
+      if (d && (d.escape || d.collect?.escape)) expect(s.text, s.id).toMatch(/portal/);
+    }
+    const step = (id) => allSteps().find((s) => s.id === id).text;
+    expect(step('cablestudio')).not.toMatch(/every channel/);
+    expect(step('cablestudio')).toMatch(/running order/);
+    expect(step('heistcon')).toMatch(/crew/);
+    expect(step('evilrick')).toMatch(/pods/);
+    // (seen is a hunt, not a catch)
+    expect(step('gromflomites')).not.toMatch(/seeing you/);
+  });
+
+  it('says how to tell our Jerry at the Jerryboree, in its step', () => {
+    const step = allSteps().find((s) => s.id === 'jerryboree');
+    const ours = DESTINATIONS.find((d) => d.id === 'jerryboree').find.tells.ours; // ('He offers you an apple')
+    expect(step.text.toLowerCase()).toContain(ours.toLowerCase().replace(/^he /, ''));
+  });
+
   it('sends a step to the dial place its task is in', () => {
     const dial = new Set(DIAL.map((d) => d.id));
     for (const s of allSteps()) {
@@ -74,7 +94,7 @@ describe('the adventure’s episodes', () => {
     expect(wiped.title).toBe('Wiped');
     expect(wiped.steps.map((s) => s.id)).toEqual(['diner', 'basement', 'mindblowers', 'customs']);
     expect(wiped.unlocks).toEqual(['annex', 'meeseeksgolf']);
-    expect(wiped.steps[0].text).toBe('A Federation agent is in a booth at Shoney’s, up the street. Find out what the raid took.');
+    expect(wiped.steps[0].text).toBe('A Federation agent is in a booth at Shoney’s, up the street. Hear what the Federation wants.');
   });
 
   it('goes on with Arcade money: Roy, then a walkway cabinet’s target', () => {
@@ -82,6 +102,8 @@ describe('the adventure’s episodes', () => {
     expect(arcade.title).toBe('Arcade money');
     expect(arcade.steps.map((s) => s.id ?? s.game)).toEqual(['roy', 'cabinet']);
     expect(arcade.steps[1]).toMatchObject({ type: 'win', game: 'cabinet', place: 'annex' });
+    // (which cabinet: the one that plays)
+    expect(arcade.steps[1].text).toContain('Plumbus Smash');
     expect(arcade.unlocks).toEqual(['agency', 'simulation']);
   });
 

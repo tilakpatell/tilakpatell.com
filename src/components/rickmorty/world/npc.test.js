@@ -169,6 +169,17 @@ describe('a duel’s hunter (Hemorrhage, Evil Rick: ./dimensions/duel.js)', () =
     expect(events.filter(([name]) => name === 'bark').length).toBeGreaterThanOrEqual(1);
   });
 
+  it('once he’s down, isn’t set on Morty again by his own near, Morty in reach', () => {
+    const N = createNpcs({ id: 'blooddome', area: AREA });
+    const h = N.add(figure(), { x: 0, z: -8, face: 0, ai: { hunt: { ...duel.hunt, near: 6 } }, id: 'hemorrhage' });
+    N.hunt(true);
+    run(N, [h], 0.1, () => ({ x: 0, z: 0 }));
+    for (let i = 0; i < 5; i++) N.hit('hemorrhage');
+    // (Morty 3 m off his body, inside his near)
+    run(N, [h], 1, () => ({ x: 0, z: 3 }), { t0: 1 });
+    expect(N.list().find((o) => o.id === 'hemorrhage')).toMatchObject({ dead: true, hunting: false });
+  });
+
   it('once he’s down, says nothing more: no bark from the ground, his hands still', () => {
     const N = createNpcs({ id: 'evilrick', area: AREA });
     const c = figure();

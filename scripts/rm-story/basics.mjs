@@ -1,12 +1,111 @@
 // The browser check's first scenarios (../rm-story-check.mjs): episode 1
-// from the street to Customs and back, the dial's lock, the ways home, Free
+// from the street to Customs and back (and its card kept for a visitor who
+// scrolled away while it loaded), the dial's lock, the ways home, Free
 // roam, a returner, the Citadel, a planet landed on, and the toys ticking
 // when they're played.
-/* global window */
+/* global window, document, StorageEvent */
 import { READY } from '../../src/components/rickmorty/adventure/episodes.js';
-import { BASE, OUT, N, check, done, c137, built, goto, use, place, story, reads, WIPED, ARCADE, throughPortal, gun, toast, inArea, game, arriveOf, standOn, PLACES, CITADEL_LINE, citadelUp, citadelReads } from './helpers.mjs';
+import { BASE, OUT, N, check, done, c137, built, goto, use, place, story, reads, WIPED, ARCADE, throughPortal, gun, toast, inArea, game, arriveOf, standOn, PLACES, CITADEL_LINE, citadelUp, citadelReads, warp, goalIs, dial, warpUse, spotAt, home, cardOnLine, cardFor, achieved, promptIs } from './helpers.mjs';
 
 export const BASICS = {
+  // another tab's ticks: kept when this one ticks, and this one's list
+  // following as they're kept; and the last missing-cat poster ticks at once,
+  // so a page left straight after can't lose it
+  async tabs(page) {
+    await c137(page);
+    const keep = (ids) => page.evaluate((ids) => window.localStorage.setItem('tp-c137-done', JSON.stringify([...JSON.parse(window.localStorage.getItem('tp-c137-done') ?? '[]'), ...ids])), ids);
+    await keep(['birdworld']);
+    await page.evaluate(() => window.__C137__.complete('butter'));
+    const d = await done(page);
+    check(d.includes('birdworld') && d.includes('butter'), `another tab’s tick was lost as this one ticked: ${JSON.stringify(d)}`);
+    await keep(['cable']);
+    await page.evaluate(() => window.dispatchEvent(new StorageEvent('storage', { key: 'tp-c137-done' })));
+    await page.evaluate(() => window.__C137__.complete('cable'));
+    await page.waitForTimeout(1500);
+    check((await page.locator('.rm-toast', { hasText: 'Watch interdimensional cable' }).count()) === 0, 'this tab ticked again what another tab had kept');
+    // the posters, all five read, and the page left at once
+    const posters = await page.evaluate(async () => (await import('/src/components/rickmorty/world/town/plan.js')).POSTERS.map(({ id, x, z }) => ({ id, x, z })));
+    for (const p of posters) {
+      await goto(page, 'street', p.x, p.z, N);
+      await use(page, p.id);
+    }
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await built(page);
+    check((await done(page)).includes('posters'), 'the posters, all read, didn’t count once the page was left at once');
+  },
+  // on a phone (390 × 664: a browser's own bars taken), episode 2's card
+  // comes up with episode 1's closing line, and not over it
+  'c137-phone': Object.assign(
+    async (page) => {
+      await page.setViewportSize({ width: 390, height: 664 });
+      await c137(page);
+      await page.evaluate(() => window.__C137__.complete('customs'));
+      await cardOnLine(page, WIPED.outro[0][1]);
+      await cardFor(page, 1);
+    },
+    { seed: { 'tp-rm-story': { v: 1, data: { episode: 0, step: 3, got: [], wins: [], freeRoam: false } }, 'tp-c137-done': ['diner', 'basement', 'mindblowers'] } },
+  ),
+  // Rick says Blips and Chitz is through the portal; dialled elsewhere, what
+  // follows his line (once it's read) says where it goes
+  'rick-aside': Object.assign(
+    async (page) => {
+      await c137(page);
+      check((await page.evaluate(() => window.__C137__.dial('customs'))) === 'customs', 'the dial wouldn’t take Customs');
+      const rick = await page.evaluate(async () => (await import('/src/components/rickmorty/world/rules.js')).HOTSPOTS.find((h) => h.id === 'rick'));
+      await goto(page, 'garage', rick.x + 0.6, rick.z, Math.PI);
+      await use(page, 'rick');
+      await toast(page, 'Blips and Chitz is through there');
+      await toast(page, 'Dialled to Interdimensional Customs. Step through the portal.');
+    },
+    { seed: { 'tp-c137-done': ['cable'] } },
+  ),
+  // a place whose task is done (here before its achievement could be earned:
+  // an old save) hands the achievement over on the next visit
+  'achieve-later': Object.assign(
+    async (page) => {
+      await c137(page);
+      await dial(page, 'storytrain');
+      await achieved(page, 'storytrain', 'the Story Train, done before, didn’t hand over its achievement');
+    },
+    { seed: { 'tp-c137-done': ['storytrain'] } },
+  ),
+  // a phone held sideways (844 × 390: a browser's own bars taken): the stick
+  // and the buttons on screen, and the top row clear of them
+  'c137-landscape': Object.assign(
+    async (page) => {
+      await c137(page);
+      await page.locator('.rm-stick').waitFor({ timeout: 10000 });
+      const at = await page.evaluate(() => {
+        const box = (el) => el && (({ top, bottom, left, right }) => ({ top: Math.round(top), bottom: Math.round(bottom), left: Math.round(left), right: Math.round(right) }))(el.getBoundingClientRect());
+        const under = (sel) => Array.from(document.querySelectorAll(sel), box);
+        return { h: window.innerHeight, w: window.innerWidth, thumbs: [...under('.rm-hud-bottom .rm-stick'), ...under('.rm-hud-bottom .rm-pad button')], top: [...under('.rm-hud-top .rm-brand'), ...under('.rm-hud-top .rm-side')] };
+      });
+      check(at.thumbs.length >= 2, `sideways, the stick and buttons are ${JSON.stringify(at.thumbs)}`);
+      for (const t of at.thumbs) check(t.top >= 0 && t.bottom <= at.h && t.right <= at.w, `sideways, a thumb’s control is off the screen (${JSON.stringify(t)} in ${at.w} × ${at.h})`);
+      for (const r of at.top) for (const t of at.thumbs) check(!(r.top < t.bottom && t.top < r.bottom && r.left < t.right && t.left < r.right), `sideways, the top row (${JSON.stringify(r)}) runs into a thumb’s control (${JSON.stringify(t)})`);
+    },
+    { context: { viewport: { width: 844, height: 390 }, hasTouch: true, isMobile: true } },
+  ),
+  // Customs' alarm: the pads' swirls ahead of him shut while it's on, so the
+  // only portal open is the way home behind him; open again on his next visit
+  'customs-alarm': Object.assign(
+    async (page) => {
+      await c137(page);
+      const padsAre = (open, when) =>
+        page.waitForFunction((o) => window.__C137__.api.act('customs', 'pads').every((v) => v === o), open, { timeout: 10000, polling: 100 }).catch(async () => {
+          throw new Error(`${when} the pads are ${JSON.stringify(await page.evaluate(() => window.__C137__.api.act('customs', 'pads')))}`);
+        });
+      await dial(page, 'customs');
+      await padsAre(1, 'before the alarm');
+      await warpUse(page, 'customs', 'seeds', ...spotAt('customs', 'seeds'));
+      await warpUse(page, 'customs', 'scanner', ...spotAt('customs', 'scanner'));
+      await padsAre(0, 'with the alarm on');
+      await home(page, 'customs');
+      await dial(page, 'customs');
+      await padsAre(1, 'back in Customs after the alarm');
+    },
+    { seed: { 'tp-rm-story': { v: 1, data: { episode: 0, step: 3, got: [], wins: [], freeRoam: false } }, 'tp-c137-done': ['diner', 'basement', 'mindblowers'] } },
+  ),
   // a new visitor plays episode 1 from the street to Customs and back
   async 'episode-1'(page) {
     // the card: episode 1, as the world comes on, gone at the next key
@@ -22,13 +121,33 @@ export const BASICS = {
     await built(page);
     check((await story(page)).freeRoam === false, 'a new visitor started on free roam');
     await reads(page, WIPED.steps[0].text);
+    // (the Checklist lights the story's task, Shoney's, not the list's first thing)
+    await page.keyboard.press('m');
+    const list = page.locator('#rm-list');
+    await list.waitFor({ timeout: 10000 });
+    await list.getByRole('tab', { name: 'Checklist' }).click();
+    const lit = await list.locator('li[data-next] .rm-list-name').textContent();
+    const diner = await page.evaluate(async () => (await import('/src/components/rickmorty/world/rules.js')).TASKS.find((t) => t.id === 'diner').name);
+    check(lit === diner, `the Checklist lights “${lit}”, not the story’s task`);
+    await page.keyboard.press('m');
+    await list.waitFor({ state: 'detached', timeout: 5000 });
+    // the first step's marker: inside Shoney's, on the agent in his booth, not the way back out
+    await warp(page, 'diner', -300, 800, N);
+    await inArea(page, 'diner');
+    await goalIs(page, 'dineragent', 'inside Shoney’s at the first step');
     for (const [i, { id }] of WIPED.steps.slice(0, 3).entries()) {
       await page.evaluate((id) => window.__C137__.complete(id), id);
       await reads(page, WIPED.steps[i + 1].text);
       const s = await story(page);
       check(s.episode === 0 && s.step === i + 1, `after ${id} the story is at ${s.episode}.${s.step}`);
     }
-    // the last step: out of Customs with the seeds; the episode's closing line, then episode 2's card
+    // the last step: Customs, the marker on the seeds, then (taken) on the scanner, not the bare table
+    await dial(page, 'customs');
+    await goalIs(page, 'seeds', 'in Customs before the seeds');
+    await warpUse(page, 'customs', 'seeds', ...spotAt('customs', 'seeds'));
+    await goalIs(page, 'scanner', 'in Customs with the seeds');
+    await home(page, 'customs');
+    // out of Customs with the seeds; the episode's closing line, then episode 2's card
     await page.evaluate(() => window.__C137__.complete('customs'));
     await toast(page, WIPED.outro[0][1]);
     await card.waitFor({ timeout: 10000 }).catch(() => {
@@ -44,6 +163,23 @@ export const BASICS = {
     for (const id of ['agency', 'vat']) check(!(await page.evaluate((id) => window.__RMSTORY__.dialOpen(id), id)), `${id} is open after episode 1`);
     await reads(page, ARCADE.steps[0].text);
   },
+  // a new visitor who scrolls down to Portal panic while the street loads:
+  // episode 1's card waits till the world's seen, not shown out of view and
+  // gone by the time they're back
+  async 'episode-1-away'(page) {
+    await page.goto(`${BASE}/#/c-137`, { waitUntil: 'domcontentloaded' });
+    await page.locator('#portal-panic').waitFor({ timeout: 60000 });
+    await page.evaluate(() => document.getElementById('portal-panic').scrollIntoView({ block: 'start' }));
+    check(!(await page.evaluate(() => Boolean(window.__C137__?.goto))), 'the world was on before the page could scroll away from it');
+    await page.waitForFunction(() => window.__C137__?.goto, null, { timeout: 600000, polling: 1000 });
+    // (longer than the card's own seven seconds)
+    await page.waitForTimeout(8000);
+    check((await page.locator('.rm-episode').count()) === 0, 'episode 1’s card showed with the world out of view');
+    await page.evaluate(() => document.querySelector('.rm-world')?.scrollIntoView({ block: 'start' }));
+    await cardFor(page, 0);
+    await built(page);
+    await reads(page, WIPED.steps[0].text);
+  },
   // a new visitor's dial: Customs open, the rest dimmed with the episode that
   // opens them; a locked pick says so and changes nothing; a dial left set to
   // a locked place (tp-rm-dial) still opens the portal on an open one
@@ -54,9 +190,9 @@ export const BASICS = {
     check((await rows.count()) === 32, `the dial has ${await rows.count()} places, not 32`);
     check((await page.locator('.rm-dial-row[data-locked]').count()) === 31, 'the dial doesn’t have 31 places locked');
     check(!(await rows.filter({ hasText: 'Interdimensional Customs' }).getAttribute('data-locked')), 'Customs is locked');
-    check((await page.locator('.rm-dial-lead').textContent()) === 'Coordinates home: 1 of 32', 'the dial doesn’t count the coordinates home');
+    check((await page.locator('.rm-dial-lead').textContent()) === 'Coordinates on the gun: 1 of 32', 'the dial doesn’t count the coordinates home');
     await rows.filter({ hasText: 'vat of acid' }).click();
-    await toast(page, 'Opens after episode 5, “Heat”.');
+    await toast(page, 'Opens after episode 5, “Heat”. Free roam, in Things to do, opens it now.');
     check((await page.evaluate(() => localStorage.getItem('tp-rm-dial'))) !== 'vat', 'a locked pick set the dial');
     await page.evaluate(() => localStorage.setItem('tp-rm-dial', 'vat'));
     await throughPortal(page);
@@ -128,6 +264,9 @@ export const BASICS = {
       await page.evaluate(() => window.__C137__.api.act('cablestudio', 'sequence-start'));
       await page.waitForTimeout(1000);
       check((await game(page, 'cablestudio', 'sequence')).phase === 'idle' && !(await page.locator('.rm-cluster[aria-label="Going live"][data-on]').count()), 'a returner’s cable studio started its game again');
+      // (and the booth only says its line: its prompt says so, not 'Start the countdown')
+      await warp(page, 'cablestudio', ...spotAt('cablestudio', 'cablebooth'));
+      await promptIs(page, PLACES.spot('cablestudio', 'cablebooth').label, 'Look', 'with a returner’s channels on air,');
       // the village helped before the climb was built: no meter at the stairs, the stairs never bite, and its achievement comes on the visit
       await goto(page, 'fantasy', ...arriveOf('fantasy'));
       await page.waitForFunction(() => JSON.parse(localStorage.getItem('tp-achievements') ?? '[]').includes('fantasy'), null, { timeout: 30000, polling: 250 }).catch(() => {

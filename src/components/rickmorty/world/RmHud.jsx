@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import RmEarnNote from '../RmEarnNote';
 import { PowerBar } from '../../universe/shared/powerBar';
 import { Link as RouterLink } from 'react-router-dom';
-import { RiArrowDownLine, RiArrowLeftLine, RiArrowUpLine, RiCheckLine, RiCloseLine, RiCrosshair2Line, RiEmotionLaughLine, RiEyeLine, RiHeart3Line, RiHome4Line, RiListCheck2, RiFlashlightLine, RiLiveLine, RiPlantLine, RiSafe2Line, RiSearchEyeLine, RiSettings3Line, RiShieldLine, RiShirtLine, RiTimerLine, RiToolsLine, RiTyphoonLine, RiVipCrownLine, RiVipDiamondLine } from 'react-icons/ri';
+import { RiArrowDownLine, RiArrowLeftLine, RiArrowUpLine, RiCheckLine, RiCloseLine, RiCrosshair2Line, RiEmotionLaughLine, RiEyeLine, RiGroupLine, RiHeart3Line, RiHome4Line, RiListCheck2, RiFlashlightLine, RiLiveLine, RiPlantLine, RiSafe2Line, RiSearchEyeLine, RiSettings3Line, RiShieldLine, RiShirtLine, RiTimerLine, RiToolsLine, RiTyphoonLine, RiVipCrownLine, RiVipDiamondLine } from 'react-icons/ri';
 import { EMOTES, wheelAngle } from '../../../lib/emote';
 import { local } from '../../../lib/hooks';
 import { Arms, Cluster, Prompt, Reticle, Stick, TouchButton, Vitals, createFlightCluster, reticleState } from '../../../runtime/hud';
@@ -22,6 +22,7 @@ import { setShipVoice, shipVoiceOn, stopSpeaking } from './shipVoice';
 import { Title, Toast } from './WorldCards';
 import { EPISODES } from '../adventure/episodes';
 import EpisodeCard from '../adventure/EpisodeCard';
+import { listNext, listTab } from '../adventure/hud';
 import StoryList from '../adventure/StoryList';
 import { useAdventure } from '../adventure/useAdventure';
 import { homeLink } from '../adventure/ways';
@@ -214,8 +215,8 @@ export default function RmHud({
                 <em>{enemyShare(duel.hp, duel.max)}%</em>
               </div>
               <span className="sr-only">Morty: {health.value} of 100.</span>
-              <span className="rm-fight-hint">{touch ? 'The star fires. Keep out of reach.' : 'F fires. Keep out of reach.'}</span>
-              {!touch && <span className="rm-fight-hint">Tab locks on: Morty turns to face them.</span>}
+              <span className="rm-fight-hint">{touch ? 'The star fires. Keep out of reach.' : 'F fires (RT on a pad). Keep out of reach.'}</span>
+              {!touch && <span className="rm-fight-hint">Tab locks on (LT on a pad): Morty turns to face them.</span>}
             </div>
           )}
           {clock != null && (
@@ -284,7 +285,7 @@ export default function RmHud({
       <DimensionDial open={!!trial} items={trialItems} value={null} onPick={pickTrial} onClose={closeTrial} title={`Rick’s rooms · ${(trial?.room ?? 0) + 1} of ${ROOMS.length}`} lead={trial ? ROOMS[trial.room].prompt : null} foot="↑ ↓ to choose, Enter to pick, Esc to back out" label="Rick’s rooms" />
 
       <Toast toast={toast} />
-      {card != null && <EpisodeCard episode={EPISODES[card]} n={card + 1} onDone={closeCard} />}
+      {card != null && <EpisodeCard episode={EPISODES[card] ?? null} n={card + 1} onDone={closeCard} />}
       {shipLine && hud.area === 'street' && (
         <p className="rm-shipline" role="status" key={shipLine.at}>
           <span className="rm-shipline-eyes" aria-hidden="true">
@@ -531,7 +532,7 @@ export default function RmHud({
         )}
       </div>
 
-      {list && <ThingsToDo box={listBox} prog={prog} done={done} onClose={closeList} back={back} planet={planet} />}
+      {list && <ThingsToDo box={listBox} prog={prog} done={done} onClose={closeList} back={back} planet={planet} here={hud.area} />}
     </>
   );
 }
@@ -559,10 +560,12 @@ function EmoteWheel({ hover, touch, onPick, onClose }) {
 // and every thing to do, ticked when it's done, with where to go for the rest
 // (on a planet, its own and a line for the rest: ./planetMode.js's listOf);
 // then the cruiser's voice, and Free roam (every place on the dial open).
-function ThingsToDo({ box, prog, done, onClose, back, planet }) {
+function ThingsToDo({ box, prog, done, onClose, back, planet, here }) {
   const [voice, setVoice] = useState(shipVoiceOn);
-  const [tab, setTab] = useState('story');
   const story = useAdventure();
+  // (the Story tab while there's a story to follow, the Checklist once it's over)
+  const [tab, setTab] = useState(() => listTab(story.state));
+  const over = listTab(story.state) === 'checklist';
   // (the Citadel's scenes made, to tick its step if made before it came up)
   const [citadel] = useState(() => local.get('tp-citadel-done', []));
   const { label, rows, rest } = listOf(planet, done);
@@ -588,7 +591,7 @@ function ThingsToDo({ box, prog, done, onClose, back, planet }) {
         ))}
       </div>
       <div className="rm-list-panel" id="rm-list-panel" role="tabpanel" aria-labelledby={`rm-tab-${tab}`}>
-        {tab === 'story' ? <StoryList state={story.state} tasks={done} citadel={citadel} /> : <Checklist rows={rows} rest={rest} next={prog.next} />}
+        {tab === 'story' ? <StoryList state={story.state} tasks={done} citadel={citadel} /> : <Checklist rows={rows} rest={rest} next={planet ? prog.next : listNext(story.state, prog.next, rows, { here })} />}
       </div>
       <label className="rm-list-switch">
         <input
@@ -602,13 +605,15 @@ function ThingsToDo({ box, prog, done, onClose, back, planet }) {
         />
         <span>The ship’s voice</span>
       </label>
-      <label className="rm-list-switch">
-        <input type="checkbox" checked={story.state.freeRoam} onChange={(e) => story.setFreeRoam(e.target.checked)} />
-        <span>
-          Free roam
-          <span className="rm-list-sub">Every place on the dial, open.</span>
-        </span>
-      </label>
+      {!over && (
+        <label className="rm-list-switch">
+          <input type="checkbox" checked={story.state.freeRoam} onChange={(e) => story.setFreeRoam(e.target.checked)} />
+          <span>
+            Free roam
+            <span className="rm-list-sub">Every place on the dial, open.</span>
+          </span>
+        </label>
+      )}
       <RouterLink to={back.to} replace={back.replace} className="rm-list-back">
         <RiArrowLeftLine aria-hidden="true" /> {back.label}
       </RouterLink>
@@ -675,17 +680,20 @@ function Ending({ end, onAgain, onLeave }) {
 }
 
 // Others online in the street: how many, or a way to see them (going online
-// is the site's own switch, with your callsign, as on the universe map).
-function OtherMortys({ trav, where }) {
+// is the site's own switch, with your callsign, as on the universe map). Its
+// icon and name stay on a phone, where a chip's words go.
+export function OtherMortys({ trav, where }) {
   if (!trav.available) return null;
   if (!trav.on)
     return (
-      <button type="button" className="rm-chip" onClick={trav.join} title={`Go online, and see everyone else ${where} as a Morty from another dimension`}>
+      <button type="button" className="rm-chip" onClick={trav.join} title={`Go online, and see everyone else ${where} as a Morty from another dimension`} aria-label={`See other Mortys: go online, and see everyone else ${where} as a Morty from another dimension`}>
+        <RiGroupLine aria-hidden="true" />
         <span>See other Mortys</span>
       </button>
     );
   return (
-    <span className="rm-chip" title={`Everyone else online ${where} shows as a Morty from another dimension: they can’t touch your things to do, nor you theirs`}>
+    <span className="rm-chip" role="img" title={`Everyone else online ${where} shows as a Morty from another dimension: they can’t touch your things to do, nor you theirs`} aria-label={`${trav.count} ${trav.count === 1 ? 'other Morty' : 'other Mortys'} ${where}`}>
+      <RiGroupLine aria-hidden="true" />
       <b>{trav.count}</b>
       <span>{trav.count === 1 ? 'other Morty' : 'other Mortys'} here</span>
     </span>

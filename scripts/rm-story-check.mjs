@@ -24,9 +24,11 @@
 // fails (a step that didn't advance, a dial place opened out of turn, a toy
 // that ticked before it was played, an error on the page). BASE sets the
 // server (default http://127.0.0.1:5197), CHROME the browser, OUT a folder for
-// a shot of each scenario's end. Headless browsers draw in software, slowly:
-// the first world takes a while to build. The scenarios are ./rm-story/'s
-// (basics.mjs, early.mjs, late.mjs, citadel.mjs, sector.mjs, score.mjs, evil.mjs), the steps they share its helpers.mjs, and
+// a shot of each scenario's end. A scenario runs at 1280 × 720 unless it says
+// otherwise (its `context`: Playwright's newContext options). Headless
+// browsers draw in software, slowly: the first world takes a while to build.
+// The scenarios are ./rm-story/'s (basics.mjs, early.mjs, late.mjs,
+// citadel.mjs, sector.mjs, score.mjs, evil.mjs, pad.mjs), the steps they share its helpers.mjs, and
 // where they stand Morty in a place through the portal its places.mjs, read
 // from the places' own data.
 import { chromium } from 'playwright-core';
@@ -39,8 +41,9 @@ import { AT_THE_CITADEL } from './rm-story/citadel.mjs';
 import { SECTOR_CHECKS } from './rm-story/sector.mjs';
 import { SCORE_CHECKS } from './rm-story/score.mjs';
 import { EVIL_CHECKS } from './rm-story/evil.mjs';
+import { PAD_CHECKS } from './rm-story/pad.mjs';
 
-const SCENARIOS = { ...BASICS, ...EARLY, ...LATE, ...AT_THE_CITADEL, ...SECTOR_CHECKS, ...SCORE_CHECKS, ...EVIL_CHECKS };
+const SCENARIOS = { ...BASICS, ...EARLY, ...LATE, ...AT_THE_CITADEL, ...SECTOR_CHECKS, ...SCORE_CHECKS, ...EVIL_CHECKS, ...PAD_CHECKS };
 
 const only = process.argv.slice(2);
 for (const n of only) if (!SCENARIOS[n]) throw new Error(`no scenario ${n} (there are ${Object.keys(SCENARIOS).join(', ')})`);
@@ -49,7 +52,8 @@ const browser = await chromium.launch({ executablePath: exe, args: ['--use-angle
 let failed = null;
 for (const [name, run] of Object.entries(SCENARIOS)) {
   if (only.length && !only.includes(name)) continue;
-  const ctx = await browser.newContext({ viewport: { width: 1280, height: 720 } });
+  // (a scenario may want a browser of its own kind: a phone's, held sideways)
+  const ctx = await browser.newContext({ viewport: { width: 1280, height: 720 }, ...run.context });
   await ctx.addInitScript((seed) => {
     // (only on the first load: a scenario that reloads keeps what it's done)
     if (window.sessionStorage.getItem('rm-check')) return;

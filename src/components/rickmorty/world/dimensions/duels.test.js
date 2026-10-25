@@ -63,14 +63,16 @@ const ways = (area, who, start) => ({
   slow: fight(area, who, start, { every: 1.2 }),
   stand: fight(area, who, start, {}),
   kite: fight(area, who, start, { kite: true }),
+  // (standing and firing every 0.9 s: too slow for either, the last fight no easier than the first)
+  stand9: fight(area, who, start, { every: 0.9 }),
 });
 
 describe('the duels, fought four ways', () => {
   it('has Hemorrhage beat a Morty who doesn’t fire or fires slowly, and lose to one who fires steadily, standing or keeping out of reach', () => {
-    expect(ways('blooddome', 'hemorrhage', [0, -0.1])).toEqual({ none: 'beaten', slow: 'beaten', stand: 'won', kite: 'won' });
+    expect(ways('blooddome', 'hemorrhage', [0, -0.1])).toEqual({ none: 'beaten', slow: 'beaten', stand: 'won', kite: 'won', stand9: 'beaten' });
   });
 
   it('has Evil Rick do the same in the lair', () => {
-    expect(ways('evilrick', 'evilrick', [-14, 4])).toEqual({ none: 'beaten', slow: 'beaten', stand: 'won', kite: 'won' });
+    expect(ways('evilrick', 'evilrick', [-14, 4])).toEqual({ none: 'beaten', slow: 'beaten', stand: 'won', kite: 'won', stand9: 'beaten' });
   });
 });

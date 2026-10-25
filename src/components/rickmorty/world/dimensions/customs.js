@@ -5,8 +5,9 @@
 // Michael by a pillar, round portal pads with their swirls, and the north
 // wall glass, onto the spaceport and the alien city (its world, ./worlds.js). Rick's seeds wait on a table by the way in; taken
 // (the area's 'took'), they're gone from it; walked through the scanner
-// ('alarm'), the arch and the desks' lights go red and flash till Morty's
-// gone ('calm', as every place is told when he leaves it).
+// ('alarm'), the arch and the desks' lights go red and flash, and the pads'
+// swirls shut, till Morty's gone ('calm', as every place is told when he
+// leaves it).
 
 import * as THREE from 'three';
 import { BALL, CYL } from '../interiors/shell';
@@ -113,11 +114,12 @@ export async function buildCustoms(kit) {
   let took = false;
   const area = S.done(LIGHT, (t, dt, state, camera) => {
     crate.visible = !took;
-    // (the swirls face the camera, as the portal home does)
+    // (the swirls face the camera, as the portal home does; shut while the
+    // alarm's on, so the one open portal is the way home behind him)
     for (const [sw, m] of swirls) {
       if (camera) sw.rotation.y = Math.atan2(camera.position.x - sw.position.x, camera.position.z - sw.position.z);
       m.uniforms.t.value = t;
-      m.uniforms.open.value = 1;
+      m.uniforms.open.value = alarm ? 0 : 1;
     }
     lampMat.color.setHex(alarm && Math.sin(t * 9) > 0 ? 0xff2a1a : 0x7a2a2a);
   });
@@ -135,6 +137,7 @@ export async function buildCustoms(kit) {
       took = false;
       S.calm();
     },
+    pads: () => swirls.map(([, m]) => m.uniforms.open.value), // (how open the pads' swirls are: the browser check's)
   };
   return area;
 }

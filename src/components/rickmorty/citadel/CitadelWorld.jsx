@@ -3,6 +3,7 @@ import { useAchievements } from '../../Achievements';
 import { audioContext } from '../../../lib/audio';
 import { use3D } from '../../../lib/gpu';
 import { local, useInView, useMediaQuery, usePageVisible } from '../../../lib/hooks';
+import { keptOver } from '../../../lib/kept';
 import { WorldHost, useWorld } from '../../../runtime';
 import { Objective } from '../../../runtime/hud';
 import { readPad, stirs, typing } from '../../games/pad';
@@ -147,7 +148,8 @@ export default function CitadelWorld({ onLeave, leaveLabel = 'Back to C-137', fr
       const taken = !doneRef.current.includes(id) && citadelProgress([...doneRef.current, id]).done.includes(id);
       setDone((d) => {
         if (d.includes(id)) return d;
-        const next = citadelProgress([...d, id]).done;
+        // (kept over what another tab's kept since, not over this page's copy)
+        const next = citadelProgress(keptOver(local.get(DONE, []), d, [id])).done;
         local.set(DONE, next);
         return next;
       });

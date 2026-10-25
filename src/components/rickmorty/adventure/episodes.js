@@ -32,7 +32,7 @@ export const EPISODES = [
     title: 'Wiped',
     intro: [['Rick', 'The Federation came through the garage at dawn and wiped my portal gun. Every coordinate. I keep backups, Morty. I’m not an animal.']],
     steps: [
-      task('diner', 'A Federation agent is in a booth at Shoney’s, up the street. Find out what the raid took.'),
+      task('diner', 'A Federation agent is in a booth at Shoney’s, up the street. Hear what the Federation wants.'),
       task('basement', 'Rick keeps backups under the garage. Find the hatch in the floor.'),
       task('mindblowers', 'The backup chip is in the Mind Blowers chair, through the clone lab. Sit in it and watch.'),
       task('customs', 'The first coordinates are in Rick’s Mega Seeds. Dial Customs, take them through the scanner and get back through the portal before they catch you.', 'customs'),
@@ -46,7 +46,7 @@ export const EPISODES = [
     intro: [['Rick', 'The next set’s at Blips and Chitz. I bet it on a high score a while back, and I don’t remember losing.']],
     steps: [
       task('roy', 'Dial Blips and Chitz and live a life as Roy.', 'annex'),
-      { type: 'win', game: 'cabinet', place: 'annex', text: 'Rick bet the next set on a walkway cabinet at Blips and Chitz. Beat its target.' },
+      { type: 'win', game: 'cabinet', place: 'annex', text: 'Rick bet the next set on Plumbus Smash, the walkway cabinet at Blips and Chitz. Beat its target.' },
     ],
     outro: [['Morty', 'We won coordinates back at an arcade, Rick. I don’t think that’s how coordinates are supposed to work.']],
     unlocks: ['agency', 'simulation'],
@@ -69,7 +69,7 @@ export const EPISODES = [
     intro: [['Rick', 'Two sets went somewhere small. One’s powering a car battery, the other’s inside a man. Don’t ask.']],
     steps: [
       task('microverse', 'The car’s battery has gone flat. Dial the Microverse and power Zeep’s world.', 'microverse'),
-      task('anatomy', 'A set of coordinates went into Ruben. Dial Anatomy Park and get it out.', 'anatomy'),
+      task('anatomy', 'A set of coordinates went into Ruben. Dial Anatomy Park, find the four pieces of the park map and get back through the portal before the clock runs out.', 'anatomy'),
     ],
     outro: [['Morty', 'I was inside a guy, Rick. A whole guy.']],
     unlocks: ['gromflomites', 'fortress'],
@@ -80,7 +80,7 @@ export const EPISODES = [
     intro: [['Rick', 'The Federation’s found the street. Time to be somewhere they aren’t, quickly.']],
     steps: [
       { type: 'win', game: 'chase', text: 'The Federation ship is over the street. Take the cruiser up and shake it.' },
-      task('gromflomites', 'Dial the Gromflomite base and get to Fart’s cell without a guard seeing you.', 'gromflomites'),
+      task('gromflomites', 'Dial the Gromflomite base and get to Fart’s cell without a guard catching you.', 'gromflomites'),
     ],
     outro: [['Rick', 'Ship shaken, and the raid’s haul is ours. They’ll be back. They always come back.']],
     unlocks: ['needful', 'vat', 'nimbus'],
@@ -101,8 +101,8 @@ export const EPISODES = [
     title: 'The Jerry problem',
     intro: [['Morty', 'Rick hid a set on Dad. Dad’s at the Jerryboree, and the rest of it’s at a hospital. Of course it is.']],
     steps: [
-      task('jerryboree', 'Dad’s at the Jerryboree, with a lot of other Dads. Find ours.', 'jerryboree'),
-      task('gloopynoops', 'Dial St. Gloopy Noops and take back what’s Jerry’s.', 'gloopynoops'),
+      task('jerryboree', 'Dad’s at the Jerryboree, with a lot of other Dads. Ours offers you an apple, as he does at home: find him.', 'jerryboree'),
+      task('gloopynoops', 'Dial St. Gloopy Noops and take back what’s Jerry’s, then get back through the portal in time.', 'gloopynoops'),
     ],
     outro: [['Rick', 'Your father carried coordinates for a year and never noticed. The perfect courier.']],
     unlocks: ['cablestudio', 'schwifty', 'dream'],
@@ -112,7 +112,7 @@ export const EPISODES = [
     title: 'Prime time',
     intro: [['Rick', 'Two sets went out on television: one on a cable channel, one in a song the Cromulons want to hear.']],
     steps: [
-      task('cablestudio', 'Dial the cable studio and get every channel on before it goes live.', 'cablestudio'),
+      task('cablestudio', 'Dial the cable studio, start the countdown at the booth, and get the channels on in their running order before it goes live.', 'cablestudio'),
       task('schwifty', 'The Cromulons want a hit. Dial the Get Schwifty show and give them one.', 'schwifty'),
     ],
     outro: [['Morty', 'We were on TV in every dimension, Rick. Mom’s going to have questions.']],
@@ -164,7 +164,7 @@ export const EPISODES = [
     title: 'Big score',
     intro: [['Rick', 'The last sets are held by people who rob for a living and people who save the world for a living. Same thing.']],
     steps: [
-      task('heistcon', 'Dial Heist-Con and run the job.', 'heistcon'),
+      task('heistcon', 'Dial Heist-Con, get Miles Knightly a crew, and run the job.', 'heistcon'),
       task('vindicators', 'Dial the Vindicators and answer for it.', 'vindicators'),
     ],
     outro: [['Rick', 'Job done, Vindicators answered. One stop left, and it’s a bad one.']],
@@ -176,7 +176,7 @@ export const EPISODES = [
     intro: [['Morty', 'Everything leads to one lair, and a Rick who thinks he’s the only Rick that matters.']],
     steps: [
       task('blooddome', 'Dial the Blood Dome and win.', 'blooddome'),
-      task('evilrick', 'Dial Evil Rick’s lair and beat him.', 'evilrick'),
+      task('evilrick', 'Dial Evil Rick’s lair, free the Mortys in his pods, and beat him.', 'evilrick'),
       task('evilmorty', 'Talk to the Morty at the lair.', 'evilrick'),
       { type: 'use', id: 'dial', text: 'Take the gun home and put it back on Rick’s bench.' },
     ],

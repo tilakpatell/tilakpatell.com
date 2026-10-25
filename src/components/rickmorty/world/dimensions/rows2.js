@@ -56,6 +56,7 @@ export const ROWS = [
   }),
   place(14, {
     id: 'storytrain',
+    achieve: 'storytrain',
     name: 'The Story Train',
     note: 'A carriage on the Story Train, the anthology going past the windows. Someone wants to see your ticket.',
     kind: 'room',
@@ -92,6 +93,7 @@ export const ROWS = [
   }),
   place(15, {
     id: 'fortress',
+    achieve: 'fortress',
     name: 'Rick Prime’s fortress',
     note: 'A cold hangar of Rick Prime’s, somewhere out past the Central Finite Curve. The Omega Device is here.',
     kind: 'room',
@@ -174,6 +176,7 @@ export const ROWS = [
   }),
   place(17, {
     id: 'nimbus',
+    achieve: 'nimbus',
     name: 'Mr. Nimbus’s beach',
     note: 'The shore where the land meets the sea. Mr. Nimbus controls the police, and he’s expecting Rick.',
     kind: 'outdoor',
@@ -213,6 +216,7 @@ export const ROWS = [
   }),
   place(18, {
     id: 'gromflomites',
+    achieve: 'gromflomites',
     name: 'The Gromflomite base',
     note: 'Where the Federation keeps Fart, the being Krombopulos Michael was paid to kill. Guards on every walkway.',
     kind: 'room',
@@ -242,7 +246,7 @@ export const ROWS = [
       { id: 'crate-e', dx: 12, dz: 6, w: 2, d: 2 },
       { id: 'lockers', dx: -18.6, dz: -2, w: 1.2, d: 8 },
     ],
-    tasks: [{ id: 'gromflomites', name: 'Open Fart’s cell', hint: 'Dial the Gromflomite base on the portal gun, and reach the cell at the far end without a guard seeing you. Use the crates.' }],
+    tasks: [{ id: 'gromflomites', name: 'Open Fart’s cell', hint: 'Dial the Gromflomite base on the portal gun, and reach the cell at the far end without a guard catching you.' }],
     say: {
       kmichael: { who: 'Krombopulos Michael', text: 'Oh boy. Hi, Morty. Don’t mind me, I’m just here to kill a guy. A gas, technically. Look, if you got the cell open for me I’d be real grateful. I’d owe you a killing.' },
       fartcell: { who: 'Fart', text: 'The lock sings a note and the door slides. “Thank you, Morty.” Across the room, Krombopulos Michael says “Oh boy” and is already running.' },
@@ -298,7 +302,7 @@ export const ROWS = [
     tasks: [{ id: 'heistcon', name: 'Run the job at Heist-Con', hint: 'Dial Heist-Con on the portal gun, take a badge and recruit a muscle and a cat burglar for Miles Knightly, then start the job at Heistotron’s plan and lift from the four booths in the order the meter gives before the keynote ends, with your own crew after you.' }],
     say: {
       miles: { who: 'Miles Knightly', text: '“Kid. You in?” He doesn’t wait. “Get me a muscle and a cat burglar and we’ve got the start of something. Then we double-cross everyone. That’s the job.”' },
-      'heister-a1': { who: 'A heister', text: '“Muscle? Sure. I lift things. Sometimes they’re safes.” He hands you a card. It just says MUSCLE.' },
+      'heister-a1': { who: 'A muscle', text: '“Muscle? Sure. I lift things. Sometimes they’re safes.” He hands you a card. It just says MUSCLE.' },
       'heister-b1': { who: 'A cat burglar', text: '“Lasers, vents, roofs. I’m in if Knightly’s in. Tell him I want a bigger cut than last time.”' },
       heistotron: { who: null, text: 'Heistotron. A robot built to plan heists. Rick built it to beat Miles, then it heisted Rick’s plan to heist it. It’s giving the keynote.' },
       heistbooth: { who: null, text: 'A booth selling grappling hooks, glass cutters and a book called “Your Crew And You”. Everything is stolen as you watch.' },
@@ -337,6 +341,7 @@ export const ROWS = [
   }),
   place(20, {
     id: 'snakeplanet',
+    achieve: 'snakeplanet',
     name: 'Snake Planet',
     note: 'A planet of snakes, with a space programme. Everything here is a snake, and most of them bite.',
     kind: 'outdoor',
@@ -379,6 +384,7 @@ export const ROWS = [
   }),
   place(21, {
     id: 'nuptia',
+    achieve: 'nuptia',
     name: 'Nuptia 4',
     note: 'The couples’ retreat on a cliff over the clouds. The machine reads what you think of each other, and makes it.',
     kind: 'outdoor',
@@ -482,6 +488,7 @@ export const ROWS = [
   }),
   place(23, {
     id: 'resort',
+    achieve: 'resort',
     name: 'The Immortality Field Resort',
     note: 'A resort where nobody can die, inside the field. Risotto Groupon runs it, and he has plans for Rick.',
     kind: 'outdoor',
@@ -533,6 +540,7 @@ export const ROWS = [
     sky: { top: 0x1a1a4a, mid: 0x4a3a8a, low: 0xd86a4a, sun: 0xffb060, clouds: 0, moons: 0 },
     people: [{ id: 'watert', dx: -4, dz: -12, face: S, ai: { watch: 10, bark: { r: 6, every: 15, lines: ['You here to play, little man? The heads want a song. Give the heads a song.', 'My father was a block of ice. I became water. We all become something.'] } } }],
     extras: [
+      // (the head calls for a song, and its verdicts too: recorded in its own voice, as the show's end card shows them, ../games/Schwifty.jsx)
       { kind: 'cromulon', dx: 0, dz: -60, face: S, y: 10, h: 24, ai: { watch: 80, bark: { r: 70, every: 20, lines: ['SHOW ME WHAT YOU GOT.', 'I LIKE WHAT YOU GOT. GOOD JOB.', 'DISQUALIFIED.'] } } },
       { kind: 'cromulon', dx: -40, dz: -56, face: S + 0.3, y: 10, h: 24 },
       { kind: 'cromulon', dx: 40, dz: -58, face: S - 0.3, y: 10, h: 24 },
