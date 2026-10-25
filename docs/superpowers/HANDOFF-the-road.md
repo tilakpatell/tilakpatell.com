@@ -130,6 +130,18 @@ A session takes the next lane whose state allows it, runs until its budget, merg
 - **The deeps have a floor** (2026-10-22): `daylight.js`'s `refFloor` holds the light the house look measures a point against at least to what the shade's floor stands for. Under Moria's black air that light was none, every glimmer read as full light, and the shade never came, so the halls drew black. A new storm of black air needs nothing more.
 - **What the laptop check found, for every world** (2026-10-22): three's Sprites share one geometry, and a group given back with its geometries freed took it from under every sprite still drawn, freezing WebGPU's frames: `runtime/webgpu.js`'s `keepSpriteGeometry` keeps it. `lib/three/pipelineGuard.js` builds a shader after the frame, when three has emptied the scene's lights: it now leaves a scene's lights in place once its render is over, or the chapters' lit materials drew black on WebGPU. A geometry a lit hook reads the normal of must have one (`grassNodes`' blades have one now, instanced, one element): three puts a zero there, and a normalize makes it NaN.
 
+## R7’s first measure (2026-10-25, for whoever carries the lane)
+
+Two sessions ran R7 at once: the first’s pushes were an hour apart while it measured, and the conductor took the lane up again. The first stood down once it saw the second’s commits; its work is merged into the branch. What it measured, every stage from its address after 6 s (`lab/road/measure.mjs`, the dev server, SwiftShader):
+
+- **Over the design’s budgets on high** before its mends: Hobbiton 1.44 M triangles, the Shire’s edge 1.22 M (both against 1.2 M), Bree 416 draws (against 350; 357 on a second frame, so a single frame swings by a fifth). Every other stage was under: draws 26 to 152, triangles 185 k to 977 k.
+- **On low**: Hobbiton 481 k and the Havens 418 k triangles (against 400 k); draws 33 to 161, all under 200.
+- **The UI** covered 15.7 to 17.8 % of a 1440 × 900 window walking, against 14 %: the ribbon’s full-width glass alone was 9 %.
+- **The one “page error”** each stage shows is three’s notice that WebGPU is missing in the container (“running under WebGL2 backend”), which `common.mjs`’s filter catches; not a fault.
+- **Mended and pushed**: the Havens’ sea in 5 m rows (418 k → 52 k on low); the Shire’s wheat clump and metre of hedge at half the triangles (`stages/shireLight.js`; the Shire’s edge 1.22 M → 0.90 M on high); the ribbon at most 56 rem, centred (12.9 % walking; Hobbiton 14.8 % with its card up). Pictures before and after were looked at: the corn, the hedges, the Havens’ shore and quay read the same.
+- **Left**: Hobbiton on high was still 1.38 M at its opening before the second session’s hiding of far corn and hedges. `lab/road/probe-tris.mjs` (DETAIL=1) tallies a frame draw by draw: there, 375 k were the two blade patches (the field’s and the Hill’s, the camera on the Hill), 409 k the sun’s two cascades (the merged props alone 249 k of it), 153 k the merged props in the picture. The cascades’ `cadence` (`lib/three/light/sun.js`, far cascade every fourth frame, as Battlefront has it) is the next lever; the Road does not ask for it yet.
+- **Not yet done**: the whole ride’s download (`lab/road/measure-ride.mjs`, written, not run), the probe’s rows, the phone, reduced motion, the docs. Playwright’s Chromium in this container is `chromium-1243/chrome-linux64`; `common.mjs` finds it now.
+
 ## Doing, not watching (for every lane after)
 
 The owner found the Road made no sense, let you pass through things and gave you nothing to do. What a stage written from here on must keep:
