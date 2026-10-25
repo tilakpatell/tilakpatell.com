@@ -2921,6 +2921,8 @@ export async function create(canvas, ctx) {
   const startCrash = (e) => {
     powers.cancel();
     unique.clear();
+    guns.clear(); // (what's in flight goes with you: it can't score once you're down)
+    rounds.clear();
     const s = state.ship;
     const solid = solidsNow.find((o) => o.id === e.id) ?? SOLIDS.find((o) => o.id === e.id);
     const center = new THREE.Vector3(...solid.at);
@@ -2988,6 +2990,8 @@ export async function create(canvas, ctx) {
   const startDestroyed = (by = null, rammed = false) => {
     powers.cancel();
     unique.clear();
+    guns.clear(); // (what's in flight goes with you: it can't score once you're down)
+    rounds.clear();
     const s = state.ship;
     const from = new THREE.Vector3(s.x, s.y, s.z);
     state.crash = {

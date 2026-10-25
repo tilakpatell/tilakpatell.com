@@ -11,6 +11,7 @@
 //   launch(at, dir, speed, { life, punch, damage, homing, targetId }) → mesh,
 //   fly(dt, hit, expire, find) → bool,  each round on a step, homing on find(its target's id) (homeOn): hit(m, from, to) → true when it's spent (the scene drew
 //                                 the bang); expire(m) when its life runs out; true while any's in flight
+//   clear(),                      every round put away (hidden, homing on nothing): you're shot down or crashed
 //   dispose() }
 
 import * as THREE from 'three';
@@ -96,6 +97,13 @@ export function createRounds(parent, count) {
         hit(m, from, to);
       }
       return any;
+    },
+    clear() {
+      for (const m of list) {
+        m.visible = false;
+        m.userData.target = null;
+        m.userData.targetId = null;
+      }
     },
     dispose() {
       for (const m of list) parent.remove(m);
