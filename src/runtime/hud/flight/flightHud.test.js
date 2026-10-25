@@ -123,7 +123,7 @@ describe('the cluster’s parts (moved from galaxy/cluster.test.js)', () => {
 
   it('says how far the target is as the lock’s bracket does (frame.js’s distText)', () => {
     const { root, place } = setUpCluster();
-    const said = (dist) => (place({ lock: { name: 'TIE Fighter', dist, hp: null } }), root.querySelector('.fc-target-dist').textContent);
+    const said = (dist) => (place({ lock: { name: 'TIE Fighter', dist, tough: false, hp: 0 } }), root.querySelector('.fc-target-dist').textContent);
     expect([0.04, 9.26, 9.96, 14.2, 160.5, 1234.4].map(said)).toEqual(['0.0', '9.3', '10.0', '14', '161', '1234']);
     expect(said(9.96)).toBe(distText(9.96));
   });
@@ -148,7 +148,7 @@ describe('the cluster’s parts (moved from galaxy/cluster.test.js)', () => {
   });
   it('writes the target, and clears it', () => {
     const { root, place } = setUpCluster();
-    place({ lock: { name: 'TIE Interceptor', dist: 14.2, hp: 0.5 } });
+    place({ lock: { name: 'TIE Interceptor', dist: 14.2, tough: true, hp: 0.5 } });
     expect(root.querySelector('.fc-target').hasAttribute('data-on')).toBe(true);
     expect(root.querySelector('.fc-target-name').textContent).toBe('TIE Interceptor');
     expect(root.querySelector('.fc-target-dist').textContent).toBe('14');
@@ -167,7 +167,7 @@ describe('the cluster’s parts (moved from galaxy/cluster.test.js)', () => {
   });
   it('shows no hull bar for a one-hit fighter', () => {
     const { root, place } = setUpCluster();
-    place({ lock: { name: 'TIE Fighter', dist: 9.26, hp: null } });
+    place({ lock: { name: 'TIE Fighter', dist: 9.26, tough: false, hp: 0 } });
     expect(root.querySelector('.fc-target-dist').textContent).toBe('9.3');
     expect(root.querySelector('.fc-target').hasAttribute('data-on')).toBe(true);
     expect(root.querySelector('.fc-target-hp').hasAttribute('data-on')).toBe(false);

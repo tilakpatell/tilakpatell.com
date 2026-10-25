@@ -28,8 +28,9 @@ export function createFlightHud({ distText, draw = drawRadar }) {
   const kit = createFlightCluster();
   const radarOpts = { range: 0, dpr: 1 }; // (the radar's options, one record)
   const edge = { x: 0, y: 0, angle: 0 };
-  // an element and the last of each thing written to it
-  const box = (el) => (el ? { el, last: {} } : null);
+  // an element and the last of each thing written to it (a distance, a number
+  // with a fraction, in a slot of its own: see dist)
+  const box = (el) => (el ? { el, last: {}, d: new Float64Array(1) } : null);
   const read = (r) => {
     const q = (c) => box(r.querySelector(c));
     const all = (c) => [...r.querySelectorAll(c)].map(box);
@@ -60,7 +61,10 @@ export function createFlightHud({ distText, draw = drawRadar }) {
       tName: p('.fc-target-name'),
       tDist: p('.fc-target-dist'),
       tHp: p('.fc-target-hp'),
-      alt: p('.universe-alt'),
+      // (the altitude's gauge: not called `alt`, the record's number, which is
+      // read beside it in one call's arguments: under one name the engine read
+      // the two through one load and made an object of the number each frame)
+      gauge: p('.universe-alt'),
       wanted: p('.universe-wanted'),
       wantedWord: p('.universe-wanted-word'),
       wantedBounty: p('.universe-wanted-bounty'),
@@ -87,20 +91,27 @@ export function createFlightHud({ distText, draw = drawRadar }) {
   const text = (b, s) => {
     if (b && !same(b, 'text', s)) b.el.textContent = s;
   };
-  // a distance: the number compared first, the words made only when it's new
-  const dist = (b, d, words) => {
+  // (no number with a fraction is handed to a call here, nor kept among the
+  // `last` values, which are many kinds of object: the engine makes each such
+  // number an object of its own, a frame's worth each frame. A record goes on
+  // whole, or its place in whole tenths of a pixel, and a distance is kept in
+  // a number slot)
+  // a record's distance (`dist`, or its own words, `text`): the number
+  // compared first, the words made only when it's new
+  const dist = (b, rec) => {
     if (!b) return;
+    const words = rec.text ?? null;
     if (words !== null) {
-      b.last.d = NaN; // (a number after the words is written again)
+      b.d[0] = NaN; // (a number after the words is written again)
       return text(b, words);
     }
-    if (b.last.d === d) return;
-    b.last.d = d;
-    text(b, distText(d));
+    if (b.d[0] === rec.dist) return;
+    b.d[0] = rec.dist;
+    text(b, distText(rec.dist));
   };
-  const move = (b, x, y) => {
-    const kx = Math.round(x * 10);
-    const ky = Math.round(y * 10);
+  // a part at a point, in tenths of a pixel (whole numbers)
+  const tenths = (v) => Math.round(v * 10);
+  const move = (b, kx, ky) => {
     if (b.last.kx === kx && b.last.ky === ky) return;
     b.last.kx = kx;
     b.last.ky = ky;
@@ -118,28 +129,26 @@ export function createFlightHud({ distText, draw = drawRadar }) {
     if (b && !same(b, key, k)) write(b.el, k);
   };
   const str = (el, k) => (el.textContent = String(k));
+  const spd = (el, k) => (el.textContent = `SPD ${k}`);
+  const bounty = (el, k) => (el.textContent = k ? `${k} ¢` : '');
   const fiftieths = (el, k) => el.style.setProperty('--v', String(k / 50));
   const px = (k) => `${k}px`;
   const rad = (k) => `${(k / 1000).toFixed(3)}rad`;
   const share = (k) => (k / 1000).toFixed(3);
   // a bracket at its point when that's in view, else an arrow at the edge of
-  // the open area pointing the way (its size `r`, in px, when it has one)
-  const mark = (b, p, rect, r = 0) => {
-    const off = !onScreen(p.x, p.y, p.z, rect);
-    let x = p.x;
-    let y = p.y;
+  // the open area pointing the way (`sized`: the lock's and the way's, which
+  // have a size, `p.r` in px; read only from those, so its load meets only
+  // records that have one)
+  const mark = (b, p, rect, sized) => {
+    const off = !onScreen(p, rect);
     if (off) {
-      const cx = rect.x + rect.w / 2;
-      const cy = rect.y + rect.h / 2;
-      const k = p.z > 0 ? 1 : -1;
-      edgeOf((p.x - cx) * k, (p.y - cy) * k, rect, 28, edge);
-      x = edge.x;
-      y = edge.y;
+      edgeOf(p, rect, 28, edge);
       prop(b, '--a', Math.round(edge.angle * 1000), rad);
     }
-    move(b, x, y);
+    if (off) move(b, tenths(edge.x), tenths(edge.y));
+    else move(b, tenths(p.x), tenths(p.y));
     flag(b, 'data-off', off);
-    if (r) prop(b, '--r', Math.round(r), px);
+    if (sized && p.r) prop(b, '--r', Math.round(p.r), px);
   };
 
   function place(r, f) {
@@ -152,7 +161,7 @@ export function createFlightHud({ distText, draw = drawRadar }) {
     if (e.reticle) {
       flag(e.reticle, 'data-on', reticle.on);
       if (reticle.on) {
-        move(e.reticle, reticle.x, reticle.y);
+        move(e.reticle, tenths(reticle.x), tenths(reticle.y));
         flag(e.reticle, 'data-hot', reticle.hot);
         flag(e.reticle, 'data-hit', reticle.hit);
         flag(e.reticle, 'data-kill', reticle.kill);
@@ -161,10 +170,10 @@ export function createFlightHud({ distText, draw = drawRadar }) {
     if (e.lock) {
       flag(e.lock, 'data-on', lock.on);
       if (lock.on) {
-        mark(e.lock, lock, f.rect, lock.r);
+        mark(e.lock, lock, f.rect, true);
         flag(e.lock, 'data-hot', lock.hot);
         text(e.lockName, lock.name);
-        dist(e.lockDist, lock.dist, lock.text);
+        dist(e.lockDist, lock);
         if (lock.tough !== null) {
           flag(e.lock, 'data-tough', lock.tough);
           if (lock.tough) prop(e.lock, '--hp', Math.round(lock.hp * 1000), share);
@@ -175,7 +184,7 @@ export function createFlightHud({ distText, draw = drawRadar }) {
       for (let i = 0; i < e.threats.length; i++) {
         const on = i < f.threats.n;
         flag(e.threats[i], 'data-on', on);
-        if (on) mark(e.threats[i], f.threats.at[i], f.rect);
+        if (on) mark(e.threats[i], f.threats.at[i], f.rect, false);
       }
     }
     if (f.mates) {
@@ -184,24 +193,24 @@ export function createFlightHud({ distText, draw = drawRadar }) {
         flag(e.mates[i], 'data-on', on);
         if (on) {
           text(e.mates[i].name, f.mates.at[i].name);
-          mark(e.mates[i], f.mates.at[i], f.rect);
+          mark(e.mates[i], f.mates.at[i], f.rect, false);
         }
       }
     }
     if (e.lead) {
       flag(e.lead, 'data-on', lead.on);
       if (lead.on) {
-        move(e.lead, lead.x, lead.y);
+        move(e.lead, tenths(lead.x), tenths(lead.y));
         flag(e.lead, 'data-hot', lead.hot);
       }
     }
     if (e.nav) {
       flag(e.nav, 'data-on', nav.on);
       if (nav.on) {
-        mark(e.nav, nav, f.rect, nav.r);
+        mark(e.nav, nav, f.rect, true);
         flag(e.nav, 'data-way', nav.way);
         text(e.navName, nav.name);
-        dist(e.navDist, nav.dist, nav.text);
+        dist(e.navDist, nav);
       }
     }
     placeCluster(e, f);
@@ -216,25 +225,24 @@ export function createFlightHud({ distText, draw = drawRadar }) {
         const k = sp.top > 0 ? Math.min(1, Math.abs(sp.v) / sp.top) : 0;
         put(e.speed, 'sp', Math.round(k * 50), fiftieths);
         flag(e.speed, 'data-boost', Boolean(sp.boosting));
-        put(e.speedN, 'spn', Math.round(Math.abs(sp.v) * 10), (el, k) => (el.textContent = `SPD ${k}`));
+        put(e.speedN, 'spn', Math.round(Math.abs(sp.v) * 10), spd);
       }
       if (f.kills !== null && f.kills !== undefined) put(e.kills, 'kills', f.kills, str);
       const t = f.target;
       flag(e.target, 'data-on', Boolean(t));
       if (t) {
         text(e.tName, t.name);
-        if (e.tDist && !same(e.tDist, 'td', distText(t.dist))) e.tDist.el.textContent = e.tDist.last.td;
-        const tough = t.hp !== null && t.hp !== undefined;
-        flag(e.tHp, 'data-on', tough);
-        if (tough) put(e.tHp, 'thp', Math.round(t.hp * 50), fiftieths);
+        dist(e.tDist, t);
+        flag(e.tHp, 'data-on', t.tough);
+        if (t.tough) put(e.tHp, 'thp', Math.round(t.hp * 50), fiftieths);
       }
     }
     const a = f.alt;
-    if (a && e.alt) {
-      flag(e.alt, 'data-on', a.on);
+    if (a && e.gauge) {
+      flag(e.gauge, 'data-on', a.on);
       if (a.on) {
-        prop(e.alt, '--alt', Math.round(a.alt * 1000), share);
-        flag(e.alt, 'data-moving', a.moving);
+        prop(e.gauge, '--alt', Math.round(a.alt * 1000), share);
+        flag(e.gauge, 'data-moving', a.moving);
       }
     }
     const w = f.wanted;
@@ -243,7 +251,7 @@ export function createFlightHud({ distText, draw = drawRadar }) {
       flag(e.wanted, 'data-search', w.search);
       for (let i = 0; i < e.stars.length; i++) flag(e.stars[i], 'data-lit', i < w.stars);
       text(e.wantedWord, w.word);
-      put(e.wantedBounty, 'bounty', w.bounty, (el, k) => (el.textContent = k ? `${k} ¢` : ''));
+      put(e.wantedBounty, 'bounty', w.bounty, bounty);
     }
     const rd = f.radar;
     if (rd && e.radar) {

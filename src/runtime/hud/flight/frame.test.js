@@ -73,11 +73,11 @@ describe('the target card', () => {
     const tie = { lock: { id: 't', at: P(720, 450, 14.2), size: 1, hp: 1, hpMax: 2 }, lockName: 'TIE Interceptor' };
     fillFlight(f, view(tie), project);
     const card = f.target;
-    expect(card).toEqual({ name: 'TIE Interceptor', dist: 14.2, hp: 0.5 });
+    expect(card).toEqual({ name: 'TIE Interceptor', dist: 14.2, tough: true, hp: 0.5 });
     fillFlight(f, view(tie), project);
     expect(f.target).toBe(card);
     fillFlight(f, view({ ...tie, lock: { ...tie.lock, hpMax: 1 } }), project);
-    expect(f.target.hp).toBe(null);
+    expect([f.target.tough, f.target.hp]).toEqual([false, 0]);
     f.cluster.on = false;
     fillFlight(f, view(tie), project);
     expect(f.target).toBe(null);

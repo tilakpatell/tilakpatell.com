@@ -236,23 +236,32 @@ describe('the help onto the lead', () => {
 describe('the edge of the screen', () => {
   const rect = { x: 0, y: 100, w: 1000, h: 600 };
 
+  // (the thing's projected point: screen px, and its depth in front of the camera; the middle here is 500, 400)
   it('puts a marker on the border, in from the edge, on the line out to the thing', () => {
-    const right = edgeOf(500, 0, rect);
+    const right = edgeOf({ x: 1000, y: 400, z: 5 }, rect);
     expect(right).toEqual({ x: 1000 - 28, y: 400, angle: 0 });
-    const up = edgeOf(0, -300, rect);
+    const up = edgeOf({ x: 500, y: 100, z: 5 }, rect);
     expect(up.x).toBe(500);
     expect(up.y).toBe(100 + 28);
     expect(up.angle).toBeCloseTo(-Math.PI / 2, 6);
-    const corner = edgeOf(300, 300, rect);
+    const corner = edgeOf({ x: 800, y: 700, z: 5 }, rect);
     expect(corner.y).toBeCloseTo(400 + 272, 6);
     expect(corner.x).toBeCloseTo(772, 6);
   });
 
+  it('turns the way round for a thing behind the camera, which projects through the middle', () => {
+    const behind = edgeOf({ x: 1000, y: 400, z: -5 }, rect);
+    expect(behind.x).toBe(28);
+    expect(behind.y).toBe(400);
+    expect(Math.abs(behind.angle)).toBeCloseTo(Math.PI, 6);
+  });
+
   it('knows what is on the screen', () => {
-    expect(onScreen(500, 400, 10, rect)).toBe(true);
-    expect(onScreen(500, 400, -1, rect)).toBe(false); // behind the camera
-    expect(onScreen(5, 400, 10, rect)).toBe(false); // too near the edge
-    expect(onScreen(500, 690, 10, rect)).toBe(false);
+    expect(onScreen({ x: 500, y: 400, z: 10 }, rect)).toBe(true);
+    expect(onScreen({ x: 500, y: 400, z: -1 }, rect)).toBe(false); // behind the camera
+    expect(onScreen({ x: 5, y: 400, z: 10 }, rect)).toBe(false); // too near the edge
+    expect(onScreen({ x: 500, y: 690, z: 10 }, rect)).toBe(false);
+    expect(onScreen({ x: 500, y: 690, z: 10 }, rect, 5)).toBe(true); // a margin of its own
   });
 });
 
@@ -350,7 +359,7 @@ describe('out records', () => {
     expect(nose({ heading: 0, pitch: 0 }, o)).toBe(o);
     expect(o).toEqual([-0, 0, -1]);
     const e = { x: 0, y: 0, angle: 0 };
-    expect(edgeOf(1, 0, { x: 0, y: 0, w: 200, h: 100 }, 28, e)).toBe(e);
+    expect(edgeOf({ x: 101, y: 50, z: 1 }, { x: 0, y: 0, w: 200, h: 100 }, 28, e)).toBe(e);
     expect(e).toEqual({ x: 172, y: 50, angle: 0 });
   });
 });

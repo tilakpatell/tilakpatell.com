@@ -275,16 +275,28 @@ export { sweptSpheres as sweptHit } from '../contact';
 
 // Where a marker for something off the screen goes: on the edge of the open
 // part of the canvas (`rect`: { x, y, w, h }), `pad` px in, on the line from
-// its middle out toward the thing (dx, dy: the way to it on screen, any
-// length), and the angle the arrow turns to point that way (radians, 0 is
-// right, growing clockwise as CSS does).
-export function edgeOf(dx, dy, rect, pad = 28, out = { x: 0, y: 0, angle: 0 }) {
+// its middle out toward the thing's projected point (`p`: { x, y } in px and
+// z, its depth in front; one behind the camera projects through the middle,
+// so the way to it is turned round), and the angle the arrow turns to point
+// that way (radians, 0 is right, growing clockwise as CSS does).
+// (This and onScreen take the point, not its numbers: the HUD's writer calls
+// them each frame, and a number handed to a call the engine hasn't inlined is
+// made into an object of its own.)
+export function edgeOf(p, rect, pad = 28, out = { x: 0, y: 0, angle: 0 }) {
   const cx = rect.x + rect.w / 2;
   const cy = rect.y + rect.h / 2;
   const hw = Math.max(1, rect.w / 2 - pad);
   const hh = Math.max(1, rect.h / 2 - pad);
+  const way = p.z > 0 ? 1 : -1;
+  const dx = (p.x - cx) * way;
+  const dy = (p.y - cy) * way;
   const l = Math.sqrt(dx * dx + dy * dy);
-  if (l < 1e-6) return Object.assign(out, { x: cx, y: cy - hh, angle: -Math.PI / 2 });
+  if (l < 1e-6) {
+    out.x = cx;
+    out.y = cy - hh;
+    out.angle = -Math.PI / 2;
+    return out;
+  }
   const ux = dx / l;
   const uy = dy / l;
   const k = Math.min(hw / Math.max(1e-6, Math.abs(ux)), hh / Math.max(1e-6, Math.abs(uy)));
@@ -294,8 +306,9 @@ export function edgeOf(dx, dy, rect, pad = 28, out = { x: 0, y: 0, angle: 0 }) {
   return out;
 }
 
-// is a projected point (screen px, and its depth in front of the camera)
-// where a bracket can sit: in front, and inside the open area with a margin
-export function onScreen(x, y, z, rect, margin = 24) {
-  return z > 0.3 && x >= rect.x + margin && x <= rect.x + rect.w - margin && y >= rect.y + margin && y <= rect.y + rect.h - margin;
+// is a projected point (`p`: { x, y } in screen px, z its depth in front of
+// the camera) where a bracket can sit: in front, and inside the open area
+// with a margin
+export function onScreen(p, rect, margin = 24) {
+  return p.z > 0.3 && p.x >= rect.x + margin && p.x <= rect.x + rect.w - margin && p.y >= rect.y + margin && p.y <= rect.y + rect.h - margin;
 }

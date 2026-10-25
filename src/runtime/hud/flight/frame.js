@@ -17,7 +17,7 @@
 //       cluster: the kit's cluster view ({ on, vitals, arms, abilities }); speed: { v, top, boosting }; kills;
 //       alt: { on, alt (−1…1 of the ceiling), moving }; wanted: { on, stars, word, search, bounty };
 //       radar: { points, range, dpr } (a tick's, or null between ticks);
-//       target: { name, dist, hp (0–1, or null for a one-hit one) } | null: the card, filled here
+//       target: { name, dist, tough (it takes a few hits: its bar shows), hp (0–1 while tough) } | null: the card, filled here
 //         from the lock it brackets while the cluster shows, one record kept }
 //   fillFlight(frame, v, project) → frame
 //     v: { on, gun (the gun line shows), foot, ship ({ x, y, z, heading, pitch } | null on foot),
@@ -65,27 +65,45 @@ export function createFrame() {
 }
 
 // (made once: a frame's arrows' records, kept while on foot has them null;
-// the lists gathered and sorted, nearest the ship first)
+// the lists gathered into kept slots and put in order, nearest the ship
+// first, with their distances beside them: nothing is made per frame)
 const kept = new WeakMap();
 const list = [];
+let count = 0;
+let keys = new Float64Array(64);
 const pt = { x: 0, y: 0, z: 0 };
 const gun = [0, 0, 0];
 let from = null;
-const nearer = (a, b) => apart(a.at.x, a.at.y, a.at.z, from.x, from.y, from.z) - apart(b.at.x, b.at.y, b.at.z, from.x, from.y, from.z);
 
 const has = (l, id) => {
-  for (const c of l) if (c.id === id) return true;
+  for (let i = 0; i < l.length; i++) if (l[i].id === id) return true;
   return false;
 };
 
-// the first `max` of `list` off the screen, nearest first, into `out.at`
+// the first `max` of the gathered off the screen, nearest first, into `out.at`
 function arrows(out, max, rect, project, named) {
-  list.sort(nearer);
+  if (count > keys.length) keys = new Float64Array(count * 2);
+  for (let i = 0; i < count; i++) {
+    const c = list[i];
+    keys[i] = apart(c.at.x, c.at.y, c.at.z, from.x, from.y, from.z);
+  }
+  // (an insertion sort in place, the nearer first and the even kept in their order: sort() would copy the list)
+  for (let i = 1; i < count; i++) {
+    const c = list[i];
+    const k = keys[i];
+    let j = i - 1;
+    for (; j >= 0 && keys[j] > k; j--) {
+      list[j + 1] = list[j];
+      keys[j + 1] = keys[j];
+    }
+    list[j + 1] = c;
+    keys[j + 1] = k;
+  }
   let n = 0;
-  for (const c of list) {
-    if (n >= max) break;
+  for (let i = 0; i < count && n < max; i++) {
+    const c = list[i];
     project(c.at.x, c.at.y, c.at.z, pt);
-    if (onScreen(pt.x, pt.y, pt.z, rect)) continue;
+    if (onScreen(pt, rect)) continue;
     const a = out.at[n++];
     a.x = pt.x;
     a.y = pt.y;
@@ -93,11 +111,12 @@ function arrows(out, max, rect, project, named) {
     if (named) a.name = c.name;
   }
   out.n = n;
-  list.length = 0;
+  for (let i = 0; i < count; i++) list[i] = null; // (the slots kept, nothing held in them)
+  count = 0;
 }
 
 export function fillFlight(frame, v, project) {
-  if (!kept.has(frame)) kept.set(frame, { threats: frame.threats, mates: frame.mates, target: { name: '', dist: 0, hp: null } });
+  if (!kept.has(frame)) kept.set(frame, { threats: frame.threats, mates: frame.mates, target: { name: '', dist: 0, tough: false, hp: 0 } });
   const arrowsOf = kept.get(frame);
   const s = v.ship;
   frame.on = v.on;
@@ -107,8 +126,8 @@ export function fillFlight(frame, v, project) {
   const ret = frame.reticle;
   ret.on = Boolean(v.on && v.gun && s);
   if (ret.on) {
-    const [nx, ny, nz] = nose(s, gun);
-    project(s.x + nx * 6, s.y + ny * 6, s.z + nz * 6, pt);
+    nose(s, gun); // (read by index: taking it apart as `[nx, ny, nz]` makes an iterator a frame)
+    project(s.x + gun[0] * 6, s.y + gun[1] * 6, s.z + gun[2] * 6, pt);
     ret.x = pt.x;
     ret.y = pt.y;
     ret.hot = v.hot;
@@ -140,7 +159,9 @@ export function fillFlight(frame, v, project) {
     const card = arrowsOf.target;
     card.name = v.lockName;
     card.dist = lock.dist;
-    card.hp = (t.hpMax ?? 1) > 1 ? t.hp / t.hpMax : null;
+    // (a number always, as the lock's: a field that holds a number or null is handed a new one each frame)
+    card.tough = (t.hpMax ?? 1) > 1;
+    card.hp = card.tough ? t.hp / t.hpMax : 0;
     frame.target = card;
   } else frame.target = null;
   // the ones coming at you that you can't see, and your allies: arrows at
@@ -155,12 +176,16 @@ export function fillFlight(frame, v, project) {
     frame.mates.n = 0;
     from = s;
     if (v.on && s) {
-      for (const c of v.cands ?? NONE) if (c.threat && c.id !== t?.id) list.push(c);
+      const cands = v.cands ?? NONE;
+      for (let i = 0; i < cands.length; i++) {
+        const c = cands[i];
+        if (c.threat && c.id !== t?.id) list[count++] = c;
+      }
       arrows(frame.threats, THREATS, v.rect, project, false);
       if (v.mates) {
-        for (const c of v.mates) list.push(c);
+        for (let i = 0; i < v.mates.length; i++) list[count++] = v.mates[i];
         // (and the pilot flown to, ally or not, so you can see where the trip's taking you)
-        if (v.to && !has(v.mates, v.to.id)) list.push(v.to);
+        if (v.to && !has(v.mates, v.to.id)) list[count++] = v.to;
         arrows(frame.mates, MATES, v.rect, project, true);
       }
     }
@@ -170,7 +195,7 @@ export function fillFlight(frame, v, project) {
   lead.on = false;
   if (t && v.lead && v.lead.t <= v.life) {
     project(v.lead.x, v.lead.y, v.lead.z, pt);
-    lead.on = onScreen(pt.x, pt.y, pt.z, v.rect, 8);
+    lead.on = onScreen(pt, v.rect, 8);
     lead.x = pt.x;
     lead.y = pt.y;
     lead.hot = v.hot;
