@@ -10,6 +10,7 @@ import { SYSTEMS, goalsOf, lightYears, systemById } from './systems';
 import { placesOf } from './places';
 import '../universe/universe.css';
 import './flight.css';
+import '../../lib/bf2017/fonts.css';
 import GuideCue from '../guide/GuideCue';
 import { letHandedGo } from '../hyperspace3d/timeline';
 import { letsJumpGo } from './jumpIn';

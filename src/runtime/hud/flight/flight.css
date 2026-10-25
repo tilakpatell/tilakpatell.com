@@ -6,8 +6,9 @@
    with the markup, so a map that draws the HUD has its looks. Each overlay
    rule is under :where(.universe-hud), which weighs nothing, so each weighs
    what it did and a map's own class or custom property still wins as it did:
-   the map tints it (--engine, --hot, data-ship), the kit doesn't. Nothing a
-   player reads here is under 0.7rem. */
+   the map tints it (--engine, --hot, data-ship, and the two tokens a world
+   may set: --hud-flight-face, the HUD's face, and --hud-reticle-line, the gun
+   line's width), the kit doesn't. Nothing a player reads here is under 0.7rem. */
 
 .universe-hud {
   --hot: #ff6a52;
@@ -17,7 +18,7 @@
   inset: 0;
   overflow: hidden;
   pointer-events: none;
-  font-family: var(--font-mono);
+  font-family: var(--hud-flight-face, var(--font-mono)); /* (a world's face for its flight HUD, by token) */
 }
 .universe-hud > span {
   position: absolute;
@@ -42,7 +43,7 @@
   width: 24px;
   height: 24px;
   margin: -12px 0 0 -12px;
-  border: 1.5px solid rgb(255 255 255 / 0.6);
+  border: var(--hud-reticle-line, 1.5px) solid rgb(255 255 255 / 0.6);
   border-radius: 50%;
   transition: opacity 0.18s, border-color 0.15s, box-shadow 0.15s;
 }

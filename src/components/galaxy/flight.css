@@ -10,6 +10,9 @@
   --fc-right: calc(var(--panel-w, 0px) + 24px);
   --hud-cluster-left: var(--fc-left);
   --hud-cluster-right: var(--fc-right);
+  /* (the HUD in the Battlefront's own face, as its world has it: lib/bf2017/fonts.css, GalaxyView brings it) */
+  --hud-flight-face: var(--font-bf-hud, var(--font-mono));
+  --hud-key-face: var(--font-bf-hud, var(--font-mono));
 }
 /* the pickups' effects, a chip each over the row (cluster.js's buffs): the bar along its foot is the time left, or the bubble's points */
 .fc-buffs { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }

@@ -4,7 +4,7 @@
 //
 //   node scripts/flight-hud-style-check.mjs --write <file>      what they are now
 //   node scripts/flight-hud-style-check.mjs --against <file>    what moved since
-//     [--maps universe,galaxy] [--parts overlay,cluster] [--order last|first|both] [--lines 200]
+//     [--maps universe,galaxy] [--parts overlay,cluster] [--order last|first|both] [--lines 200] [--tokens]
 //
 // A page per map, holding the sheets from disk (universe.css with its
 // @imports, the HUD kit's hud.css and cluster.css, the galaxy's flight.css,
@@ -28,7 +28,9 @@
 // Prints `smallest text: <px>` (the smallest font size of any text shown);
 // with --against, `N differences (order: <o>)` and a line a difference,
 // `size|motion|map|state|element|pseudo property: before -> after`, exit 1
-// on any.
+// on any. A custom property (a token, --*) is not a difference unless
+// --tokens: a change made by tokens adds them, and what they do shows in the
+// properties they set; the tokens that moved are counted on their own line.
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -265,6 +267,8 @@ if (write) {
     const now = await take(order, html);
     console.log(`smallest text: ${now.smallest.px}px (${now.smallest.at})`);
     const lines = [];
+    let tokens = 0;
+    const withTokens = argv.includes('--tokens');
     for (const key of new Set([...Object.keys(was.rows), ...Object.keys(now.rows)])) {
       // (only what this run read: a map or part left out isn't a difference)
       const [, , map, partState] = key.split('|');
@@ -275,9 +279,14 @@ if (write) {
         lines.push(`${key}: ${a ? 'there' : 'missing'} -> ${b ? 'there' : 'missing'}`);
         continue;
       }
-      for (const k of new Set([...Object.keys(a), ...Object.keys(b)])) if (a[k] !== b[k]) lines.push(`${key} ${k}: ${a[k] ?? '(default)'} -> ${b[k] ?? '(default)'}`);
+      for (const k of new Set([...Object.keys(a), ...Object.keys(b)])) {
+        if (a[k] === b[k]) continue;
+        if (k.startsWith('--') && !withTokens) tokens++;
+        else lines.push(`${key} ${k}: ${a[k] ?? '(default)'} -> ${b[k] ?? '(default)'}`);
+      }
     }
     console.log(`${lines.length} differences (order: ${order})`);
+    if (tokens) console.log(`(and ${tokens} tokens moved, not counted: --tokens counts them)`);
     const limit = Number(flag('lines', 200));
     for (const l of lines.slice(0, limit)) console.log(l);
     if (lines.length > limit) console.log(`… and ${lines.length - limit} more`);
