@@ -131,6 +131,7 @@ The lane’s last code commit, measured as the baseline was: the universe map fr
 | kbd-styles | 68 | 66 | falling |
 | big-files | 22 | 22 | 22 or fewer |
 | cycles | 5 | 5 | 5 or fewer |
+| bundle (total JS; chunks; entry) | 28,527 kB; 1297; 96 kB | 28,556 kB; 1299; 96 kB (main’s 109 newer commits merged in) | — |
 
 The scenes shrank less than the plan hoped: the core took what both scenes ran alike, and each scene kept the code that feeds it (its candidates, its hit sources, its HUD record’s parts). The health ratchet (`--ratchet --pr 1242`) set the budgets at the new values: boundary-breaks 489 → 475, kbd-styles 70 → 66, big-files 30 → 22, hud-kit 1 → 0, glsl-sites 619 → 613, renderers 16 → 14.
 
@@ -140,13 +141,16 @@ Every new file is under 400 lines; the largest are `lib/combat/flight/targeting.
 
 `npx vitest run --config vitest.flight.config.js`: 60 targets, 40 bolts in flight, one locked, the sight, the guns’ step, the HUD’s record and its writer each frame, in Node.
 
-| Case | Held to | At 368c7af4 |
+| Case | Held to | Measured (three runs) |
 |---|---|---|
-| a frame’s time | 0.3 ms at the 95th | within, three runs in a row |
-| writes, a locked frame | 6 at most (12 with three threat arrows); none in the map’s view | within |
-| allocation: the record and the guns over a moving fight; the writer over an unchanged frame with every part shown | under 4096 bytes over 600 frames | within |
-| allocation: the sight | `track` alone plus 1024 bytes a frame | within |
-| a radar draw | 0.5 ms at the 95th | within |
+| a frame’s time | 0.3 ms at the 95th | 0.075 to 0.108 ms |
+| writes, a locked frame | 6 at most | 5 |
+| writes, with three threat arrows moving | 12 at most | 7 |
+| writes, the map’s view | none | 0 |
+| made by the record and the guns over a moving fight (600 frames) | under 4096 bytes | 0 |
+| made by the writer over an unchanged frame, every part shown (600 frames) | under 4096 bytes | 0 |
+| made by the sight, a frame | `track` alone plus 1024 bytes | 25.9 KB against `track`’s 25.4 KB |
+| a radar draw | 0.5 ms at the 95th | 0.021 to 0.025 ms |
 
 Allocation is counted by V8’s sampling heap profiler, only what is made under the measured loop, so neither a collection nor the harness moves it. The scenario found the frame loop making a few hundred bytes a frame (the threat arrows’ lists, the nose taken apart as an array, numbers handed to calls the engine didn’t inline, a distance kept among the writer’s `last` values, the card’s words and its hull share, two closures a frame, the kit’s per-call record, and the altitude’s element and number read through one load), and `368c7af4` takes each out. `track` itself makes about 25 KB a frame at 60 candidates (a record a candidate, the sort’s copies, a new lock each frame): that is today’s targeting rule, the most the frame loop makes, and a later lane’s to slim.
 
