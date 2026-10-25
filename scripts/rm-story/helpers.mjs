@@ -112,8 +112,9 @@ export const gun = async (page) => {
   await page.getByRole('button', { name: /Portal gun/ }).first().click();
   await page.locator('.rm-dial-box').waitFor({ timeout: 10000 });
 };
+// (it may wait behind a long line's read: up to the toast slot's 14 s)
 export const toast = (page, text) =>
-  page.locator('.rm-toast', { hasText: text }).waitFor({ timeout: 10000 }).catch(async () => {
+  page.locator('.rm-toast', { hasText: text }).waitFor({ timeout: 20000 }).catch(async () => {
     throw new Error(`no toast saying “${text}” (it says “${await page.locator('.rm-toast').first().textContent({ timeout: 500 }).catch(() => 'nothing')}”)`);
   });
 // Morty in `area`, and it built
