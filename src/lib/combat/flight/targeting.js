@@ -9,7 +9,7 @@
 // AIM.range (one coming at you counts as nearer), and holds while it stays
 // within the wider AIM.hold (a dogfight swings about), dropping once it's
 // been outside that for AIM.lose seconds (AIM.loseManual for one picked by
-// hand: T, Shift+T or a tap). When its target goes down the guns move
+// hand: T, Shift+T or a tap, however far it has gone). When its target goes down the guns move
 // straight on to the next one inside the hold, so a fight flows; and a lock
 // the guns picked themselves gives way when its target has sat wide of the
 // nose (outside the pick-up cone) or out of the bolts' reach for AIM.swap
@@ -104,7 +104,7 @@ export function track(s, candidates, lock, dt, { cycle = false } = {}) {
   const seen = [];
   for (const c of candidates) {
     const b = bearing(s, c.at);
-    if (b.dist > AIM.range * 1.3) continue;
+    if (b.dist > AIM.range * 1.3 && !(lock?.manual && c.id === lock.id)) continue; // (one picked by hand is looked for however far it's gone)
     seen.push({ c, ...b });
   }
   seen.sort((a, b) => a.off - b.off);

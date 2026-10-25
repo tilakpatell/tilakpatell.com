@@ -113,6 +113,17 @@ describe('the lock', () => {
     expect(follow(ship, [behind], lock, AIM.loseManual + 0.2)).toBeNull();
   });
 
+  it('keeps a lock picked by hand past 78 for its grace; one the guns picked goes at once', () => {
+    const far = hunter('a', [0, 0, -79]); // (past AIM.range × 1.3, 78)
+    const lock = { id: 'a', out: 0, manual: true };
+    expect(track(ship, [far], lock, 1 / 60)).toEqual({ id: 'a', out: 1 / 60, manual: true });
+    expect(follow(ship, [far], lock, AIM.loseManual - 0.2)?.id).toBe('a');
+    expect(follow(ship, [far], lock, AIM.loseManual + 0.2)).toBeNull();
+    // (back in before it runs out: the clock reset)
+    expect(track(ship, [hunter('a', [0, 0, -20])], follow(ship, [far], lock, 2), 1 / 60)).toEqual({ id: 'a', out: 0, manual: true });
+    expect(track(ship, [far], { id: 'a', out: 0 }, 1 / 60)).toBeNull();
+  });
+
   it('cycles the other way round too', () => {
     const cands = [hunter('a', [0, 0, -20]), hunter('b', [5, 0, -20]), hunter('c', [-9, 0, -20])];
     let lock = track(ship, cands, null, 1 / 60);
