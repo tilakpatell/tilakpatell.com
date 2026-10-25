@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { EDGE, GOALS, OPEN_SPACE, OVERDRIVE, PLANETS, SHIP, SOLIDS, SPACE, STARTS, autopilot, boostAt, brakeAt, ceilingAt, clearPark, crashLoud, driveAt, forward, holdReach, inTrench, noseOf, orbiting, parkAt, spawn, startAt, step, turnAt } from './ship';
+import { EDGE, GOALS, OPEN_SPACE, OVERDRIVE, PLANETS, SHIP, SOLIDS, SPACE, STARTS, autopilot, boostAt, brakeAt, ceilingAt, clearPark, crashLoud, driveAt, forward, holdReach, inTrench, isGoal, noseOf, orbiting, parkAt, spawn, startAt, step, turnAt } from './ship';
 import { DEEP, WONDERS, easeOpen, gapAlong, trenchBand } from './deep';
 import { MAW } from './maw';
 import { NOSE, UP, fromAngles, rotate } from './orient';
@@ -9,6 +9,9 @@ const inMain = (at) => sectorOf(...at) === 'main';
 import { byId } from './universes';
 import { ENTRY, LANDABLE, airTop } from './entry';
 import { sunFor } from './lighting';
+import * as THREE from 'three';
+import { UNIVERSE, addBodies, createExpanse, makeSector, orbitAt, spaceTime } from '../expanse/shared/space';
+import { solidsWith } from './shipHits';
 
 const fly = (s, input, seconds, solids = SOLIDS) => {
   let ship = s;
@@ -950,6 +953,11 @@ describe('autopilot', () => {
   it('has nowhere to go for anything that is not a place', () => {
     expect(parkAt('nope')).toBeNull();
     expect(autopilot(spawn(null), 'nope').done).toBe(true);
+    // (GOALS is a plain object: a word on its prototype is no goal)
+    for (const id of ['constructor', 'toString', 'hasOwnProperty', '__proto__']) {
+      expect([isGoal(id), parkAt(id), autopilot(spawn(null), id).done], id).toEqual([false, null, true]);
+    }
+    expect(isGoal('marvel')).toBe(true);
   }, LONG);
 
   it('flies from one universe to the next all the way round', () => {
@@ -1087,5 +1095,52 @@ describe('open space', () => {
       expect(fromMiddle(s)).toBeGreaterThanOrEqual(RM.edge + 2 - 1e-6);
     }
     expect(edge).toBe(1); // (one word of the wall, not one a frame while it slides off the ball)
+  });
+});
+
+describe('generated space', () => {
+  // a body builder that builds nothing much (the Expanse's drawing isn't what's tested)
+  const build = (look, { r }) => ({ group: new THREE.Group(), radius: r, reach: r, update() {}, setSuns() {}, dispose() {} });
+  const sector = addBodies(makeSector(UNIVERSE, 1, 0));
+  // (a planet with no moons, so nothing else is in the way)
+  const sys = sector.systems.find((x) => x.planets.some((p) => !p.moonList.length));
+  const planet = sys.planets.find((p) => !p.moonList.length);
+  const NOW = 1.7e12;
+
+  // flown at a generated planet from 10 past its surface where its orbit has
+  // it, the Expanse drawn round the ship and the planet going round as it does
+  const into = (speed, input) => {
+    const ex = createExpanse(new THREE.Group(), { build });
+    const camera = new THREE.PerspectiveCamera();
+    let now = NOW;
+    const at = orbitAt(planet, spaceTime(now));
+    let ship = { ...spawn(null), x: at[0], y: at[1], z: at[2] + planet.radius + 10, heading: 0, pitch: 0, speed };
+    const frame = (still) => {
+      camera.position.set(ship.x, ship.y, ship.z);
+      camera.updateMatrixWorld();
+      ex.update({ ship, camera, t: 0, dt: 1 / 60, now });
+      now += 1000 / 60;
+      if (still) return [];
+      const r = step(ship, input, 1 / 60, solidsWith(SOLIDS, ex.solids()), OPEN_SPACE);
+      ship = r.ship;
+      // never inside it, where it is now
+      const p = ex.solids().find((o) => o.id === planet.id).at;
+      expect(Math.hypot(ship.x - p[0], ship.y - p[1], ship.z - p[2])).toBeGreaterThanOrEqual(planet.radius + SHIP.radius - 1e-6);
+      return r.events;
+    };
+    for (let i = 0; i < 3; i++) frame(true); // (its sector in and the system held)
+    const events = [];
+    for (let i = 0; i < 60 * 8 && !events.length; i++) events.push(...frame(false));
+    ex.dispose();
+    return events;
+  };
+
+  it('can’t be flown through: a generated planet is bumped slow and crashed into fast', () => {
+    expect(planet.id).toMatch(/^E:1,0:\d+:\d+$/);
+    const slow = into(2, { throttle: 2 / SHIP.cruise });
+    expect(slow.map((e) => [e.type, e.id])).toEqual([['bump', planet.id]]);
+    const fast = into(40, { throttle: 1, boost: true });
+    expect(fast.map((e) => [e.type, e.id])).toEqual([['crash', planet.id]]);
+    expect(fast[0].speed).toBeGreaterThan(SHIP.crash);
   });
 });

@@ -134,6 +134,52 @@ describe('buildBody', () => {
   });
 });
 
+// The universe draws round the camera (universe/relative.js): for the draw
+// alone the map is moved by minus the camera and the camera put at nought.
+// A body's middle, read against the shader's cameraPosition, has to be where
+// the body is as it's drawn, not where it was when update() ran
+describe('buildBody, drawn round the camera', () => {
+  const stubRenderer = { getDrawingBufferSize: (v) => v.set(1920, 1080) };
+  // a body out in a map, its update() run, then the map shifted as the draw shifts it
+  const shifted = (small) => {
+    const scene = new THREE.Scene();
+    const map = new THREE.Group();
+    scene.add(map);
+    const b = buildBody('hoth', { r: 40, small });
+    b.group.position.set(1e6 + 300, 20, -50);
+    b.group.rotation.set(0.3, 1.1, -0.2);
+    map.add(b.group);
+    const camera = new THREE.PerspectiveCamera(34, 16 / 9, 0.05, 45000);
+    camera.position.set(1e6 + 300, 20, 400);
+    scene.add(camera);
+    scene.updateMatrixWorld();
+    b.update(0, camera);
+    map.position.set(-1e6, 0, 0);
+    camera.position.set(0, 0, 0);
+    scene.updateMatrixWorld(); // (as the renderer does, before any onBeforeRender)
+    return { scene, camera, b, u: b.surface.material.uniforms };
+  };
+
+  it('sets its middle in the draw, from where it is then (small or not)', () => {
+    for (const small of [false, true]) {
+      const { scene, camera, b, u } = shifted(small);
+      b.surface.onBeforeRender(stubRenderer, scene, camera);
+      expect(u.uCenter.value.toArray(), String(small)).toEqual([300, 20, -50]);
+      expect(u.uRot.value.elements, String(small)).toEqual(new THREE.Matrix3().setFromMatrix4(b.group.matrixWorld).elements);
+      b.dispose();
+    }
+  });
+
+  it('sets it from its air too, for when the ground is out of view and the air is not', () => {
+    const { scene, camera, b, u } = shifted(false);
+    const air = b.group.children.find((o) => o !== b.surface && o.material.uniforms?.uCenter);
+    expect(air.material.uniforms.uCenter).toBe(u.uCenter); // (one, shared)
+    air.onBeforeRender(stubRenderer, scene, camera);
+    expect(u.uCenter.value.toArray()).toEqual([300, 20, -50]);
+    b.dispose();
+  });
+});
+
 describe('nearOctaves', () => {
   it('is two on high and four on ultra for a world over 300 pixels tall, and none otherwise', () => {
     expect(nearOctaves({ tier: 'high', pxTall: 600 })).toBe(2);

@@ -21,11 +21,13 @@
 //   faster, white-blue hot inside to red outside, one side brighter where it
 //   comes toward you; faint jets run out of the poles. lens() is where it is,
 //   for the post's bending of the light round it.
-// - The Veil and the Cradle, nebulae: soft clouds of many puffs that always
-//   face you (noise painted once into a small texture, so a pixel is a couple
-//   of lookups), glowing in their colours with dark lanes of dust across
-//   them and young stars inside. A puff fades out as you come close to it,
-//   so flying through is a drift through haze, not a wall.
+// - The Veil and the Cradle, nebulae: drawn by nebula/, the one renderer
+//   every cloud in the universe is, fixed in the world (the Veil a remnant's
+//   broken shell, the Cradle a nursery with a bright heart, young stars in
+//   both). Each shifts as you fly past, rolls with the stars and grows as
+//   you come in; inside one, its fog is round the ship. Deep space keeps
+//   each one's place (its group, for its name and the far stars) and owns
+//   the renderer, which the Expanse's sectors borrow (`nebulae`).
 // - The Citadel of Ricks, as the show draws it: a great glass dome with a
 //   city of pale green towers under it on a bronze saucer, four arms out to
 //   smaller domed cities (one riding higher than the rest), a cluster of
@@ -47,8 +49,9 @@
 // Lit things are lit in world space from where their light is (the home sun
 // at the map's middle, or their own star), so the map can turn under them.
 //
-// buildDeepSpace({ small, tier }) → { group, update(t, camera, cam, { names }), lens(), dispose() }
-// cam is the camera's position in the map's space (the group's own).
+// buildDeepSpace({ small, tier, renderer }) → { group, nebulae, update(t, camera, cam, { names }), lens(), dispose() }
+// cam is the camera's position in the map's space (the group's own);
+// nebulae is nebula/'s createNebulae, its group under deep space's.
 
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
@@ -62,7 +65,9 @@ import { buildTraffic } from './trafficModels';
 import { sharpen } from '../../lib/three/textures';
 import { rockHook } from '../../lib/three/rock';
 import { citadelModel } from './citadelModel';
-import { BILLBOARD_VERT, CITADEL_FRAG, CITADEL_GLASS_FRAG, CITADEL_VERT, DISK_FRAG, DISK_VERT, GLOW_FRAG, HALO_FRAG, HALO_VERT, JET_FRAG, JET_VERT, LABEL_FRAG, LABEL_VERT, PHOTON_FRAG, PHOTON_VERT, PORTAL_FRAG, PUFF_FRAG, PUFF_VERT, RING_FRAG, RING_VERT, SKY_FRAG, SKY_VERT, SPARK_FRAG, SPARK_VERT, STAR_FRAG, WORLD_FRAG, WORLD_VERT } from './deepspaceShaders';
+import { NEBULAE } from './landmarks';
+import { createNebulae } from './nebula';
+import { BILLBOARD_VERT, CITADEL_FRAG, CITADEL_GLASS_FRAG, CITADEL_VERT, DISK_FRAG, DISK_VERT, GLOW_FRAG, HALO_FRAG, HALO_VERT, JET_FRAG, JET_VERT, LABEL_FRAG, LABEL_VERT, PHOTON_FRAG, PHOTON_VERT, PORTAL_FRAG, RING_FRAG, RING_VERT, SKY_FRAG, SKY_VERT, STAR_FRAG, WORLD_FRAG, WORLD_VERT } from './deepspaceShaders';
 
 const { PI, sin, cos, hypot, max, min } = Math;
 const TAU = PI * 2;
@@ -302,37 +307,6 @@ function craterTexture(w, h, seed) {
   return dataTexture(out, w, h, { repeat: true });
 }
 
-// The nebulae's puffs: r and g two billowy clouds, b a wisp (streaky along
-// x, for the filaments), a a tiling fine texture to break them up.
-function puffTexture(n) {
-  const noise = valueNoise(1977);
-  const out = new Uint8Array(n * n * 4);
-  for (let j = 0; j < n; j++) {
-    for (let i = 0; i < n; i++) {
-      const x = ((i + 0.5) / n) * 2 - 1;
-      const y = ((j + 0.5) / n) * 2 - 1;
-      const r = hypot(x, y);
-      const wx = fbm(noise, x * 1.5 + 11.3, y * 1.5 + 2.1, 3) - 0.5;
-      const wy = fbm(noise, x * 1.5 + 5.7, y * 1.5 + 8.4, 3) - 0.5;
-      // nothing reaches the quad's edge: everything is gone by the inscribed circle
-      const rim = 1 - smooth(0.62, 0.97, r);
-      const cloud = (off) => {
-        const v = fbm(noise, (x + wx * 0.7) * 2.3 + off, (y + wy * 0.7) * 2.3 + off * 0.7, 5);
-        const edge = 1 - smooth(0.15, 0.95, r + (v - 0.5) * 0.9);
-        const d = Math.max(0, (v - 0.3) * 2.6) * edge * rim;
-        return Math.min(1, d ** 1.2);
-      };
-      // a few thin filaments, curving, along x
-      const ridge = 1 - Math.abs(2 * fbm(noise, x * 0.9 + 31, (y + wx * 0.9) * 2.1 + 17, 4) - 1);
-      const along = 1 - smooth(0.3, 0.95, Math.abs(x) + wy * 0.3);
-      const wisp = Math.min(1, (ridge ** 6 * 1.3 + 0.22 * cloud(61)) * along * (1 - smooth(0.45, 0.9, Math.abs(y))) * rim);
-      const fine = fbm(noise, (i / n) * 16, (j / n) * 16, 4, 16);
-      out.set([cloud(0) * 255, cloud(23.7) * 255, wisp * 255, Math.max(0, Math.min(255, fine * 1.4 * 255 - 50))], (j * n + i) * 4);
-    }
-  }
-  return dataTexture(out, n, n, { repeat: true });
-}
-
 // The Death Star's plating, equirectangular: storeys of city blocks (r: how
 // light each is), their lit windows (g), how high each stands (b).
 function galaxyAtlas(size) {
@@ -542,7 +516,7 @@ export function debrisRocks({ small = false } = {}) {
 // where the streams have drifted to at `t` (the whole of them together)
 export const DEBRIS_DRIFT = (t) => ({ x: sin(t * 0.004) * 6, y: sin(t * 0.003 + 1) * 1.5, z: cos(t * 0.0035) * 5 });
 
-export function buildDeepSpace({ small = false, tier = 'high' } = {}) {
+export function buildDeepSpace({ small = false, tier = 'high', renderer = null } = {}) {
   const group = new THREE.Group();
   group.name = 'deep-space';
   const owned = []; // geometries, materials and textures to free
@@ -554,9 +528,17 @@ export function buildDeepSpace({ small = false, tier = 'high' } = {}) {
   const uTime = { value: 0 };
   const homeW = { value: new THREE.Vector3() }; // the home sun, in world space
   const lightOf = new Map(); // a wonder's id → its star's world position, for its planets
+  // (where the suns are, set as a lit thing is drawn: the shaders read them
+  // against their world positions, and the map is moved round the camera
+  // for the draw alone, relative.js, so they're set from the map as it's drawn)
+  const lit = () => {
+    homeW.value.setFromMatrixPosition(group.matrixWorld);
+    for (const [id, light] of lightOf) light.value.copy(wonderGroups[id].position).applyMatrix4(group.matrixWorld);
+  };
   const mesh = (geo, mat, parent, order = 0) => {
     const m = new THREE.Mesh(own(geo), own(mat));
     m.renderOrder = order;
+    if (mat.uniforms?.uLight) m.onBeforeRender = lit;
     parent.add(m);
     return m;
   };
@@ -712,160 +694,13 @@ export function buildDeepSpace({ small = false, tier = 'high' } = {}) {
   };
 
   // ── the nebulae ──
-  const puffTex = own(puffTexture(seg(256, 128)));
-  const sparks = []; // young stars, map space: [x, y, z, r, g, b, size]
-  const nebulae = [];
-  const MASKS = [
-    [1, 0, 0, 0],
-    [0, 1, 0, 0],
-    [0, 0, 1, 0],
-  ];
+  // (nebula/: every cloud in one draw, fixed in the world; its materials made
+  // now, hidden, so the scene's warm-up links them before the map is seen)
+  const nebulae = createNebulae({ renderer, tier });
+  group.add(nebulae.group);
   const nebula = (w) => {
-    const g = place(w);
-    const rand = rng(w.id);
-    const R = w.r;
-    // its colours at full strength (the hue is the palette's; how bright is the puff's)
-    const pal = w.colors.map((c) => {
-      const k = new THREE.Color(c);
-      return k.multiplyScalar(1 / Math.max(k.r, k.g, k.b, 1e-3));
-    });
-    const puffs = [];
-    const n = small ? 0.55 : 1;
-    const many = (k) => Math.max(1, Math.round(k * n));
-    // size is a puff's half-width; strength how bright its gas, or (dust) how much it dims
-    const add = (at, size, color, { strength = 0.3, tangent = [0, 0, 0], stretch = 1, mask = Math.floor(rand() * 2), spin = (rand() - 0.5) * 0.004, dust = 0 } = {}) => {
-      const c = color.clone().multiplyScalar(strength);
-      puffs.push({ at, tangent, shape: [size, stretch, spin, rand()], tint: dust ? [c.r * dust, c.g * dust, c.b * dust, dust] : [c.r, c.g, c.b, 0], mask: MASKS[mask] });
-    };
-    const mixed = (a, b, k) => a.clone().lerp(b, k);
-    const dustTint = new THREE.Color(0.08, 0.04, 0.05);
-    if (w.id === 'veil') {
-      // what's left of a star that blew up: a broken shell of glowing gas,
-      // cyan on one side and red-violet on the other, wisps lying along it
-      // (seen from outside it's a ring, brightest at its rim)
-      const shell = R * 0.7;
-      const axis = new THREE.Vector3(0.25, 1, 0.15).normalize();
-      const side = new THREE.Vector3(1, 0, 0).cross(axis).normalize();
-      const p = new THREE.Vector3();
-      const tg = new THREE.Vector3();
-      const count = many(24);
-      for (let i = 0; i < count; i++) {
-        // round the shell, mostly near its equator (a ring more than a ball), with gaps
-        const a = (i / count) * TAU + (rand() - 0.5) * 0.35;
-        const lat = (rand() - 0.5) * 0.9;
-        p.set(cos(a) * cos(lat), sin(lat) * 0.8, sin(a) * cos(lat)).applyAxisAngle(side, 0.35).multiplyScalar(shell * (0.9 + rand() * 0.2));
-        tg.set(-sin(a), 0, cos(a)).applyAxisAngle(side, 0.35);
-        const k = (sin(a) + 1) / 2;
-        const c = k < 0.5 ? mixed(pal[2], pal[0], k * 2) : mixed(pal[0], pal[1], (k - 0.5) * 2);
-        const wispy = i % 3 === 0;
-        add(p.toArray(), R * (wispy ? 0.25 : 0.18 + rand() * 0.1), c, {
-          strength: wispy ? 0.24 : 0.13 + rand() * 0.07,
-          tangent: tg.toArray(),
-          stretch: wispy ? 1.6 : 1.1 + rand() * 0.35,
-          mask: wispy ? 2 : Math.floor(rand() * 2),
-          spin: 0,
-        });
-      }
-      // a faint glow inside it, and dust across it
-      add([0, 0, 0], R * 0.5, mixed(pal[0], pal[1], 0.5), { strength: 0.06, mask: 0 });
-      for (let i = 0; i < many(3); i++) {
-        const a = rand() * TAU;
-        p.set(cos(a), (rand() - 0.5) * 0.4, sin(a)).multiplyScalar(shell * 0.95);
-        tg.set(-sin(a), 0, cos(a));
-        add(p.toArray(), R * 0.15, dustTint, { tangent: tg.toArray(), stretch: 1.6, mask: Math.floor(rand() * 2), dust: 0.55, strength: 1 });
-      }
-    } else {
-      // a stellar nursery: a bright core where the young stars are, clouds
-      // billowing round it (yellow-green within, green, blue without), dark
-      // pillars of dust standing in front of it
-      const hot = mixed(pal[1], new THREE.Color(1, 1, 0.92), 0.5);
-      add([0, 0, 0], R * 0.26, hot, { strength: 0.36, mask: 0 });
-      add([R * 0.06, R * 0.03, -R * 0.04], R * 0.15, new THREE.Color(1, 0.98, 0.88), { strength: 0.36, mask: 1 });
-      const ring = (count, r0, r1, size0, size1, color, strength, wisps = 0) => {
-        for (let i = 0; i < many(count); i++) {
-          const a = rand() * TAU;
-          const f = rand();
-          const rr = R * (r0 + f * (r1 - r0));
-          const p = [cos(a) * rr, (rand() - 0.5) * R * 0.4 * (1.2 - f * 0.6), sin(a) * rr];
-          const wispy = rand() < wisps;
-          const tg = [-sin(a), (rand() - 0.5) * 0.5, cos(a)];
-          add(p, R * (size0 + rand() * (size1 - size0)), color(f), {
-            strength: strength * (0.75 + rand() * 0.5),
-            tangent: tg,
-            stretch: wispy ? 1.6 + rand() * 0.3 : 1 + rand() * 0.5,
-            mask: wispy ? 2 : Math.floor(rand() * 2),
-          });
-        }
-      };
-      ring(6, 0.12, 0.32, 0.12, 0.19, (f) => mixed(pal[1], pal[0], f * 0.6), 0.22);
-      ring(10, 0.28, 0.62, 0.15, 0.25, (f) => mixed(pal[0], pal[2], f * 0.4), 0.17, 0.2);
-      ring(7, 0.55, 0.92, 0.18, 0.3, (f) => mixed(pal[2], pal[0], 0.2 - f * 0.2), 0.14, 0.45);
-      for (let i = 0; i < many(5); i++) {
-        const a = rand() * TAU;
-        const rr = R * (0.1 + rand() * 0.32);
-        const p = [cos(a) * rr, -R * 0.1 + rand() * R * 0.12, sin(a) * rr];
-        add(p, R * (0.08 + rand() * 0.04), dustTint, { tangent: [0.12, 1, 0.05], stretch: 1.7 + rand() * 0.4, mask: Math.floor(rand() * 2), dust: 0.7, strength: 1 });
-      }
-    }
-    // young stars, crowded toward the middle
-    const starCount = Math.round(70 * n);
-    for (let i = 0; i < starCount; i++) {
-      const gauss = () => (rand() + rand() + rand() - 1.5) / 1.5;
-      const spread = w.id === 'veil' ? 0.6 : 0.35;
-      const p = [w.at[0] + gauss() * R * spread, w.at[1] + gauss() * R * spread * 0.45, w.at[2] + gauss() * R * spread];
-      const b = 0.5 + rand() ** 6 * 5;
-      const c = new THREE.Color(0.75 + rand() * 0.2, 0.85 + rand() * 0.1, 1).lerp(pal[Math.floor(rand() * 3)], 0.2).multiplyScalar(b);
-      sparks.push([...p, c.r, c.g, c.b, 0.8 + rand() ** 3 * 2.5]);
-    }
-    // all its puffs in one draw, sorted far to near each frame (dust dims
-    // only what's behind it)
-    const N = puffs.length;
-    const geo = new THREE.InstancedBufferGeometry();
-    const quad = new THREE.PlaneGeometry(1, 1);
-    geo.index = quad.index;
-    geo.setAttribute('position', quad.attributes.position);
-    geo.setAttribute('uv', quad.attributes.uv);
-    const attr = (name, size) => {
-      const a = new THREE.InstancedBufferAttribute(new Float32Array(N * size), size);
-      a.setUsage(THREE.DynamicDrawUsage);
-      geo.setAttribute(name, a);
-      return a;
-    };
-    const A = { aCentre: attr('aCentre', 3), aTangent: attr('aTangent', 3), aShape: attr('aShape', 4), aTint: attr('aTint', 4), aMask: attr('aMask', 4) };
-    geo.instanceCount = N;
-    geo.boundingSphere = new THREE.Sphere(new THREE.Vector3(), R * 1.6);
-    const mat = shader(PUFF_VERT, PUFF_FRAG, { uPuff: { value: puffTex } }, { ...premultiplied, side: THREE.DoubleSide });
-    mesh(geo, mat, g, 1);
-    const order = puffs.map((_, i) => i);
-    const written = order.slice();
-    const dist = new Float32Array(N);
-    const byDistance = (a, b) => dist[b] - dist[a];
-    const write = () => {
-      order.forEach((src, i) => {
-        const p = puffs[src];
-        A.aCentre.array.set(p.at, i * 3);
-        A.aTangent.array.set(p.tangent, i * 3);
-        A.aShape.array.set(p.shape, i * 4);
-        A.aTint.array.set(p.tint, i * 4);
-        A.aMask.array.set(p.mask, i * 4);
-      });
-      for (const a of Object.values(A)) a.needsUpdate = true;
-    };
-    write();
-    nebulae.push((cam) => {
-      if (!cam) return;
-      for (let i = 0; i < N; i++) {
-        const p = puffs[i].at;
-        dist[i] = hypot(cam.x - w.at[0] - p[0], cam.y - w.at[1] - p[1], cam.z - w.at[2] - p[2]);
-      }
-      order.sort(byDistance);
-      // only sent again when the order has changed
-      let same = true;
-      for (let i = 0; i < N && same; i++) same = order[i] === written[i];
-      if (same) return;
-      for (let i = 0; i < N; i++) written[i] = order[i];
-      write();
-    });
+    place(w);
+    nebulae.add(NEBULAE.find((d) => d.id === w.id));
   };
 
   // ── the Death Star ──
@@ -1248,25 +1083,6 @@ export function buildDeepSpace({ small = false, tier = 'high' } = {}) {
     else if (w.kind === 'graveyard') graveyard(w);
   }
 
-  // the nebulae's young stars, all in one draw
-  if (sparks.length) {
-    const geo = new THREE.BufferGeometry();
-    geo.setAttribute('position', new THREE.Float32BufferAttribute(sparks.flatMap((s) => s.slice(0, 3)), 3));
-    geo.setAttribute('aColor', new THREE.Float32BufferAttribute(sparks.flatMap((s) => s.slice(3, 6)), 3));
-    geo.setAttribute('aSize', new THREE.Float32BufferAttribute(sparks.map((s) => s[6]), 1));
-    const mat = own(shader(SPARK_VERT, SPARK_FRAG, { uScale: { value: 500 } }, additive));
-    const points = new THREE.Points(own(geo), mat);
-    points.name = 'deep-young-stars';
-    points.renderOrder = 2;
-    // a point's size is in pixels: how many a unit is at a distance of one
-    const size = new THREE.Vector2();
-    points.onBeforeRender = (renderer, scene, camera) => {
-      const target = renderer.getRenderTarget();
-      const h = target ? target.height : renderer.getDrawingBufferSize(size).y;
-      mat.uniforms.uScale.value = (h / 2) * (camera.projectionMatrix.elements[5] || 1);
-    };
-    group.add(points);
-  }
   // ── names ──
   const named = WONDERS.map((w) => ({ w, name: w.name, sub: SUBTITLE[w.id] ?? w.kind.replace('-', ' '), color: w.color ?? w.colors?.[0] ?? '#9fb0d0' }));
   const labelTex = own(labelAtlas(named));
@@ -1435,6 +1251,7 @@ mat3 tumble(float id) {
   let lastT = null;
   return {
     group,
+    nebulae, // (the one renderer: the Expanse's sectors add theirs to it)
     debris: debrisField, // (the streams' rocks, for the ship to hit: rockHits.js)
     // (`names` false: the wonders' names fade, the way in through a planet's
     // air being under a sky of its own; or a test, by wonder id, of whose
@@ -1444,10 +1261,8 @@ mat3 tumble(float id) {
       lastT = t;
       uTime.value = t;
       group.updateWorldMatrix(true, false);
-      homeW.value.setFromMatrixPosition(group.matrixWorld);
-      for (const [id, light] of lightOf) light.value.copy(wonderGroups[id].position).applyMatrix4(group.matrixWorld);
       for (const tick of ticks) tick(t, dt, cam);
-      for (const sort of nebulae) sort(cam);
+      nebulae.update(camera);
       if (cam) {
         sky.position.copy(cam);
         // names: out of the home system, and well clear of the wonder
@@ -1472,6 +1287,7 @@ mat3 tumble(float id) {
       return lensAt;
     },
     dispose() {
+      nebulae.dispose();
       for (const f of fleets) f.dispose();
       group.traverse((o) => {
         if (o.isInstancedMesh) o.dispose();

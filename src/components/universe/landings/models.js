@@ -19,7 +19,7 @@
 
 import * as THREE from 'three';
 import { loadGltf } from '../../../lib/three/gltf';
-import { bakeCanopy, canopy, canopyK, canopyLevel, canopyShader, crownMaterial, familyOf } from './canopy';
+import { bakeCanopy, canopy, canopyK, canopyLevel, canopyShader, crownMaterial, familyOf, placeCanopy } from './canopy';
 import { sizeFor } from './sizing';
 
 // (the scale a spec asks for: ./sizing.js, pure, for a world that wants it alone)
@@ -100,6 +100,8 @@ export function foliage(material) {
     }
   };
   material.customProgramCacheKey = () => `foliage|canopy:${level}`;
+  // (where you are, for a crown in the way to open round: set as it's drawn, canopy.js)
+  material.onBeforeRender = placeCanopy;
   Object.defineProperty(material.userData, 'canopy', { value: shared, enumerable: false, configurable: true });
   return material;
 }

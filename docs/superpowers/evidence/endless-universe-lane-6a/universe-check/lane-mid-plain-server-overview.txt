@@ -1,0 +1,1 @@
+ok   mid  overview             calls   99  tris   489042  3433.5 ms  entropy 3.34  edges 0.058  contrast 82  ship 0 × 0 px  (306 s)

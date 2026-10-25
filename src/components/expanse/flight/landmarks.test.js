@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { PROPS, SURFACE_MODELS } from '../../galaxy/shared/models';
 import { planetField } from '../../../lib/land/flight/field';
 import { PLANETS, planetSpecOf } from './planets';
-import { LANDMARK_MAX, LANDMARK_MIN } from '../../../lib/land/flight/landmarkTables';
+import { LANDMARK_MAX, LANDMARK_MIN, POI_KITS } from '../../../lib/land/flight/landmarkTables';
 import { placementsFor, siteFor, siteGround } from './landmarks';
 
 const NAMED = PLANETS.map((p) => p.id).filter((id) => planetSpecOf(id).pois.length);
@@ -93,6 +93,29 @@ describe('placementsFor', () => {
       }
       if (kept + dropped) expect(dropped / (kept + dropped), id).toBeLessThan(0.1);
     }
+  });
+
+  it('stands a generated POI from its kind’s list', () => {
+    const spec = { id: 'e:3,-2:1:0', type: 'rock' };
+    expect(placementsFor(spec, { id: 'poi-0', kind: 'outpost', at: [100, 200], r: 80 }, { heightAt: () => 5 }).list.length).toBeGreaterThanOrEqual(3);
+    for (const kind of Object.keys(POI_KITS)) {
+      const poi = { id: 'poi-0', kind, at: [100, 200], r: 60, edge: 80 };
+      expect(siteFor(spec, poi)).toBeNull();
+      const { list, dropped } = placementsFor(spec, poi, { heightAt: () => 5 });
+      expect(list.length, kind).toBeGreaterThanOrEqual(LANDMARK_MIN);
+      expect(dropped).toBe(0);
+      for (const p of list) {
+        expect(known(p), `${kind}: ${p.kind} ${p.model ?? ''}`).toBe(true);
+        expect([...p.at, p.y, p.yaw, p.scale].every(Number.isFinite), kind).toBe(true);
+        expect(p.y).toBe(5);
+        expect(Math.hypot(p.at[0] - poi.at[0], p.at[1] - poi.at[1])).toBeLessThanOrEqual(poi.r);
+      }
+    }
+    // (a crashed ship lies tipped over)
+    const wreck = placementsFor(spec, { id: 'poi-1', kind: 'wreck', at: [0, 0], r: 60 }, { heightAt: () => 0 }).list;
+    expect(wreck[0]).toMatchObject({ model: 'kit:space/Spaceship_RaeTheRedPanda', pitch: 0.35, roll: -0.5 });
+    // (and a kind no list has stands nothing)
+    expect(placementsFor(spec, { id: 'poi-2', kind: 'castle', at: [0, 0], r: 60 }, { heightAt: () => 0 }).list).toEqual([]);
   });
 
   it('is the same list every time', () => {

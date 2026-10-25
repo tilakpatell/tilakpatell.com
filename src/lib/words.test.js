@@ -20,8 +20,9 @@ const FILES = [
   ...list('components/tour/', /\.jsx?$/),
   ...list('components/feed/', /\.jsx$/),
   ...['Home', 'Experience', 'Projects', 'Resume', 'Contact', 'Travel', 'Changes', 'Terminal'].map((p) => `pages/${p}.jsx`),
-  ...['UniversePanel', 'UniverseMap', 'NavMap', 'Hangar', 'FlightSettings', 'StartChoice'].map((f) => `components/universe/${f}.jsx`),
+  ...['UniversePanel', 'UniverseMap', 'NavMap', 'MiniMap', 'FlatMap', 'Hangar', 'FlightSettings', 'StartChoice'].map((f) => `components/universe/${f}.jsx`),
   ...list('components/universe/online/', /\.jsx$/),
+  ...list('components/universe/chart/', /\.jsx$/),
   'components/cockpit/Welcome.jsx', // a first visit's one question
   'components/universe/nav.js',
   'components/universe/scene.js',

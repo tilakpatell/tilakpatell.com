@@ -7,6 +7,7 @@ import * as level from './level';
 import * as stage from './stage';
 import * as fx from './fx';
 import * as arms from './arms';
+import * as bodies from './bodies';
 
 // The galaxy's face: exactly these names and nothing else, so a world that
 // reads the galaxy through it knows what it may lean on
@@ -19,6 +20,7 @@ const FACE = [
   [stage, ['HeroStage', 'stageFor']],
   [fx, ['LASER', 'createBolts', 'createFlashes', 'createHandArms']],
   [arms, ['HAND_WEAPONS', 'HERO_KEY', 'HILTS', 'PICKABLE', 'SABER_COLORS', 'heroById', 'pickableWith', 'readCrewStyle', 'skinsOf']],
+  [bodies, ['LOOKS', 'buildBody']],
 ];
 
 describe('galaxy/shared', () => {

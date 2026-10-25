@@ -1,8 +1,10 @@
 import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
-import { LANDMARKS, LANDMARK_IDS, createLandmarks, drawnAngle, landK } from './landmarks';
+import { LANDMARKS, LANDMARK_IDS, NEBULAE, createLandmarks, drawnAngle, landK, quadAxes } from './landmarks';
 import { FAR_STARS } from './farStars';
 import { WONDERS, binaryAt } from './deep';
+import { checkDesc } from './nebula/rules';
+import { RESERVED } from './__fixtures__/glsl';
 
 const deg = (d) => (d * Math.PI) / 180;
 const camAt = (x, y, z) => {
@@ -54,6 +56,15 @@ describe('the rules', () => {
     expect(byId('curvesun').sector).toBe('rickmorty');
     expect(byId('maw').sector).toBe('main');
     expect(byId('sun').sector).toBe('main');
+  });
+
+  it('hands its nebulae to the renderer, every one deep space has', () => {
+    expect(NEBULAE.map((d) => d.id)).toEqual(WONDERS.filter((w) => w.kind === 'nebula').map((w) => w.id));
+    for (const d of NEBULAE) {
+      const w = WONDERS.find((x) => x.id === d.id);
+      expect(checkDesc(d)).toMatchObject({ at: w.at, r: w.r, colors: w.colors });
+    }
+    expect(NEBULAE.map((d) => d.form)).toEqual(['shell', 'nursery']);
   });
 });
 
@@ -110,11 +121,66 @@ describe('drawn', () => {
     });
     lm.dispose();
   });
+
+  it('draws only what isn’t a nebula, those rows first', () => {
+    const lm = createLandmarks(new THREE.Group(), { skyFar: 24000 });
+    const drawn = LANDMARKS.filter((l) => l.kind !== 'nebula').length;
+    expect(lm.mesh.geometry.instanceCount).toBe(drawn);
+    expect(LANDMARKS.slice(0, drawn).every((l) => l.kind !== 'nebula')).toBe(true);
+    lm.dispose();
+  });
+
+  it('never draws a nebula or hides its group, and still says where its name shows', () => {
+    const g = {};
+    const lm = createLandmarks(new THREE.Group(), { skyFar: 24000 });
+    const veil = WONDERS.find((w) => w.id === 'veil');
+    const i = LANDMARKS.findIndex((l) => l.id === 'veil');
+    for (const off of [30000, 2000]) {
+      lm.update(camAt(veil.at[0] + off, veil.at[1], veil.at[2]), 0, { sector: 'main', groups: (id) => (g[id] ??= new THREE.Group()) });
+      expect(lm.mesh.geometry.attributes.aK.getX(i)).toBe(0);
+      expect(g.veil?.visible ?? true).toBe(true);
+    }
+    expect(lm.kOf('veil')).toBe(0);
+    lm.update(camAt(veil.at[0] + 30000, veil.at[1], veil.at[2]), 0, { sector: 'main', groups: () => null });
+    expect(lm.kOf('veil')).toBe(1);
+    lm.dispose();
+  });
+
+  it('stands upright in the world, not on the screen, even straight overhead', () => {
+    for (const d of [[0, 0, -1], [0.6, 0.3, -0.74], [0, 1, 0], [0, -1, 0], [1e-9, 1, 0]]) {
+      const l = Math.hypot(...d);
+      const dir = d.map((v) => v / l);
+      const { right, up } = quadAxes(dir);
+      const dot = (a, b) => a.reduce((s, v, k) => s + v * b[k], 0);
+      for (const v of [right, up]) {
+        expect(Math.hypot(...v)).toBeCloseTo(1, 9);
+        expect(dot(v, dir)).toBeCloseTo(0, 9);
+      }
+      expect(dot(right, up)).toBeCloseTo(0, 9);
+      expect(up[1]).toBeGreaterThanOrEqual(0);
+    }
+    const lm = createLandmarks(new THREE.Group(), { skyFar: 24000 });
+    expect(lm.mesh.material.vertexShader).not.toMatch(/mv\.xy\s*\+=/);
+    expect(lm.mesh.material.depthTest).toBe(true);
+    lm.dispose();
+  });
+
+  it('faces the camera, never flipped, straight overhead and under too', () => {
+    for (const d of [[0, 0, -1], [0.6, 0.3, -0.74], [0, 1, 0], [0, -1, 0], [1e-9, 1, 0], [-1e-9, -1, 1e-9], [0.03, 0.9995, -0.02]]) {
+      const l = Math.hypot(...d);
+      const dir = d.map((v) => v / l);
+      const { right, up } = quadAxes(dir);
+      // (right × up is the quad's front: back along dir, to the camera)
+      const front = [right[1] * up[2] - right[2] * up[1], right[2] * up[0] - right[0] * up[2], right[0] * up[1] - right[1] * up[0]];
+      front.forEach((v, k) => expect(v, `${d} ${k}`).toBeCloseTo(-dir[k], 9));
+      for (const v of [...right, ...up]) expect(Number.isFinite(v)).toBe(true);
+    }
+  });
 });
 
 describe('its shaders', () => {
-  // (GLSL ES keeps these back for later: a variable named one doesn't compile)
-  const RESERVED = ['half', 'fixed', 'input', 'output', 'sample', 'filter', 'sizeof', 'cast', 'namespace', 'using', 'common', 'partition', 'active', 'superp', 'hvec2', 'hvec3', 'hvec4', 'fvec2', 'fvec3', 'fvec4', 'long', 'short', 'double', 'unsigned', 'external', 'interface', 'union', 'enum', 'typedef', 'template', 'this', 'goto', 'inline', 'noinline', 'volatile', 'public', 'static', 'extern', 'asm'];
+  // (GLSL ES keeps these back for later: a variable named one doesn't
+  // compile; the list is the fixture's, __fixtures__/glsl.js)
   it('names nothing with a reserved word', () => {
     const lm = createLandmarks(new THREE.Group(), { skyFar: 24000 });
     const { vertexShader, fragmentShader } = lm.mesh.material;

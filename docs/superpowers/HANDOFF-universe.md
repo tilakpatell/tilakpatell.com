@@ -14,7 +14,7 @@
 - One feel: `specs/2026-10-08-one-feel-site-wide-design.md`, `specs/2026-10-08-game-feel-design.md` (its audit is `docs/research/2026-10-08-game-feel-audit.md`).
 - Decisions about the map’s ships: `docs/decisions/2026-10-09-ship-contact.md`, `docs/decisions/2026-10-09-ram-knocks-and-the-wire.md`.
 - The UI rules, written down: `docs/health/RULES.md`, “UI”.
-- The endless universe (one seamless 3D space, things and events, nebulae fixed in the world, landable generated planets, the dynamic map): `specs/2026-10-18-endless-universe-design.md`; its plans are `plans/2026-10-18-endless-universe*.md`.
+- The endless universe (one seamless 3D space, things and events, nebulae fixed in the world, landable generated planets, the dynamic map): `specs/2026-10-18-endless-universe-design.md`; its plans are `plans/2026-10-18-endless-universe*.md`; what is in and what is left of it, lane by lane: `specs/2026-10-25-endless-universe-remaining-work.md`.
 
 ## Landed
 
@@ -35,6 +35,7 @@
 
 ## Left
 
+- **The endless universe, the rest of it.** Lanes 2 (to PR 2.5's task 21), 1 (part one), 3 (PR 3.1), 6a, 5a and 4a's first task are in; PR 2.5's task 22, lane 1's tasks 9–11, PR 3.2, lanes 4a, 4b, 5b, 6b and 4c, the one all-tier measure and folding the lanes' notes in here are left, in that order: `specs/2026-10-25-endless-universe-remaining-work.md`.
 - **The Invincible planet, looked at.** Its glow, dust and belt were toned down and its maps worked out at 4096 on 2026-10-23 (`evidence/universe-planets-canon/`). Left: the moon’s orbit (r × 2.15) against its neighbours. Done: a screenshot that reads as one object, not a pile of effects, and no console errors.
 - **The galaxy’s grounds, close in.** The wonders and the galaxy’s worlds were looked at on 2026-10-23 (`evidence/universe-wonders-galaxy/`): all read as their canon selves, sharp from orbit at ultra. Left, in `src/components/galaxy/bodyShaders.js`: Tatooine’s dune streaks read as brushed fur this close, and Coruscant’s day side is a flat grid where the films show towers and canyons of light. Done: a shot of each beside a still from the films.
 - **Galaxy surfaces, Tatooine’s unverified list.** `HANDOFF-galaxy.md`, “Not yet verified in a browser”: the cantina, the palace, Tosche Station. Done: each quest plays through in the browser with the dev hooks, lamps bright enough, no errors.

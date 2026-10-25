@@ -66,20 +66,22 @@ describe('galaxy/nodes/sky, the twin of galaxy/sky', () => {
   });
 
   it('bakes with a node material that has the same flags, and the same uniforms by name and value for a system', () => {
-    for (const id of ['hoth', 'tatooine', 'kashyyyk']) {
-      const a = glsl.createSky({ level: 'high' });
-      const n = nodes.createSky({ level: 'high' });
-      a.setSystem(systemById(id));
-      n.setSystem(systemById(id));
-      const ma = bakeOf(a);
-      const mn = bakeOf(n);
-      expect(mn.isNodeMaterial).toBe(true);
-      expect(flags(mn)).toEqual(flags(ma));
-      expect(Object.keys(mn.uniforms).sort()).toEqual(Object.keys(ma.uniforms).sort());
-      for (const k of Object.keys(ma.uniforms)) expect(plain(mn.uniforms[k].value), `${id} ${k}`).toEqual(plain(ma.uniforms[k].value));
-      a.dispose();
-      n.dispose();
-    }
+    // (and the same again baked without its clouds, as the universe bakes it)
+    for (const opts of [{}, { clouds: false }])
+      for (const id of ['hoth', 'tatooine', 'kashyyyk']) {
+        const a = glsl.createSky({ level: 'high', ...opts });
+        const n = nodes.createSky({ level: 'high', ...opts });
+        a.setSystem(systemById(id));
+        n.setSystem(systemById(id));
+        const ma = bakeOf(a);
+        const mn = bakeOf(n);
+        expect(mn.isNodeMaterial).toBe(true);
+        expect(flags(mn)).toEqual(flags(ma));
+        expect(Object.keys(mn.uniforms).sort()).toEqual(Object.keys(ma.uniforms).sort());
+        for (const k of Object.keys(ma.uniforms)) expect(plain(mn.uniforms[k].value), `${id} ${k} ${JSON.stringify(opts)}`).toEqual(plain(ma.uniforms[k].value));
+        a.dispose();
+        n.dispose();
+      }
   });
 
   it('places the same stars, suns and beacons for a system, and writes the frame’s uniforms by name', () => {

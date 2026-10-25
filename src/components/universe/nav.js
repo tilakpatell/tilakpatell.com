@@ -17,8 +17,24 @@
 //   cruise  The pulse drive as it comes: the scenic way, the crew talking.
 // Picking a place anywhere on the map (its name, the panel, the nav map)
 // goes by the drive picked.
+//
+// Generated places, out in the endless universe (an E: id, in any spelling:
+// places/ids.js), are places to go too, but never listed here: there are
+// too many, and none is stored. Every function that takes an id takes the
+// caller's lookup in its opts, { place(id) → Destination | null, park(id,
+// from) → Park | null } (places/resolve.js's lookupOf, or the scene's
+// places), and a generated place is what that finds, and nothing without
+// one. The scene's lookup reads only the sectors it has; the terminal's
+// makes one, on its own page. It's a lookup and not an import, and the ids
+// come from places/ids.js, because a module is never split across chunks:
+// anything taken from the resolver would bring the generator onto every page
+// that loads this one (⌘K, the home page's mini-map and the site's root),
+// and a sector's making onto the main thread. The park comes with the lookup
+// too (places/park.js's parkPlace): imported here, it took ⌘K past the 2 kB
+// those pages may grow by. A generated place is timed by places/trip.js's
+// formula, and a jump to one is a jump like any other.
 
-import { EDGE, GOALS, OVERDRIVE, SHIP, SOLIDS, autopilot, forward, headingTo, parkAt, step } from './ship';
+import { EDGE, GOALS, OVERDRIVE, SHIP, SOLIDS, autopilot, forward, goalAt, headingTo, isGoal, parkAt, step } from './ship';
 import { PORTALS, portalById, portalHit, transit } from './portals';
 import { MAW, parkNear } from './maw';
 import { WONDERS, reachOf } from './deep';
@@ -27,6 +43,8 @@ import { MOONS, byId } from './universes';
 import { LENGTH } from './scale';
 import { pilotId } from './pilotGoal';
 import { SYSTEM_MARKS, SYSTEM_NAMES } from '../galaxy/names';
+import { canonicalPlace, isPlaceId } from './places/ids';
+import { longTrip } from './places/trip';
 
 export const DRIVE_KEY = 'tp-universe-drive';
 
@@ -156,9 +174,21 @@ export const DESTINATIONS = [
   })),
 ].map((d) => ({ ...d, sector: sectorOf(...d.at) })); // (which sector of the map it's in: layout.js)
 const BY_ID = new Map(DESTINATIONS.map((d) => [d.id, d])); // (a Map: a word from a visitor is never a prototype's key here)
-export const destinationById = (id) => BY_ID.get(id) ?? null;
-// the place on this map a trip to `id` really goes to: a system's gate, else itself
-export const goalOf = (id) => BY_ID.get(id)?.via ?? id;
+// a generated place the caller's lookup finds, by its canonical id; null
+// for none, and with no lookup (this file never reaches the generator)
+function generated(id, place) {
+  const canon = typeof place === 'function' ? canonicalPlace(id) : null;
+  return (canon && place(canon)) || null;
+}
+// a place by its id: one on the map, else a generated one the lookup finds
+export const destinationById = (id, { place } = {}) => BY_ID.get(id) ?? generated(id, place);
+// the place on this map a trip to `id` really goes to: a system's gate, else
+// itself (a generated place by its canonical id)
+export const goalOf = (id) => (BY_ID.has(id) ? (BY_ID.get(id).via ?? id) : (canonicalPlace(id) ?? id));
+// whether there's somewhere to go for `id`: a place on the map, or a
+// generated place the lookup finds (one in a sector the caller hasn't got
+// isn't, yet: the scene's own travel fetches it)
+export const canGo = (id, { place } = {}) => isGoal(goalOf(id)) || generated(id, place) !== null;
 
 // The sectors (layout.js): a place in another sector than the ship's is
 // gone to through the portal between them (portals.js), then on from its far
@@ -166,10 +196,11 @@ export const goalOf = (id) => BY_ID.get(id)?.via ?? id;
 // null; legOf(ship, id) → where the trip to `id` goes first: that portal, or
 // the place itself (its gate, for a star system) when it's in the ship's sector.
 // (Another pilot, `pilot:<id>` (pilotGoal.js), is in whichever sector their
-// `pose` says: legOf(ship, id, pose))
+// `pose` says: legOf(ship, id, pose). A generated place is in the main
+// map's: none is in the Curve, so from there it's gone to by the portal home)
 const sectorOfGoal = (id) => {
-  const g = GOALS[goalOf(id)];
-  return g ? sectorOf(...g.at) : null;
+  const g = goalAt(goalOf(id));
+  return g ? sectorOf(...g.at) : isPlaceId(id) ? 'main' : null;
 };
 export const portalBetween = (from, to) => PORTALS.find((p) => sectorOf(...p.at) === from && p.leadsTo.sector === to) ?? null;
 export function legOf(ship, id, pose = null) {
@@ -190,19 +221,41 @@ export const KINDS = [
 
 // the destinations a filter and a search leave, in map order (the search
 // matches the name, its fandom or what it is, ignoring case and accents)
+// (and `more`, rows of generated places, the ones in view or visited, after
+// the map's own, each once; a generated row matches by its id too, and an id
+// in any spelling that isn't among them is looked up; a row round the ship
+// (around.js's) has no type, so it matches by its name or its whole id.
+// Generated systems are kind 'star', since a 'system' on the chart is a gate
+// system, so the "Star systems" filter takes both)
 const fold = (t) =>
   t
     .normalize('NFD')
     .replace(/[̀-ͯ]/g, '')
     .toLowerCase();
-export function findDestinations(kind = 'all', query = '') {
-  const q = fold(query.trim());
-  return DESTINATIONS.filter((d) => (kind === 'all' || d.kind === kind) && (!q || fold(`${d.name} ${d.type} ${byId(d.id)?.label ?? ''}`).includes(q)));
+const ofKind = (d, kind) => kind === 'all' || d.kind === kind || (kind === 'system' && d.kind === 'star');
+function withMore(more) {
+  if (!more?.length) return DESTINATIONS;
+  const rows = [...DESTINATIONS];
+  const seen = new Set(BY_ID.keys());
+  for (const d of more) if (d?.id && !seen.has(d.id)) (seen.add(d.id), rows.push(d));
+  return rows;
+}
+export function findDestinations(kind = 'all', query = '', { more = [], place } = {}) {
+  const text = String(query ?? '').trim();
+  const q = fold(text);
+  const canon = canonicalPlace(text);
+  const rows = withMore(more);
+  const found = rows.filter((d) => ofKind(d, kind) && (!q || d.id === canon || fold(`${d.name} ${d.type ?? ''} ${byId(d.id)?.label ?? ''}${d.generated ? ` ${d.id}` : ''}`).includes(q)));
+  const looked = canon && !rows.some((d) => d.id === canon) ? generated(canon, place) : null;
+  return looked && ofKind(looked, kind) ? [...found, looked] : found;
 }
 // one place for a word (the terminal's `fly`): its id as it is (a system's
 // with or without `sys:`), else the first the search finds; null for nothing
-export function findDestination(query = '') {
-  const q = fold(String(query ?? '').trim());
+// (a generated place's id, in any spelling, is the lookup's to find or not)
+export function findDestination(query = '', { place } = {}) {
+  const text = String(query ?? '').trim();
+  if (isPlaceId(text)) return generated(text, place);
+  const q = fold(text);
   if (!q) return null;
   return BY_ID.get(q) ?? BY_ID.get(`sys:${q}`) ?? findDestinations('all', q)[0] ?? null;
 }
@@ -231,8 +284,10 @@ export function tourFrom(ship, ids = tourIdsIn(mapSectorOf(ship.x, ship.y ?? 0, 
 }
 
 // where the ship parks at a place (the Maw: the edge of its pull, not in it)
-export function parkFor(id, from) {
+// (a generated place: where the lookup's park says; null if it hasn't got it)
+export function parkFor(id, from, { park } = {}) {
   id = goalOf(id);
+  if (isPlaceId(id)) return (typeof park === 'function' && park(id, from)) || null;
   if (id === MAW.id) return parkNear(from);
   // (a portal: right into its middle, so the ship goes through: portals.js)
   const portal = portalById(id);
@@ -280,15 +335,16 @@ export function riftSpot(ship, rand = Math.random) {
 
 // how far it is from (x, y, z) to a place: to its parking spot's side of
 // it, in map units (the edge of what's there, not its middle)
-// (in another sector: to the portal, and on from its far end)
-export function distanceTo(ship, id) {
-  const d = destinationById(goalOf(id));
+// (in another sector: to the portal, and on from its far end; a generated
+// place where the lookup has it)
+export function distanceTo(ship, id, opts = {}) {
+  const d = destinationById(goalOf(id), opts);
   if (!d || !ship) return null;
   const leg = legOf(ship, id);
-  if (leg !== d.id) {
-    const p = portalById(leg);
+  const p = leg !== d.id ? portalById(leg) : null;
+  if (p) {
     const out = portalById(p.leadsTo.exit);
-    return Math.hypot(ship.x - p.at[0], (ship.y ?? 0) - p.at[1], ship.z - p.at[2]) + distanceTo({ x: out.at[0], y: out.at[1], z: out.at[2] }, id);
+    return Math.hypot(ship.x - p.at[0], (ship.y ?? 0) - p.at[1], ship.z - p.at[2]) + distanceTo({ x: out.at[0], y: out.at[1], z: out.at[2] }, id, opts);
   }
   const c = Math.hypot(ship.x - d.at[0], (ship.y ?? 0) - d.at[1], ship.z - d.at[2]);
   return Math.max(0, c - d.reach);
@@ -300,19 +356,21 @@ export function distanceTo(ship, id) {
 // (in another sector: into the portal, through, and on from the far end; a
 // jump goes to the portal, and the hyperdrive's charging by the far side, so
 // on from there at super speed)
+// (a leg the autopilot doesn't fly within `limit` seconds, and a generated
+// place on the pulse drive, are timed by places/trip.js's formula instead:
+// a far trip has a time, not a dash)
 export const TRANSIT = 0.6; // seconds through a portal (the flash)
-export function tripTime(ship, id, drive = 'super', { limit = 150, dt = 1 / 30 } = {}) {
+export function tripTime(ship, id, drive = 'super', { limit = 150, dt = 1 / 30, ...look } = {}) {
   id = goalOf(id);
-  if (!ship || !GOALS[id]) return null;
+  const dest = generated(id, look.place);
+  if (!ship || !(goalAt(id) || dest)) return null;
   const leg = legOf(ship, id);
   if (leg !== id) {
+    const p = portalById(leg);
     let first;
     let out;
-    if (drive === 'hyper') {
-      first = HYPER.length;
-      const p = portalById(leg);
-      out = transit({ ...ship, x: p.at[0], y: p.at[1], z: p.at[2], speed: 0 }, leg)?.ship;
-    } else {
+    if (drive === 'hyper') first = HYPER.length;
+    else {
       const park = parkFor(leg, [ship.x, ship.z]);
       const od = driveById(drive).od;
       let s = { ...ship };
@@ -324,14 +382,17 @@ export function tripTime(ship, id, drive = 'super', { limit = 150, dt = 1 / 30 }
         }
         s = next;
       }
+      if (!out) first = Math.max(limit, longTrip(ship, park, drive));
     }
+    out ??= transit({ ...ship, x: p.at[0], y: p.at[1], z: p.at[2], speed: 0 }, leg)?.ship;
     if (!out) return null;
-    const rest = tripTime(out, id, drive === 'hyper' ? 'super' : drive, { limit, dt });
+    const rest = tripTime(out, id, drive === 'hyper' ? 'super' : drive, { limit, dt, ...look });
     return rest === null ? null : first + TRANSIT + rest;
   }
   if (drive === 'hyper') return HYPER.length;
-  const park = parkFor(id, [ship.x, ship.z]);
+  const park = parkFor(id, [ship.x, ship.z], look);
   if (!park) return null;
+  if (dest) return longTrip(ship, park, drive);
   const od = driveById(drive).od;
   let s = { ...ship };
   for (let t = 0; t < limit; t += dt) {
@@ -339,7 +400,7 @@ export function tripTime(ship, id, drive = 'super', { limit = 150, dt = 1 / 30 }
     if (a.done) return t;
     s = step(s, a.input, dt).ship;
   }
-  return null;
+  return Math.max(limit, longTrip(ship, park, drive));
 }
 
 // "8 s", "1 min 5 s", or a dash

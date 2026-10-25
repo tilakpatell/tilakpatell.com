@@ -17,7 +17,18 @@
 // the same ground; the note's other layers for that biome follow them.
 //
 //   WORLDS → worlds, in the roster's order (galaxy, sector, fandom)
+//   PLANE_CLIMATE → the climate noise a plane planet's biomes are placed by
+//   WATER_LOOKS[kind] → { color, roughness, opacity, glow? }: a water sheet's look
+//   waterColourOf(water, accent) → '#rrggbb' the sheet is drawn in, or null (no sheet);
+//     waterLinearOf(water, accent) → the same in linear light, [r, g, b] 0…1, before it's bytes
+//   linearOf('#rrggbb') → [r, g, b] in linear light; byteOf(linear) → its sRGB byte, 0…255
+//     (three's own curves, as THREE.Color reads and writes a colour)
 //   TYPE_BIOMES[type] → an Expanse planet's biomes; TYPE_LOOK[type] → { palette, clutter, soft }
+//   SEEDED_EXPANSE → the roster's thirteen Expanse planets, [id, type], in its order
+//   MOON_FAMILY[moon type] → the planet type a moon is made as; familyOf(type) → a body's family
+//   ROUND_ROUGH[family][biome id] → its hills' multiplier on a round planet
+//   roundBiomes(family) → [{ id, at, reach, base, rough, relief: [] }]: a
+//     round planet's biomes, the template's with no scatter
 //   expand(biomes, seed) → biomes with each scatter made island layers
 
 import { seeded } from '../../seeded.js';
@@ -590,6 +601,38 @@ const FANDOM = [
 
 export const WORLDS = [...GALAXY, ...SECTOR, ...FANDOM];
 
+// the noise a plane planet's climate square is read from (biomes.js)
+export const PLANE_CLIMATE = { frequency: 0.00025, warp: 400 };
+
+// A water sheet's look by its kind, as expanse/flight/water.js draws it (a
+// kind left out, Bespin's clouds, has no sheet). Its colour is the water's
+// own where it has one (a generated planet's sea), else its kind's, moved
+// 0.15 toward the planet's accent in linear light, as three's Color.lerp
+// mixes in its working space: waterColourOf says the '#rrggbb' that comes to.
+export const WATER_LOOKS = {
+  sea: { color: '#1f5a6e', roughness: 0.12, opacity: 0.86 },
+  lake: { color: '#2a4f5a', roughness: 0.16, opacity: 0.9 },
+  swamp: { color: '#2e3322', roughness: 0.35, opacity: 0.95 },
+  lava: { color: '#3a0c02', roughness: 0.6, opacity: 1, glow: '#ff4a0a' },
+};
+
+// (three's own sRGB curves, constant for constant, so the bytes agree)
+const toLinear = (c) => (c < 0.04045 ? c * 0.0773993808 : Math.pow(c * 0.9478672986 + 0.0521327014, 2.4));
+const toSrgb = (c) => (c < 0.0031308 ? c * 12.92 : 1.055 * Math.pow(c, 0.41666) - 0.055);
+export const linearOf = (hex) => [1, 3, 5].map((i) => toLinear(parseInt(hex.slice(i, i + 2), 16) / 255));
+export const byteOf = (v) => Math.round(Math.min(255, Math.max(0, toSrgb(v) * 255)));
+export function waterLinearOf(water, accent) {
+  const look = water && Object.hasOwn(WATER_LOOKS, water.kind) ? WATER_LOOKS[water.kind] : null;
+  if (!look) return null;
+  const a = linearOf(water.colour ?? look.color);
+  const b = linearOf(accent);
+  return a.map((v, i) => v + (b[i] - v) * 0.15);
+}
+export function waterColourOf(water, accent) {
+  const c = waterLinearOf(water, accent);
+  return c && `#${c.map((v) => byteOf(v).toString(16).padStart(2, '0')).join('')}`;
+}
+
 // ── the Expanse's generated planets, by type: the galaxy's worlds as templates, the names stripped ──
 const template = (id) => GALAXY.find((w) => w.id === id);
 const look = (id, more = {}) => ({ palette: template(id).palette, clutter: template(id).clutter, soft: Boolean(template(id).soft), ground: template(id).ground, water: template(id).water ?? null, ...more });
@@ -615,6 +658,40 @@ export const TYPE_LOOK = {
   ringed: look('bespin'),
   rock: look('geonosis', { clutter: clutter(['rock', 60], ['debris', 15]) }),
 };
+
+// The thirteen Expanse planets of the roster (fixtures/expanse.json, the
+// first thirteen of sector (1, 0)'s systems): the ones anything is built on,
+// so they keep their template ground for good. planetSpec.test.js holds this
+// to the generator's rows.
+export const SEEDED_EXPANSE = [
+  ['e:1,0:0:0', 'gas'], ['e:1,0:0:1', 'forest'], ['e:1,0:0:2', 'lava'], ['e:1,0:0:3', 'ice'],
+  ['e:1,0:0:4', 'rock'], ['e:1,0:0:5', 'ice'], ['e:1,0:0:6', 'desert'],
+  ['e:1,0:1:0', 'desert'], ['e:1,0:1:1', 'ocean'], ['e:1,0:1:2', 'rock'],
+  ['e:1,0:2:0', 'gas'], ['e:1,0:2:1', 'ocean'], ['e:1,0:2:2', 'rock'],
+];
+
+// a moon is rocky or icy (the generator's moonsOf), and is made as a rock or an ice planet
+export const MOON_FAMILY = { rocky: 'rock', icy: 'ice' };
+export const familyOf = (type) => (Object.hasOwn(MOON_FAMILY, type) ? MOON_FAMILY[type] : type);
+
+// ── a round planet's biomes (sphereField.js): the template's places on the climate square, no layer stacks ──
+// The terrain character makes the land's shape, so a biome adds only its
+// base and how rough its hills are: a multiplier on the round field's one
+// hills noise. Keyed by family, then the template's biome id (an ice
+// planet's plains are rougher than a rock one's).
+export const ROUND_ROUGH = {
+  ice: { plains: 0.7, shelf: 0.3, range: 2.2, glacier: 0.8, valley: 0.6 },
+  desert: { jundland: 1.2, dunesea: 0.8, plateau: 0.6, chott: 0.25, wastes: 0.9 },
+  forest: { redwoods: 1, savannah: 0.6, range: 2.2, lakes: 0.4, desert: 0.7 },
+  lava: { fields: 1, volcanoes: 2, ash: 0.6, glass: 0.3 },
+  ocean: { islands: 1, volcano: 1.6, reef: 0.3, deep: 0.5 },
+  rock: { plains: 0.6, mesas: 1.2, badlands: 1.6, craters: 1 },
+};
+
+// fresh objects each call, so no two specs share an array; a biome the
+// table doesn't name (a gas giant's deck, never round) is rough 1
+export const roundBiomes = (family) =>
+  TYPE_BIOMES[family].map((x) => ({ id: x.id, at: [...x.at], reach: x.reach, base: x.base ?? 0, rough: ROUND_ROUGH[family]?.[x.id] ?? 1, relief: [] }));
 
 const between = (rnd, [a, b]) => a + rnd() * (b - a);
 

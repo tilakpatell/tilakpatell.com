@@ -10,6 +10,9 @@
 //
 //   biomeWeights(spec, x, z) → number[] (one a biome, summing to 1)
 //   climateOf(spec) → (x, z) → [t, m] (cached by spec)
+//   weightsAt(biomes, t, m) → number[]: the weights at a point of the
+//     climate square, however the climate was found (a round planet's is a
+//     field of the direction: sphereField.js)
 
 import { noiseFor } from './fnl.js';
 
@@ -20,7 +23,7 @@ const smoothstep = (a, b, x) => {
 
 // one pair of noises a spec, not one a call: a leaf asks 1,225 points
 const climates = new WeakMap();
-function climateOf(spec) {
+export function climateOf(spec) {
   let c = climates.get(spec);
   if (!c) {
     const t = noiseFor(spec.seed, { ...spec.climate, octaves: 3 });
@@ -33,7 +36,11 @@ function climateOf(spec) {
 
 export function biomeWeights(spec, x, z) {
   const [t, m] = climateOf(spec)(x, z);
-  const w = spec.biomes.map((b) => 1 - smoothstep(b.reach * 0.6, b.reach, Math.hypot(t - b.at[0], m - b.at[1])));
+  return weightsAt(spec.biomes, t, m);
+}
+
+export function weightsAt(biomes, t, m) {
+  const w = biomes.map((b) => 1 - smoothstep(b.reach * 0.6, b.reach, Math.hypot(t - b.at[0], m - b.at[1])));
   // The first biome takes what the others leave of 1, so where they fade
   // out it fades in. Normalising alone would make one biome's last sliver
   // of weight a whole 1 at the edge of its reach, and the land would step

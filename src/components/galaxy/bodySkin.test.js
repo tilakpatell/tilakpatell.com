@@ -121,6 +121,35 @@ describe('a skinned body', () => {
     b.dispose();
   });
 
+  it('gives way in the air by where it is in the world, whatever the last draw shifted', async () => {
+    const { load } = fakeLoad();
+    const scene = new THREE.Scene();
+    const map = new THREE.Group();
+    scene.add(map);
+    const b = buildBody(look, { r: 30, tier: 'ultra', load });
+    b.group.position.set(5000, 0, 0);
+    map.add(b.group);
+    const u = b.surface.material.uniforms;
+    const camera = new THREE.PerspectiveCamera();
+    camera.position.set(5000, 0, 30.5); // (in its air)
+    scene.add(camera);
+    await settle();
+    scene.updateMatrixWorld();
+    b.update(1, camera);
+    expect(u.uSkinMix.value).toBe(0);
+    // drawn round the camera (universe/relative.js), then put back
+    map.position.set(-5000, 0, -30.5);
+    camera.position.set(0, 0, 0);
+    scene.updateMatrixWorld();
+    b.surface.onBeforeRender({ getDrawingBufferSize: (v) => v.set(1280, 720) }, scene, camera);
+    map.position.set(0, 0, 0);
+    camera.position.set(5000, 0, 30.5);
+    scene.updateMatrixWorld();
+    b.update(2, camera);
+    expect(u.uSkinMix.value).toBe(0);
+    b.dispose();
+  });
+
   it('frees a map that lands after the body is gone', async () => {
     const { asked, load } = fakeLoad();
     const b = buildBody(look, { r: 30, tier: 'high', load });
