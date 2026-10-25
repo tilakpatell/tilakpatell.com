@@ -3,6 +3,7 @@ import { PLACE } from '../words';
 import { PARK_GAP, clearOf } from '../ship';
 import { THING_KINDS, WONDER_KINDS, fullSector, placeIn, thingRow, UNIVERSE } from '../../expanse/shared/gen';
 import { parseSpaceId } from '../../../lib/space/address';
+import { FAR } from '../../expanse/shared/levels';
 import { THING_CARDS, placeCard, placeLook, placeReach } from './cards';
 
 const s = fullSector(UNIVERSE, 1, 0, 0);
@@ -25,6 +26,7 @@ describe('a generated place’s card', () => {
     for (const [k, c] of Object.entries(THING_CARDS)) {
       expect(c.move === undefined || typeof c.move === 'function', k).toBe(true);
       expect(c.at, k).toBeUndefined(); // (a mover is `move`: a Destination's `at` is a position)
+      expect(c.far, k).toBe(FAR); // (lane 2's far plane, the one around.js lists by)
     }
     expect(placeCard({ kind: 'thing', row: thingRow(s, 0), sector: s }).move).toBeNull();
   });

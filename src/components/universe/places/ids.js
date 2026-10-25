@@ -10,12 +10,13 @@
 //   read back as they are written
 // canonicalPlace(id) → the generator's own form, 'E:sx,sz:i:j:k' or
 //   'E:sx,sz,sy:w<n>' (spaceId's), or null
-// atTime(place, t) → [x, y, z] (a new array) or null: where a destination or a row
-//   round the ship ({ place, src: { row, planet? }, move? }) is at t on the
-//   shared clock. A planet is on its orbit, a moon round its planet, a row
-//   carrying its card's mover where move(row, t) says, and anything else where
-//   its row is (or, with no row, where it is). The mover rides on the row, so
-//   this file needs no card.
+// atTime(place, t, out?) → [x, y, z] (out, or a new array) or null: where a
+//   destination or a row round the ship ({ place, src: { row, planet? },
+//   move? }) is at t on the shared clock. A planet is on its orbit, a moon
+//   round its planet, a row carrying its card's mover where move(row, t)
+//   says, and anything else where its row is (or, with no row, where it is).
+//   The mover rides on the row, so this file needs no card. out is for a
+//   caller every frame (carry.js), so it makes no array.
 
 import { parseSpaceId, spaceId } from '../../../lib/space/address.js';
 import { moonAt, orbitAt } from '../../expanse/shared/orbits';
@@ -33,11 +34,14 @@ export function canonicalPlace(id) {
 
 export const isPlaceId = (id) => canonicalPlace(id) !== null;
 
-export function atTime(place, t) {
+export function atTime(place, t, out = [0, 0, 0]) {
   const row = place?.src?.row;
-  if (place?.place === 'planet') return orbitAt(row, t);
-  if (place?.place === 'moon') return moonAt(row, place.src.planet, t);
-  if (typeof place?.move === 'function') return place.move(row, t);
-  const at = row?.at ?? place?.at;
-  return at ? [at[0], at[1], at[2]] : null;
+  if (place?.place === 'planet') return orbitAt(row, t, out);
+  if (place?.place === 'moon') return moonAt(row, place.src.planet, t, out);
+  const at = typeof place?.move === 'function' ? place.move(row, t) : (row?.at ?? place?.at);
+  if (!at) return null;
+  out[0] = at[0];
+  out[1] = at[1];
+  out[2] = at[2];
+  return out;
 }

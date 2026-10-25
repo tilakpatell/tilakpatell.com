@@ -31,9 +31,9 @@
 
 import { parseSpaceId } from '../../../lib/space/address.js';
 import { THING_KINDS } from '../../expanse/shared/gen';
+import { FAR } from '../../expanse/shared/levels'; // (the far plane, lane 2's: around.js lists by it too)
 import { PLACE } from '../words';
 
-const FAR = 45000; // the universe camera's far plane (scene.js)
 const GIANTS = new Set(['gas', 'ringed']); // no ground to land on
 const MOON_COLOR = { rocky: '#8a8178', icy: '#cfe3ee' };
 const STATION_COLOR = '#9fd8ff'; // the nav map's blue

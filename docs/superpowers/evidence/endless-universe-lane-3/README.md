@@ -70,6 +70,8 @@ Terminal: 33 chunks, 169.77 kB gzipped; Waystation in none
 
 ## The stations
 
+`stations.test.js` checks a station's height as `[y + h, y − h]` containing its `y`, not the plan's `|st.at[1] − sys.at[1]| === poleHeight(…)`, because `(y + h) − y` needn't be `h` in floats: the check is as exact, and loosens nothing.
+
 Over the plan's five test cubes (`[1, 0, 0]`, `[0, 0, 1]`, `[2, 1, -3]`, `[0, 0, 0]` and `[-3, -1, 2]`), 397 of 1,176 systems have a station: 33.8%. Those systems have 4,581 planets. Making a sector's stations takes 0.5 to 1.3 ms (the best of nine, in Vitest, on a busy container), against 27 to 69 ms for the same sector without its lattice, so `fullSector` makes them whether or not it makes the lattice:
 
 | cube | systems | stations | stations, ms | sector without things, ms |

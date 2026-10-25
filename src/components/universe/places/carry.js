@@ -29,15 +29,17 @@
 // carryWeight(dist, zone) → 0…1, 1 − smoothstep(inner, outer, dist)
 // frameOf(rows, { here, going }) → the row whose id is going, when it's a
 //   planet or moon; else the row whose id is here, when it's one; else null
-// carryFrames(frames, body, dt) → a new [{ body, k }]: body's entry (matched
-//   by id) rises by dt / fade to 1, joining at 0 while another fades out and
-//   at 1 into an empty list (a ship placed at a park is carried from its first
-//   frame); every other entry falls as much and is dropped at 0. A null body
-//   lets them all fall.
+// carryFrames(frames, body, dt) → a new [{ body, k, zone }]: body's entry
+//   (matched by id) rises by dt / fade to 1, joining at 0 while another fades
+//   out and at 1 into an empty list (a ship placed at a park is carried from
+//   its first frame); every other entry falls as much and is dropped at 0. A
+//   null body lets them all fall. zone is carryZone(body), worked out once
+//   when the body joins and kept while it stays (the same id, the same place)
 // carry(ship, frames, t0, t1) → the ship moved by Σ k × weight × the body's
 //   motion from t0 to t1 (a moon's includes its planet's), the weight from
-//   how far the ship is from the body at t0. The same object when that's
-//   nothing or t1 is t0.
+//   how far the ship is from the body at t0, in the entry's zone (or
+//   carryZone(body) for an entry made by hand). The same object when that's
+//   nothing or t1 is t0. It runs every frame, so it makes no array.
 
 import { PARK_GAP } from '../ship';
 import { atTime } from './ids';
@@ -70,27 +72,30 @@ export function carryFrames(frames, body, dt) {
   let joined = false;
   for (const f of frames) {
     if (body && f.body.id === body.id) {
-      out.push({ body, k: Math.min(1, f.k + dk) });
+      out.push({ body, k: Math.min(1, f.k + dk), zone: f.zone ?? carryZone(body) });
       joined = true;
-    } else if (f.k - dk > 0) out.push({ body: f.body, k: f.k - dk });
+    } else if (f.k - dk > 0) out.push({ ...f, k: f.k - dk });
   }
   // (into an empty list there's nothing to fade from, so it's whole at once)
-  if (body && !joined) out.push({ body, k: frames.length ? Math.min(1, dk) : 1 });
+  if (body && !joined) out.push({ body, k: frames.length ? Math.min(1, dk) : 1, zone: carryZone(body) });
   return out;
 }
+
+const A = [0, 0, 0];
+const B = [0, 0, 0];
 
 export function carry(ship, frames, t0, t1) {
   if (t1 === t0) return ship;
   let dx = 0;
   let dy = 0;
   let dz = 0;
-  for (const { body, k } of frames) {
+  for (const { body, k, zone } of frames) {
     if (!(k > 0)) continue;
-    const a = atTime(body, t0);
+    const a = atTime(body, t0, A);
     if (!a) continue;
-    const w = k * carryWeight(Math.hypot(ship.x - a[0], ship.y - a[1], ship.z - a[2]), carryZone(body));
+    const w = k * carryWeight(Math.hypot(ship.x - a[0], ship.y - a[1], ship.z - a[2]), zone ?? carryZone(body));
     if (!(w > 0)) continue;
-    const b = atTime(body, t1);
+    const b = atTime(body, t1, B);
     dx += w * (b[0] - a[0]);
     dy += w * (b[1] - a[1]);
     dz += w * (b[2] - a[2]);

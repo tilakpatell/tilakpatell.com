@@ -11,6 +11,7 @@ import { fullSector, UNIVERSE } from '../expanse/shared/gen';
 import { lookupOf, resolvePlace } from './places/resolve';
 import { parkPlace } from './places/park';
 import { longTrip } from './places/trip';
+import { placesAround } from './places/around';
 
 const inside = (s) => SOLIDS.some((p) => Math.hypot(s.x - p.at[0], s.y - p.at[1], s.z - p.at[2]) < (inTrench(p, s.x, s.y, s.z) ? p.band.floor : p.r) + SHIP.radius - 1e-6);
 const worlds = [...ORDER.filter((id) => byId(id).kind !== 'core'), ...MOONS.map((m) => m.id)];
@@ -497,5 +498,14 @@ describe('generated places', () => {
     expect(findDestinations('all', '', { more: [...more, more[0]] }).filter((x) => x.id === sys.id)).toHaveLength(1);
     expect(findDestination('e:1,0:0', U)?.id).toBe(sys.id);
     expect(findDestination(`E:1,0:${s.systems.length}`, U)).toBeNull();
+  });
+  it('are searched with the rows round the ship too, which carry no type', () => {
+    const rows = placesAround(new Map([[s.id, s]]), sys.at, 0, { max: 60 });
+    expect(rows.length).toBeGreaterThan(20);
+    expect(rows.some((r) => 'type' in r)).toBe(false);
+    const ids = (q) => findDestinations('all', q, { more: rows }).map((x) => x.id);
+    expect(ids('undefined')).toEqual([]);
+    expect(ids(rows[0].name)).toContain(rows[0].id);
+    expect(ids(rows[0].name).length).toBeLessThan(rows.length);
   });
 });

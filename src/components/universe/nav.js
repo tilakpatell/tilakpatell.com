@@ -223,9 +223,10 @@ export const KINDS = [
 // matches the name, its fandom or what it is, ignoring case and accents)
 // (and `more`, rows of generated places, the ones in view or visited, after
 // the map's own, each once; a generated row matches by its id too, and an id
-// in any spelling that isn't among them is looked up. Generated systems are
-// kind 'star', since a 'system' on the chart is a gate system, so the
-// "Star systems" filter takes both)
+// in any spelling that isn't among them is looked up; a row round the ship
+// (around.js's) has no type, so it matches by its name or its whole id.
+// Generated systems are kind 'star', since a 'system' on the chart is a gate
+// system, so the "Star systems" filter takes both)
 const fold = (t) =>
   t
     .normalize('NFD')
@@ -244,7 +245,7 @@ export function findDestinations(kind = 'all', query = '', { more = [], place } 
   const q = fold(text);
   const canon = canonicalPlace(text);
   const rows = withMore(more);
-  const found = rows.filter((d) => ofKind(d, kind) && (!q || d.id === canon || fold(`${d.name} ${d.type} ${byId(d.id)?.label ?? ''}${d.generated ? ` ${d.id}` : ''}`).includes(q)));
+  const found = rows.filter((d) => ofKind(d, kind) && (!q || d.id === canon || fold(`${d.name} ${d.type ?? ''} ${byId(d.id)?.label ?? ''}${d.generated ? ` ${d.id}` : ''}`).includes(q)));
   const looked = canon && !rows.some((d) => d.id === canon) ? generated(canon, place) : null;
   return looked && ofKind(looked, kind) ? [...found, looked] : found;
 }
