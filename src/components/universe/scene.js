@@ -146,6 +146,7 @@ import { ESCORT, escortHull, escortPlan, escortTo } from './escort';
 import { DEBRIS_DRIFT, SKY_FAR, buildDeepSpace } from './deepspace';
 import { FAR_STARS, createFarStars } from './farStars';
 import { createLandmarks } from './landmarks';
+import { createMapSky } from './mapSky';
 import { aimFrom, aimTargets, jumpPhase, nameShows } from './aim';
 import { aligned, steerToward } from '../galaxy/space';
 import { createSectorPortals } from './sectorPortals';
@@ -217,8 +218,6 @@ import { createNearMaps } from './nearMaps';
 import { poseFor } from './poses';
 import { REMOVER, hitRemover, hpLeft, landingOpen, newRemover, stepRemover } from './remover';
 import { NX5_LEN, createRemoverView } from './removerView';
-import { createSky } from '../galaxy/sky';
-import { SYSTEMS } from '../galaxy/systems';
 import { createExpanse } from '../expanse/scene/expanse';
 import { UNIVERSE } from '../expanse/gen/seed';
 import { runtime } from '../../runtime';
@@ -675,38 +674,13 @@ export async function create(canvas, ctx) {
   post.contrast(MAP_LENS.contrast);
   post.defocus(tier === 'low' ? 0 : 1);
 
-  // the sky: the Star Wars galaxy's (galaxy/sky.js), its disc and dust,
-  // its core and nebulae, as Kashyyyk sees it (the core a third of the way
-  // in: bright, not blinding), without its suns (the map has its own) or
-  // the other systems' stars to jump to; turning with the map and riding
-  // with the camera, baked once into a cube
-  const sky = createSky({ small, level: device().detail, renderer, beacons: false });
-  sky.setSystem({ ...SYSTEMS.find((s) => s.id === 'kashyyyk'), suns: [] });
-  // (its stars sized in the pixels the post draws at, which the quality
-  // softens over a canvas that keeps its size; told again when that moves:
-  // the galaxy's drawnAt.js does the same, kept here rather than reached
-  // into, a world's insides being its own)
-  let drawnWas = null;
-  const followDrawn = () => {
-    const r = post.ratio;
-    if (r !== drawnWas) {
-      drawnWas = r;
-      sky.setRatio(r);
-    }
-    return r;
-  };
-  followDrawn();
-  map.add(sky.group);
-  // (the bake is the sky drawn six times over, one long job on the chip:
-  // under the intro, in an idle moment and never in the cockpit's launch,
-  // as the map's other making is; ./prepFrame.js)
-  sky.prepare(renderer)
-    .then(() => prepFrame())
-    .then(() => sky.bake(renderer));
+  // the sky (mapSky.js): the galaxy's band, dust and stars as Kashyyyk sees
+  // them, its clouds left out: every nebula is a place now (nebula/)
+  const { sky, followDrawn } = createMapSky(map, { renderer, small, level: device().detail, post });
 
   // deep space, out past the home system: its wonders, and the trench run
   // round the Death Star's middle
-  const deep = buildDeepSpace({ small, tier });
+  const deep = buildDeepSpace({ small, tier, renderer });
   // what the ship can hit among the rocks (rockHits.js): the belt, the rim
   // and the debris streams, each from the same rocks its mesh draws. A rock
   // the ship's smashed is gone a while (`smashed`: field → index → when it's back)

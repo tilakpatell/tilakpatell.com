@@ -50,3 +50,54 @@ describe('deep space, drawn round the camera', () => {
     vi.unstubAllGlobals();
   });
 });
+
+// The Veil and the Cradle are places, drawn by the one nebula renderer
+// (nebula/) fixed in the world, not puffs facing the camera
+describe('deep space’s nebulae', () => {
+  const at = (id) => WONDERS.find((w) => w.id === id);
+  const camAt = (p, look) => {
+    const c = new THREE.PerspectiveCamera(34, 16 / 9, 0.08, 45000);
+    c.position.set(...p);
+    c.lookAt(...look);
+    c.updateMatrixWorld(true);
+    return c;
+  };
+
+  it('hands both to one renderer under its group, and keeps each one’s place', () => {
+    stub();
+    const deep = buildDeepSpace({ small: true, tier: 'low' });
+    expect(deep.nebulae.group.parent).toBe(deep.group);
+    for (const id of ['veil', 'cradle']) {
+      const g = deep.groupOf(id);
+      expect(g.position.toArray()).toEqual(at(id).at);
+      expect(g.children).toHaveLength(0); // (its name and the far stars read it; nothing is drawn in it)
+    }
+    expect(deep.group.getObjectByName('deep-young-stars')).toBeUndefined();
+    // the Cradle fills to its middle: the eye there is inside it
+    expect(deep.nebulae.inside(at('cradle').at)?.id).toBe('cradle');
+    deep.dispose();
+    vi.unstubAllGlobals();
+  });
+
+  it('draws the Veil where it is from a camera looking at it, each frame’s update', () => {
+    stub();
+    const deep = buildDeepSpace({ small: true, tier: 'low' });
+    const veil = at('veil');
+    const eye = [veil.at[0], veil.at[1], veil.at[2] + veil.r * 6];
+    const camera = camAt(eye, veil.at);
+    deep.update(10, camera, new THREE.Vector3(...eye));
+    const clouds = deep.group.getObjectByName('nebula-clouds');
+    expect(clouds.visible).toBe(true);
+    const a = clouds.geometry.attributes.aCentre;
+    const n = clouds.geometry.instanceCount;
+    // (drawn far to near: the Veil is the nearest cloud)
+    const near = (j) => Math.hypot(a.array[j * 3], a.array[j * 3 + 1], a.array[j * 3 + 2]);
+    const cloudsDrawn = Array.from({ length: n }, (_, j) => j).filter((j) => clouds.geometry.attributes.aKind.array[j] === 0);
+    const i = cloudsDrawn.reduce((best, j) => (near(j) < near(best) ? j : best));
+    expect(near(i)).toBeCloseTo(veil.r * 6, 0);
+    [0, 1, 2].forEach((k) => expect(eye[k] + a.array[i * 3 + k]).toBeCloseTo(veil.at[k], 0));
+    deep.dispose();
+    expect(deep.nebulae.group.parent).toBeNull();
+    vi.unstubAllGlobals();
+  });
+});

@@ -23,7 +23,7 @@
 // (light, 1 − what shows through).
 //
 // A young star is a sprite of its size in pixels at its own distance
-// (deep space's sparks: SPARK_FRAG's falloff), adding light only.
+// (the falloff deep space's own sparks had), adding light only.
 //
 // Inside a cloud the fog (fog.js) is a few shells round the eye, one
 // full-screen quad each, drawn far to near after the clouds. Each holds the
