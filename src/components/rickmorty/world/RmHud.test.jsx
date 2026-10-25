@@ -76,4 +76,19 @@ describe('C-137’s HUD', () => {
     }
     expect(px(rule(touch, '.rm-list-back'), 'min-height')).toBeGreaterThanOrEqual(44);
   });
+
+  it('keeps a place’s meter clear of the prompt card on a phone, however many lines the card’s name runs to', () => {
+    const css = readFileSync(new URL('./world.css', import.meta.url), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+    const rules = (sel) =>
+      [...css.matchAll(/([^{}]+)\{([^{}]*)\}/g)]
+        .filter(([, s]) => s.split(',').map((x) => x.trim()).includes(sel))
+        .map(([, , body]) => body)
+        .join(';');
+    // (the card's placed at left 50%: shrink-to-fit would give it half the stage, and wrap a
+    // 17-letter name onto a second line, so it takes its name's width, up to its max-width)
+    expect(rules('.rm-prompt')).toMatch(/(?:^|[;{\s])width:\s*max-content/);
+    // (and the meter over it sits above the card as tall as it's measured, its 178 px at the least)
+    const bottom = rules('.rm-cluster.rm-meter .hud-vitals-block').match(/bottom:\s*([^;]+)/)?.[1].trim();
+    expect(bottom).toMatch(/^calc\(max\(178px,\s*calc\(138px \+ var\(--rm-prompt-h, 0px\)\)\) \+ var\(--rm-pad-b\)\)$/);
+  });
 });

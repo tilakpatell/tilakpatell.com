@@ -162,6 +162,24 @@ export default function RmHud({
     for (const n of row.children) ro?.observe(n);
     return () => ro?.disconnect();
   }, []);
+  // And the prompt card's height while it's up (nought when it's not), for a
+  // place's meter over it on a phone (./world.css --rm-prompt-h): a name on
+  // two lines, or the E key's button in a narrow window, makes it taller
+  const prompt = useRef(null);
+  const prompting = gl === 'on' && Boolean(here);
+  useLayoutEffect(() => {
+    const card = prompt.current;
+    const stage = top.current?.parentElement;
+    if (!stage || !card) return undefined;
+    const fit = () => stage.style.setProperty('--rm-prompt-h', `${Math.round(card.getBoundingClientRect().height)}px`);
+    fit();
+    const ro = typeof ResizeObserver === 'function' ? new ResizeObserver(fit) : null;
+    ro?.observe(card);
+    return () => {
+      ro?.disconnect();
+      stage.style.setProperty('--rm-prompt-h', '0px');
+    };
+  }, [prompting]);
   // (a planet landed on from the map: back to space, or home to C-137's garage)
   const home = homeLink(planet);
   const back1 = (
@@ -308,7 +326,7 @@ export default function RmHud({
       )}
 
       {gl === 'on' && here && (
-        <div className="rm-prompt" data-kind={here.kind}>
+        <div ref={prompt} className="rm-prompt" data-kind={here.kind}>
           <p className="rm-prompt-name">{here.name}</p>
           {!touch && (
             <button type="button" className="rm-btn" onClick={act}>

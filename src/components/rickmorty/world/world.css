@@ -131,7 +131,7 @@
 .rm-list-switch input { width: 1.15rem; height: 1.15rem; accent-color: var(--rm-lime); }
 
 /* the prompt for what Morty's next to */
-.rm-prompt { position: absolute; left: 50%; bottom: clamp(5rem, 13%, 7rem); z-index: 3; display: grid; justify-items: center; gap: 0.5rem; min-width: min(17rem, calc(100% - 2rem)); max-width: min(24rem, calc(100% - 2rem)); padding: 0.75rem 1rem 0.85rem; border: 2px solid var(--rm-ink); border-radius: 14px; background: var(--rm-glass); text-align: center; box-shadow: 0 4px 0 rgba(27, 20, 36, 0.6), inset 0 0 0 1px rgba(157, 255, 90, 0.35); transform: translateX(-50%); animation: rm-rise 0.18s ease-out both; }
+.rm-prompt { position: absolute; left: 50%; bottom: clamp(5rem, 13%, 7rem); z-index: 3; display: grid; justify-items: center; gap: 0.5rem; min-width: min(17rem, calc(100% - 2rem)); max-width: min(24rem, calc(100% - 2rem)); width: max-content; padding: 0.75rem 1rem 0.85rem; border: 2px solid var(--rm-ink); border-radius: 14px; background: var(--rm-glass); text-align: center; box-shadow: 0 4px 0 rgba(27, 20, 36, 0.6), inset 0 0 0 1px rgba(157, 255, 90, 0.35); transform: translateX(-50%); animation: rm-rise 0.18s ease-out both; }
 .rm-prompt-name { margin: 0; color: #fff; font: 400 1.25rem/1.1 'Luckiest Guy', var(--font-sans); letter-spacing: 0.03em; }
 .rm-prompt[data-kind='land'] { box-shadow: 0 4px 0 rgba(27, 20, 36, 0.6), inset 0 0 0 1px rgba(255, 210, 58, 0.5); }
 @keyframes rm-rise { from { opacity: 0; transform: translate(-50%, 6px); } }
@@ -559,8 +559,10 @@
 /* a place's game (./games/meter.js): a deal's looks, a freeze's beat, a find's and a sequence's clock, a
    climb's height as the bar, no percent; on a touch screen or a narrow one, its block wide
    enough for the line, as the chase's is, and lifted with the foot's pad as the prompt
-   card under it is (190 px at a plain pad; a home bar's inset lifts both alike) */
+   card under it is (190 px at a plain pad; a home bar's inset lifts both alike), and over
+   the card as tall as RmHud measures it (--rm-prompt-h: a name on two lines, or the E key's
+   button in a narrow window) */
 .rm-meter-deal .hud-vitals-n, .rm-meter-freeze .hud-vitals-n, .rm-meter-find .hud-vitals-n, .rm-meter-sequence .hud-vitals-n, .rm-meter-climb .hud-vitals-n { display: none; }
 @media (pointer: coarse), (max-width: 767px) {
-  .rm-cluster.rm-meter .hud-vitals-block { bottom: calc(178px + var(--rm-pad-b)); width: auto; max-width: 46vw; }
+  .rm-cluster.rm-meter .hud-vitals-block { bottom: calc(max(178px, calc(138px + var(--rm-prompt-h, 0px))) + var(--rm-pad-b)); width: auto; max-width: 46vw; }
 }
