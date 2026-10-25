@@ -519,180 +519,8 @@ body:has(.universe-panel) .guide-btn { display: none; }
   .universe-tour { left: 16px; right: 16px; top: auto; bottom: calc(var(--sheet-h) + 212px); max-width: calc(100% - 32px); }
 }
 
-.universe-hud {
-  --hot: #ff6a52;
-  --nav: var(--engine, #e8eefc);
-  position: absolute;
-  z-index: 1;
-  inset: 0;
-  overflow: hidden;
-  pointer-events: none;
-  font-family: var(--font-mono);
-}
-.universe-hud > span {
-  position: absolute;
-  left: 0;
-  top: 0;
-  opacity: 0;
-  transition: opacity 0.18s;
-  will-change: transform;
-}
-.universe-hud > span[data-on] { opacity: 1; }
-/* scrambled: a flare's shockwave through the ship (a jitter, and a flicker) */
-.universe-hud[data-static] > span[data-on] { animation: universe-static 90ms steps(2) infinite; }
-@keyframes universe-static {
-  0% { opacity: 1; margin-left: 0; }
-  50% { opacity: 0.35; margin-left: 3px; }
-  100% { opacity: 0.8; margin-left: -2px; }
-}
-@media (prefers-reduced-motion: reduce) {
-  .universe-hud[data-static] > span[data-on] { animation: none; opacity: 0.6; }
-}
-.universe-reticle {
-  width: 24px;
-  height: 24px;
-  margin: -12px 0 0 -12px;
-  border: 1.5px solid rgb(255 255 255 / 0.6);
-  border-radius: 50%;
-  transition: opacity 0.18s, border-color 0.15s, box-shadow 0.15s;
-}
-.universe-reticle::before,
-.universe-reticle::after {
-  content: '';
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  background: rgb(255 255 255 / 0.85);
-}
-.universe-reticle::before { width: 3px; height: 3px; margin: -1.5px; border-radius: 50%; }
-.universe-reticle::after { width: 1px; height: 7px; margin: -17px 0 0 -0.5px; }
-.universe-reticle[data-hot] { border-color: var(--hot); box-shadow: 0 0 10px rgb(255 106 82 / 0.55); }
-.universe-reticle[data-hit] { animation: universe-hit 0.25s ease-out; }
-/* the crosshair on foot (runtime/hud's Reticle), ringed in the lock's colour */
-.universe-foot-reticle { --hud-accent: var(--hot); }
-@keyframes universe-hit {
-  from { scale: 1.5; border-color: #fff; box-shadow: 0 0 14px rgb(255 255 255 / 0.8); }
-}
-.universe-lock,
-.universe-nav {
-  --r: 40px;
-  width: var(--r);
-  height: var(--r);
-  margin: calc(var(--r) / -2) 0 0 calc(var(--r) / -2);
-}
-.universe-lock { color: var(--hot); }
-.universe-lock > i {
-  position: absolute;
-  width: 9px;
-  height: 9px;
-  border: 1.5px solid currentColor;
-  filter: drop-shadow(0 0 3px rgb(255 106 82 / 0.5));
-}
-.universe-lock > i:nth-child(1) { left: 0; top: 0; border-right: 0; border-bottom: 0; }
-.universe-lock > i:nth-child(2) { right: 0; top: 0; border-left: 0; border-bottom: 0; }
-.universe-lock > i:nth-child(3) { right: 0; bottom: 0; border-left: 0; border-top: 0; }
-.universe-lock > i:nth-child(4) { left: 0; bottom: 0; border-right: 0; border-top: 0; }
-.universe-lock[data-on] > i { animation: universe-lock-in 0.3s ease-out; }
-@keyframes universe-lock-in {
-  from { scale: 1.9; opacity: 0; }
-}
-.universe-lock[data-hot] > i { border-color: #fff; border-width: 2px; }
-.universe-lock-name,
-.universe-lock-dist,
-.universe-nav-name,
-.universe-nav-dist,
-.universe-mate-name {
-  position: absolute;
-  left: 50%;
-  translate: -50% 0;
-  font-weight: 400;
-  font-size: 0.7rem; /* (the HUD's floor: never smaller) */
-  letter-spacing: 0.12em;
-  line-height: 1.2;
-  text-transform: uppercase;
-  white-space: nowrap;
-  text-shadow: 0 0 6px rgb(3 4 10 / 0.9), 0 1px 2px rgb(3 4 10 / 0.9);
-}
-.universe-lock-name { top: calc(100% + 5px); }
-.universe-lock-dist { top: calc(100% + 18px); opacity: 0.75; }
-/* the lead: a small diamond, filled once the nose is on it */
-.universe-lead {
-  width: 9px;
-  height: 9px;
-  margin: -4.5px 0 0 -4.5px;
-  border: 1.5px solid var(--hot);
-  rotate: 45deg;
-  filter: drop-shadow(0 0 3px rgb(255 106 82 / 0.6));
-  transition: opacity 0.18s, background-color 0.15s;
-}
-.universe-lead[data-hot] { background: #fff; border-color: #fff; }
-/* the way to go: a thin diamond round the place, its name and range over it
-   (under it would sit on the place's own name) */
-.universe-nav { color: var(--nav); opacity: 0; }
-.universe-nav[data-on] { opacity: 0.85; }
-.universe-nav[data-on][data-way] { opacity: 0.5; }
-.universe-nav > i {
-  position: absolute;
-  inset: 0;
-  border: 1px solid currentColor;
-  rotate: 45deg;
-  scale: 0.72;
-  filter: drop-shadow(0 0 4px rgb(3 4 10 / 0.8));
-}
-.universe-nav-name { bottom: calc(100% + 6px); }
-.universe-nav-dist { bottom: calc(100% + 19px); opacity: 0.75; }
-/* off the screen: an arrow at the edge, pointing the way, the labels beside it */
-.universe-hud > span[data-off] > i { display: none; }
-.universe-hud > span[data-off]::after {
-  content: '';
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 0;
-  height: 0;
-  margin: -8px 0 0 -8px;
-  border: 8px solid transparent;
-  border-left: 14px solid currentColor;
-  border-right: 0;
-  transform-origin: 2px 50%;
-  rotate: var(--a, 0rad);
-  filter: drop-shadow(0 0 4px rgb(3 4 10 / 0.8));
-}
-.universe-hud > span[data-off] .universe-lock-name,
-.universe-hud > span[data-off] .universe-nav-name,
-.universe-hud > span[data-off] .universe-mate-name { top: calc(50% + 14px); bottom: auto; }
-.universe-hud > span[data-off] .universe-lock-dist,
-.universe-hud > span[data-off] .universe-nav-dist { top: calc(50% + 27px); bottom: auto; }
-/* a tough one's bracket shows what it has left: a bar under its name */
-.universe-lock-hp {
-  position: absolute;
-  left: 50%;
-  top: calc(100% + 32px);
-  width: 34px;
-  height: 3px;
-  margin-left: -17px;
-  display: none;
-  background: rgb(255 106 82 / 0.25);
-}
-.universe-lock-hp::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: currentColor;
-  transform-origin: left;
-  scale: var(--hp, 1) 1;
-  transition: scale 0.15s;
-}
-.universe-lock[data-tough] .universe-lock-hp { display: block; }
-.universe-hud > span[data-off] .universe-lock-hp { top: calc(50% + 41px); }
-/* one coming at you, off the screen: a red arrow at the edge, pulsing */
-.universe-threat { color: var(--hot); }
-.universe-threat[data-on] { animation: universe-threat 0.9s ease-in-out infinite; }
-@keyframes universe-threat { 50% { opacity: 0.45; } }
-/* an ally off the screen: a green arrow at the edge, their callsign by it
-   (as typed: no capitals forced on it) */
-.universe-mate { color: #8dffad; }
-.universe-mate-name { text-transform: none; letter-spacing: 0.04em; font-size: 0.75rem; }
+/* the flight overlay's looks are the HUD kit's (runtime/hud/flight/flight.css,
+   with the markup); the map tints them by its ship's engine colour */
 .universe-map[data-ship='cruiser'] { --engine: #8dff6a; }
 .universe-map[data-ship='falcon'] { --engine: #7cc8ff; }
 .universe-map[data-ship='xwing'] { --engine: #ff8a5c; }
@@ -1285,10 +1113,6 @@ body:has(.universe-panel) .guide-btn { display: none; }
   /* (over the prompt, and above the buttons' cluster: the weapon one, the
      tallest, is hidden on foot, and the climb button is off to the right) */
   .universe-wayin { bottom: calc(var(--sheet-h) + 156px); translate: -50% 0; max-width: calc(100% - 32px); }
-  .universe-lock-name,
-  .universe-lock-dist,
-  .universe-nav-name,
-  .universe-nav-dist { font-size: 0.7rem; }
   .universe-climbs { right: 26px; bottom: calc(var(--sheet-h) + 104px); }
   .universe-alt { left: 12px; top: calc(var(--nav-h, 68px) + (100% - var(--nav-h, 68px) - var(--sheet-h)) / 2); height: 120px; margin-top: -60px; }
   .universe-alt-mark { translate: 0 calc(var(--alt, 0) * -60px); }
@@ -1313,10 +1137,6 @@ body:has(.universe-panel) .guide-btn { display: none; }
   .universe-said { font-size: 0.85rem; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .universe-reticle[data-hit],
-  .universe-lock[data-on] > i { animation: none; }
-  .universe-threat[data-on] { animation: none; }
-  .universe-hud > span { transition: none; }
   .universe-labels,
   .universe-label,
   .universe-fade { transition: none; }

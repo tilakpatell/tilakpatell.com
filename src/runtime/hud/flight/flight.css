@@ -1,0 +1,206 @@
+/* The flight overlay (FlightHud.jsx's markup, one for both maps): the gun
+   line, the lock's brackets with its name, range and what it has left, the
+   threats' and the mates' arrows, the lead pip and the way to go. It was the
+   universe map's (universe.css), and the galaxy's kill X (galaxy/flight.css);
+   it comes with the markup now, so a map that draws the overlay has its
+   looks. Every rule is under :where(.universe-hud), which weighs nothing, so
+   each weighs what it did and a map's own class or custom property still
+   wins as it did: the map tints it (--engine, --hot, data-ship), the kit
+   doesn't. Nothing a player reads here is under 0.7rem. */
+
+.universe-hud {
+  --hot: #ff6a52;
+  --nav: var(--engine, #e8eefc);
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  font-family: var(--font-mono);
+}
+.universe-hud > span {
+  position: absolute;
+  left: 0;
+  top: 0;
+  opacity: 0;
+  transition: opacity 0.18s;
+  will-change: transform;
+}
+.universe-hud > span[data-on] { opacity: 1; }
+/* scrambled: a flare's shockwave through the ship (a jitter, and a flicker) */
+.universe-hud[data-static] > span[data-on] { animation: universe-static 90ms steps(2) infinite; }
+@keyframes universe-static {
+  0% { opacity: 1; margin-left: 0; }
+  50% { opacity: 0.35; margin-left: 3px; }
+  100% { opacity: 0.8; margin-left: -2px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .universe-hud[data-static] > span[data-on] { animation: none; opacity: 0.6; }
+}
+:where(.universe-hud) .universe-reticle {
+  width: 24px;
+  height: 24px;
+  margin: -12px 0 0 -12px;
+  border: 1.5px solid rgb(255 255 255 / 0.6);
+  border-radius: 50%;
+  transition: opacity 0.18s, border-color 0.15s, box-shadow 0.15s;
+}
+:where(.universe-hud) .universe-reticle::before,
+:where(.universe-hud) .universe-reticle::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  background: rgb(255 255 255 / 0.85);
+}
+:where(.universe-hud) .universe-reticle::before { width: 3px; height: 3px; margin: -1.5px; border-radius: 50%; }
+:where(.universe-hud) .universe-reticle::after { width: 1px; height: 7px; margin: -17px 0 0 -0.5px; }
+:where(.universe-hud) .universe-reticle[data-hot] { border-color: var(--hot); box-shadow: 0 0 10px rgb(255 106 82 / 0.55); }
+:where(.universe-hud) .universe-reticle[data-hit] { animation: universe-hit 0.25s ease-out; }
+/* the crosshair on foot (runtime/hud's Reticle), ringed in the lock's colour */
+:where(.universe-hud) .universe-foot-reticle { --hud-accent: var(--hot); }
+@keyframes universe-hit {
+  from { scale: 1.5; border-color: #fff; box-shadow: 0 0 14px rgb(255 255 255 / 0.8); }
+}
+:where(.universe-hud) .universe-lock,
+:where(.universe-hud) .universe-nav {
+  --r: 40px;
+  width: var(--r);
+  height: var(--r);
+  margin: calc(var(--r) / -2) 0 0 calc(var(--r) / -2);
+}
+:where(.universe-hud) .universe-lock { color: var(--hot); }
+:where(.universe-hud) .universe-lock > i {
+  position: absolute;
+  width: 9px;
+  height: 9px;
+  border: 1.5px solid currentColor;
+  filter: drop-shadow(0 0 3px rgb(255 106 82 / 0.5));
+}
+:where(.universe-hud) .universe-lock > i:nth-child(1) { left: 0; top: 0; border-right: 0; border-bottom: 0; }
+:where(.universe-hud) .universe-lock > i:nth-child(2) { right: 0; top: 0; border-left: 0; border-bottom: 0; }
+:where(.universe-hud) .universe-lock > i:nth-child(3) { right: 0; bottom: 0; border-left: 0; border-top: 0; }
+:where(.universe-hud) .universe-lock > i:nth-child(4) { left: 0; bottom: 0; border-right: 0; border-top: 0; }
+:where(.universe-hud) .universe-lock[data-on] > i { animation: universe-lock-in 0.3s ease-out; }
+@keyframes universe-lock-in {
+  from { scale: 1.9; opacity: 0; }
+}
+:where(.universe-hud) .universe-lock[data-hot] > i { border-color: #fff; border-width: 2px; }
+:where(.universe-hud) .universe-lock-name,
+:where(.universe-hud) .universe-lock-dist,
+:where(.universe-hud) .universe-nav-name,
+:where(.universe-hud) .universe-nav-dist,
+:where(.universe-hud) .universe-mate-name {
+  position: absolute;
+  left: 50%;
+  translate: -50% 0;
+  font-weight: 400;
+  font-size: 0.7rem; /* (the HUD's floor: never smaller) */
+  letter-spacing: 0.12em;
+  line-height: 1.2;
+  text-transform: uppercase;
+  white-space: nowrap;
+  text-shadow: 0 0 6px rgb(3 4 10 / 0.9), 0 1px 2px rgb(3 4 10 / 0.9);
+}
+:where(.universe-hud) .universe-lock-name { top: calc(100% + 5px); }
+:where(.universe-hud) .universe-lock-dist { top: calc(100% + 18px); opacity: 0.75; }
+/* the lead: a small diamond, filled once the nose is on it */
+:where(.universe-hud) .universe-lead {
+  width: 9px;
+  height: 9px;
+  margin: -4.5px 0 0 -4.5px;
+  border: 1.5px solid var(--hot);
+  rotate: 45deg;
+  filter: drop-shadow(0 0 3px rgb(255 106 82 / 0.6));
+  transition: opacity 0.18s, background-color 0.15s;
+}
+:where(.universe-hud) .universe-lead[data-hot] { background: #fff; border-color: #fff; }
+/* the way to go: a thin diamond round the place, its name and range over it
+   (under it would sit on the place's own name) */
+:where(.universe-hud) .universe-nav { color: var(--nav); opacity: 0; }
+:where(.universe-hud) .universe-nav[data-on] { opacity: 0.85; }
+:where(.universe-hud) .universe-nav[data-on][data-way] { opacity: 0.5; }
+:where(.universe-hud) .universe-nav > i {
+  position: absolute;
+  inset: 0;
+  border: 1px solid currentColor;
+  rotate: 45deg;
+  scale: 0.72;
+  filter: drop-shadow(0 0 4px rgb(3 4 10 / 0.8));
+}
+:where(.universe-hud) .universe-nav-name { bottom: calc(100% + 6px); }
+:where(.universe-hud) .universe-nav-dist { bottom: calc(100% + 19px); opacity: 0.75; }
+/* off the screen: an arrow at the edge, pointing the way, the labels beside it */
+.universe-hud > span[data-off] > i { display: none; }
+.universe-hud > span[data-off]::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 0;
+  height: 0;
+  margin: -8px 0 0 -8px;
+  border: 8px solid transparent;
+  border-left: 14px solid currentColor;
+  border-right: 0;
+  transform-origin: 2px 50%;
+  rotate: var(--a, 0rad);
+  filter: drop-shadow(0 0 4px rgb(3 4 10 / 0.8));
+}
+.universe-hud > span[data-off] .universe-lock-name,
+.universe-hud > span[data-off] .universe-nav-name,
+.universe-hud > span[data-off] .universe-mate-name { top: calc(50% + 14px); bottom: auto; }
+.universe-hud > span[data-off] .universe-lock-dist,
+.universe-hud > span[data-off] .universe-nav-dist { top: calc(50% + 27px); bottom: auto; }
+/* a tough one's bracket shows what it has left: a bar under its name */
+:where(.universe-hud) .universe-lock-hp {
+  position: absolute;
+  left: 50%;
+  top: calc(100% + 32px);
+  width: 34px;
+  height: 3px;
+  margin-left: -17px;
+  display: none;
+  background: rgb(255 106 82 / 0.25);
+}
+:where(.universe-hud) .universe-lock-hp::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: currentColor;
+  transform-origin: left;
+  scale: var(--hp, 1) 1;
+  transition: scale 0.15s;
+}
+:where(.universe-hud) .universe-lock[data-tough] .universe-lock-hp { display: block; }
+.universe-hud > span[data-off] .universe-lock-hp { top: calc(50% + 41px); }
+/* one coming at you, off the screen: a red arrow at the edge, pulsing */
+:where(.universe-hud) .universe-threat { color: var(--hot); }
+:where(.universe-hud) .universe-threat[data-on] { animation: universe-threat 0.9s ease-in-out infinite; }
+@keyframes universe-threat { 50% { opacity: 0.45; } }
+/* an ally off the screen: a green arrow at the edge, their callsign by it
+   (as typed: no capitals forced on it) */
+:where(.universe-hud) .universe-mate { color: #8dffad; }
+:where(.universe-hud) .universe-mate-name { text-transform: none; letter-spacing: 0.04em; font-size: 0.75rem; }
+
+@media (max-width: 767px) {
+  :where(.universe-hud) .universe-lock-name,
+  :where(.universe-hud) .universe-lock-dist,
+  :where(.universe-hud) .universe-nav-name,
+  :where(.universe-hud) .universe-nav-dist { font-size: 0.7rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :where(.universe-hud) .universe-reticle[data-hit],
+  :where(.universe-hud) .universe-lock[data-on] > i { animation: none; }
+  :where(.universe-hud) .universe-threat[data-on] { animation: none; }
+  .universe-hud > span { transition: none; }
+}
+
+/* the reticle's kill flash: a white X through the ring for a third of a second (the scene sets data-kill) */
+:where(.universe-hud) .universe-reticle[data-kill] {
+  scale: 1.7;
+  border-color: #fff;
+  background: linear-gradient(45deg, transparent 44%, #fff 44% 56%, transparent 56%), linear-gradient(-45deg, transparent 44%, #fff 44% 56%, transparent 56%);
+  box-shadow: 0 0 14px rgb(255 255 255 / 0.8);
+}

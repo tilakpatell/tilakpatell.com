@@ -60,14 +60,6 @@
 }
 @media (pointer: fine) { .galaxy-jumpbtn[data-course] { display: none; } }
 
-/* the reticle's kill flash: a white X through the ring for a third of a second (the scene sets data-kill) */
-.universe-reticle[data-kill] {
-  scale: 1.7;
-  border-color: #fff;
-  background: linear-gradient(45deg, transparent 44%, #fff 44% 56%, transparent 56%), linear-gradient(-45deg, transparent 44%, #fff 44% 56%, transparent 56%);
-  box-shadow: 0 0 14px rgb(255 255 255 / 0.8);
-}
-
 /* a laptop's width: the blocks a little narrower, to fit the space left of the panel (the kit narrows its glass) */
 @media (max-width: 1320px) {
   .fc-target { min-width: 150px; }

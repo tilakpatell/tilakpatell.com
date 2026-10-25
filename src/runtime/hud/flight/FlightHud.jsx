@@ -9,6 +9,8 @@
 //   <FlightHud hudRef crosshair />   crosshair: on foot, the kit's Reticle,
 //     right after the gun line so it sits under the brackets
 
+import './flight.css'; // (its looks, under :where(.universe-hud): the map tints them)
+
 export function FlightOverlay({ hudRef = null, crosshair = null }) {
   return (
     <div ref={hudRef} className="universe-hud" aria-hidden="true">
