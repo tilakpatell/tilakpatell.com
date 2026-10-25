@@ -133,6 +133,35 @@ describe('Heist-Con’s crew gate (the stage’s `collected`)', () => {
   });
 });
 
+describe('a catch in the update the job’s won in (../news.js hears the win through its fade)', () => {
+  it('says the catch first, then the win: the people step before the place’s game', async () => {
+    const v = visit('heistcon', { build: (S) => S.people() });
+    await settle();
+    v.step();
+    v.area.actions.collected();
+    v.step();
+    v.area.actions['sequence-start']();
+    v.step();
+    const { order } = v.area.actions.sequence();
+    for (const id of order.slice(0, -1)) {
+      v.area.actions[`sequence-${id}`]();
+      v.step();
+    }
+    v.step(15);
+    const cat = v.area.actions.npcs().find((n) => n.id === 'heister-b1');
+    expect(cat.hunting).toBe(true);
+    // (Morty in her reach, and the last booth lifted, in the one update)
+    Object.assign(v.state.morty, { x: cat.x + 0.6, z: cat.z });
+    v.said.length = 0;
+    v.area.actions[`sequence-${order.at(-1)}`]();
+    v.step();
+    expect(v.said.map(([n, e]) => [n, e.who ?? e.task])).toEqual([
+      ['caught', 'heister-b1'],
+      ['done', 'heistcon'],
+    ]);
+  });
+});
+
 describe('the stage’s climb (Fantasy World’s Stair Goblins)', () => {
   const tread = (d, i) => d.solids.find((s) => s.id === d.climb.stairs[i].steps[0]);
   const onTread = (v, l) => Object.assign(v.state.morty, { x: l.x, z: l.z, y: l.top, air: false });
