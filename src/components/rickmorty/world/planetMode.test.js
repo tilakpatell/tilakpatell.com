@@ -89,6 +89,14 @@ describe('C-137: a planet played on its own', () => {
     expect(l.rows).toEqual(TASKS.map((t) => ({ id: t.id, name: t.name, hint: t.hint, done: t.id === 'cable' })));
   });
 
+  it('names the bench for what it does at the story’s last step: the gun put back, not a dimension picked', () => {
+    const bench = { kind: 'spot', id: 'dial', name: HOTSPOTS.find((h) => h.id === 'dial').label, verb: 'Dial' };
+    expect(relabel(bench, { bench: true })).toMatchObject({ name: 'The portal gun, back on Rick’s bench', verb: 'Put it back' });
+    expect(relabel(bench)).toBe(bench);
+    const other = { kind: 'spot', id: HOTSPOTS[0].id, name: HOTSPOTS[0].label };
+    expect(relabel(other, { bench: true })).toBe(other);
+  });
+
   it('names the way home on a planet, and where the garage portal is dialled', () => {
     const purge = planetOf('purge');
     const home = prompt(LINKS.find((l) => l.id === 'purge-portal'));

@@ -1969,7 +1969,7 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
   };
 
   // (the garage portal says where it's dialled; a planet's own portal is the way back to space)
-  const here = relabel(hud.near ? PROMPT[hud.near] : null, { planet, portal: planet ? null : portalName(portalTarget(dialRef.current, dialOpen)) });
+  const here = relabel(hud.near ? PROMPT[hud.near] : null, { planet, portal: planet ? null : portalName(portalTarget(dialRef.current, dialOpen)), bench: !planet && markRef.current?.id === 'dial' });
   const back = backLink(planet);
   const placeName = hud.flying ? 'Over the Smiths’ street' : (hud.room ?? AREA_NAME[hud.area]);
   return (

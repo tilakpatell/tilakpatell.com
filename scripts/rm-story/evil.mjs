@@ -106,6 +106,12 @@ async function fled(page, area) {
 async function theEnd(page) {
   await goalIs(page, 'dial', 'home with the gun');
   await warp(page, 'garage', ...BENCH);
+  // (at the last step the bench's prompt says what its press does)
+  const prompt = page.locator('.rm-prompt', { hasText: 'The portal gun, back on Rick’s bench' });
+  await prompt.waitFor({ timeout: 10000 }).catch(() => {
+    throw new Error('the bench’s prompt doesn’t say the gun goes back');
+  });
+  check((await prompt.textContent()).includes('Put it back'), `the bench’s prompt reads “${await prompt.textContent()}”`);
   await use(page, 'dial');
   await toast(page, EVIL.outro[0][1]);
   check((await page.locator('.rm-dial-box').count()) === 0, 'the dial opened over Rick’s last line');

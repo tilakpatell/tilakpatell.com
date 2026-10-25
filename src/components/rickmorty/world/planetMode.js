@@ -59,8 +59,10 @@ export function listOf(planet, done = []) {
 }
 
 // the prompt as the HUD shows it: the garage portal naming where it's dialled,
-// a planet's own portal the way back to space; anything else as it is
-export function relabel(p, { planet = null, portal = null } = {}) {
+// a planet's own portal the way back to space, Rick's bench at the story's
+// last step (`bench`) what its press does then; anything else as it is
+export function relabel(p, { planet = null, portal = null, bench = false } = {}) {
+  if (bench && p?.kind === 'spot' && p.id === 'dial') return { ...p, name: 'The portal gun, back on Rick’s bench', verb: 'Put it back' };
   if (!p || p.kind !== 'link') return p;
   if (planet && p.id === `${planet.id}-portal`) return { ...p, name: WAY_HOME };
   if (portal && p.id === 'garage-portal') return { ...p, name: portal };
