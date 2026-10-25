@@ -115,3 +115,24 @@ What `src/lib/land/flight/variety.js` gives Tasks 8 to 13, where it differs from
 
 - Nothing imports `orbitMaps.js` yet, so `npm run build` doesn’t bundle the worker. It’s the same `new Worker(new URL(…, import.meta.url), { type: 'module' })` form the terrain worker builds with. Lane 5b’s first import of it should be checked in a production build.
 - There’s no `cancel`. A planet that leaves view keeps its bake going, and with one worker the next planet waits behind it. With a 512 × 256 bake taking about 3.5 s, lane 5b may want `get` to pass a priority, or a `cancel(spec, tier)` that calls the pool’s.
+
+## Task 12: worlds you can’t build on
+
+### Landed
+
+- `src/components/expanse/flight/shared.js` reads `readOnly = spec.buildable === false`. On such a world (every planet and moon past the fifty, as `generated.js` sets it) the shared world never reaches the durable world: no client (not the dev hook either), no loader, no sign-in, no read or write.
+  - B toasts “Nothing can be built on this world.” and places nothing, not even a turret of the visit’s own. It says so on a generated cloud deck too, before the cloud deck’s own line.
+  - `prompt()` gives `build: false`, `unbuild: false` and `kept: false`, so the HUD offers neither B nor X. X, pressed anyway, finds none of yours.
+  - The room (poses, shots, the hints) works as before.
+  - A spec with no `buildable` key, as the tests’ hand-made ones, and the fifty’s `buildable: true` are as they were.
+- `shared.test.js` has 5 new tests: the plan’s 3 (the first run with and without a durable layer, the second also holding that no loader is made and no sign-in asked), a generated cloud deck, and X with nothing to take down. Every existing test is unchanged.
+- `docs/architecture.md`’s durable-world section says a planet nothing may be built on has the room alone.
+- In Chromium on the dev server (`/fly/…` at `low`, software GL), with `scripts/lib/fake-durable.mjs`’s hook attached and every call through it counted:
+  - On a generated forest (`e:3,-2:4:0`), held 20 m over its ground 1 km out and clear of its places, B pressed as a visitor presses it made no call through the hook at all, not even for a sign-in. B toasted the sentence, nothing was placed or held, and the prompt read `build: false, unbuild: false, kept: false`. There was no page error.
+  - On Hoth, the control, the same hook signed in, read cells and took the insert, and B toasted “Turret built.”. Pictures are in `lab/planets/task12/` (not committed).
+
+### Left
+
+- X on a world nothing may be built on says “None of yours within 30 m.”: true, but it’s the general line. The HUD never offers X there, so only a visitor who knows the key sees it.
+- `prompt().kept` is sent four times a second, but nothing in `Fly.jsx` or `FlightHud.jsx` reads it. A visitor learns that a world keeps nothing when they press B, not before.
+- For browser checks: with this container’s Chromium (`chromium-1243`), `--use-gl=swiftshader` (the flags `scripts/online-check.mjs` launches with) left `/fly/hoth` at “Coming down over Hoth…” for 15 minutes. `autopilot-check.mjs`’s `--use-angle=swiftshader --enable-unsafe-swiftshader` brought the flight on in 8 s. `online-check.mjs --fly` itself wasn’t run here.
