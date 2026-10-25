@@ -12,19 +12,19 @@ describe('the endless universe’s budget table', () => {
   it('holds the plan’s rows', () => {
     expect(BUDGET.low).toEqual({
       systemsBuilt: 1, discs: 400, slotSize: 400, nearSlots: 64, beyondRings: 1, thingsNear: 16, thingKinds: {},
-      workers: 1, expanseMs: 1, traffic: 2, events: 1, nebula: { res: 0.25, steps: 16 }, gargantuan: 'low', planetMap: [256, 128],
+      workers: 1, expanseMs: 1, traffic: 2, events: 1, nebula: { res: 0.25, steps: 16 }, gargantuan: 'low', planetMap: [256, 128], tags: 3,
     });
     expect(BUDGET.mid).toEqual({
       systemsBuilt: 1, discs: 1200, slotSize: 400, nearSlots: 64, beyondRings: 1, thingsNear: 32, thingKinds: {},
-      workers: 2, expanseMs: 1.5, traffic: 4, events: 2, nebula: { res: 0.5, steps: 32 }, gargantuan: 'mid', planetMap: [256, 128],
+      workers: 2, expanseMs: 1.5, traffic: 4, events: 2, nebula: { res: 0.5, steps: 32 }, gargantuan: 'mid', planetMap: [256, 128], tags: 6,
     });
     expect(BUDGET.high).toEqual({
       systemsBuilt: 2, discs: 2500, slotSize: 400, nearSlots: 64, beyondRings: 2, thingsNear: 64, thingKinds: {},
-      workers: 3, expanseMs: 2, traffic: 6, events: 3, nebula: { res: 0.5, steps: 48 }, gargantuan: 'high', planetMap: [512, 256],
+      workers: 3, expanseMs: 2, traffic: 6, events: 3, nebula: { res: 0.5, steps: 48 }, gargantuan: 'high', planetMap: [512, 256], tags: 6,
     });
     expect(BUDGET.ultra).toEqual({
       systemsBuilt: 3, discs: 4000, slotSize: 400, nearSlots: 64, beyondRings: 2, thingsNear: 96, thingKinds: {},
-      workers: 4, expanseMs: 2, traffic: 8, events: 3, nebula: { res: 1, steps: 64 }, gargantuan: 'high', planetMap: [512, 256],
+      workers: 4, expanseMs: 2, traffic: 8, events: 3, nebula: { res: 1, steps: 64 }, gargantuan: 'high', planetMap: [512, 256], tags: 6,
     });
     expect(Object.keys(BUDGET)).toEqual(LEVELS);
   });
@@ -130,5 +130,22 @@ describe('the quality steps and the floor', () => {
     at('high', 3, true);
     at('low', 2, false);
     expect(JSON.stringify(BUDGET)).toBe(before);
+  });
+});
+
+describe('name tags (lane 3)', () => {
+  it('are 3 on low and 6 above, lowered with the discs by the quality steps, never below one', () => {
+    expect(['low', 'mid', 'high'].map((tier) => universeBudget({ tier }).tags)).toEqual([3, 6, 6]);
+    expect(universeBudget({ tier: 'high', detail: 'ultra' }).tags).toBe(6);
+    expect(universeBudget({ tier: 'mid' }, 2).tags).toBe(3);
+    for (const tier of ['low', 'mid', 'high']) {
+      for (let step = 0; step <= 3; step++) {
+        for (const floor of [false, true]) {
+          const n = universeBudget({ tier }, step, floor).tags;
+          expect(n).toBeGreaterThanOrEqual(1);
+          expect(n).toBeLessThanOrEqual(universeBudget({ tier }).tags);
+        }
+      }
+    }
   });
 });
