@@ -3,7 +3,7 @@ import { progress } from '../world/rules';
 import { EPISODES } from './episodes';
 import { fresh } from './story';
 import { DIAL } from '../world/dimensions/destinations';
-import { SAID_MS, dialItems, dialLead, leaveHold, markedTask, newsOf, objectiveLine } from './hud';
+import { SAID_MS, dialItems, dialLead, leaveHold, markedTask, newsOf, objectiveLine, passesCard } from './hud';
 
 describe('what the HUD shows of the story', () => {
   it('reads the story’s step first, then the checklist’s next', () => {
@@ -221,5 +221,13 @@ describe('what the HUD shows of the story', () => {
     expect(dialLead({ ...fresh(), episode: 12 }, DIAL.length)).toBe('Coordinates home: 32 of 32');
     // (free roam opens the dial, but brings no coordinates home)
     expect(dialLead({ ...fresh(), freeRoam: true }, DIAL.length)).toBe('Coordinates home: 1 of 32');
+  });
+});
+
+describe('an episode’s card, passed', () => {
+  it('goes at a key pressed, not at a key held down from before it showed (its auto-repeat)', () => {
+    expect(passesCard({ key: 'w', repeat: false })).toBe(true);
+    expect(passesCard({ key: 'w', repeat: true })).toBe(false);
+    expect(passesCard({ type: 'pointerdown' })).toBe(true);
   });
 });

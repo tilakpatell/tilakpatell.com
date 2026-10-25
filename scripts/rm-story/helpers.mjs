@@ -1,4 +1,4 @@
-/* global window, document */
+/* global window, document, KeyboardEvent */
 // The browser check's helpers (../rm-story-check.mjs): where the dev server
 // is, where shots go, the browser to drive, and the steps every scenario
 // takes through C-137's dev hooks (window.__C137__, window.__RMSTORY__):
@@ -129,6 +129,10 @@ export async function cardFor(page, i) {
   });
   const said = await card.textContent();
   check(said.includes(`Episode ${i + 1}`) && said.includes(EPISODES[i].title) && said.includes(EPISODES[i].intro[0][1]), `episode ${i + 1}’s card says “${said}”`);
+  // (a key held from before it showed doesn't pass it: its auto-repeat)
+  await page.evaluate(() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'w', code: 'KeyW', repeat: true })));
+  await page.waitForTimeout(300);
+  check((await card.count()) === 1, `episode ${i + 1}’s card went at a held key’s repeat`);
   await page.keyboard.press('Shift');
   await card.waitFor({ state: 'detached', timeout: 5000 });
 }

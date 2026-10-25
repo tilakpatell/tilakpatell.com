@@ -79,3 +79,8 @@ export const dialItems = (items, state) => items.map((d) => ({ ...d, locked: dia
 // The dial's lead: how many coordinates the story has brought home (Free
 // roam opens the dial, but brings none home).
 export const dialLead = (state, total) => `Coordinates home: ${coordinates(state).size} of ${total}`;
+
+// Whether a key or a tap passes an episode's card (./EpisodeCard.jsx): a key
+// pressed, not one held down from before it showed (its auto-repeat), or a
+// walking player never reads the next episode's first line
+export const passesCard = (e) => !e?.repeat;
