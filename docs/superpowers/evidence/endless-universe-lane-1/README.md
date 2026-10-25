@@ -114,3 +114,115 @@ These are two places of the lane’s own, not the baseline poses, so they have n
 - `wc -l src/components/universe/scene.js`: 6,374 before, 6,349 after (the sky block out to `mapSky.js`, −26; the step in `paceTo`, +1).
 - `glsl-sites`: 615, unchanged. Deep space’s materials are all made by its one `shader()` helper, so its puffs and sparks were never sites of their own.
 - `big-files`: 22, unchanged. `deepspace.js` is 1,300 lines, from 1,490; `deepspaceShaders.js` 747, from 827.
+
+## The gate: part one (Tasks 1 to 8)
+
+Run at `5b0814b5` on 2026-10-25, in the lane’s worktree. Other lanes’ browsers and tests shared the machine all the while: its load average ran from 3 to 30 on 4 cores, and its memory limit killed one pair of browsers run side by side. So everything with a clock in it below was slower than it would be alone.
+
+### The repo’s checks
+
+- **`npm run lint`:** green (6 m 55 s).
+- **`npm test`:** the whole suite once, 1,965 files in 56 minutes: 69 files red, 129 tests of 21,458. Every one ran out of time: 125 at the 5 s limit, and 4 over a speed budget of their own (`bf2017-hulls` 130 ms against 50, `battleTactics` 4.9 s against 4, `sector` 2.4 s against 2, `terrain` 782 ms against 250). None is in a file the lane touched.
+  - The 69 files again, two workers: 10 red, all time-outs. Those 10, one worker: 2 red.
+  - `scripts/health/art-mix.test.mjs` is red on `main` too (the baseline log at `cc5e2eaf`).
+  - `src/components/galaxy/surface/missions/blast.test.js`, “plays out with nobody playing inside fifteen minutes”, takes 4.3 to 5.1 s against its 5 s limit on either tree. Alone, one after another: the lane 5,066 ms (red), `main` 4,944 ms, the lane 4,339 ms, `main` 4,269 ms. The lane touches nothing under `galaxy/surface`.
+- **`npm run build`:** green (2 m 11 s), with the usual note on chunk sizes.
+- **`node scripts/health.mjs --check --skip build`:** within budget.
+- **`node scripts/flight-island.mjs --check`:** ok, 151 files on the island, 39 marked rows, 62 references.
+
+### The poses at mid
+
+`node scripts/universe-check.mjs --quality mid --frames 3 --out lab/universe/lane1-gate1/mid`, beside the lane’s before (Task 1, `ebfb2307`). The numbers are `gate-mid.json`. Every pose came out ok, with no page error. `breakingbad` timed out the first time, waiting 600 s for the canvas, and was run again alone.
+
+| pose | before calls | before tris | gate calls | gate tris | calls | tris |
+| --- | --: | --: | --: | --: | --: | --: |
+| `overview` | 98 | 488,962 | 97 | 488,958 | −1 | −4 |
+| `falcon-sun` | 82 | 474,020 | 80 | 473,936 | −2 | −84 |
+| `middleearth-limb` | 39 | 37,732 | 39 | 37,728 | 0 | −4 |
+| `rickmorty` | 40 | 38,858 | 40 | 38,854 | 0 | −4 |
+| `gaming` | 43 | 45,466 | 42 | 45,462 | −1 | −4 |
+| `caribbean` | 43 | 87,492 | 43 | 87,488 | 0 | −4 |
+| `middleearth` | 39 | 37,732 | 39 | 37,728 | 0 | −4 |
+| `breakingbad` | 64 | 31,930 | 64 | 31,926 | 0 | −4 |
+| `office` | 41 | 23,236 | 40 | 23,232 | −1 | −4 |
+| `belt` | 46 | 421,298 | 45 | 421,294 | −1 | −4 |
+| `maw` | 43 | 74,250 | 43 | 74,246 | 0 | −4 |
+| `landing-middleearth` | 77 | 50,796 | 142 | 138,084 | see below | |
+| `station` | 69 | 459,214 | 68 | 459,210 | −1 | −4 |
+| `far-rim` | 42 | 40,598 | 41 | 40,594 | −1 | −4 |
+
+Thirteen poses are at or under their before:
+
+- **4 triangles fewer at each:** the landmarks’ draw, 10 instances down to 8.
+- **A call fewer at seven:** the sparks’ `Points`, gone.
+- **At `falcon-sun`, a second call and 80 more triangles:** deep space’s puffs, gone.
+- **No nebula draw in any of them:** neither the Veil nor the Cradle is in view at these poses.
+
+**`landing-middleearth`** is counted at the first frame after the pose, while the landing is still coming in. So its count is a race, and how busy the machine is decides it.
+
+- **The before:** caught early (77 calls). Task 1’s shot has no smial or trees yet.
+- **The gate:** caught partway (142 calls), still falling frame by frame.
+
+So both trees were measured again once the landing had settled, one browser at a time. A frame was counted until three counts in a row agreed (`lab/galaxysky/posediag.mjs`, git-ignored). The before is `ebfb2307`’s `src` exported to a scratch folder, with the rest taken from `main`, which lane 2 didn’t change:
+
+| tree | calls | triangles | the landmarks’ draw |
+| --- | --: | --: | --: |
+| `ebfb2307` | 116 | 126,982 | 1 call, 20 triangles |
+| the gate | 116 | 126,978 | 1 call, 16 triangles |
+
+The landing is 4 triangles under its before too, so no pose is over. (`main`’s mid, the coordinator’s: 116 calls, 126,980 triangles.)
+
+### What the pictures show
+
+- **Pixels between two runs:** planet poses move 10% to 66% of their pixels between any two runs, because things turn and fly in the page’s own time. Their pixel change says nothing, so only the three still poses are compared. Each is the share moved by more than 16 in a channel, against `main` to `ebfb2307` as the noise:
+  - `overview`: 4.1% (noise 2.6%)
+  - `maw`: 1.2% (noise 1.1%)
+  - `far-rim`: 9.8% (noise 0.5%)
+- **`far-rim` (`gate-far-rim.webp`, the before on the left):** the pink cloud low on the left is gone, on purpose. It is one of the clouds the lane takes out of the map: the sky baked without its clouds (`mapSky.js`, Task 8) and deep space’s painted clouds gone. Nothing else in the shot moves.
+- **The Veil and the Cradle:** neither is in any of the fourteen poses. Task 8’s shots (`task8-veil.webp`, `task8-cradle.webp`) are their pictures, and Task 10’s two poses will give them numbers.
+
+![far-rim at mid, the before on the left](gate-far-rim.webp)
+
+### `/galaxy`
+
+The galaxy’s sky was checked pixel for pixel: `lab/galaxysky/`, git-ignored.
+
+- **Its sky:** `ebfb2307`’s `galaxy/sky.js` (its imports pointed at `/src`) beside today’s. Each was made with only the galaxy’s options (no `clouds`), set to a system and baked, then drawn from six directions at 256 × 256. Each view’s pixels were hashed.
+- **The result:** all 45 systems, plus 3 with `beacons: false` (the Rick and Morty backdrop’s sky): 48 of 48 the same at every view. Every view is lit, and `gl.getError()` is 0.
+- **The control:** today’s with `clouds: false` differs at both systems tried, so the check does see a change when there is one.
+- **The cube:** baked small (512) with no level, so no panorama was fetched. A panorama is laid over the same bake, and the option doesn’t touch it.
+- **The galaxy’s call:** `galaxy/scene.js:297` calls `createSky({ small, level, renderer })`, so it keeps the default.
+- **Not taken:** the whole `/galaxy` route’s shot (`autopilot-check.mjs`). Its frames move with time, so two shots of one tree differ, and the sky is all the lane changed in the galaxy.
+
+### Frame times
+
+The universe check’s mean over 3 frames, in software GL at 1280 × 720: before (quiet), then the gate (loaded).
+
+| pose | before | gate |
+| --- | --: | --: |
+| `overview` | 2.6 s | 5.7 s |
+| `falcon-sun` | 3.2 s | 5.5 s |
+| `middleearth-limb` | 2.4 s | 5.4 s |
+| `rickmorty` | 1.6 s | 4.2 s |
+| `gaming` | 1.5 s | 3.4 s |
+| `caribbean` | 2.3 s | 3.4 s |
+| `middleearth` | 1.6 s | 3.9 s |
+| `breakingbad` | 1.8 s | 4.3 s |
+| `office` | 0.8 s | 1.7 s |
+| `belt` | 1.4 s | 2.0 s |
+| `maw` | 2.5 s | 1.3 s |
+| `landing-middleearth` | 8.7 s | 5.1 s |
+| `station` | 3.7 s | 2.5 s |
+| `far-rim` | 1.5 s | 1.3 s |
+
+They follow the machine’s load, not the code. The later poses ran as the load fell, and came out faster than the before. The frame time worth reading (`perf-probe.mjs`, a tier twice) is left to the coordinator’s measure at the end, as Task 1 said.
+
+### Pops
+
+Not measured in part one. The pop-in count (anything over 4 px that appears in one frame) belongs to the whole-route check that flies into a nebula. That check comes with Task 10.
+
+### The counts at the gate
+
+- **`wc -l src/components/universe/scene.js`:** 6,374 before the lane, 6,349 at the gate (−25). `main` has 6,409.
+- **`glsl-sites`:** 615 against the before’s 614 (budget 619). That is one over until Task 9 takes out `sectors.js`’s puff material, after which the lane ends at 614.
+- **`big-files`:** 22, unchanged.
