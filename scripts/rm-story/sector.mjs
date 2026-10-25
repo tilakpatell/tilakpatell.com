@@ -30,7 +30,7 @@ export const SECTOR_CHECKS = {
     await noLink(page, 'in C-137');
     await page.evaluate(() => window.__C137__.goto('garage', -302.3, 101.4, Math.PI));
     await inArea(page, 'garage');
-    await goalIs(page, 'garage-portal', 'in the garage');
+    await goalIs(page, 'dial', 'in the garage, the gun set elsewhere');
     // Pluto dialled first, Bird World's part still to do: the marker's on Pluto's game, not its way out
     await dial(page, 'pluto');
     await reads(page, PLUTO.text);
@@ -171,7 +171,7 @@ export const SECTOR_CHECKS = {
     await opens(page, SCORE.unlocks, false, 'after episode 11');
     await reads(page, SCORE.steps[0].text);
     await noLink(page, 'after episode 11');
-    await goalIs(page, 'garage-portal', 'in the garage after episode 11');
+    await goalIs(page, 'dial', 'in the garage after episode 11, the gun still on Squanch');
   },
 
   // a returner who'd done three of the sector's planets before episode 11

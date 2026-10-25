@@ -92,7 +92,7 @@ export const SCORE_CHECKS = {
     await noLink(page, 'in C-137');
     await page.evaluate(() => window.__C137__.goto('garage', -302.3, 101.4, Math.PI));
     await inArea(page, 'garage');
-    await goalIs(page, 'garage-portal', 'in the garage');
+    await goalIs(page, 'dial', 'in the garage, the gun set elsewhere');
     check((await page.evaluate(() => window.__C137__.dial('blooddome'))) !== 'blooddome', 'the dial took Blood Dome at episode 12');
 
     // Heist-Con before anything: the badge marked, no job, nobody after him

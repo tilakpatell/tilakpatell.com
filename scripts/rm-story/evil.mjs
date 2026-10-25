@@ -144,7 +144,10 @@ export const EVIL_CHECKS = {
     await tab.waitFor({ state: 'detached', timeout: 10000 });
     await page.evaluate(() => window.__C137__.goto('garage', -302.3, 101.4, Math.PI));
     await inArea(page, 'garage');
-    await goalIs(page, 'garage-portal', 'in the garage');
+    // (the gun set elsewhere: the marker's on it, on the bench; set to the Dome, on the portal)
+    await goalIs(page, 'dial', 'in the garage, the gun set elsewhere');
+    check((await page.evaluate(() => window.__C137__.dial('blooddome'))) === 'blooddome', 'the dial wouldn’t take the Blood Dome');
+    await goalIs(page, 'garage-portal', 'in the garage, the gun set to the Dome');
 
     // the Blood Dome: the ring, the hint, the fight won
     await dial(page, 'blooddome');

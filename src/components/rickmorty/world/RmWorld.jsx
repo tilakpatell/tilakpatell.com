@@ -67,7 +67,7 @@ import { useAdventure } from '../adventure/useAdventure';
 import { dialItems, dialLead, leaveHold, markedTask, newsOf, objectiveLine } from '../adventure/hud';
 import { arriveAt } from '../adventure/ways';
 import { backLink, boundOf, inLine, planetOf, planetProgress, relabel } from './planetMode';
-import { dialledNote, isGunKey, portalName } from './portalGun';
+import { dialFirst, dialledNote, isGunKey, portalName } from './portalGun';
 import Cards from './WorldCards';
 import RmHud from './RmHud';
 import { useRmEarn } from '../useRmEarn';
@@ -231,7 +231,7 @@ const WHEEL_R = 110;
 
 // Where the next thing to do is, for the map's marker: the area and the spot
 // in it, and from anywhere else, the way towards it.
-const GOAL = { cable: ['house', 'spot:cable'], butter: ['house', 'spot:butter'], meeseeks: ['garage', 'spot:meeseeks'], plumbus: ['garage', 'spot:plumbus'], portalpanic: ['garage', 'spot:portalpanic'], quiz: ['school', 'spot:quiz'], fly: ['street', 'cruiser'], portal: ['garage', 'link:garage-portal'], dial: ['garage', 'spot:dial'], basement: ['garage', 'link:garage-hatch'], roy: ['arcade', 'spot:roy'], roy55: ['arcade', 'spot:roy'], president: ['street', 'spot:president'], oval: ['garage', 'link:garage-oval'], diner: ['street', 'link:diner-door'], mindblowers: ['mindblowers', 'spot:chair'], rickall: ['house', 'spot:egg'], wong: ['wong', 'spot:therapy'], ...Object.fromEntries(DESTINATIONS.flatMap((d) => d.tasks.map((t) => [t.id, [d.id, `spot:${Object.keys(d.done).find((k) => d.done[k] === t.id) ?? d.escape?.after ?? d.escape?.spot ?? d.goal}`]]))), sewer: ['agency', 'spot:sewer'], cabinet: ['arcade', 'spot:cabinet2'], chase: ['street', 'cruiser'], pond: ['street', 'spot:pond'], posters: ['street', 'spot:poster1'] };
+const GOAL = { cable: ['house', 'spot:cable'], butter: ['house', 'spot:butter'], meeseeks: ['garage', 'spot:meeseeks'], plumbus: ['garage', 'spot:plumbus'], portalpanic: ['garage', 'spot:portalpanic'], quiz: ['school', 'spot:quiz'], fly: ['street', 'cruiser'], portal: ['garage', 'link:garage-portal'], dial: ['garage', 'spot:dial'], basement: ['garage', 'link:garage-hatch'], roy: ['arcade', 'spot:roy'], roy55: ['arcade', 'spot:roy'], president: ['street', 'spot:president'], oval: ['garage', 'link:garage-oval'], diner: ['diner', 'spot:dineragent'], mindblowers: ['mindblowers', 'spot:chair'], rickall: ['house', 'spot:egg'], wong: ['wong', 'spot:therapy'], ...Object.fromEntries(DESTINATIONS.flatMap((d) => d.tasks.map((t) => [t.id, [d.id, `spot:${Object.keys(d.done).find((k) => d.done[k] === t.id) ?? d.escape?.after ?? d.escape?.spot ?? d.goal}`]]))), sewer: ['agency', 'spot:sewer'], cabinet: ['arcade', 'spot:cabinet2'], chase: ['street', 'cruiser'], pond: ['street', 'spot:pond'], posters: ['street', 'spot:poster1'] };
 // (every destination on the dial is through the garage's portal; the other planets are landed on from the universe map)
 const DIALLED = new Set(DIAL.map((d) => d.id));
 const toDest = (via) => Object.fromEntries(DESTINATIONS.filter((d) => !isPlanet(d.id) || DIALLED.has(d.id)).map((d) => [d.id, via]));
@@ -243,9 +243,9 @@ const WAY = {
   annex: { arcade: 'arcade-door' },
 };
 const OUT = { upstairs: 'stairs-down', school: 'school-exit', annex: 'annex-portal', arcade: 'arcade-exit', basement: 'basement-ladder', mindblowers: 'mind-door', oval: 'oval-portal', diner: 'diner-exit', wong: 'wong-exit', ...Object.fromEntries(DESTINATIONS.map((d) => [d.id, `${d.id}-portal`])) };
-// (`act`: the world's api.act, for where a place's game has got to, and
-// `done` the tasks done: ./dimensions/gameGoal.js)
-function goalOf(next, s, planet = null, act = null, done = []) {
+// (`act`: the world's api.act, for where a place's game has got to, `done`
+// the tasks done: ./dimensions/gameGoal.js; `dialled` where the gun's set)
+function goalOf(next, s, planet = null, act = null, done = [], dialled = null) {
   if (s.flying) return null;
   // (on a planet with everything there done, or a clock running to get back out: its portal home; from C-137, a planet's not pointed at)
   if (!next || (planet && s.escape?.area === planet.id)) return planet ? PROMPT[`link:${planet.id}-portal`].link : null;
@@ -270,6 +270,8 @@ function goalOf(next, s, planet = null, act = null, done = []) {
     return p.link ?? p.spot;
   }
   const id = WAY[s.area]?.[to] ?? OUT[s.area];
+  // (the garage portal goes where the gun's set: set elsewhere, the gun on the bench first)
+  if (id === 'garage-portal' && dialled && dialFirst(to, dialled)) return PROMPT['spot:dial'].spot;
   return PROMPT[`link:${id}`]?.link ?? null;
 }
 
@@ -1843,7 +1845,7 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
       // the place's people, for the map (stage.js's NPC layer says where they are)
       s.npcs = api.current?.act(s.area, 'npcs') ?? null;
       // (kept on the sim, where the checks read it)
-      s.goal = goalOf(markRef.current, s, planet, (area, name) => api.current?.act(area, name), doneRef.current) ?? (s.flying && !planet ? chaseGoal(s.chase) : null);
+      s.goal = goalOf(markRef.current, s, planet, (area, name) => api.current?.act(area, name), doneRef.current, planet ? null : dialRef.current) ?? (s.flying && !planet ? chaseGoal(s.chase) : null);
       drawMap(map.current, s, s.goal, s.t);
       // (and a place's game, its meter: ./dimensions/stage.js's `meter`)
       const charge = api.current?.act(s.area, 'meter') ?? METER_OFF;

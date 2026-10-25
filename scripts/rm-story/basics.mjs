@@ -4,7 +4,7 @@
 // when they're played.
 /* global window */
 import { READY } from '../../src/components/rickmorty/adventure/episodes.js';
-import { BASE, OUT, N, check, done, c137, built, goto, use, place, story, reads, WIPED, ARCADE, throughPortal, gun, toast, inArea, game, arriveOf, standOn, PLACES, CITADEL_LINE, citadelUp, citadelReads } from './helpers.mjs';
+import { BASE, OUT, N, check, done, c137, built, goto, use, place, story, reads, WIPED, ARCADE, throughPortal, gun, toast, inArea, game, arriveOf, standOn, PLACES, CITADEL_LINE, citadelUp, citadelReads, warp, goalIs } from './helpers.mjs';
 
 export const BASICS = {
   // a new visitor plays episode 1 from the street to Customs and back
@@ -22,6 +22,10 @@ export const BASICS = {
     await built(page);
     check((await story(page)).freeRoam === false, 'a new visitor started on free roam');
     await reads(page, WIPED.steps[0].text);
+    // the first step's marker: inside Shoney's, on the agent in his booth, not the way back out
+    await warp(page, 'diner', -300, 800, N);
+    await inArea(page, 'diner');
+    await goalIs(page, 'dineragent', 'inside Shoney’s at the first step');
     for (const [i, { id }] of WIPED.steps.slice(0, 3).entries()) {
       await page.evaluate((id) => window.__C137__.complete(id), id);
       await reads(page, WIPED.steps[i + 1].text);

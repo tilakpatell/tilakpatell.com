@@ -8,6 +8,12 @@
 import { DIAL, portalTarget } from './dimensions/destinations';
 import { inLine } from './planetMode';
 
+// whether the gun wants dialling before the garage portal takes Morty to `area`,
+// `dialled` where it's set (the dial's 'annex' is Blips and Chitz, its arcade
+// inside it); false for anywhere the portal doesn't go
+const dialFor = (area) => (area === 'arcade' || area === 'annex' ? 'annex' : DIAL.some((d) => d.id === area) ? area : null);
+export const dialFirst = (area, dialled) => dialFor(area) != null && dialFor(area) !== dialled;
+
 // the place the dial's set to, by name ('annex', or an old or unknown setting, is Blips and Chitz)
 export const dialledName = (dial) => DIAL.find((d) => d.id === portalTarget(dial)).name;
 
