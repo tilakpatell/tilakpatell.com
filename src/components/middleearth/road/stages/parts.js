@@ -27,6 +27,10 @@
 //     `rise` over the land, gold with a field’s light and dark, its x0 edge
 //     (the lane’s, under the clumps there) dropping to the ground; faces up
 //     whichever way x runs (a few thousand triangles where clumps would be millions)
+//   inReach([z0, z1], at, reach) → whether the ride `at` metres into the
+//     stage is within `reach` of that stretch of it: a scene hides what is
+//     drawn there beyond it (Hobbiton’s corn, two hundred metres up the lane
+//     from Bag End, was a sixth of the first frame’s triangles)
 //   waterOn(land, i) → (x, z) → the height of the land’s i-th river’s water
 //     there, or null off it: what carries a boat
 //   lampPools(lamps, heightAt, { radius, colour, strength, toward }) → { mesh, set(amount), dispose }:
@@ -93,6 +97,8 @@ export function merged(parts, material, name) {
 }
 
 const SHARED = ['position', 'normal', 'uv', 'color', 'aRole'];
+
+export const inReach = ([z0, z1], at, reach) => at >= z0 - reach && at <= z1 + reach;
 
 export const BAND = 60; // m along z: a merged mesh of statics spans no more than this
 

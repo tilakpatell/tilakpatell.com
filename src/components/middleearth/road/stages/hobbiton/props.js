@@ -10,7 +10,8 @@
 // are the nature kit's, stages/tables.js's). In the
 // stage’s frame: the lane along +z from 0, +x on the walker’s left.
 //
-//   buildProps({ K, material, heightAt, tier }) → { group, wheel, chimneys, update(dt), dispose }
+//   buildProps({ K, material, heightAt, tier }) → { group, wheel, chimneys, update(dt, local), dispose }
+//     update: the wheel turning, and what is far from the ride `local` metres in hidden
 //     chimneys: the chimney tops in the stage’s frame, the Hill’s first (for their smoke)
 //     K: townKit.js’s kit; material: the stage’s vertex-coloured one (the tables)
 //   buildCart(K) → { group, seat } (the chapter’s cart, its shafts to −z in the group)
@@ -18,7 +19,7 @@
 
 import * as THREE from 'three';
 import { MeshBasicNodeMaterial } from 'three/webgpu';
-import { BAND, C, canopy, disposeBuilt, merged, mergeStatics, part } from '../parts';
+import { BAND, C, canopy, disposeBuilt, inReach, merged, mergeStatics, part } from '../parts';
 import { moundTop } from '../../ground';
 import { STAGES } from '../index';
 import { bagEnd, barrelParts, beehiveParts, benchParts, bush, cabbageGeo, cart, dog, flowerBed, greenDragon, hayBaleParts, hedgeGeo, hole, lampParts, mailboxParts, mill, partyTree, parts, pavilion, pumpkinGeo, scarecrowParts, sheep, signpost, washingLine, wheatGeo, wheelbarrowParts } from '../../../shire/build';
@@ -59,6 +60,8 @@ const PAVILION = [21, 146, Math.PI];
 const PATCH = { x: [19, 27], z: [30, 41], crow: [23.5, 35.5] }; // the vegetable patch and its scarecrow
 const CORN = { z: [198, 226], x: [5.5, 8.6], far: 30 }; // the field’s edge either side: clumps by the lane, the canopy behind to `far`
 const HEDGES = [[1, 56, 68], [1, 78, 104], [1, 150, 184], [-1, 58, 88], [-1, 104, 112], [-1, 120, 140], [-1, 160, 170], [-1, 182, 196]]; // side, z from, z to
+// m: how near the ride must be for a band of hedge, or the corn’s clumps (the canopy behind them stays), to be drawn
+const REACH = { hedge: 120, corn: 100 };
 const SHEEP = [[-36, 178], [-40, 183], [-33, 188], [-44, 190], [-38, 195], [-31, 200]];
 
 const CLOTH = C(0xe8dfc8);
@@ -260,12 +263,16 @@ export function buildProps({ K, material, heightAt, tier = 'high' }) {
   for (const [side, z0, z1] of HEDGES) for (let z = z0; z < z1; z += 0.95) blocks.push([side * 4.6, z]);
   const along = new THREE.Quaternion().setFromAxisAngle(up, R);
   const hedgeGeometry = hedgeGeo();
+  // (what is drawn only while the ride is near it: a band of hedge or the corn two hundred metres off was triangles for a few pixels)
+  const far = [];
   for (const list of banded(blocks, (b) => b[1])) {
     const hedge = new THREE.InstancedMesh(hedgeGeometry, K.mats.hedge, list.length);
     list.forEach(([x, z], i) => hedge.setMatrixAt(i, m.compose(new THREE.Vector3(x, heightAt(x, z) - 0.1, z), along, new THREE.Vector3(1, 0.85 + ((z * 7.1) % 1) * 0.25, 0.9))));
     hedge.computeBoundingSphere();
     hedge.castShadow = true;
     group.add(hedge);
+    hedge.userData.far = true;
+    far.push({ mesh: hedge, z: [list[0][1], list[list.length - 1][1]], reach: REACH.hedge });
   }
 
   // the corn at the field’s edge, either side of the lane: the chapter’s
@@ -276,6 +283,8 @@ export function buildProps({ K, material, heightAt, tier = 'high' }) {
   const wheat = new THREE.InstancedMesh(crops.wheat, K.mats.wheat, clumps.length);
   clumps.forEach(([x, z], i) => wheat.setMatrixAt(i, m.compose(new THREE.Vector3(x, heightAt(x, z), z), q.setFromAxisAngle(up, (x * 13 + z) % 6.28), new THREE.Vector3(0.9, 0.8 + ((x * z) % 1) * 0.3, 0.9))));
   group.add(wheat);
+  wheat.userData.far = true;
+  far.push({ mesh: wheat, z: CORN.z, reach: REACH.corn });
   group.add(merged([1, -1].map((side) => canopy(heightAt, { x: [side * (CORN.x[1] - 1), side * CORN.far], z: CORN.z, cells: [24, 30] })), material, 'hobbiton:corn'));
 
   // the chimney tops in the stage’s frame, before the merge takes their groups
@@ -288,8 +297,9 @@ export function buildProps({ K, material, heightAt, tier = 'high' }) {
     group,
     wheel: theMill.wheel,
     chimneys,
-    update(dt) {
+    update(dt, local = 0) {
       if (theMill.wheel) theMill.wheel.rotation.z -= dt * 0.6;
+      for (const f of far) f.mesh.visible = inReach(f.z, local, f.reach);
     },
     dispose() {
       group.removeFromParent();

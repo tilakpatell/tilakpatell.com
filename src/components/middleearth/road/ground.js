@@ -11,6 +11,10 @@
 //       blades grow over them too, from a small map of their own
 //     update(x, z): the camera, in the stage’s frame (the blades’ patch follows it)
 //   groundJob(land, …): the same as a generator, a few rows a step (terrain.js’s run)
+//   patchOver(x, z, size, area) → whether a patch of blades `size` across
+//     round (x, z) lies over an area { x0, z0, w, d }: the mounds’ patch
+//     is drawn only while it does (off the Hill it was the field’s count
+//     again, every blade standing on nothing)
 //   moundTop(heightAt, mound) → (x, z) → a mound’s surface there (−∞ off it),
 //     its `.low` the lowest of the land round its foot; a mound is
 //     { at: [x, z], r, squash, sink }: a dome `r` across, squashed by
@@ -31,12 +35,14 @@ import { createGroundMap } from '../../../lib/three/groundmapNodes';
 import { noise2 } from '../../../lib/land/layers.js';
 import { run } from './terrain';
 import { soilHook } from './soil';
-import { createBlades } from './blades';
+import { BLADES, createBlades } from './blades';
 import { trackJob } from './track';
 import { boundsOf, distanceTo } from '../../../lib/land/paths.js';
 
 export const NEAR = 60; // m either side of the road
-const COARSE = 2; // the far grid takes every other sample
+const COARSE = 2;
+
+export const patchOver = (x, z, size, { x0, z0, w, d }) => x + size / 2 >= x0 && x - size / 2 <= x0 + w && z + size / 2 >= z0 && z - size / 2 <= z0 + d; // the far grid takes every other sample
 
 // The paint: the soil’s colours (stages/soils.js) by height and a slow
 // noise, its rock where the land is steep, worn to its dirt on the road. A
@@ -294,8 +300,13 @@ function moundBlades(land, mounds, colour, { wind, soil, tier }) {
     groundMap.dispose();
     return null;
   }
+  const patch = BLADES[tier]?.size ?? 0;
   return {
     ...blades,
+    update(x, z) {
+      blades.mesh.visible = patchOver(x, z, patch, { x0, z0, w, d });
+      if (blades.mesh.visible) blades.update(x, z);
+    },
     dispose() {
       blades.dispose();
       groundMap.dispose();
