@@ -34,3 +34,25 @@ What `src/lib/land/flight/variety.js` gives Tasks 8 to 13, where it differs from
 ### Left
 
 - Lane 5b: a leaf’s clutter is seeded by `spec.id` and the leaf’s chart key (`leafMesh.js`), so it’s placed in the chart, not on the sphere. The same ground reached from two landing spots carries different rocks and trees. Nothing shows it within one flight.
+
+## Task 8: generated specs
+
+### Landed
+
+- `src/lib/land/flight/generated.js`: `generatedSpecOf(row, family = familyOf(row.type))`, `groundRadius(row)`, `POI_NAMES`, `clutterOf(family, flora, exotic)` and `chartedAt(spec, dir)`. `planetSpecOf`’s branch for any planet or moon past the fifty now returns `generatedSpecOf`, so a typed `/fly/e:…` flies a round planet in its own colours. The fifty take the same paths as before, and `the roster` lock and `TERRAIN_VERSION` don’t move.
+- A generated spec has the fifty’s 17 keys and `ROSTER_EXTRA`’s, and is plain data (a JSON round trip gives it back). A gas or ringed giant is a plane cloud deck, recoloured. Every other planet, and every moon, is round: a radius of 15 to 60 km, its places set on the sphere, and the chart starting at the first place, or at the first dry, gentle candidate where it has none.
+- Over 1,180 landable planets from `randomSystems(1500, 7)`, every place kind the variety asked for was set (1,920 of 1,920), and every chart starts on dry, gentle land. A spec takes about 2.3 ms in Node.
+- `WATER_LOOKS` moved unchanged into `planetTables.js`, beside `waterColourOf(water, accent)`: the `#rrggbb` a water sheet is drawn in, mixed in linear light with three’s own curves. `water.test.js` holds it to `water.js`’s material, byte for byte, for every one of the fifty with water and for a generated sea. `water.js` draws a spec’s own `water.colour` where it has one. Task 10’s orbit map can read the same helper.
+- From Task 6’s “Left”: a seeded ocean is now held by its sea as well as its sand, in the colour `waterColourOf` gives. Four ocean slots give way in `e:1,0:1` and `e:1,0:2`; no planet the generator makes today moves (those systems’ generated planets are a ringed giant, a lava world and an ice world).
+- Where it differs from the lane plan:
+  - A lava planet’s and an ocean’s ground keep their template’s accent. Their variety accent is the glow and the sea, which drew navy puddles over an ocean’s beaches in the browser.
+  - An exotic’s clutter row takes the place of a template row of its kind at its depth, because two such rows are seeded alike in `leafMesh.js` and stand on each other. A glowing or floating planet that already has trees keeps its own.
+  - A gas giant gets no exotic clutter. Its only exotic is glowing (Task 6), and a cloud deck has no ground for trees.
+  - A moon’s `parent` is read from its canonical id, as Task 5’s branch did, not from `row.parent`. The two agree for every row `moonRowOf` makes.
+- In the browser (`/fly/…` on the dev server, software GL), an ocean (`e:3,-2:5:0`), a lava world (`e:3,-2:8:2`), a forest (`e:3,-2:4:0`), a moon (`e:3,-2:1:1:0`) and a gas giant (`e:3,-2:5:4`) each streamed their ground with no page error. The only console errors were the dev server’s 403s on fonts outside the worktree, the same on Hoth.
+
+### Left
+
+- Trees stand in the sea. `leafMesh.js` places clutter with no check of the water level, so a generated forest’s 79 m trunks rise out of the shallows along every coast (seen on `e:3,-2:4:0`). The fifty’s lakes and seas do the same today. A rule in `clutterFor` that only round specs take would leave the fifty alone.
+- The flight’s own map (`expanse/flight/mapRules.js`) colours a sea by its own `WATER` table, not by `water.colour`. A generated ocean’s sea there is the kind’s map colour. Task 10’s `groundColour` reads `water.colour`.
+- A ground’s `mark` (footprints) and `wet` colours stay the template’s.
