@@ -33,7 +33,7 @@
 // partSpecs(kind) → [{ id, kind, at, r, reach, low, build }]
 
 import * as THREE from 'three';
-import { SUBSYSTEMS, TURRETS } from '../universe/wars';
+import { SUBSYSTEMS, TURRETS } from '../universe/shared/capitals';
 
 // what's built where the model has nothing to take, by the subsystem's kind
 const BUILD = { shieldgen: 'dome', bridge: 'block', reactor: 'bulb' };

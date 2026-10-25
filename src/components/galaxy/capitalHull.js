@@ -300,6 +300,10 @@ export function hullMaterial(maps, def, { name = 'M_Hull_01' } = {}) {
   maps.panelsNormal.channel = 0;
   maps.panelsNormal.repeat.setScalar(def.panels.tiling);
   m.normalMap = maps.panelsNormal;
+  // (the pack's hulls carry no tangents: three works the frame out from the
+  // UVs, and glTF's green is turned for that frame, as GLTFLoader turns it;
+  // swapIn turns it back for a hull whose parts have them)
+  m.normalScale.y = -1;
   const ratio = def.details.tiling / def.panels.tiling;
   const colour = Boolean(maps.panels && maps.details);
   if (!colour && !maps.detailsNormal) return m;
@@ -358,6 +362,8 @@ export function paintMaterial(maps, def, { name = def.own } = {}) {
     maps.tilingNormal.channel = 0;
     maps.tilingNormal.repeat.setScalar(def.tiling.tiling);
     m.normalMap = maps.tilingNormal;
+    // (no tangents on the pack's hulls: hullMaterial's)
+    m.normalScale.y = -1;
   }
   const ratio = def.breakup.tiling / def.tiling.tiling;
   const relief = sheets && maps.breakupNormal;
@@ -689,5 +695,7 @@ function swapIn(root, targets, def, parts, material) {
     const to = new THREE.Matrix4().multiplyMatrices(rootInverse, mesh.matrixWorld);
     mesh.geometry = joined(parts.map((p, k) => inFrame(p.geometry, new THREE.Matrix4().multiplyMatrices(frame, def.parts[k].place ?? new THREE.Matrix4()).multiply(p.matrix), to)));
     if (material) mesh.material = material;
+    // (a hull whose parts all carry tangents is lit through them: glTF's green as it is)
+    if (material?.normalMap && mesh.geometry.getAttribute('tangent')) material.normalScale.y = Math.abs(material.normalScale.y);
   });
 }

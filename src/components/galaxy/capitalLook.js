@@ -30,7 +30,7 @@
 // plates are a plate's size on any of them) are the data.
 
 import * as THREE from 'three';
-import { HULLS } from '../universe/wars';
+import { HULLS } from '../universe/shared/capitals';
 import { panes, patchShaders, plate } from './capitalPlating';
 
 // metres long, Wookieepedia's (the plates are metres, whatever a ship's drawn at)

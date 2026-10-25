@@ -9,12 +9,20 @@
 // each part whole at six LODs, both UV sets, its tangents and the game's
 // 2,048 maps.
 //
-//   node scripts/bf2017-kit-places.mjs <system> <kit slug> <kind> [--map <file without .json/.bin>] [--root lab/assets/bf2017]
-//     e.g. endor endor-isd destroyer
+//   node scripts/bf2017-kit-places.mjs <system> <kit slug> [--map <file without .json/.bin>] [--maps <regex>] [--root lab/assets/bf2017]
+//     e.g. endor endor-isd; fondor fondor-isd
 //
-//   writes src/data/galaxy/kits/<kind>.json:
+//   writes src/data/galaxy/kits/<kit slug>.json:
 //     { level, from, anchor, parts: [[mesh, at, quaternion, scale], …], lods: { mesh: n }, tex: { slug: { low, mid, high, ultra } } }
-//   (the anchor, the hull, left out of `parts`: capitalHull.js draws it)
+//   (the anchor, the hull, left out of `parts`: capitalHull.js draws it; its
+//   LODs listed, for what its GLB holds beside it; `n`, the LODs from the
+//   first the pack has without a gap)
+//   --maps <regex>: the map rows the kit's parts wear, by their slug (the
+//   Star Destroyer's own sheets, ^t_stardestroyer, by default)
+//   --fallback <pack,…>: the packs a part the kit's own hasn't got is taken
+//   from (the same game mesh: Fondor's pack left out the Star Destroyer's
+//   domes, Endor's has them), its entry naming its pack, `[mesh, at,
+//   quaternion, scale, pack]`
 //   --map: the space map's local copy (the drop's web/maps/<map>, fetched by
 //   scripts/bf2017-fetch.mjs with the bucket's keys)
 
@@ -36,34 +44,45 @@ export const packOf = (map) => `sb_${String(map).split('/').pop().replace(/^sb_|
 // The kit file from piecesOf's model and the pack's level.json. Pure.
 //   model: { parts: [{ file, at, quaternion, scale }] } (the anchor at the origin, first)
 //   level: level.json ({ meshes: [{ name, glb }], tex })
-export function kitOf(model, level, { pack, from }) {
-  const byName = new Map(level.meshes.map((m) => [last(m.name), m]));
-  const [anchor, ...rest] = model.parts;
+//   fallbacks: [{ pack, level }], the packs a part the kit's own hasn't got is taken from
+export function kitOf(model, level, { pack, from, maps = /^t_stardestroyer/, fallbacks = [] }) {
+  // (a kit gathered round an anchor, its first part at the origin; an area's, the dry dock's, has none to draw round)
+  const [anchor] = model.parts;
+  if (!model.kit || !anchor || anchor.at.some((v) => v !== 0)) throw new Error(`${from}: not a kit round an anchor`);
+  const packs = [{ pack, level }, ...fallbacks].map((x) => ({ ...x, byName: new Map(x.level.meshes.map((m) => [last(m.name), m])) }));
+  // (the LODs from the first without a gap: a LOD past a missing one isn't asked for)
+  const lodsOf = (glb = []) => {
+    const n = glb.findIndex((g) => !g);
+    return n < 0 ? glb.length : n;
+  };
   const parts = [];
   const lods = {};
   const missing = [];
-  for (const p of rest) {
+  const used = new Set([pack]);
+  for (const p of model.parts) {
     const mesh = last(p.file);
-    const row = byName.get(mesh);
-    if (!row?.glb?.some(Boolean)) {
+    const from = packs.find((x) => lodsOf(x.byName.get(mesh)?.glb) > 0);
+    if (!from) {
       missing.push(mesh);
       continue;
     }
-    lods[mesh] = row.glb.filter(Boolean).length;
-    parts.push([mesh, p.at.map((v) => round(v, 1000)), p.quaternion.map((v) => round(v, 1e4)), p.scale.map((v) => round(v, 1000))]);
+    used.add(from.pack);
+    lods[mesh] = lodsOf(from.byName.get(mesh).glb);
+    const entry = [mesh, p.at.map((v) => round(v, 1000)), p.quaternion.map((v) => round(v, 1e4)), p.scale.map((v) => round(v, 1000))];
+    if (from.pack !== pack) entry.push(from.pack);
+    if (p !== anchor) parts.push(entry);
   }
-  // (the maps the kit's parts wear are the Star Destroyer's own sheets: the rows by their prefix)
-  const prefix = /^t_stardestroyer/;
-  const tex = Object.fromEntries(Object.entries(level.tex ?? {}).filter(([slug]) => prefix.test(slug)).map(([slug, row]) => [slug, { low: row.low, mid: row.mid, high: row.high, ultra: row.ultra }]));
-  return { kit: { level: pack, from, anchor: last(anchor.file), parts, lods, tex }, missing };
+  const tex = {};
+  for (const x of packs.filter((x) => used.has(x.pack)).reverse()) for (const [slug, row] of Object.entries(x.level.tex ?? {})) if (maps.test(slug)) tex[slug] = { low: row.low, mid: row.mid, high: row.high, ultra: row.ultra };
+  return { kit: { level: pack, from, anchor: last(anchor.file), parts, lods, tex: Object.fromEntries(Object.entries(tex).sort(([a], [b]) => (a < b ? -1 : 1))) }, missing };
 }
 
 async function main() {
   const args = parseArgs(process.argv.slice(2));
-  const [system, slug, kind] = args._;
+  const [system, slug] = args._;
   const space = SPACE[system];
-  if (!space || !slug || !kind) {
-    console.log('node scripts/bf2017-kit-places.mjs <system> <kit slug> <kind> [--map <file>] [--root lab/assets/bf2017]');
+  if (!space || !slug) {
+    console.log('node scripts/bf2017-kit-places.mjs <system> <kit slug> [--map <file>] [--maps <regex>] [--root lab/assets/bf2017]');
     return 1;
   }
   const base = typeof args.map === 'string' ? args.map : localPath(typeof args.root === 'string' ? args.root : join(ROOT, 'lab/assets/bf2017'), `web/maps/${space.map}`);
@@ -75,9 +94,10 @@ async function main() {
     return 1;
   }
   const pack = packOf(space.map);
-  const level = JSON.parse(readFileSync(join(ROOT, 'public/models/galaxy/bf2017/levels', pack, 'level.json'), 'utf8'));
-  const { kit, missing } = kitOf(model, level, { pack, from: slug });
-  const out = join(ROOT, 'src/data/galaxy/kits', `${kind}.json`);
+  const levelOf = (p) => JSON.parse(readFileSync(join(ROOT, 'public/models/galaxy/bf2017/levels', p, 'level.json'), 'utf8'));
+  const fallbacks = (typeof args.fallback === 'string' ? args.fallback.split(',') : []).map((p) => ({ pack: p, level: levelOf(p) }));
+  const { kit, missing } = kitOf(model, levelOf(pack), { pack, from: slug, fallbacks, ...(typeof args.maps === 'string' ? { maps: new RegExp(args.maps) } : {}) });
+  const out = join(ROOT, 'src/data/galaxy/kits', `${slug}.json`);
   mkdirSync(dirname(out), { recursive: true });
   writeFileSync(out, `${JSON.stringify(kit)}\n`);
   console.log(`${slug}: ${kit.parts.length} parts of ${new Set(kit.parts.map((p) => p[0])).size} meshes round ${kit.anchor}, ${Object.keys(kit.tex).length} maps → ${out}`);

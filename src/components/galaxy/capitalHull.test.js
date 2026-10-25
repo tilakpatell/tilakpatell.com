@@ -346,6 +346,19 @@ describe('capitalHull', () => {
     expect(kept.material).toBe(cut);
   });
 
+  it('turns glTF’s green for a hull lit through three’s own frame (the pack’s hulls carry no tangents), and back for one whose parts carry them', async () => {
+    expect(hullMaterial(sheets(), GAME_HULLS.destroyer).normalScale.y).toBe(-1);
+    expect(paintMaterial({ combine: map(), tilingNormal: map(), breakup: map(), breakupNormal: map() }, GAME_HULLS.venator).normalScale.y).toBe(-1);
+    const { root, hull } = ship();
+    const tangents = () => {
+      const p = packHull();
+      p.geometry.setAttribute('tangent', new THREE.BufferAttribute(new Float32Array([1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1]), 4));
+      return p;
+    };
+    await dressGameHull(root, 'destroyer', { detail: 'high', loadMesh: async () => tangents(), loadTexture: async () => map() });
+    expect(hull.material.normalScale.y).toBe(1);
+  });
+
   it('keeps the parts’ tangents where every part has them, a mirrored part’s handedness turned', () => {
     const g = packHull().geometry;
     g.setAttribute('tangent', new THREE.BufferAttribute(new Float32Array([1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1]), 4));

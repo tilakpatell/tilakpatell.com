@@ -37,6 +37,14 @@ describe('spaceKits', () => {
     expect(asked).toEqual([['hull', 'jedicruiser'], ['maps', 'lightcruiser'], ['hull', 'jedicruiser'], ['maps', 'lightcruiser']]);
   });
 
+  it('draws a kit the pack has whole as its own level stands it, any other by its kind', async () => {
+    const asked = [];
+    const parts = async (root, key) => (asked.push(key), false);
+    const stub = async () => false;
+    for (const slug of ['fondor-isd', 'endor-isd', 'naboo-jedicruiser']) await dressKit(kit(), slug, { hull: stub, maps: stub, parts });
+    expect(asked).toEqual(['fondor-isd', 'endor-isd', 'jedicruiser']);
+  });
+
   it('dresses a kit as the war’s ship of its kind, and hands it back where the level stood it', async () => {
     const gltf = kit();
     const asked = [];

@@ -214,6 +214,21 @@ export function bindSlot(mat, slot, tex, { metal = true } = {}) {
   mat.needsUpdate = true;
 }
 
+// A normal map on another UV set than the first is lit through the frame of
+// that set, not the GLB's tangents (the export's are the first set's): its
+// meshes' tangents dropped, for three to work the frame out from the normal
+// map's own UVs, and glTF's green turned for that frame as GLTFLoader turns
+// it (normalScale.y)
+export function unTangent(gltf, slots) {
+  const off = new Set(slots.filter((x) => x.slot === 'normalMap' && (x.texCoord ?? 0) !== 0).map((x) => x.material));
+  if (!off.size) return;
+  gltf.scene.traverse((o) => {
+    if (!o.isMesh || !off.has(gltf.parser.associations.get(o.material)?.materials)) return;
+    if (o.geometry.getAttribute('tangent')) o.geometry.deleteAttribute('tangent');
+    if (o.material.normalScale && o.material.normalScale.y > 0) o.material.normalScale.y = -o.material.normalScale.y;
+  });
+}
+
 // whether a material's ORM keeps its metal: the export's ORM is laid out on
 // the colour's UVs and takes its blue, the metal, from the NAM's alpha; where
 // the NAM is on the other UV set (the game's two-UV presets: the colour on
@@ -272,7 +287,8 @@ export function onChannel(tex, channel = 0) {
   if (!copies.has(channel)) {
     const c = tex.clone();
     c.channel = channel;
-    c.userData = {};
+    // (the game's word on its colour kept; its row and its copies the shared one's)
+    c.userData = { gameSrgb: tex.userData.gameSrgb, colourName: tex.userData.colourName };
     copies.set(channel, c);
   }
   return copies.get(channel);
@@ -461,6 +477,11 @@ export function createLevelLoader({
   // alone left the copy, the one drawn, white. Returns the GLB indices of
   // the materials whose colour map was named and did not come (bare, as
   // one that named none: load).
+  // (the classic renderer's materials read each map on its own UV set and
+  // keep a misaligned ORM's metal off; the node renderer's game material
+  // (gameMaterial.js) samples the GLB's maps on its colour map's set itself,
+  // and is given them as before)
+  const ownSets = !(recipes && materialFor);
   async function bind(gltf, slots, glbPath) {
     const lost = new Set();
     const copies = new Map(); // GLB index → the scene's materials of it
@@ -478,9 +499,10 @@ export function createLevelLoader({
           if (slot === 'map') lost.add(material);
           return;
         }
-        for (const m of new Set([mat, ...(copies.get(material) ?? [])])) bindSlot(m, slot, onChannel(tex, texCoord), { metal: ormMetal(slots, material) });
+        for (const m of new Set([mat, ...(copies.get(material) ?? [])])) bindSlot(m, slot, ownSets ? onChannel(tex, texCoord) : tex, { metal: !ownSets || ormMetal(slots, material) });
       }),
     );
+    if (ownSets) unTangent(gltf, slots);
     return lost;
   }
 

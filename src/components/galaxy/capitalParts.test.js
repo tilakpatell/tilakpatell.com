@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
-import { SUBSYSTEMS, TURRETS } from '../universe/wars';
+import { SUBSYSTEMS, TURRETS } from '../universe/shared/capitals';
 import { SECTIONS, componentsOf, cutParts, partSpecs, partsOf, piecesOf, reachOf } from './capitalParts';
 
 // a ship 1 long as galaxy/models.js fits one: a holder scaled to the unit

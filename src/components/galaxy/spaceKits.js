@@ -23,7 +23,7 @@ import * as THREE from 'three';
 import { budget, device } from '../../lib/device';
 import { cloneScene } from '../../lib/three/gltfCache';
 import { dressGameHull, dressGameMaps } from './capitalHull';
-import { dressGameKit } from './capitalKit';
+import { GAME_KITS, dressGameKit } from './capitalKit';
 import { dressCapital, isCapital } from './capitalLook';
 import { shadowed } from './capitalShadow';
 
@@ -51,7 +51,8 @@ export async function dressKit(gltf, slug, { detail = device().detail, phone = d
   if (!row || !isCapital(row[0])) return root;
   const [kind, turn, own = kind] = row;
   const dressing = { detail, phone, aniso };
-  await Promise.all([hull(root, own, dressing), maps(root, kind, dressing), parts(root, own, dressing)]);
+  // (a kit the pack stands its own way drawn as its level has it: Fondor's Star Destroyer is its dry dock's, not Endor's)
+  await Promise.all([hull(root, own, dressing), maps(root, kind, dressing), parts(root, slug in GAME_KITS ? slug : own, dressing)]);
   // (in the ship's own frame: centred, turned bow to +z, one long)
   root.updateMatrixWorld(true);
   const box = new THREE.Box3().setFromObject(root);

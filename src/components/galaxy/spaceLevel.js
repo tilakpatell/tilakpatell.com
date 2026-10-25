@@ -21,6 +21,7 @@ import { createLevelArea } from './levelArea';
 import { LIGHTS } from '../../data/bf2017/light';
 import { METRES } from './surface/missions/starfighter';
 import { levelHull } from './capitalHull';
+import { windowsMaterial } from './capitalKit';
 import { budget, device } from '../../lib/device';
 
 const _v = new THREE.Vector3();
@@ -38,6 +39,21 @@ const greyed = (root) =>
       if ('roughness' in m) m.roughness = Math.min(m.roughness, 0.6);
     }
   });
+
+// (the Star Destroyer's windows, which the export gives no map (the game's
+// SS_StarDestroyer_Windows_01 lights its panes from a heightmap the bucket
+// hasn't got): lit as the war's ship's are, a pane a cell of their own UVs'
+// grid, capitalKit.js's windowsMaterial, one for the level, not greyed; the
+// Venator's and the Lucrehulk's, another shader's on another layout, are)
+const ISD_WINDOWS = /^M_Windows$/;
+export const litWindows = (root, made = {}) => {
+  root.traverse((o) => {
+    if (!o.isMesh || Array.isArray(o.material) || o.material?.map || !ISD_WINDOWS.test(o.material?.name ?? '')) return;
+    made.windows ??= windowsMaterial({ name: 'M_Windows' });
+    o.material = made.windows;
+  });
+  return made;
+};
 
 // (a level's own bare hull, a Star Destroyer's, a Venator's, an MC80's: the
 // game's material on it as the war's ship of its kind has, capitalHull.js's
@@ -89,6 +105,7 @@ export function drawSpaceLevel(scene, { pack, origin, packOrigin, tier, renderer
       : null;
     let last = performance.now();
     let looked = -Infinity;
+    const lit = {};
     return {
       group,
       // (where the camera is in the pack's own metres: its LODs and cells by that)
@@ -105,6 +122,7 @@ export function drawSpaceLevel(scene, { pack, origin, packOrigin, tier, renderer
         if (now - looked >= 1000) {
           looked = now;
           hulled(group);
+          litWindows(group, lit);
           greyed(group);
         }
       },
@@ -114,6 +132,7 @@ export function drawSpaceLevel(scene, { pack, origin, packOrigin, tier, renderer
         gone = true;
         room?.dispose();
         level?.dispose();
+        lit.windows?.dispose();
         scene.remove(group);
       },
     };

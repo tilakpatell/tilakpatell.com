@@ -2,7 +2,7 @@ import { Document, NodeIO } from '@gltf-transform/core';
 import * as THREE from 'three';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { WasmError } from '../../../../lib/wasm/load.js';
-import { asColour, BARE, bareGlb, bindSlot, colourByName, createLevelLoader, gameWordOf, matchRecipes, onChannel, ormMetal, recipeMaps, recipesIndex, sharpenPack, swapInto } from './levelGltf.js';
+import { asColour, BARE, bareGlb, bindSlot, colourByName, createLevelLoader, gameWordOf, matchRecipes, onChannel, ormMetal, recipeMaps, recipesIndex, sharpenPack, swapInto, unTangent } from './levelGltf.js';
 
 // the KTX2 loader the pack's maps come through, as a test sets it (no
 // transcoder here: a test that names no map never asks)
@@ -741,5 +741,32 @@ describe('an ORM whose metal is another layout’s', () => {
     bindSlot(k, 'metalRough', t);
     expect(k.metalnessMap).toBe(t);
     expect(k.metalness).toBe(1);
+  });
+});
+
+describe('a normal map on the unique UV set', () => {
+  it('is lit through its own set’s frame: the meshes’ tangents (the first set’s) dropped and glTF’s green turned, the rest left be', () => {
+    const geometry = () => {
+      const g = new THREE.BufferGeometry();
+      g.setAttribute('tangent', new THREE.BufferAttribute(new Float32Array(4), 4));
+      return g;
+    };
+    const unique = new THREE.MeshStandardMaterial();
+    const tiling = new THREE.MeshStandardMaterial();
+    const a = new THREE.Mesh(geometry(), unique);
+    const b = new THREE.Mesh(geometry(), tiling);
+    const scene = new THREE.Group().add(a, b);
+    const associations = new Map([
+      [unique, { materials: 0 }],
+      [tiling, { materials: 1 }],
+    ]);
+    unTangent({ scene, parser: { associations } }, [
+      { material: 0, slot: 'normalMap', uri: 'n', texCoord: 1 },
+      { material: 1, slot: 'normalMap', uri: 'm' },
+    ]);
+    expect(a.geometry.getAttribute('tangent')).toBeUndefined();
+    expect(unique.normalScale.y).toBe(-1);
+    expect(b.geometry.getAttribute('tangent')).toBeTruthy();
+    expect(tiling.normalScale.y).toBe(1);
   });
 });
