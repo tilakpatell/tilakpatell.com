@@ -196,6 +196,24 @@ describe('the toast slot', () => {
     expect(slot.reading()).toBe(false);
   });
 
+  it('takes a toast down at the end of its own life, and never the one put up after it', () => {
+    const c = clock();
+    const hid = [];
+    const slot = createToastSlot({ show: () => {}, hide: (t) => hid.push([t.text, c.now()]), now: c.now, later: c.later, cancel: c.cancel });
+    slot.put(SHORT);
+    c.to(TOAST_MS.say);
+    expect(hid).toEqual([[SHORT.text, TOAST_MS.say]]);
+    // (a line that went up a moment before the one before it ends stays its own life)
+    slot.put(SHORT);
+    c.to(TOAST_MS.say + 5599);
+    slot.put(OUTRO, { after: true });
+    c.to(TOAST_MS.say * 4);
+    expect(hid).toEqual([
+      [SHORT.text, TOAST_MS.say],
+      [OUTRO.text, TOAST_MS.say + 5599 + toastLife(OUTRO)],
+    ]);
+  });
+
   it('drops what waits when it’s cleared', () => {
     const c = clock();
     const { slot, shown } = slotOn(c);

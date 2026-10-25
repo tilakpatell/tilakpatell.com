@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { preloadVoiced, sayVoiced, stopVoiced } from '../../../lib/voiced';
-import { createToastSlot, toastLife } from './toastSlot';
+import { createToastSlot } from './toastSlot';
 import { lineSaid } from './voicelines';
 
 // C-137's one toast over RmWorld.jsx (./toastSlot.js's slot, as React state):
 // what's said is heard in the speaker's own voice where it's been made
 // (./voicelines.js, lib/voiced.js) as it goes up; the next thing said,
-// voiced or not, stops it. Each toast comes down when its time's up.
+// voiced or not, stops it. Each toast comes down when its time's up (the
+// slot's own timer: never the next one, put up in the same moment).
 //
 // useRmToast() → { toast, say(t, { after, onShow }), due(), reading() } —
 // `after`: wait till the line that's up has been read (a thing done, the
@@ -24,6 +25,7 @@ export function useRmToast() {
         sayVoiced(said?.who, said?.text);
       }
     },
+    hide: (t) => setToast((cur) => (cur === t ? null : cur)),
   });
   useEffect(() => {
     const s = slot.current;
@@ -33,11 +35,6 @@ export function useRmToast() {
       stopVoiced();
     };
   }, []);
-  useEffect(() => {
-    if (!toast) return undefined;
-    const t = setTimeout(() => setToast(null), toastLife(toast));
-    return () => clearTimeout(t);
-  }, [toast]);
   const say = useCallback((t, opts) => slot.current.put(t, opts), []);
   const due = useCallback(() => slot.current.due(), []);
   const reading = useCallback(() => slot.current.reading(), []);

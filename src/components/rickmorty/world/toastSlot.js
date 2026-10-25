@@ -12,8 +12,9 @@
 //     its fade (from 88% of it: world.css's rm-toast) starts once it's read.
 //   readFor(t, now) → ms till `t` has been read: a line said, its readMs, at
 //     most as long as it's up; anything else, nought.
-//   createToastSlot({ show, now, later, cancel }) → { put(t, { after, onShow }), due(), reading(), clear() }
-//     `show(t)` puts `t` (stamped `at`) up; `after`: wait till what's up has
+//   createToastSlot({ show, hide, now, later, cancel }) → { put(t, { after, onShow }), due(), reading(), clear() }
+//     `show(t)` puts `t` (stamped `at`) up, and `hide(t)` takes it down at the
+//     end of its own life, never one put up since; `after`: wait till what's up has
 //     been read; `onShow()`: run as `t` goes up. One waits at a time: a later
 //     one takes its place (and the onShow of what it put behind runs as it
 //     goes up), and it waits on behind a line said meanwhile. `due()`: ms
@@ -33,14 +34,21 @@ export function readFor(t, now) {
   return Math.max(0, t.at + Math.min(readMs(t.text), toastLife(t)) - now);
 }
 
-export function createToastSlot({ show, now = () => performance.now(), later = setTimeout, cancel = clearTimeout }) {
+export function createToastSlot({ show, hide = () => {}, now = () => performance.now(), later = setTimeout, cancel = clearTimeout }) {
   let up = null;
   let waiting = null;
   let told = [];
   let timer = null;
+  let ends = null; // (the timer that takes what's up down)
   const put = (t, onShow) => {
-    up = { ...t, at: now() };
-    show(up);
+    const mine = { ...t, at: now() };
+    up = mine;
+    if (ends != null) cancel(ends);
+    ends = later(() => {
+      ends = null;
+      if (up === mine) hide(mine);
+    }, toastLife(mine));
+    show(mine);
     onShow.forEach((f) => f());
   };
   const left = () => (up && now() < up.at + toastLife(up) ? readFor(up, now()) : 0);
@@ -66,7 +74,9 @@ export function createToastSlot({ show, now = () => performance.now(), later = s
     reading: () => left() > 0,
     clear() {
       if (timer != null) cancel(timer);
+      if (ends != null) cancel(ends);
       timer = null;
+      ends = null;
       waiting = null;
       told = [];
     },
