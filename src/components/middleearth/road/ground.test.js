@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createGround, moundTop, paintFor, patchMeets } from './ground';
+import { createGround, moundTop, paintFor, patchOver } from './ground';
 import { landFor, roadFor } from './terrain';
 import { createWind } from '../../../lib/three/windNodes';
 import { soilOf } from './stages/soils';
@@ -73,16 +73,13 @@ describe('a stage’s mounds', () => {
   }, 30000);
 });
 
-describe('the mounds’ blades', () => {
-  // (a patch of 44 m round the camera meets the Hill’s bounds only near it)
-  const area = { x0: -30, z0: 20, w: 40, d: 30 };
-  it('grow while the patch round the camera meets the mounds', () => {
-    expect(patchMeets(0, 0, 22, area)).toBe(true);
-    expect(patchMeets(-50, 35, 22, area)).toBe(true);
-  });
-  it('are put away once it no longer does', () => {
-    expect(patchMeets(0, -3, 22, area)).toBe(false);
-    expect(patchMeets(0, 75, 22, area)).toBe(false);
-    expect(patchMeets(33, 35, 22, area)).toBe(false);
+describe('patchOver', () => {
+  it('a patch of blades `size` across round the camera lies over an area while their squares meet', () => {
+    const hill = { x0: 14, z0: -14, w: 40, d: 40 };
+    expect(patchOver(0, 0, 44, hill)).toBe(true);
+    expect(patchOver(-7, 0, 44, hill)).toBe(true);
+    expect(patchOver(-8.5, 0, 44, hill)).toBe(false);
+    expect(patchOver(30, 48, 44, hill)).toBe(true);
+    expect(patchOver(30, 49, 44, hill)).toBe(false);
   });
 });

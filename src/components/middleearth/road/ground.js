@@ -11,6 +11,10 @@
 //       blades grow over them too, from a small map of their own
 //     update(x, z): the camera, in the stage’s frame (the blades’ patch follows it)
 //   groundJob(land, …): the same as a generator, a few rows a step (terrain.js’s run)
+//   patchOver(x, z, size, area) → whether a patch of blades `size` across
+//     round (x, z) lies over an area { x0, z0, w, d }: the mounds’ patch
+//     is drawn only while it does (off the Hill it was the field’s count
+//     again, every blade standing on nothing)
 //   moundTop(heightAt, mound) → (x, z) → a mound’s surface there (−∞ off it),
 //     its `.low` the lowest of the land round its foot; a mound is
 //     { at: [x, z], r, squash, sink }: a dome `r` across, squashed by
@@ -36,7 +40,9 @@ import { trackJob } from './track';
 import { boundsOf, distanceTo } from '../../../lib/land/paths.js';
 
 export const NEAR = 60; // m either side of the road
-const COARSE = 2; // the far grid takes every other sample
+const COARSE = 2;
+
+export const patchOver = (x, z, size, { x0, z0, w, d }) => x + size / 2 >= x0 && x - size / 2 <= x0 + w && z + size / 2 >= z0 && z - size / 2 <= z0 + d; // the far grid takes every other sample
 
 // The paint: the soil’s colours (stages/soils.js) by height and a slow
 // noise, its rock where the land is steep, worn to its dirt on the road. A
@@ -263,14 +269,6 @@ export function moundTop(heightAt, { at: [cx, cz], r, squash = 1, sink = 0 }) {
   return top;
 }
 
-// whether the patch of blades round the camera (`half` metres either way of
-// x, z) meets an area: the mounds’ patch is as many blades as the field’s,
-// and drawn wherever the camera was it cost Hobbiton 187,500 triangles a
-// frame for a hill most of the stage never sees
-export function patchMeets(x, z, half, { x0, z0, w, d }) {
-  return x + half > x0 && x - half < x0 + w && z + half > z0 && z - half < z0 + d;
-}
-
 // the blades over a stage’s mounds: a map of their own over their bounds,
 // fine enough for a dome’s sides (a third of a metre), grass on them short
 // of their foot (where the dome rises too steeply for a texel to follow),
@@ -302,10 +300,13 @@ function moundBlades(land, mounds, colour, { wind, soil, tier }) {
     groundMap.dispose();
     return null;
   }
+  const patch = BLADES[tier]?.size ?? 0;
   return {
     ...blades,
-    area: { x0, z0, w, d },
-    half: BLADES[tier].size / 2,
+    update(x, z) {
+      blades.mesh.visible = patchOver(x, z, patch, { x0, z0, w, d });
+      if (blades.mesh.visible) blades.update(x, z);
+    },
     dispose() {
       blades.dispose();
       groundMap.dispose();
@@ -344,8 +345,7 @@ export function* groundJob(land, { house = null, tier = 'high', soil = null, own
       mesh,
       update(x, z) {
         field.update(x, z);
-        hills.mesh.visible = patchMeets(x, z, hills.half, hills.area);
-        if (hills.mesh.visible) hills.update(x, z);
+        hills.update(x, z);
       },
       dispose() {
         field.dispose();

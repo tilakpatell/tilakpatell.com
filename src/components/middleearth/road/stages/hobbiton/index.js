@@ -96,7 +96,7 @@ export function build({ road, heightAt, rt, weather, tier = 'high' }) {
   return {
     group,
     update(local, dt, { since = {}, speed = 0 } = {}) {
-      props.update(dt);
+      props.update(dt, local);
       if (!smoke.length)
         smoke = chimneys.map((c) => {
           const s = weather?.kind?.('smoke', { count: 24, scale: 0.8 }) ?? null;

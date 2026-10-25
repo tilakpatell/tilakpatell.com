@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import * as THREE from 'three';
-import { C, ROLE, disposeBuilt, lampPools, merged, mergeStatics, part, roleOf, waterOn } from './parts';
+import { C, ROLE, disposeBuilt, inReach, lampPools, merged, mergeStatics, part, roleOf, waterOn } from './parts';
 import { landFor } from '../terrain';
 
 const box = (mat, x, uv = true) => {
@@ -73,6 +73,17 @@ describe('mergeStatics, by band', () => {
     }
     mergeStatics(whole, { band: 0 });
     expect(whole.children).toHaveLength(1);
+  });
+});
+
+describe('inReach', () => {
+  it('a stretch of the stage is in reach while the ride is within that many metres of either end, or on it', () => {
+    expect(inReach([198, 226], 210, 90)).toBe(true);
+    expect(inReach([198, 226], 108, 90)).toBe(true);
+    expect(inReach([198, 226], 107, 90)).toBe(false);
+    expect(inReach([198, 226], 316, 90)).toBe(true);
+    expect(inReach([198, 226], 317, 90)).toBe(false);
+    expect(inReach([198, 226], -12, 90)).toBe(false);
   });
 });
 
