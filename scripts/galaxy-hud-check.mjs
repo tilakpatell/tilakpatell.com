@@ -17,7 +17,7 @@
 //   target: T locks one, and its name is in the cluster
 //   course: M, "endo" + Enter plots Endor, M again: the HUD's way-to-go says "Course: Endor" ("· J" on a keyboard only), and J
 //     (with the nose on no star) starts the jump; on a touch screen that's a Jump to Endor button, which a keyboard doesn't show
-// SIZES=900x700,375x667 runs only those (and 844x390, a touch phone on its side, runs only so). With a scenario's name as the argument, that alone runs, at 1440x900 (shots in OUT):
+// SIZES=900x700,375x667 runs only those. With a scenario's name as the argument, that alone runs, at 1440x900 (shots in OUT):
 //   pickups: a pickup dropped ahead is drawn, on the radar, taken by flying through (the rapid-fire chip; the repair kit's
 //     deflectors; the bubble's points; the power cell's charge), spins unless motion is reduced, is not taken in a jump's
 //     alignment and gone once the jump is committed (galaxy-hud-check/pickups.mjs)
@@ -433,8 +433,7 @@ async function run(viewport, touch) {
 }
 
 const stopped = (size, e) => check(false, `${size}: the check stopped: ${String(e.message).split('\n')[0]}`);
-const SIZES = [[1440, 900], [1280, 720], [1366, 657], [1152, 720], [900, 700], [390, 844, true], [375, 667, true]];
-const ASKED = [[844, 390, true]]; // (run only when SIZES names it: the touch HUD's parts still meet there, a phone on its side)
+const SIZES = [[1440, 900], [1280, 720], [1366, 657], [1152, 720], [900, 700], [390, 844, true], [375, 667, true], [844, 390, true]];
 const only = process.env.SIZES?.split(',');
 // (`pickups` as the argument runs that scenario alone, galaxy-hud-check/pickups.mjs; none runs the flight HUD's sizes)
 const scenario = process.argv[2];
@@ -443,7 +442,7 @@ else if (scenario === 'hangar') await hangar().catch((e) => stopped('hangar', e)
 else if (scenario === 'difficulty') await difficulty().catch((e) => stopped('difficulty', e));
 else if (scenario) check(false, `no scenario called ${scenario} (pickups, hangar, difficulty)`);
 else
-  for (const [width, height, touch = false] of only ? [...SIZES, ...ASKED] : SIZES) {
+  for (const [width, height, touch = false] of SIZES) {
     if (only && !only.includes(`${width}x${height}`)) continue;
     await run({ width, height }, touch).catch((e) => stopped(`${width}x${height}`, e));
   }

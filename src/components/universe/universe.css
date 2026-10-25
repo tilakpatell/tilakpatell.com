@@ -804,10 +804,9 @@ body:has(.universe-panel) .guide-btn { display: none; }
 }
 .universe-jump-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .universe-jump:active { background: rgb(40 90 160 / 0.6); }
-.universe-jump kbd { border-color: rgb(150 205 255 / 0.5); color: inherit; }
 @media (pointer: coarse) {
   .universe-jump { display: inline-flex; }
-  .universe-jump kbd { display: none; }
+  .universe-jump .hud-cap { display: none; }
 }
 @media (max-width: 767px) {
   .universe-jump { bottom: calc(var(--sheet-h) + 156px); translate: -50% 0; }

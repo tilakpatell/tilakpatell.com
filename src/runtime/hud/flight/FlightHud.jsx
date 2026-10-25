@@ -11,7 +11,7 @@
 // classes and custom properties.
 //
 //   <FlightHud hudRef crosshair flying foot className vitalsIcon speedIcon
-//     armsKeys powers row over overlay after clusterRef />
+//     armsKeys powers row over overlay after stickRef jump controls thumbs onThumbsFit />
 //   crosshair: on foot, the kit's Reticle, right after the gun line so it sits under the brackets
 //   flying: false draws only `overlay` (no ship: nothing of the HUD's own)
 //   foot: the cluster says Health, with no radar, speed or target card
@@ -21,11 +21,22 @@
 //   powers, row: the world's blocks at the cluster's end (its powers' tiles; on foot, abilities)
 //   over: what sits over the cluster's row (the galaxy's pickups' chips)
 //   overlay, after: the world's own parts after the overlay (a battle's HUD, the Citadel's state)
-//   clusterRef: the cluster's element, for the world's own writes (the chips)
+//   stickRef: the touch stick's ring, first (the scene moves it)
+//   jump: { className, name, onPress, accent?, course? } | null: the one jump button, its key first
+//     (accent: the star's colour; course: the plotted course's, for a touch screen with no J)
+//   controls: { fire, boost, climb, view, weapon | null } | null: the touch buttons, in one grid
+//     (.universe-thumbs, after the world's own `thumbs`): each the scene's, a held one called with
+//     its value pressed and let go (HeldButton); null draws none
+//   onThumbsFit(): the grid's size has changed (the scene measures the open map again)
+// It writes the cluster's height (--hud-cluster-h: thumbs.js's clusterHeight) on the map, and the
+// thumbs' size (--thumbs-h, --thumbs-w) on the page, for what sits over them.
 
+import { useEffect, useRef } from 'react';
 import Arms from '../Arms.jsx';
 import Cluster from '../Cluster.jsx';
 import Vitals from '../Vitals.jsx';
+import HeldButton from './HeldButton.jsx';
+import { clusterHeight } from './thumbs.js';
 import './flight.css'; // (its looks, under :where(.universe-hud): the map tints them)
 
 export function FlightOverlay({ hudRef = null, crosshair = null }) {
@@ -68,15 +79,70 @@ export function FlightOverlay({ hudRef = null, crosshair = null }) {
   );
 }
 
-export default function FlightHud({ hudRef = null, crosshair = null, flying = true, foot = false, className = '', vitalsIcon = null, speedIcon = null, armsKeys = false, powers = null, row = null, over = null, overlay = null, after = null, clusterRef = null }) {
+const climbIcon = (way) => (
+  <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+    <path d={way > 0 ? 'M5 15l7-7 7 7' : 'M5 9l7 7 7-7'} fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+// (a button pressed once, on the finger's own event: no long-press menu)
+const pressed = (fn) => (e) => (e.preventDefault(), fn());
+const noMenu = (e) => e.preventDefault();
+
+export default function FlightHud({ hudRef = null, crosshair = null, flying = true, foot = false, className = '', vitalsIcon = null, speedIcon = null, armsKeys = false, powers = null, row = null, over = null, overlay = null, after = null, stickRef = null, jump = null, controls = null, thumbs = null, onThumbsFit = null }) {
+  const clusterEl = useRef(null);
+  const thumbsEl = useRef(null);
+  const fitted = useRef(onThumbsFit);
+  fitted.current = onThumbsFit;
+  const touchy = Boolean(controls);
+  // the cluster's height on the map (--hud-cluster-h), for what sits over it (the jump button, the prompt, the keys card): it grows
+  // when the row wraps in a narrow window, or the strip over it fills. (On a touch screen the row has no box of its own: 0.)
+  useEffect(() => {
+    const root = clusterEl.current;
+    const map = root?.parentElement;
+    const row = root?.querySelector('.hud-cluster-row');
+    const strip = root?.querySelector('.hud-cluster-over')?.firstElementChild ?? null;
+    if (!row || !map || typeof ResizeObserver !== 'function') return undefined;
+    const fit = () => map.style.setProperty('--hud-cluster-h', `${clusterHeight(row, strip)}px`);
+    const watch = new ResizeObserver(fit);
+    watch.observe(row);
+    if (strip) watch.observe(strip);
+    fit();
+    return () => {
+      watch.disconnect();
+      map.style.removeProperty('--hud-cluster-h');
+    };
+  }, [flying, foot]);
+  // the thumbs' size (--thumbs-h, --thumbs-w) on the page, for what sits over them on a touch screen (the prompt, the jump, the
+  // way in, what you've just earned) and the first-flight hint beside them; nothing on a desktop, where the grid has no box
+  useEffect(() => {
+    const deck = thumbsEl.current;
+    const page = deck?.closest('.universe-page') ?? deck?.parentElement;
+    if (!deck || !page || typeof ResizeObserver !== 'function') return undefined;
+    const fit = () => {
+      page.style.setProperty('--thumbs-h', `${deck.offsetHeight}px`);
+      page.style.setProperty('--thumbs-w', `${deck.offsetWidth}px`);
+      fitted.current?.();
+    };
+    const watch = new ResizeObserver(fit);
+    watch.observe(deck);
+    fit();
+    return () => {
+      watch.disconnect();
+      page.style.removeProperty('--thumbs-h');
+      page.style.removeProperty('--thumbs-w');
+    };
+  }, [flying, touchy]);
   if (!flying) return <>{overlay}</>;
   return (
     <>
+      <div ref={stickRef} className="universe-stick" aria-hidden="true">
+        <span />
+      </div>
       {/* the ship's height: a mark on a strip at the left, brighter while it climbs or dives */}
       <div className="universe-alt" aria-hidden="true">
         <span className="universe-alt-mark" />
       </div>
-      <Cluster rootRef={clusterRef} className={`fc ${className}`.trim()} label={foot ? 'On foot' : 'Flight'} over={over}>
+      <Cluster rootRef={clusterEl} className={`fc ${className}`.trim()} label={foot ? 'On foot' : 'Flight'} over={over}>
         {!foot && <canvas className="fc-radar" width="264" height="264" aria-hidden="true" />}
         <Vitals className="fc-ship" label={foot ? 'Health' : 'Shields'} icon={vitalsIcon}>
           {!foot && (
@@ -134,6 +200,46 @@ export default function FlightHud({ hudRef = null, crosshair = null, flying = tr
       <FlightOverlay hudRef={hudRef} crosshair={crosshair} />
       {overlay}
       {after}
+      {/* the star the nose is on, to jump to (or the course plotted, on a touch screen): J, or this */}
+      {jump && (
+        <button type="button" className={jump.className} data-course={jump.course ? '' : undefined} style={jump.accent ? { '--star': jump.accent } : undefined} onClick={jump.onPress}>
+          <kbd className="hud-cap" aria-hidden="true">
+            J
+          </kbd>
+          <span className="universe-jump-label">Jump to {jump.name}</span>
+        </button>
+      )}
+      {/* the thumbs: every touch button in one grid in the right thumb's corner (thumbs.css lays it out, wider and lower with
+          the phone on its side), the left of the screen free to drag the ship about; no box of its own on a desktop */}
+      {controls && (
+        <div ref={thumbsEl} className="universe-thumbs">
+          {thumbs}
+          <div className="universe-climbs">
+            <HeldButton size={52} className="universe-climb" aria-label={foot ? 'Jump' : 'Nose up'} on={1} off={0} onHold={controls.climb}>
+              {climbIcon(1)}
+            </HeldButton>
+            {!foot && (
+              <HeldButton size={52} className="universe-climb" aria-label="Nose down" on={-1} off={0} onHold={controls.climb}>
+                {climbIcon(-1)}
+              </HeldButton>
+            )}
+          </div>
+          <button type="button" className="universe-view" onPointerDown={pressed(controls.view)} onContextMenu={noMenu}>
+            {foot ? 'Switch' : 'View'}
+          </button>
+          {controls.weapon && (
+            <button type="button" className="universe-weapon" onPointerDown={pressed(controls.weapon)} onContextMenu={noMenu}>
+              Weapon
+            </button>
+          )}
+          <HeldButton className="universe-fire" onHold={controls.fire}>
+            Fire
+          </HeldButton>
+          <HeldButton size={76} className="universe-boost" onHold={controls.boost}>
+            {foot ? 'Run' : 'Boost'}
+          </HeldButton>
+        </div>
+      )}
     </>
   );
 }

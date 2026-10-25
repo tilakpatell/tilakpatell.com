@@ -19,9 +19,10 @@
    the first launch on a phone: Universe.jsx).
 
    The galaxy is a universe page too (and its map a .universe-map with a
-   ship), and flies with these buttons' classes (GalaxyView.jsx), but has no
-   .universe-thumbs, and every rule here leaves out .galaxy-page and
-   .galaxy-map: none of this reaches it.
+   ship), and flies with the same grid (the HUD kit's FlightHud draws it on
+   both maps): the grid's rules here reach it, its place on the galaxy's page
+   (the --thumbs-* tokens) is galaxy/flight.css's, and every other rule here
+   leaves out .galaxy-page and .galaxy-map.
    A desktop (a fine pointer) gets nothing from this file either: the two
    wrappers have no box of their own, and each part keeps its place. */
 

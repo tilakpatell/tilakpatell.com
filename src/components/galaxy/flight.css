@@ -36,16 +36,38 @@
   .galaxy-map .universe-hangar-btn { display: none; }
 }
 /* the jump button, when the nose is on a star, sits over the cluster, in the middle of the same space: above the cluster's own height
-   (--fc-h, measured by GalaxyView: the row wraps in a narrow window). A touch screen keeps its own place (galaxy.css). With the course
+   (--hud-cluster-h, measured by the HUD kit's FlightHud: the row wraps in a narrow window). A touch screen keeps its own place (galaxy.css). With the course
    plotted and no star under the nose it's a button for a touch screen, which has no J (data-course): a keyboard has the key. */
 @media (min-width: 768px) and (pointer: fine) {
-  .galaxy-page .galaxy-jumpbtn { left: calc(var(--fc-left) + (100% - var(--fc-left) - var(--fc-right)) / 2); translate: -50% 0; bottom: calc(var(--hud-pad-b, 12px) + 10px + var(--fc-h, 132px) + 8px); }
+  .galaxy-page .galaxy-jumpbtn { left: calc(var(--fc-left) + (100% - var(--fc-left) - var(--fc-right)) / 2); translate: -50% 0; bottom: calc(var(--hud-pad-b, 12px) + 10px + var(--hud-cluster-h, 132px) + 8px); }
 }
 @media (pointer: fine) { .galaxy-jumpbtn[data-course] { display: none; } }
 
 /* (the first-flight line goes over the cluster, not under it) */
 @media (max-width: 767px) and (min-height: 780px) {
   .galaxy-page .universe-hint { bottom: calc(var(--sheet-h, 0px) + 226px); } /* (over the power tiles too) */
+}
+
+/* the thumbs' grid on a touch screen (the HUD kit's FlightHud draws it, universe/thumbs.css lays it out): where it goes on the
+   galaxy's page, as on the universe map's (thumbs.css's own tokens leave .galaxy-page out) */
+@media (pointer: coarse) {
+  .galaxy-page {
+    --thumbs-r: calc(var(--panel-w, 0px) + 12px + var(--hud-edge, 12px));
+    --thumbs-b: calc(var(--hud-pad-b, 12px) + 8px);
+    --thumbs-over: calc(var(--thumbs-b) + var(--thumbs-h, 0px) + 12px);
+  }
+}
+@media (pointer: coarse) and (max-width: 767px) and (min-height: 501px) {
+  .galaxy-page {
+    --thumbs-r: var(--hud-edge, 12px);
+    --thumbs-b: calc(var(--sheet-h, 0px) + 12px);
+  }
+}
+@media (pointer: coarse) and (max-height: 500px) {
+  .galaxy-page {
+    --thumbs-r: calc(var(--panel-w, 0px) + var(--hud-edge, 12px) + 12px);
+    --thumbs-b: var(--hud-pad-b, 12px);
+  }
 }
 
 /* The flying keys (KeysCard.jsx): over the cluster, in the middle of the open
@@ -55,7 +77,7 @@
   position: absolute;
   z-index: 3;
   left: calc(var(--fc-left) + (100% - var(--fc-left) - var(--fc-right)) / 2);
-  bottom: calc(var(--hud-pad-b, 12px) + 10px + var(--fc-h, 132px) + 66px);
+  bottom: calc(var(--hud-pad-b, 12px) + 10px + var(--hud-cluster-h, 132px) + 66px);
   translate: -50% 0;
   width: max-content;
   max-width: calc(100% - var(--fc-left) - var(--fc-right));

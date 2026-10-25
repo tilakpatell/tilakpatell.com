@@ -53,3 +53,22 @@ describe('FlightHud', () => {
   });
   it('with no ship, only the overlay slot', () => expect(html(<FlightHud flying={false} overlay={<i className="o" />} />)).toBe('<i class="o"></i>'));
 });
+
+describe('FlightHud’s thumbs, stick and jump', () => {
+  const c = { fire() {}, boost() {}, climb() {}, view() {}, weapon() {} };
+  it('draws only kbd.hud-cap key caps', () => {
+    const caps = html(<FlightHud hudRef={ref} armsKeys controls={c} jump={{ className: 'universe-jump', name: 'Endor', onPress() {} }} />).match(/<kbd[^>]*>/g);
+    expect(caps).toHaveLength(9); // T, Q, T on the card; R 1 2 3 R on the arms; J
+    for (const k of caps) expect(k).toMatch(/^<kbd class="hud-cap"/);
+  });
+  it('has one jump button, its key first', () => {
+    expect(html(<FlightHud hudRef={ref} controls={c} jump={{ className: 'galaxy-jumpbtn', course: true, name: 'Endor', accent: '#f80', onPress() {} }} />)).toContain('<button type="button" class="galaxy-jumpbtn" data-course="" style="--star:#f80"><kbd class="hud-cap" aria-hidden="true">J</kbd><span class="universe-jump-label">Jump to Endor</span></button>');
+  });
+  it('holds Fire, Boost and the climbs with HeldButton, in one grid', () => {
+    const out = html(<FlightHud hudRef={ref} controls={c} />);
+    expect(out.match(/class="universe-thumbs"/g)).toHaveLength(1);
+    expect(out).toContain('<button type="button" class="hud-touch-btn universe-fire">Fire</button>');
+    expect(out).toContain('<button type="button" class="hud-touch-btn universe-boost" data-size="primary">Boost</button>');
+    expect(out).toContain('<button type="button" class="hud-touch-btn universe-climb" data-size="small" aria-label="Nose up">');
+  });
+});
