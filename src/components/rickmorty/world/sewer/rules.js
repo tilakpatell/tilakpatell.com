@@ -8,6 +8,8 @@
 //   stepRun(run, input, dt, { press }) → run   input: { left, right, hop, fire } presses since the last step;
 //     `press`, the hop's buffer (lib/press.js's createCooldownPress)
 //   laneX(lane) → metres across the drain
+//   laserOn(touch) → the HUD's word for what fires once the laser's on: on a
+//     touch screen the star, as the first card says
 
 export const TUNING = Object.freeze({
   lanes: 3,
@@ -119,3 +121,5 @@ export function stepRun(prev, input = {}, dt = 1 / 60, { press = null } = {}) {
 
 // how far along, 0 … 1
 export const progress = (run) => clamp(run.x / TUNING.goal, 0, 1);
+
+export const laserOn = (touch) => `laser on: ${touch ? 'the star fires' : 'F fires'}`;

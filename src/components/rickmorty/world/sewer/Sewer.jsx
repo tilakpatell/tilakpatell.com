@@ -4,8 +4,8 @@ import '@fontsource/luckiest-guy/400.css';
 import { useFrameLoop, useMediaQuery } from '../../../../lib/hooks';
 import { readPad } from '../../../games/pad';
 import { createCooldownPress, pressGroups } from '../../../../lib/press';
-import { TUNING, newRun, progress, stepRun } from './rules';
-import { sewerPad } from './sewerPad';
+import { TUNING, laserOn, newRun, progress, stepRun } from './rules';
+import { sewerKey, sewerPad } from './sewerPad';
 import './sewer.css';
 
 // Pickle Rick's sewer run, the game under the agency's floor: roll down the
@@ -103,16 +103,12 @@ export default function Sewer({ onLeave, onWin }) {
     const down = (e) => {
       if (e.metaKey || e.ctrlKey || e.altKey) return;
       const p = phaseRef.current;
-      if (e.key === 'Escape') {
-        e.preventDefault();
-        if (p === 'play') setPhase('paused');
-        else if (p === 'paused') setPhase('play');
-        else onLeave(wonRef.current);
-        return;
-      }
-      if (e.key === 'p' || e.key === 'P') {
-        if (p === 'play') setPhase('paused');
-        else if (p === 'paused') setPhase('play');
+      // (Esc and P, a held one's repeat doing nothing: ./sewerPad.js)
+      const said = sewerKey(e.key, p, e.repeat);
+      if (said) {
+        if (e.key === 'Escape') e.preventDefault();
+        if (said.phase) setPhase(said.phase);
+        else if (said.leave) onLeave(wonRef.current);
         return;
       }
       for (const [name, keys] of Object.entries(KEYS)) {
@@ -226,7 +222,7 @@ export default function Sewer({ onLeave, onWin }) {
                 ))}
               </div>
               <div>
-                Screws {hud.screws}/{TUNING.screws} {hud.laser ? '· laser on: F fires' : ''}
+                Screws {hud.screws}/{TUNING.screws} {hud.laser ? `· ${laserOn(touch)}` : ''}
               </div>
             </div>
             <div>
