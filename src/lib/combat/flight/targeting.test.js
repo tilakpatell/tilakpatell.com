@@ -332,3 +332,14 @@ describe('the nose following the lock', () => {
     expect(withIt).toEqual(n);
   });
 });
+
+describe('out records', () => {
+  it('fills an out record when given one', () => {
+    const o = [9, 9, 9];
+    expect(nose({ heading: 0, pitch: 0 }, o)).toBe(o);
+    expect(o).toEqual([-0, 0, -1]);
+    const e = { x: 0, y: 0, angle: 0 };
+    expect(edgeOf(1, 0, { x: 0, y: 0, w: 200, h: 100 }, 28, e)).toBe(e);
+    expect(e).toEqual({ x: 172, y: 50, angle: 0 });
+  });
+});

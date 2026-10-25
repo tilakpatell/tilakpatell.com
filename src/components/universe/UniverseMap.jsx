@@ -14,7 +14,7 @@ import { askBrief } from '../tour/brief';
 import LoadingVeil from '../worlds/LoadingVeil';
 import { RiShieldLine } from 'react-icons/ri';
 import PowerBar from './PowerBar';
-import { Abilities, Arms, Cluster, Prompt, Reticle, TouchButton, Vitals } from '../../runtime/hud';
+import { Abilities, Arms, Cluster, FlightHud, Prompt, Reticle, TouchButton, Vitals } from '../../runtime/hud';
 import { PROMPT as LOOK_PROMPT } from '../../runtime/look';
 
 // The map: the 3D scene (scene.js and planets.js, a world module on the
@@ -356,41 +356,7 @@ export default function UniverseMap({ selected, onSelect, onOpen, handle, frozen
                 <b className="universe-wanted-word" />
                 <b className="universe-wanted-bounty" />
               </div>
-              <div ref={hud} className="universe-hud" aria-hidden="true">
-                <span className="universe-reticle" />
-                {/* on foot, the kit's crosshair in the middle: the shot goes down the camera's ray (footAim.js) */}
-                <Reticle className="universe-foot-reticle" state={onFoot ? reticle : null} />
-                <span className="universe-lock">
-                  <i />
-                  <i />
-                  <i />
-                  <i />
-                  <b className="universe-lock-name" />
-                  <b className="universe-lock-dist" />
-                  <b className="universe-lock-hp" />
-                </span>
-                <span className="universe-threat" />
-                <span className="universe-threat" />
-                <span className="universe-threat" />
-                <span className="universe-mate">
-                  <b className="universe-mate-name" />
-                </span>
-                <span className="universe-mate">
-                  <b className="universe-mate-name" />
-                </span>
-                <span className="universe-mate">
-                  <b className="universe-mate-name" />
-                </span>
-                <span className="universe-mate">
-                  <b className="universe-mate-name" />
-                </span>
-                <span className="universe-lead" />
-                <span className="universe-nav">
-                  <i />
-                  <b className="universe-nav-name" />
-                  <b className="universe-nav-dist" />
-                </span>
-              </div>
+              <FlightHud hudRef={hud} crosshair={<Reticle className="universe-foot-reticle" state={onFoot ? reticle : null} />} />
               <div ref={siegeEl} className="universe-siege" role="status">
                 <b>The Citadel</b>
                 <span className="universe-siege-state" />

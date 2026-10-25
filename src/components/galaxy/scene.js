@@ -104,7 +104,7 @@ import { createTrail } from '../universe/trail';
 import { ENGINES, SHIP_MODELS, buildShip, BUILT } from '../universe/shipModels';
 import { loadModel } from '../universe/planets';
 import { lockSound, shieldSound, shipEngine } from '../universe/sounds';
-import { AIM, aimAngles, edgeOf, nose, onScreen } from '../../lib/combat/flight/targeting';
+import { AIM, aimAngles, nose } from '../../lib/combat/flight/targeting';
 import { TRACK_AFTER_SHOT, createSight } from '../../lib/combat/flight/sight';
 import { DEFAULTS as CONTROL_DEFAULTS, STICK, dragSteers, keyAxes, keyFlies, stickInput } from '../universe/controls';
 import { SIZE as PILOT_SIZE, createPilots } from '../universe/online/pilots';
@@ -126,6 +126,8 @@ import { PICKUPS, createPickups, gunsUnder } from './pickups';
 import { createPickupFx } from './pickupFx';
 import { createRadar } from '../../lib/combat/flight/radar';
 import { drawRadar } from '../../runtime/hud/flight/radarDraw';
+import { createFrame, distText, fillFlight } from '../../runtime/hud/flight/frame.js';
+import { createFlightHud } from '../../runtime/hud/flight/flightHud.js';
 import { armsView, arsenalOf, chargeFor, createArmory, createGalaxyPowers, createRounds, createUniqueArms, fan, picksFor } from '../universe/shared/flying';
 import { shotPunch } from './gunRules';
 import { CADENCE } from '../../lib/combat/flight/guns';
@@ -1999,7 +2001,6 @@ export async function create(canvas, ctx) {
 
   // ── The HUD (the page's markup, the universe map's classes) ──
   // the flight cluster's numbers (cluster.js writes them where the page put its markup)
-  const range = (d) => (d < 10 ? d.toFixed(1) : Math.round(d).toString());
   // (the one record and the one lock it carries, filled each frame: cluster.js compares what's in them)
   const clusterLock = { name: '', dist: 0, hp: null };
   const clusterNow = { on: false, shield: 100, low: false, speed: 0, top: 1, boosting: false, kills: 0, lock: null, arms: null };
@@ -2067,43 +2068,12 @@ export async function create(canvas, ctx) {
     el.style.setProperty('--kx', `${(Math.cos(a) * k * 28).toFixed(1)}px`);
     el.style.setProperty('--ky', `${(Math.sin(a) * k * 28).toFixed(1)}px`);
   };
-  let hud = { root: null };
-  const hudEls = () => {
-    const root = props.hud?.current ?? null;
-    if (root !== hud.root) {
-      const q = (c) => root?.querySelector(c) ?? null;
-      hud = { root, reticle: q('.universe-reticle'), lock: q('.universe-lock'), lockName: q('.universe-lock-name'), lockDist: q('.universe-lock-dist'), lead: q('.universe-lead'), nav: q('.universe-nav'), navName: q('.universe-nav-name'), navDist: q('.universe-nav-dist'), threats: [...(root?.querySelectorAll('.universe-threat') ?? [])], mates: [...(root?.querySelectorAll('.universe-mate') ?? [])], text: new Map(), on: new Map() };
-    }
-    return hud;
-  };
-  const setText = (h, el, s) => {
-    if (!el || h.text.get(el) === s) return;
-    h.text.set(el, s);
-    el.textContent = s;
-  };
-  const setOn = (h, el, on) => {
-    if (!el || h.on.get(el) === on) return;
-    h.on.set(el, on);
-    el.toggleAttribute('data-on', on);
-  };
-  const hudAt = { x: 0, y: 0, z: 0 };
-  const placeMark = (el, p, r = 0) => {
-    const off = !onScreen(p.x, p.y, p.z, rect);
-    let x = p.x;
-    let y = p.y;
-    if (off) {
-      const cx = rect.x + rect.w / 2;
-      const cy = rect.y + rect.h / 2;
-      const k = p.z > 0 ? 1 : -1;
-      const edge = edgeOf((p.x - cx) * k, (p.y - cy) * k, rect);
-      x = edge.x;
-      y = edge.y;
-      el.style.setProperty('--a', `${edge.angle.toFixed(3)}rad`);
-    }
-    el.style.transform = `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0)`;
-    el.toggleAttribute('data-off', off);
-    if (r) el.style.setProperty('--r', `${Math.round(r)}px`);
-  };
+  // the overlay (the kit's, runtime/hud/flight: frame.js's record filled from
+  // hudIn each frame, flightHud.js writing it where the page put its markup)
+  const frame = createFrame();
+  const flightHud = createFlightHud({ distText });
+  const hudIn = { on: false, gun: false, foot: false, ship: null, hot: false, hit: false, kill: false, static: false, rect: null, tanHalf: 1, h: 1, lock: null, lockName: '', lockText: null, bracket: undefined, lead: null, life: AIM.life, threatsFrom: [null, null, null], mates: null, to: null, goal: null, navMin: 34, navMax: 260 };
+  const toIn = { id: null, name: '', at: null }; // (the pilot flown to, among the mates' arrows)
   // The HUD's goal for the plotted course: its name, light-years and bearing, worked out when the course or the system changes (the key),
   // its `at` moved with the ship each frame. "· J" only where there's a key to press.
   const courseKeep = { key: '', goal: null };
@@ -2113,101 +2083,57 @@ export async function create(canvas, ctx) {
     if (courseKeep.key !== key) {
       const to = systemById(id);
       courseKeep.key = key;
-      courseKeep.goal = to && state.sys ? { at: [0, 0, 0], dir: courseTo(state.sys, to), name: `Course: ${to.name}${finePointer() ? ' · J' : ''}`, dist: `${lightYears(state.sys, to).toLocaleString('en-US')} ly`, reach: 0, way: true } : null;
+      courseKeep.goal = to && state.sys ? { at: [0, 0, 0], dir: courseTo(state.sys, to), name: `Course: ${to.name}${finePointer() ? ' · J' : ''}`, text: `${lightYears(state.sys, to).toLocaleString('en-US')} ly`, reach: 0, way: true } : null;
     }
     return courseKeep.goal;
   };
-  const threatList = [];
-  const mateList = [];
   const placeHud = () => {
-    const h = hudEls();
-    if (!h.root) return;
+    const root = props.hud?.current ?? null;
+    if (!root) return flightHud.place(null, frame);
     const s = state.ship;
     const on = flying() && !state.crash && !props.frozen && !(state.jump && state.jump.phase !== 'align');
-    const [nx, ny, nz] = on ? nose(s) : [0, 0, 0];
-    const retOn = on && !state.auto && !state.jump;
-    setOn(h, h.reticle, retOn);
-    if (retOn) {
-      toScreen(s.x + nx * 6, s.y + ny * 6, s.z + nz * 6, hudAt);
-      h.reticle.style.transform = `translate3d(${hudAt.x.toFixed(1)}px, ${hudAt.y.toFixed(1)}px, 0)`;
-      h.reticle.toggleAttribute('data-hot', state.hot);
-      h.reticle.toggleAttribute('data-hit', state.hitMark > 0);
-      h.reticle.toggleAttribute('data-kill', state.killMark > 0);
-    }
+    const v = hudIn;
+    v.on = on;
+    v.gun = !state.auto && !state.jump;
+    v.foot = false;
+    v.ship = s;
+    v.hot = state.hot;
+    v.hit = state.hitMark > 0;
+    v.kill = state.killMark > 0;
+    v.static = false;
+    v.rect = rect;
+    v.tanHalf = tanHalf;
+    v.h = size.h;
     const tgt = on ? state.lockTarget : null;
-    setOn(h, h.lock, Boolean(tgt));
-    if (tgt) {
-      toScreen(tgt.at.x, tgt.at.y, tgt.at.z, hudAt);
-      const px = hudAt.z > 0 ? (tgt.size / (hudAt.z * tanHalf)) * (size.h / 2) * 2.6 : 0;
-      placeMark(h.lock, hudAt, clamp(px, 30, 140));
-      h.lock.toggleAttribute('data-hot', state.hot);
-      setText(h, h.lockName, tgt.name ?? NAMES[tgt.kind] ?? SHIP_INFO[tgt.kind]?.name ?? tgt.kind);
-      setText(h, h.lockDist, range(apart(tgt.at.x, tgt.at.y, tgt.at.z, s.x, s.y, s.z)));
-      const tough = (tgt.hpMax ?? 1) > 1;
-      h.lock.toggleAttribute('data-tough', tough);
-      if (tough) h.lock.style.setProperty('--hp', (tgt.hp / tgt.hpMax).toFixed(3));
-    }
-    let n = 0;
-    if (on && h.threats.length) {
-      threatList.length = 0;
-      for (const c of hunters?.targets ?? NO_TARGETS) if (c.threat && c.id !== tgt?.id) threatList.push(c);
-      for (const c of war?.targets ?? NO_TARGETS) if (c.threat && c.id !== tgt?.id) threatList.push(c);
-      // (and a pilot whose shots have been landing on you)
-      if (pilots.count) for (const c of pilots.targets) if (c.threat && c.id !== tgt?.id) threatList.push(c);
-      threatList.sort((a, b) => apart(a.at.x, a.at.y, a.at.z, s.x, s.y, s.z) - apart(b.at.x, b.at.y, b.at.z, s.x, s.y, s.z));
-      for (const c of threatList) {
-        if (n >= h.threats.length) break;
-        toScreen(c.at.x, c.at.y, c.at.z, hudAt);
-        if (onScreen(hudAt.x, hudAt.y, hudAt.z, rect)) continue;
-        const el = h.threats[n++];
-        setOn(h, el, true);
-        placeMark(el, hudAt);
+    v.lock = tgt;
+    v.lockName = tgt ? (tgt.name ?? NAMES[tgt.kind] ?? SHIP_INFO[tgt.kind]?.name ?? tgt.kind) : '';
+    v.lockText = null;
+    v.bracket = undefined;
+    v.lead = state.lead;
+    v.life = AIM.life;
+    // (the ones coming at you that you can't see: hunters, the war's, and a pilot whose shots have been landing on you)
+    v.threatsFrom[0] = hunters?.targets ?? null;
+    v.threatsFrom[1] = war?.targets ?? null;
+    v.threatsFrom[2] = pilots.count ? pilots.targets : null;
+    // (your allies off the screen, and the pilot you're flying to, ally or not)
+    v.mates = pilots.count ? pilots.mates : null;
+    v.to = null;
+    if (on && pilots.count && state.auto?.pilot) {
+      const at = pilots.at(state.auto.pilot);
+      if (at) {
+        toIn.id = state.auto.pilot;
+        toIn.name = state.auto.name ?? '';
+        toIn.at = at;
+        v.to = toIn;
       }
     }
-    for (let i = n; i < h.threats.length; i++) setOn(h, h.threats[i], false);
-    // your allies off the screen: a green arrow at the edge each, with their
-    // callsign (nearest first, as many as there are arrows), so you can find
-    // your wing
-    let m = 0;
-    if (on && h.mates.length && pilots.count) {
-      mateList.length = 0;
-      for (const c of pilots.mates) mateList.push(c);
-      // (and the pilot you're flying to, ally or not, so you can see where the trip's taking you)
-      const to = state.auto?.pilot;
-      if (to && !mateList.some((c) => c.id === to)) {
-        const at = pilots.at(to);
-        if (at) mateList.push({ id: to, name: state.auto.name ?? '', at });
-      }
-      mateList.sort((a, b) => apart(a.at.x, a.at.y, a.at.z, s.x, s.y, s.z) - apart(b.at.x, b.at.y, b.at.z, s.x, s.y, s.z));
-      for (const c of mateList) {
-        if (m >= h.mates.length) break;
-        toScreen(c.at.x, c.at.y, c.at.z, hudAt);
-        if (onScreen(hudAt.x, hudAt.y, hudAt.z, rect)) continue;
-        const el = h.mates[m++];
-        setOn(h, el, true);
-        setText(h, el.firstChild, c.name);
-        placeMark(el, hudAt);
-      }
-    }
-    for (let i = m; i < h.mates.length; i++) setOn(h, h.mates[i], false);
-    const lead = tgt && state.lead && state.lead.t <= AIM.life ? state.lead : null;
-    let leadOn = false;
-    if (lead) {
-      toScreen(lead.x, lead.y, lead.z, hudAt);
-      leadOn = onScreen(hudAt.x, hudAt.y, hudAt.z, rect, 8);
-      if (leadOn) {
-        h.lead.style.transform = `translate3d(${hudAt.x.toFixed(1)}px, ${hudAt.y.toFixed(1)}px, 0)`;
-        h.lead.toggleAttribute('data-hot', state.hot);
-      }
-    }
-    setOn(h, h.lead, leadOn);
     // the way to go: the jump's bearing while coming round onto it, else
     // wherever the autopilot's taking you
     let goal = null;
-    if (on && state.jump) goal = { at: [s.x + state.jump.dir[0] * 2000, s.y + state.jump.dir[1] * 2000, s.z + state.jump.dir[2] * 2000], name: `Jump: ${state.jump.to.name}`, dist: `${lightYears(state.jump.from, state.jump.to).toLocaleString('en-US')} ly`, reach: 0, way: true };
+    if (on && state.jump) goal = { at: [s.x + state.jump.dir[0] * 2000, s.y + state.jump.dir[1] * 2000, s.z + state.jump.dir[2] * 2000], name: `Jump: ${state.jump.to.name}`, text: `${lightYears(state.jump.from, state.jump.to).toLocaleString('en-US')} ly`, reach: 0, way: true };
     else if (on && state.auto) {
       const g = (state.auto.space ?? state.space).goals[state.auto.id];
-      if (g) goal = { at: g.at, name: g.name ?? state.auto.name ?? '', dist: range(apart(g.at[0], g.at[1], g.at[2], s.x, s.y, s.z)), reach: g.reach ?? g.r, way: false };
+      if (g) goal = { at: g.at, name: g.name ?? state.auto.name ?? '', text: null, reach: g.reach ?? g.r, way: false };
     }
     // (else the course plotted on the galaxy map: the way to jump, as the jump's own bearing, till J goes)
     else if (on && props.course && props.course !== state.sys?.id) {
@@ -2220,15 +2146,9 @@ export async function create(canvas, ctx) {
       }
     }
     state.navGoal = goal ? goal.at : null;
-    setOn(h, h.nav, Boolean(goal));
-    if (goal) {
-      toScreen(goal.at[0], goal.at[1], goal.at[2], hudAt);
-      const px = hudAt.z > 0 && goal.reach ? (goal.reach / (hudAt.z * tanHalf)) * (size.h / 2) * 2.2 : 0;
-      placeMark(h.nav, hudAt, clamp(px, 34, 260));
-      h.nav.toggleAttribute('data-way', goal.way);
-      setText(h, h.navName, goal.name);
-      setText(h, h.navDist, goal.dist);
-    }
+    v.goal = goal;
+    fillFlight(frame, v, toScreen);
+    flightHud.place(root, frame);
   };
 
   // ── Being online ──

@@ -72,11 +72,14 @@ const unit = (v) => {
 const angleBetween = (a, b) => Math.acos(clamp(a[0] * b[0] + a[1] * b[1] + a[2] * b[2], -1, 1));
 
 // the way the ship's nose points: along its heading (0 is −z, growing
-// turning left), tipped by its pitch
-export function nose(s) {
+// turning left), tipped by its pitch (into `out`, given one: the HUD's, kept)
+export function nose(s, out = [0, 0, 0]) {
   const p = s.pitch || 0;
   const level = Math.cos(p);
-  return [-Math.sin(s.heading) * level, Math.sin(p), -Math.cos(s.heading) * level];
+  out[0] = -Math.sin(s.heading) * level;
+  out[1] = Math.sin(p);
+  out[2] = -Math.cos(s.heading) * level;
+  return out;
 }
 
 // the direction from the ship to a point, as a unit vector
@@ -260,17 +263,20 @@ export { sweptSpheres as sweptHit } from '../contact';
 // its middle out toward the thing (dx, dy: the way to it on screen, any
 // length), and the angle the arrow turns to point that way (radians, 0 is
 // right, growing clockwise as CSS does).
-export function edgeOf(dx, dy, rect, pad = 28) {
+export function edgeOf(dx, dy, rect, pad = 28, out = { x: 0, y: 0, angle: 0 }) {
   const cx = rect.x + rect.w / 2;
   const cy = rect.y + rect.h / 2;
   const hw = Math.max(1, rect.w / 2 - pad);
   const hh = Math.max(1, rect.h / 2 - pad);
   const l = Math.sqrt(dx * dx + dy * dy);
-  if (l < 1e-6) return { x: cx, y: cy - hh, angle: -Math.PI / 2 };
+  if (l < 1e-6) return Object.assign(out, { x: cx, y: cy - hh, angle: -Math.PI / 2 });
   const ux = dx / l;
   const uy = dy / l;
   const k = Math.min(hw / Math.max(1e-6, Math.abs(ux)), hh / Math.max(1e-6, Math.abs(uy)));
-  return { x: cx + ux * k, y: cy + uy * k, angle: Math.atan2(uy, ux) };
+  out.x = cx + ux * k;
+  out.y = cy + uy * k;
+  out.angle = Math.atan2(uy, ux);
+  return out;
 }
 
 // is a projected point (screen px, and its depth in front of the camera)

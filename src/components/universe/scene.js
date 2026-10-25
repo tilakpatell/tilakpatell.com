@@ -187,7 +187,7 @@ import { readBuildWire, readTune, tuneKey, writeBuild } from './shipyard/build';
 import { readLooks } from '../rickmorty/wardrobe/looks';
 import { BUILT_KINDS, buildTraffic } from './trafficModels';
 import { entrySound, lockSound, shipEngine, wellSound } from './sounds';
-import { AIM, aimAngles, edgeOf, nose, onScreen } from './targeting';
+import { AIM, aimAngles, nose } from './targeting';
 import { TRACK_AFTER_SHOT, createSight } from '../../lib/combat/flight/sight';
 import { DEFAULTS as CONTROL_DEFAULTS, STICK, dragSteers, keyAxes, keyFlies, stickInput } from './controls';
 import { byId } from './universes';
@@ -202,6 +202,8 @@ import { isMate } from './online/mates';
 import { createLook } from '../../runtime/look';
 import { reticleState } from '../../runtime/hud/reticle';
 import { createAbilitiesWriter, createFlightCluster } from '../../runtime/hud/cluster.js';
+import { createFrame, fillFlight } from '../../runtime/hud/flight/frame.js';
+import { createFlightHud } from '../../runtime/hud/flight/flightHud.js';
 import { clusterView } from './clusterView';
 import { createRounds } from './rounds';
 import { createGalaxyPowers } from './powers';
@@ -286,6 +288,8 @@ const KEYS = { w: 'up', s: 'down', a: 'a', d: 'd', arrowleft: 'left', arrowright
 const FOOT_KEYS = { ...KEYS, a: 'left', d: 'right', arrowup: 'up', arrowdown: 'down', ' ': 'jump', shift: 'boost', q: 'strafeL', e: 'strafeR', f: null };
 const FOOT_FOV = 56; // the lens on foot: a person's, wider than the chase's
 const SHIP_NAMES = { rv: 'The RV', cruiser: 'The cruiser', xwing: 'The X-wing', falcon: 'The Falcon' };
+// the lock's bracket on foot: ×1.6 the trooper's size on screen, 26 to 120 px (frame.js's BRACKET in flight)
+const FOOT_LOCK = { k: 1.6, min: 26, max: 120 };
 
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 // how far apart, in three dimensions (a square root: Math.hypot makes garbage
@@ -2860,50 +2864,16 @@ export async function create(canvas, ctx) {
   };
 
   // ── The HUD: the gun line, the lock, the lead and the way to go ──
-  // (DOM in UniverseMap.jsx, moved here as the scene draws, like the names)
-  let hud = { root: null };
-  const hudEls = () => {
-    const root = props.hud?.current ?? null;
-    if (root !== hud.root) {
-      const q = (c) => root?.querySelector(c) ?? null;
-      hud = { root, reticle: q('.universe-reticle'), lock: q('.universe-lock'), lockName: q('.universe-lock-name'), lockDist: q('.universe-lock-dist'), lead: q('.universe-lead'), nav: q('.universe-nav'), navName: q('.universe-nav-name'), navDist: q('.universe-nav-dist'), threats: [...(root?.querySelectorAll('.universe-threat') ?? [])], mates: [...(root?.querySelectorAll('.universe-mate') ?? [])], text: new Map(), on: new Map() };
-    }
-    return hud;
-  };
-  const setText = (h, el, s) => {
-    if (!el || h.text.get(el) === s) return;
-    h.text.set(el, s);
-    el.textContent = s;
-  };
-  const setOn = (h, el, on) => {
-    if (!el || h.on.get(el) === on) return;
-    h.on.set(el, on);
-    el.toggleAttribute('data-on', on);
-  };
-  const hudAt = { x: 0, y: 0, z: 0 };
-  const threatList = [];
-  const mateList = [];
-  // a bracket at its point when that's in view, else an arrow at the edge of
-  // the open area pointing the way (its size `r`, in px, when it has one)
-  const placeMark = (el, p, r = 0) => {
-    const off = !onScreen(p.x, p.y, p.z, state.rect);
-    let x = p.x;
-    let y = p.y;
-    if (off) {
-      const cx = state.rect.x + state.rect.w / 2;
-      const cy = state.rect.y + state.rect.h / 2;
-      const k = p.z > 0 ? 1 : -1;
-      const edge = edgeOf((p.x - cx) * k, (p.y - cy) * k, state.rect);
-      x = edge.x;
-      y = edge.y;
-      el.style.setProperty('--a', `${edge.angle.toFixed(3)}rad`);
-    }
-    el.style.transform = `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0)`;
-    el.toggleAttribute('data-off', off);
-    if (r) el.style.setProperty('--r', `${Math.round(r)}px`);
-  };
-  // (in the nav map's measure, ship-lengths, so the two agree: nav.js)
-  const range = (d) => shortDistance(d);
+  // (the kit's flight overlay, runtime/hud/flight: frame.js's record filled
+  // here each frame from hudIn, flightHud.js writing it where the page put
+  // its markup; the distances in the nav map's measure, ship-lengths, so
+  // the two agree: nav.js)
+  const frame = createFrame();
+  const flightHud = createFlightHud({ distText: shortDistance });
+  const hudIn = { on: false, gun: false, foot: false, ship: null, hot: false, hit: false, kill: false, static: false, rect: null, tanHalf: 1, h: 1, lock: null, lockName: '', lockText: null, bracket: undefined, lead: null, life: AIM.life, threatsFrom: [null, null], mates: null, to: null, goal: null, navMin: 34, navMax: 260 };
+  const toIn = { id: null, name: '', at: null }; // (the pilot flown to, among the mates' arrows)
+  const navIn = { at: null, reach: 0, way: false, name: '', text: null }; // (the way to go in flight)
+  const footBack = { at: [0, 0, 0], reach: 0, way: false, name: '', text: '', dist: 0 }; // (on foot, the way back to the ship)
   // where you're going: the autopilot's goal, the picked place you're not
   // yet at, or, out in deep space with nowhere picked, the nearest wonder
   // ahead (as a waypoint, fainter)
@@ -2923,123 +2893,78 @@ export async function create(canvas, ctx) {
     }
     return best;
   };
+  // the goal as the HUD draws it: where it is and how big round it, or
+  // null where there's nothing to point at
+  const navGoalFor = (s) => {
+    const goal = navGoal(s);
+    if (!goal) return null;
+    // (another pilot: the diamond's on them, their name as its text)
+    const mate = pilotId(goal.id) ? pilots.pose(pilotId(goal.id)) : null;
+    const place = !mate && isPlace(goal.id) ? byId(goal.id) : null;
+    // (the war's front is neither a place nor a wonder: its own goal, front.js's)
+    const war = goal.id === 'front' ? front?.goal() : null;
+    const wd = place || war || mate ? null : wonderById(goal.id);
+    const at = mate ? [mate.x, mate.y, mate.z] : place ? POSITIONS[goal.id] : war ? war.at : wd?.at;
+    if (!at) return null;
+    navIn.at = at;
+    // (the Citadel gone, the diamond is round where its core was, not round the empty reach of its arms)
+    navIn.reach = mate ? 0.5 : place ? REACH[goal.id] : war ? war.r : wd.id === 'citadel' && siegeSt.down && citadelGeo ? citadelGeo.core * 0.5 : reachOf(wd);
+    navIn.way = goal.way;
+    navIn.name = mate ? mate.name : place ? place.label : war ? 'The front' : wd.name;
+    return navIn;
+  };
   let footReticle = null; // (the on-foot crosshair's last state: placeFootHud)
   const placeHud = () => {
-    const h = hudEls();
-    if (!h.root) return;
-    if (onFoot()) return placeFootHud(h);
+    const root = props.hud?.current ?? null;
+    if (!root) return flightHud.place(null, frame);
+    if (onFoot()) return placeFootHud(root);
     if (footReticle?.shown) {
       footReticle = reticleState(footReticle, {});
       emit({ type: 'reticle', state: footReticle });
     }
     const s = state.ship;
     const on = flying() && state.view !== 'map' && !state.crash && !state.dive && !props.frozen;
-    // the gun line: a little way out along the nose (not while it flies itself)
-    const [nx, ny, nz] = on ? nose(s) : [0, 0, 0];
-    const retOn = on && !state.auto;
-    setOn(h, h.reticle, retOn);
-    if (retOn) {
-      toScreen(s.x + nx * 6, s.y + ny * 6, s.z + nz * 6, hudAt);
-      h.reticle.style.transform = `translate3d(${hudAt.x.toFixed(1)}px, ${hudAt.y.toFixed(1)}px, 0)`;
-      h.reticle.toggleAttribute('data-hot', state.hot);
-      h.reticle.toggleAttribute('data-hit', state.hitMark > 0);
-    }
-    // the lock: brackets round the hunter, its name and range; the lead pip
-    // where a shot would meet it
-    const tgt = on ? state.lockTarget : null;
-    setOn(h, h.lock, Boolean(tgt));
-    if (tgt) {
-      toScreen(tgt.at.x, tgt.at.y, tgt.at.z, hudAt);
-      const px = hudAt.z > 0 ? (tgt.size / (hudAt.z * tanHalf)) * (size.h / 2) * 2.6 : 0;
-      placeMark(h.lock, hudAt, clamp(px, 30, 140));
-      h.lock.toggleAttribute('data-hot', state.hot);
-      setText(h, h.lockName, tgt.name ?? NAMES[tgt.kind] ?? tgt.kind);
-      setText(h, h.lockDist, range(apart(tgt.at.x, tgt.at.y, tgt.at.z, s.x, s.y, s.z)));
-      // what it has left, for the ones that take a few hits
-      const tough = (tgt.hpMax ?? 1) > 1;
-      h.lock.toggleAttribute('data-tough', tough);
-      if (tough) h.lock.style.setProperty('--hp', (tgt.hp / tgt.hpMax).toFixed(3));
-    }
-    // the ones coming at you that you can't see: an arrow at the edge each
-    // (nearest first), so a fight behind you isn't a surprise
-    let n = 0;
-    if (on && h.threats.length) {
-      threatList.length = 0;
-      for (const c of hunters?.targets ?? []) if (c.threat && c.id !== tgt?.id) threatList.push(c);
-      // (and a pilot whose shots have been landing on you)
-      if (pilots.count) for (const c of pilots.targets) if (c.threat && c.id !== tgt?.id) threatList.push(c);
-      threatList.sort((a, b) => apart(a.at.x, a.at.y, a.at.z, s.x, s.y, s.z) - apart(b.at.x, b.at.y, b.at.z, s.x, s.y, s.z));
-      for (const c of threatList) {
-        if (n >= h.threats.length) break;
-        toScreen(c.at.x, c.at.y, c.at.z, hudAt);
-        if (onScreen(hudAt.x, hudAt.y, hudAt.z, state.rect)) continue;
-        const el = h.threats[n++];
-        setOn(h, el, true);
-        placeMark(el, hudAt);
+    const v = hudIn;
+    v.on = on;
+    // (the gun line: not while it flies itself)
+    v.gun = !state.auto;
+    v.foot = false;
+    v.ship = s;
+    v.hot = state.hot;
+    v.hit = state.hitMark > 0;
+    v.kill = false;
+    v.static = state.static > 0;
+    v.rect = state.rect;
+    v.tanHalf = tanHalf;
+    v.h = size.h;
+    const t = on ? state.lockTarget : null;
+    v.lock = t;
+    v.lockName = t ? (t.name ?? NAMES[t.kind] ?? t.kind) : '';
+    v.lockText = null;
+    v.bracket = undefined;
+    v.lead = state.lead;
+    v.life = AIM.life;
+    // (the ones coming at you that you can't see: the hunters, and a pilot whose shots have been landing on you)
+    v.threatsFrom[0] = hunters?.targets ?? null;
+    v.threatsFrom[1] = pilots.count ? pilots.targets : null;
+    // (your allies off the screen, and the pilot you're flying to, ally or not)
+    v.mates = pilots.count ? pilots.mates : null;
+    v.to = null;
+    if (on && pilots.count && state.auto?.pilot) {
+      const at = pilots.at(state.auto.pilot);
+      if (at) {
+        toIn.id = state.auto.pilot;
+        toIn.name = state.auto.name ?? '';
+        toIn.at = at;
+        v.to = toIn;
       }
     }
-    for (let i = n; i < h.threats.length; i++) setOn(h, h.threats[i], false);
-    // your allies off the screen: a green arrow at the edge each, with their
-    // callsign (nearest first, as many as there are arrows), so you can find
-    // your wing
-    let m = 0;
-    if (on && h.mates.length && pilots.count) {
-      mateList.length = 0;
-      for (const c of pilots.mates) mateList.push(c);
-      // (and the pilot you're flying to, ally or not, so you can see where the trip's taking you)
-      const to = state.auto?.pilot;
-      if (to && !mateList.some((c) => c.id === to)) {
-        const at = pilots.at(to);
-        if (at) mateList.push({ id: to, name: state.auto.name ?? '', at });
-      }
-      mateList.sort((a, b) => apart(a.at.x, a.at.y, a.at.z, s.x, s.y, s.z) - apart(b.at.x, b.at.y, b.at.z, s.x, s.y, s.z));
-      for (const c of mateList) {
-        if (m >= h.mates.length) break;
-        toScreen(c.at.x, c.at.y, c.at.z, hudAt);
-        if (onScreen(hudAt.x, hudAt.y, hudAt.z, state.rect)) continue;
-        const el = h.mates[m++];
-        setOn(h, el, true);
-        setText(h, el.firstChild, c.name);
-        placeMark(el, hudAt);
-      }
-    }
-    for (let i = m; i < h.mates.length; i++) setOn(h, h.mates[i], false);
-    const lead = tgt && state.lead && state.lead.t <= AIM.life ? state.lead : null;
-    let leadOn = false;
-    if (lead) {
-      toScreen(lead.x, lead.y, lead.z, hudAt);
-      leadOn = onScreen(hudAt.x, hudAt.y, hudAt.z, state.rect, 8);
-      if (leadOn) {
-        h.lead.style.transform = `translate3d(${hudAt.x.toFixed(1)}px, ${hudAt.y.toFixed(1)}px, 0)`;
-        h.lead.toggleAttribute('data-hot', state.hot);
-      }
-    }
-    setOn(h, h.lead, leadOn);
-    // the way to go
-    const goal = on ? navGoal(s) : null;
-    setOn(h, h.nav, Boolean(goal));
-    if (goal) {
-      // (another pilot: the diamond's on them, their name as its text)
-      const mate = pilotId(goal.id) ? pilots.pose(pilotId(goal.id)) : null;
-      const place = !mate && isPlace(goal.id) ? byId(goal.id) : null;
-      // (the war's front is neither a place nor a wonder: its own goal, front.js's)
-      const war = goal.id === 'front' ? front?.goal() : null;
-      const wd = place || war || mate ? null : wonderById(goal.id);
-      const at = mate ? [mate.x, mate.y, mate.z] : place ? POSITIONS[goal.id] : war ? war.at : wd?.at;
-      if (!at) {
-        setOn(h, h.nav, false);
-        return;
-      }
-      toScreen(at[0], at[1], at[2], hudAt);
-      // (the Citadel gone, the diamond is round where its core was, not round the empty reach of its arms)
-      const reach = mate ? 0.5 : place ? REACH[goal.id] : war ? war.r : wd.id === 'citadel' && siegeSt.down && citadelGeo ? citadelGeo.core * 0.5 : reachOf(wd);
-      const px = hudAt.z > 0 ? (reach / (hudAt.z * tanHalf)) * (size.h / 2) * 2.2 : 0;
-      // no bigger than a quarter of the frame's height: close in, the place itself shows the way
-      placeMark(h.nav, hudAt, clamp(px, 34, Math.min(260, size.h * 0.25)));
-      h.nav.toggleAttribute('data-way', goal.way);
-      setText(h, h.navName, mate ? mate.name : place ? place.label : war ? 'The front' : wd.name);
-      setText(h, h.navDist, range(apart(at[0], at[1], at[2], s.x, s.y, s.z)));
-    }
+    v.goal = on ? navGoalFor(s) : null;
+    v.navMin = 34;
+    // (no bigger than a quarter of the frame's height: close in, the place itself shows the way)
+    v.navMax = Math.min(260, size.h * 0.25);
+    fillFlight(frame, v, toScreen);
+    flightHud.place(root, frame);
   };
 
   // ── A crash: into something too fast ──
@@ -3863,7 +3788,6 @@ export async function create(canvas, ctx) {
 
   // everything that goes on round you while you fly: the hunters, the
   // director and its set pieces, your shields, the wonders you come up on
-  let staticOn = false;
   const adventure = (dt, t) => {
     state.clock += dt;
     standing.side(sideOf(state.kind));
@@ -4043,10 +3967,6 @@ export async function create(canvas, ctx) {
     if (state.static > 0) {
       state.static = Math.max(0, state.static - dt);
       busy = true;
-    }
-    if ((state.static > 0) !== staticOn) {
-      staticOn = state.static > 0;
-      props.hud?.current?.toggleAttribute('data-static', staticOn);
     }
     placeCluster();
     powers.place(props.powers?.current ?? null, flying() && !onFoot() && !state.crash && !state.dive && !state.jump && !props.frozen && state.view !== 'map');
@@ -4750,35 +4670,48 @@ export async function create(canvas, ctx) {
   // (the crosshair on foot is the kit's Reticle, in the middle where the
   // camera's ray goes (footAim.js): the page draws it from 'reticle', sent
   // only when it changes: footReticle, kept with placeHud)
-  const placeFootHud = (h) => {
+  const placeFootHud = (root) => {
     const info = foot.info();
     const on = Boolean(info) && foot.phase === 'walk' && !props.frozen;
-    setOn(h, h.reticle, false);
     const ret = reticleState(footReticle, { gun: on && info.gun, hitAt: on && info.landed != null ? -info.landed : null, now: 0, lock: on && info.locked }); // (landed: ms ago)
     if (ret !== footReticle) {
       footReticle = ret;
       emit({ type: 'reticle', state: ret });
     }
     const lock = on ? info.lock : null;
-    setOn(h, h.lock, Boolean(lock));
-    if (lock) {
-      toScreen(lock.at.x, lock.at.y, lock.at.z, hudAt);
-      const px = hudAt.z > 0 ? (lock.size / (hudAt.z * tanHalf)) * (size.h / 2) * 1.6 : 0;
-      placeMark(h.lock, hudAt, clamp(px, 26, 120));
-      h.lock.toggleAttribute('data-hot', true);
-      setText(h, h.lockName, TROOPS[lock.kind]?.name ?? lock.kind);
-      setText(h, h.lockDist, `${Math.round(lock.dist)} m`);
-    }
-    setOn(h, h.lead, false);
+    const v = hudIn;
+    v.on = on;
+    v.gun = false;
+    v.foot = true;
+    v.ship = null;
+    v.hot = true;
+    v.hit = false;
+    v.kill = false;
+    v.static = state.static > 0;
+    v.rect = state.rect;
+    v.tanHalf = tanHalf;
+    v.h = size.h;
+    v.lock = lock;
+    v.lockName = lock ? (TROOPS[lock.kind]?.name ?? lock.kind) : '';
+    v.lockText = lock ? `${Math.round(lock.dist)} m` : null;
+    v.bracket = FOOT_LOCK;
+    v.lead = null;
+    v.mates = null;
+    v.to = null;
     const back = on && info.ship.dist > 30 ? info.ship : null;
-    setOn(h, h.nav, Boolean(back));
     if (back) {
-      toScreen(back.at.x, back.at.y, back.at.z, hudAt);
-      placeMark(h.nav, hudAt, 40);
-      h.nav.toggleAttribute('data-way', false);
-      setText(h, h.navName, SHIP_NAMES[state.kind] ?? 'The ship');
-      setText(h, h.navDist, `${Math.round(back.dist)} m`);
+      footBack.at[0] = back.at.x;
+      footBack.at[1] = back.at.y;
+      footBack.at[2] = back.at.z;
+      footBack.name = SHIP_NAMES[state.kind] ?? 'The ship';
+      footBack.text = `${Math.round(back.dist)} m`;
+      footBack.dist = back.dist;
     }
+    v.goal = back ? footBack : null;
+    v.navMin = 40;
+    v.navMax = 40;
+    fillFlight(frame, v, toScreen);
+    flightHud.place(root, frame);
   };
   // G at a landing's door (footScene's door()): into the planet's page
   const intoDoor = () => {

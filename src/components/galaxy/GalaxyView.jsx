@@ -17,6 +17,7 @@ import LoadingVeil from '../worlds/LoadingVeil';
 import BattleEnd from './BattleEnd';
 import FlightCluster from './FlightCluster';
 import KeysCard from './KeysCard';
+import { FlightHud } from '../../runtime/hud';
 
 // The galaxy's 3D view (scene.js, a world module on the world runtime:
 // ./module.js) and everything over it:
@@ -253,39 +254,7 @@ export default function GalaxyView({ system, here, handle, holo = null, ship, lo
                 <span />
               </div>
               <FlightCluster rootRef={cluster} ship={ship} reduced={reduced} powersRef={powers} onPower={onPower} radarRef={radar} buffsRef={buffs} picks={powerPicks} carry={skillFx?.carry} />
-              <div ref={hud} className="universe-hud" aria-hidden="true">
-                <span className="universe-reticle" />
-                <span className="universe-lock">
-                  <i />
-                  <i />
-                  <i />
-                  <i />
-                  <b className="universe-lock-name" />
-                  <b className="universe-lock-dist" />
-                  <b className="universe-lock-hp" />
-                </span>
-                <span className="universe-threat" />
-                <span className="universe-threat" />
-                <span className="universe-threat" />
-                <span className="universe-mate">
-                  <b className="universe-mate-name" />
-                </span>
-                <span className="universe-mate">
-                  <b className="universe-mate-name" />
-                </span>
-                <span className="universe-mate">
-                  <b className="universe-mate-name" />
-                </span>
-                <span className="universe-mate">
-                  <b className="universe-mate-name" />
-                </span>
-                <span className="universe-lead" />
-                <span className="universe-nav">
-                  <i />
-                  <b className="universe-nav-name" />
-                  <b className="universe-nav-dist" />
-                </span>
-              </div>
+              <FlightHud hudRef={hud} />
               <div className="universe-climbs">
                 {climbButton(1, 'Nose up')}
                 {climbButton(-1, 'Nose down')}

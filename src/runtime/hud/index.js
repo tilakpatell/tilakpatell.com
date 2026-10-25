@@ -27,6 +27,7 @@ export { default as Arms } from './Arms';
 export { default as Powers } from './Powers';
 export { default as Abilities } from './Abilities';
 export { createAbilitiesWriter, createFlightCluster, PIPS, vitalsPct } from './cluster.js';
+export { default as FlightHud } from './flight/FlightHud.jsx';
 export { default as Screen } from './Screen.jsx';
 export { default as ScreenCanvas } from './ScreenCanvas.jsx';
 export { screenKey } from './screenKey';
