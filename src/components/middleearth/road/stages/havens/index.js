@@ -36,8 +36,10 @@ export function build({ road, heightAt, sky = null, tier = 'high' }) {
   const props = buildProps({ road, tier });
   group.add(props.group);
 
-  // the sea, the whole Gulf: the beach stands over it where it rises
-  const water = createWater({ area: { x0: -420, z0: -40, w: 840, d: 860 }, level: WATER, kind: 'still', sky, ground: heightAt });
+  // the sea, the whole Gulf: the beach stands over it where it rises (rows
+  // 5 m apart: a still sea's swell is a centimetre, and the shore's depth
+  // reads as well between them on a beach this gentle)
+  const water = createWater({ area: { x0: -420, z0: -40, w: 840, d: 860 }, level: WATER, kind: 'still', sky, ground: heightAt, step: 5 });
   water.set({ sun: { el: 0.08 }, ambient: 0.3 });
   group.add(water.mesh);
 

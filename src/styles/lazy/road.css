@@ -27,14 +27,17 @@
 .road-brand-eyebrow { font: 600 0.72rem/1.1 var(--hud-title-face); letter-spacing: 0.14em; text-transform: uppercase; color: var(--hud-muted); }
 .road-brand-name { font: 700 var(--fs-sm)/1.2 var(--hud-title-face); }
 
-/* the foot: the prompt over the ribbon, the ribbon the width of the stage */
+/* the foot: the prompt over the ribbon, the ribbon across the stage */
 .road-foot { display: grid; gap: 0.6rem; justify-items: start; width: 100%; pointer-events: none; }
 .road-foot > * { pointer-events: auto; }
 .road-thumbs { display: flex; align-items: flex-end; gap: 0.75rem; margin-left: auto; pointer-events: auto; }
 .road-stage[data-holding] .road-foot { opacity: 0; pointer-events: none; transition: opacity var(--t-slow); }
 
 /* the ribbon: sixteen dots on an inked line, the walkers’ mark between them */
-.road-ribbon { position: relative; width: 100%; height: calc(var(--road-dot) + 2.6rem); padding: 0 calc(var(--road-dot) / 2); border-radius: var(--hud-radius); background: var(--hud-glass); color: var(--hud-ink); }
+/* (no wider than the sixteen stops want: the stage’s width of glass on a
+   1440 screen was nine parts in a hundred of the picture, the design’s whole
+   allowance for the UI near gone on it alone) */
+.road-ribbon { position: relative; justify-self: center; width: 100%; max-width: 56rem; height: calc(var(--road-dot) + 2.6rem); padding: 0 calc(var(--road-dot) / 2); border-radius: var(--hud-radius); background: var(--hud-glass); color: var(--hud-ink); }
 .road-ribbon-line { position: absolute; left: calc(var(--road-dot) / 2 + 0.5rem); right: calc(var(--road-dot) / 2 + 0.5rem); top: calc(var(--road-dot) / 2 + 0.25rem); height: 2px; background: linear-gradient(90deg, var(--hud-accent), var(--hud-muted)); opacity: 0.8; }
 .road-ribbon-mark { position: absolute; top: calc(var(--road-dot) / 2 + 0.25rem); left: calc(var(--road-dot) / 2 + 0.5rem + (100% - var(--road-dot) - 1rem) * var(--at, 0)); width: 14px; height: 14px; margin: -6px 0 0 -7px; border-radius: 50%; background: #ffd27a; box-shadow: 0 0 0 3px rgb(255 210 122 / 0.3), 0 0 12px rgb(255 190 90 / 0.8); transition: left 0.25s linear; }
 .road-ribbon-stops { position: absolute; inset: 0.25rem calc(var(--road-dot) / 2 + 0.5rem) 0; margin: 0; padding: 0; list-style: none; }

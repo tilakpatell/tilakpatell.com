@@ -156,7 +156,7 @@ export default function TheRoad() {
           }
           foot={
             <div className="road-foot">
-              {!touch && <Prompt k={prompt.k} verb={prompt.verb} onClick={() => (reduced ? null : api()?.setAuto(!clock.auto))} alt={alt} />}
+              {!touch && <Prompt k={prompt.k} verb={prompt.verb} onClick={() => (reduced ? api()?.next() : api()?.setAuto(!clock.auto))} alt={alt} />}
               <Ribbon stages={STAGES} s={at.s} names={touch || portrait ? 'current' : 'all'} markRef={mark} onJump={(id) => api()?.goTo(id)} />
             </div>
           }
@@ -167,12 +167,20 @@ export default function TheRoad() {
                   Talk
                 </TouchButton>
               )}
-              <TouchButton size={52} onPress={() => api()?.press('run', true)} onRelease={() => api()?.press('run', false)} aria-label="Run">
-                Run
-              </TouchButton>
-              <TouchButton size={76} onPress={() => api()?.press('walk', true)} onRelease={() => api()?.press('walk', false)} aria-label="Walk">
+              {/* (under reduced motion nothing walks on its own: Next, a still at a time, is the big thumb) */}
+              {!reduced && (
+                <TouchButton size={52} onPress={() => api()?.press('run', true)} onRelease={() => api()?.press('run', false)} aria-label="Run">
+                  Run
+                </TouchButton>
+              )}
+              <TouchButton size={reduced ? 52 : 76} onPress={() => api()?.press('walk', true)} onRelease={() => api()?.press('walk', false)} aria-label="Walk">
                 Walk
               </TouchButton>
+              {reduced && (
+                <TouchButton size={76} onPress={() => api()?.next()} aria-label="Next">
+                  Next
+                </TouchButton>
+              )}
             </div>
           }
         >

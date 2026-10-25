@@ -18,7 +18,8 @@
 //
 // The grid is filled from what the build left standing (its merged statics,
 // `userData.solid`, and its opaque instanced dressing; never what a scene
-// moves, a gate or a raft or a marching column (`userData.moves`), nor water, light or crop), a slice a frame as
+// moves, a gate or a raft or a marching column (`userData.moves`), nor water, light or crop; what is
+// hidden only while the ride is far off, `userData.far`, counts), a slice a frame as
 // the stage comes, so the walk never waits on it.
 //
 // A build is given { road, heightAt, land, waters, rt, weather, ambience, tier, sky, backdrop }
@@ -41,15 +42,16 @@ const PAST = 40; // m of the grid either side of the stage's ends
 const SOFT = /lantern|pool|corn|grass|flower|reed|water|falls|spray|vision|mist|cloud|light/i;
 
 // what stands solid in a build: its merged statics and its opaque instanced dressing
-const solid = (o) => o.isMesh && !o.isSkinnedMesh && !o.userData.ink && !o.userData.moves && o.visible && (o.userData.solid || o.isInstancedMesh) && ![o.material].flat().some((m) => m?.transparent) && !SOFT.test(o.name);
+const solid = (o) => o.isMesh && !o.isSkinnedMesh && !o.userData.ink && !o.userData.moves && (o.visible || o.userData.far) && (o.userData.solid || o.isInstancedMesh) && ![o.material].flat().some((m) => m?.transparent) && !SOFT.test(o.name);
 
 // the build's solid triangles into the grid, in the land's frame, a slice at a time
 function* fill(root, frame, grid) {
   const meshes = [];
   // (nothing hidden, nor under a hidden group or one that moves: a beat's figure or prop, not yet
-  // shown, was a wall no one could see; the grid is filled once, from what stands)
+  // shown, was a wall no one could see; the grid is filled once, from what stands; but what a scene
+  // hides only while the ride is far from it, `userData.far`, stands all the same)
   const walk = (o) => {
-    if (!o.visible || o.userData.moves) return;
+    if ((!o.visible && !o.userData.far) || o.userData.moves) return;
     if (solid(o)) meshes.push(o);
     for (const c of o.children) walk(c);
   };

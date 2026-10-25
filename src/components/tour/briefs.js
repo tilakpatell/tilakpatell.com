@@ -451,6 +451,13 @@ export const BRIEFS = {
       text: 'Leave the keys and it walks on at a walk, stopping where something happens. Space turns it off and on.',
       keys: [['Space', 'Let the road walk']],
     },
+    {
+      id: 'deeds',
+      title: 'Your part',
+      text: 'At some moments the road stops and a card asks you to act: press, hold, keep a rhythm or choose a word. T has a word with whoever walks beside you.',
+      keys: [['E', 'Do it'], ['A, D', 'A rhythm, in turn'], ['T', 'Talk']],
+      touch: [['Do it', 'The card’s button']],
+    },
     help('the Road'),
   ],
   '/middle-earth/place': [
