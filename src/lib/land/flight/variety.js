@@ -11,16 +11,19 @@
 //
 // The colours. Each family has its slots (FAMILIES): a hue and a lightness
 // each, kept far enough apart that no two can meet, jitter and all. A
-// planet's dominant colour is a slot of its family: the system's own shuffle
-// of the slots (seeded by the system's id), read at the planet's index (a
-// moon's by its index round its planet), then nudged by up to SLOT_JITTER.
-// So two siblings are at least 1 apart by colourDistance. A system that
-// holds seeded planets (the roster's, which keep their templates' looks)
-// gives them its first indices and its other planets only the slots clear
-// of their colours. The dominant is the slot's own colour, and the palette
-// is drawn round it: the mix of `low` and `high` (dominantOf) lands on it as
-// near as '#rrggbb' allows, which for a pale or a dark planet's hue is only
-// a few degrees. An ocean planet's dominant is its water's.
+// planet's slot is its system's own shuffle of its family's slots (seeded by
+// the system's id), read at the planet's index (a moon's by its index round
+// its planet). A system that holds seeded planets (the roster's, which keep
+// their templates' looks) gives them its first indices and its other planets
+// only the slots clear of their colours. The palette is drawn round the slot
+// nudged by up to SLOT_JITTER, and the dominant colour is read back from the
+// palette (dominantOf): the mix of `low` and `high`, or an ocean planet's
+// water. '#rrggbb' moves that mix off the aim, by degrees of hue on a pale or
+// a dark planet; where it would carry it out past the jitter, the palette is
+// drawn round the slot's own colour, which every family's saturation keeps
+// inside. So the colours a visitor sees hold the guarantee: two siblings at
+// least 1 apart by colourDistance, and a generated planet at least that far
+// from a seeded sibling's template.
 //
 // Pure: plain data in and out, so it crosses to a worker.
 //
@@ -29,14 +32,18 @@
 //   colourDistance([h1, l1], [h2, l2]) → hypot(Δh / 15°, Δl / 0.08), Δh round the circle
 //   dominantOf(palette, water = null) → [h°, l]: the mix of `low` and `high`,
 //     or the water's colour when one is given (an ocean planet's)
+//   paletteOf(family, [h°, l], r) → { colours: { low, high, rock, accent, deep },
+//     water }: the palette round (h, l), its saturation and the rest drawn from r
 //   varietyOf(row) → { family, dominant: [h°, l], palette: { low, high, rock,
 //     accent, deep, skyLow, skyHigh }, water: { kind: 'sea' | 'lava', colour? } | null,
 //     character: { kind, sea, peaks } | null, sky: { low, high, haze, clouds,
 //     cloudColour, rings, moons }, weather: { kind, amount }, flora: { family,
 //     density, pick } | null, fauna: { density, plans: [{ body, role, tint, group }] } | null,
 //     exotic: null | 'crystal' | 'glowing' | 'floating' | 'spires', poiKinds: kind[] } | null
-//     (null for a type no family knows). A gas giant (gas or ringed) has no
-//     character, flora, fauna, water or places. flora.family is one of
+//     (null for a type no family knows, or a row whose seed isn't a whole
+//     number). dominant is dominantOf(palette, an ocean's water). A gas giant
+//     (gas or ringed) has no character, flora, fauna, water or places, and
+//     its only exotic is 'glowing'. flora.family is one of
 //     lib/land/flora.js's and `pick` (0…1) chooses among its trees; a fauna
 //     plan's body is 'beast', 'flyer' or 'walker', 1–3 of them and each
 //     different, and its tint the palette's rock or accent (a density of 0
@@ -68,7 +75,9 @@ function hslOfRgb([r, g, b]) {
   return [wrap(h * 60), s, l];
 }
 
-function hexOfHsl(h, s, l) {
+// (h, s, l)'s channels in whole steps of 1/steps: 255 for a '#rrggbb', 510
+// for the mix of two
+function stepsOfHsl(h, s, l, steps) {
   const sat = clamp01(s);
   const light = clamp01(l);
   const c = (1 - Math.abs(2 * light - 1)) * sat;
@@ -76,8 +85,11 @@ function hexOfHsl(h, s, l) {
   const x = c * (1 - Math.abs((hh % 2) - 1));
   const [r, g, b] = hh < 1 ? [c, x, 0] : hh < 2 ? [x, c, 0] : hh < 3 ? [0, c, x] : hh < 4 ? [0, x, c] : hh < 5 ? [x, 0, c] : [c, 0, x];
   const m = light - c / 2;
-  return `#${[r, g, b].map((v) => Math.round(clamp01(v + m) * 255).toString(16).padStart(2, '0')).join('')}`;
+  return [r, g, b].map((v) => Math.round(clamp01(v + m) * steps));
 }
+
+const hexOfSteps = (c) => `#${c.map((v) => Math.min(255, Math.max(0, v)).toString(16).padStart(2, '0')).join('')}`;
+const hexOfHsl = (h, s, l) => hexOfSteps(stepsOfHsl(h, s, l, 255));
 
 export function colourDistance([h1, l1], [h2, l2]) {
   const dh = Math.abs(wrap(h1 - h2));
@@ -99,17 +111,20 @@ export function dominantOf(palette, water = null) {
 
 const grid = (hues, lights) => hues.flatMap((h) => lights.map((l) => Object.freeze([h, l])));
 const family = (slots, sat) => Object.freeze({ slots: Object.freeze(slots), sat: Object.freeze(sat) });
-const GAS = family([...grid([266, 289, 312], [0.55, 0.67]), ...grid([20, 42], [0.94])], [0.25, 0.55]);
+const GAS = family([...grid([266, 289, 312], [0.55, 0.67]), ...grid([20, 42], [0.94])], [0.3, 0.55]);
 
-// Starting values; the test holds every two slots, in a family and across,
-// at least 1 + twice the jitter apart. An ocean's slots are its water's.
+// Starting values. The tests hold every two slots, in a family and across,
+// at least 1 + twice the jitter apart, and each slot's own colour inside the
+// jitter through '#rrggbb' at every saturation its family draws. That's what
+// set ice's and gas's floors: a pale slot has so little chroma that one
+// rounded channel swings its hue. An ocean's slots are its water's.
 export const FAMILIES = Object.freeze({
   lava: family(grid([335, 0, 25, 50], [0.1, 0.21]), [0.15, 0.35]),
   rock: family(grid([335, 0, 25, 50], [0.33, 0.45]), [0.1, 0.45]),
   desert: family(grid([20, 42, 64], [0.58, 0.7, 0.82]), [0.35, 0.6]),
   forest: family(grid([85, 108, 131, 154], [0.26, 0.38]), [0.3, 0.55]),
   ocean: family(grid([178, 200, 222, 244], [0.28, 0.4]), [0.4, 0.7]),
-  ice: family(grid([178, 200, 222, 244], [0.8, 0.92]), [0.15, 0.45]),
+  ice: family(grid([178, 200, 222, 244], [0.8, 0.92]), [0.25, 0.45]),
   gas: GAS,
   ringed: GAS,
 });
@@ -117,7 +132,11 @@ export const FAMILIES = Object.freeze({
 export const SLOT_JITTER = Object.freeze({ hue: 2, light: 0.01 });
 const JITTER = Math.hypot(SLOT_JITTER.hue / 15, SLOT_JITTER.light / 0.08);
 
-// each seeded type's template colour, as the roster's seeded planets wear it
+// each seeded type's template colour, as the roster's seeded planets wear it.
+// (A seeded ocean's is its sand's for now: its sea's colour is the flight's
+// water.js's until that moves into planetTables. Then a seeded ocean is to be
+// held by its water, dominantOf(palette, { colour }), as a generated one is;
+// three ocean slots sit within 1 + 2·jitter of that sea.)
 const TEMPLATE = Object.fromEntries(Object.entries(TYPE_LOOK).map(([type, look]) => [type, dominantOf(look.palette)]));
 const systemOf = (id) => id.slice(0, Math.max(0, id.lastIndexOf(':')));
 
@@ -195,8 +214,9 @@ const EXOTIC_SHARE = 0.05;
 const POI_COUNT = [[0, 1], [1, 3], [2, 3], [3, 2]];
 const POI_KINDS = { ruins: 3, wreck: 2, outpost: 2, monolith: 1, signal: 2 };
 
-// each aspect's own stream, off the planet's seed
-const SALT = { slot: 0x1f83d9ab, palette: 0x5be0cd19, character: 0x6a09e667, sky: 0x3c6ef372, weather: 0x510e527f, flora: 0x9b05688c, fauna: 0x243f6a88, exotic: 0x13198a2e, poi: 0x299f31d0 };
+// each aspect's own stream, off the planet's seed (no other stream in the
+// flight shares a salt: the test reads every SALT here)
+const SALT = { slot: 0x1f83d9ab, palette: 0x5be0cd19, character: 0x6a09e667, sky: 0xa4093822, weather: 0x510e527f, flora: 0x9b05688c, fauna: 0x243f6a88, exotic: 0x13198a2e, poi: 0x299f31d0 };
 
 const between = (r, [lo, hi]) => lo + r() * (hi - lo);
 const round3 = (v) => Math.round(v * 1000) / 1000;
@@ -217,13 +237,21 @@ const ACCENT = {
   gas: (h, s, l) => hexOfHsl(h + 40, s, l),
 };
 
-// a ground's four colours round (h, s, l): the mix of low and high is its hue and lightness
-const groundColours = (h, s, l) => ({ low: hexOfHsl(h - 3, s, l - 0.05), high: hexOfHsl(h + 3, 0.9 * s, l + 0.05), rock: hexOfHsl(h + 10, 0.6 * s, 0.6 * l), deep: hexOfHsl(h, s, 0.7 * l) });
+// a ground's four colours round (h, s, l). low is a shade darker and 3° back
+// round the hue; high is whatever makes the mix of the two (h, s, l) itself,
+// to the half step a mix of two '#rrggbb's can hit (so it comes out near
+// (h + 3, s, l + 0.05)). The mix is what dominantOf reads.
+function groundColours(h, s, l) {
+  const low = stepsOfHsl(h - 3, s, l - 0.05, 255);
+  const mix = stepsOfHsl(h, s, l, 510);
+  return { low: hexOfSteps(low), high: hexOfSteps(mix.map((v, i) => v - low[i])), rock: hexOfHsl(h + 10, 0.6 * s, 0.6 * l), deep: hexOfHsl(h, s, 0.7 * l) };
+}
 
-function paletteOf(look, [h, l], r) {
+export function paletteOf(fam, [h, l], r) {
+  const look = fam === 'ringed' ? 'gas' : fam;
   const s = between(r, FAMILIES[look].sat);
   if (look === 'ocean') {
-    // its water is the slot; its sand is a desert's
+    // its water is (h, l); its sand is a desert's
     const colour = hexOfHsl(h, s, l);
     const sand = groundColours(between(r, [20, 64]), between(r, FAMILIES.desert.sat), between(r, [0.58, 0.82]));
     return { colours: { ...sand, accent: colour }, water: { kind: 'sea', colour } };
@@ -274,29 +302,41 @@ function poiKindsOf(system, r) {
   return kinds;
 }
 
+// a row's seed as a bigint: the generator's string, a whole number or a bigint, else null
+const bigSeedOf = (v) => (typeof v === 'bigint' ? v : (Number.isInteger(v) || (typeof v === 'string' && /^-?\d+$/.test(v))) ? BigInt(v) : null);
+
 export function varietyOf(row) {
   const fam = familyOf(row.type);
-  if (!Object.hasOwn(FAMILIES, fam)) return null;
+  const big = bigSeedOf(row.seed);
+  if (!Object.hasOwn(FAMILIES, fam) || big === null) return null;
   const look = fam === 'ringed' ? 'gas' : fam;
   const gas = look === 'gas';
-  const seed = fold(BigInt(row.seed));
+  const seed = fold(big);
   const stream = (aspect) => seeded(seed ^ SALT[aspect]);
 
   // the system's key and the planet's index in it (a moon's are its planet and its own number)
   const id = canonicalId(row.id) ?? String(row.id ?? '');
   const key = systemOf(id);
   const index = Number(id.slice(id.lastIndexOf(':') + 1)) || 0;
-  const [h0, l0] = slotOf(fam, key, index);
+  const slot = slotOf(fam, key, index);
   const jitter = stream('slot');
-  const dominant = [wrap(h0 + (2 * jitter() - 1) * SLOT_JITTER.hue), l0 + (2 * jitter() - 1) * SLOT_JITTER.light];
+  const aim = [wrap(slot[0] + (2 * jitter() - 1) * SLOT_JITTER.hue), slot[1] + (2 * jitter() - 1) * SLOT_JITTER.light];
 
-  const { colours, water } = paletteOf(look, dominant, stream('palette'));
+  // the dominant is read back from what's drawn; where '#rrggbb' carries the
+  // jittered aim out past the jitter, it's drawn round the slot itself,
+  // which the tests hold inside it (the same stream, so the same draws)
+  const dominantIn = (made) => dominantOf(made.colours, look === 'ocean' ? made.water : null);
+  let made = paletteOf(look, aim, stream('palette'));
+  if (colourDistance(dominantIn(made), slot) > JITTER) made = paletteOf(look, slot, stream('palette'));
+  const { colours, water } = made;
+  const dominant = dominantIn(made);
   const sky = skyOf(look, dominant, colours.high, row, stream('sky'));
 
+  // a gas giant has no ground for crystals, islands or spires: a rare one glows
   const ex = stream('exotic');
   const rare = ex() < EXOTIC_SHARE;
   const exoticKind = EXOTICS[Math.floor(ex() * EXOTICS.length)];
-  const exotic = rare ? exoticKind : null;
+  const exotic = rare ? (gas ? 'glowing' : exoticKind) : null;
 
   const w = stream('weather');
   const drawn = weighted(w, WEATHER[look]);

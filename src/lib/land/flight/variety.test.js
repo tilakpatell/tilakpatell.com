@@ -1,10 +1,14 @@
+import { readFileSync, readdirSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { CHARACTERS, TERRAIN } from './characters';
-import { FAMILIES, SLOT_JITTER, colourDistance, dominantOf, varietyOf } from './variety';
+import { FAMILIES, SLOT_JITTER, colourDistance, dominantOf, paletteOf, varietyOf } from './variety';
 import { SEEDED_EXPANSE, TYPE_LOOK } from './planetTables';
 import { randomSystems } from './fixtures/generated';
 
 const templateDominant = (type) => dominantOf(TYPE_LOOK[type].palette);
+const JITTER = Math.hypot(SLOT_JITTER.hue / 15, SLOT_JITTER.light / 0.08);
+// the colour a visitor sees: an ocean's water, else the mix of its low and high ground
+const drawn = (v) => dominantOf(v.palette, v.family === 'ocean' ? v.water : null);
 
 describe('the palette slots', () => {
   it('keep every slot of every family apart, jitter and all, within a family and across', () => {
@@ -12,6 +16,16 @@ describe('the palette slots', () => {
     const gap = 1 + 2 * Math.hypot(SLOT_JITTER.hue / 15, SLOT_JITTER.light / 0.08);
     for (let i = 0; i < all.length; i++) for (let j = i + 1; j < all.length; j++) expect(colourDistance(all[i][1], all[j][1]), `${all[i][0]} ${all[i][1]} · ${all[j][0]} ${all[j][1]}`).toBeGreaterThanOrEqual(gap);
     for (const { slots } of Object.values(FAMILIES)) expect(slots.length).toBeGreaterThanOrEqual(8);
+  });
+
+  it('holds every slot’s own colour through #rrggbb, at every saturation its family draws', () => {
+    // a pale or a dark slot has little chroma, so a rounded channel swings
+    // its hue; the family's saturation floor keeps it inside the jitter
+    for (const [family, { slots }] of Object.entries(FAMILIES)) for (const slot of slots) for (let n = 0; n <= 400; n++) {
+      const { colours, water } = paletteOf(family, slot, () => n / 400);
+      const at = dominantOf(colours, family === 'ocean' ? water : null);
+      expect(colourDistance(at, slot), `${family} ${slot} at ${n / 400}`).toBeLessThanOrEqual(JITTER);
+    }
   });
 
   it('measures the hue round the circle', () => {
@@ -31,11 +45,45 @@ describe('varietyOf', () => {
     }
   });
 
+  it('keeps siblings apart in the colours drawn, the palest too', () => {
+    for (const rows of systems) {
+      const v = rows.map(varietyOf);
+      for (let i = 0; i < v.length; i++) for (let j = i + 1; j < v.length; j++) expect(colourDistance(drawn(v[i]), drawn(v[j])), `${rows[i].id} ${rows[j].id}`).toBeGreaterThanOrEqual(1);
+    }
+    // pale ice siblings from randomSystems(30000, 11), whose mixes once met 0.70 apart
+    const pale = [
+      [['e:-7,31:11:1', '597666849481775283'], ['e:-7,31:11:2', '7655134661737035446']],
+      [['e:-3,39:4:3', '10830084583472094813'], ['e:-3,39:4:4', '13392403512798673920']],
+      [['e:8,8:3:3', '12465111276248268292'], ['e:8,8:3:4', '16230430790295176500']],
+    ];
+    for (const pair of pale) {
+      const [a, b] = pair.map(([id, seed]) => varietyOf({ id, type: 'ice', seed }));
+      expect(colourDistance(drawn(a), drawn(b)), pair[0][0]).toBeGreaterThanOrEqual(1);
+    }
+  });
+
   it('keeps a generated planet clear of its seeded siblings', () => {
     const seededIn = (sys) => SEEDED_EXPANSE.filter(([id]) => id.startsWith(`${sys}:`));
     for (const sys of ['e:1,0:1', 'e:1,0:2']) for (let j = 3; j < 7; j++) for (const type of ['rock', 'ice', 'desert', 'forest', 'lava', 'ocean', 'gas']) {
       const v = varietyOf({ id: `${sys}:${j}`, name: 'X', type, seed: String(1000n + BigInt(j)), system: { faction: null, traffic: 0, hazard: null } });
       for (const [id, t] of seededIn(sys)) expect(colourDistance(v.dominant, templateDominant(t)), `${sys}:${j} ${type} · ${id}`).toBeGreaterThanOrEqual(1);
+    }
+  });
+
+  it('gives a seeded system’s other planets slots of their own, however many share a family', () => {
+    // a system has up to 7 planets, the seeded ones first, so each family
+    // needs 7 − s slots clear of the seeded colours
+    const keys = [...new Set(SEEDED_EXPANSE.map(([id]) => id.slice(0, id.lastIndexOf(':'))))];
+    for (const sys of keys) {
+      const seeded = SEEDED_EXPANSE.filter(([id]) => id.startsWith(`${sys}:`));
+      for (const type of Object.keys(FAMILIES)) {
+        const v = [];
+        for (let j = seeded.length; j < 7; j++) v.push([`${sys}:${j}`, varietyOf({ id: `${sys}:${j}`, type, seed: String(2000n + BigInt(j)) })]);
+        for (let i = 0; i < v.length; i++) {
+          for (const [id, t] of seeded) expect(colourDistance(drawn(v[i][1]), templateDominant(t)), `${v[i][0]} ${type} · ${id}`).toBeGreaterThanOrEqual(1);
+          for (let k = i + 1; k < v.length; k++) expect(colourDistance(drawn(v[i][1]), drawn(v[k][1])), `${v[i][0]} · ${v[k][0]} ${type}`).toBeGreaterThanOrEqual(1);
+        }
+      }
     }
   });
 
@@ -75,21 +123,11 @@ describe('varietyOf', () => {
   const many = randomSystems(2000, 3).flat();
   const all = many.map((row) => [row, varietyOf(row)]);
 
-  it('draws the palette round its dominant colour, as near as #rrggbb allows', () => {
+  it('reads its dominant colour back from the palette it draws', () => {
     const HEX = /^#[0-9a-f]{6}$/;
-    const rgb = (hex) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255);
-    // the chroma of what dominantOf reads: an ocean's water, else the mix of low and high
-    const chromaOf = (v) => {
-      const c = v.family === 'ocean' ? rgb(v.water.colour) : rgb(v.palette.low).map((x, i) => (x + rgb(v.palette.high)[i]) / 2);
-      return Math.max(...c) - Math.min(...c);
-    };
     for (const [row, v] of all) {
       for (const [k, c] of Object.entries(v.palette)) expect(c, `${row.id} ${k}`).toMatch(HEX);
-      const [h, l] = dominantOf(v.palette, v.family === 'ocean' ? v.water : null);
-      expect(Math.abs(l - v.dominant[1]), row.id).toBeLessThan(0.01);
-      // a channel half a step off moves a hue by up to 0.47° over the chroma,
-      // so a pale or a dark planet's hue is only as near as that
-      expect(colourDistance([h, l], [v.dominant[0], l]) * 15, row.id).toBeLessThan(1 + 0.47 / chromaOf(v));
+      expect(v.dominant, row.id).toEqual(drawn(v));
     }
   });
 
@@ -118,6 +156,18 @@ describe('varietyOf', () => {
       for (const p of v.fauna.plans) expect([v.palette.rock, v.palette.accent]).toContain(p.tint);
       if (v.exotic === 'glowing') expect(v.weather.kind).toBe('spores');
     }
+  });
+
+  it('lets a gas giant be exotic only by glowing, and as often as any planet', () => {
+    let giants = 0;
+    for (const [row, v] of all) {
+      if (v.family !== 'gas' && v.family !== 'ringed') continue;
+      giants++;
+      expect([null, 'glowing'], row.id).toContain(v.exotic);
+      // the same draw of the exotic stream as a rock planet of its seed
+      expect(Boolean(v.exotic), row.id).toBe(Boolean(varietyOf({ ...row, type: 'rock' }).exotic));
+    }
+    expect(giants).toBeGreaterThan(200);
   });
 
   it('puts its rings and moons in its sky, and the sky in its palette', () => {
@@ -154,8 +204,26 @@ describe('varietyOf', () => {
     expect(pirate).toBeGreaterThan(wrecks);
   });
 
-  it('has no variety for a type no family knows, and never throws', () => {
+  it('has no variety for a type no family knows or a row with no whole seed, and never throws', () => {
     expect(varietyOf({ id: 'e:3,-2:1:0', type: 'plasma', seed: '9' })).toBe(null);
+    for (const seed of [undefined, null, '', 'x', '1.5', 1.5]) expect(varietyOf({ id: 'e:3,-2:1:0', type: 'rock', seed }), String(seed)).toBe(null);
+    expect(varietyOf({ id: 'e:3,-2:1:0', type: 'rock', seed: 9 })).toEqual(varietyOf({ id: 'e:3,-2:1:0', type: 'rock', seed: '9' }));
     expect(() => varietyOf({ id: 'nonsense', type: 'rock', seed: '9' })).not.toThrow();
+  });
+
+  it('draws each aspect from a salt of its own, shared with no other stream in the flight', () => {
+    const dir = new URL('./', import.meta.url);
+    const salts = readdirSync(dir)
+      .filter((f) => f.endsWith('.js') && !f.endsWith('.test.js'))
+      .flatMap((f) => {
+        const table = readFileSync(new URL(f, dir), 'utf8').match(/const SALT = \{([^}]*)\}/)?.[1] ?? '';
+        return [...table.matchAll(/(\w+): (0x[0-9a-f]+)/g)].map(([, aspect, salt]) => [`${f} ${aspect}`, salt]);
+      });
+    expect(salts.filter(([where]) => where.startsWith('variety.js')).length).toBe(9);
+    const seen = new Map();
+    for (const [where, salt] of salts) {
+      expect(seen.get(salt), `${where} is ${salt}`).toBeUndefined();
+      seen.set(salt, where);
+    }
   });
 });
