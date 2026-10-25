@@ -17,19 +17,28 @@ const sim = (D, drive, heading) => {
   return null;
 };
 
+// (the eighteen flights the formula was fitted to, each a test of its own:
+// together they are about 25,000 steps of the physics, too long for one)
+const SIDES = [
+  ['nose on', headingTo(1, 0)],
+  ['side on', 0],
+  ['tail on', headingTo(-1, 0)],
+];
+const FLIGHTS = ['cruise', 'super'].flatMap((drive) => [2000, 10000, 40000].flatMap((D) => SIDES.map(([side, heading]) => ({ drive, D, side, heading }))));
+
 describe('a long trip’s time', () => {
-  it('is within a tenth, or a second and a half, of flying it, at three headings on both drives', () => {
+  it('is the formula fitted to the flights below', () => {
     expect(TRIP).toEqual({ extra: { cruise: 7.1, super: 5.6 }, turn: { cruise: 1.7, super: 0.5 } });
-    for (const drive of ['cruise', 'super']) {
-      for (const D of [2000, 10000, 40000]) {
-        for (const heading of [headingTo(1, 0), 0, headingTo(-1, 0)]) {
-          const flown = sim(D, drive, heading);
-          const t = longTrip(flown.s0, flown.park, drive);
-          expect(Math.abs(t - flown.t), `${drive} ${D} ${heading}`).toBeLessThanOrEqual(Math.max(1.5, 0.1 * flown.t));
-        }
-      }
-    }
+    expect(FLIGHTS).toHaveLength(18);
   });
+  for (const { drive, D, side, heading } of FLIGHTS) {
+    it(`is within a tenth, or a second and a half, of flying it: ${drive}, ${D} off, ${side}`, () => {
+      const flown = sim(D, drive, heading);
+      expect(flown).not.toBeNull();
+      const t = longTrip(flown.s0, flown.park, drive);
+      expect(Math.abs(t - flown.t)).toBeLessThanOrEqual(Math.max(1.5, 0.1 * flown.t));
+    });
+  }
   it('is finite for any trip, and nothing but the overhead for none', () => {
     const s = { ...spawn(null), x: 0, y: 0, z: 0, heading: 0 };
     expect(longTrip(s, { x: 0, y: 0, z: 0 }, 'super')).toBeCloseTo(TRIP.extra.super, 9);

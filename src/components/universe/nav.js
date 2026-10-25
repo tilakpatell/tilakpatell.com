@@ -34,7 +34,7 @@
 // those pages may grow by. A generated place is timed by places/trip.js's
 // formula, and a jump to one is a jump like any other.
 
-import { EDGE, GOALS, OVERDRIVE, SHIP, SOLIDS, autopilot, forward, headingTo, isGoal, parkAt, step } from './ship';
+import { EDGE, GOALS, OVERDRIVE, SHIP, SOLIDS, autopilot, forward, goalAt, headingTo, isGoal, parkAt, step } from './ship';
 import { PORTALS, portalById, portalHit, transit } from './portals';
 import { MAW, parkNear } from './maw';
 import { WONDERS, reachOf } from './deep';
@@ -199,7 +199,7 @@ export const canGo = (id, { place } = {}) => isGoal(goalOf(id)) || generated(id,
 // `pose` says: legOf(ship, id, pose). A generated place is in the main
 // map's: none is in the Curve, so from there it's gone to by the portal home)
 const sectorOfGoal = (id) => {
-  const g = GOALS[goalOf(id)];
+  const g = goalAt(goalOf(id));
   return g ? sectorOf(...g.at) : isPlaceId(id) ? 'main' : null;
 };
 export const portalBetween = (from, to) => PORTALS.find((p) => sectorOf(...p.at) === from && p.leadsTo.sector === to) ?? null;
@@ -363,7 +363,7 @@ export const TRANSIT = 0.6; // seconds through a portal (the flash)
 export function tripTime(ship, id, drive = 'super', { limit = 150, dt = 1 / 30, ...look } = {}) {
   id = goalOf(id);
   const dest = generated(id, look.place);
-  if (!ship || !(GOALS[id] || dest)) return null;
+  if (!ship || !(goalAt(id) || dest)) return null;
   const leg = legOf(ship, id);
   if (leg !== id) {
     const p = portalById(leg);

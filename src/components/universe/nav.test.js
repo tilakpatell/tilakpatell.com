@@ -449,7 +449,8 @@ describe('generated places', () => {
     expect([destinationById(sys.id, none), canGo(sys.id, none), findDestination(sys.id, none)]).toEqual([null, false, null]);
   });
   it('are nothing for an id that isn’t there, or junk, and never throw', () => {
-    for (const id of ['E:1,0:0:99', 'E:1,0:w60', 'E:1,0:w10003', 'beacon:E:1,0:n', '', null, undefined, 42]) {
+    // (a word on Object.prototype is no goal, and a sector too far off to lay out is nowhere, at once)
+    for (const id of ['E:1,0:0:99', 'E:1,0:w60', 'E:1,0:w10003', 'beacon:E:1,0:n', '', null, undefined, 42, 'constructor', 'toString', 'hasOwnProperty', '__proto__', 'E:500000000000000,0:0']) {
       expect([destinationById(id, U), canGo(id, U), parkFor(id, [0, 0], U), tripTime(home(), id, 'hyper', U), distanceTo(home(), id, U), findDestination(id, U)], String(id)).toEqual([null, false, null, null, null, null]);
     }
     expect(findDestination(' e:1,0,0:0:1 ', U)).toMatchObject({ id: 'E:1,0:0:1', name: sys.planets[1].name });
