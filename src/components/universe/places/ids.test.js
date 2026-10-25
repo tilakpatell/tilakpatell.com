@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { FROM, SIDE_EFFECT, uncomment } from '../../../../scripts/health/graph.mjs';
 import { moonAt, orbitAt } from '../../expanse/shared/orbits';
-import { atTime, canonicalPlace, isPlaceId } from './ids';
+import { FURTHEST, atTime, canonicalPlace, isPlaceId } from './ids';
 
 const importsOf = (p) => {
   const code = uncomment(readFileSync(new URL(p, import.meta.url), 'utf8'));
@@ -32,6 +32,15 @@ describe('generated ids, and where a place is', () => {
       expect(isPlaceId(id), id).toBe(true);
       expect(canonicalPlace(canonicalPlace(id))).toBe(canonicalPlace(id));
     }
+  });
+  it('is nothing for a sector further off than the generator can lay out, and the furthest it can is a place', () => {
+    expect(FURTHEST).toBe(2 ** 26);
+    const past = FURTHEST + 1;
+    for (const id of ['E:500000000000000,0:0', 'E:1,0,500000000000000:0', 'E:9007199254740991,0:0', `E:${-past},0:0`, `e:0,${past}:w3`, `E:0,0,${-past}:1:2`]) {
+      expect(canonicalPlace(id), id).toBeNull();
+      expect(isPlaceId(id), id).toBe(false);
+    }
+    for (const id of [`E:${FURTHEST},0:0`, `E:0,${-FURTHEST},${FURTHEST}:0:1`, `e:${-FURTHEST},0,0:w3`]) expect(isPlaceId(id), id).toBe(true);
   });
   it('puts a planet on its orbit, a moon round its planet, a mover where it says and the rest where they are', () => {
     expect(atTime({ place: 'planet', src: { row: planet } }, 1234.5)).toEqual(orbitAt(planet, 1234.5));

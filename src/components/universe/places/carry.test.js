@@ -119,11 +119,19 @@ describe('the carry', () => {
     }
     expect(atMoon).toBe(true);
   });
-  it('keeps a ship parked where it parked, stick let go, at the fastest planet and every one that parks past its moons', () => {
-    const past = planets.filter((p) => parkDistance(dest(p.id)) > dest(p.id).reach + PARK_GAP.near + 1e-9);
+  it('keeps a ship parked where it parked, stick let go, at the fastest planet', () => {
+    const { off, bumps } = drift(fastest, 300);
+    expect(off, fastest.id).toBeLessThan(1);
+    expect(bumps, fastest.id).toEqual([]);
+  });
+  it('keeps a ship parked where it parked, stick let go, at every planet that parks past its moons', () => {
+    const past = planets.filter((p) => {
+      const d = dest(p.id); // (each planet resolved once)
+      return parkDistance(d) > d.reach + PARK_GAP.near + 1e-9;
+    });
     expect(past.length).toBeGreaterThan(0);
-    for (const p of [fastest, ...past]) {
-      const { off, bumps } = drift(p, p === fastest ? 300 : 60);
+    for (const p of past) {
+      const { off, bumps } = drift(p, 60);
       expect(off, p.id).toBeLessThan(1);
       expect(bumps, p.id).toEqual([]);
     }

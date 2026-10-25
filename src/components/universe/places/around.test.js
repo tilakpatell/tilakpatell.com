@@ -84,6 +84,8 @@ describe('what’s round the ship', () => {
     expect(orbitingPlace(at(gone), st.id, rows)).not.toBe(st.id);
     expect(orbitingPlace(at(gone), st.id, rows)).toBe(sysOr(gone));
     expect(orbitingPlace(at(row.reach + PARK_GAP.near + PARK_GAP.in + 1), null, rows)).toBe(sysOr(row.reach + PARK_GAP.near + PARK_GAP.in + 1));
+  });
+  it('counts a ship parked at any station as there, and inside its system’s zone', () => {
     for (const x of s.stations) {
       const park = parkPlace(resolvePlace(x.id, { t: 0 }), [x.at[0], x.at[2] + 1000], 0);
       const near = placesAround(sectors, x.at, 0, all);
@@ -92,21 +94,27 @@ describe('what’s round the ship', () => {
       expect(len(xyz(park), home.at), x.id).toBeLessThan(hereZone(home).in);
     }
   });
-  it('counts a ship parked at a system, or at a planet, even one that parks past its moons, as there', () => {
+  it('counts a ship parked at a system as there', () => {
     for (const sys of s.systems.slice(0, 60)) {
       const park = parkPlace(resolvePlace(sys.id, { t: 0 }), [sys.at[0] + 9000, sys.at[2]], 0);
       expect(orbitingPlace(still(park), null, placesAround(one, xyz(park), 0, all)), sys.id).toBe(sys.id);
     }
+  });
+  it('counts a ship parked at a planet, even one that parks past its moons, as there', () => {
     const planets = s.systems.flatMap((x) => x.planets);
+    const dests = new Map(planets.map((p) => [p.id, resolvePlace(p.id, { t: 0 })])); // (each planet resolved once)
     const past = planets.filter((p) => {
-      const d = resolvePlace(p.id, { t: 0 });
+      const d = dests.get(p.id);
       return parkDistance(d) > d.reach + PARK_GAP.near + 1e-9;
     });
     expect(past.length).toBeGreaterThan(0);
+    // (with the planet preferred, only its own row can answer, and a planet's
+    // row has a park only near its system, where no cap drops it: so the
+    // scene's default cap gives the same answer as none, from far fewer rows)
     for (const p of [...s.systems.slice(0, 60).flatMap((x) => x.planets), ...past]) {
-      const d = resolvePlace(p.id, { t: 0 });
+      const d = dests.get(p.id);
       const park = parkPlace(d, [d.at[0] + 5000, d.at[2]], 0);
-      expect(orbitingPlace(still(park), null, placesAround(one, xyz(park), 0, all), p.id), p.id).toBe(p.id);
+      expect(orbitingPlace(still(park), null, placesAround(one, xyz(park), 0, AROUND), p.id), p.id).toBe(p.id);
     }
   });
   it('keeps a parked ship at its planet as a moon goes by, and gives it to the moon when it flies in', () => {

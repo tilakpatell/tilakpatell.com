@@ -188,7 +188,10 @@ export const GOALS = {
   ...Object.fromEntries(WONDERS.filter((w) => w.solid === false).map((w) => [w.id, { id: w.id, at: w.at, r: w.r, reach: 0, deep: true }])),
   ...PLANET,
 };
-export const isGoal = (id) => Boolean(GOALS[id]);
+// (by GOALS' own keys: it's a plain object, and a word a visitor types,
+// 'constructor' say, is never its prototype's)
+export const goalAt = (id) => (Object.hasOwn(GOALS, id) ? GOALS[id] : null);
+export const isGoal = (id) => goalAt(id) !== null;
 
 // How far the pulse drive has opened up at (x, y, z), 0 … 1, going the way
 // `f` points (a unit vector; none: as it would be going straight at the
@@ -292,7 +295,7 @@ const away = (s, p) => {
 // from (`from`, or the camera's side of the map). A wonder out in deep space the same, further off (they're
 // big), level with its middle. Null for anywhere that isn't a goal.
 export function parkAt(id, from = [0, HOME_RADIUS]) {
-  const p = GOALS[id];
+  const p = goalAt(id);
   if (!p) return null;
   const deep = !PLANET[id];
   // a world is parked at on its day side (lighting.js), so it's seen lit,

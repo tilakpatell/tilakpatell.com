@@ -5,6 +5,8 @@ For the coordinator to fold into `docs/superpowers/HANDOFF-universe.md`. PR 3.1 
 ## Landed
 
 - `nav.js` takes generated places through its caller's lookup, `{ place(id) → Destination | null, park(id, from: [x, z]) → Park | null }`, not `{ place }` alone. The park comes from the lookup so the pages that load the nav don't carry `park.js` (with it, ⌘K grew by 2.14 kB gzipped: the README's Task 7). `lookupOf(opts)` in `places/resolve.js` makes one.
+- A generated id names a sector at most `FURTHEST` (2^26) off on each axis (`places/ids.js`); past that `isPlaceId` is false and every lookup gives nothing at once. The generator can't lay out a sector past about 4.5e14: its grid cells pass 2^53 and `gridOf().clear` in `expanse/gen/space.js` never ends. So a typed `fly` or a link to such an id can't freeze the page or leave a worker spinning. The generator and its fingerprint are as they were.
+- `ship.js`'s `goalAt(id)` reads `GOALS` by its own keys only, and `isGoal`, `parkAt`, nav's `canGo` and `tripTime` go through it. A word on `Object.prototype` (`constructor`, `toString`) is no longer a goal, and `parkFor` and `tripTime` give nothing for it, not a throw.
 
 ## Left
 

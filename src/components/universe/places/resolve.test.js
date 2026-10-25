@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { UNIVERSE, fullSector, moonAt, orbitAt, thingRow, universeOf } from '../../expanse/shared/gen';
-import { atTime, canonicalPlace, isPlaceId } from './ids';
+import { FURTHEST, atTime, canonicalPlace, isPlaceId } from './ids';
 import { parkPlace } from './park';
 import { lookupOf, resolvePlace } from './resolve';
 
@@ -35,6 +35,15 @@ describe('the resolver', () => {
     for (const id of [`E:1,0:${s.systems.length}`, `${sys.id}:${sys.planets.length}`, `${p.id}:${p.moonList.length}`, 'E:1,0:0:99', 'E:1,0:w60', 'E:1,0:w9999', 'E:1,0:w10003', 'nonsense', undefined]) {
       expect(resolvePlace(id, { t: 0 }), String(id)).toBeNull();
     }
+  });
+  it('is nothing, at once, for a sector further off than the generator can lay out', () => {
+    // (past about 4.5e14 sectors the generator's grid cells pass 2^53, and its loop over them never ends)
+    for (const id of ['E:500000000000000,0:0', 'E:1,0,500000000000000:0', 'E:9007199254740991,0:0']) {
+      expect(resolvePlace(id, { t: 0 }), id).toBeNull();
+      expect(lookupOf({ t: 0 }).park(id, [0, 0]), id).toBeNull();
+    }
+    const furthest = [fullSector(UNIVERSE, FURTHEST, 0, 0, { things: false })]; // (no lattice, as the 2D sector: it costs most to make)
+    expect(resolvePlace(`E:${FURTHEST},0:0`, { t: 0, sectors: furthest, build: false })).toMatchObject({ id: `E:${FURTHEST},0:0`, place: 'system', cube: [FURTHEST, 0, 0] });
   });
   it('is nothing, not a throw, in a sector that hasn’t its lattice, wonders or moons yet', () => {
     // (lane 2's shapes: the 2D sector the Expanse holds before its one space,
