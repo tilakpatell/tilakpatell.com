@@ -215,7 +215,7 @@ export function patchShaders(m, key, change) {
   m.needsUpdate = true;
 }
 
-export function plate(m, unit, length, { mapped = false, size = 2048, lite = false } = {}) {
+export function plate(m, unit, length, { mapped = false, size = 2048, lite = false, windows = true } = {}) {
   const detail = detailMap(size);
   m.userData.plated = true;
   // (the ship's length and the hand it was plated with, for a part built on it later: capitalParts.js)
@@ -224,7 +224,8 @@ export function plate(m, unit, length, { mapped = false, size = 2048, lite = fal
     shader.uniforms.uUnit = { value: unit };
     shader.uniforms.uLength = { value: length };
     shader.uniforms.uDetail = detail;
-    shader.uniforms.uLit = { value: mapped ? 0 : 1.2 };
+    // (the bare walls' lit panes: none over a model's own map, nor on a part built on the hull)
+    shader.uniforms.uLit = { value: mapped || !windows ? 0 : 1.2 };
     shader.vertexShader = shader.vertexShader.replace('#include <common>', `#include <common>\n${PLATE_VERT}`).replace(
       '#include <begin_vertex>',
       `#include <begin_vertex>

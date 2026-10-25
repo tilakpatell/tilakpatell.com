@@ -141,6 +141,10 @@ describe('capitalParts', () => {
     mapped.holder.userData.plating = { length: 1200, lite: false };
     const own = partsOf(cutParts(mapped.holder, 'providence', [{ id: 'reactor', kind: 'reactor', at: [0, -0.06, 0], r: 0.04, build: 'bulb' }]).holder).knock('reactor');
     expect(own.every((m) => m.material.userData.plated && m.material.userData.plating.length === 1200)).toBe(true);
+    // (no rows of the bare walls' lit panes on a built part)
+    const lit = { uniforms: {}, vertexShader: THREE.ShaderLib.standard.vertexShader, fragmentShader: THREE.ShaderLib.standard.fragmentShader };
+    built[0].material.onBeforeCompile(lit);
+    expect(lit.uniforms.uLit.value).toBe(0);
     // (each its own copy, the plating's frame the mesh's in the ship's)
     expect(built[0].material).not.toBe(built[1].material);
     const shader = { uniforms: {}, vertexShader: THREE.ShaderLib.standard.vertexShader, fragmentShader: THREE.ShaderLib.standard.fragmentShader };

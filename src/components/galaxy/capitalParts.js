@@ -14,7 +14,8 @@
 // shield generator, a block with its windows lit for a bridge, a bulb with
 // a band round it for a reactor, in the ship's own grey and, where its hull
 // is plated, plated as the hull is (capitalPlating.js's plate, in the ship's
-// own metres: no flat grey placeholder on a hull of panels). A battery is the
+// own metres, without the bare walls' lit panes: no flat grey placeholder on
+// a hull of panels). A battery is the
 // model's own pieces round it, where it has any, else a turbolaser turret
 // built there (a base, a housing, its two barrels forward), so every
 // battery a bolt can hit is a gun on the hull that can be shot off it.
@@ -264,8 +265,9 @@ function platedBuilt(g, kind, { length, lite }) {
   g.traverse((o) => {
     if (!o.isMesh || o.material !== hull) return;
     const m = hull.clone();
-    // (the detail map the hull's already has: none baked anew for it)
-    plate(m, o.matrixWorld.clone(), length, { size: 0, lite });
+    // (the detail map the hull's already has: none baked anew for it; no
+    // rows of lit panes, which a bulb, a dome or a turret hasn't got)
+    plate(m, o.matrixWorld.clone(), length, { size: 0, lite, windows: false });
     plated.push(m);
     o.material = m;
   });

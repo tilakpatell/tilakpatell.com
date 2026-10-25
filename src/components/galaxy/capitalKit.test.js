@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
-import { GAME_KITS, MESH_TRIS, WINDOW_HEIGHT, WINDOW_LIGHT, dressGameKit, kitMaterial, kitOf, lodsFor, mapSize, windowsMaterial, withPanes } from './capitalKit';
+import { GAME_KITS, MESH_TRIS, PANE_MEAN, WINDOW_HEIGHT, WINDOW_LIGHT, dressGameKit, kitMaterial, kitOf, lodsFor, mapSize, windowsMaterial, withPanes } from './capitalKit';
 
 const map = () => new THREE.Texture();
 const compiled = (m) => {
@@ -107,15 +107,25 @@ describe('capitalKit', () => {
     const s = compiled(plain);
     expect(s.fragmentShader).toMatch(/vec2 kwCell = vUv \* vec2\( 2\.0, 1\.0 \);/);
     expect(s.fragmentShader).toMatch(/float kwH = texture2D\( kwHeight, vUv \)\.r;/);
-    expect(s.fragmentShader).toMatch(/totalEmissiveRadiance \*= mix\( kwOn, kwMean, kwBlur \);/);
+    expect(s.fragmentShader).toMatch(/totalEmissiveRadiance \*= mix\( kwOn, kwMean, kwFar \);/);
+    // (far off, the heightmap pane's own mean, its recess lit 0.8 at its floor, not the recess's share of the cell)
+    expect(PANE_MEAN.height).toBeCloseTo(0.196, 3);
+    expect(s.fragmentShader).toContain(`mix( ${PANE_MEAN.plain.toFixed(4)}, 0.1960, kwUse )`);
     // (the plain pane till the game's heightmap comes; then its shape, the same program)
     expect(s.uniforms.kwUse.value).toBe(0);
     const height = map();
+    height.image = { width: 512, height: 256 };
     expect(withPanes(plain, height)).toBe(plain);
     expect(s.uniforms.kwHeight.value).toBe(height);
     expect(s.uniforms.kwUse.value).toBe(1);
+    // (the blend to the mean where the map's mips still hold the panes: a mip sooner on a phone's 256)
+    expect(s.uniforms.kwBlur.value.toArray()).toEqual([0.06, 0.25]);
+    const small = map();
+    small.image = { width: 256, height: 128 };
+    withPanes(plain, small);
+    expect(s.uniforms.kwBlur.value.x).toBeCloseTo(0.12, 6);
     expect(withPanes(plain, null)).toBe(plain);
-    expect(s.uniforms.kwHeight.value).toBe(height);
+    expect(s.uniforms.kwHeight.value).toBe(small);
   });
 
   it('asks for the game’s heightmap of the panes once a kit draws windows, and lights them by it', async () => {

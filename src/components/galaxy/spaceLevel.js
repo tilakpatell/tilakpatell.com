@@ -47,7 +47,7 @@ const greyed = (root) =>
 // one for the level, not greyed; the Venator's and the Lucrehulk's, another
 // shader's on another layout, are)
 const ISD_WINDOWS = /^M_Windows$/;
-export const litWindows = (root, made = {}, { panes = paneHeight } = {}) => {
+export const litWindows = (root, made = {}, { panes = () => paneHeight(undefined, device().phone) } = {}) => {
   root.traverse((o) => {
     if (!o.isMesh || Array.isArray(o.material) || o.material?.map || !ISD_WINDOWS.test(o.material?.name ?? '')) return;
     if (!made.windows) {

@@ -179,16 +179,26 @@ export function kitMaterial(def, maps) {
 // dark glass; where a pixel spans a cell, their mean
 export const WINDOW_LIGHT = { colour: [1, 0.96, 0.62], intensity: 1.5, lit: 0.85 };
 // the game's heightmap of the panes (512 × 256: two panes, a cell each, the
-// surface white, the recess black with the pane's inside in it), and how
-// much of a cell its recess is (0.23; the plain pane's 0.36)
+// surface white, the recess black with the pane's inside in it), and a
+// pane's mean over its cell: the plain one's 0.36 (all lit inside), the
+// heightmap's 0.196 (its recess 0.23 of a cell, lit 0.8 at its floor; read
+// over the map's own top mip)
 export const WINDOW_HEIGHT = `${LEVELS}/bespin/m2bes/tex/t_stardestroyer_windows_01_h`;
-const PANE_MEAN = { plain: 0.64 * 0.56, height: 0.231 };
+export const PANE_MEAN = { plain: 0.64 * 0.56, height: 0.196 };
+// (where a pixel spans this much of a cell, the mean takes over: a plain
+// pane's edges alias past a third of one; the heightmap's mips smear its
+// recess away from about 1/16 of a cell on its 512 (a cell 16 texels at mip
+// 4, the panes gone by mip 7), on a phone's 256 a mip sooner)
+const BLUR = { plain: [0.35, 1.0], height: [0.06, 0.25] };
 export const paneHeight = (loadTexture = packMap, phone = false) => loadTexture(WINDOW_HEIGHT, phone ? 256 : 512, { aniso: 4, srgb: false, repeat: true });
 // the heightmap on a windows material, when it comes (its uniforms read each frame: no new program)
 export function withPanes(m, map) {
   if (!map || !m?.userData.panes) return m;
   m.userData.panes.height.value = map;
   m.userData.panes.use.value = 1;
+  // (the blend to the mean as far in as the map's width says its mips hold the panes)
+  const k = 512 / (map.image?.width || map.mipmaps?.[0]?.width || 512);
+  m.userData.panes.blur.value.set(BLUR.height[0] * k, BLUR.height[1] * k);
   return m;
 }
 export function windowsMaterial(def) {
@@ -197,13 +207,14 @@ export function windowsMaterial(def) {
   m.emissive.setRGB(...WINDOW_LIGHT.colour);
   m.emissiveIntensity = WINDOW_LIGHT.intensity;
   m.defines = { USE_UV: '' };
-  const panes = { height: { value: null }, use: { value: 0 } };
+  const panes = { height: { value: null }, use: { value: 0 }, blur: { value: new THREE.Vector2(...BLUR.height) } };
   m.userData.panes = panes;
   const lit = WINDOW_LIGHT.lit.toFixed(2);
   patchShaders(m, 'kitwindows', (shader) => {
     shader.uniforms.kwHeight = panes.height;
     shader.uniforms.kwUse = panes.use;
-    shader.fragmentShader = shader.fragmentShader.replace('#include <common>', '#include <common>\nuniform sampler2D kwHeight;\nuniform float kwUse;').replace(
+    shader.uniforms.kwBlur = panes.blur;
+    shader.fragmentShader = shader.fragmentShader.replace('#include <common>', '#include <common>\nuniform sampler2D kwHeight;\nuniform float kwUse;\nuniform vec2 kwBlur;').replace(
       '#include <emissivemap_fragment>',
       `#include <emissivemap_fragment>
   // (a pane a cell: half a unit across, a unit up; the game's from its
@@ -218,11 +229,12 @@ export function windowsMaterial(def) {
   float kwLit = step( 1.0 - ${lit}, kwHash );
   float kwOn = kwPane * kwLit * ( 0.65 + 0.35 * fract( kwHash * 7.13 ) );
   // (the mean where a pixel spans a cell: no sparkle far off)
-  float kwBlur = smoothstep( 0.35, 1.0, length( fwidth( kwCell ) ) );
+  vec2 kwFrom = mix( vec2( ${BLUR.plain.map((v) => v.toFixed(2)).join(', ')} ), kwBlur, kwUse );
+  float kwFar = smoothstep( kwFrom.x, kwFrom.y, length( fwidth( kwCell ) ) );
   float kwMean = mix( ${PANE_MEAN.plain.toFixed(4)}, ${PANE_MEAN.height.toFixed(4)}, kwUse ) * ${lit} * 0.82;
-  totalEmissiveRadiance *= mix( kwOn, kwMean, kwBlur );
+  totalEmissiveRadiance *= mix( kwOn, kwMean, kwFar );
   // (a dark pane dark glass in its frame, close to)
-  diffuseColor.rgb *= 1.0 - 0.7 * min( kwPane, 1.0 ) * ( 1.0 - kwLit ) * ( 1.0 - kwBlur );`,
+  diffuseColor.rgb *= 1.0 - 0.7 * min( kwPane, 1.0 ) * ( 1.0 - kwLit ) * ( 1.0 - kwFar );`,
     );
   });
   return m;
