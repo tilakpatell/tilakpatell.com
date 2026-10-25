@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createGround, moundTop, paintFor } from './ground';
+import { createGround, moundTop, paintFor, patchOver } from './ground';
 import { landFor, roadFor } from './terrain';
 import { createWind } from '../../../lib/three/windNodes';
 import { soilOf } from './stages/soils';
@@ -71,4 +71,22 @@ describe('a stage’s mounds', () => {
     expect(plain.blades.mesh.isMesh).toBe(true);
     plain.dispose();
   }, 30000);
+});
+
+describe('patchOver', () => {
+  it('a patch of blades `size` across round the camera lies over an area while their squares meet', () => {
+    const hill = { x0: 14, z0: -14, w: 40, d: 40 };
+    expect(patchOver(0, 0, 44, hill)).toBe(true);
+    expect(patchOver(-7, 0, 44, hill)).toBe(true);
+    expect(patchOver(-8.5, 0, 44, hill)).toBe(false);
+    expect(patchOver(30, 48, 44, hill)).toBe(true);
+    expect(patchOver(30, 49, 44, hill)).toBe(false);
+  });
+  it('by `by` metres at the least, when asked', () => {
+    const hill = { x0: 14, z0: -14, w: 40, d: 40 };
+    expect(patchOver(-7, 0, 44, hill, 11)).toBe(false);
+    expect(patchOver(3, 0, 44, hill, 11)).toBe(true);
+    expect(patchOver(30, 37, 44, hill, 11)).toBe(true);
+    expect(patchOver(30, 38, 44, hill, 11)).toBe(false);
+  });
 });

@@ -5,7 +5,7 @@
 // drifts along its flow. `uRise` swells a river into running crests (the
 // Bruinen at the Ford); `lava` is an emissive flow under a crust instead.
 //
-//   createWater({ area | along, level, flow = [0, 1], kind = 'river' | 'still' | 'lava', sky, ground, speed, murk = 0 })
+//   createWater({ area | along, level, flow = [0, 1], kind = 'river' | 'still' | 'lava', sky, ground, speed, murk = 0, step = 2 })
 //     → { mesh, uniforms: { uTime, uRise, uFlow }, set(light), update(dt), dispose }
 //
 // `area` is { x0, z0, w, d }, a flat sheet at `level`; `along` is
@@ -14,7 +14,9 @@
 // `murk` (0…1) is water the colour of the bog it lies in, the sky dulled
 // off it (the Dead Marshes'). `ground(x, z)` is the land under it: each vertex keeps how deep it stands
 // (aDepth), so the shallows and the foam are read where the ground is, with
-// no texture to sample. `uFlow` is the speed along the flow, m/s.
+// no texture to sample. `uFlow` is the speed along the flow, m/s. `step` is
+// the metres between rows: a sea far wider than its swell takes a coarser
+// one (the Havens' Gulf at 2 m was 361,000 triangles, most of a phone's).
 //
 // Basic, not standard: its light is the sky’s, shared with the dome through
 // `sky.uniforms` (the sun, its colour, the horizon, the day), so the water
@@ -46,7 +48,7 @@ const HOT = new THREE.Color(1, 0.32, 0.04);
 const CRUST = new THREE.Color(0.06, 0.03, 0.025);
 
 // the rows of a flat sheet, or of a ribbon down a line, as one indexed mesh
-function geometryOf({ area, along, level = 0, flow = [0, 1], ground }) {
+function geometryOf({ area, along, level = 0, flow = [0, 1], ground, step = STEP }) {
   const pos = [];
   const dir = [];
   const deep = [];
@@ -59,8 +61,8 @@ function geometryOf({ area, along, level = 0, flow = [0, 1], ground }) {
   };
   if (along) {
     const { line, width, level: at } = along;
-    rows = Math.max(1, Math.ceil(line.length / STEP));
-    cols = Math.max(1, Math.ceil(width / STEP));
+    rows = Math.max(1, Math.ceil(line.length / step));
+    cols = Math.max(1, Math.ceil(width / step));
     for (let j = 0; j <= rows; j++) {
       const m = (j / rows) * line.length;
       const p = line.pointAt(m);
@@ -75,8 +77,8 @@ function geometryOf({ area, along, level = 0, flow = [0, 1], ground }) {
     }
   } else {
     const l = Math.hypot(flow[0], flow[1]) || 1;
-    cols = Math.max(1, Math.ceil(area.w / STEP));
-    rows = Math.max(1, Math.ceil(area.d / STEP));
+    cols = Math.max(1, Math.ceil(area.w / step));
+    rows = Math.max(1, Math.ceil(area.d / step));
     for (let j = 0; j <= rows; j++)
       for (let i = 0; i <= cols; i++) put(area.x0 + (i / cols) * area.w, level, area.z0 + (j / rows) * area.d, flow[0] / l, flow[1] / l);
   }
@@ -93,7 +95,7 @@ function geometryOf({ area, along, level = 0, flow = [0, 1], ground }) {
   return g;
 }
 
-export function createWater({ area = null, along = null, level = 0, flow = [0, 1], kind = 'river', sky = null, ground = null, speed = SPEED[kind], murk = 0 } = {}) {
+export function createWater({ area = null, along = null, level = 0, flow = [0, 1], kind = 'river', sky = null, ground = null, speed = SPEED[kind], murk = 0, step = STEP } = {}) {
   const s = sky?.uniforms ?? {};
   const u = {
     uTime: uniform(0),
@@ -189,7 +191,7 @@ export function createWater({ area = null, along = null, level = 0, flow = [0, 1
   });
 
   material.colorNode = kind === 'lava' ? lava() : water();
-  const mesh = new THREE.Mesh(geometryOf({ area, along, level, flow, ground }), material);
+  const mesh = new THREE.Mesh(geometryOf({ area, along, level, flow, ground, step }), material);
   mesh.name = `water:${kind}`;
   // (the water is drawn after the ground it lies in)
   mesh.renderOrder = 1;

@@ -14,7 +14,7 @@
 // save past the first stage is there to carry on from (the ride waits for
 // the answer), 'menu' {} and 'lore' {} on their keys, 'end' { ridden } at the Havens,
 // 'line' { who, text, at } as one of the cast says something (ambience.js).
-// The world adds: goTo(stageId), setAuto(on), press(name, down) (the touch
+// The world adds: goTo(stageId), setAuto(on), next() (reduced motion's Next, by touch or click), press(name, down) (the touch
 // buttons), carryOn() (from a few metres before a moment the ride was left
 // inside: ./carry.js), restart(), skipToEnd(); and set(s), `s`, `scene` for the checks.
 // In development, window.__ROAD__ = { set(s), info(), world, weather, ambience, vision(on), fast(k), grid(), group(), land(), floor(x, z) }.
@@ -23,7 +23,7 @@ import * as THREE from 'three';
 import { PACE, newClock, step as stepClock } from './clock';
 import { SAVE, recent, resume, ridden as riddenOf, savedAt, shouldOffer } from './entry';
 import { carryFrom } from './carry';
-import { ABOVE_GROUND, LOOK_LIMIT, pose, settleLook } from './director';
+import { ABOVE_GROUND, LOOK_LIMIT, fovFor, pose, settleLook } from './director';
 import { keyLight, light as lightAt, refFloor, shadeOf, skyLight } from './daylight';
 import { at as lineAt, sOf, total } from './line';
 import { createSky } from './sky';
@@ -43,6 +43,7 @@ import { STAGES, modeAt, stageById } from './stages/index';
 import { BEATS_OF } from './stages/registry';
 import { createScenes } from './scenes';
 import { createLamps } from './lamps';
+import { CASTS } from './stages/parts';
 import { createDoing } from './doing';
 import { createClear, tooNear } from './clear';
 import { LINES } from './voicelines';
@@ -92,7 +93,7 @@ export function sFromAddress(at) {
 export default {
   id: 'road',
   shading: 'nodes',
-  mb: 8,
+  mb: 27, // (WORLD_MB’s, the ride measured whole)
   label: 'The Road through Middle-earth',
   create(rt, props = {}) {
     const scene = new THREE.Scene();
@@ -168,6 +169,10 @@ export default {
       renderer.shadowMap.enabled = true;
       renderer.shadowMap.type = THREE.PCFShadowMap;
       sun.shadow.radius = 1.5;
+      // (and from the stages’ casters, a band’s statics as one shape a cascade, stages/parts.js:
+      // a merged mesh a material a band cast, Hobbiton’s were 127 of a frame’s 230 shadow draws;
+      // the cascades take this camera’s layers, so the casters are cast and never drawn)
+      sun.shadow.camera.layers.enable(CASTS);
       import('../../../lib/three/light/sun')
         .then(async ({ castCascades }) => {
           if (unlit) return;
@@ -218,6 +223,8 @@ export default {
     let still = 0; // s since the last drag
     let ended = clock.s >= 1;
     const touch = { walk: false, run: false };
+    // (the page's Next, a touch or a click, under reduced motion: taken by the next step, as an Enter)
+    let nudged = false;
     // (what's said before the page listens is held for it, as fromScene holds
     // a scene's: the first stage's card is told on the first frame)
     let held = [];
@@ -390,8 +397,10 @@ export default {
         camera.rotation.z += Math.sin(shook * 39 + 2) * a * 0.12;
       }
       veil.position.copy(camera.position);
-      if (camera.fov !== p.fov) {
-        camera.fov = p.fov;
+      // (a phone held upright opens the field upward: the director's fovFor)
+      const fov = fovFor(p.fov, camera.aspect);
+      if (camera.fov !== fov) {
+        camera.fov = fov;
         camera.updateProjectionMatrix();
       }
       sun.position.copy(camera.position).addScaledVector(sunDir, 100);
@@ -462,7 +471,9 @@ export default {
       },
       step(dt, input) {
         dt *= labPace; // (1 but in the lab, where a slow software frame is sped up to reach a beat)
-        const pressed = (name) => KEYS[name].some((c) => input?.pressed?.has?.(c));
+        const nudge = nudged;
+        nudged = false;
+        const pressed = (name) => (name === 'next' && nudge) || KEYS[name].some((c) => input?.pressed?.has?.(c));
         // (while the resume card waits, nothing walks: Enter, under reduced
         // motion, is its yes; the card's own buttons take the rest)
         if (offerOpen) {
@@ -550,6 +561,9 @@ export default {
       },
       setAuto(on) {
         clock = { ...clock, auto: Boolean(on) && !clock.reduced, pausedUntil: 0 };
+      },
+      next() {
+        nudged = true;
       },
       press(name, down) {
         if (name in touch) touch[name] = Boolean(down);
