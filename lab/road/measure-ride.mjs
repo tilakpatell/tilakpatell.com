@@ -26,10 +26,9 @@ const boot = bytes;
 console.log(`| ${STAGE_IDS[0]} | ${(boot / 1e6).toFixed(1)} | ${(boot / 1e6).toFixed(1)} |`);
 for (const id of STAGE_IDS.slice(1)) {
   const before = bytes;
-  await page.evaluate((id) => {
-    location.hash = `#/middle-earth/road?at=${id}`;
-  }, id);
-  await page.waitForFunction(() => window.__ROAD__ && window.__RUNTIME__?.status === 'on', null, { timeout: 240000 });
+  // (by the world's own jump, as the ribbon does: a new address in the same window leaves the ride where it was)
+  await page.evaluate((id) => window.__ROAD__.world.goTo(id), id);
+  await page.waitForFunction((id) => window.__ROAD__.info().stage === id, id, { timeout: 240000 });
   await page.waitForTimeout(hold);
   console.log(`| ${id} | ${((bytes - before) / 1e6).toFixed(1)} | ${(bytes / 1e6).toFixed(1)} |`);
 }
