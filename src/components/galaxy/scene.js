@@ -128,7 +128,7 @@ import { createRadar } from '../../lib/combat/flight/radar';
 import { drawRadar } from '../../runtime/hud/flight/radarDraw';
 import { createFrame, distText, fillFlight } from '../../runtime/hud/flight/frame.js';
 import { createFlightHud } from '../../runtime/hud/flight/flightHud.js';
-import { armsView, arsenalOf, chargeFor, createArmory, createGalaxyPowers, createRounds, createUniqueArms, fan, picksFor } from '../universe/shared/flying';
+import { armsView, arsenalOf, chargeFor, createArmory, createGalaxyPowers, createRounds, createUniqueArms, difficultyOf, fan, picksFor } from '../universe/shared/flying';
 import { shotPunch } from './gunRules';
 import { CADENCE, createGuns, pace } from '../../lib/combat/flight/guns';
 import { effectsFor } from './warEffects';
@@ -466,6 +466,9 @@ export async function create(canvas, ctx) {
     if (what) emit({ type: 'earn', what, n, side: 'galaxy' });
   };
   const controls = () => props.controls ?? CONTROL_DEFAULTS;
+  // how hard the fight is (the flight setting: universe/difficulty.js), now, as on the universe map
+  const diff = () => difficultyOf(controls().difficulty);
+  if (hunters) hunters.difficulty = diff;
   // the player's targeting (lib/combat/flight/sight.js); foeBuf: every foe, ungated, for its find
   const sight = createSight(state);
   const foeBuf = [];
@@ -1867,7 +1870,7 @@ export async function create(canvas, ctx) {
       // (ace: the kind of the faction's ace, when it came along, for its own line)
       const ace = FACTIONS[e.faction]?.ace;
       if (!e.prey) emit({ type: 'hunted', faction: e.faction, ace: ace && e.kinds.includes(ace) ? ace : null });
-    } else if (e.type === 'laser') hurt(e.damage);
+    } else if (e.type === 'laser') hurt(e.damage * diff().damage);
     else if (e.type === 'shot') emit(e);
     else if (e.type === 'escaped' || e.type === 'cleared') {
       // (the last of them rammed down: the crew's ram line for it)
@@ -1959,7 +1962,7 @@ export async function create(canvas, ctx) {
     pickupFx.sync(pickups.list, state.clock);
     if (pickupFx.busy) busy = true;
     if (live) {
-      if (state.clock - state.hitAt > state.stats.delay && state.shield < 100) state.shield = Math.min(100, state.shield + dt * 12 * state.stats.regen);
+      if (state.clock - state.hitAt > state.stats.delay && state.shield < 100) state.shield = Math.min(100, state.shield + dt * 12 * state.stats.regen * diff().regen);
       if (state.shield > 70) state.lowSaid = false;
       state.heat = Math.max(0, state.heat - dt / 45);
       // now and then something happens: the director, run on the system's

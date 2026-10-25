@@ -23,12 +23,15 @@
 //     alignment and gone once the jump is committed (galaxy-hud-check/pickups.mjs)
 //   hangar: the Shipyard's button beside the flight settings', H and Escape, the yard shut under the galaxy map and mid-jump, twin
 //     cannons fitted and flying (the guns' cadence), kept under the universe map's keys (galaxy-hud-check/hangar.mjs)
+//   difficulty: flown at Outlaw, the hunters read it and the shields come back at its rate; with reduced motion (no hunters),
+//     no page errors (galaxy-hud-check/difficulty.mjs)
 // Prints a line per check, ok or FAIL, and exits 1 on any FAIL. Shots are in OUT (hud-<size>.png, hud-<size>-keys.png).
 import { writeFileSync } from 'node:fs';
 import { browser, check, problems, out } from './galaxy-map-check/lib.mjs';
 import { hold, open as baseOpen, settle, smallText } from './galaxy-hud-check/lib.mjs';
 import { pickups } from './galaxy-hud-check/pickups.mjs';
 import { hangar } from './galaxy-hud-check/hangar.mjs';
+import { difficulty } from './galaxy-hud-check/difficulty.mjs';
 
 // (a galaxy at Tatooine, flown in an X-wing, nothing else open, the first-flight keys card up: lib.mjs's, with a touch screen's rules on after)
 const open = async (viewport, touch) => {
@@ -413,7 +416,8 @@ const only = process.env.SIZES?.split(',');
 const scenario = process.argv[2];
 if (scenario === 'pickups') await pickups().catch((e) => stopped('pickups', e));
 else if (scenario === 'hangar') await hangar().catch((e) => stopped('hangar', e));
-else if (scenario) check(false, `no scenario called ${scenario} (pickups, hangar)`);
+else if (scenario === 'difficulty') await difficulty().catch((e) => stopped('difficulty', e));
+else if (scenario) check(false, `no scenario called ${scenario} (pickups, hangar, difficulty)`);
 else
   for (const [width, height, touch = false] of SIZES) {
     if (only && !only.includes(`${width}x${height}`)) continue;

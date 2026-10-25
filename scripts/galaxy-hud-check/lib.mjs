@@ -1,14 +1,16 @@
 /* global window, document, getComputedStyle */
-// The galaxy HUD check's shared parts (scripts/galaxy-hud-check.mjs runs it; pickups.mjs and hangar.mjs are its scenarios):
+// The galaxy HUD check's shared parts (scripts/galaxy-hud-check.mjs runs it; pickups.mjs, hangar.mjs and difficulty.mjs are its scenarios):
 // a galaxy flown in an X-wing, a key held for a while, the text on a part of the page a player reads under 0.7 rem.
 import { browser } from '../galaxy-map-check/lib.mjs';
 
 const base = process.env.BASE ?? 'http://127.0.0.1:5188';
 export const settle = (page, ms = 400) => page.waitForTimeout(ms);
 
-// a galaxy at Tatooine, flown in an X-wing, nothing else open (the first-flight keys card up)
-export const open = async (viewport, { reduced = false } = {}) => {
+// a galaxy at Tatooine, flown in an X-wing, nothing else open (the first-flight keys card up);
+// `controls`: the flight settings stored first (controls.js's, as the page keeps them)
+export const open = async (viewport, { reduced = false, controls = null } = {}) => {
   const ctx = await browser.newContext({ viewport, ...(reduced ? { reducedMotion: 'reduce' } : {}) });
+  if (controls) await ctx.addInitScript((c) => window.localStorage.setItem('tp-universe-controls', JSON.stringify(c)), controls);
   await ctx.addInitScript(() => {
     window.localStorage.setItem('tp-3d', 'on');
     window.localStorage.setItem('tp-intro', '1');
