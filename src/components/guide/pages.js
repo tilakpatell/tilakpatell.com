@@ -106,6 +106,7 @@ export const PAGES = {
     keys: [
       { label: 'Flying', rows: [...fly(), ['hold S', 'Drop out of a lane'], ['hold W', 'Carry on through a junction'], ['M', 'The nav map: pick a place and a drive'], ['J', 'Jump to the place picked'], ['P', 'Rick’s portal gun: a portal ahead to his dimension (or home); fly into it'], ['E / Enter', 'Land or dock where you are'], ['H', 'The Hangar: crew, arms, powers and the shipyard'], ['C', 'The Hangar, on your crew'], ['O', 'Flight settings'], ['Esc', 'Back out to the whole universe']] },
       { label: 'On foot', rows: [['W A S D', 'Walk'], ['Q E', 'Step sideways'], ['Shift', 'Run'], ['Space', 'Jump'], ['Click, then the mouse', 'Look round (Esc lets go)'], ['F / Click', 'Fire (held, the gun keeps firing at its own pace: bursts and pellets as it has them, the gun picked in the Hangar’s Arms)'], ['R', 'Vent the gun’s heat (overheated, hit the sweet spot)'], ['G', 'Through a door, or back into the ship; anywhere else, your crew member’s ability: Rick’s portal hop, Morty’s and Jesse’s sprint, Walt’s fulminate, Han’s detonite charge, Chewie’s leap, Luke’s Force push, Artoo’s booster rockets (held)'], ['V', 'Their second: an overcharge (no heat and a harder shot), a medpack, Luke’s repulse or Artoo’s patch-up'], ['X', 'Play the other one of your crew'], ['B', 'Rick’s next gadget: the portal gun, the freeze ray, the shrink ray'], ['P', 'Out of their eyes, and back'], ['Enter', 'Into the planet’s page']] },
+      { label: 'On the nav map', rows: [['+ − 0', 'Zoom in, out, back to the ship'], ['Drag', 'Move the chart'], ['Shift and drag', 'Tilt and turn it; Look straight down puts it back']] },
     ],
     touch: [
       {
@@ -113,6 +114,7 @@ export const PAGES = {
           ['Drag', 'Fly, anywhere on the map'],
           ['↑ ↓', 'Hold to pull the nose up and down'],
           ['Tap', 'A planet, station or wonder to fly there; a hunter to lock on'],
+          ['Two fingers on the nav map', 'Pinch to zoom; turn or slide them to turn and tilt it'],
         ],
       },
       { label: 'The buttons', rows: [['Boost', 'Hold to go fast'], ['Fire', 'Shoot'], ['Weapon', 'The next of your three guns'], ['Power', 'Your crew’s power'], ['Big one', 'Once your kills have charged it'], ['View', 'The cockpit'], ['Hangar', 'Paint and parts (the wrench)'], ['Flight settings', 'How it all feels (the sliders)']] },

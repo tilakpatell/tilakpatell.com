@@ -1,0 +1,212 @@
+{
+  "tier": "high",
+  "viewport": [
+    1280,
+    720
+  ],
+  "dpr": 1,
+  "level": null,
+  "poses": {
+    "belt": {
+      "calls": 46,
+      "triangles": 465860,
+      "shipPx": {
+        "w": 154,
+        "h": 84,
+        "box": [
+          392,
+          607,
+          546,
+          691
+        ]
+      },
+      "drawn": {
+        "canvas": 1,
+        "scene": 1.25,
+        "finish": {
+          "up": false,
+          "samples": 2,
+          "cap": null
+        }
+      },
+      "frameMs": 2967.7,
+      "frameMsMedian": 2965.2,
+      "memory": {
+        "geometries": 391,
+        "textures": 147
+      },
+      "metrics": {
+        "colorBuckets": 111,
+        "colorEntropyBits": 4.95,
+        "edgeDensity": 0.236,
+        "luminance": {
+          "mean": 67.3,
+          "p5": 27.6,
+          "p95": 114.5,
+          "contrast": 86.9
+        },
+        "dominantColorShare": 0.111
+      },
+      "errors": []
+    },
+    "maw": {
+      "calls": 43,
+      "triangles": 77372,
+      "shipPx": {
+        "w": 154,
+        "h": 68,
+        "box": [
+          392,
+          518,
+          546,
+          586
+        ]
+      },
+      "drawn": {
+        "canvas": 1,
+        "scene": 1.25,
+        "finish": {
+          "up": false,
+          "samples": 2,
+          "cap": null
+        }
+      },
+      "frameMs": 862.9,
+      "frameMsMedian": 1077.3,
+      "memory": {
+        "geometries": 391,
+        "textures": 240
+      },
+      "metrics": {
+        "colorBuckets": 178,
+        "colorEntropyBits": 4.62,
+        "edgeDensity": 0.075,
+        "luminance": {
+          "mean": 57.2,
+          "p5": 0,
+          "p95": 105,
+          "contrast": 105
+        },
+        "dominantColorShare": 0.112
+      },
+      "errors": []
+    },
+    "landing-middleearth": {
+      "calls": 129,
+      "triangles": 181927,
+      "shipPx": null,
+      "drawn": {
+        "canvas": 1,
+        "scene": 1.25,
+        "finish": {
+          "up": false,
+          "samples": 2,
+          "cap": null
+        }
+      },
+      "frameMs": 7245.4,
+      "frameMsMedian": 7034.7,
+      "memory": {
+        "geometries": 598,
+        "textures": 184
+      },
+      "metrics": {
+        "colorBuckets": 206,
+        "colorEntropyBits": 4.84,
+        "edgeDensity": 0.104,
+        "luminance": {
+          "mean": 91.4,
+          "p5": 39.3,
+          "p95": 209.3,
+          "contrast": 170
+        },
+        "dominantColorShare": 0.264
+      },
+      "errors": []
+    },
+    "station": {
+      "calls": 69,
+      "triangles": 510880,
+      "shipPx": {
+        "w": 154,
+        "h": 77,
+        "box": [
+          392,
+          551,
+          546,
+          627
+        ]
+      },
+      "drawn": {
+        "canvas": 1,
+        "scene": 1.25,
+        "finish": {
+          "up": false,
+          "samples": 2,
+          "cap": null
+        }
+      },
+      "frameMs": 4835.9,
+      "frameMsMedian": 4588.5,
+      "memory": {
+        "geometries": 391,
+        "textures": 147
+      },
+      "metrics": {
+        "colorBuckets": 394,
+        "colorEntropyBits": 7.45,
+        "edgeDensity": 0.336,
+        "luminance": {
+          "mean": 144.2,
+          "p5": 78.7,
+          "p95": 211.8,
+          "contrast": 133.1
+        },
+        "dominantColorShare": 0.029
+      },
+      "errors": []
+    },
+    "far-rim": {
+      "calls": 42,
+      "triangles": 85160,
+      "shipPx": {
+        "w": 153,
+        "h": 76,
+        "box": [
+          392,
+          533,
+          545,
+          609
+        ]
+      },
+      "drawn": {
+        "canvas": 1,
+        "scene": 1.25,
+        "finish": {
+          "up": false,
+          "samples": 2,
+          "cap": null
+        }
+      },
+      "frameMs": 1111.3,
+      "frameMsMedian": 1130.9,
+      "memory": {
+        "geometries": 391,
+        "textures": 147
+      },
+      "metrics": {
+        "colorBuckets": 86,
+        "colorEntropyBits": 4.54,
+        "edgeDensity": 0.027,
+        "luminance": {
+          "mean": 66.3,
+          "p5": 26.4,
+          "p95": 110.8,
+          "contrast": 84.4
+        },
+        "dominantColorShare": 0.102
+      },
+      "errors": []
+    }
+  }
+}

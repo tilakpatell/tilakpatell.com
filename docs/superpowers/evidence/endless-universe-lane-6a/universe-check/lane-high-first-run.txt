@@ -1,0 +1,10 @@
+ok   high overview             calls   98  tris   540628    2934 ms  entropy 3.33  edges 0.058  contrast 86.3  ship 0 × 0 px  (306 s)
+ok   high falcon-sun           calls   82  tris   525686  2594.1 ms  entropy 6.89  edges 0.26  contrast 168.3  ship 292 × 143 px  (199 s)
+ok   high middleearth-limb     calls   39  tris   106406  2846.6 ms  entropy 5.71  edges 0.21  contrast 97  ship 100 × 42 px  (199 s)
+ok   high rickmorty            calls   39  tris    91688  1447.7 ms  entropy 5.62  edges 0.143  contrast 148.1  ship 100 × 42 px  (200 s)
+ok   high gaming               calls   40  tris    59034    4067 ms  entropy 4.93  edges 0.127  contrast 137.1  ship 100 × 42 px  (203 s)
+ok   high caribbean            calls   43  tris   156166    2948 ms  entropy 4.92  edges 0.113  contrast 92.9  ship 100 × 41 px  (225 s)
+ok   high middleearth          calls   39  tris   106406  2242.5 ms  entropy 4.99  edges 0.11  contrast 96.3  ship 100 × 43 px  (228 s)
+ok   high breakingbad          calls   63  tris    92994  3042.5 ms  entropy 5.16  edges 0.132  contrast 161.7  ship 100 × 41 px  (201 s)
+ok   high office               calls   41  tris    62606  3079.2 ms  entropy 5.88  edges 0.084  contrast 178.2  ship 100 × 41 px  (241 s)
+FAIL high belt: page.screenshot: Target page, context or browser has been closed

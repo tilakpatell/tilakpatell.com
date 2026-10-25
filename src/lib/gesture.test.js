@@ -99,4 +99,47 @@ describe('gesture', () => {
     g.cancel(3);
     expect(g.active).toBe(false);
   });
+  it('a drag begun with the modifier turns the view instead of panning it', () => {
+    const g = createGesture();
+    g.down(1, 300, 300, R, { orbit: true });
+    const m = g.move(1, 360, 270, R);
+    expect(m.pan).toBeUndefined();
+    expect(m.orbit[0]).toBeCloseTo(60 / 600);
+    expect(m.orbit[1]).toBeCloseTo(-30 / 600);
+    g.up(1);
+    expect(g.takeClick()).toBe(true);
+  });
+  it('the modifier is the press’s own: the next plain press pans again', () => {
+    const g = createGesture();
+    g.down(1, 300, 300, R, { orbit: true });
+    expect(g.move(1, 302, 300, R)).toBeNull(); // (under DRAG: still a click, turned or not)
+    expect(g.move(1, 340, 300, R).orbit[0]).toBeCloseTo(40 / 600);
+    expect(g.move(1, 350, 300, R).orbit[0]).toBeCloseTo(10 / 600);
+    g.up(1);
+    g.down(2, 300, 300, R);
+    const m = g.move(2, 340, 300, R);
+    expect(m.orbit).toBeUndefined();
+    expect(m.pan[0]).toBeCloseTo(40 / 600);
+  });
+  it('two fingers say how far the line between them turned and how far they moved up or down', () => {
+    const g = createGesture();
+    g.down(1, 200, 300, R);
+    g.down(2, 400, 300, R);
+    const m = g.move(2, 400, 500, R);
+    expect(m.zoom).toBeCloseTo(Math.hypot(200, 200) / 200);
+    expect(m.turn).toBeCloseTo(Math.PI / 4);
+    expect(m.tilt).toBeCloseTo(100 / 600);
+  });
+  it('two fingers’ turn and tilt are since the last move, and a turn across the left is a small one', () => {
+    const g = createGesture();
+    g.down(1, 300, 300, R);
+    g.down(2, 100, 310, R); // (the line points left, a hair below: just under π)
+    const m = g.move(2, 100, 290, R); // (a hair above: just over −π, a small turn clockwise)
+    expect(m.turn).toBeCloseTo(2 * Math.atan2(10, 200));
+    expect(m.tilt).toBeCloseTo(-10 / 600);
+    const n = g.move(1, 300, 270, R); // (the first finger moves up: back across the left, a small turn anticlockwise)
+    expect(n.turn).toBeCloseTo(Math.atan2(20, -200) - Math.atan2(-10, -200) - 2 * Math.PI);
+    expect(n.turn).toBeLessThan(0);
+    expect(n.tilt).toBeCloseTo(-15 / 600);
+  });
 });
