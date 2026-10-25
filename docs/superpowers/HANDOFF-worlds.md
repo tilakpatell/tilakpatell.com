@@ -69,7 +69,7 @@ The house look on every galaxy world (`src/lib/three/house.js`, each world’s l
 
 ### The Road through Middle-earth
 
-One ride from Bag End to the Grey Havens at `/middle-earth/road`, a `'nodes'` module in `src/components/middleearth/road/` (lane R1, 2026-10-18: the spine; sixteen stages to come). Its own hand-off is `HANDOFF-the-road.md`, with the lanes, what each must know about Middle-earth’s files and the owner’s steps.
+One ride from Bag End to the Grey Havens at `/middle-earth/road`, a `'nodes'` module in `src/components/middleearth/road/` (lanes R1 to R7, 2026-10-18 to 2026-10-25: the spine, the systems, the sixteen stages with their deeds, the end on the Red Book’s desk, and the polish: every stage under the design’s draws and triangles on high and low, the whole ride 26 MB). Its own hand-off is `HANDOFF-the-road.md`, with the lanes, what each must know about Middle-earth’s files and the owner’s steps.
 
 ### Hogwarts
 
