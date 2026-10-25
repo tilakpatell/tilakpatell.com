@@ -35,7 +35,7 @@
 
 import { OVERDRIVE, SHIP, headingTo } from '../universe/ship';
 import { gapAlong } from '../universe/deep';
-import { conj, fromAngles, rotate } from '../universe/orient';
+import { conj, fromAngles, rotate } from '../../lib/flight/orient';
 
 export const EDGE = 2400;
 export const CEILING = 420;
