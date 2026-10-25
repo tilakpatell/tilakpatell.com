@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { local, storage } from '../lib/hooks';
+import { keptOver } from '../lib/kept';
 import { useTheme } from '../theme/ThemeProvider';
 import { FAN_THEMES, THEMES, THEME_ORDER } from '../theme/themes';
 import { partsUnlockedBy } from './universe/outfit';
@@ -352,7 +353,8 @@ export function AchievementProvider({ children }) {
   const unlock = useCallback(
     (id) => {
       if (!ACHIEVEMENTS[id] || unlockedRef.current.includes(id)) return;
-      const next = [...unlockedRef.current, id];
+      // (kept over what another tab's kept since, not over this page's copy)
+      const next = keptOver(local.get(KEY, []), unlockedRef.current, [id], (k) => Boolean(ACHIEVEMENTS[k]));
       unlockedRef.current = next;
       setUnlocked(next);
       local.set(KEY, next);

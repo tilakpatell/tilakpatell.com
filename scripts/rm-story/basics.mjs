@@ -2,11 +2,36 @@
 // from the street to Customs and back, the dial's lock, the ways home, Free
 // roam, a returner, the Citadel, a planet landed on, and the toys ticking
 // when they're played.
-/* global window */
+/* global window, StorageEvent */
 import { READY } from '../../src/components/rickmorty/adventure/episodes.js';
 import { BASE, OUT, N, check, done, c137, built, goto, use, place, story, reads, WIPED, ARCADE, throughPortal, gun, toast, inArea, game, arriveOf, standOn, PLACES, CITADEL_LINE, citadelUp, citadelReads, warp, goalIs, dial, warpUse, spotAt, home } from './helpers.mjs';
 
 export const BASICS = {
+  // another tab's ticks: kept when this one ticks, and this one's list
+  // following as they're kept; and the last missing-cat poster ticks at once,
+  // so a page left straight after can't lose it
+  async tabs(page) {
+    await c137(page);
+    const keep = (ids) => page.evaluate((ids) => window.localStorage.setItem('tp-c137-done', JSON.stringify([...JSON.parse(window.localStorage.getItem('tp-c137-done') ?? '[]'), ...ids])), ids);
+    await keep(['birdworld']);
+    await page.evaluate(() => window.__C137__.complete('butter'));
+    const d = await done(page);
+    check(d.includes('birdworld') && d.includes('butter'), `another tab’s tick was lost as this one ticked: ${JSON.stringify(d)}`);
+    await keep(['cable']);
+    await page.evaluate(() => window.dispatchEvent(new StorageEvent('storage', { key: 'tp-c137-done' })));
+    await page.evaluate(() => window.__C137__.complete('cable'));
+    await page.waitForTimeout(1500);
+    check((await page.locator('.rm-toast', { hasText: 'Watch interdimensional cable' }).count()) === 0, 'this tab ticked again what another tab had kept');
+    // the posters, all five read, and the page left at once
+    const posters = await page.evaluate(async () => (await import('/src/components/rickmorty/world/town/plan.js')).POSTERS.map(({ id, x, z }) => ({ id, x, z })));
+    for (const p of posters) {
+      await goto(page, 'street', p.x, p.z, N);
+      await use(page, p.id);
+    }
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await built(page);
+    check((await done(page)).includes('posters'), 'the posters, all read, didn’t count once the page was left at once');
+  },
   // a new visitor plays episode 1 from the street to Customs and back
   async 'episode-1'(page) {
     // the card: episode 1, as the world comes on, gone at the next key

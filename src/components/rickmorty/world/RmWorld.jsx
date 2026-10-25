@@ -16,7 +16,6 @@ import MeeseeksBox from '../MeeseeksBox';
 import PlumbusFactory from '../PlumbusFactory';
 import PortalPanic from '../portal/PortalPanic'; // (the page has it already, so not lazy)
 import Quiz from './Quiz';
-import { MORTY_BEST } from './roy/rules';
 import {
   ARCADE,
   AREAS,
@@ -94,6 +93,8 @@ import { chaseCalls, chaseGoal, chaseReadout, chaseStart, newChase, shaken, step
 import { FRICTION, coneFor } from '../../../lib/combat/aim';
 import { createLockOn } from '../../../lib/combat/lockOn';
 import { stepRmLockOn } from './rmLockOn';
+import { MORTY_BEST } from './roy/rules';
+import { POSTERS_READ, saved } from './saved';
 import { padActs, padFiring } from './padActs';
 import { dialPad } from './dimensions/dialKey';
 
@@ -127,38 +128,11 @@ const sound = (name) =>
 // what's said when a place's clock runs out before he's back through its portal
 const LATE = 'Out of time. Back to where you came in, and try it again.';
 
-// the missing-cat posters Morty's read, kept between visits (the `posters` thing to do)
-const POSTERS_READ = 'tp-c137-posters';
+// what C-137 keeps between visits (./saved.js): the things done, kept over
+// what another tab's kept since; Roy's; the missing-cat posters read
 const POSTER_IDS = new Set(POSTERS.map((p) => p.id));
-const postersRead = () => {
-  const r = local.get(POSTERS_READ, []);
-  return Array.isArray(r) ? r.filter((id) => POSTER_IDS.has(id)) : [];
-};
-
-const DONE = 'tp-c137-done';
-const ROY = 'tp-c137-roy';
 const TASK_IDS = new Set(TASKS.map((t) => t.id));
-const readDone = () => {
-  const d = local.get(DONE, []);
-  return Array.isArray(d) ? d.filter((x, i) => TASK_IDS.has(x) && d.indexOf(x) === i) : [];
-};
-// the best age as Roy so far, or null before a life's been lived
-const readBest = () => Math.max(0, Math.floor(Number(local.get(ROY, null)?.best) || 0)) || null;
-// Roy's tasks from what Roy keeps (tp-c137-roy): a life lived, and one past Morty's 55
-const royDone = () => {
-  const r = local.get(ROY, null);
-  const best = Number(r?.best) || 0;
-  return [...((Number(r?.lives) || 0) > 0 || best > 0 ? ['roy'] : []), ...(best > MORTY_BEST ? ['roy55'] : [])];
-};
-// what's done, with Roy's caught up (a life that ended before the page was left)
-const startDone = () => {
-  const d = readDone();
-  const more = royDone().filter((id) => !d.includes(id));
-  if (!more.length) return d;
-  const next = [...d, ...more];
-  local.set(DONE, next);
-  return next;
-};
+const { addDone, startDone, royDone, readBest, postersRead } = saved(local);
 const CANT_LAND = 'Can’t land here. Slow right down over open ground, clear of the doors: the road or a front lawn.';
 
 // what opens over the page, and the task playing it ticks off (each toy's onUsed)
@@ -362,6 +336,16 @@ export default function RmWorld({ start = null, onLeave = null, frozen = false, 
   const { unlock } = useAchievements();
   const [done, setDone] = useState(startDone);
   const doneRef = useRef(done);
+  // (another tab's ticks, as they're kept: this one's list follows)
+  useEffect(() => {
+    const on = (e) => {
+      if (e.key !== 'tp-c137-done') return;
+      doneRef.current = addDone(doneRef.current);
+      setDone(doneRef.current);
+    };
+    window.addEventListener('storage', on);
+    return () => window.removeEventListener('storage', on);
+  }, []);
   // (what Morty's deeds pay into the one wallet: a task once, a fight won each time)
   const { earn, note: earned } = useRmEarn(() => seedsOf('task', doneRef.current));
   const [open, setOpen] = useState(null);
@@ -413,9 +397,8 @@ export default function RmWorld({ start = null, onLeave = null, frozen = false, 
   const complete = useCallback(
     (id) => {
       if (!TASK_IDS.has(id) || doneRef.current.includes(id)) return;
-      const next = [...doneRef.current, id];
+      const next = addDone(doneRef.current, id);
       doneRef.current = next;
-      local.set(DONE, next);
       setDone(next);
       earn('task', id);
       api.current?.fx('done', { id });
@@ -1108,8 +1091,9 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
       if (POSTER_IDS.has(n.id) && !postersRead().includes(n.id)) {
         const read = [...postersRead(), n.id];
         local.set(POSTERS_READ, read);
-        if (POSTER_IDS.size === read.length) later(() => complete('posters'), TALK_MS);
-        else later(() => say({ kind: 'note', text: `${read.length} of ${POSTER_IDS.size} posters read` }, { after: true }), TALK_MS);
+        // (at once: what's told of it waits behind the poster's own line, and a page left now can't lose it)
+        if (POSTER_IDS.size === read.length) complete('posters');
+        else say({ kind: 'note', text: `${read.length} of ${POSTER_IDS.size} posters read` }, { after: true });
       }
       if (COLLECT[n.id] && COLLECT[n.id].spots.every((id) => s.used.has(id))) {
         const c = COLLECT[n.id];
