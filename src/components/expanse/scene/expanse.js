@@ -93,6 +93,7 @@ import { POOLS, beyondKeys, definePools, sectorJob, withMoons } from '../gen/job
 import { spaceTime } from '../gen/orbits';
 import { UNIVERSE } from '../gen/seed';
 import { createDiscs } from './discs';
+import { FAR } from './levels';
 import { createNear } from './near';
 import { createSector } from './sectors';
 
@@ -128,6 +129,23 @@ const roomOf = (budget) => ({
 export const farRoom = (level) => roomOf(universeBudget(level));
 
 const cellKey = (c) => `${c[0]},${c[1]},${c[2]}`;
+// how far a point is out of a sector's cube, and how far past it anything of
+// the sector can reach (a system's bodies are within twice its reach of its
+// star, as discs.js has it; a wonder's ball within its size)
+function outOf(o, p) {
+  let s = 0;
+  for (let k = 0; k < 3; k++) {
+    const d = Math.abs(p[k] - o[k]) - HALF;
+    if (d > 0) s += d * d;
+  }
+  return Math.sqrt(s);
+}
+function marginOf(sector) {
+  let m = 0;
+  for (const x of sector.systems) m = Math.max(m, 2 * x.reach);
+  for (const w of sector.wonders) m = Math.max(m, w.size);
+  return m;
+}
 const cheb = (a, b) => Math.max(Math.abs(a[0] - b[0]), Math.abs(a[1] - b[1]), Math.abs(a[2] - b[2]));
 const same = (a, b) => Boolean(a && b) && a[0] === b[0] && a[1] === b[1] && a[2] === b[2];
 const cube = (r) => {
@@ -181,15 +199,21 @@ export function createExpanse(parent, { universe = UNIVERSE, workers = null, far
   const fails = new Map(); // job key → how often it's failed
   const asked = new Map(); // job key → the job, till it's taken or let go
   const landed = []; // [job key, job, answer], taken one a frame
-  let sectorList = [];
+  let sectorList = []; // every sector held
   let entries = [];
-  let shares = new Float64Array(0); // (how much of each sector's discs show: faded in as it comes)
+  // the sectors near enough the camera to have anything within the far
+  // plane, fed to the discs and what's built, and how much of each sector's
+  // discs show (faded in as it comes)
+  const fed = [];
+  let fedSectors = [];
   let systems = [];
+  let restale = true;
+  let shares = new Float64Array(0);
   const relist = () => {
     entries = [...held.values()];
     sectorList = entries.map((e) => e.sector);
     if (shares.length < entries.length) shares = new Float64Array(2 * entries.length);
-    systems = sectorList.flatMap((s) => s.systems);
+    restale = true;
   };
   let drawnAt = null; // the centre the far layer draws, [sx, sy, sz]
   let here = null; // the sector the ship is in
@@ -265,7 +289,7 @@ export function createExpanse(parent, { universe = UNIVERSE, workers = null, far
     const sector = withMoons(answer.sector);
     const drawn = make(sector, { tier, reduced });
     root.add(drawn.group);
-    const e = { id: sector.id, cell: job.cell, sector, stars: answer.stars, drawn, slot: -1, shown: false, age: was?.age ?? 0 };
+    const e = { id: sector.id, cell: job.cell, sector, stars: answer.stars, drawn, slot: -1, shown: false, age: was?.age ?? 0, margin: marginOf(sector) };
     const L = layerOf();
     const swap = Boolean(was?.shown);
     // (made again with no slot free: into the one it had)
@@ -491,11 +515,26 @@ export function createExpanse(parent, { universe = UNIVERSE, workers = null, far
     L.far.setEdge?.(edge);
     // the wonders; the nearest systems built, and the rest within the far
     // plane as discs, a sector's faded in over PLACE_IN from when it came
+    let n = 0;
+    let changed = restale;
     for (let i = 0; i < entries.length; i++) {
       const e = entries[i];
       e.drawn.update(t, dt, camera);
-      shares[i] = Math.min(1, e.age / PLACE_IN);
+      if (outOf(e.sector.origin, cam) <= FAR + e.margin) {
+        if (fed[n] !== e) changed = true;
+        fed[n] = e;
+        shares[n++] = Math.min(1, e.age / PLACE_IN);
+      }
       e.age += dt;
+    }
+    if (fed.length !== n) {
+      fed.length = n;
+      changed = true;
+    }
+    if (changed) {
+      fedSectors = fed.map((e) => e.sector);
+      systems = fedSectors.flatMap((x) => x.systems);
+      restale = false;
     }
     if (L.own) {
       L.own.points.visible = true;
@@ -503,7 +542,7 @@ export function createExpanse(parent, { universe = UNIVERSE, workers = null, far
     }
     const ts = spaceTime(now);
     near.update(systems, cam, ts, camera, t);
-    L.discs.feed(sectorList, cam, ts, shares);
+    L.discs.feed(fedSectors, cam, ts, shares);
     // (the specks come in where the discs' budget ends)
     L.far.setDiscEdge?.(L.discs.edge());
   }

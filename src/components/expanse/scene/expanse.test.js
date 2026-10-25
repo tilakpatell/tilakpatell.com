@@ -410,6 +410,28 @@ describe('the Expanse, everywhere', () => {
     ex.dispose();
   });
 
+  it('feeds its discs and what it builds only the sectors near enough the camera to have anything within the far plane', async () => {
+    const fed = [];
+    const makeNear = (group, o) => {
+      const n = createNear(group, o);
+      const own = n.update;
+      n.update = (systems, ...rest) => (fed.push(systems.map((x) => x.id)), own(systems, ...rest));
+      return n;
+    };
+    const { pool, far, ex } = expanseOf({ makeNear });
+    expect(await until(ex, [0, 0, 0], whole(pool, far, [0, 0, 0]))).toBe(true);
+    // (home: its own sector's star alone; the next sectors' faces are 60,000 off)
+    expect(fed.at(-1)).toEqual(['E:0,0:0']);
+    // near a face, the sector past it too; and the discs as fed
+    await frame(ex, [20000, 0, 0]);
+    expect(fed.at(-1).sort()).toEqual(['E:0,0:0', 'E:1,0:0']);
+    expect(far.frames.at(-1).map((row) => row[11]).sort()).toEqual(['E:0,0:0']); // (E:1,0's star is 104,000 off)
+    // and everything it holds is still held, and found
+    expect(ex.loaded()).toHaveLength(27);
+    expect(ex.nearestSystem([SECTOR, 0, SECTOR]).system.id).toBe('E:1,1:0');
+    ex.dispose();
+  });
+
   it('makes a sector again when told, its slot swapped for the new in one update, never gone between', async () => {
     const { pool, far, ex } = expanseOf();
     expect(await until(ex, [0, 0, 0], whole(pool, far, [0, 0, 0]))).toBe(true);
