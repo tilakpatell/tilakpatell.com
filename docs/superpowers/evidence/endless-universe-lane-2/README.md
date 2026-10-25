@@ -398,3 +398,51 @@ Before and after, the same held views (t = 0), `main` on its own dev server:
 | 30 radii off it, looking at its star | 37, 4,074 | 30, 5,550 |
 
 On `main` the gas giant has no moons and the rock no ring, and the giant is lit from the wrong side (sectors.js lit it in the map's axes); on the lane both have theirs, lit from their star. Fewer calls: the stars and wonders past the far plane are slots of the one far layer, not a `Points` a sector.
+
+### PR 2.4's gate
+
+Run in the lane's worktree at `12ed6f79`, on 2026-10-25, with other lanes' browser checks and test runs beside it (a load average of 13 to 20 on four cores). No code has changed since `18952195`, where Task 17 ran PR 2.4's own checks (`12ed6f79` is the evidence and the hand-off notes), so those checks' numbers above stand and were not run again.
+
+| command | outcome |
+| --- | --- |
+| `npm run lint` | clean (3 min 24 s) |
+| `npm test` | 1,924 files passed, 35 failed, 1 skipped; 21,335 tests passed, 47 failed, 8 skipped (1,489 s). Every failure is a 5, 20 or 30 s timeout (44) or a speed ratio (3: `bf2017-hulls.test.mjs`' X-wing, 10,000 segment tests in 99.6 ms of 50, and its Star Destroyer, 133 of 100; `middleearth/road/terrain.test.js`, a stage in 761 ms of 250). None is in a file PR 2.4 touches. The 35 run again on their own, a file at a time (`--no-file-parallelism`, the same timeouts): 33 pass. Of the two left, `galaxy/surface/missions/blast.test.js` passes run again beside `art-mix` (both branches). `scripts/health/art-mix.test.mjs` walks the real `src` and `scripts`, and here takes 3.7 to 6.0 s on `main` and 3.7 to 5.5 s on the lane (three runs each, turn about), so either goes over its 5 s now and then; `main`'s logged run timed out on it too. A first run was cut off when the disk filled (another lane's build): its log stopped at 4 KB, so it was run again. |
+| `npm run build` | built in 98 s (it refreshes `public/github.json`; put back, not committed) |
+| `node scripts/health.mjs --check --skip build` | within budget: boundary breaks 479 of 489, GLSL sites 614 of 619, big files 22 of 30 (`scene.js` counted 6,362) |
+| `node scripts/flight-island.mjs --check` | 151 files on the island, 39 marked rows, 62 references |
+
+#### Console errors on the checks past the rim
+
+The seven console errors on Task 17's checks are 403s from the lane's dev server, none from the page. This worktree's `node_modules` is a link to another checkout, and Vite serves nothing outside the worktree: three's basis transcoder from the lane's dev server is 403 with the repo's config and 200 with the config `main`'s check was run under (`vite.fs.config.mjs`, which allows the linked folder). So `main` showed none. There was no page error and no shader error on either branch. The eight warnings are the frame guard's on the PMREM generator's shaders, the same eight on `main`.
+
+#### The numbers, together
+
+| | before | after |
+| --- | --: | --: |
+| `scene.js`, lines | 6,374 (`8630fda8`, PR 2.3's last) | 6,361 (`12ed6f79`) |
+| `scene.js`, since `main` | 6,409 (`cc5e2eaf`) | 6,361 |
+| pops, flying in from 40,000 to 3 radii of the ringed rock `E:1,0:1:2` (547 frames) | none counted (no `pops()` before) | count 0, 0 px |
+| the Expanse's own time a frame on that flight | | 1.03 ms mean, 22.6 ms worst, 17 frames over 8 ms, 1 over 16 |
+
+Draw calls and triangles at each pose are in Task 17's tables above: equal to `main` at all 14 baseline poses at mid, but the landing (where the planet has turned to) and `far-rim`'s 4 triangles (stopped, `main`'s 40,598); past the rim, 35, 32 and 30 calls at the three held views against `main`'s 41, 40 and 37.
+
+Frame times, `universe-check.mjs --quality mid --frames 3`'s mean and median of its three timed frames, in ms. `main`'s at `cc5e2eaf` (06:21 on 2026-10-24), the lane's at `18952195` (23:16 the same day), each in headless Chromium drawing in software beside whatever else was running:
+
+| pose | `main`: mean, median | lane: mean, median |
+| --- | --: | --: |
+| `overview` | 1,839, 1,873 | 1,619, 1,136 |
+| `falcon-sun` | 1,520, 1,839 | 2,965, 2,903 |
+| `middleearth-limb` | 1,615, 1,584 | 1,626, 1,013 |
+| `rickmorty` | 1,070, 1,236 | 1,741, 1,800 |
+| `gaming` | 3,463, 3,385 | 2,210, 1,845 |
+| `caribbean` | 3,142, 3,148 | 2,527, 1,988 |
+| `middleearth` | 3,440, 3,297 | 1,506, 1,848 |
+| `breakingbad` | 3,105, 2,971 | 1,919, 1,975 |
+| `office` | 2,034, 2,136 | 773, 876 |
+| `belt` | 2,806, 2,851 | 1,820, 1,834 |
+| `maw` | 1,791, 1,895 | 841, 862 |
+| `landing-middleearth` | 4,089, 3,999 | 1,927, 1,894 |
+| `station` | 4,669, 5,104 | 1,521, 1,564 |
+| `far-rim` | 1,188, 1,490 | 677, 652 |
+
+They say nothing about a real chip: a frame here is one to five seconds, and how loaded the machine was moves it more than either branch does (the lane is faster at 11 of 14 poses with the same calls and triangles). Inside the rim the Expanse sleeps and draws nothing, so the frame is `main`'s. The probe on a real graphics chip is still owed (the hand-off notes).
