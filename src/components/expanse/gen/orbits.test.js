@@ -40,5 +40,16 @@ describe('orbitAt', () => {
     const flat = { ...moon, tilt: 0 };
     for (const t of [0, 3000, 9000]) expect(moonAt(flat, planet, t)[1] - orbitAt(planet, t)[1]).toBeCloseTo(0, 9);
   });
+  it('writes where it is into an array it is given, and places a moon from where its planet is, so a frame allocates none', () => {
+    const at = [0, 0, 0];
+    const m = [0, 0, 0];
+    for (const t of [0, 500, 1e9]) {
+      expect(orbitAt(planet, t, at)).toBe(at);
+      expect(at).toEqual(orbitAt(planet, t));
+      expect(moonAt(moon, planet, t, m, at)).toBe(m);
+      expect(m).toEqual(moonAt(moon, planet, t));
+      expect(moonAt(moon, planet, t, at, at)).toEqual(moonAt(moon, planet, t)); // (in the planet's own array)
+    }
+  });
   it('reads the shared clock in seconds', () => expect(spaceTime(1.5e12)).toBe(1.5e9));
 });
