@@ -1,9 +1,10 @@
 // The Gromflomite base ("Mortynight Run"): a Federation hangar in their
-// green steel, crates to hide behind, the guards' lockers, a screen in their
-// script, and at the far end the cell with Fart in it, its door sliding
-// open when Morty gets there (the area's 'opened'). Krombopulos Michael
-// waits by the way in. The guards walk their rounds (./destinations.js;
-// stage.js's NPC behaviour) and go for him if they get a look.
+// green steel, crates stacked about (they slow a guard round them; they
+// don't hide Morty), the guards' lockers, a screen in their script, and at
+// the far end the cell with Fart in it, its door sliding open when Morty gets
+// there (the area's 'opened'). Krombopulos Michael waits by the way in. The
+// guards walk their rounds (./destinations.js; stage.js's NPC behaviour) and
+// go for him once he's near enough to see.
 
 import * as THREE from 'three';
 import { BALL, BOX, fitText } from '../interiors/shell';

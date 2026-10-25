@@ -22,7 +22,7 @@ export const ROWS = [
       { id: 'pod1', dx: -15.4, dz: -8, label: 'A Morty in a pod', verb: 'Free', r: 1.4 },
       { id: 'pod2', dx: -15.4, dz: -2, label: 'A Morty in a pod', verb: 'Free', r: 1.4 },
       { id: 'pod3', dx: -15.4, dz: 4, label: 'A Morty in a pod', verb: 'Free', r: 1.4 },
-      { id: 'evilrick', dx: 0, dz: -10.4, label: 'Evil Rick', verb: 'Face him', r: 1.6 },
+      { id: 'evilrick', dx: 0, dz: -10.4, label: 'Evil Rick', verb: 'Talk', r: 1.6 },
       { id: 'evilmorty', dx: 12.4, dz: -14, label: 'A Morty with an eyepatch', verb: 'Talk', r: 1.6, until: 'evilmorty', after: 'evilrick' },
       { id: 'domewall', dx: 0, dz: -16, label: 'The dome', verb: 'Look', r: 2.4 },
       { id: 'scarconsole', dx: 4, dz: -12.4, label: 'His console', verb: 'Look', r: 1.6 },
@@ -190,7 +190,7 @@ export const ROWS = [
       { id: 'crate-b', dx: 10, dz: -12, w: 2, d: 2 },
       { id: 'cells', dx: -18.6, dz: 12, w: 1.2, d: 10 },
     ],
-    tasks: [{ id: 'prison', name: 'Spring Rick from the Brainalyzer', hint: 'Dial the Federation prison on the portal gun, throw both green switches, and unstrap Rick without a guard seeing you. The pillars and crates are cover.' }],
+    tasks: [{ id: 'prison', name: 'Spring Rick from the Brainalyzer', hint: 'Dial the Federation prison on the portal gun, throw both green switches, and unstrap Rick without a guard catching you. The pillars and crates are cover.' }],
     say: {
       switch1: { who: null, text: 'A green switch. You throw it. Half the lights go out, and on the far wall a lock sings.' },
       switch2: { who: null, text: 'The other green switch. The rest of the lights go out and the Brainalyzer’s clamps click open. Rick says “Finally.”' },
@@ -340,7 +340,7 @@ export const ROWS = [
       { id: 'hole', dx: -16, dz: 14, r: 1.2 },
     ],
     tasks: [
-      { id: 'agency', name: 'Spring Jaguar', hint: 'Dial the agency on the portal gun, take the key off its hook, and unlock Jaguar’s cell without a guard seeing you. Pickle Rick is on the desk, being no help at all.' },
+      { id: 'agency', name: 'Spring Jaguar', hint: 'Dial the agency on the portal gun, take the key off its hook, and unlock Jaguar’s cell without a guard catching you. Pickle Rick is on the desk, being no help at all.' },
       { id: 'sewer', name: 'Run the sewer as Pickle Rick', hint: 'At the agency, go down the hole in the floor by the rats. Dodge the grates, squash the rats, pick up screws, and make the far drain.' },
     ],
     say: {

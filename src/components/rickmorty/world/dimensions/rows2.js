@@ -246,7 +246,7 @@ export const ROWS = [
       { id: 'crate-e', dx: 12, dz: 6, w: 2, d: 2 },
       { id: 'lockers', dx: -18.6, dz: -2, w: 1.2, d: 8 },
     ],
-    tasks: [{ id: 'gromflomites', name: 'Open Fart’s cell', hint: 'Dial the Gromflomite base on the portal gun, and reach the cell at the far end without a guard seeing you. Use the crates.' }],
+    tasks: [{ id: 'gromflomites', name: 'Open Fart’s cell', hint: 'Dial the Gromflomite base on the portal gun, and reach the cell at the far end without a guard catching you.' }],
     say: {
       kmichael: { who: 'Krombopulos Michael', text: 'Oh boy. Hi, Morty. Don’t mind me, I’m just here to kill a guy. A gas, technically. Look, if you got the cell open for me I’d be real grateful. I’d owe you a killing.' },
       fartcell: { who: 'Fart', text: 'The lock sings a note and the door slides. “Thank you, Morty.” Across the room, Krombopulos Michael says “Oh boy” and is already running.' },

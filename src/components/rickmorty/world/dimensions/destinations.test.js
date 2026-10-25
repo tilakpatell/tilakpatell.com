@@ -27,6 +27,12 @@ describe('the destinations', () => {
     const none = DESTINATIONS.flatMap((d) => d.tasks.filter((t) => t.id in ACHIEVEMENTS && !ways(d).has(t.id)).map((t) => `${d.id}: ${t.id}`));
     expect(none).toEqual([]);
   });
+  it('promise only what a place does: a guard seen is a hunt, not a catch, and its crates aren’t cover', () => {
+    for (const id of ['gromflomites', 'prison', 'agency']) for (const t of destinationById(id).tasks) expect(t.hint, t.id).not.toMatch(/seeing you/);
+    expect(destinationById('gromflomites').tasks[0].hint).not.toMatch(/crates/);
+    // (Evil Rick's spot is a line he says: Talk, as anyone who says one)
+    expect(destinationById('evilrick').hotspots.find((h) => h.id === 'evilrick').verb).toBe('Talk');
+  });
   it('name every Rick and Morty achievement differently', () => {
     const names = KEYS.rickmorty.map((k) => ACHIEVEMENTS[k].name);
     expect(names.filter((n, i) => names.indexOf(n) !== i)).toEqual([]);
