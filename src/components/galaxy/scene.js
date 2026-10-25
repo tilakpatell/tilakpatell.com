@@ -104,7 +104,8 @@ import { createTrail } from '../universe/trail';
 import { ENGINES, SHIP_MODELS, buildShip, BUILT } from '../universe/shipModels';
 import { loadModel } from '../universe/planets';
 import { lockSound, shieldSound, shipEngine } from '../universe/sounds';
-import { AIM, aimAngles, assist, assistAmount, dirTo, edgeOf, intercept, nose, onScreen, track, trackNudge } from '../../lib/combat/flight/targeting';
+import { AIM, aimAngles, edgeOf, nose, onScreen } from '../../lib/combat/flight/targeting';
+import { TRACK_AFTER_SHOT, createSight } from '../../lib/combat/flight/sight';
 import { DEFAULTS as CONTROL_DEFAULTS, STICK, dragSteers, keyAxes, keyFlies, stickInput } from '../universe/controls';
 import { SIZE as PILOT_SIZE, createPilots } from '../universe/online/pilots';
 import { GUARD } from '../universe/online/protocol';
@@ -184,7 +185,6 @@ const NO_TARGETS = Object.freeze([]); // (when there are no hunters to lock on t
 const NO_BUFFS = NO_TARGETS; // (and no pickups' effects to show)
 
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
-const TRACK_AFTER_SHOT = 1500; // ms: a lock the guns picked is followed this long after a shot at it
 const apart = (ax, ay, az, bx, by, bz) => Math.sqrt((ax - bx) * (ax - bx) + (ay - by) * (ay - by) + (az - bz) * (az - bz));
 // the wall clock, in seconds: every pilot's set pieces keep the same time
 const wall = () => Date.now() / 1000;
@@ -448,6 +448,11 @@ export async function create(canvas, ctx) {
     if (what) emit({ type: 'earn', what, n, side: 'galaxy' });
   };
   const controls = () => props.controls ?? CONTROL_DEFAULTS;
+  // the player's targeting (lib/combat/flight/sight.js); foeBuf: every foe, ungated, for its find
+  const sight = createSight(state);
+  const foeBuf = [];
+  let lockWar = NO_TARGETS; // (this frame's war list: the nose follows the war's ships too)
+  const sightIn = { speed: AIM.bolt, life: AIM.life, help: controls, tracks: (t) => Boolean(hunters?.targets.includes(t) || lockWar.includes(t)) || performance.now() - state.lastShot < TRACK_AFTER_SHOT, foes: foeBuf };
   const flying = () => Boolean(state.ship);
   // the crew's ship powers (powers.js), played out with the scene's own pieces
   // (made before the first frame's shaders are, so its look is made with them)
@@ -1020,8 +1025,7 @@ export async function create(canvas, ctx) {
       state.safeUntil = Math.min(state.safeUntil, state.clock);
     }
     const [fx, fz] = forward(s.heading);
-    let dir = nose(s);
-    if (state.lead && state.lead.t <= AIM.life) dir = assist(dir, dirTo(s, state.lead), powers.aim(controls()).assist); // (Force Focus's help onto the game's ships only)
+    const dir = sight.aim(nose(s), s, powers.aim(controls()).assist); // (Force Focus's help onto the game's ships only)
     // from the guns fitted, their barrels in turn; or the ship's own
     const mods = state.model?.modules;
     if (mods?.muzzles.length) {
@@ -1468,7 +1472,7 @@ export async function create(canvas, ctx) {
   // ── Hyperspace ──
   // (the way the reticle is, from the eye: the star you see behind it, in
   // the chase view as in the cockpit; the jump then comes round onto it)
-  const sight = new THREE.Vector3();
+  const eyeLine = new THREE.Vector3();
   const aimDir = [0, 0, 0];
   const aimOpts = { keep: null, dirs: null }; // (the sky's stars' bearings are the ones it looks along, not worked out again every frame)
   const aimAt = (ship) => {
@@ -1476,8 +1480,8 @@ export async function create(canvas, ctx) {
     let dir = null;
     if (ship && state.sys) {
       const [nx, ny, nz] = nose(ship);
-      sight.set(ship.x + nx * 6, ship.y + ny * 6, ship.z + nz * 6).sub(camera.position);
-      if (sight.lengthSq() > 1e-6) dir = sight.normalize().toArray(aimDir);
+      eyeLine.set(ship.x + nx * 6, ship.y + ny * 6, ship.z + nz * 6).sub(camera.position);
+      if (eyeLine.lengthSq() > 1e-6) dir = eyeLine.normalize().toArray(aimDir);
       else {
         aimDir[0] = nx;
         aimDir[1] = ny;
@@ -1678,10 +1682,10 @@ export async function create(canvas, ctx) {
       }
     } else {
       input = steering();
-      // the nose follows the lock (targeting.js: a nudge toward the lead,
+      // the nose follows the lock (sight.nudge: a nudge toward the lead,
       // as much as the lock-tracking setting allows, giving way to the stick)
-      if (state.trackable && state.lead && state.lead.t <= AIM.life) {
-        const n = trackNudge(state.ship, state.lead, powers.aim(controls()).track, input);
+      const n = sight.nudge(state.ship, input, powers.aim(controls()).track);
+      if (n) {
         input.turn = clamp(input.turn + n.turn, -1, 1);
         input.climb = clamp(input.climb + n.climb, -1, 1);
       }
@@ -1812,35 +1816,13 @@ export async function create(canvas, ctx) {
       for (const c of pilots.targets) candBuf.push(c);
       cands = candBuf;
     }
-    const was = state.lock?.id ?? null;
-    state.lock = cands.length || state.lock ? track(ship, cands, state.lock, dt, { cycle: state.cycle }) : null;
-    state.cycle = 0;
-    const tgt = state.lock ? (cands.find((c) => c.id === state.lock.id) ?? null) : null;
-    state.lockTarget = tgt;
-    // (the nose follows only a lock on a hunter, one picked by hand, or one
-    // being shot at: not a passing pilot or a part of the Citadel the guns
-    // happened on)
-    state.trackable = Boolean(tgt && (hunters?.targets.includes(tgt) || warCands.includes(tgt) || state.lock?.manual || performance.now() - state.lastShot < TRACK_AFTER_SHOT));
-    if (tgt && tgt.id !== was && state.shown && !document.hidden) lockSound();
-    state.lead = tgt ? intercept(ship, AIM.bolt + Math.max(0, ship.speed), tgt.at, tgt.vel) : null;
-    state.hot = Boolean(state.lead && state.lead.t <= AIM.life && assistAmount(nose(ship), dirTo(ship, state.lead), controls().assist) >= 1);
-    let bx = 0;
-    let by = 0;
-    let bz = 0;
-    if (tgt && !reduced) {
-      const vx = tgt.at.x - ship.x;
-      const vy = tgt.at.y - ship.y;
-      const vz = tgt.at.z - ship.z;
-      const l = Math.sqrt(vx * vx + vy * vy + vz * vz) || 1;
-      const k = Math.min(0.3, l * 0.08) / l;
-      bx = vx * k;
-      by = vy * k;
-      bz = vz * k;
-    }
-    const ease = 1 - Math.exp(-dt * 3);
-    state.bias[0] += (bx - state.bias[0]) * ease;
-    state.bias[1] += (by - state.bias[1]) * ease;
-    state.bias[2] += (bz - state.bias[2]) * ease;
+    foeBuf.length = 0; // (every foe, ungated, for the sight's find)
+    for (const c of hunters?.targets ?? NO_TARGETS) if (!c.prey) foeBuf.push(c);
+    for (const c of warCands) foeBuf.push(c);
+    lockWar = warCands;
+    sightIn.speed = AIM.bolt + Math.max(0, ship.speed);
+    if (sight.update(ship, cands, dt, sightIn) && state.shown && !document.hidden) lockSound();
+    sight.lean(state.bias, ship, dt, reduced);
 
     shipToModel(dt, t, input);
     if (!state.idleSaid && !state.auto && Math.abs(ship.speed) < 0.05 && state.shown && !document.hidden && performance.now() - state.lastInput > IDLE) {
