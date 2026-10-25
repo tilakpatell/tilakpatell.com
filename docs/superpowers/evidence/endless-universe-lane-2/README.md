@@ -474,3 +474,78 @@ Every answer crossed whole: the seeds as BigInts, the lattice and the specks as 
 | `npm run build` | built |
 | `node scripts/health.mjs --check --skip build` | within budget |
 | `scene.js` | 6,361 lines before and after: not touched |
+
+### Task 20: the Expanse in 3D, everywhere, with no rim
+
+Five commits on `eu/lane-2`, from `1819eadd`:
+
+- `96b15eac` The far layer's specks fade at the edge of what's loaded, and a slot can hold a ring
+- `eead61ca` The Expanse everywhere in 3D: no rim, no origin, made off the main thread
+- `d1bbd5f8` The far layer's specks come in where the discs' budget ends
+- `880b6047` The Expanse keeps the last sectors it made in process, and a sector made again keeps its slot when none is free
+- `7da88466` A sector's discs fade in as it comes, as its specks do
+- `3e494f7d` The Expanse feeds its discs and builds only from the sectors near the camera
+
+#### What it does
+
+`expanse/scene/expanse.js` is rewritten. There is no rim, no `activeAt`, no floating origin and no `onShift`: the root stays at nought, and the scene draws round the camera. A chunk grid in three dimensions (`runtime/chunkGrid3.js`, radius 1, `inFlight` the budget's `workers`) asks the pool for `sectorJob`s, nearest first and then along the nose (heading and pitch, in quarters, so the grid's order is cached); an answer is taken one a frame. The rings beyond are `beyondJob`s on their own worker, a ring a job, ring 1 first, each landing in its ring's A or B slot. The far layer draws one centre whole: once the ship is 2,000 into the next sector (`SWAP_PAST`, so a ship on a face never flickers), the new centre's sectors and rings are staged hidden and swapped in with one `hideSlots` and one `showSlots` once all are in. A centre not next to the one drawn is a jump: what's drawn goes at once and the new place fades in over 0.5 s as it comes (`PLACE_IN`), its specks by `fadeSlot` and its discs by a share a sector that `discs.js`' `feed` now takes. Answers for jobs let go (a sector out of the grid's band, a ring round a centre neither drawn nor the ship's) are refused by the job's own record; a job that comes back with nothing is asked again, and left empty after three tries (with a warning). With no ship, or in the Rick and Morty pocket, it lets everything go, as it did inside the rim and the pocket before.
+
+The far layer (`universe/farStars.js`) gains three things the swap needs. Every speck fades to nothing at an edge the Expanse sets each frame (`setEdge`, the levels' `beyondFade`): as far as the drawn sectors reach from the camera, eased out after a swap and in at once, so the sectors that join or leave a ring at a swap do it at nothing. A slot's `key` may be a list (a ring names every sector it holds), and a slot shown as one holding any of its keys goes is a swap, not a pop. And a speck gives way to its disc where the discs' budget ends (`setDiscEdge`, from `discs.js`' new `edge()`), not only at the far plane, so where the budget binds the stars between are specks, not nothing (the hole Task 15's review found). A slot's colours are looked up a byte at a time, so a ring of 32,000 specks is set in about 0.3 ms in Node (8 to 28 ms before).
+
+`farRoom` makes room for the rings: the budget's 64 slots of 400, then A and B for each ring, 98 × 330 specks for ring 1 and 218 × 330 for ring 2 (330 the most stars a sector holds, a few over). At mid and low that's 64,680 more points in the one `Points`, and 204,480 at high and ultra; no draw call.
+
+The rim's star field (`scene/starfield.js`) and its four tests are gone. `scene.js` passes `workers: ctx.rt.workers` where it passed the origin, and no longer resets the runtime's origin (6,361 lines before, 6,359 after): Task 22's wiring of `:731-734`.
+
+#### The browser check (`lab/t20/check.mjs`, untracked)
+
+At mid, in headless Chromium in software, on the lane's dev server, with load averages of 20 to 30 on four cores (other lanes' checks beside it). The page drew a frame every three to four seconds, so the Expanse's own times are this machine's, not a phone's.
+
+| Step | What | Result |
+|---|---|---|
+| home | the ship at the default start, `[-37406, 300, 15398]` | the core's 27 sectors and ring 1 in, 115 s after the page was up (30 frames); the pools two sector workers and one beyond, all idle after |
+| face | from 59,000 to 64,000 along x, 250 a frame, then held | swapped to `E:1,0`'s centre (ring B shown, A hidden, 36 sectors held) within a second of reaching 64,000; `pops()` asked every frame: none at all |
+| jump | to x = 1.2e8 | the 27 round `E:1000,0` and its ring in 62 s, nothing of home held |
+| back | to `[0, 0, 3000]` | home's 27 and ring in 58 s, nothing of `E:1000,0` held |
+| console | the whole run | no page error, no console error but the dev server's known 403s on files through the linked `node_modules` (filtered) |
+
+The Expanse's own time a frame, in that browser: at home while it loaded, a mean of 28.5 ms and at most 511 ms (7 of 30 frames over 16 ms); across the face 22.6 ms and at most 315 ms; through the jump 16.5 ms and at most 210 ms. In Node under the same load, with the 27 real sectors round the default start held, a steady frame is 0.72 ms (median, low) and 0.82 ms (mid). A phone's numbers are owed with the perf probe.
+
+The Expanse's feed was then cut to the sectors near the camera (`3e494f7d`): at the default start, with the 27 real sectors round home held, a steady frame of its own goes from 0.70 ms to 0.27 ms (median, mid, in Node, the two run in turn, twice, under the same load).
+
+The browser check again at `3e494f7d`, the load lower (14 to 17): the same steps, the same outcomes. The core's 27 and ring 1 were in 58 s after the page was up (28 frames; the default start was `[-131, 0, 306]` this time); the face swapped within a second of 64,000 with no pop at all; the jump's 27 and ring in 38 s and home's again in 39 s; no page or console error. The Expanse's own time a frame: at home while it loaded a mean of 5.8 ms and at most 29 ms (3 of 28 frames over 16 ms), across the face 4.2 ms and at most 20 ms (1 of 32), through the jump 9.2 ms and at most 38.5 ms (6 of 33). The slow frames are those a sector or a ring lands in.
+
+#### Draw calls and triangles: `universe-check.mjs --quality mid --frames 3`
+
+At `7da88466` (the cut of the feed changes no draw), against `main`'s at `cc5e2eaf` (`/home/user/wt/main/lab/universe/mid.json`, the coordinator's). With no rim, the Expanse is awake at every pose: the core's 27 sectors and the ring round them load as each pose's page comes up. Nothing at any pose gains a call or a triangle; `overview` and `falcon-sun` draw one call and 80 triangles fewer, as the lane's earlier runs did. The landing's triangles move from run to run on both branches (it comes down where Middle-earth has turned to: the lane's earlier runs read 23,252, 126,982 and 168,948), and 38 more here is that. No page error at any pose.
+
+| Pose | `main` calls | lane calls | `main` triangles | lane triangles |
+|---|--:|--:|--:|--:|
+| `overview` | 99 | 98 | 489,042 | 488,962 |
+| `falcon-sun` | 82 | 81 | 474,020 | 473,940 |
+| `middleearth-limb` | 39 | 39 | 37,732 | 37,732 |
+| `rickmorty` | 40 | 40 | 38,858 | 38,858 |
+| `gaming` | 43 | 43 | 45,466 | 45,466 |
+| `caribbean` | 43 | 43 | 87,492 | 87,492 |
+| `middleearth` | 39 | 39 | 37,732 | 37,732 |
+| `breakingbad` | 64 | 64 | 31,930 | 31,930 |
+| `office` | 41 | 41 | 23,236 | 23,236 |
+| `belt` | 46 | 46 | 421,298 | 421,298 |
+| `maw` | 43 | 43 | 74,250 | 74,250 |
+| `landing-middleearth` | 116 | 116 | 126,980 | 127,018 |
+| `station` | 69 | 69 | 459,214 | 459,214 |
+| `far-rim` | 42 | 42 | 40,598 | 40,598 |
+
+The shots are in `lab/universe/t20/mid/` (untracked): generated stars and discs in the core now show at every pose, so the pictures change and want the owner's eye.
+
+#### Tests and the gate's parts
+
+| Check | Result |
+|---|---|
+| `npx vitest run src/components/expanse/scene/expanse.test.js` | 28 tests passed |
+| `npx vitest run src/components/expanse/scene src/components/expanse/shared src/components/universe/farStars.test.js src/components/universe/ship.test.js` | 10 files, 217 tests passed |
+| `npx vitest run src/components/expanse` | 48 files: 493 tests, 489 passed; 4 timed out or ran slow under load in `gen/` files Task 20 doesn't touch (`density.test.js`, `names.test.js`, `space.test.js`' speed test, `things.test.js`), each of which passes run on its own |
+| `npx vitest run src/components/universe` | 196 files: 2,372 tests, 2,353 passed; 18 timed out at 5 s under a load of 19 to 23 (battles, hunters, skirmish, traffic, landings, crews, foot). Run alone, all pass but `crews.test.js`' and `foot.test.js`' one each, which time out on `main` too under the same load; `ship.test.js`' generated planet passed in the run (1.6 s alone) |
+| `npx eslint` on the nine files changed | clean |
+| `npx vite build` | built; `sector.worker` is its own 33.7 KB chunk, named from the universe's scene chunk |
+| `node scripts/health.mjs --check --skip build` | within budget |
+| `scene.js` | 6,361 lines before (`1819eadd`), 6,359 after |
