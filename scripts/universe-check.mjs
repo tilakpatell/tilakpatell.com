@@ -11,7 +11,8 @@
 //     [--lock] (a TIE put ahead and locked by hand at each flying pose, scripts/lib/flight-probes.mjs: the bracket,
 //       the lead and the reticle drawn; the overlay's marks in the report and <pose>.hud.webp, the shot with the HUD;
 //       the report's `hud`: what the bracket says of the lock's distance, and how far it is in the map's units, which
-//       must agree to within one where the lock is held and its bracket drawn)
+//       must agree to within one where the lock is held and its bracket drawn; there too, the target's card must name
+//       the lock, the speed read SPD n and the radar have 300 pixels drawn)
 //
 // It starts the dev server (the poses are a DEV hook, `window.__universe().pose`,
 // which a production build leaves out) unless --url names one, opens
@@ -255,7 +256,15 @@ for (const tier of tiers) {
         hud = await page.evaluate(() => {
           const s = window.__universeDebug.state;
           const at = s.lockTarget?.at;
-          return { lockDist: document.querySelector('.universe-lock-dist')?.textContent ?? null, lockUnits: at && s.ship ? Math.hypot(at.x - s.ship.x, at.y - s.ship.y, at.z - s.ship.z) : null };
+          const said = (c) => document.querySelector(c)?.textContent ?? null;
+          // (the radar's picture: its pixels drawn at all)
+          const cv = document.querySelector('.fc-radar');
+          let radarPx = 0;
+          if (cv) {
+            const { data } = cv.getContext('2d').getImageData(0, 0, cv.width, cv.height);
+            for (let i = 3; i < data.length; i += 4) if (data[i] >= 8) radarPx++;
+          }
+          return { lockDist: said('.universe-lock-dist'), lockUnits: at && s.ship ? Math.hypot(at.x - s.ship.x, at.y - s.ship.y, at.z - s.ship.z) : null, lockName: said('.universe-lock-name'), cardName: said('.fc-target-name'), speed: said('.fc-speed-n'), radarPx };
         });
         await page.evaluate(() => {
           const style = document.createElement('style');
@@ -273,6 +282,10 @@ for (const tier of tiers) {
       // (the bracket's distance in the map's units: only where the lock's held and its bracket is drawn)
       if (lock?.held && marks?.some((m) => m.c === 'universe-lock' && m.on) && hud.lockUnits !== null) {
         if (!/^\d+(\.\d)?$/.test(hud.lockDist ?? '') || Math.abs(Number(hud.lockDist) - hud.lockUnits) > 1) fail(`${tier} ${name}: the lock says ${hud.lockDist}, ${hud.lockUnits.toFixed(1)} units off`);
+        // (and the cluster's parts, on the universe map too: the target's card names the lock, the speed reads, the radar's drawn)
+        if (hud.cardName !== hud.lockName) fail(`${tier} ${name}: the target's card says ${hud.cardName}, the lock ${hud.lockName}`);
+        if (!/^SPD \d+$/.test(hud.speed ?? '')) fail(`${tier} ${name}: the speed reads ${hud.speed}`);
+        if (hud.radarPx < 300) fail(`${tier} ${name}: the radar has ${hud.radarPx} pixels drawn`);
       }
       console.log(`ok   ${tier.padEnd(4)} ${name.padEnd(20)} calls ${String(numbers.calls).padStart(4)}  tris ${String(numbers.triangles).padStart(8)}  ${String(numbers.frameMs).padStart(6)} ms  entropy ${metrics.colorEntropyBits}  edges ${metrics.edgeDensity}  contrast ${metrics.luminance.contrast}${numbers.shipPx ? `  ship ${numbers.shipPx.w} × ${numbers.shipPx.h} px` : ''}${args.lock ? `  lock ${lock?.held ? 'held' : lock?.skipped ?? 'none'}` : ''}  (${((Date.now() - t0) / 1000).toFixed(0)} s)`);
     } catch (e) {

@@ -4,7 +4,7 @@
 //
 //   node scripts/flight-hud-style-check.mjs --write <file>      what they are now
 //   node scripts/flight-hud-style-check.mjs --against <file>    what moved since
-//     [--maps universe,galaxy] [--parts overlay,cluster] [--order last|first|both]
+//     [--maps universe,galaxy] [--parts overlay,cluster] [--order last|first|both] [--lines 200]
 //
 // A page per map, holding the sheets from disk (universe.css with its
 // @imports, the HUD kit's hud.css and cluster.css, the galaxy's flight.css,
@@ -78,14 +78,30 @@ async function markup() {
     // (React itself from Node: the modules' own import of it is left to Node too, so it's the one React)
     const React = await import('react');
     const { renderToStaticMarkup } = await import('react-dom/server');
-    const { FlightOverlay } = await vite.ssrLoadModule('/src/runtime/hud/flight/FlightHud.jsx');
-    const { default: FlightCluster } = await vite.ssrLoadModule('/src/components/galaxy/FlightCluster.jsx');
+    const { default: FlightHud, FlightOverlay } = await vite.ssrLoadModule('/src/runtime/hud/flight/FlightHud.jsx');
     const ref = { current: null };
     const h = React.createElement;
-    return {
-      overlay: renderToStaticMarkup(h(FlightOverlay, {})),
-      cluster: renderToStaticMarkup(h(FlightCluster, { rootRef: ref, ship: 'xwing', reduced: false, powersRef: ref, onPower: () => {}, radarRef: ref, buffsRef: ref })),
-    };
+    const overlay = renderToStaticMarkup(h(FlightOverlay, {}));
+    // (the cluster as the galaxy draws it: its own until FlightCluster.jsx went, then FlightHud's with the galaxy's icons, chips and powers)
+    if (existsSync(join(ROOT, 'src/components/galaxy/FlightCluster.jsx'))) {
+      const { default: FlightCluster } = await vite.ssrLoadModule('/src/components/galaxy/FlightCluster.jsx');
+      return { overlay, cluster: renderToStaticMarkup(h(FlightCluster, { rootRef: ref, ship: 'xwing', reduced: false, powersRef: ref, onPower: () => {}, radarRef: ref, buffsRef: ref })) };
+    }
+    const { RiShieldLine } = await import('react-icons/ri');
+    const { default: GameIcon } = await vite.ssrLoadModule('/src/runtime/hud/GameIcon.jsx');
+    const { default: PowerBar } = await vite.ssrLoadModule('/src/components/universe/PowerBar.jsx');
+    const hud = h(FlightHud, {
+      hudRef: ref,
+      clusterRef: ref,
+      vitalsIcon: h(RiShieldLine, { className: 'fc-shield-icon', 'aria-hidden': 'true' }),
+      speedIcon: h(GameIcon, { name: 'hud:speed', className: 'fc-speed-icon' }),
+      over: h('div', { className: 'fc-buffs', 'aria-hidden': 'true' }),
+      powers: h(PowerBar, { ship: 'xwing', reduced: false, barRef: ref, onPress: () => {}, placement: 'cluster', picks: null, carry: null }),
+    });
+    const all = renderToStaticMarkup(hud);
+    const at = all.indexOf('<div class="hud-cluster');
+    const end = all.indexOf('<div class="universe-wanted"');
+    return { overlay, cluster: all.slice(at, end) };
   } finally {
     await vite.close();
   }
@@ -262,8 +278,9 @@ if (write) {
       for (const k of new Set([...Object.keys(a), ...Object.keys(b)])) if (a[k] !== b[k]) lines.push(`${key} ${k}: ${a[k] ?? '(default)'} -> ${b[k] ?? '(default)'}`);
     }
     console.log(`${lines.length} differences (order: ${order})`);
-    for (const l of lines.slice(0, 200)) console.log(l);
-    if (lines.length > 200) console.log(`… and ${lines.length - 200} more`);
+    const limit = Number(flag('lines', 200));
+    for (const l of lines.slice(0, limit)) console.log(l);
+    if (lines.length > limit) console.log(`… and ${lines.length - limit} more`);
     failed += lines.length;
   }
   process.exit(failed ? 1 : 0);

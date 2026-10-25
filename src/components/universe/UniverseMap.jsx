@@ -14,7 +14,7 @@ import { askBrief } from '../tour/brief';
 import LoadingVeil from '../worlds/LoadingVeil';
 import { RiShieldLine } from 'react-icons/ri';
 import PowerBar from './PowerBar';
-import { Abilities, Arms, Cluster, FlightHud, Prompt, Reticle, TouchButton, Vitals } from '../../runtime/hud';
+import { Abilities, FlightHud, Prompt, Reticle, TouchButton } from '../../runtime/hud';
 import { PROMPT as LOOK_PROMPT } from '../../runtime/look';
 
 // The map: the 3D scene (scene.js and planets.js, a world module on the
@@ -49,13 +49,11 @@ export default function UniverseMap({ selected, onSelect, onOpen, handle, frozen
   const labels = useRef({});
   const tags = useRef(null);
   const stick = useRef(null);
-  const alt = useRef(null);
-  const cluster = useRef(null); // the flight cluster: shields and arms in a ship, health on foot (the HUD kit's: clusterView.js)
+  const cluster = useRef(null); // the flight cluster (the HUD kit's FlightHud): for its height on the map; the scene writes it through the HUD's record
   const abilitiesEl = useRef(null); // the crew member's abilities on foot, as a touch screen's buttons (in the cluster on a desktop)
   const powers = useRef(null); // the crew's two powers' tiles in it (PowerBar.jsx; the scene writes them: powers.js)
   const thumbs = useRef(null); // the touch buttons, one grid under the right thumb (the powers in it on a touch screen)
   const touch = useMediaQuery('(pointer: coarse)');
-  const wantedEl = useRef(null); // (the law's stars and the bounty on you: wanted.js)
   const { economy } = useEconomy({ ask: false }); // (the wallet a bounty's paid off from)
   const hud = useRef(null);
   const siegeEl = useRef(null); // the Citadel's siege (siege.js)
@@ -112,11 +110,8 @@ export default function UniverseMap({ selected, onSelect, onOpen, handle, frozen
       controls,
       labels,
       stick,
-      alt,
-      cluster,
       abilities: abilitiesEl,
       powers,
-      wanted: wantedEl,
       wallet: economy,
       hud,
       siege: siegeEl,
@@ -333,34 +328,28 @@ export default function UniverseMap({ selected, onSelect, onOpen, handle, frozen
               <div ref={stick} className="universe-stick" aria-hidden="true">
                 <span />
               </div>
-              <div ref={alt} className="universe-alt" aria-hidden="true">
-                <span className="universe-alt-mark" />
-              </div>
-              {/* the flight cluster, bottom centre, as the galaxy has it: the shields and the line picked (health on foot) */}
-              <Cluster rootRef={cluster} className="universe-cluster" label={onFoot ? 'On foot' : 'Flight'}>
-                <Vitals label={onFoot ? 'Health' : 'Shields'} icon={<RiShieldLine aria-hidden="true" />} />
-                <Arms keys />
-                {/* on foot: your crew member's two abilities, G and V (the scene writes their names and cooldowns); a touch screen's are buttons in the thumbs, below */}
-                {onFoot && !touch && <Abilities slots={FOOT_ABILITIES} />}
-                {/* (a touch screen's are round buttons in the thumbs' grid, below) */}
-                {!onFoot && !touch && <PowerBar ship={ship} reduced={reduced} barRef={powers} onPress={(slot) => view.current?.power?.(slot)} placement="cluster" picks={powerPicks} carry={skillFx?.carry} />}
-              </Cluster>
-              <div ref={wantedEl} className="universe-wanted" aria-hidden="true">
-                <span className="universe-wanted-stars">
-                  <i />
-                  <i />
-                  <i />
-                  <i />
-                  <i />
-                </span>
-                <b className="universe-wanted-word" />
-                <b className="universe-wanted-bounty" />
-              </div>
-              <FlightHud hudRef={hud} crosshair={<Reticle className="universe-foot-reticle" state={onFoot ? reticle : null} />} />
-              <div ref={siegeEl} className="universe-siege" role="status">
-                <b>The Citadel</b>
-                <span className="universe-siege-state" />
-              </div>
+              {/* the flight HUD, the galaxy's own (the HUD kit's FlightHud): the altitude, the cluster bottom centre (the radar,
+                  the shields, the speed and the kills, the line picked, the target; health on foot), the law's strip and the
+                  overlay, with the Citadel's siege after it */}
+              <FlightHud
+                hudRef={hud}
+                crosshair={<Reticle className="universe-foot-reticle" state={onFoot ? reticle : null} />}
+                clusterRef={cluster}
+                className="universe-cluster"
+                foot={onFoot}
+                vitalsIcon={<RiShieldLine aria-hidden="true" />}
+                armsKeys
+                // (a touch screen's powers and abilities are round buttons in the thumbs' grid, below)
+                powers={!onFoot && !touch && <PowerBar ship={ship} reduced={reduced} barRef={powers} onPress={(slot) => view.current?.power?.(slot)} placement="cluster" picks={powerPicks} carry={skillFx?.carry} />}
+                // (on foot: your crew member's two abilities, G and V; the scene writes their names and cooldowns)
+                row={onFoot && !touch && <Abilities slots={FOOT_ABILITIES} />}
+                overlay={
+                  <div ref={siegeEl} className="universe-siege" role="status">
+                    <b>The Citadel</b>
+                    <span className="universe-siege-state" />
+                  </div>
+                }
+              />
               <p ref={prompt} className="universe-prompt" aria-live="polite" />
               {/* the star the nose is on, to jump to: J, or this (a touch screen's way) */}
               {!onFoot && ship && aim && (

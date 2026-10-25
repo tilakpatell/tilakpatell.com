@@ -65,3 +65,21 @@ describe('the threat arrows', () => {
     expect(f.threats.at[0]).toEqual({ x: 720, y: 450, z: -20 });
   });
 });
+
+describe('the target card', () => {
+  it('fills the target card from the lock it brackets', () => {
+    const f = createFrame();
+    f.cluster = { on: true };
+    const tie = { lock: { id: 't', at: P(720, 450, 14.2), size: 1, hp: 1, hpMax: 2 }, lockName: 'TIE Interceptor' };
+    fillFlight(f, view(tie), project);
+    const card = f.target;
+    expect(card).toEqual({ name: 'TIE Interceptor', dist: 14.2, hp: 0.5 });
+    fillFlight(f, view(tie), project);
+    expect(f.target).toBe(card);
+    fillFlight(f, view({ ...tie, lock: { ...tie.lock, hpMax: 1 } }), project);
+    expect(f.target.hp).toBe(null);
+    f.cluster.on = false;
+    fillFlight(f, view(tie), project);
+    expect(f.target).toBe(null);
+  });
+});

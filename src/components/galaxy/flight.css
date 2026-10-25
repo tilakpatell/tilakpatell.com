@@ -1,33 +1,16 @@
-/* The flight cluster (FlightCluster.jsx): the HUD kit's (runtime/hud/
-   cluster.css: the row, the glass, the deflectors, the arms and the power
-   tiles, the same in every world that flies a ship), placed bottom centre of
-   the space left of the panel, clear of the corner's buttons (the flight
-   settings' and the multiplayer pill, 176px) and of the panel (24px). This is
-   the galaxy's own blocks in it: the radar, the speed and the kills, the
-   target and the pickups' chips. On a touch screen the power tiles stay round
-   buttons beside Fire and View, and the cluster keeps to the left column,
-   clear of them. */
+/* The flight cluster's place on the galaxy's page: bottom centre of the
+   space left of the panel, clear of the corner's buttons (the flight
+   settings' and the multiplayer pill, 176px) and of the panel (24px); and the
+   galaxy's own parts round it: the pickups' chips over it, the note of what a
+   pickup gave, the jump button over it and the flying keys. The cluster's
+   blocks themselves (the radar, the speed and the kills, the target) are the
+   HUD kit's, with the overlay (runtime/hud/flight/flight.css), on both maps. */
 .galaxy-page {
   --fc-left: 176px;
   --fc-right: calc(var(--panel-w, 0px) + 24px);
   --hud-cluster-left: var(--fc-left);
   --hud-cluster-right: var(--fc-right);
 }
-.fc-speed > span { background: linear-gradient(90deg, #ffd36a, #fff2c4); }
-.fc-speed[data-boost] > span { background: linear-gradient(90deg, #ff9a3d, #ffe08a); box-shadow: 0 0 10px rgb(255 170 60 / 0.7); }
-.fc-target { min-width: 160px; } /* (mostly "No target · T": room for the arms block beside it) */
-.fc-target-name { overflow: hidden; max-width: 200px; text-overflow: ellipsis; white-space: nowrap; }
-.fc-target-hp > span { background: linear-gradient(90deg, #ff5a4a, #ffb08a); }
-.fc-target-hp:not([data-on]) { visibility: hidden; }
-/* (no target: the label, and the way to get one) */
-.fc-target:not([data-on]) > :not(.fc-none):not(.hud-label) { display: none; }
-.fc-target[data-on] .fc-none { display: none; }
-.fc-none { color: rgb(217 243 255 / 0.85); font-size: 0.74rem; }
-/* the speed line's mark: the game's own speed-bar icon (GameIcon), in the cluster's ink, the line's height, one item with the
-   number so the line's space-between keeps the number at the start and the kills at the end */
-.fc-speed-lead { display: inline-flex; align-items: center; gap: 4px; }
-.fc-speed-icon { flex: none; width: 12px; height: 12px; fill: currentColor; color: #9ef3ff; }
-.fc-radar { width: 132px; height: 132px; border: 1px solid rgb(127 214 255 / 0.28); border-radius: 50%; background: radial-gradient(circle, rgb(10 30 50 / 0.82), rgb(3 6 14 / 0.86)); }
 /* the pickups' effects, a chip each over the row (cluster.js's buffs): the bar along its foot is the time left, or the bubble's points */
 .fc-buffs { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
 .fc-buffs:empty { display: none; }
@@ -60,53 +43,6 @@
 }
 @media (pointer: fine) { .galaxy-jumpbtn[data-course] { display: none; } }
 
-/* a laptop's width: the blocks a little narrower, to fit the space left of the panel (the kit narrows its glass) */
-@media (max-width: 1320px) {
-  .fc-target { min-width: 150px; }
-  .fc-radar { width: 112px; height: 112px; }
-}
-@media (max-height: 700px), (max-width: 1100px) {
-  .fc-target { min-width: 150px; }
-  .fc-radar { width: 104px; height: 104px; }
-}
-/* a laptop with the panel open (the band left of it is 680 to 770px): the radar and the power tiles in their compact sizes and
-   the target narrower, so the row keeps to one row with the arms block in it */
-@media (pointer: fine) and (min-width: 768px) and (max-width: 1400px) {
-  .galaxy-page:not([data-tucked]) .fc-radar { width: 96px; height: 96px; }
-  .galaxy-page:not([data-tucked]) .fc-target { min-width: 150px; }
-  .galaxy-page:not([data-tucked]) .hud-powers[data-place='cluster'] .hud-power { width: 64px; height: 52px; }
-  .galaxy-page:not([data-tucked]) .hud-powers[data-place='cluster'] .hud-power-name { display: none; }
-}
-/* (a narrow window with the panel open, up to a small laptop's 1280: no room for the target as well as the arms; the lock's own
-   mark over the 3D says it) */
-@media (min-width: 768px) and (max-width: 1300px) {
-  .galaxy-page:not([data-tucked]) .fc-target { display: none; }
-}
-
-/* a touch screen, or a phone's width: the cluster is the whole map's box (it
-   takes no clicks) so the power tiles, which keep their own place as round
-   buttons beside Fire and View on the right, are placed against the map as
-   they are without it. The radar and the deflectors keep to the left column,
-   clear of View, the tiles, the flight settings' button and, on a phone, the
-   war's lines (nav + 150px, a battle's) and the comms: below the lines, beside
-   the settings' button (the radar) and over it (the deflectors) when the
-   screen is tall enough, else above the lines, under the map button. There's
-   no room for the rest (speed, kills, the target: the lock's own mark over
-   the 3D names it). Under the comms when they speak, over the rest. */
-@media (pointer: coarse), (max-width: 767px) {
-  /* (the kit makes the cluster the map's box and puts the deflectors in the left column; the radar goes beside them) */
-  .fc-target, .fc-speed, .fc-sub { display: none; }
-  .fc-radar { position: absolute; left: calc(var(--hud-edge, 12px) + 54px); bottom: 66px; width: 76px; height: 76px; }
-}
-@media (max-width: 767px) {
-  .fc-radar { bottom: calc(var(--sheet-h, 0px) + 66px); }
-}
-/* (a phone too short for the left column under the war's lines: above them) */
-@media (max-width: 767px) and (max-height: 779px) {
-  .fc-radar, .fc-ship { bottom: auto; top: calc(var(--nav-h, 68px) + 62px); }
-  .fc-radar { left: var(--hud-edge, 12px); }
-  .fc-ship { left: calc(var(--hud-edge, 12px) + 84px); }
-}
 /* (the first-flight line goes over the cluster, not under it) */
 @media (max-width: 767px) and (min-height: 780px) {
   .galaxy-page .universe-hint { bottom: calc(var(--sheet-h, 0px) + 226px); } /* (over the power tiles too) */

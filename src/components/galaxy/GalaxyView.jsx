@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { RiShieldLine } from 'react-icons/ri';
 import { local, useReducedMotion } from '../../lib/hooks';
 import { WorldHost, useWorld } from '../../runtime';
 import galaxyModule from './module';
@@ -8,6 +9,7 @@ import Hangar from '../universe/Hangar';
 import { SYSTEMS, goalsOf, lightYears, systemById } from './systems';
 import { placesOf } from './places';
 import '../universe/universe.css';
+import './flight.css';
 import GuideCue from '../guide/GuideCue';
 import { letHandedGo } from '../hyperspace3d/timeline';
 import { letsJumpGo } from './jumpIn';
@@ -15,9 +17,9 @@ import WarHud from './WarHud';
 import StarfighterHud from './StarfighterHud';
 import LoadingVeil from '../worlds/LoadingVeil';
 import BattleEnd from './BattleEnd';
-import FlightCluster from './FlightCluster';
 import KeysCard from './KeysCard';
-import { FlightHud, HeldButton } from '../../runtime/hud';
+import { FlightHud, GameIcon, HeldButton } from '../../runtime/hud';
+import { PowerBar } from '../universe/shared/powerBar';
 
 // The galaxy's 3D view (scene.js, a world module on the world runtime:
 // ./module.js) and everything over it:
@@ -26,8 +28,9 @@ import { FlightHud, HeldButton } from '../../runtime/hud';
 // them (a click jumps you there) and, with the nose on one, the button to
 // jump to it, the other pilots' callsigns, the targeting HUD and the stick ring
 // (the universe map's own, UniverseMap.jsx's classes, the scene moves them),
-// the flight cluster (FlightCluster.jsx: radar, deflectors, speed, kills,
-// target and the crew's powers), the touch buttons, the flight settings and a line on how to
+// the flight HUD (the HUD kit's FlightHud, the universe map's own: the
+// radar, the shields, speed, kills, the target and the crew's powers in the
+// cluster, the pickups' effects over it, the overlay), the touch buttons, the flight settings and a line on how to
 // fly until you do, the Shipyard's button beside the settings' (its yard is the
 // page's: Galaxy.jsx), and the war's battle on here in a line (WarHud.jsx) with
 // its end card when it's decided (BattleEnd.jsx).
@@ -40,9 +43,8 @@ export default function GalaxyView({ system, here, handle, holo = null, ship, lo
   const [aim, setAim] = useState(null); // the star the nose is on
   const tags = useRef(null);
   const stick = useRef(null);
-  const cluster = useRef(null); // (the flight cluster: deflectors, speed, kills, the target; the scene writes it)
-  const radar = useRef(null); // (its radar's canvas)
-  const buffs = useRef(null); // (and the row of effects over it)
+  const cluster = useRef(null); // (the flight cluster, for its height on the map; the scene writes it, through the HUD's record)
+  const buffs = useRef(null); // (the row of effects over it)
   const powers = useRef(null); // (the crew's ship powers' bar, inside it: the scene writes that too)
   const hud = useRef(null);
   const [flown, setFlown] = useState(false);
@@ -82,8 +84,6 @@ export default function GalaxyView({ system, here, handle, holo = null, ship, lo
       labels,
       stars,
       stick,
-      cluster,
-      radar,
       buffs,
       powers,
       hud,
@@ -201,8 +201,6 @@ export default function GalaxyView({ system, here, handle, holo = null, ship, lo
       {meant ? (
         <>
           <LoadingVeil className="universe-loading" shown={!on} progress={progress.value} step={progress.step} title="Plotting a course to a galaxy far, far away" />
-          {on && oath && <WarHud sys={here} oath={oath} front={warInfo} />}
-          {on && <StarfighterHud front={warInfo} />}
           {on && oath && <BattleEnd front={warInfo} />}
           <ul className="universe-labels galaxy-labels" aria-label="In this system">
             {goals.map((g) => (
@@ -248,13 +246,28 @@ export default function GalaxyView({ system, here, handle, holo = null, ship, lo
             </ul>
           )}
           <div ref={tags} className="universe-tags" aria-hidden="true" />
+          {on && (
+            <FlightHud
+              flying={Boolean(ship)}
+              hudRef={hud}
+              clusterRef={cluster}
+              vitalsIcon={<RiShieldLine className="fc-shield-icon" aria-hidden="true" />}
+              speedIcon={<GameIcon name="hud:speed" className="fc-speed-icon" />}
+              over={<div ref={buffs} className="fc-buffs" aria-hidden="true" />}
+              powers={<PowerBar ship={ship} reduced={reduced} barRef={powers} onPress={onPower} placement="cluster" picks={powerPicks} carry={skillFx?.carry} />}
+              overlay={
+                <>
+                  {oath && <WarHud sys={here} oath={oath} front={warInfo} />}
+                  <StarfighterHud front={warInfo} />
+                </>
+              }
+            />
+          )}
           {ship && on && (
             <>
               <div ref={stick} className="universe-stick" aria-hidden="true">
                 <span />
               </div>
-              <FlightCluster rootRef={cluster} ship={ship} reduced={reduced} powersRef={powers} onPower={onPower} radarRef={radar} buffsRef={buffs} picks={powerPicks} carry={skillFx?.carry} />
-              <FlightHud hudRef={hud} />
               <div className="universe-climbs">
                 {climbButton(1, 'Nose up')}
                 {climbButton(-1, 'Nose down')}

@@ -125,7 +125,6 @@ import { createCluster } from './cluster';
 import { PICKUPS, createPickups } from './pickups';
 import { createPickupFx } from './pickupFx';
 import { createRadar } from '../../lib/combat/flight/radar';
-import { drawRadar } from '../../runtime/hud/flight/radarDraw';
 import { createFrame, distText, fillFlight } from '../../runtime/hud/flight/frame.js';
 import { createFlightHud } from '../../runtime/hud/flight/flightHud.js';
 import { armsView, arsenalOf, chargeFor, createArmory, createGalaxyPowers, createRounds, createUniqueArms, difficultyOf, fan, picksFor } from '../universe/shared/flying';
@@ -480,7 +479,7 @@ export async function create(canvas, ctx) {
   const powers = createGalaxyPowers({ parent: scene, reduced, hunters, war, bolts, flashes, crashFx, pops, post, state, emit, controls, strike: (...a) => strike(...a), scored: (...a) => scored(...a), teleport: (pose) => teleport(pose), laser: LASER.rebel });
   // the skill tree's four ship weapons (the universe's uniqueArms.js): fired as the guns are, played out beside the powers
   const unique = createUniqueArms({ parent: scene, reduced, foes: () => sight.foes, bolts, flashes, state, emit, strike: (from, to, shot) => guns.strike(from, to, shot, UNIQUE_HITS) });
-  const cluster = createCluster(); // (the flight cluster's writer: placeShield)
+  const cluster = createCluster(); // (the pickups' chips over the flight cluster: fillShield)
   // what a kill leaves behind (pickups.js: the rules, pickupFx.js: the drawing); none online, and none survive a jump, a landing or a crash
   const pickups = createPickups();
   // the chips over the cluster: the pickups' effects, and, back behind your
@@ -2008,49 +2007,48 @@ export async function create(canvas, ctx) {
       busy = true;
     }
     post.hit(state.hurt);
-    placeShield();
-    placeRadar();
+    fillShield();
+    fillRadar();
     powers.place(props.powers?.current ?? null, flying() && !state.crash && !state.dive && !props.frozen && !state.jump);
     return busy || Boolean(hunters?.count);
   };
 
   // ── The HUD (the page's markup, the universe map's classes) ──
-  // the flight cluster's numbers (cluster.js writes them where the page put its markup)
-  // (the one record and the one lock it carries, filled each frame: cluster.js compares what's in them)
-  const clusterLock = { name: '', dist: 0, hp: null };
-  const clusterNow = { on: false, shield: 100, low: false, speed: 0, top: 1, boosting: false, kills: 0, lock: null, arms: null };
+  // the flight cluster's parts, filled into the HUD's record (the shields,
+  // the line picked, the speed, the kills; flightHud.js writes them, and the
+  // target's card from the lock, as the universe map's are); the pickups'
+  // chips over it are the galaxy's own (cluster.js)
+  // (the records, made once and filled each frame)
+  const vitalsNow = { value: 100, max: 100, low: false };
+  const clusterPart = { on: false, vitals: vitalsNow, arms: null, abilities: null };
+  const speedPart = { v: 0, top: 1, boosting: false };
   const armsNow = { name: '', line: 'primary', index: 0, ammo: 0, max: 0, filling: 0 }; // (the record the cluster's arms are written into: armsView fills it each frame)
-  const placeShield = () => {
-    const root = props.cluster?.current;
-    if (!root) return;
-    const v = clusterNow;
-    v.on = flying() && !state.crash && !(state.jump && state.jump.phase !== 'align') && !props.frozen;
+  const fillShield = () => {
+    const on = flying() && !state.crash && !(state.jump && state.jump.phase !== 'align') && !props.frozen;
     const s = state.ship;
-    const t = v.on ? state.lockTarget : null;
-    v.shield = state.shield;
-    v.low = state.shield < 35;
-    v.speed = s?.speed ?? 0;
-    v.top = SHIP.boost * clamp(flightStats().boost ?? 1, TUNE.boost[0], TUNE.boost[1]) * pickups.mods().boost;
-    v.boosting = Boolean(state.keys.boost || state.boostBtn) && v.speed > SHIP.cruise;
-    v.kills = state.kills;
-    if (t) {
-      clusterLock.name = t.name ?? NAMES[t.kind] ?? SHIP_INFO[t.kind]?.name ?? t.kind;
-      clusterLock.dist = apart(t.at.x, t.at.y, t.at.z, s.x, s.y, s.z);
-      clusterLock.hp = (t.hpMax ?? 1) > 1 ? t.hp / t.hpMax : null;
-    }
-    v.lock = t ? clusterLock : null;
-    v.arms = state.kind ? armsView(arms(), armsNow) : null;
-    cluster.place(root, v);
-    cluster.buffs(props.buffs?.current ?? null, v.on ? buffsNow() : NO_BUFFS);
+    clusterPart.on = on;
+    vitalsNow.value = state.shield;
+    vitalsNow.low = state.shield < 35;
+    clusterPart.arms = state.kind ? armsView(arms(), armsNow) : null;
+    speedPart.v = s?.speed ?? 0;
+    speedPart.top = SHIP.boost * clamp(flightStats().boost ?? 1, TUNE.boost[0], TUNE.boost[1]) * pickups.mods().boost;
+    speedPart.boosting = Boolean(state.keys.boost || state.boostBtn) && speedPart.v > SHIP.cruise;
+    frame.cluster = clusterPart;
+    frame.speed = speedPart;
+    frame.kills = state.kills;
+    frame.alt = null; // (the galaxy's space has no floor or ceiling)
+    frame.wanted = null; // (nor its law)
+    cluster.buffs(props.buffs?.current ?? null, on ? buffsNow() : NO_BUFFS);
   };
   // the radar: its contacts gathered and drawn, at most 20 times a second (radar.js keeps its records: nothing's made per tick)
   const radar = createRadar();
   let radarLock = null; // (the lock's id this tick)
   const addHostile = (c) => radar.add(c.id, c.threat ? 'threat' : 'hostile', c.at, c.id === radarLock);
   const addAlly = (c) => radar.add(c.id, 'ally', c.at);
-  const placeRadar = () => {
-    const cv = props.radar?.current;
-    if (!cv || !flying() || state.crash || props.frozen || (state.jump && state.jump.phase !== 'align')) return;
+  const radarPart = { points: null, range: 0, dpr: 1 }; // (a tick's picture, for flightHud.js to draw)
+  const fillRadar = () => {
+    frame.radar = null; // (between ticks: the picture drawn last stays)
+    if (!flying() || state.crash || props.frozen || (state.jump && state.jump.phase !== 'align')) return;
     if (!radar.due(state.clock)) return;
     radarLock = state.lockTarget?.id ?? null;
     radar.start(state.ship);
@@ -2065,8 +2063,10 @@ export async function create(canvas, ctx) {
     if (b && b.you?.team !== null && !b.over) for (const f of b.fighters) if (f.alive && f.team === b.you.team) radar.add(f.id, 'ally', f.seen ?? f.pos);
     for (const p of pickups.list) radar.add(p.id, 'pickup', p.at); // (a number: nothing's made for it each tick; it's never the lock)
     if (state.navGoal) radar.add('nav', 'goal', state.navGoal);
-    const range = radar.range;
-    drawRadar(cv, radar.points(range), { range, dpr: Math.min(2, window.devicePixelRatio || 1) });
+    radarPart.range = radar.range;
+    radarPart.points = radar.points(radarPart.range);
+    radarPart.dpr = Math.min(2, window.devicePixelRatio || 1);
+    frame.radar = radarPart;
   };
   const placeStick = () => {
     const el = props.stick?.current;

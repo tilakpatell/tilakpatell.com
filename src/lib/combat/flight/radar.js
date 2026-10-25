@@ -1,6 +1,6 @@
 import { forward } from '../../flight/orient';
 
-// The flight cluster's radar (FlightCluster.jsx, drawn by galaxy/scene.js):
+// The flight cluster's radar (FlightHud.jsx's, filled by both maps' scene.js):
 // top-down in the ship's frame, nose up. A contact's x is to the ship's
 // right and y ahead of it, both −1…1 of the range; past the range it's
 // pinned to the rim, and one well above or below the ship says so (up).

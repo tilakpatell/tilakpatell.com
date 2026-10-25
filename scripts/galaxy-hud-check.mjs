@@ -1,4 +1,4 @@
-/* global window, document */
+/* global window, document, getComputedStyle */
 // A browser check of the galaxy's flight HUD (galaxy/FlightCluster.jsx, cluster.js, radar.js, radarDraw.js, KeysCard.jsx; the
 // course on the HUD: pages/Galaxy.jsx and scene.js). With the dev server up (npx vite --port 5188 --host 127.0.0.1, or BASE= for
 // another), and after the galaxy map check's parts (galaxy-map-check/lib.mjs: the browser, the check line):
@@ -269,8 +269,9 @@ async function run(viewport, touch) {
       }, slot);
       say(no.denied && no.word.length > 0, `a press on a power that isn't ready (${slot}) is refused and says why (${no.word})`);
     }
-    const n = await G(() => ({ shield: document.querySelector('.hud-vitals-n')?.textContent, kills: document.querySelector('.fc-kills-n')?.textContent, speed: document.querySelector('.fc-speed-n')?.textContent }));
-    say(/^\d+%$/.test(n.shield ?? ''), `the deflectors read a percentage (${n.shield})`);
+    const n = await G(() => ({ shield: document.querySelector('.hud-vitals-n')?.textContent, kills: document.querySelector('.fc-kills-n')?.textContent, speed: document.querySelector('.fc-speed-n')?.textContent, word: document.querySelector('.fc-ship .hud-label')?.textContent }));
+    say(n.word === 'Shields', `the vitals say Shields (${n.word})`);
+    say(/^\d+%$/.test(n.shield ?? ''), `the shields read a percentage (${n.shield})`);
     say(/^\d+$/.test(n.kills ?? ''), `and the kills a number (${n.kills})`);
     await page.screenshot({ path: `${out}/hud-${file}${touch ? '-touch' : ''}.png` });
     await page.keyboard.up('w');
@@ -282,6 +283,9 @@ async function run(viewport, touch) {
     const chipped = await boxes(page);
     const chips = chipped.filter((b) => b.name === 'chip');
     say(chips.length === 3, `three effects are three chips (${chips.length})`);
+    // (the chips' row and the cluster's place are the galaxy's own sheet: galaxy/flight.css, which GalaxyView brings)
+    const sheet = await G(() => ({ row: getComputedStyle(document.querySelector('.fc-buffs')).display, left: getComputedStyle(document.querySelector('.galaxy-page')).getPropertyValue('--fc-left').trim() }));
+    say(sheet.row === 'flex' && sheet.left === '176px', `the chips and the jump button take the galaxy’s sheet (${sheet.row}, ${sheet.left})`);
     const mchips = meets(chipped, tall);
     say(mchips.length === 0, `and they meet nothing${mchips.length ? ` (${mchips.join(', ')})` : ''}`);
     const outChip = chips.filter((b) => b.l < -0.5 || b.t < -0.5 || b.r > viewport.width + 0.5 || b.b > viewport.height + 0.5);

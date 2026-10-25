@@ -201,7 +201,8 @@ import { GUARD, STALE_MS } from './online/protocol';
 import { isMate } from './online/mates';
 import { createLook } from '../../runtime/look';
 import { reticleState } from '../../runtime/hud/reticle';
-import { createAbilitiesWriter, createFlightCluster } from '../../runtime/hud/cluster.js';
+import { createAbilitiesWriter } from '../../runtime/hud/cluster.js';
+import { createRadar } from '../../lib/combat/flight/radar';
 import { createFrame, distText, fillFlight } from '../../runtime/hud/flight/frame.js';
 import { createFlightHud } from '../../runtime/hud/flight/flightHud.js';
 import { clusterView } from './clusterView';
@@ -1283,6 +1284,8 @@ export async function create(canvas, ctx) {
     hot: false, // the nose is near enough the lead that a shot bends onto it
     cycle: 0, // T was pressed: on to the next target (1), or Shift+T, back one (−1)
     hitMark: 0, // the reticle's flash as a shot lands, 1 fading to 0
+    kills: 0, // the ships you've downed this flight (the cluster's count: a crew of your own starts it again)
+    killMark: 0, // the reticle's kill X as one goes down, 1 fading to 0
     bias: [0, 0, 0], // the camera's lean toward the lock, eased (the map's own frame)
     pull: 0, // how hard the Maw has you (maw.js), 0 … 1
     pullSaid: false,
@@ -2145,6 +2148,7 @@ export async function create(canvas, ctx) {
     powers.setCrew(kind, crewSkills(kind));
     setPlumes(kind, ENGINES[kind] ?? []);
     if (!same) {
+      state.kills = 0;
       traffic?.setCrew(crewAt(kind, mapSectorOf(state.ship?.x ?? 0, 0, state.ship?.z ?? 0)));
       hunters?.clear();
       meteors.clear();
@@ -2561,6 +2565,8 @@ export async function create(canvas, ctx) {
     pops.hit({ point: hh.at, normal, radius: hh.down ? hh.size * 1.8 : 0.2 });
     if (hh.down) burn(hh.at, hh.size);
     if (hh.down) {
+      state.kills += 1;
+      state.killMark = 1;
       emit({ type: 'kill', kind: hh.kind, hunter: true, ...(ram ? { ram } : null) });
       state.heat += 1;
       killed(hh);
@@ -2574,6 +2580,8 @@ export async function create(canvas, ctx) {
       net?.hunterHit(ph.id, ph.hunter, punch);
       powers.gain(ph.down ? 'kill' : 'hit', `pilots:${ph.id}:${ph.hunter}`); // (the big one charges off another pilot's hunters too, as the galaxy's does)
       if (ph.down) {
+        state.kills += 1;
+        state.killMark = 1;
         emit({ type: 'kill', kind: ph.kind, hunter: true, ...(ram ? { ram } : null) });
         if (state.helped.once(`${ph.id}:${ph.hunter}`)) pay('hunterHelped'); // (one shot off someone else's tail)
         if (!reduced) state.shake = Math.max(state.shake, 0.2);
@@ -2782,20 +2790,18 @@ export async function create(canvas, ctx) {
   };
 
   // the height gauge: where the ship is between the floor and the ceiling,
-  // shown while you fly it (brighter while it climbs or dives)
-  let altOn = false;
-  const placeAlt = () => {
-    const el = props.alt?.current;
-    if (!el) return;
+  // shown while you fly it (brighter while it climbs or dives): filled into
+  // the HUD's record (flightHud.js writes it)
+  const altPart = { on: false, alt: 0, moving: false };
+  const fillAlt = () => {
     const on = flying() && !onFoot() && state.view !== 'map' && !state.crash && !state.dive && !props.frozen;
-    if (on !== altOn) {
-      altOn = on;
-      el.toggleAttribute('data-on', on);
+    altPart.on = on;
+    if (on) {
+      const s = state.ship;
+      altPart.alt = clamp(s.y / SHIP.ceiling, -1, 1);
+      altPart.moving = Math.abs(s.vy || 0) > 0.4;
     }
-    if (!on) return;
-    const s = state.ship;
-    el.style.setProperty('--alt', clamp(s.y / SHIP.ceiling, -1, 1).toFixed(3));
-    el.toggleAttribute('data-moving', Math.abs(s.vy || 0) > 0.4);
+    frame.alt = altPart;
   };
 
   const placeStick = () => {
@@ -2883,7 +2889,7 @@ export async function create(canvas, ctx) {
     v.ship = s;
     v.hot = state.hot;
     v.hit = state.hitMark > 0;
-    v.kill = false;
+    v.kill = state.killMark > 0;
     v.static = state.static > 0;
     v.rect = state.rect;
     v.tanHalf = tanHalf;
@@ -3474,8 +3480,8 @@ export async function create(canvas, ctx) {
 
   // the flight cluster (the HUD kit's, as the galaxy has it): the shields in
   // a ship and the line picked, your health on foot (clusterView.js says
-  // when each shows); the records are filled each frame, nothing made
-  const clusterWriter = createFlightCluster();
+  // when each shows), the speed and the kills; the records are filled into
+  // the HUD's each frame (flightHud.js writes them), nothing made
   const abilitiesWriter = createAbilitiesWriter(); // (on foot, on a touch screen: the abilities' buttons in the thumbs)
   const clusterNow = { flying: false, onFoot: false, view: '', crash: false, dive: false, frozen: false, shield: 100, footInfo: null, armory: null };
   const clusterOut = clusterView(clusterNow);
@@ -3484,9 +3490,9 @@ export async function create(canvas, ctx) {
   // (written when its numbers move: the word's kind and its seconds, not a
   // string made each frame to compare)
   const wantedWas = { on: null, stars: -1, word: '', secs: -1, bounty: -1 };
-  const placeWanted = () => {
-    const el = props.wanted?.current;
-    if (!el) return;
+  const wantedPart = { on: false, stars: 0, word: '', search: false, bounty: 0 }; // (the HUD's record of it: flightHud.js writes it)
+  const fillWanted = () => {
+    frame.wanted = wantedPart;
     const r = wanted.report;
     const on = Boolean(flying() && !onFoot() && state.view !== 'map' && !state.crash && !props.frozen && (wanted.stars > 0 || wanted.bounty > 0 || Boolean(r)));
     const kind = wanted.stars ? (wanted.phase === 'search' ? 'search' : 'wanted') : r ? 'witness' : 'bounty';
@@ -3494,18 +3500,15 @@ export async function create(canvas, ctx) {
     const was = wantedWas;
     if (on === was.on && wanted.stars === was.stars && kind === was.word && secs === was.secs && wanted.bounty === was.bounty) return;
     Object.assign(was, { on, stars: wanted.stars, word: kind, secs, bounty: wanted.bounty });
-    const word = kind === 'search' ? `Searching ${secs}s` : kind === 'wanted' ? 'Wanted' : kind === 'witness' ? `Witness ${secs}s` : 'Bounty';
-    el.toggleAttribute('data-on', on);
-    el.toggleAttribute('data-search', wanted.phase === 'search');
-    el.querySelectorAll('.universe-wanted-stars i').forEach((star, i) => star.toggleAttribute('data-lit', i < wanted.stars));
-    const w = el.querySelector('.universe-wanted-word');
-    const b = el.querySelector('.universe-wanted-bounty');
-    if (w) w.textContent = word;
-    if (b) b.textContent = wanted.bounty ? `${wanted.bounty} ¢` : '';
+    // (the words made only when what they say has moved)
+    wantedPart.word = kind === 'search' ? `Searching ${secs}s` : kind === 'wanted' ? 'Wanted' : kind === 'witness' ? `Witness ${secs}s` : 'Bounty';
+    wantedPart.on = on;
+    wantedPart.search = wanted.phase === 'search';
+    wantedPart.stars = wanted.stars;
+    wantedPart.bounty = wanted.bounty;
   };
-  const placeCluster = () => {
-    const el = props.cluster?.current;
-    if (!el) return;
+  const speedPart = { v: 0, top: SHIP.boost, boosting: false };
+  const fillCluster = () => {
     // (on foot, it's your health: while there's trouble about or you're hurt)
     const c = clusterNow;
     c.flying = flying();
@@ -3517,8 +3520,44 @@ export async function create(canvas, ctx) {
     c.shield = state.shield;
     c.footInfo = c.onFoot && foot.phase === 'walk' ? foot.info() : null;
     c.armory = state.kind ? arms() : null;
-    clusterWriter.place(el, clusterView(c, clusterOut));
+    frame.cluster = clusterView(c, clusterOut);
+    // (in a ship: the speed against the boost's top, and the kills; on foot, neither)
+    const s = c.flying && !c.onFoot ? state.ship : null;
+    if (s) {
+      speedPart.v = s.speed;
+      speedPart.boosting = Boolean(state.keys.boost || state.boostBtn) && s.speed > SHIP.cruise;
+    }
+    frame.speed = s ? speedPart : null;
+    frame.kills = s ? state.kills : null;
     if (c.footInfo && props.abilities?.current) abilitiesWriter.place(props.abilities.current, c.footInfo.abilities);
+  };
+  // the radar, as the galaxy's (lib/combat/flight/radar.js gathers, the HUD
+  // draws): its contacts at most 20 times a second, the foes the sight
+  // knows, a pilot whose shots have been landing, your allies, the wing and
+  // your side at the front, and the way to go
+  const radar = createRadar();
+  const radarPart = { points: null, range: 0, dpr: 1 }; // (a tick's picture, for flightHud.js to draw)
+  let radarLock = null; // (the lock's id this tick)
+  const addHostile = (c) => radar.add(c.id, c.threat ? 'threat' : 'hostile', c.at, c.id === radarLock);
+  const fillRadar = () => {
+    frame.radar = null; // (between ticks: the picture drawn last stays)
+    if (!flying() || onFoot() || state.crash || state.dive || props.frozen || state.view === 'map') return;
+    if (!radar.due(state.clock)) return;
+    radarLock = state.lockTarget?.id ?? null;
+    radar.start(state.ship);
+    for (const c of sight.foes) addHostile(c);
+    if (pilots.count) {
+      for (const c of pilots.targets) if (c.threat) addHostile(c);
+      for (const c of pilots.mates) radar.add(c.id, 'ally', c.at);
+    }
+    if (wingmen?.active) for (const w of wingmen.ships) radar.add(w.key, 'ally', w.at);
+    const b = front?.joined !== null && front?.joined !== undefined ? front.battle : null;
+    if (b && b.you?.team !== null && !b.over) for (const f of b.fighters) if (f.alive && f.team === b.you.team) radar.add(f.id, 'ally', f.seen ?? f.pos);
+    if (hudIn.goal) radar.add('nav', 'goal', hudIn.goal.at); // (the way to go, as the last frame's HUD had it)
+    radarPart.range = radar.range;
+    radarPart.points = radar.points(radarPart.range);
+    radarPart.dpr = Math.min(2, window.devicePixelRatio || 1);
+    frame.radar = radarPart;
   };
 
   // friends in a long fight (wingmen.js): once a hunt has dragged on, or
@@ -3922,9 +3961,10 @@ export async function create(canvas, ctx) {
       state.static = Math.max(0, state.static - dt);
       busy = true;
     }
-    placeCluster();
+    fillCluster();
+    fillRadar();
     powers.place(props.powers?.current ?? null, flying() && !onFoot() && !state.crash && !state.dive && !state.jump && !props.frozen && state.view !== 'map');
-    placeWanted();
+    fillWanted();
     return busy || Boolean(hunters?.count) || later.length > 0;
   };
 
@@ -4997,7 +5037,7 @@ export async function create(canvas, ctx) {
         foot.prefetchAt(landable, { light: sunInMap[landable] ?? lightInMap().toArray(), near: friendOn(landable), entry: ahead });
       }
     }
-    placeAlt();
+    fillAlt();
     map.rotation.y = state.yaw;
     map.updateMatrixWorld();
 
@@ -5175,6 +5215,7 @@ export async function create(canvas, ctx) {
     locate();
     placeLabels();
     if (state.hitMark > 0) state.hitMark = Math.max(0, state.hitMark - dt * 4);
+    if (state.killMark > 0) state.killMark = Math.max(0, state.killMark - dt / 0.35); // (as the galaxy's)
     // the other pilots: where you are, out to them; where they are, drawn.
     // Down on a planet, it's your crew that go out (your ship's off the
     // sky: parked, the others see it on the ground), and the crews of
@@ -5258,7 +5299,7 @@ export async function create(canvas, ctx) {
     if (state.dive) return now - state.dive.start < DIVE_MS; // then the page takes over
     if (state.crash?.through) return true; // the crater glows on while the page washes out
     if (props.frozen) return false;
-    return !still() || moving || shooting || launching || sieging || fxBusy || powers.busy || powerBolts.busy || powerFlashes.busy || bursting || novaBusy || adventuring || piloting || net?.peers.size > 0 || state.kick > 0 || state.hitMark > 0 || cabWas !== state.cabK || Math.abs(state.fovBase - baseWant) > 0.01 || pulseAt || traffic?.count > 0 || state.flare > 1 || Boolean(state.jump) || Boolean(state.flight || state.drag || state.vel || state.stick?.on || state.yawTo !== null || state.blend);
+    return !still() || moving || shooting || launching || sieging || fxBusy || powers.busy || powerBolts.busy || powerFlashes.busy || bursting || novaBusy || adventuring || piloting || net?.peers.size > 0 || state.kick > 0 || state.hitMark > 0 || state.killMark > 0 || cabWas !== state.cabK || Math.abs(state.fovBase - baseWant) > 0.01 || pulseAt || traffic?.count > 0 || state.flare > 1 || Boolean(state.jump) || Boolean(state.flight || state.drag || state.vel || state.stick?.on || state.yawTo !== null || state.blend);
   }
 
   // ── Keys, while flying ──

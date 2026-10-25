@@ -1,4 +1,4 @@
-// The radar's picture (FlightCluster.jsx's canvas): rings at a half and the
+// The radar's picture (FlightHud.jsx's canvas, on both maps): rings at a half and the
 // whole range, a wedge for what's ahead, the ship in the middle, and a dot
 // per contact (radar.js placed them): red for hostiles (bigger when they're
 // on you), green allies, gold the way to go, cyan a pickup, the lock in a

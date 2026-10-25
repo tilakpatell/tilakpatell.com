@@ -13,7 +13,12 @@
 //       threats: { n, at: [{ x, y, z } × 3] } | null (on foot: left as it was),
 //       mates:   { n, at: [{ x, y, z, name } × 4] } | null (likewise),
 //       nav:     { on, x, y, z, r, way, name, dist, text },
-//       cluster, speed, kills, target, radar, wanted, alt (the cluster's parts: null for now) }
+//       the parts round the overlay, each the scene's but the target's, null where it's left as it is:
+//       cluster: the kit's cluster view ({ on, vitals, arms, abilities }); speed: { v, top, boosting }; kills;
+//       alt: { on, alt (−1…1 of the ceiling), moving }; wanted: { on, stars, word, search, bounty };
+//       radar: { points, range, dpr } (a tick's, or null between ticks);
+//       target: { name, dist, hp (0–1, or null for a one-hit one) } | null: the card, filled here
+//         from the lock it brackets while the cluster shows, one record kept }
 //   fillFlight(frame, v, project) → frame
 //     v: { on, gun (the gun line shows), foot, ship ({ x, y, z, heading, pitch } | null on foot),
 //          hot, hit, kill, static, rect, tanHalf, h (the view's height in px),
@@ -92,7 +97,7 @@ function arrows(out, max, rect, project, named) {
 }
 
 export function fillFlight(frame, v, project) {
-  if (!kept.has(frame)) kept.set(frame, { threats: frame.threats, mates: frame.mates });
+  if (!kept.has(frame)) kept.set(frame, { threats: frame.threats, mates: frame.mates, target: { name: '', dist: 0, hp: null } });
   const arrowsOf = kept.get(frame);
   const s = v.ship;
   frame.on = v.on;
@@ -130,6 +135,14 @@ export function fillFlight(frame, v, project) {
     lock.tough = v.foot ? null : (t.hpMax ?? 1) > 1;
     lock.hp = lock.tough ? t.hp / t.hpMax : 0;
   }
+  // the target's card in the cluster: the lock it brackets, while the cluster shows
+  if (t && frame.cluster?.on) {
+    const card = arrowsOf.target;
+    card.name = v.lockName;
+    card.dist = lock.dist;
+    card.hp = (t.hpMax ?? 1) > 1 ? t.hp / t.hpMax : null;
+    frame.target = card;
+  } else frame.target = null;
   // the ones coming at you that you can't see, and your allies: arrows at
   // the edge (on foot, left as they were)
   if (v.foot) {

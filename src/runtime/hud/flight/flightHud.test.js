@@ -75,3 +75,150 @@ describe('the flight HUD’s writer', () => {
     expect([again(), $.lock.at['--r'], $['lock-dist'].at.text, $.lead.at.transform]).toEqual([5, '95px', '13', 'translate3d(711.1px, 440.0px, 0)']);
   });
 });
+
+describe('the cluster’s parts (moved from galaxy/cluster.test.js)', () => {
+  // (a stand-in for each element, with the calls the writers make)
+  const clusterEl = () => {
+    const attrs = new Set();
+    const vars = new Map();
+    return {
+      textContent: '',
+      hidden: false,
+      dataset: {},
+      style: { setProperty: (k, v) => vars.set(k, v), getPropertyValue: (k) => vars.get(k) ?? '' },
+      toggleAttribute: (n, on) => (on ? attrs.add(n) : attrs.delete(n)),
+      hasAttribute: (n) => attrs.has(n),
+    };
+  };
+  // (the cluster's blocks, the kit's vitals and arms, and the parts round it: the altitude, the wanted strip, the radar)
+  const PARTS = ['.hud-vitals', '.hud-vitals-n', '.hud-arms', '.hud-arms-name', '.fc-speed', '.fc-speed-n', '.fc-kills-n', '.fc-target', '.fc-target-name', '.fc-target-dist', '.fc-target-hp', '.universe-alt', '.universe-wanted', '.universe-wanted-word', '.universe-wanted-bounty', '.fc-radar'];
+  const MANY = { '.hud-arms-line': 3, '.hud-arms-pip': 8, '.universe-wanted-stars i': 5 };
+  // (the map: the overlay's parent, holding the cluster, which is itself here)
+  const clusterDom = () => {
+    const parts = Object.fromEntries(PARTS.map((s) => [s, clusterEl()]));
+    const many = Object.fromEntries(Object.entries(MANY).map(([s, n]) => [s, Array.from({ length: n }, clusterEl)]));
+    const root = { ...clusterEl(), many, querySelectorAll: (s) => many[s] ?? [] };
+    root.querySelector = (s) => (s === '.hud-cluster' ? root : (parts[s] ?? null));
+    return root;
+  };
+  const laser = { name: 'Laser cannons', line: 'primary', index: 0, ammo: 0, max: 0, filling: 0 };
+  const mapOverlay = (map) => ({ ...clusterEl(), parentElement: map, querySelector: () => null, querySelectorAll: () => [] });
+  const fv = (frame, o = {}) => {
+    const x = { on: true, shield: 82, low: false, speed: 6, top: 12, boosting: false, kills: 3, lock: null, arms: laser, ...o };
+    frame.cluster = { on: x.on, vitals: { value: x.shield, max: 100, low: x.low }, arms: x.arms, abilities: null };
+    frame.speed = { v: x.speed, top: x.top, boosting: x.boosting };
+    frame.kills = x.kills;
+    frame.target = x.lock;
+    return frame;
+  };
+  // (one writer and one frame a case, as a map has them; place(o) a frame)
+  const setUpCluster = (draw) => {
+    const root = clusterDom();
+    const hud = createFlightHud({ distText, ...(draw ? { draw } : {}) });
+    const overlay = mapOverlay(root);
+    const frame = createFrame();
+    const place = (o) => (hud.place(overlay, fv(frame, o)), hud.writes);
+    return { root, hud, frame, place, overlay };
+  };
+
+  it('says how far the target is as the lock’s bracket does (frame.js’s distText)', () => {
+    const { root, place } = setUpCluster();
+    const said = (dist) => (place({ lock: { name: 'TIE Fighter', dist, hp: null } }), root.querySelector('.fc-target-dist').textContent);
+    expect([0.04, 9.26, 9.96, 14.2, 160.5, 1234.4].map(said)).toEqual(['0.0', '9.3', '10.0', '14', '161', '1234']);
+    expect(said(9.96)).toBe(distText(9.96));
+  });
+  it('writes the ship', () => {
+    const { root, place } = setUpCluster();
+    place();
+    expect(root.hasAttribute('data-on')).toBe(true);
+    expect(root.querySelector('.hud-vitals-n').textContent).toBe('82%');
+    expect(root.querySelector('.hud-vitals').style.getPropertyValue('--v')).toBe('0.82');
+    expect(root.querySelector('.fc-speed').style.getPropertyValue('--v')).toBe('0.5');
+    expect(root.querySelector('.fc-speed-n').textContent).toBe('SPD 60');
+    expect(root.querySelector('.fc-kills-n').textContent).toBe('3');
+  });
+  it('flags low shields and the boost', () => {
+    const { root, place } = setUpCluster();
+    place({ shield: 20, low: true, boosting: true });
+    expect(root.querySelector('.hud-vitals').hasAttribute('data-low')).toBe(true);
+    expect(root.querySelector('.fc-speed').hasAttribute('data-boost')).toBe(true);
+    place();
+    expect(root.querySelector('.hud-vitals').hasAttribute('data-low')).toBe(false);
+    expect(root.querySelector('.fc-speed').hasAttribute('data-boost')).toBe(false);
+  });
+  it('writes the target, and clears it', () => {
+    const { root, place } = setUpCluster();
+    place({ lock: { name: 'TIE Interceptor', dist: 14.2, hp: 0.5 } });
+    expect(root.querySelector('.fc-target').hasAttribute('data-on')).toBe(true);
+    expect(root.querySelector('.fc-target-name').textContent).toBe('TIE Interceptor');
+    expect(root.querySelector('.fc-target-dist').textContent).toBe('14');
+    expect(root.querySelector('.fc-target-hp').style.getPropertyValue('--v')).toBe('0.5');
+    expect(root.querySelector('.fc-target-hp').hasAttribute('data-on')).toBe(true);
+    place();
+    expect(root.querySelector('.fc-target').hasAttribute('data-on')).toBe(false);
+  });
+  it('writes the primary line, with no rack under it', () => {
+    const { root, place } = setUpCluster();
+    place();
+    expect(root.querySelector('.hud-arms').hasAttribute('data-on')).toBe(true);
+    expect(root.querySelector('.hud-arms-name').textContent).toBe('Laser cannons');
+    expect(root.many['.hud-arms-line'].map((l) => l.hasAttribute('data-on'))).toEqual([true, false, false]);
+    expect(root.many['.hud-arms-pip'].every((p) => p.hidden)).toBe(true);
+  });
+  it('shows no hull bar for a one-hit fighter', () => {
+    const { root, place } = setUpCluster();
+    place({ lock: { name: 'TIE Fighter', dist: 9.26, hp: null } });
+    expect(root.querySelector('.fc-target-dist').textContent).toBe('9.3');
+    expect(root.querySelector('.fc-target').hasAttribute('data-on')).toBe(true);
+    expect(root.querySelector('.fc-target-hp').hasAttribute('data-on')).toBe(false);
+  });
+  it('hides when not flying, and writes nothing it already wrote', () => {
+    const { root, place } = setUpCluster();
+    place();
+    const n = root.querySelector('.hud-vitals-n');
+    n.textContent = 'tampered';
+    place();
+    expect(n.textContent).toBe('tampered'); // (unchanged value: no write)
+    place({ on: false });
+    expect(root.hasAttribute('data-on')).toBe(false);
+  });
+  it('writes the altitude and wanted parts, and leaves a null one', () => {
+    const { root, frame, place } = setUpCluster();
+    frame.alt = { on: true, alt: 0.25, moving: true };
+    frame.wanted = { on: true, stars: 2, word: 'Wanted', search: false, bounty: 450 };
+    place();
+    const alt = root.querySelector('.universe-alt');
+    const wanted = root.querySelector('.universe-wanted');
+    expect([alt.hasAttribute('data-on'), alt.hasAttribute('data-moving'), alt.style.getPropertyValue('--alt')]).toEqual([true, true, '0.250']);
+    expect([wanted.hasAttribute('data-on'), root.many['.universe-wanted-stars i'].map((i) => i.hasAttribute('data-lit')), root.querySelector('.universe-wanted-word').textContent, root.querySelector('.universe-wanted-bounty').textContent]).toEqual([true, [true, true, false, false, false], 'Wanted', '450 ¢']);
+    frame.alt = null;
+    frame.wanted = null;
+    expect([place(), alt.style.getPropertyValue('--alt')]).toEqual([0, '0.250']);
+  });
+  it('finds the parts again when they come back as new ones (on foot and back in a ship)', () => {
+    const root = clusterDom();
+    const hud = createFlightHud({ distText });
+    const overlay = mapOverlay(root);
+    const frame = createFrame();
+    hud.place(overlay, fv(frame));
+    const old = root.querySelector('.fc-speed-n');
+    // (on foot the speed's parts go; back in a ship they're new elements)
+    old.isConnected = false;
+    const fresh = clusterEl();
+    const q = root.querySelector;
+    root.querySelector = (c) => (c === '.fc-speed-n' ? fresh : q(c));
+    hud.place(overlay, fv(frame, { speed: 7 }));
+    expect([fresh.textContent, old.textContent]).toEqual(['SPD 70', 'SPD 60']);
+  });
+  it('draws the radar only when its part is there', () => {
+    const calls = [];
+    const { root, frame, place } = setUpCluster((...a) => calls.push(a));
+    const P = [{ x: 0.1, y: 0.5, kind: 'hostile' }];
+    frame.radar = { points: P, range: 40, dpr: 1 };
+    place();
+    expect(calls).toEqual([[root.querySelector('.fc-radar'), P, { range: 40, dpr: 1 }]]);
+    frame.radar = null;
+    place();
+    expect(calls.length).toBe(1);
+  });
+});

@@ -3,16 +3,30 @@
 // the map's frame loop. Each value is written only when it has changed,
 // numbers compared before any string is made, so a frame that changes
 // nothing writes nothing and makes nothing; `writes` counts this frame's.
-// A part whose record is null (the arrows, on foot) is left as it was.
+// A part whose record is null (the arrows, on foot; the altitude or the
+// wanted strip a map doesn't fill) is left as it was, but the target's card:
+// null there is no target.
 //
-//   createFlightHud({ distText }) → { place(root, frame), writes }
+// The cluster's parts (FlightHud.jsx's, beside the overlay: under its
+// parent) are written too: the kit's vitals and arms by the kit's own
+// writer (runtime/hud/cluster.js), then, while the cluster shows, the speed,
+// the kills and the target's card as the galaxy's cluster wrote them; the
+// altitude and the wanted strip as the universe map wrote them; and the
+// radar drawn on a tick's points.
+//
+//   createFlightHud({ distText, draw = drawRadar }) → { place(root, frame), writes }
 //     root: the overlay's .universe-hud element, or null (nothing is written)
-//     distText(d): a distance in the map's unit, for the lock and the nav
+//     distText(d): a distance in the map's unit, for the lock, the nav and the card
+//     draw(canvas, points, { range, dpr }): the radar's picture (radarDraw.js)
 
 import { edgeOf, onScreen } from '../../../lib/combat/flight/targeting.js';
+import { createFlightCluster } from '../cluster.js';
+import { drawRadar } from './radarDraw.js';
 
-export function createFlightHud({ distText }) {
+export function createFlightHud({ distText, draw = drawRadar }) {
   let els = null;
+  const kit = createFlightCluster();
+  const radarOpts = { range: 0, dpr: 1 }; // (the radar's options, one record)
   const edge = { x: 0, y: 0, angle: 0 };
   // an element and the last of each thing written to it
   const box = (el) => (el ? { el, last: {} } : null);
@@ -21,9 +35,45 @@ export function createFlightHud({ distText }) {
     const all = (c) => [...r.querySelectorAll(c)].map(box);
     const mates = all('.universe-mate');
     for (const m of mates) m.name = box(m.el.firstChild);
-    return { root: box(r), reticle: q('.universe-reticle'), lock: q('.universe-lock'), lockName: q('.universe-lock-name'), lockDist: q('.universe-lock-dist'), lead: q('.universe-lead'), nav: q('.universe-nav'), navName: q('.universe-nav-name'), navDist: q('.universe-nav-dist'), threats: all('.universe-threat'), mates };
+    // (the cluster's parts, beside the overlay)
+    const map = r.parentElement ?? null;
+    const p = (c) => box(map?.querySelector(c) ?? null);
+    const cluster = map?.querySelector('.hud-cluster') ?? null;
+    const stars = map ? [...map.querySelectorAll('.universe-wanted-stars i')].map(box) : [];
+    return {
+      root: box(r),
+      reticle: q('.universe-reticle'),
+      lock: q('.universe-lock'),
+      lockName: q('.universe-lock-name'),
+      lockDist: q('.universe-lock-dist'),
+      lead: q('.universe-lead'),
+      nav: q('.universe-nav'),
+      navName: q('.universe-nav-name'),
+      navDist: q('.universe-nav-dist'),
+      threats: all('.universe-threat'),
+      mates,
+      cluster,
+      speed: p('.fc-speed'),
+      speedN: p('.fc-speed-n'),
+      kills: p('.fc-kills-n'),
+      target: p('.fc-target'),
+      tName: p('.fc-target-name'),
+      tDist: p('.fc-target-dist'),
+      tHp: p('.fc-target-hp'),
+      alt: p('.universe-alt'),
+      wanted: p('.universe-wanted'),
+      wantedWord: p('.universe-wanted-word'),
+      wantedBounty: p('.universe-wanted-bounty'),
+      stars,
+      radar: map?.querySelector('.fc-radar') ?? null,
+    };
   };
   const hud = { writes: 0, place };
+  // (the ship's parts of the cluster go on foot and come back as new ones: a
+  // part the record has for them that's missing or gone from the page, and
+  // they're all looked for again)
+  const lost = (b) => !b || b.el.isConnected === false;
+  const gone = (e, f) => (f.speed && (lost(e.speed) || lost(e.speedN))) || (f.radar && (!e.radar || e.radar.isConnected === false));
   // (each write goes through here: skipped when it's what's there)
   const same = (b, key, v) => {
     if (b.last[key] === v) return true;
@@ -63,6 +113,12 @@ export function createFlightHud({ distText }) {
     hud.writes++;
     b.el.style.setProperty(name, write(k));
   };
+  // a number, compared as written: k a whole number standing for what's shown
+  const put = (b, key, k, write) => {
+    if (b && !same(b, key, k)) write(b.el, k);
+  };
+  const str = (el, k) => (el.textContent = String(k));
+  const fiftieths = (el, k) => el.style.setProperty('--v', String(k / 50));
   const px = (k) => `${k}px`;
   const rad = (k) => `${(k / 1000).toFixed(3)}rad`;
   const share = (k) => (k / 1000).toFixed(3);
@@ -89,7 +145,7 @@ export function createFlightHud({ distText }) {
   function place(r, f) {
     hud.writes = 0;
     if (!r) return;
-    if (!els || els.root.el !== r) els = read(r);
+    if (!els || els.root.el !== r || gone(els, f)) els = read(r);
     flag(els.root, 'data-static', f.static);
     const { reticle, lock, lead, nav } = f;
     const e = els;
@@ -147,6 +203,54 @@ export function createFlightHud({ distText }) {
         text(e.navName, nav.name);
         dist(e.navDist, nav.dist, nav.text);
       }
+    }
+    placeCluster(e, f);
+  }
+
+  // the parts round the overlay
+  function placeCluster(e, f) {
+    if (f.cluster) kit.place(e.cluster, f.cluster);
+    if (f.cluster?.on) {
+      const sp = f.speed;
+      if (sp) {
+        const k = sp.top > 0 ? Math.min(1, Math.abs(sp.v) / sp.top) : 0;
+        put(e.speed, 'sp', Math.round(k * 50), fiftieths);
+        flag(e.speed, 'data-boost', Boolean(sp.boosting));
+        put(e.speedN, 'spn', Math.round(Math.abs(sp.v) * 10), (el, k) => (el.textContent = `SPD ${k}`));
+      }
+      if (f.kills !== null && f.kills !== undefined) put(e.kills, 'kills', f.kills, str);
+      const t = f.target;
+      flag(e.target, 'data-on', Boolean(t));
+      if (t) {
+        text(e.tName, t.name);
+        if (e.tDist && !same(e.tDist, 'td', distText(t.dist))) e.tDist.el.textContent = e.tDist.last.td;
+        const tough = t.hp !== null && t.hp !== undefined;
+        flag(e.tHp, 'data-on', tough);
+        if (tough) put(e.tHp, 'thp', Math.round(t.hp * 50), fiftieths);
+      }
+    }
+    const a = f.alt;
+    if (a && e.alt) {
+      flag(e.alt, 'data-on', a.on);
+      if (a.on) {
+        prop(e.alt, '--alt', Math.round(a.alt * 1000), share);
+        flag(e.alt, 'data-moving', a.moving);
+      }
+    }
+    const w = f.wanted;
+    if (w && e.wanted) {
+      flag(e.wanted, 'data-on', w.on);
+      flag(e.wanted, 'data-search', w.search);
+      for (let i = 0; i < e.stars.length; i++) flag(e.stars[i], 'data-lit', i < w.stars);
+      text(e.wantedWord, w.word);
+      put(e.wantedBounty, 'bounty', w.bounty, (el, k) => (el.textContent = k ? `${k} ¢` : ''));
+    }
+    const rd = f.radar;
+    if (rd && e.radar) {
+      radarOpts.range = rd.range;
+      radarOpts.dpr = rd.dpr;
+      draw(e.radar, rd.points, radarOpts);
+      hud.writes++;
     }
   }
   return hud;
