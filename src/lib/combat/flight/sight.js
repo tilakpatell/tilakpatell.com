@@ -35,6 +35,11 @@ export function createSight(state) {
   let life = 0;
   let foes = NONE;
   const pt = { x: 0, y: 0, z: 0 }; // (a tap's projection, kept)
+  // the T ring (targeting.js's track): kept from press to press while the
+  // lock is the one the sight wrote, started again once it's lost or written
+  // from outside (a tap, a pose, a check)
+  const ring = [];
+  let mine = null;
   const sight = {
     cands: NONE,
     foes: NONE,
@@ -43,7 +48,10 @@ export function createSight(state) {
       foes = sight.foes = o.foes ?? cands;
       life = o.life;
       const was = state.lock?.id ?? null;
-      state.lock = cands.length || state.lock ? track(ship, cands, state.lock, dt, { cycle: state.cycle }) : null;
+      if (state.lock !== mine) ring.length = 0;
+      state.lock = cands.length || state.lock ? track(ship, cands, state.lock, dt, { cycle: state.cycle, ring }) : null;
+      mine = state.lock;
+      if (!state.lock) ring.length = 0;
       state.cycle = 0;
       const tgt = state.lock ? (cands.find((c) => c.id === state.lock.id) ?? null) : null;
       state.lockTarget = tgt;

@@ -99,8 +99,12 @@ export function bearing(s, p) {
 // `candidates` are { id, at, vel, size, threat? } (hunters.targets; threat
 // 0 to 1, how much it's coming at you). Returns the new lock, or null. With
 // `cycle` (true or 1, or −1 the other way), moves on to the next candidate
-// round the nose (nearest the nose first).
-export function track(s, candidates, lock, dt, { cycle = false } = {}) {
+// round the nose (nearest the nose first); with `ring` too (an array of ids
+// the caller keeps from press to press), round that instead, updated in place:
+// what's no longer held drops out, what's newly held joins the end (nearest
+// the nose first), and the rest keep their order, so the nose following the
+// lock between presses doesn't turn the next press back.
+export function track(s, candidates, lock, dt, { cycle = false, ring = null } = {}) {
   const seen = [];
   for (const c of candidates) {
     const b = bearing(s, c.at);
@@ -110,7 +114,18 @@ export function track(s, candidates, lock, dt, { cycle = false } = {}) {
   seen.sort((a, b) => a.off - b.off);
   const held = (e) => e.off < AIM.hold && e.dist <= AIM.range * 1.3;
   const current = lock ? seen.find((e) => e.c.id === lock.id) : null;
-  if (cycle && seen.length) {
+  if (cycle && seen.length && ring) {
+    let w = 0;
+    for (let r = 0; r < ring.length; r++) if (seen.some((e) => e.c.id === ring[r] && held(e))) ring[w++] = ring[r];
+    ring.length = w;
+    for (const e of seen) if (held(e) && !ring.includes(e.c.id)) ring.push(e.c.id);
+    if (ring.length) {
+      const i = current ? ring.indexOf(lock.id) : -1;
+      const step = cycle === -1 ? -1 : 1;
+      const id = ring[(((i < 0 && step < 0 ? 0 : i) + step) % ring.length + ring.length) % ring.length];
+      return { id, out: 0, manual: true };
+    }
+  } else if (cycle && seen.length) {
     const ring = seen.filter(held);
     if (ring.length) {
       const i = current ? ring.findIndex((e) => e.c.id === lock.id) : -1;

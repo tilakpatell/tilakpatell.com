@@ -14,7 +14,11 @@ const TRACK_AFTER_SHOT = 1500;
 // hunters, the clock, the assist setting, reduced motion; the galaxy's war)
 export function todayLock(state, ship, cands, dt, env) {
   const was = state.lock?.id ?? null;
-  state.lock = cands.length || state.lock ? track(ship, cands, state.lock, dt, { cycle: state.cycle }) : null;
+  // (the T ring as the sight keeps it, from Task 11 on)
+  if (state.lock !== env.mine) env.ring.length = 0;
+  state.lock = cands.length || state.lock ? track(ship, cands, state.lock, dt, { cycle: state.cycle, ring: env.ring }) : null;
+  env.mine = state.lock;
+  if (!state.lock) env.ring.length = 0;
   state.cycle = 0;
   const tgt = state.lock ? (cands.find((c) => c.id === state.lock.id) ?? null) : null;
   state.lockTarget = tgt;
@@ -68,7 +72,7 @@ export function fight(map) {
   const H = ['h1', 'h2', 'h3'].map((id) => T(id, 0, 0, 0));
   H[1].threat = 1;
   const W = [T('w1', 0, 0, 0)];
-  const env = { map, hunters: H, war: W, now: 0, assist: 1, reduced: false };
+  const env = { map, hunters: H, war: W, now: 0, assist: 1, reduced: false, ring: [], mine: null };
   const tracks = (t) => H.includes(t) || (map === 'galaxy' && W.includes(t)) || env.now - b.lastShot < TRACK_AFTER_SHOT;
   const o = feed({ help: () => ({ assist: env.assist }), tracks });
   const seen = { ticks: 0, hot: 0, nudges: 0, followed: 0, unfollowed: 0 };

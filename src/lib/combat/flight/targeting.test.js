@@ -354,3 +354,14 @@ describe('out records', () => {
     expect(e).toEqual({ x: 172, y: 50, angle: 0 });
   });
 });
+
+describe('the T ring', () => {
+  const [a, b, d] = [hunter('a', [0, 0, -20]), hunter('b', [5, 0, -20]), hunter('d', [2, 0, -30])];
+  const facing = (t) => ({ ...ship, heading: aimAngles(dirTo(ship, t.at)).heading }); // (the nose on it)
+  it('drops the gone, appends the new, never re-sorts', () => {
+    const ring = ['a', 'b', 'c']; // (c gone since the last press, d new)
+    let lock = { id: 'b', out: 0, manual: true };
+    const ids = [facing(b), facing(d), ship].map((s, i) => (lock = track(s, [a, b, d], lock, 1 / 60, { cycle: [true, true, -1][i], ring })).id);
+    expect([ids, ring]).toEqual([['d', 'a', 'd'], ['a', 'b', 'd']]);
+  });
+});
