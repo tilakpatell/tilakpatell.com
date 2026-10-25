@@ -132,113 +132,121 @@ export default function FlightHud({ hudRef = null, crosshair = null, flying = tr
       page.style.removeProperty('--thumbs-w');
     };
   }, [flying, touchy]);
-  if (!flying) return <>{overlay}</>;
+  // (three places, the same with a ship or without, so the world's overlay, a battle's HUD, is never made again as one comes or goes)
   return (
     <>
-      <div ref={stickRef} className="universe-stick" aria-hidden="true">
-        <span />
-      </div>
-      {/* the ship's height: a mark on a strip at the left, brighter while it climbs or dives */}
-      <div className="universe-alt" aria-hidden="true">
-        <span className="universe-alt-mark" />
-      </div>
-      <Cluster rootRef={clusterEl} className={`fc ${className}`.trim()} label={foot ? 'On foot' : 'Flight'} over={over}>
-        {!foot && <canvas className="fc-radar" width="264" height="264" aria-hidden="true" />}
-        <Vitals className="fc-ship" label={foot ? 'Health' : 'Shields'} icon={vitalsIcon}>
-          {!foot && (
-            <>
-              <div className="hud-line fc-sub">
-                <span className="fc-speed-lead">
-                  {speedIcon}
-                  <b className="fc-speed-n">SPD 0</b>
+      {flying && (
+        <>
+          <div ref={stickRef} className="universe-stick" aria-hidden="true">
+            <span />
+          </div>
+          {/* the ship's height: a mark on a strip at the left, brighter while it climbs or dives */}
+          <div className="universe-alt" aria-hidden="true">
+            <span className="universe-alt-mark" />
+          </div>
+          <Cluster rootRef={clusterEl} className={`fc ${className}`.trim()} label={foot ? 'On foot' : 'Flight'} over={over}>
+            {!foot && <canvas className="fc-radar" width="264" height="264" aria-hidden="true" />}
+            <Vitals className="fc-ship" label={foot ? 'Health' : 'Shields'} icon={vitalsIcon}>
+              {!foot && (
+                <>
+                  <div className="hud-line fc-sub">
+                    <span className="fc-speed-lead">
+                      {speedIcon}
+                      <b className="fc-speed-n">SPD 0</b>
+                    </span>
+                    <span className="hud-label">
+                      Kills <b className="fc-kills-n">0</b>
+                    </span>
+                  </div>
+                  <span className="hud-bar fc-speed">
+                    <span />
+                  </span>
+                </>
+              )}
+            </Vitals>
+            {/* (its keys are on the keys card on the galaxy: the row has no room for them beside the radar and the target) */}
+            <Arms keys={armsKeys} />
+            {!foot && (
+              <div className="hud-glass fc-target" aria-hidden="true">
+                <span className="hud-label">Target</span>
+                <b className="fc-target-name" />
+                <span className="hud-line">
+                  <b className="fc-target-dist" />
+                  <span className="hud-keys">
+                    <kbd className="hud-cap">T</kbd> next <kbd className="hud-cap">Q</kbd> back
+                  </span>
                 </span>
-                <span className="hud-label">
-                  Kills <b className="fc-kills-n">0</b>
+                <span className="hud-bar fc-target-hp">
+                  <span />
+                </span>
+                <span className="fc-none">
+                  No target · <kbd className="hud-cap">T</kbd>
                 </span>
               </div>
-              <span className="hud-bar fc-speed">
-                <span />
-              </span>
-            </>
-          )}
-        </Vitals>
-        {/* (its keys are on the keys card on the galaxy: the row has no room for them beside the radar and the target) */}
-        <Arms keys={armsKeys} />
-        {!foot && (
-          <div className="hud-glass fc-target" aria-hidden="true">
-            <span className="hud-label">Target</span>
-            <b className="fc-target-name" />
-            <span className="hud-line">
-              <b className="fc-target-dist" />
-              <span className="hud-keys">
-                <kbd className="hud-cap">T</kbd> next <kbd className="hud-cap">Q</kbd> back
-              </span>
-            </span>
-            <span className="hud-bar fc-target-hp">
-              <span />
-            </span>
-            <span className="fc-none">
-              No target · <kbd className="hud-cap">T</kbd>
-            </span>
-          </div>
-        )}
-        {powers}
-        {row}
-      </Cluster>
-      {/* the law: stars, the word for what it's doing, the bounty on you */}
-      <div className="universe-wanted" aria-hidden="true">
-        <span className="universe-wanted-stars">
-          <i />
-          <i />
-          <i />
-          <i />
-          <i />
-        </span>
-        <b className="universe-wanted-word" />
-        <b className="universe-wanted-bounty" />
-      </div>
-      <FlightOverlay hudRef={hudRef} crosshair={crosshair} />
-      {overlay}
-      {after}
-      {/* the star the nose is on, to jump to (or the course plotted, on a touch screen): J, or this */}
-      {jump && (
-        <button type="button" className={jump.className} data-course={jump.course ? '' : undefined} style={jump.accent ? { '--star': jump.accent } : undefined} onClick={jump.onPress}>
-          <kbd className="hud-cap" aria-hidden="true">
-            J
-          </kbd>
-          <span className="universe-jump-label">Jump to {jump.name}</span>
-        </button>
-      )}
-      {/* the thumbs: every touch button in one grid in the right thumb's corner (thumbs.css lays it out, wider and lower with
-          the phone on its side), the left of the screen free to drag the ship about; no box of its own on a desktop */}
-      {controls && (
-        <div ref={thumbsEl} className="universe-thumbs">
-          {thumbs}
-          <div className="universe-climbs">
-            <HeldButton size={52} className="universe-climb" aria-label={foot ? 'Jump' : 'Nose up'} on={1} off={0} onHold={controls.climb}>
-              {climbIcon(1)}
-            </HeldButton>
-            {!foot && (
-              <HeldButton size={52} className="universe-climb" aria-label="Nose down" on={-1} off={0} onHold={controls.climb}>
-                {climbIcon(-1)}
-              </HeldButton>
             )}
+            {powers}
+            {row}
+          </Cluster>
+          {/* the law: stars, the word for what it's doing, the bounty on you */}
+          <div className="universe-wanted" aria-hidden="true">
+            <span className="universe-wanted-stars">
+              <i />
+              <i />
+              <i />
+              <i />
+              <i />
+            </span>
+            <b className="universe-wanted-word" />
+            <b className="universe-wanted-bounty" />
           </div>
-          <button type="button" className="universe-view" onPointerDown={pressed(controls.view)} onContextMenu={noMenu}>
-            {foot ? 'Switch' : 'View'}
-          </button>
-          {controls.weapon && (
-            <button type="button" className="universe-weapon" onPointerDown={pressed(controls.weapon)} onContextMenu={noMenu}>
-              Weapon
+          <FlightOverlay hudRef={hudRef} crosshair={crosshair} />
+        </>
+      )}
+      {overlay}
+      {flying && (
+        <>
+          {after}
+          {/* the star the nose is on, to jump to (or the course plotted, on a touch screen): J, or this */}
+          {jump && (
+            <button type="button" className={jump.className} data-course={jump.course ? '' : undefined} style={jump.accent ? { '--star': jump.accent } : undefined} onClick={jump.onPress}>
+              <kbd className="hud-cap" aria-hidden="true">
+                J
+              </kbd>
+              <span className="universe-jump-label">Jump to {jump.name}</span>
             </button>
           )}
-          <HeldButton className="universe-fire" onHold={controls.fire}>
-            Fire
-          </HeldButton>
-          <HeldButton size={76} className="universe-boost" onHold={controls.boost}>
-            {foot ? 'Run' : 'Boost'}
-          </HeldButton>
-        </div>
+          {/* the thumbs: every touch button in one grid in the right thumb's corner (thumbs.css lays it out, wider and lower with
+              the phone on its side), the left of the screen free to drag the ship about; no box of its own on a desktop */}
+          {controls && (
+            <div ref={thumbsEl} className="universe-thumbs">
+              {thumbs}
+              <div className="universe-climbs">
+                <HeldButton size={52} className="universe-climb" aria-label={foot ? 'Jump' : 'Nose up'} on={1} off={0} onHold={controls.climb}>
+                  {climbIcon(1)}
+                </HeldButton>
+                {!foot && (
+                  <HeldButton size={52} className="universe-climb" aria-label="Nose down" on={-1} off={0} onHold={controls.climb}>
+                    {climbIcon(-1)}
+                  </HeldButton>
+                )}
+              </div>
+              <button type="button" className="universe-view" onPointerDown={pressed(controls.view)} onContextMenu={noMenu}>
+                {foot ? 'Switch' : 'View'}
+              </button>
+              {controls.weapon && (
+                <button type="button" className="universe-weapon" onPointerDown={pressed(controls.weapon)} onContextMenu={noMenu}>
+                  Weapon
+                </button>
+              )}
+              <HeldButton className="universe-fire" onHold={controls.fire}>
+                Fire
+              </HeldButton>
+              <HeldButton size={76} className="universe-boost" onHold={controls.boost}>
+                {foot ? 'Run' : 'Boost'}
+              </HeldButton>
+            </div>
+          )}
+        </>
       )}
     </>
   );

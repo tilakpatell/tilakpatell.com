@@ -435,7 +435,7 @@ body:has(.universe-panel) .guide-btn { display: none; }
   background: rgb(3 4 10 / 0.55);
   color: rgb(255 255 255 / 0.85);
   font-family: var(--font-mono);
-  font-size: 0.66rem;
+  font-size: 0.7rem;
   letter-spacing: 0.12em;
   text-transform: uppercase;
   white-space: nowrap;

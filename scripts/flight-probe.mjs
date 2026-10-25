@@ -18,6 +18,7 @@
 //   reach         seismic charges picked: the lead pip on at 6 out, off at 12
 //   tap           a tap on a character in front of a planet locks on to it, by hand
 //   threats       a character on you, 20 behind: its threat arrow, and no lock
+//   wing-radar    a wing called up on the universe map: the radar draws them, as allies
 //
 // Each finding is a line, `ok   …` or `FAIL …`; the exit code is how many
 // FAILs. A Chromium: CHROMIUM (CHROME for the galaxy's), else the
@@ -37,7 +38,7 @@ const flag = (k, d = null) => {
 const url = String(flag('url', 'http://127.0.0.1:5188')).replace(/\/$/, '');
 const line = Number(flag('line', 0));
 const shotDir = flag('shot') ? resolve(flag('shot')) : null;
-const SCENARIOS = ['order', 'crash', 'galaxy-bolt', 'unique-pilots', 'galaxy-capital', 'reach', 'tap', 'threats'];
+const SCENARIOS = ['order', 'crash', 'galaxy-bolt', 'unique-pilots', 'galaxy-capital', 'reach', 'tap', 'threats', 'wing-radar'];
 if (!SCENARIOS.includes(scenario)) throw new Error(`usage: flight-probe.mjs <${SCENARIOS.join('|')}> [--line 0|1|2] [--expect clear] [--shot dir] [--url …]`);
 
 let failed = 0;
@@ -320,6 +321,29 @@ async function threats(page) {
   say(got.arrows === 1 && got.lock === null, `Vader 20 behind: one threat arrow, no lock (${got.arrows} arrow${got.arrows === 1 ? '' : 's'}, ${got.lock === null ? 'no lock' : `locked on ${got.lock}`})`);
 }
 
+// at the far rim, the hunters gone, two X-wings called up on you: a few frames on, the radar's allies' green (the scene's
+// fillRadar reads the wing as it is: a page error if it can't)
+async function wingRadar(page) {
+  const got = await page.evaluate(async () => {
+    const d = window.__universeDebug;
+    const u = window.__universe();
+    await u.pose('far-rim');
+    d.hunters?.clear();
+    if (!d.wingmen) return { skipped: 'no wingmen' };
+    d.wingmen.join('xwing', d.state.ship, 2);
+    await u.frames(6);
+    const cv = document.querySelector('.fc-radar');
+    if (!cv) return { wing: d.wingmen.active, green: null };
+    const { data } = cv.getContext('2d').getImageData(0, 0, cv.width, cv.height);
+    let green = 0;
+    for (let i = 0; i < data.length; i += 4) if (data[i + 3] >= 90 && data[i + 1] > 200 && data[i] < 160 && data[i + 2] < 190) green++;
+    return { wing: d.wingmen.active, green };
+  });
+  await shoot(page, 'wing-radar');
+  if (got.skipped) return say(false, `a wing on the radar (${got.skipped})`);
+  say(got.wing && got.green > 5, `a wing called up is on the radar, green (${got.wing ? 'wing up' : 'no wing'}; ${got.green ?? 'no radar'} green px)`);
+}
+
 const galaxy = scenario === 'galaxy-bolt' || scenario === 'unique-pilots' || scenario === 'galaxy-capital';
 const { browser, page, errors } = galaxy ? await openGalaxy() : await openUniverse();
 try {
@@ -331,6 +355,7 @@ try {
   if (scenario === 'reach') await reach(page);
   if (scenario === 'tap') await tap(page);
   if (scenario === 'threats') await threats(page);
+  if (scenario === 'wing-radar') await wingRadar(page);
 } catch (e) {
   say(false, `${scenario}: ${String(e.message ?? e).split('\n')[0]}`);
 }

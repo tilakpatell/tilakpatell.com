@@ -3550,7 +3550,7 @@ export async function create(canvas, ctx) {
       for (const c of pilots.targets) if (c.threat) addHostile(c);
       for (const c of pilots.mates) radar.add(c.id, 'ally', c.at);
     }
-    if (wingmen?.active) for (const w of wingmen.ships) radar.add(w.key, 'ally', w.at);
+    if (wingmen?.active) for (const w of wingmen.ships) if (w.alive) radar.add(w.id, 'ally', w.pos); // (the rules' own records, as the galaxy's)
     const b = front?.joined !== null && front?.joined !== undefined ? front.battle : null;
     if (b && b.you?.team !== null && !b.over) for (const f of b.fighters) if (f.alive && f.team === b.you.team) radar.add(f.id, 'ally', f.seen ?? f.pos);
     if (hudIn.goal) radar.add('nav', 'goal', hudIn.goal.at); // (the way to go, as the last frame's HUD had it)

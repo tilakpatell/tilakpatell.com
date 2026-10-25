@@ -264,7 +264,7 @@ for (const tier of tiers) {
             const { data } = cv.getContext('2d').getImageData(0, 0, cv.width, cv.height);
             for (let i = 3; i < data.length; i += 4) if (data[i] >= 8) radarPx++;
           }
-          return { lockDist: said('.universe-lock-dist'), lockUnits: at && s.ship ? Math.hypot(at.x - s.ship.x, at.y - s.ship.y, at.z - s.ship.z) : null, lockName: said('.universe-lock-name'), cardName: said('.fc-target-name'), speed: said('.fc-speed-n'), radarPx };
+          return { lockDist: said('.universe-lock-dist'), lockUnits: at && s.ship ? Math.hypot(at.x - s.ship.x, at.y - s.ship.y, at.z - s.ship.z) : null, lockName: said('.universe-lock-name'), cardName: said('.fc-target-name'), speed: said('.fc-speed-n'), clusterOn: Boolean(document.querySelector('.fc')?.hasAttribute('data-on')), radarPx };
         });
         await page.evaluate(() => {
           const style = document.createElement('style');
@@ -284,7 +284,8 @@ for (const tier of tiers) {
         if (!/^\d+(\.\d)?$/.test(hud.lockDist ?? '') || Math.abs(Number(hud.lockDist) - hud.lockUnits) > 1) fail(`${tier} ${name}: the lock says ${hud.lockDist}, ${hud.lockUnits.toFixed(1)} units off`);
         // (and the cluster's parts, on the universe map too: the target's card names the lock, the speed reads, the radar's drawn)
         if (hud.cardName !== hud.lockName) fail(`${tier} ${name}: the target's card says ${hud.cardName}, the lock ${hud.lockName}`);
-        if (!/^SPD \d+$/.test(hud.speed ?? '')) fail(`${tier} ${name}: the speed reads ${hud.speed}`);
+        // (written, not the markup's own SPD 0: the cluster's on only once the writer has been at it)
+        if (!hud.clusterOn || !/^SPD \d+$/.test(hud.speed ?? '')) fail(`${tier} ${name}: the speed reads ${hud.speed}${hud.clusterOn ? '' : ', the cluster off'}`);
         if (hud.radarPx < 300) fail(`${tier} ${name}: the radar has ${hud.radarPx} pixels drawn`);
       }
       console.log(`ok   ${tier.padEnd(4)} ${name.padEnd(20)} calls ${String(numbers.calls).padStart(4)}  tris ${String(numbers.triangles).padStart(8)}  ${String(numbers.frameMs).padStart(6)} ms  entropy ${metrics.colorEntropyBits}  edges ${metrics.edgeDensity}  contrast ${metrics.luminance.contrast}${numbers.shipPx ? `  ship ${numbers.shipPx.w} × ${numbers.shipPx.h} px` : ''}${args.lock ? `  lock ${lock?.held ? 'held' : lock?.skipped ?? 'none'}` : ''}  (${((Date.now() - t0) / 1000).toFixed(0)} s)`);
