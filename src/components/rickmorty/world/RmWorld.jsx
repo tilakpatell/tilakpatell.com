@@ -94,6 +94,8 @@ import { chaseCalls, chaseGoal, chaseReadout, chaseStart, newChase, shaken, step
 import { FRICTION, coneFor } from '../../../lib/combat/aim';
 import { createLockOn } from '../../../lib/combat/lockOn';
 import { stepRmLockOn } from './rmLockOn';
+import { padActs, padFiring } from './padActs';
+import { dialPad } from './dimensions/dialKey';
 
 // Dimension C-137, the world: walk about the Smiths' street as Morty, go into
 // the house, Rick's garage and Harry Herpson High, fly Rick's space cruiser
@@ -613,6 +615,10 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
   const trialRef = useRef(newTrial());
   const wardrobeRef = useRef(wardrobe);
   wardrobeRef.current = wardrobe || dialing || !!trial;
+  const dialPadRef = useRef(false); // (the dial's up: the pad's presses are its keys)
+  dialPadRef.current = dialing || !!trial;
+  const overRef = useRef(open); // (a place open over the page, the sewer's or a cabinet's: the pad's for it)
+  overRef.current = open;
   const closeWardrobe = useCallback(() => setWardrobe(false), []);
   const closeDial = useCallback(() => setDialing(false), []);
   const pickDial = useCallback(
@@ -1523,15 +1529,17 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
     const raw = readPad();
     const before = s.padBefore;
     s.padBefore = raw ?? {};
-    const pad = wardrobeRef.current ? null : raw; // (the wardrobe's open over him: the pad's for it)
-    const pressed = (b) => pad?.[b] && !before[b];
-    if (pressed('a')) fns.current.act();
-    if (pressed('x') && s.rickall) fns.current.shoot();
-    if (pressed('b') && listRef.current) closeList();
-    if (pressed('y')) {
-      if (listRef.current) closeList();
-      else setList(true);
+    // (the wardrobe or a place open over him: the pad's for it; the dial's, it's the dial's keys: ./dimensions/dialKey.js)
+    const pad = wardrobeRef.current || overRef.current ? null : raw;
+    if (dialPadRef.current) for (const key of dialPad(raw, before)) window.dispatchEvent(new KeyboardEvent('keydown', { key }));
+    // (./padActs.js: A uses, X jumps, Y and B the list, in a fight RT fires and LT locks on, any press shuts a card)
+    for (const a of padActs(pad, before, { card: cardRef.current != null, list: Boolean(listRef.current), duel: Boolean(s.duel), rickall: Boolean(s.rickall), flying: Boolean(s.flying) })) {
+      if (a === 'jump') {
+        s.jump = true;
+        s.press.press();
+      } else ({ closeCard, act: () => fns.current.act(), shoot: () => fns.current.shoot(), fire: () => fns.current.fire(), lock: toggleLock, openList: () => setList(true), closeList })[a]();
     }
+    s.padFiring = padFiring(pad, { flying: Boolean(s.flying) });
 
     // the emote wheel's look, when it changes; Morty's emote, over once its
     // clip is, once he walks off (but for a wave), or once he does anything
@@ -1666,7 +1674,7 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
     let fightHits = null;
     if (fight) {
       let hurt = 0;
-      if (s.firing && s.flying) fight.fire(s.t, s.c, s.fed, cruiser?.cadence ?? 1);
+      if ((s.firing || s.padFiring) && s.flying) fight.fire(s.t, s.c, s.fed, cruiser?.cadence ?? 1);
       for (const e of fight.step(dt, s.t, { cruiser: s.c, at: s.fed, flying: s.flying, stats: cruiser })) {
         if (e.type === 'hit') (fightHits ??= []).push(e.at);
         else if (e.type === 'down') {

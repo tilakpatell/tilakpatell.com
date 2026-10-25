@@ -214,8 +214,8 @@ export default function RmHud({
                 <em>{enemyShare(duel.hp, duel.max)}%</em>
               </div>
               <span className="sr-only">Morty: {health.value} of 100.</span>
-              <span className="rm-fight-hint">{touch ? 'The star fires. Keep out of reach.' : 'F fires. Keep out of reach.'}</span>
-              {!touch && <span className="rm-fight-hint">Tab locks on: Morty turns to face them.</span>}
+              <span className="rm-fight-hint">{touch ? 'The star fires. Keep out of reach.' : 'F fires (RT on a pad). Keep out of reach.'}</span>
+              {!touch && <span className="rm-fight-hint">Tab locks on (LT on a pad): Morty turns to face them.</span>}
             </div>
           )}
           {clock != null && (

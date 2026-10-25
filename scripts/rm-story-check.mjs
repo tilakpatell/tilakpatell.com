@@ -39,8 +39,9 @@ import { AT_THE_CITADEL } from './rm-story/citadel.mjs';
 import { SECTOR_CHECKS } from './rm-story/sector.mjs';
 import { SCORE_CHECKS } from './rm-story/score.mjs';
 import { EVIL_CHECKS } from './rm-story/evil.mjs';
+import { PAD_CHECKS } from './rm-story/pad.mjs';
 
-const SCENARIOS = { ...BASICS, ...EARLY, ...LATE, ...AT_THE_CITADEL, ...SECTOR_CHECKS, ...SCORE_CHECKS, ...EVIL_CHECKS };
+const SCENARIOS = { ...BASICS, ...EARLY, ...LATE, ...AT_THE_CITADEL, ...SECTOR_CHECKS, ...SCORE_CHECKS, ...EVIL_CHECKS, ...PAD_CHECKS };
 
 const only = process.argv.slice(2);
 for (const n of only) if (!SCENARIOS[n]) throw new Error(`no scenario ${n} (there are ${Object.keys(SCENARIOS).join(', ')})`);

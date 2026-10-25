@@ -11,12 +11,12 @@ import { check, use, reads, at, opens, toast, playTo, later, warpUse, warp, caug
 const [DOME, LAIR, EYEPATCH, BENCH_STEP] = EVIL.steps;
 // a stand in Rick's garage where the bench (the dial) is the nearest thing
 const BENCH = [-301.75, 100.15, Math.PI];
-const WHO = { blooddome: 'hemorrhage', evilrick: 'evilrick' };
-const huntOf = (area) => PLACES.dest(area).people.find((p) => p.id === WHO[area]).ai.hunt;
-const him = (page, area) => page.evaluate(([a, w]) => window.__C137__.api.act(a, 'npcs').find((n) => n.id === w), [area, WHO[area]]);
+export const WHO = { blooddome: 'hemorrhage', evilrick: 'evilrick' };
+export const huntOf = (area) => PLACES.dest(area).people.find((p) => p.id === WHO[area]).ai.hunt;
+export const him = (page, area) => page.evaluate(([a, w]) => window.__C137__.api.act(a, 'npcs').find((n) => n.id === w), [area, WHO[area]]);
 const said = (area, id) => PLACES.dest(area).say[id].text;
 // the fight on: its panel up, and the sim's duel his
-const fightOn = (page, area) =>
+export const fightOn = (page, area) =>
   page.waitForFunction((w) => window.__C137__.sim.duel?.who === w && Boolean(document.querySelector('.rm-fight')), WHO[area], { timeout: 15000, polling: 100 }).catch(() => {
     throw new Error(`the fight with ${WHO[area]} didn’t start`);
   });
@@ -27,7 +27,7 @@ const noFight = async (page, when) => {
 // a stand `r` m from him, facing him: from the way in round, the first of
 // eight bearings inside the place, a metre clear of its solids and with
 // none between them (a figure facing f looks along (cos f, −sin f))
-function standOff(area, h, r) {
+export function standOff(area, h, r) {
   const d = PLACES.dest(area);
   const inside = (x, z, m) => d.solids.some((o) => (o.r != null ? Math.hypot(x - o.x, z - o.z) < o.r + m : Math.abs(x - o.x) < o.w / 2 + m && Math.abs(z - o.z) < o.d / 2 + m));
   for (const b of [0, 1, -1, 2, -2, 3, -3, 4].map((k) => (k * Math.PI) / 4)) {
@@ -161,7 +161,7 @@ export const EVIL_CHECKS = {
     await warpUse(page, 'blooddome', 'ring', ...spotAt('blooddome', 'ring'));
     await fightOn(page, 'blooddome');
     const hint = await page.locator('.rm-fight').textContent();
-    check(hint.includes('F fires. Keep out of reach.') && hint.includes('Tab locks on'), `the fight’s hint reads “${hint}”`);
+    check(hint.includes('F fires (RT on a pad). Keep out of reach.') && hint.includes('Tab locks on (LT on a pad)'), `the fight’s hint reads “${hint}”`);
     await later(page, 0.3);
     check((await page.evaluate(() => window.__C137__.sim.near?.id ?? null)) !== 'ring', 'the ring stayed in reach mid-fight');
     await win(page, 'blooddome');

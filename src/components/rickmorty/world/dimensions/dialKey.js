@@ -11,3 +11,18 @@ export function dialKey(e) {
   if (e.key === 'Escape') return e.repeat ? 'ignore' : 'close';
   return null;
 }
+
+// …and a controller's presses there (../../games/pad.js's readings, this
+// frame's and the last), as the keys they stand for: the d-pad or the stick
+// turns it, A sets it, B puts the gun down (RmWorld hands them to the dial)
+const STICK = 0.5;
+export function dialPad(now, before) {
+  if (!now) return [];
+  const was = before ?? {};
+  const out = [];
+  if ((now.down && !was.down) || (now.ly > STICK && !(was.ly > STICK))) out.push('ArrowDown');
+  if ((now.up && !was.up) || (now.ly < -STICK && !(was.ly < -STICK))) out.push('ArrowUp');
+  if (now.a && !was.a) out.push('Enter');
+  if (now.b && !was.b) out.push('Escape');
+  return out;
+}
