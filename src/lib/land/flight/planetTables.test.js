@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ROUND_ROUGH, TYPE_BIOMES, WATER_LOOKS, roundBiomes, waterColourOf } from './planetTables';
+import { ROUND_ROUGH, TYPE_BIOMES, WATER_LOOKS, byteOf, linearOf, roundBiomes, waterColourOf, waterLinearOf } from './planetTables';
 
 const ROUND = ['ice', 'desert', 'forest', 'lava', 'ocean', 'rock'];
 
@@ -42,5 +42,25 @@ describe('the water sheets', () => {
     expect(r).toBeGreaterThan(Math.round(0.15 * 255));
     expect(waterColourOf({ kind: 'sea', level: 0 }, '#3ad0c8')).toMatch(/^#[0-9a-f]{6}$/);
     for (const w of [null, undefined, { kind: 'clouds', level: -380 }]) expect(waterColourOf(w, '#ffffff'), String(w?.kind)).toBeNull();
+  });
+
+  it('are that colour in linear light before it’s written as bytes', () => {
+    for (const [w, accent] of [[{ kind: 'sea', level: 0 }, '#3ad0c8'], [{ kind: 'lava', level: 0 }, '#ff8800'], [{ kind: 'sea', level: 0, colour: '#204060' }, '#0a0b0c']]) {
+      const c = waterLinearOf(w, accent);
+      expect(`#${c.map((v) => byteOf(v).toString(16).padStart(2, '0')).join('')}`).toBe(waterColourOf(w, accent));
+    }
+    expect(waterLinearOf({ kind: 'clouds', level: -380 }, '#ffffff')).toBeNull();
+  });
+});
+
+describe('the colour curves', () => {
+  it('read a byte into linear light and write it back as the same byte, as three’s do', () => {
+    for (let v = 0; v < 256; v++) {
+      const hex = `#${v.toString(16).padStart(2, '0').repeat(3)}`;
+      expect(linearOf(hex).map(byteOf), hex).toEqual([v, v, v]);
+    }
+    expect(linearOf('#ff0000')).toEqual([1, 0, 0]);
+    // halfway in linear light is sRGB 188; past the ends is clamped
+    expect([byteOf(0.5), byteOf(-1), byteOf(2)]).toEqual([188, 0, 255]);
   });
 });
