@@ -33,16 +33,18 @@
 //   of the first n candidates (four numbers each: where, and the radius),
 //   the indices within far + r of cam, the nearest max kept (a tie to the
 //   lower index), far to near; written into `out` when it's long enough
-// createDiscs(far, { budget, built }) → { feed(sectors, cam, t), setBudget(budget), edge() }
+// createDiscs(far, { budget, built }) → { feed(sectors, cam, t, shares), setBudget(budget), edge() }
 //   far: the far layer; budget: universe/budget.js's row (its `discs`);
 //   built: () → the systems built in full (near.js's built()): their ids,
 //   an array or a set, each given up by its own reach; or a map of each id
 //   to the reach it's built within, given up by that; or none, to take
 //   every system within its reach as built
-//   feed(sectors, cam, t): a frame's. The sectors through addBodies (null
-//   for none), where the camera is (the far layer's parent's space, the
-//   map's) and the shared clock in seconds (orbits.js's spaceTime). It
-//   allocates nothing for a body.
+//   feed(sectors, cam, t, shares): a frame's. The sectors through addBodies
+//   (null for none), where the camera is (the far layer's parent's space,
+//   the map's), the shared clock in seconds (orbits.js's spaceTime) and how
+//   much of each sector shows (0 … 1, one a sector in its order: a sector
+//   come in fading in; none, and all of each). It allocates nothing for a
+//   body.
 //   setBudget(budget): a new row, from the pace's step
 //   edge(): where its budget ends as of the last feed, the far plane while
 //   all within it fit (or none's been fed): where the far layer's specks
@@ -167,12 +169,13 @@ export function createDiscs(far, { budget, built = null }) {
   };
 
   return {
-    feed(sectors, cam, t = 0) {
+    feed(sectors, cam, t = 0, shares = null) {
       n = 0;
       const held = built ? built() : null;
       for (let i = 0; i < sectors.length; i++) {
         const sector = sectors[i];
-        if (!sector) continue;
+        const share = shares ? shares[i] : 1;
+        if (!sector || !(share > 0)) continue;
         const { systems, wonders } = sector;
         for (let j = 0; j < systems.length; j++) {
           const s = systems[j];
@@ -181,7 +184,7 @@ export function createDiscs(far, { budget, built = null }) {
           if (!(dS <= FAR + 2 * s.reach)) continue;
           const reach = held ? reachOf(held, s) : s.reach;
           REACH.reach = reach;
-          const hand = reach < 0 ? 1 : 1 - levelWeights(dS, REACH, W).full;
+          const hand = share * (reach < 0 ? 1 : 1 - levelWeights(dS, REACH, W).full);
           if (!(hand > 0)) continue;
           add(s.at, s.star.size, s.star.color, null, hand, s.id);
           const { planets } = s;
@@ -202,7 +205,7 @@ export function createDiscs(far, { budget, built = null }) {
           const lk = WONDER[w.kind] ?? WONDER.rogue;
           SPECK.r = w.size * WONDER_SPECK;
           REACH.reach = realAt(SPECK);
-          const hand = 1 - levelWeights(distTo(w.at, cam), REACH, W).full;
+          const hand = share * (1 - levelWeights(distTo(w.at, cam), REACH, W).full);
           if (hand > 0) add(w.at, w.size * lk.r, lk.dark ?? lk.color, null, hand, w.id);
         }
       }

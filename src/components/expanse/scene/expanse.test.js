@@ -9,7 +9,7 @@ import { orbitAt, spaceTime } from '../gen/orbits';
 import { makeSector } from '../gen/sector';
 import { UNIVERSE } from '../gen/seed';
 import { addBodies } from '../gen/systems';
-import { FAR } from './levels';
+import { FAR, levelWeights } from './levels';
 import { createNear, strengthOf } from './near';
 import { starsOf } from './specks';
 import { universeBudget } from '../../universe/shared/far';
@@ -385,6 +385,28 @@ describe('the Expanse, everywhere', () => {
     ex.setStep(0, false);
     expect(await until(ex, [0, 0, 0], whole(pool, far, [0, 0, 0]))).toBe(true);
     expect(pool.askedFor(POOLS.beyond)).toHaveLength(2);
+    ex.dispose();
+  });
+
+  it('fades a place’s discs in as it comes, as its specks, and keeps them whole when a sector’s made again', async () => {
+    const { pool, far, ex } = expanseOf();
+    // (the core's stand-in star, 30,000 above home: a disc from there)
+    const alpha = () => far.frames.at(-1)?.find((row) => row[11] === 'E:0,0:0')?.[10] ?? 0;
+    const seen = [];
+    for (let i = 0; i < 60; i++) {
+      await frame(ex, [0, 0, 0]);
+      seen.push(alpha());
+    }
+    const whole = levelWeights(30000, { reach: 400 }).disc;
+    expect(seen.at(-1)).toBeCloseTo(whole, 6);
+    for (let i = 1; i < seen.length; i++) expect(seen[i] - seen[i - 1]).toBeLessThanOrEqual(whole / 30 + 1e-9);
+    expect(seen.filter((a) => a > 0 && a < whole).length).toBeGreaterThan(10);
+    ex.reload('E:0,0');
+    for (let i = 0; i < 5; i++) {
+      await frame(ex, [0, 0, 0]);
+      expect(alpha()).toBeCloseTo(whole, 6);
+    }
+    expect(pool.askedFor(POOLS.sector).filter((m) => m.sx === 0 && m.sy === 0 && m.sz === 0)).toHaveLength(2);
     ex.dispose();
   });
 

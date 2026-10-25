@@ -129,6 +129,23 @@ describe('the discs, fed', () => {
     expect(got.get(B.id).alpha).toBeCloseTo(levelWeights(40000, { reach: B.reach }).disc, 12);
   });
 
+  it('takes each sector’s share of itself, so a sector come in fades in: everything of it, and only it', () => {
+    const far = fakeFar();
+    const discs = createDiscs(far, { budget: { discs: 100 } });
+    const cam = between();
+    const other = { ...SECTOR, id: 'E:9,8', systems: [], wonders: [] };
+    discs.feed([other, SECTOR], cam, 0, [1, 0.25]);
+    let got = far.byId();
+    for (const id of ALL_A) expect(got.get(id)?.alpha, id).toBeCloseTo(0.25, 12);
+    expect(got.get(B.id).alpha).toBeCloseTo(0.25 * levelWeights(40000, { reach: B.reach }).disc, 12);
+    // none of it, and none drawn; whole, as with no shares
+    discs.feed([SECTOR], cam, 0, [0]);
+    expect(far.last()).toEqual([]);
+    discs.feed([SECTOR], cam, 0, [1]);
+    got = far.byId();
+    for (const id of ALL_A) expect(got.get(id)?.alpha, id).toBe(1);
+  });
+
   it('pushes nothing from a sector past the far plane', () => {
     const far = fakeFar();
     createDiscs(far, { budget: { discs: 100 } }).feed([SECTOR], [0, 0, 0], 0);

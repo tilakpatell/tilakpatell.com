@@ -18,9 +18,10 @@
 // (sectors.js); its stars and wonders as a slot of specks in the far layer,
 // past the far plane, and each ring beyond in a slot of its own; within the
 // far plane its stars, planets, moons and wonders as discs (discs.js), fed
-// every frame, the specks coming in where their budget ends; and the
-// nearest systems built whole (near.js). Planets and moons go round on the
-// shared clock (orbits.js's spaceTime of the wall time it's given).
+// every frame, faded in over PLACE_IN as its sector comes, the specks
+// coming in where their budget ends; and the nearest systems built whole
+// (near.js). Planets and moons go round on the shared clock (orbits.js's
+// spaceTime of the wall time it's given).
 //
 // The centre drawn. The far layer draws one centre's 3 × 3 × 3 and rings,
 // whole. Once the ship is SWAP_PAST into the next sector (so one sitting on
@@ -181,9 +182,13 @@ export function createExpanse(parent, { universe = UNIVERSE, workers = null, far
   const asked = new Map(); // job key → the job, till it's taken or let go
   const landed = []; // [job key, job, answer], taken one a frame
   let sectorList = [];
+  let entries = [];
+  let shares = new Float64Array(0); // (how much of each sector's discs show: faded in as it comes)
   let systems = [];
   const relist = () => {
-    sectorList = [...byId.values()];
+    entries = [...held.values()];
+    sectorList = entries.map((e) => e.sector);
+    if (shares.length < entries.length) shares = new Float64Array(2 * entries.length);
     systems = sectorList.flatMap((s) => s.systems);
   };
   let drawnAt = null; // the centre the far layer draws, [sx, sy, sz]
@@ -260,7 +265,7 @@ export function createExpanse(parent, { universe = UNIVERSE, workers = null, far
     const sector = withMoons(answer.sector);
     const drawn = make(sector, { tier, reduced });
     root.add(drawn.group);
-    const e = { id: sector.id, cell: job.cell, sector, stars: answer.stars, drawn, slot: -1, shown: false };
+    const e = { id: sector.id, cell: job.cell, sector, stars: answer.stars, drawn, slot: -1, shown: false, age: was?.age ?? 0 };
     const L = layerOf();
     const swap = Boolean(was?.shown);
     // (made again with no slot free: into the one it had)
@@ -484,15 +489,21 @@ export function createExpanse(parent, { universe = UNIVERSE, workers = null, far
     const reach = Math.max(0, (radius + 0.5 + k) * SECTOR - Math.max(Math.abs(cam[0] - c[0]), Math.abs(cam[1] - c[1]), Math.abs(cam[2] - c[2])));
     edge = reach <= edge ? reach : edge + Math.min(reach - edge, EDGE_OUT * reach * Math.min(dt, 1 / 30));
     L.far.setEdge?.(edge);
-    // the wonders; the nearest systems built, and the rest within the far plane as discs
-    for (const e of held.values()) e.drawn.update(t, dt, camera);
+    // the wonders; the nearest systems built, and the rest within the far
+    // plane as discs, a sector's faded in over PLACE_IN from when it came
+    for (let i = 0; i < entries.length; i++) {
+      const e = entries[i];
+      e.drawn.update(t, dt, camera);
+      shares[i] = Math.min(1, e.age / PLACE_IN);
+      e.age += dt;
+    }
     if (L.own) {
       L.own.points.visible = true;
       L.own.update(camera, dt);
     }
     const ts = spaceTime(now);
     near.update(systems, cam, ts, camera, t);
-    L.discs.feed(sectorList, cam, ts);
+    L.discs.feed(sectorList, cam, ts, shares);
     // (the specks come in where the discs' budget ends)
     L.far.setDiscEdge?.(L.discs.edge());
   }
