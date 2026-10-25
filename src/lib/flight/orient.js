@@ -109,3 +109,6 @@ export function turnToward(q, dir, max) {
   const axis = s > 1e-9 ? [ax[0] / s, ax[1] / s, ax[2] / s] : rotate(q, RIGHT);
   return normalize(mul(axisAngle(axis, Math.min(angle, max)), q));
 }
+
+// the way a heading points along the ground, as [x, z] (0 is −z, growing turning left)
+export const forward = (h) => [-Math.sin(h), -Math.cos(h)];

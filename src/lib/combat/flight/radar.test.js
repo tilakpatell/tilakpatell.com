@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { forward } from '../universe/ship';
+import { forward } from '../../flight/orient';
 import { RANGE, createRadar, radarPoints, rangeFor, rangeFrom } from './radar';
 
 const ship = { x: 0, y: 0, z: 0, heading: 0 };
@@ -76,5 +76,11 @@ describe('radar', () => {
     radar.start(ship);
     radar.add('a', 'hostile', ahead(70));
     expect(radar.range).toBe(RANGE.cruise);
+  });
+  it('is due at most 20 times a second, or at the rate given', () => {
+    const radar = createRadar();
+    const slow = createRadar();
+    expect([0.03, 0.05, 0.09, 0.1].map((t) => radar.due(t))).toEqual([false, true, false, true]);
+    expect([0.05, 0.1, 0.15].map((t) => slow.due(t, 10))).toEqual([false, true, false]);
   });
 });

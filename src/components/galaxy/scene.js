@@ -123,8 +123,8 @@ import { createWarFront } from './warfront';
 import { createCluster } from './cluster';
 import { PICKUPS, createPickups, gunsUnder } from './pickups';
 import { createPickupFx } from './pickupFx';
-import { createRadar } from './radar';
-import { drawRadar } from './radarDraw';
+import { createRadar } from '../../lib/combat/flight/radar';
+import { drawRadar } from '../../runtime/hud/flight/radarDraw';
 import { armsView, arsenalOf, chargeFor, createArmory, createGalaxyPowers, createRounds, createUniqueArms, fan, picksFor } from '../universe/shared/flying';
 import { shotPunch } from './gunRules';
 import { CADENCE } from '../../lib/combat/flight/guns';
@@ -2047,15 +2047,13 @@ export async function create(canvas, ctx) {
   };
   // the radar: its contacts gathered and drawn, at most 20 times a second (radar.js keeps its records: nothing's made per tick)
   const radar = createRadar();
-  let radarAt = 0;
   let radarLock = null; // (the lock's id this tick)
   const addHostile = (c) => radar.add(c.id, c.threat ? 'threat' : 'hostile', c.at, c.id === radarLock);
   const addAlly = (c) => radar.add(c.id, 'ally', c.at);
   const placeRadar = () => {
     const cv = props.radar?.current;
     if (!cv || !flying() || state.crash || props.frozen || (state.jump && state.jump.phase !== 'align')) return;
-    if (state.clock - radarAt < 0.05) return;
-    radarAt = state.clock;
+    if (!radar.due(state.clock)) return;
     radarLock = state.lockTarget?.id ?? null;
     radar.start(state.ship);
     for (const c of hunters?.targets ?? NO_TARGETS) addHostile(c);

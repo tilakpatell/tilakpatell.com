@@ -1,4 +1,4 @@
-import { forward } from '../universe/ship';
+import { forward } from '../../flight/orient';
 
 // The flight cluster's radar (FlightCluster.jsx, drawn by galaxy/scene.js):
 // top-down in the ship's frame, nose up. A contact's x is to the ship's
@@ -67,6 +67,7 @@ export function createRadar() {
   let ship = null;
   let nearest = Infinity;
   let range = RANGE.cruise;
+  let drawn = 0;
   return {
     start(s) {
       ship = s;
@@ -91,6 +92,12 @@ export function createRadar() {
     },
     points(r) {
       return radarPoints(ship, rows, r, pts, n);
+    },
+    // whether it's time to draw it again, `hz` times a second at most (it is read every frame)
+    due(clock, hz = 20) {
+      if (clock - drawn < 1 / hz) return false;
+      drawn = clock;
+      return true;
     },
   };
 }
