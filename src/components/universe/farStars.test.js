@@ -223,6 +223,21 @@ describe('slots', () => {
     stars.dispose();
   });
 
+  it('takes every byte of a colour into the working space as a swatch’s hex reads, however many specks a slot holds', () => {
+    const pts = Array.from({ length: 256 }, (_, i) => ({ at: [i, 0, 0], color: [i, 255 - i, (i * 7) & 255], r: 10 }));
+    const stars = createFarStars(new THREE.Group(), { places: [], skyFar: 24000, slots: [256] });
+    stars.setSlot(0, slotOf([0, 0, 0], pts));
+    const C = stars.points.geometry.attributes.aColor.array;
+    const c = new THREE.Color();
+    pts.forEach((p, i) => {
+      c.setRGB(p.color[0] / 255, p.color[1] / 255, p.color[2] / 255, THREE.SRGBColorSpace);
+      expect(C[i * 3]).toBeCloseTo(c.r, 6);
+      expect(C[i * 3 + 1]).toBeCloseTo(c.g, 6);
+      expect(C[i * 3 + 2]).toBeCloseTo(c.b, 6);
+    });
+    stars.dispose();
+  });
+
   it('keeps none of a slot’s old specks, and what fits of too many', () => {
     const stars = createFarStars(new THREE.Group(), { places: [], skyFar: 24000, slots: [3, 3] });
     const R = stars.points.geometry.attributes.aSize.array;
@@ -419,6 +434,26 @@ describe('discs', () => {
   });
 });
 
+describe('the edge of what’s loaded', () => {
+  it('fades every speck to nothing at the edge it’s given, as the levels’ rings beyond do, and none till it’s given one', () => {
+    const stars = createFarStars(new THREE.Group(), { places: [], skyFar: 24000, slots: [4] });
+    const u = stars.points.material.uniforms.uEdge;
+    expect(u.value).toBeGreaterThan(1e29); // (none: nothing fades)
+    stars.setEdge(240000);
+    expect(u.value).toBe(240000);
+    stars.setEdge(Infinity);
+    expect(u.value).toBeGreaterThan(1e29);
+    stars.setEdge(-5);
+    expect(u.value).toBe(0);
+    // (on the chip: a speck's share times the levels' beyondFade, inside(d, uEdge))
+    const v = stars.points.material.vertexShader;
+    expect(v).toMatch(/vK = aSize > 0\.0 \? slot\.w \* \(1\.0 - inside\(d, FAR\)\) \* inside\(d, uEdge\) : 0\.0;/);
+    // (and a disc or a place takes none of it)
+    expect(v.match(/uEdge/g)).toHaveLength(2);
+    stars.dispose();
+  });
+});
+
 describe('pops (dev)', () => {
   const H = 1080;
   const stubRenderer = { getRenderTarget: () => null, getDrawingBufferSize: (v) => v.set(1920, H), domElement: { clientHeight: H }, getPixelRatio: () => 1 };
@@ -517,6 +552,51 @@ describe('pops (dev)', () => {
     stars.hideSlots([1]);
     stars.setSlot(0, { ...slotOf([0, 0, -100000], [ONE]), key: 'D' });
     stars.showSlots([0]);
+    stars.update(cam);
+    expect(stars.pops().count).toBe(1);
+    stars.dispose();
+  });
+
+  it('takes a slot that holds several things as a swap when it shows as another holding any of them goes', () => {
+    // (a centre's swap: a sector a ring held comes into a slot of its own, and
+    // the ring goes for the next centre's, which holds the same ring's name)
+    const stars = createFarStars(new THREE.Group(), { places: [], skyFar: 24000, slots: [4, 4, 4, 4] });
+    const cam = camAt(0, 0, 0);
+    stars.update(cam);
+    stars.points.onBeforeRender(stubRenderer);
+    stars.setSlot(0, { ...slotOf([0, 0, -100000], [ONE]), key: ['beyond:1', 'E:2,0', 'E:2,1'] });
+    stars.setSlot(1, { ...slotOf([0, 0, -150000], [ONE]), key: 'E:-1,0' });
+    stars.showSlots([0, 1]);
+    stars.update(cam);
+    stars.pops();
+    stars.setSlot(2, { ...slotOf([0, 0, -100000], [ONE]), key: 'E:2,0' });
+    stars.setSlot(3, { ...slotOf([0, 0, -150000], [ONE]), key: ['beyond:1', 'E:-1,0', 'E:3,0'] });
+    stars.hideSlots([0, 1]);
+    stars.showSlots([2, 3]);
+    stars.update(cam);
+    expect(stars.pops()).toEqual({ count: 0, px: 0 });
+    // and one holding none of what went is new
+    stars.setSlot(0, { ...slotOf([0, 0, -100000], [ONE]), key: ['beyond:2', 'E:9,9'] });
+    stars.hideSlots([2]);
+    stars.showSlots([0]);
+    stars.update(cam);
+    expect(stars.pops().count).toBe(1);
+    stars.dispose();
+  });
+
+  it('counts nothing of a slot past the edge it’s given', () => {
+    const stars = createFarStars(new THREE.Group(), { places: [], skyFar: 24000, slots: [4, 4] });
+    const cam = camAt(0, 0, 0);
+    stars.update(cam);
+    stars.points.onBeforeRender(stubRenderer);
+    stars.pops();
+    stars.setEdge(200000);
+    stars.setSlot(0, { ...slotOf([0, 0, -250000], [ONE]), key: 'far' });
+    stars.showSlots([0]);
+    stars.update(cam);
+    expect(stars.pops()).toEqual({ count: 0, px: 0 });
+    stars.setSlot(1, { ...slotOf([0, 0, -100000], [ONE]), key: 'near' });
+    stars.showSlots([1]);
     stars.update(cam);
     expect(stars.pops().count).toBe(1);
     stars.dispose();

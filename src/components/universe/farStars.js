@@ -33,7 +33,10 @@
 //     speck's place is worked out on the chip, from its slot's centre (from
 //     the camera, in doubles, each update) and where it is in the slot. Past
 //     the far plane it is a speck on the sky, in its colour, falling off as
-//     the square (speckBright); within it, it gives way to its disc.
+//     the square (speckBright); within it, it gives way to its disc. Every
+//     speck fades to nothing at the edge it's given (setEdge: the levels'
+//     beyondFade, as far as what's loaded reaches from the camera), so
+//     nothing comes or goes there at once as the slots change.
 // Everything is written from the camera, and the Points sit at the camera
 // (in the parent's space), so what goes to the chip is small and exact even
 // 10^9 out. Blending is premultiplied: a star or speck writes alpha 0, so it
@@ -54,16 +57,20 @@
 // createFarStars(parent, { places: [{ id, at, reach | r, color, sector?, station?, group? }], skyFar, slots = [], discs = 0 })
 //   → { points, update(camera, dt, { focus, sector }), kOf(id) → 0 (real) … 1 (far),
 //       setSlot(i, slot), showSlots(list), hideSlots(list), fadeSlot(i, seconds),
-//       discs: { begin(), push(…), end() }, pops() → { count, px }, dispose() }
+//       setEdge(edge), discs: { begin(), push(…), end() }, pops() → { count, px }, dispose() }
 // `at` is in the parent's space (the map's), and the points are added to it.
 // `slots` is each slot's size in specks; `discs` how many discs it draws.
 //   setSlot(i, { centre: [x, y, z], at: Float32Array, color: Uint8Array, r: Float32Array, count, key? })
 //     a slot's specks: `at` (3 a speck) from `centre` (the parent's space),
 //     `color` (3 a speck) as a hex colour's bytes, `r` the star's radius;
 //     only that slot's range is uploaded, and it is hidden till shown;
-//     `key` names what it holds (a sector's key), for pops() alone
+//     `key` names what it holds (a sector's key, or a list of them for a
+//     ring of sectors), for pops() alone
 //   showSlots(list), hideSlots(list): at once, so a swap is one frame
 //   fadeSlot(i, seconds): shown over that long, from where it is
+//   setEdge(edge): every speck faded to nothing at `edge` from the camera,
+//     from 0.8 of it (levels.js's beyondFade); none (Infinity, as it starts)
+//     and nothing fades
 //   discs.push(x, y, z, r, cr, cg, cb, lx, ly, lz, alpha, id?) between begin()
 //     and end(), a frame: where (the parent's space), its radius, its
 //     colour (the working space's, as a THREE.Color's), the way to its
@@ -72,11 +79,11 @@
 //   pops() (dev): what came in at over half in one frame since it was last
 //     asked, the largest in the frame's pixels: a disc from nothing (by its
 //     id) or a slot shown out of nothing (one shown in the frame another
-//     drawn with the same key goes is a swap: the same thing, moved; one with
-//     no key is always new). Nothing is counted till it's first asked.
+//     drawn with one of its keys goes is a swap: the same thing, moved; one
+//     with no key is always new). Nothing is counted till it's first asked.
 
 import * as THREE from 'three';
-import { BRIGHT_AT, FADE, FAR, REAL_LEAST, REAL_REACHES, SPECK_LEAST, discPx, levelWeights, realAt, speckBright } from '../expanse/shared/levels';
+import { BRIGHT_AT, FADE, FAR, REAL_LEAST, REAL_REACHES, SPECK_LEAST, beyondFade, discPx, levelWeights, realAt, speckBright } from '../expanse/shared/levels';
 import { WONDERS, reachOf } from './deep';
 import { POSITIONS, REACH, SUN } from './layout';
 import { MOONS, UNIVERSES } from './universes';
@@ -94,6 +101,8 @@ const LIFT = 1.1; // and lifted by this
 const LIFT_MORE = 2; // and this more at full brightness
 const MOST_SLOTS = 200; // (a uniform each: the chip holds 256 at least)
 const FRAME_H = 1080; // (a frame's height till it's first drawn)
+const NO_EDGE = 1e30; // (no edge: a float the chip holds, where Infinity would make a NaN)
+const NO_KEYS = [];
 const WHITE = new THREE.Color('#ffffff');
 
 export { realAt };
@@ -119,6 +128,19 @@ export const FAR_STARS = [
   ...WONDERS.filter((w) => !LANDMARK_IDS.has(w.id)).map((w) => ({ id: w.id, at: w.at, reach: reachOf(w), color: w.color ?? w.colors?.[0] ?? '#ffb47a', sector: w.sector ?? 'main' })),
 ];
 
+// (an sRGB colour's byte in the working space, a lookup a channel, so a
+// ring's tens of thousands of specks are set in a frame: only while the
+// working space has sRGB's primaries, where a channel needs only its own)
+let LUT = null;
+function byteLut() {
+  if (THREE.ColorManagement.workingColorSpace !== THREE.LinearSRGBColorSpace) return null;
+  if (!LUT) {
+    const c = new THREE.Color();
+    LUT = Float32Array.from({ length: 256 }, (_, i) => c.setRGB(i / 255, 0, 0, THREE.SRGBColorSpace).r);
+  }
+  return LUT;
+}
+
 // (a number as GLSL writes a float: 20 as 20.0)
 const glf = (x) => (Number.isInteger(x) ? `${x}.0` : String(x));
 
@@ -138,6 +160,7 @@ const VERT = /* glsl */ `
   uniform float uHeight;
   uniform float uTime;
   uniform float uSkyFar;
+  uniform float uEdge;
   uniform vec4 uSlot[SLOTS];
   varying vec3 vColor;
   varying float vK;
@@ -182,7 +205,7 @@ const VERT = /* glsl */ `
       at = rel * (uSkyFar / d);
       px = PX_LEAST + PX_MORE * b;
       vColor = mix(aColor, vec3(1.0), TO_WHITE) * (LIFT + LIFT_MORE * b);
-      vK = aSize > 0.0 ? slot.w * (1.0 - inside(d, FAR)) : 0.0;
+      vK = aSize > 0.0 ? slot.w * (1.0 - inside(d, FAR)) * inside(d, uEdge) : 0.0;
       vBright = b;
     } else if (aSlot > -1.5) {
       // a disc: its true size (levels.js's discPx), in the page's pixels
@@ -293,7 +316,7 @@ export function createFarStars(parent, { places, skyFar, slots = [], discs = 0 }
     vertexShader: VERT,
     fragmentShader: FRAG,
     defines: { SLOTS: Math.max(1, S) },
-    uniforms: { uDpr: { value: 1 }, uHeight: { value: FRAME_H }, uTime: { value: 0 }, uSkyFar: { value: skyFar }, uSlot: { value: U } },
+    uniforms: { uDpr: { value: 1 }, uHeight: { value: FRAME_H }, uTime: { value: 0 }, uSkyFar: { value: skyFar }, uEdge: { value: NO_EDGE }, uSlot: { value: U } },
     blending: THREE.CustomBlending,
     blendEquation: THREE.AddEquation,
     blendSrc: THREE.OneFactor,
@@ -347,7 +370,8 @@ export function createFarStars(parent, { places, skyFar, slots = [], discs = 0 }
   const sWas = new Float64Array(S);
   const sCentre = new Float64Array(S * 3);
   const sCount = new Int32Array(S);
-  const sKey = new Array(S).fill(null);
+  const sKey = new Array(S).fill(NO_KEYS); // (what each holds: its keys)
+  let edge = Infinity;
   const tint = new THREE.Color();
   const weights = { full: 0, disc: 0, speck: 0 };
   const NONE = { reach: 0 };
@@ -357,7 +381,7 @@ export function createFarStars(parent, { places, skyFar, slots = [], discs = 0 }
     return i;
   };
   const hide = (i) => {
-    if (sWas[i] > 0 && sKey[i] !== null) gone.add(sKey[i]);
+    if (sWas[i] > 0) for (const k of sKey[i]) gone.add(k);
     sAlpha[i] = 0;
     sRate[i] = 0;
     U[i].w = 0;
@@ -369,7 +393,7 @@ export function createFarStars(parent, { places, skyFar, slots = [], discs = 0 }
     for (let v = slotAt[i], end = v + sCount[i]; v < end; v++) {
       if (!(R[v] > 0)) continue;
       const d = Math.hypot(U[i].x + P[v * 3], U[i].y + P[v * 3 + 1], U[i].z + P[v * 3 + 2]);
-      if (sAlpha[i] * levelWeights(d, NONE, weights).speck > 0.5) most = Math.max(most, starPx(speckBright(d, R[v])) * mat.uniforms.uDpr.value);
+      if (sAlpha[i] * levelWeights(d, NONE, weights).speck * beyondFade(d, edge) > 0.5) most = Math.max(most, starPx(speckBright(d, R[v])) * mat.uniforms.uDpr.value);
     }
     return most;
   };
@@ -546,7 +570,7 @@ export function createFarStars(parent, { places, skyFar, slots = [], discs = 0 }
         }
         placeSlot(i);
         // (out of nothing, unless it's what another drawn last frame held)
-        if (track && !(sWas[i] > 0) && sAlpha[i] > 0.5 && !(sKey[i] !== null && gone.has(sKey[i]))) {
+        if (track && !(sWas[i] > 0) && sAlpha[i] > 0.5 && !sKey[i].some((k) => gone.has(k))) {
           const most = slotPx(i);
           if (most > 0) pop(most);
         }
@@ -562,7 +586,7 @@ export function createFarStars(parent, { places, skyFar, slots = [], discs = 0 }
       hide(slotIn(i));
       // (what it holds now was never drawn)
       sWas[i] = 0;
-      sKey[i] = key;
+      sKey[i] = key === null ? NO_KEYS : Array.isArray(key) ? [...key] : [key];
       const from = slotAt[i];
       const size = slotAt[i + 1] - from;
       // (what fits, of what it was given)
@@ -573,11 +597,15 @@ export function createFarStars(parent, { places, skyFar, slots = [], discs = 0 }
       P.fill(0, (from + c) * 3, (from + size) * 3);
       R.set(r.subarray(0, c), from);
       R.fill(0, from + c, from + size);
-      for (let k = 0; k < c; k++) {
-        tint.setRGB(color[k * 3] / 255, color[k * 3 + 1] / 255, color[k * 3 + 2] / 255, THREE.SRGBColorSpace);
-        C[(from + k) * 3] = tint.r;
-        C[(from + k) * 3 + 1] = tint.g;
-        C[(from + k) * 3 + 2] = tint.b;
+      const lut = byteLut();
+      if (lut) for (let k = 0; k < c * 3; k++) C[from * 3 + k] = lut[color[k]];
+      else {
+        for (let k = 0; k < c; k++) {
+          tint.setRGB(color[k * 3] / 255, color[k * 3 + 1] / 255, color[k * 3 + 2] / 255, THREE.SRGBColorSpace);
+          C[(from + k) * 3] = tint.r;
+          C[(from + k) * 3 + 1] = tint.g;
+          C[(from + k) * 3 + 2] = tint.b;
+        }
       }
       C.fill(0, (from + c) * 3, (from + size) * 3);
       for (const a of SPECK) mark(a, from, size);
@@ -605,6 +633,10 @@ export function createFarStars(parent, { places, skyFar, slots = [], discs = 0 }
         sRate[i] = 0;
         U[i].w = 1;
       }
+    },
+    setEdge(e) {
+      edge = e >= 0 ? e : 0;
+      mat.uniforms.uEdge.value = Number.isFinite(edge) ? edge : NO_EDGE;
     },
     discs: writer,
     pops() {
