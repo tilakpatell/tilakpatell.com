@@ -163,3 +163,55 @@ What `src/lib/land/flight/variety.js` gives Tasks 8 to 13, where it differs from
 - Siblings of one family and one character share a recipe. `E:-5,-8:6`’s three rock canyon worlds differ in shape and colour but read as one kind of place. More characters per family would widen that.
 - A planet’s chart starts at a gentle spot, so a ground tile shows the plain round its first place. The ice continents and the plateaus look smooth at 8 m a pixel under this light, with 34 to 177 m of rolling relief over 3 km. The flight’s own light, detail and clutter show more of it.
 - `node scripts/stack-census.mjs --check` was already stale on `main`. This script adds one more importer of `sharp` for the census’s next write.
+
+## Task 14: verification and pictures
+
+### Landed
+
+- `docs/superpowers/evidence/endless-universe-lane-5a/README.md`: the before and after of `/fly/hoth`, `/fly/e:3,-2:1:0` (Zurktar, the first rock planet of sector (3, −2), as the plan names it) and `/fly/e:3,-2:1:1` (Trigkre, the next, which has a place ahead of its spawn), with the numbers, and Task 13’s contact sheet. Before is `main` at cc5e2eaf; after is the lane’s head. Pictures are webp, 19 to 141 kB.
+- `/fly/hoth` is the same. Held still at its spawn, the lane’s first shot is pixel for pixel `main`’s first two (0 pixels differ, canvas and whole page). It draws 188 to 189 calls on both sides, and 540,928 to 540,996 triangles on `main` (three runs) against 540,928 to 541,144 on the lane (two runs). The ground’s 166 meshes, Echo Base, the trench, the sky and the ship hash alike; only the life, the events and the ion cannon change from run to run, on both sides, by 17 to 18 pixels.
+- The two generated planets change on purpose: round, in their own colours, with their own fauna. Zurktar draws 81 calls and 1,041,344 triangles (81 to 82 and 1.10 M on `main`). Trigkre draws 91 calls and 723,398 triangles (79 and 1,060,606 on `main`).
+- The gates on the lane’s head:
+  - `npm run lint`: clean.
+  - `npm test`: every file green, in three goes. The whole run took 44 minutes at a load of 20 to 34 on four cores (`main`’s baseline took 11): 1,887 files passed, and 74 failed on time alone: each of their 119 tests timed out or missed a time budget. One is the flight’s (`ground.test.js`’s first crash test, 5,079 ms against 5,000), and it passed when run again; the rest are other worlds’. Run again together, 47 of the 74 passed; the other 27 passed one file at a time (857 tests). `the roster`, `TERRAIN_VERSION`, `planets.test.js` and `stack.test.js` passed in the whole run, and again on their own.
+  - `npm run build`: built. Its `prebuild` rewrote a line of `public/github.json`, which was put back, not being the lane’s.
+  - `node scripts/health.mjs --check --skip build`: within budget, every metric as on `main`.
+  - `node scripts/flight-island.mjs --check`: `ok 172 files on the island, 39 marked rows, 62 references`.
+  - `node scripts/autopilot-check.mjs --only smoke --quality mid --routes /fly/hoth,/fly/e:3%2C-2:1:0,/fly/e:3%2C-2:1:1`: the three flights ok in 13 to 15 s, and the eight flat core pages ok. `/` was “no canvas: the 3D never started” at 103 s, twice. Lane 6a’s evidence finds the same on `main`’s build in this container today: the canvas comes after the check’s 90 s. Nothing on `/`’s way to its canvas changed in this lane; the one module of the lane’s it reaches is `worlds/packs.js`’s flight pack, a list of files, two longer.
+- Where it differs from the lane plan:
+  - The pictures and counts are of a flight held still (the governor held, the ship at its spawn, every step at `dt` 0, the ground streamed in), not the smoke’s shot after 8 s of flying. A flight left to fly in this container never drew the same frame twice. The method is in the README; the script that ran it was a scratch file, not committed (the task makes no new file).
+  - `autopilot-check.mjs --only smoke` wasn’t run on `main`: it serves a `dist/`, `main`’s checkout has none, and a 1.6 GB build didn’t fit the container’s disk. The held-still runs on `main`’s dev server stand for it on the two fly routes: no page error and no console error outside the noise list. The after smoke ran as written, on the lane’s build.
+  - An id’s comma is written `%2C` in `--routes` (`/fly/e:3%2C-2:1:0`), because the script splits that list on commas; the router decodes it.
+  - Browser checks at `mid` only, by the coordinator’s budget. No pull request: the coordinator opens one for every lane.
+
+### Left
+
+- Trigkre draws 12 more calls than on `main`, so “draw calls no higher at any checked route” doesn’t hold on a generated planet with a place in view. 8 are its signal, a place it didn’t have; 2 are the events, which vary from run to run. Its triangles fall by a third. Whether a place may cost its calls is the owner’s call.
+- A generated planet with a place and its own fauna has 15 to 16 shader programs where `main`’s template had 12. `late pipelines` was measured on Hoth only (4 on both sides). Lane 5b could run `FLY=e:3,-2:1:1 node scripts/perf-probe.mjs fly` to see whether those compile mid-flight.
+- `perf-probe.mjs fly`’s phase counts don’t compare in this container: frames of 30 to 130 s stalled both runs, so the ship flew a different path each time. The probe wants a real graphics chip, before and after.
+- Even held still, Hoth moves by 17 to 18 pixels from run to run: the life (`life.js` draws with `Math.random`) and the events (the wall clock) aren’t held. A pixel check of the flight should hide `flight-life` and `flight-occurrences`, or seed them.
+
+## For lane 5b: what this lane hands over
+
+What was built, where it differs from the plan’s list.
+
+- **Planet spec fields.**
+  - Every spec has `kind` (`'planet'` or `'moon'`), `parent` (a moon’s planet id, or null), `buildable`, `round`, `character`, `sky`, `weather`, `flora`, `fauna` and `exotic`, beside today’s 17. The fifty have `ROSTER_EXTRA`’s fixed values (`planetSpec.js`).
+  - `round` is `{ radius, at }` on every generated planet and moon that isn’t a gas or ringed giant (radius 15,000 to 60,000 m), and null on the fifty and on gas giants. A gas giant’s spec is a plane cloud deck (`soft: true`), recoloured.
+  - `character` is `{ kind, sea, peaks }`, kind one of `characters.js`’s `CHARACTERS`, or null.
+  - `sky` is `{ low, high, haze, clouds, cloudColour, rings, moons }`: the orbit shader’s atmosphere and clouds. `fog` is set from the haze.
+  - `weather` is `{ kind, amount }`. `flora` is `{ family (lib/land/flora.js’s floraFor key), density, pick }` or null. `fauna` is `{ density, plans: [{ body, role, tint, group }] }` or null. `exotic` is null, `'crystal'`, `'glowing'`, `'floating'` or `'spires'`.
+  - A generated spec is plain data (a JSON round trip gives it back) and `buildable: false`.
+- **Landing at a spot.** `chartedAt(planetSpecOf(id), dirOfLatLon(lat, lon))` (`generated.js`, `sphere.js`) gives the spec whose chart origin, `(0, 0)` in the flight, is the spot dived at, its places charted round it. It gives the spec back unchanged for a spec that isn’t round or a direction that isn’t one.
+- **Charts and directions** (`sphere.js`).
+  - `chartOf(at, radius)` → `{ at, radius, frame, toDir(x, z), toChart(dir) }`, chart +x east and −z north. `toChart` reads back inside the first turn (under πR) and the far side as `[πR, 0]`. Take-off back to orbit reads the ship’s `(x, z)` through `toDir`.
+  - `latLonOfDir`, `dirOfLatLon`, `uvOfDir`, `dirOfUv`, `frameAt`, `unit` and `angleBetween`, on `landings/biomes.js`’s layout.
+- **The ground.** `sphereField(spec)` → `{ heightAt(dir), biomeAt(dir), climateAt(dir), sample(dir) → { h, slope, biome } }`. `planetField(spec)` is unchanged in shape, and the terrain worker keys fields by `fieldKey(spec)` (`id@at` for a round spec).
+- **The orbit map.**
+  - `bakeOrbitMap(spec, { width, height })` → `{ width, height, rgba (sRGB, alpha 0 under water), biome }`, or null with no spec (`orbitMap.js`).
+  - `createOrbitMaps({ workers: rt.workers })` → `{ get(spec, tier), peek(spec, tier), stats(), dispose() }` (`orbitMaps.js`). `get` makes the map in a worker, keeps the 16 last used in memory, and gives the same shape or null; it never throws. `orbitMapSize(tier)` gives the size: 256 × 128 on `low` and `mid`, 512 × 256 on `high` and `ultra`.
+  - The texture is sRGB, laid as three’s `SphereGeometry` lays it. A gas giant’s is banded; the fifty’s are a 40 km window of their plane.
+  - Nothing imports `orbitMaps.js` yet: lane 5b’s first import should be checked in a production build.
+- **Places and life.** `landmarkRowsOf(spec, poi)` (`landmarkTables.js`) stands a generated place; `POI_NAMES` names its kind. `expanseLife(type, biomes, system, fauna)` walks a spec’s own fauna.
+- **The read-only flag.** `spec.buildable === false` turns the shared world read-only (`shared.js`): no sign-in, no read or write, B answers with a sentence.
+- **Islands.** The universe importing `lib/land/flight/*` counts as an island reference: lane 5b marks those rows `// planet flight` and lists the files in `ISLAND.rows`.
