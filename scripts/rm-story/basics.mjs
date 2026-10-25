@@ -90,7 +90,7 @@ export const BASICS = {
   // chip keeps its word (the first hint names it), its dial's foot says tap,
   // not the keys, and the Checklist's pond row says its button, not E; and
   // what's tapped is a finger's 44 px: the dial's close and the list's, the
-  // list's ways back, and each chip's hit area, over and under what's drawn
+  // list's ways back, and each chip's hit area, a 44 px square on it
   'touch-words': Object.assign(
     async (page) => {
       await c137(page);
@@ -124,16 +124,21 @@ export const BASICS = {
       check(close.w >= 44 && close.h >= 44, `on a phone the list’s close is ${close.w} × ${close.h} px`);
       const backs = await page.evaluate(() => Array.from(document.querySelectorAll('#rm-list .rm-list-back'), (a) => Math.round(a.getBoundingClientRect().height)));
       check(backs.length > 0 && backs.every((h) => h >= 44), `on a phone the list’s ways back are ${backs.join(', ')} px tall`);
-      // (a chip's drawn 36 px: a tap 3 px over or under it still lands on it, not on the next)
+      // (the list shut, off the chips it covers: a tap anywhere in a 44 px square on a chip lands on it, not on the next;
+      // the column's chips are 44 apart, so two hit areas meet edge to edge: a pixel in from that edge, as layout snaps)
+      await list.locator('.rm-icon-btn').tap();
+      await list.waitFor({ state: 'detached', timeout: 5000 });
       const hits = await page.evaluate(() =>
         Array.from(document.querySelectorAll('.rm-side .rm-chip'))
           .filter((c) => c.getClientRects().length)
           .map((c) => {
             const r = c.getBoundingClientRect();
-            return [r.top - 3, r.bottom + 3].every((y) => c.contains(document.elementFromPoint(r.left + r.width / 2, y)));
+            const [x, y] = [r.left + r.width / 2, r.top + r.height / 2];
+            const off = [[0, -21], [0, 21], [-21, 0], [21, 0]].filter(([dx, dy]) => !c.contains(document.elementFromPoint(x + dx, y + dy)));
+            return off.length ? `${c.textContent.trim() || c.getAttribute('aria-label')} misses ${JSON.stringify(off)}` : null;
           }),
       );
-      check(hits.length > 0 && hits.every(Boolean), `on a phone a tap just off a chip misses it (${JSON.stringify(hits)})`);
+      check(hits.length > 0 && hits.every((h) => !h), `on a phone a tap on a chip’s 44 px misses it: ${hits.filter(Boolean).join('; ')}`);
     },
     { seed: { 'tp-rm-story': { v: 1, data: { episode: 0, step: 3, got: [], wins: [], freeRoam: false } }, 'tp-c137-done': ['diner', 'basement', 'mindblowers'] }, context: { viewport: { width: 390, height: 664 }, hasTouch: true, isMobile: true } },
   ),
@@ -268,7 +273,7 @@ export const BASICS = {
     check((await page.evaluate(() => localStorage.getItem('tp-rm-dial'))) !== 'vat', 'a locked pick set the dial');
     await page.evaluate(() => localStorage.setItem('tp-rm-dial', 'vat'));
     await throughPortal(page);
-    await page.waitForFunction(() => window.__C137__.sim.area !== 'garage' && window.__C137__.ready(), null, { timeout: 300000, polling: 250 });
+    await page.waitForFunction(() => window.__C137__?.sim?.area !== 'garage' && window.__C137__?.ready?.(), null, { timeout: 300000, polling: 250 });
     const area = await page.evaluate(() => window.__C137__.sim.area);
     check(area === 'customs', `a dial left on the vat opened the portal on ${area}`);
   },

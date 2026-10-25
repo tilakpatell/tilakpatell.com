@@ -194,15 +194,26 @@ export const AT_THE_CITADEL = {
       await citadelReads(page, CITADEL.steps[1].text, CITADEL_LINE([]));
       await page.evaluate(() => window.__CITADEL__.enter('daycare')); // (its toast: the gate's open)
       await page.locator('.citadel-stage .shire-toast').waitFor({ timeout: 10000 });
-      await page.waitForTimeout(600);
-      const at = await page.evaluate(() => {
-        const from = (el) => el.getBoundingClientRect();
-        const row = Math.max(...Array.from(document.querySelector('.citadel-stage .shire-hud-top').children, (n) => from(n).bottom));
-        return { row: Math.round(row), toast: Math.round(from(document.querySelector('.citadel-stage .shire-toast')).top) };
-      });
-      check(at.toast >= at.row, `on a phone the toast (top ${at.toast}) is over the top row (to ${at.row})`);
-      // (herding now: the Day Care's gate is open)
+      // (herding now: the Day Care's gate is open, its meter in the top row, which grows; the toast
+      // follows it down at the row's next measure, so it's waited for, never read once)
       await page.locator('.citadel-stage .shire-meter[aria-label="Mortys back in the pen"]').waitFor({ timeout: 10000 });
+      const under = () =>
+        page.evaluate(() => {
+          const from = (el) => el.getBoundingClientRect();
+          const row = Math.max(...Array.from(document.querySelector('.citadel-stage .shire-hud-top').children, (n) => from(n).bottom));
+          const toast = document.querySelector('.citadel-stage .shire-toast');
+          return { row: Math.round(row), toast: toast && Math.round(from(toast).top) };
+        });
+      await page
+        .waitForFunction(() => {
+          const from = (el) => el.getBoundingClientRect();
+          const toast = document.querySelector('.citadel-stage .shire-toast');
+          return toast && from(toast).top >= Math.max(...Array.from(document.querySelector('.citadel-stage .shire-hud-top').children, (n) => from(n).bottom));
+        }, null, { timeout: 5000, polling: 100 })
+        .catch(async () => {
+          const at = await under();
+          throw new Error(`on a phone the toast (top ${at.toast}) is over the top row (to ${at.row})`);
+        });
       const wide = await page.evaluate(() => ({
         brand: Math.round(document.querySelector('.citadel-stage .shire-brand').getBoundingClientRect().width),
         side: Math.round(document.querySelector('.citadel-stage .shire-side').getBoundingClientRect().width),

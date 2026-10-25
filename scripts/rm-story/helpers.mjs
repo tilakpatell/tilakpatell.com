@@ -61,12 +61,12 @@ export async function built(page) {
   await page.waitForFunction(() => window.__C137__?.goto || document.querySelector('.rm-world')?.dataset.mode === 'cards', null, { timeout: 600000, polling: 1000 });
   check(await page.evaluate(() => Boolean(window.__C137__?.goto)), 'the 3D world didn’t start');
   await page.evaluate(() => document.querySelector('.rm-world')?.scrollIntoView({ block: 'start' }));
-  await page.waitForFunction(() => window.__C137__.ready(), null, { timeout: 300000, polling: 250 });
+  await page.waitForFunction(() => window.__C137__?.ready?.(), null, { timeout: 300000, polling: 250 });
 }
 // Morty sent somewhere, as a door sends him, and stood till it's built
 export async function goto(page, area, x, z, face = N) {
   check(await page.evaluate(([a, x, z, f]) => window.__C137__.goto(a, x, z, f), [area, x, z, face]), `Morty wouldn’t go to ${area}`);
-  await page.waitForFunction(() => window.__C137__.ready(), null, { timeout: 300000, polling: 250 });
+  await page.waitForFunction(() => window.__C137__?.ready?.(), null, { timeout: 300000, polling: 250 });
 }
 // E at a hotspot, once he's by it
 export async function use(page, id) {
@@ -122,7 +122,7 @@ export const toast = (page, text) =>
   });
 // Morty in `area`, and it built
 export const inArea = (page, area) =>
-  page.waitForFunction((a) => window.__C137__?.sim?.area === a && window.__C137__.ready(), area, { timeout: 300000, polling: 250 }).catch(async () => {
+  page.waitForFunction((a) => window.__C137__?.sim?.area === a && window.__C137__?.ready?.(), area, { timeout: 300000, polling: 250 }).catch(async () => {
     throw new Error(`Morty isn’t in ${area} (he’s in ${await page.evaluate(() => window.__C137__?.sim?.area)})`);
   });
 // episode i's card: its number, title and first line, gone at the next key
@@ -292,8 +292,9 @@ export async function later(page, s) {
   await page.waitForFunction((t) => window.__C137__.sim.t >= t, t0 + s, { timeout: 120000, polling: 16 });
 }
 // the map's marker (the sim's `goal`): a link's or a spot's id
+// (null: no marker; the sim's goal is worked out every third frame, so it's waited for, never read once)
 export const goalIs = (page, id, where) =>
-  page.waitForFunction((id) => window.__C137__.sim.goal?.id === id, id, { timeout: 15000, polling: 100 }).catch(async () => {
+  page.waitForFunction((id) => (window.__C137__.sim.goal?.id ?? null) === id, id, { timeout: 15000, polling: 100 }).catch(async () => {
     throw new Error(`${where} the marker’s on ${await page.evaluate(() => window.__C137__.sim.goal?.id ?? null)}, not ${id}`);
   });
 // does the map dot a spot at (x, z) in a place? (its lime, where RmWorld's
@@ -363,7 +364,8 @@ export async function openHeld(page, hash, area, names) {
   const asked = (url) => names.some((n) => new RegExp(`/${n}(-[a-z]+)?\\.glb$`).test(url.pathname));
   const hold = async (route) => {
     await held;
-    await route.continue();
+    // (one the reload dropped, or the unroute below let through first, is settled already)
+    await route.continue().catch(() => {});
   };
   await page.route(asked, hold);
   await page.goto(`${BASE}/${hash}`, { waitUntil: 'domcontentloaded' });

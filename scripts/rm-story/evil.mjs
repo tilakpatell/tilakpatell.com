@@ -316,7 +316,7 @@ export const EVIL_CHECKS = {
       await pods();
       // (mid-fight the marker points nowhere: the fight comes to him)
       await fightOn(page, 'evilrick');
-      check((await page.evaluate(() => window.__C137__.sim.goal)) == null, 'mid-fight the marker points somewhere');
+      await goalIs(page, null, 'mid-fight');
       await lose(page, 'evilrick');
       await goalIs(page, 'pod1', 'after a loss');
       await warp(page, 'evilrick', ...spotAt('evilrick', 'pod1', Math.PI));
