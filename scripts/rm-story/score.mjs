@@ -2,7 +2,8 @@
 // (../rm-story-check.mjs): Heist-Con's job on a fresh save (the plan and a
 // booth before the crew, the crew alone ticking nothing, home mid-crew and
 // mid-job, a wrong booth, one lifted again, a catch by the cat burglar, the
-// keynote run out, then the job), and Rick's rooms on the Vindicators' ship
+// keynote run out, then the job, its last booth lifted as the cat burglar
+// catches him), and Rick's rooms on the Vindicators' ship
 // played through their overlay (a room by keys, a wrong pick by click, Esc
 // mid-trial, the rest by clicks), the episode's end; a returner whose old
 // crew ticked Heist-Con; and one who did the Vindicators first. Each ends on
@@ -191,10 +192,25 @@ export const SCORE_CHECKS = {
     await toast(page, JOB.lost);
     await caught(page, wayInOf('heistcon'));
 
-    // the job, done: the achievement at last, the crew home, the Vindicators next
-    await lift(page);
-    await isDone(page, 'heistcon', 'the dealt order didn’t win Heist-Con');
+    // the job, done, its last booth lifted in the frame the cat burglar reaches
+    // him: caught, and the win still his; the achievement at last, the crew
+    // home, the Vindicators next
+    await crewUp(page);
+    await start(page);
+    await jobIs(page, { phase: 'run' }, 'the plan didn’t start the job');
+    const dealt = (await job(page)).order;
+    for (const id of dealt.slice(0, -1)) await press(page, id);
+    await crewHunting(page);
+    await page.evaluate((last) => {
+      const c = window.__C137__;
+      const cat = c.api.act('heistcon', 'npcs').find((n) => n.id === 'heister-b1');
+      c.warp('heistcon', cat.x + 0.6, cat.z);
+      c.api.act('heistcon', `sequence-${last}`);
+    }, dealt.at(-1));
+    await toast(page, H.caught);
+    await isDone(page, 'heistcon', 'the last booth lifted as the cat burglar caught him didn’t win Heist-Con');
     await achieved(page, 'heistcon', 'The con is the heist wasn’t earned');
+    await caught(page, wayInOf('heistcon'));
     await later(page, 1);
     await nobodyHunting(page, 'with the job done,');
     await noMeter(page, 'with the job done,');

@@ -237,11 +237,10 @@ export function stage(kit, id, { ground, groundTile = 4, floor, floorTile = 2, w
   let airing = sq ? aired() : null;
   let switched = [];
   let lamps = null;
-  let woundUp = false; // (its task done: no meter, even with no start spot)
+  let woundUp = false; // (its task done: no meter, even with no start spot; set in the update, people in or not)
   const labels = Object.fromEntries(d.hotspots.map((h) => [h.id, h.label]));
   const sequencing = (dt, state) => {
     const done = (state.done ?? []).includes(sq.task);
-    woundUp = done;
     grant(sq, done, state);
     // (`hunt`: the place's hunters after him while the clock runs, home when it stops: Gear World's police)
     if (sq.hunt) {
@@ -285,7 +284,7 @@ export function stage(kit, id, { ground, groundTile = 4, floor, floorTile = 2, w
   let picking = []; // (things picked up at their spots, `climb-pick-<id>`, taken one a frame)
   let stairs = null;
   let shown = 0; // (the time they're posed at: the game's, running on through a bite, ../games/climb.js's poseTime)
-  let topped = false; // (its task done: the ledges are just ledges)
+  let topped = false; // (its task done: the ledges are just ledges; set in the update, people in or not)
   // a stair goblin as its stair's mood has it: still at rest; a shiver, a fast
   // shake a little wider; the bite, two snaps down and round; or, the task
   // done, a slow sway (its group's own turn and size kept as its rest)
@@ -309,11 +308,11 @@ export function stage(kit, id, { ground, groundTile = 4, floor, floorTile = 2, w
   };
   const climbing = (t, dt, state) => {
     const done = (state.done ?? []).includes(cb.task);
-    topped = done;
     grant(cb, done, state);
     if (done || state.fading) picking = [];
     if (!done && !state.fading) {
-      ascent = stepClimb(ascent, { morty: state.morty, pick: picking.shift() ?? null }, dt);
+      // (a stair whose figure never stood, its model not loaded, is unseen: it never bites)
+      ascent = stepClimb(ascent, { morty: state.morty, pick: picking.shift() ?? null, tame: cb.stairs.filter((st) => !stairs?.[st.id]).map((st) => st.id) }, dt);
       if (cb.fell && ascent.events.some((e) => e.type === 'fell')) state.emit?.('note', { area: id, text: cb.fell });
       ascent = told(climbNews(ascent, { done, fading: false }), ascent, cb, state);
     }
@@ -423,7 +422,10 @@ export function stage(kit, id, { ground, groundTile = 4, floor, floorTile = 2, w
       update: (t, dt, state, camera) => {
         sky?.update(t, camera);
         // (a game waits for the place's people: no clock runs, no look is
-        // taken, before there's anyone there to see him)
+        // taken, before there's anyone there to see him; but one whose task's
+        // done shows no meter while they're on the way)
+        if (airing && state) woundUp = (state.done ?? []).includes(sq.task);
+        if (ascent && state) topped = (state.done ?? []).includes(cb.task);
         if (run && state && cast) powered(t, dt, state);
         if (deal && state && cast) dealing(state);
         if (still && state && cast) freezing(dt, state);

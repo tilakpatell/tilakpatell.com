@@ -5,7 +5,7 @@
 // last escape on Planet Squanch's own page holds for Morty's line. Either way
 // the sector ends on episode 12's card.
 /* global window, document */
-import { OUT, check, use, inArea, reads, story, at, opens, toast, playTo, game, standOn, later, warpUse, caught, spotAt, wayInOf, homeOf, goalIs, noLink, meter, meterSays, warp, hunting, open, openOnCard, cardFor, dial, home, notDone, ticked, low, PLACES, CITADEL, SECTOR, SCORE } from './helpers.mjs';
+import { OUT, check, use, inArea, reads, story, at, opens, toast, playTo, game, standOn, later, warpUse, caught, spotAt, wayInOf, homeOf, goalIs, noLink, meter, meterSays, warp, hunting, open, openHeld, openOnCard, cardFor, dial, home, notDone, ticked, low, PLACES, CITADEL, SECTOR, SCORE } from './helpers.mjs';
 
 const [BIRD, GEAR, PLUTO, SQUANCH] = SECTOR.steps[0].steps;
 const COGS = PLACES.dest('gearworld').sequence.items;
@@ -175,13 +175,24 @@ export const SECTOR_CHECKS = {
   },
 
   // a returner who'd done three of the sector's planets before episode 11
-  // was built: their parts passed at once, their games at rest; then Planet
+  // was built: their parts passed at once, their games at rest (no meter on
+  // a done Bird World or Gear World, even before its people stand); then Planet
   // Squanch on its own page, whose escape ends the episode and holds the
   // page for Morty's line, episode 12's card over it, before it leaves; and
   // the card again in C-137, the episode not begun
   'sector-page': Object.assign(
     async (page) => {
-      await open(page, '#/c-137/gearworld');
+      // each arrived at with its people's files held back: no fresh game's meter while they're on the way
+      for (const [id, title] of [
+        ['birdworld', 'Bird World’s crystals'],
+        ['gearworld', 'The city’s cogs'],
+      ]) {
+        const free = await openHeld(page, `#/c-137/${id}`, id, PLACES.dest(id).people.map((p) => p.who ?? p.id));
+        await later(page, 1);
+        check(await page.evaluate(() => window.__C137__.api.loading() > 0), `${id}’s people stood before its meter was read`);
+        check((await meter(page, title).count()) === 0, `a done ${id} showed its meter while its people were on the way`);
+        await free();
+      }
       check(JSON.stringify((await story(page)).got) === '[0,1,2]', `the old ticks passed parts ${JSON.stringify((await story(page)).got)}`);
       await reads(page, PLACES.allDone);
       await later(page, 1);

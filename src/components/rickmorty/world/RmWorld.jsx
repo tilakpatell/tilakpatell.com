@@ -98,6 +98,8 @@ import { MORTY_BEST } from './roy/rules';
 import { POSTERS_READ, saved } from './saved';
 import { padActs, padFiring } from './padActs';
 import { dialPad } from './dimensions/dialKey';
+import { madeIt } from './escape';
+import { newsHeard } from './news';
 
 // Dimension C-137, the world: walk about the Smiths' street as Morty, go into
 // the house, Rick's garage and Harry Herpson High, fly Rick's space cruiser
@@ -883,7 +885,7 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
         s.fading = true;
         s.keys.clear();
         const e = s.escape;
-        const made = Boolean(e && e.area === planet.id && s.t - e.at <= e.s);
+        const made = madeIt(e, via.id, s.t);
         s.escape = null; // (through the portal: its clock stops, under any line it holds for)
         const out = made ? complete(e.task) : null;
         if (made) unlock(e.task);
@@ -917,6 +919,10 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
       else if (climb) sound('splat');
       const w = api.current;
       const loading = w && !w.hasArea(l.to) ? w.ensureArea(l.to) : null;
+      // home from a place left in a hurry, inside the time it gave him: judged at the press (its clock stops under the swirl)
+      const e = s.escape;
+      const made = madeIt(e, l.id, s.t);
+      if (made) s.escape = null;
       later(async () => {
         if (loading) {
           if (l.kind === 'portal') setOpening(AREA_NAME[l.to] ?? null);
@@ -950,13 +956,11 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
         }
         if (l.id === 'garage-hatch') complete('basement');
         if (l.id === 'garage-oval') complete('oval');
-        // home from a place left in a hurry, inside the time it gave him
-        const e = s.escape;
-        if (e && l.id === `${e.area}-portal` && s.t - e.at <= e.s) {
+        if (made) {
           complete(e.task);
           unlock(e.task);
         }
-        if (e?.area === l.area) s.escape = null;
+        if (s.escape?.area === l.area) s.escape = null;
         // (what he's used is for this visit, the place he's left settles, and a fight he walked out of is over)
         s.used = new Set();
         s.duel = null;
@@ -1117,7 +1121,7 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
   const npc = useCallback(
     (name, e) => {
       const s = sim.current;
-      if (!s || s.fading || s.area !== e.area) return;
+      if (!newsHeard(name, s, e)) return; // (a win's heard through a fade: ./news.js)
       if (name === 'caught') {
         const d = destinationById(e.area);
         if (!d) return;

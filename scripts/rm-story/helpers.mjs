@@ -10,8 +10,9 @@
 // from its data (./places.mjs); and at the Citadel (window.__CITADEL__), its
 // page up, its line read (the story's step over its own) and its toast
 // waited for; a place dialled from the garage and home through its own
-// portal, a task not done after a while, the Story tab's ticks; and Rick's
-// rooms on the Vindicators' ship, as their rules have them. Kept apart from
+// portal, a task not done after a while, the Story tab's ticks, a page
+// opened with a place's people held back; and Rick's rooms on the
+// Vindicators' ship, as their rules have them. Kept apart from
 // the scenarios so no file passes 800 lines.
 import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -310,6 +311,32 @@ export async function open(page, hash) {
   await page.goto(`${BASE}/${hash}`, { waitUntil: 'domcontentloaded' });
   await page.reload({ waitUntil: 'domcontentloaded' });
   await built(page);
+}
+// a page of the site opened afresh at `hash` with the cast's files for
+// `names` held back (a place's people still on the way: its cast stands only
+// once every kind's in), till Morty's in `area`, it's built and in view; what
+// it hands back lets them through and waits till the world's ready
+export async function openHeld(page, hash, area, names) {
+  let free;
+  const held = new Promise((r) => (free = r));
+  // (a figure's model and its clips: <name>.glb, <name>-walk.glb and the rest)
+  const asked = (url) => names.some((n) => new RegExp(`/${n}(-[a-z]+)?\\.glb$`).test(url.pathname));
+  const hold = async (route) => {
+    await held;
+    await route.continue();
+  };
+  await page.route(asked, hold);
+  await page.goto(`${BASE}/${hash}`, { waitUntil: 'domcontentloaded' });
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await page.waitForFunction((a) => window.__C137__?.sim?.area === a && window.__C137__.api?.hasArea(a), area, { timeout: 600000, polling: 250 }).catch(async () => {
+    throw new Error(`Morty isn’t in a built ${area} (he’s in ${await page.evaluate(() => window.__C137__?.sim?.area)})`);
+  });
+  await page.evaluate(() => document.querySelector('.rm-world')?.scrollIntoView({ block: 'start' }));
+  return async () => {
+    free();
+    await page.unroute(asked, hold);
+    await built(page);
+  };
 }
 export const rickallOn = (page) => page.waitForFunction(() => window.__C137__.sim.rickall?.phase === 'on', null, { timeout: 300000, polling: 250 });
 

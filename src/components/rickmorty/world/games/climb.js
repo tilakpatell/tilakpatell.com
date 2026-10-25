@@ -18,7 +18,8 @@
 //     picks: [spot ids], things to pick up, each at its own spot (Bird World's
 //     crystals): with them it's won once they're all picked, on the top too if
 //     it has one; with neither a top nor picks it's never won
-//   stepClimb(game, { morty, pick }, dt) → game   morty: { x, z, y, air }; pick: a spot picked this frame, or null
+//   stepClimb(game, { morty, pick, tame }, dt) → game   morty: { x, z, y, air }; pick: a spot picked this frame, or null;
+//     tame: [stair ids] that never bite (a stair whose figure never stood: unseen, so harmless)
 //     events: start | won | lost { why: 'bitten', stair } | fell { from } | pick { id }
 //   standingOn(ledges, morty) → the id of the ledge he's on, or null
 //   stairPose(game, i) → { mood: 'still' | 'shiver' | 'bite', k }   k: the share of the way through it
@@ -27,7 +28,8 @@
 //   moods(game) → { [stair id]: mood }
 //   nextStair(game) → the stair under him, else the next one up, as an index; −1 past them
 //   climbNews(game, { done, fading }) → 'done' | 'caught' | null   what the place says
-//   climbReadout(snapshot, words) → { on, vitals, line }   for the HUD's meter
+//   climbReadout(snapshot, words) → { on, vitals, line }   for the HUD's meter (with picks: the mood of
+//     the stair underfoot, or of one whose first tread is a hop up from the ledge he's on, else the count)
 //
 // `perks` (the shop's, P13) are taken and, until the shop decides what they
 // do here, none is read.
@@ -38,6 +40,7 @@ export const TUNING = Object.freeze({
   bite: 0.8, // then bites
   lag: 1.2, // seconds between one stair's beat and the next one up's
   edge: 0.1, // how far past a ledge's edge he still stands on it (the walker's, ../rules.js: a quarter of his radius)
+  hop: 1.11, // metres: as high as he gets onto anything (the walker's CLIMB, ../rules.js)
   level: 0.02, // how near its top his feet must be
   fall: 4, // metres: a fall to the ground from a ledge this high is said
   near: 6, // metres from the stairs' foot that the meter comes on
@@ -102,7 +105,7 @@ export function nextStair(g) {
 // won: every pick picked (with picks), on the top (with a top); neither, never
 const wins = (g) => (g.top != null || g.picks.length > 0) && (g.top == null || g.on === g.top) && g.picks.every((id) => g.picked.includes(id));
 
-export function stepClimb(prev, { morty = null, pick = null } = {}, dt = 1 / 60) {
+export function stepClimb(prev, { morty = null, pick = null, tame = [] } = {}, dt = 1 / 60) {
   if (prev.phase === 'won' || prev.phase === 'lost') return { ...prev, events: [] };
   const g = { ...prev, events: [], t: prev.t + Math.min(Math.max(dt, 0), TUNING.frame) };
   g.on = standingOn(g.ledges, morty);
@@ -125,7 +128,7 @@ export function stepClimb(prev, { morty = null, pick = null } = {}, dt = 1 / 60)
     g.events.push({ type: 'won' });
     return g;
   }
-  const bitten = g.stairs.findIndex((s, i) => s.steps.includes(g.on) && stairPose(g, i).mood === 'bite');
+  const bitten = g.stairs.findIndex((s, i) => s.steps.includes(g.on) && !tame.includes(s.id) && stairPose(g, i).mood === 'bite');
   if (bitten >= 0) {
     g.phase = 'lost';
     g.events.push({ type: 'lost', why: 'bitten', stair: g.stairs[bitten].id });
@@ -153,11 +156,27 @@ export function climbReadout(g, words = WORDS) {
   return { on: true, vitals: { value: g.peak ? Math.round((100 * g.stand) / g.peak) : 0, max: 100, low: mood === 'shiver' || mood === 'bite' }, line };
 }
 
+// (how far a ledge's footprint reaches from its middle: a circle's radius, a box's half diagonal, near enough)
+const reach = (l) => (l.kind === 'circle' || l.r != null ? l.r : Math.hypot(l.w, l.d) / 2);
+// the stair he's about to step onto: its first tread higher than the ledge
+// he's on by no more than a hop, and touching it (Bird World's drum below a
+// crumbling stair); −1 on the ground, or with none
+function stairAhead(g) {
+  const at = g.ledges.find((l) => l.id === g.on);
+  if (!at) return -1;
+  return g.stairs.findIndex((s) => {
+    const l = g.ledges.find((o) => o.id === s.steps[0]);
+    return Boolean(l) && l.top > at.top && l.top - at.top <= TUNING.hop && Math.hypot(l.x - at.x, l.z - at.z) <= reach(l) + reach(at) + TUNING.edge;
+  });
+}
+
 // with things to pick up: on from the first (idle or running), the bar the
-// share picked, the line the mood of a stair underfoot, else how many found
+// share picked, the line the mood of a stair underfoot or the one a hop up
+// from where he stands, else how many found
 function picksReadout(g, words) {
   if (!(g.phase === 'run' || g.phase === 'idle')) return { on: false, vitals: null, line: '' };
   const under = g.stairs.findIndex((s) => s.steps.includes(g.on));
-  const mood = under >= 0 ? stairPose(g, under).mood : null;
+  const i = under >= 0 ? under : stairAhead(g);
+  const mood = i >= 0 ? stairPose(g, i).mood : null;
   return { on: true, vitals: { value: Math.round((100 * g.picked.length) / g.picks.length), max: 100, low: mood === 'shiver' || mood === 'bite' }, line: mood ? words[mood] : words.found(g.picked.length, g.picks.length) };
 }
