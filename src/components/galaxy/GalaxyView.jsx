@@ -17,7 +17,7 @@ import LoadingVeil from '../worlds/LoadingVeil';
 import BattleEnd from './BattleEnd';
 import FlightCluster from './FlightCluster';
 import KeysCard from './KeysCard';
-import { FlightHud } from '../../runtime/hud';
+import { FlightHud, HeldButton } from '../../runtime/hud';
 
 // The galaxy's 3D view (scene.js, a world module on the world runtime:
 // ./module.js) and everything over it:
@@ -185,15 +185,15 @@ export default function GalaxyView({ system, here, handle, holo = null, ship, lo
   const closeKeys = useCallback(() => (setFlown(true), setKeysOpen(false)), []);
   const toggleKeys = () => (showKeys ? closeKeys() : setKeysOpen(true));
 
-  const hold = (down) => (e) => (e.preventDefault(), view.current?.boost?.(down));
-  const trigger = (down) => (e) => (e.preventDefault(), view.current?.fire?.(down));
-  const climb = (way) => (e) => (e.preventDefault(), view.current?.climb?.(way));
+  // (the held ones are the kit's HeldButton, as the universe map's: it keeps
+  // the finger till it lifts, so a thumb that drifts off Fire, Boost or a
+  // climb doesn't let go of it)
   const climbButton = (way, label) => (
-    <button type="button" className="universe-climb" aria-label={label} onPointerDown={climb(way)} onPointerUp={climb(0)} onPointerCancel={climb(0)} onPointerLeave={climb(0)} onContextMenu={(e) => e.preventDefault()}>
+    <HeldButton size={52} className="universe-climb" aria-label={label} on={way} off={0} onHold={(x) => view.current?.climb?.(x)}>
       <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
         <path d={way > 0 ? 'M5 15l7-7 7 7' : 'M5 9l7 7 7-7'} fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
-    </button>
+    </HeldButton>
   );
 
   return (
@@ -266,12 +266,12 @@ export default function GalaxyView({ system, here, handle, holo = null, ship, lo
               <button type="button" className="universe-weapon" onPointerDown={(e) => (e.preventDefault(), view.current?.weapon?.())} onContextMenu={(e) => e.preventDefault()}>
                 Weapon
               </button>
-              <button type="button" className="universe-fire" onPointerDown={trigger(true)} onPointerUp={trigger(false)} onPointerCancel={trigger(false)} onPointerLeave={trigger(false)} onLostPointerCapture={trigger(false)} onContextMenu={(e) => e.preventDefault()}>
+              <HeldButton className="universe-fire" onHold={(x) => view.current?.fire?.(x)}>
                 Fire
-              </button>
-              <button type="button" className="universe-boost" onPointerDown={hold(true)} onPointerUp={hold(false)} onPointerCancel={hold(false)} onPointerLeave={hold(false)} onContextMenu={(e) => e.preventDefault()}>
+              </HeldButton>
+              <HeldButton size={76} className="universe-boost" onHold={(x) => view.current?.boost?.(x)}>
                 Boost
-              </button>
+              </HeldButton>
               <button type="button" className="galaxy-mapbtn" onClick={onMap}>
                 Galaxy map
               </button>
