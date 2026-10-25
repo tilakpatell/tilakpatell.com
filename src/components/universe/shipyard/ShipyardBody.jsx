@@ -109,6 +109,7 @@ export default function ShipyardBody({ ship, shipName = '', live, lastBuild = nu
     <>
       <YardCatalogue
         slot={slot}
+        ship={ship}
         onSlot={(s) => {
           onSlot(s);
           setNote(null);

@@ -155,6 +155,11 @@ describe('what a loadout does', () => {
     expect(partEffects(partById('booster', STOCK))).toEqual([]);
   });
 
+  it('says a gun part gives punch on a ship at the cap (B8)', () => {
+    const on = (id, kind) => partEffects(partById('guns', id), kind);
+    expect([on('incom', 'xwing'), on('twin', 'xwing'), on('incom', 'cruiser'), on('incom'), on('incom', 'falcon'), on('fusion', 'xwing')]).toEqual([['Punch +43%'], ['Punch +25%'], ['Fire rate +43%'], ['Fire rate +43%'], ['Fire rate +33%', 'Punch +7%'], ['Fire rate −50%', '3× on hunters']]);
+  });
+
   it('reads out against the factory ship, each bar inside 0…1', () => {
     const stock = readout('xwing', STOCK_LOADOUT);
     expect(stock.every((r) => r.change === 0 && r.bar > 0 && r.bar <= 1)).toBe(true);

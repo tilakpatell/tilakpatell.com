@@ -122,7 +122,7 @@ import { INTERDICTION, createInterdiction, cutAt, dropPoint, holdLifts, inWell, 
 import { createInterdictor } from './interdictor';
 import { createWarFront } from './warfront';
 import { createCluster } from './cluster';
-import { PICKUPS, createPickups, gunsUnder } from './pickups';
+import { PICKUPS, createPickups } from './pickups';
 import { createPickupFx } from './pickupFx';
 import { createRadar } from '../../lib/combat/flight/radar';
 import { drawRadar } from '../../runtime/hud/flight/radarDraw';
@@ -130,7 +130,7 @@ import { createFrame, distText, fillFlight } from '../../runtime/hud/flight/fram
 import { createFlightHud } from '../../runtime/hud/flight/flightHud.js';
 import { armsView, arsenalOf, chargeFor, createArmory, createGalaxyPowers, createRounds, createUniqueArms, fan, picksFor } from '../universe/shared/flying';
 import { shotPunch } from './gunRules';
-import { CADENCE, createGuns } from '../../lib/combat/flight/guns';
+import { CADENCE, createGuns, pace } from '../../lib/combat/flight/guns';
 import { effectsFor } from './warEffects';
 import { CABS } from './cabs';
 import { warNow } from './warState';
@@ -494,7 +494,7 @@ export async function create(canvas, ctx) {
     return chipList;
   };
   const pickupFx = createPickupFx(scene, { prepare: (o) => warm(o), reduced });
-  const gun = { gap: 0, punch: 1 }; // (the guns' delay and punch with rapid fire on, as gunsUnder writes them)
+  const gun = { gap: 0, punch: 1 }; // (the guns' delay and punch with rapid fire on, as pace writes them)
 
   // ── The system you're in ──
   const followDrawn = followRatio(post, (r) => (sky.setRatio(r), state.world?.setRatio(r))); // (the ratio the points are sized by: ./drawnAt.js)
@@ -1014,7 +1014,7 @@ export async function create(canvas, ctx) {
     const s = state.ship;
     const now = performance.now();
     const g = state.stats; // (the guns fitted in the hangar: how fast, how hard; a rapid-fire pickup quicker still, and harder where the quickest they may fire holds it back)
-    gunsUnder((CADENCE[state.kind] ?? 0.18) * g.cadence, pickups.mods().delay, FASTEST, gun);
+    pace(CADENCE[state.kind] ?? 0.18, g.cadence * pickups.mods().delay, FASTEST, gun);
     if (!s || props.frozen || state.crash || state.jump) return;
     const arm = arms();
     if (!arm.ready(now, gun.gap)) {

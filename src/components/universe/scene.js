@@ -193,7 +193,7 @@ import { DEFAULTS as CONTROL_DEFAULTS, STICK, dragSteers, keyAxes, keyFlies, sti
 import { byId } from './universes';
 import { SIZE as PILOT_SIZE, createPilots } from './online/pilots';
 import { arsenalOf, createArmory, fan } from './weapons';
-import { CADENCE, createGuns } from '../../lib/combat/flight/guns';
+import { CADENCE, createGuns, pace, shotPunch } from '../../lib/combat/flight/guns';
 import { JAMMED, jumpState } from './words';
 import { CORE, GENS, citadelGeometry, createSiege, segmentSphere } from './siege';
 import { createCitadelSiege } from './citadelSiege';
@@ -2375,10 +2375,11 @@ export async function create(canvas, ctx) {
     return armory;
   };
   const shotAt = new THREE.Vector3();
+  const gun = { gap: 0, punch: 1 }; // (the guns' delay, and the punch a quicker part gives past the quickest they may fire, as pace writes them)
   const jitter = () => Math.random() * 2 - 1;
   // a heavy round away, homing on whatever the guns have locked
   const launch = (at, d, speed, w, g) => {
-    rounds.launch(at, d, speed, { life: AIM.life * w.life, punch: (g.punch ?? 1) * w.punch, damage: w.damage, homing: w.homing, targetId: state.lockTarget?.id ?? null });
+    rounds.launch(at, d, speed, { life: AIM.life * w.life, punch: shotPunch(w, g, gun), damage: w.damage, homing: w.homing, targetId: state.lockTarget?.id ?? null });
     state.kick = Math.max(state.kick, 0.4);
   };
 
@@ -2393,8 +2394,8 @@ export async function create(canvas, ctx) {
     const g = state.stats;
     if (!s || props.frozen || state.crash) return;
     const arm = arms();
-    const cadence = Math.max(FASTEST, (CADENCE[state.kind] ?? 0.18) * g.cadence);
-    if (!arm.ready(now, cadence)) {
+    pace(CADENCE[state.kind] ?? 0.18, g.cadence, FASTEST, gun);
+    if (!arm.ready(now, gun.gap)) {
       if (arm.weapon.heavy && arm.ammo < 1 && now - (state.dryAt ?? 0) > 700) {
         state.dryAt = now;
         emit({ type: 'dry' });
@@ -2419,10 +2420,10 @@ export async function create(canvas, ctx) {
     }
     const speed = AIM.bolt * w.speed + Math.max(0, s.speed);
     let v = [dir[0] * speed, dir[1] * speed, dir[2] * speed];
-    if (w.unique) v = unique.fire(arm.id, shotAt, dir, speed, w, (g.punch ?? 1) * w.punch);
+    if (w.unique) v = unique.fire(arm.id, shotAt, dir, speed, w, shotPunch(w, g, gun));
     else if (w.heavy) launch(shotAt, dir, speed, w, g);
     else {
-      guns.fire(shotAt, fan(dir, w.count, w.cone, jitter), speed, { life: AIM.life * w.life, punch: (g.punch ?? 1) * w.punch, damage: w.damage, scale: g.bolt * w.scale });
+      guns.fire(shotAt, fan(dir, w.count, w.cone, jitter), speed, { life: AIM.life * w.life, punch: shotPunch(w, g, gun), damage: w.damage, scale: g.bolt * w.scale });
       showBolts(); // (keys and touch fire between frames)
     }
     net?.shot(shotAt, v, w.code);

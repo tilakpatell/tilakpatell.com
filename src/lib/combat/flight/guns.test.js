@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CADENCE, createGuns, gunsUnder, pace } from './guns';
+import { CADENCE, RAPID_PUNCH_CAP, createGuns, gunsUnder, pace } from './guns';
 import { aimAngles } from './targeting';
 
 const FASTEST = 0.12;
@@ -22,6 +22,10 @@ describe('the flight core’s guns', () => {
     const out = { gap: 0, punch: 0 };
     expect(pace(0.12, 0.6, FASTEST, out)).toBe(out);
     expect(out).toEqual({ gap: 0.12, punch: 1.5 });
+  });
+  it('pace: Incom on the X-wing, then the cap (B8)', () => {
+    expect(pace(CADENCE.xwing, 0.7, FASTEST).punch).toBeCloseTo(0.12 / 0.084, 12);
+    expect(pace(CADENCE.xwing, 0.7 * 0.92, FASTEST)).toEqual({ gap: 0.12, punch: RAPID_PUNCH_CAP });
   });
 });
 
