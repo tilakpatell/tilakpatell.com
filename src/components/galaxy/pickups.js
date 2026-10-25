@@ -22,21 +22,9 @@ const KINDS = Object.keys(PICKUPS);
 const NONE = Object.freeze({ boost: 1, accel: 1, delay: 1, bubble: 0 });
 const NOTHING = Object.freeze([]);
 
-// Rapid fire's cut to the guns' delay (`delay`, ×0.6) can't take them under
-// `fastest`, the quickest any gun may fire. Where that holds it back (the
-// X-wing's own are at it already), what it couldn't give in shots it gives in
-// punch, so the buff is worth the same a second on every ship: the bolts hit
-// `punch` times as hard, up to `cap`. `base` is the seconds between shots as
-// the guns are fitted. → { gap: seconds between shots, punch } written into
-// `out` (this is asked every frame the trigger is down).
-export const RAPID_PUNCH_CAP = 1.5;
-export function gunsUnder(base, delay, fastest, out = { gap: 0, punch: 1 }) {
-  const own = Math.max(fastest, base); // (what they fire at without it)
-  const wanted = own * delay;
-  out.gap = Math.max(fastest, wanted);
-  out.punch = Math.min(RAPID_PUNCH_CAP, out.gap / wanted);
-  return out;
-}
+// Rapid fire's cut to the guns' delay, and the punch it gives where the
+// quickest gun holds it back: lib/combat/flight/guns.js's, both maps'.
+export { RAPID_PUNCH_CAP, gunsUnder } from '../../lib/combat/flight/guns';
 
 const xyz = (a) => (Array.isArray(a) ? { x: a[0], y: a[1], z: a[2] } : { x: a.x, y: a.y, z: a.z });
 

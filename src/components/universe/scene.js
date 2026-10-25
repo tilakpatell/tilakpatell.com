@@ -192,6 +192,7 @@ import { DEFAULTS as CONTROL_DEFAULTS, STICK, dragSteers, keyAxes, keyFlies, sti
 import { byId } from './universes';
 import { SIZE as PILOT_SIZE, createPilots } from './online/pilots';
 import { arsenalOf, createArmory, fan } from './weapons';
+import { CADENCE } from '../../lib/combat/flight/guns';
 import { JAMMED, jumpState } from './words';
 import { CORE, GENS, citadelGeometry, createSiege, segmentSphere } from './siege';
 import { createCitadelSiege } from './citadelSiege';
@@ -230,9 +231,7 @@ const STREAKS = 220;
 const BOLTS = 40; // shots in flight at once (a spread throws five)
 const MISSILES = 8; // heavy rounds in flight at once (weapons.js)
 const SIEGE_NEAR = 420; // map units from the Citadel's middle: its parts can be locked on to
-// seconds between shots with the trigger held (the X-wing's four cannons
-// fire in turn, so it's quickest; the RV is a man with a gun out of the window)
-const CADENCE = { xwing: 0.12, falcon: 0.16, cruiser: 0.19, rv: 0.2 };
+// (seconds between shots with the trigger held: lib/combat/flight/guns.js's CADENCE)
 const BOLT_COLOR = { falcon: '#ff4a3d', xwing: '#ff3b30', cruiser: '#9df06b', rv: '#5cc8ff' };
 // each ship's exhaust (trail.js): its colour, its white-hot core, how wide
 // and how long it is, and the cruiser's portal-plasma ripple

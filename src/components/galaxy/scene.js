@@ -127,6 +127,7 @@ import { createRadar } from './radar';
 import { drawRadar } from './radarDraw';
 import { armsView, arsenalOf, chargeFor, createArmory, createGalaxyPowers, createRounds, createUniqueArms, fan, picksFor } from '../universe/shared/flying';
 import { shotPunch } from './gunRules';
+import { CADENCE } from '../../lib/combat/flight/guns';
 import { effectsFor } from './warEffects';
 import { CABS } from './cabs';
 import { warNow } from './warState';
@@ -154,7 +155,6 @@ import { assetUrl } from '../../lib/assetBase';
 
 const BOLTS = 40; // (a flak burst is seven bolts, with room for the next)
 const ROUNDS = 8; // the heavy rounds in flight at once (the universe map's)
-const CADENCE = { xwing: 0.12, falcon: 0.16, cruiser: 0.19, rv: 0.2 };
 const BOLT_COLOR = { falcon: '#ff4a3d', xwing: '#ff3b30', cruiser: '#9df06b', rv: '#5cc8ff' };
 const PLUME = {
   cruiser: { color: '#4dff3a', core: '#e6ffd2', width: 0.036, life: 0.42, length: 0.32, wobble: 1.3, sparks: 40 },

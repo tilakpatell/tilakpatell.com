@@ -15,12 +15,14 @@
 //   ammoMax, filling, select(i), cycle(dir), ready(now, cadence) → bool,
 //   fired(now), update(dt), reload(), refit(loadout, fx?) }
 // `cadence` is the ship's own seconds between blaster shots (outfit.js and
-// scene.js's CADENCE); each weapon fires at a multiple of it.
+// lib/combat/flight/guns.js's CADENCE); each weapon fires at a multiple of it.
 
 import { STOCK, STOCK_LOADOUT, partById } from './outfit';
 import { WEAPONS } from './weaponTable';
 
 export { WEAPONS, burstOf, byCode, rackOf } from './weaponTable';
+// (a fan of shots and a homing round's steering: lib/combat/flight/guns.js's, both maps')
+export { fan, steer } from '../../lib/combat/flight/guns';
 
 export const LINES = ['primary', 'secondary', 'ordnance'];
 export const LINE_SLOT = { primary: 'guns', secondary: 'secondary', ordnance: 'ordnance' };
@@ -172,64 +174,4 @@ export function armsView(a, out = { name: '', line: 'primary', index: 0, ammo: 0
   out.max = a.ammoMax;
   out.filling = a.filling;
   return out;
-}
-
-// the directions of a fan of `count` shots about `dir` (a unit [x, y, z]),
-// `cone` radians apart, spread across the view (side to side, one a little
-// high and one low so it reads as a fan, not a line). jitter: −1…1 per shot.
-export function fan(dir, count, cone, jitter = () => 0) {
-  if (count <= 1 || !cone) return [dir];
-  // a side vector (level) and an up vector, both across the shot
-  let sx = -dir[2];
-  let sz = dir[0];
-  const sl = Math.hypot(sx, sz) || 1;
-  sx /= sl;
-  sz /= sl;
-  // up = side × dir (the side vector is level, so its y is 0)
-  const ux = -sz * dir[1];
-  const uy = sz * dir[0] - sx * dir[2];
-  const uz = sx * dir[1];
-  const out = [];
-  for (let i = 0; i < count; i++) {
-    const across = (i - (count - 1) / 2) * cone + jitter() * cone * 0.25;
-    const up = (i % 2 ? 0.5 : -0.5) * cone * (i === (count - 1) / 2 ? 0 : 1) + jitter() * cone * 0.25;
-    const x = dir[0] + sx * across + ux * up;
-    const y = dir[1] + uy * up;
-    const z = dir[2] + sz * across + uz * up;
-    const l = Math.hypot(x, y, z) || 1;
-    out.push([x / l, y / l, z / l]);
-  }
-  return out;
-}
-
-// turn velocity `v` toward `to` (a unit direction) by at most `rate` radians
-// a second, keeping its speed: a homing round's steering. In place.
-export function steer(v, to, rate, dt) {
-  const speed = Math.hypot(v[0], v[1], v[2]) || 1;
-  const fx = v[0] / speed;
-  const fy = v[1] / speed;
-  const fz = v[2] / speed;
-  const dot = Math.max(-1, Math.min(1, fx * to[0] + fy * to[1] + fz * to[2]));
-  const angle = Math.acos(dot);
-  if (angle < 1e-5) return v;
-  if (rate * dt >= angle) {
-    v[0] = to[0] * speed;
-    v[1] = to[1] * speed;
-    v[2] = to[2] * speed;
-    return v;
-  }
-  // turned by exactly rate·dt toward `to`, in the plane the two share
-  let px = to[0] - fx * dot;
-  let py = to[1] - fy * dot;
-  let pz = to[2] - fz * dot;
-  const pl = Math.hypot(px, py, pz) || 1;
-  px /= pl;
-  py /= pl;
-  pz /= pl;
-  const c = Math.cos(rate * dt);
-  const s = Math.sin(rate * dt);
-  v[0] = (fx * c + px * s) * speed;
-  v[1] = (fy * c + py * s) * speed;
-  v[2] = (fz * c + pz * s) * speed;
-  return v;
 }
