@@ -197,8 +197,11 @@ export function createBattleScene(parent, { models, small = false, reduced = fal
       const slot = r && slots.get(r);
       if (slot) slot.holder.visible = false;
     }
-    else if (e.type === 'arrive') flashes.at(pt.set(e.at.x, e.at.y, e.at.z), { size: 0.9, life: 0.45, color: [0.7, 1.0, 2.2] });
-    else if (e.type === 'impact') {
+    // (a wave out of a carrier's hangar comes out of the ship: no flash; one
+    // put up in the open, a respawn or a stage's wave, a small white-blue pop)
+    else if (e.type === 'arrive') {
+      if (!e.hangar) flashes.at(pt.set(e.at.x, e.at.y, e.at.z), { size: 0.35, life: 0.25, color: [1.4, 1.6, 2.0] });
+    } else if (e.type === 'impact') {
       flashes.at(pt.set(e.at.x, e.at.y, e.at.z), { size: e.size * (e.shield ? 0.8 : 1.2), life: e.shield ? 0.5 : 0.8, color: e.shield ? [0.5, 1.2, 2.6] : [2.6, 1.3, 0.4] });
       if (e.shield) shield.hit(e.at);
       else if (e.size >= 1) {

@@ -378,9 +378,10 @@ export function buildSystem(sys, { models, bolts, flashes, small = false, ratio 
         if (p.shield) {
           const R = p.size * 0.66;
           const shell = addSolid({ id: 'ds2-shield', at: p.at, r: R, reach: R, shield: true });
+          // (unseen at rest, as in the films, but for a faint rim at the limb: a bump, or its going down, flares the rim and faintly the face)
           const mat = new THREE.ShaderMaterial({
             vertexShader: 'varying vec3 vN; varying vec3 vV; void main() { vec4 w = modelMatrix * vec4(position, 1.0); vN = normalize(mat3(modelMatrix) * normal); vV = normalize(cameraPosition - w.xyz); gl_Position = projectionMatrix * viewMatrix * w; }',
-            fragmentShader: 'uniform float uOn; uniform float uHit; varying vec3 vN; varying vec3 vV; void main() { float f = pow(1.0 - abs(dot(vN, vV)), 3.0); vec3 c = vec3(0.35, 0.85, 1.0) * (f * 0.5 + uHit * 0.35) * uOn; gl_FragColor = vec4(c, 1.0); }',
+            fragmentShader: 'uniform float uOn; uniform float uHit; varying vec3 vN; varying vec3 vV; void main() { float f = pow(1.0 - abs(dot(vN, vV)), 3.0); vec3 c = vec3(0.35, 0.85, 1.0) * (f * 0.04 + uHit * (0.1 + 0.5 * f)) * uOn; gl_FragColor = vec4(c, 1.0); }',
             uniforms: { uOn: { value: 1 }, uHit: { value: 0 } },
             transparent: true,
             blending: THREE.AdditiveBlending,
@@ -390,6 +391,8 @@ export function buildSystem(sys, { models, bolts, flashes, small = false, ratio 
           const bubble = new THREE.Mesh(new THREE.SphereGeometry(R, 48, 32), mat);
           bubble.position.copy(at);
           group.add(bubble);
+          // (hidden with its station: a level that draws its own Death Star hides the galaxy's)
+          st.bubble = bubble;
           disposers.push(() => (bubble.geometry.dispose(), mat.dispose()));
           out.dsShield = { solid: shell, mat, R };
           // the shield is up for four minutes, then the strike team on Endor gets it down for two
@@ -401,6 +404,7 @@ export function buildSystem(sys, { models, bolts, flashes, small = false, ratio 
             mat.uniforms.uOn.value += ((up ? 1 : 0) - mat.uniforms.uOn.value) * clamp01(dt * 2);
             mat.uniforms.uHit.value = Math.max(0, mat.uniforms.uHit.value - dt * 1.5);
             if (was !== null && was !== up) events.push({ type: 'event', id: up ? 'shield-up' : 'shield-down' });
+            if (was === true && !up && st.holder.visible) mat.uniforms.uHit.value = 1; // (seen once, as it fails, where it's seen)
             was = up;
             return mat.uniforms.uHit.value > 0;
           });
@@ -919,6 +923,7 @@ export function buildSystem(sys, { models, bolts, flashes, small = false, ratio 
       const st = stations[kind];
       if (!st) return;
       st.holder.visible = shown;
+      if (st.bubble) st.bubble.visible = shown;
       for (const x of st.solids) {
         x.o.r = shown ? x.r : 0;
         x.o.reach = shown ? x.reach : 0;

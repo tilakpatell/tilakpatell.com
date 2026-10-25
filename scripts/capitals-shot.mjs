@@ -27,7 +27,7 @@ const page = await browser.newPage({ viewport: { width: W * 2, height: H * 2 } }
 const errors = [];
 page.on('pageerror', (e) => errors.push(String(e)));
 page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
-const q = new URLSearchParams({ kind: String(args.kind ?? 'destroyer'), quality: String(args.quality ?? 'high'), w: String(W), h: String(H), break: String(args.break ?? ''), views: String(args.views ?? ''), split: String(args.split ?? 0) });
+const q = new URLSearchParams({ kind: String(args.kind ?? 'destroyer'), quality: String(args.quality ?? 'high'), w: String(W), h: String(H), break: String(args.break ?? ''), views: String(args.views ?? ''), split: String(args.split ?? 0), ...(args.shadows === '0' || args.shadows === 0 ? { shadows: '0' } : {}) });
 if (args.with) q.set('with', String(args.with));
 if (args.hits) q.set('hits', '1');
 await page.goto(`${base}/scripts/preview/capitals.html?${q}`);

@@ -77,7 +77,7 @@ const saturation = (c) => {
 // (a map that says where the metal is keeps a little of it: a model's own
 // greebles a touch brighter, not a whole hull of dark chrome, the
 // Interdictor's generated model's, its metal map near white all over)
-const MAPPED_METAL = 0.2;
+export const MAPPED_METAL = 0.2;
 const painted = (m) => {
   // (down to paint, never up: a material the model made plain stays plain)
   m.metalness = Math.min(m.metalness, m.metalnessMap ? MAPPED_METAL : PAINT.metalness);

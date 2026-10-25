@@ -102,7 +102,8 @@
 // Events: { type: 'down', team, kind, role, at, mine, ace? }, { type: 'hurt', damage,
 // kind }, { type: 'sub', sub, kind, phase, at, mine, cap }, { type: 'phase',
 // phase }, { type: 'shield', down: true }, { type: 'capital', id, kind,
-// team, at }, { type: 'arrive', team, kind, at }, { type: 'impact', at,
+// team, at }, { type: 'arrive', team, kind, at, hangar? } (hangar: out of a
+// carrier's, drawn with no flash), { type: 'impact', at,
 // size, shield }, { type: 'over', winner, why }, { type: 'turret', id, cap,
 // at, mine }, { type: 'disabled', id, at, size }, { type: 'escaped', id,
 // team, kind, at }, { type: 'runner', id, team, kind, at, mine? } (one shot down),

@@ -91,8 +91,10 @@ describe('capitalKit', () => {
     const onOne = { ...PROPS, metallic: 0.8, slots: PROPS.slots.map((x) => ({ ...x, texCoord: 1 })) };
     const metal = kitMaterial(onOne, maps);
     expect(metal.metalnessMap).toBe(metal.roughnessMap);
-    expect(metal.metalness).toBe(0.8);
-    expect(kitMaterial({ ...onOne, metallic: undefined }, maps).metalness).toBe(1);
+    // (no more of it than any capital's map keeps: at 1 a ship flared white in the sky's star)
+    expect(metal.metalness).toBe(0.2);
+    expect(kitMaterial({ ...onOne, metallic: undefined }, maps).metalness).toBe(0.2);
+    expect(kitMaterial({ ...onOne, metallic: 0.1 }, maps).metalness).toBe(0.1);
     // (a colour map that didn't come: grey, not white)
     expect(kitMaterial(PROPS, { orm: map(), n: map() }).color.getHex()).not.toBe(0xffffff);
   });

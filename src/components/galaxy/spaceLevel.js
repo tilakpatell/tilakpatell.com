@@ -22,6 +22,7 @@ import { LIGHTS } from '../../data/bf2017/light';
 import { METRES } from './surface/missions/starfighter';
 import { levelHull } from './capitalHull';
 import { paneHeight, windowsMaterial, withPanes } from './capitalKit';
+import { MAPPED_METAL } from './capitalLook';
 import { budget, device } from '../../lib/device';
 
 const _v = new THREE.Vector3();
@@ -59,6 +60,16 @@ export const litWindows = (root, made = {}, { panes = () => paneHeight(undefined
   });
   return made;
 };
+
+// (the level's own capitals' metal no more than the war's, capitalLook.js's
+// MAPPED_METAL: the level loader keeps a part's ORM metal at the GLB's
+// factor, 1, and a Star Destroyer's panels mirrored the sky's star, the
+// ship flaring white at some angles; capitalKit.js's kit parts the same)
+export const capMetal = (root) =>
+  root.traverse((o) => {
+    if (!o.isMesh) return;
+    for (const m of [o.material].flat()) if (m?.metalnessMap && m.metalness > MAPPED_METAL) m.metalness = MAPPED_METAL;
+  });
 
 // (a level's own bare hull, a Star Destroyer's, a Venator's, an MC80's: the
 // game's material on it as the war's ship of its kind has, capitalHull.js's
@@ -127,6 +138,7 @@ export function drawSpaceLevel(scene, { pack, origin, packOrigin, tier, renderer
         if (now - looked >= 1000) {
           looked = now;
           hulled(group);
+          capMetal(group);
           litWindows(group, lit);
           greyed(group);
         }

@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
-import { hulled, litWindows } from './spaceLevel';
+import { capMetal, hulled, litWindows } from './spaceLevel';
 
 describe('spaceLevel', () => {
   it('gives a level’s own bare hull the game’s material of its kind, asking once a mesh, and leaves the rest', async () => {
@@ -44,5 +44,15 @@ describe('spaceLevel', () => {
     await Promise.resolve();
     expect(asked).toHaveLength(1);
     expect(made.windows.userData.panes.height.value).toBe(height);
+  });
+
+  it('keeps the level’s own capitals’ mapped metal to a capital’s, and leaves a plain material be', () => {
+    const group = new THREE.Group();
+    const panel = new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshStandardMaterial({ metalness: 1, metalnessMap: new THREE.Texture() }));
+    const plain = new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshStandardMaterial({ metalness: 0.9 }));
+    group.add(panel, plain);
+    capMetal(group);
+    expect(panel.material.metalness).toBe(0.2);
+    expect(plain.material.metalness).toBe(0.9);
   });
 });

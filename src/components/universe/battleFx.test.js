@@ -66,6 +66,50 @@ describe('a bolt’s look', () => {
     draw.dispose();
     expect(parent.children).toHaveLength(0);
   });
+
+  const haloOf = (parent) => {
+    const c = new THREE.Color();
+    parent.children.filter((o) => o.isInstancedMesh)[1].getColorAt(0, c);
+    return c;
+  };
+
+  it('keeps the sheath purer than the side’s colour', () => {
+    const parent = new THREE.Group();
+    const draw = createBoltDraw(parent, { count: 2 });
+    draw.sync([{ on: true, team: 0, kind: 'laser', x: 0, y: 0, z: 0, vx: 60, vy: 0, vz: 0, age: 1 }], () => [3, 0.4, 0.3]);
+    // (its grey part taken out: a halo the colour, dimmed, tone-maps pastel)
+    const halo = haloOf(parent);
+    expect(halo.g / halo.r).toBeLessThan((0.4 / 3) * 0.7);
+    draw.dispose();
+  });
+
+  it('lights every side’s halo as bright as another’s, its grey taken out or not (GLOW’s rule)', () => {
+    const lit = (rgb) => {
+      const parent = new THREE.Group();
+      const draw = createBoltDraw(parent, { count: 2 });
+      draw.sync([{ on: true, team: 0, kind: 'laser', x: 0, y: 0, z: 0, vx: 60, vy: 0, vz: 0, age: 1 }], () => rgb);
+      const h = haloOf(parent);
+      draw.dispose();
+      return luminance([h.r, h.g, h.b]);
+    };
+    const red = lit(glowAt([5.8, 0.75, 0.55], GLOW.laser));
+    const green = lit(glowAt([0.5, 5.5, 0.9], GLOW.laser));
+    expect(red / green).toBeCloseTo(1, 6);
+  });
+
+  it('dims a far bolt', () => {
+    const parent = new THREE.Group();
+    const draw = createBoltDraw(parent, { count: 2 });
+    const bolt = { on: true, team: 0, kind: 'laser', x: 0, y: 0, z: 0, vx: 60, vy: 0, vz: 0, age: 1 };
+    draw.sync([bolt], () => [3, 0.4, 0.3], new THREE.Vector3(0, 50, 0));
+    const near = haloOf(parent).r;
+    draw.sync([bolt], () => [3, 0.4, 0.3], new THREE.Vector3(0, 450, 0));
+    // (the far fight dimmer, not confetti of one brightness; never put out)
+    const ratio = haloOf(parent).r / near;
+    expect(ratio).toBeGreaterThanOrEqual(0.35);
+    expect(ratio).toBeLessThanOrEqual(0.5);
+    draw.dispose();
+  });
 });
 
 describe('the objective markers', () => {

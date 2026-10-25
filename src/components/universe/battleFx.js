@@ -31,18 +31,24 @@ export function glowAt(rgb, lum) {
 }
 
 // ── bolts: one instanced draw, each a thin glowing rod along its way ──
+// (long and thin: a fat one read as a pastel capsule)
 const BOLT_LOOK = {
-  laser: { length: 0.6, width: 0.018, bright: 1 },
-  flak: { length: 0.3, width: 0.022, bright: 0.8 },
-  turbo: { length: 3.2, width: 0.06, bright: 1 },
+  laser: { length: 0.9, width: 0.013, bright: 1 },
+  flak: { length: 0.4, width: 0.016, bright: 0.8 },
+  turbo: { length: 4.4, width: 0.05, bright: 1 },
   torpedo: { length: 0.22, width: 0.09, bright: 1.6 },
 };
 // a bolt's core, a share of its look's width, its colour this far toward
-// white at this much its brightness; and its halo round it
-const CORE = { width: 0.5, white: 0.6, bright: 1.3 };
-const HALO = { width: 1.9, length: 1.05, bright: 0.2 };
+// HOT (a yellow-white, at the colour's own luminance: toward grey, a red
+// went pink) at this much its brightness; and its halo round it, this much
+// of its colour's grey taken out (a purer hue at a lower peak: post.js's
+// shoulder greys a bright one, so a brighter halo read paler, not redder)
+const CORE = { width: 0.3, white: 0.5, bright: 1 };
+const HOT = [1, 0.82, 0.6];
+const HOT_N = HOT.map((v) => v / luminance(HOT));
+const HALO = { width: 2.6, length: 1.05, bright: 0.12, pure: 0.6 };
 export function createBoltDraw(parent, { count = 320 } = {}) {
-  // (two draws: a bolt's hot core, near white, and the glow of its colour
+  // (two draws: a bolt's hot core, toward white, and the glow of its colour
   // round it, wider and dimmer, as the films draw them; one draw was a
   // tube of flat colour)
   const geo = new THREE.CylinderGeometry(1, 1, 1, 6, 1).rotateX(Math.PI / 2);
@@ -68,11 +74,12 @@ export function createBoltDraw(parent, { count = 320 } = {}) {
   return {
     // bolts: battle.js's pool; colourOf(bolt) → [r, g, b]; eye: the camera, in
     // the parent's space (a bolt right by it is dimmed: one passing a few
-    // metres off shouldn't fill the screen with its glow); ahead: seconds
-    // past the battle's last step (each bolt's carried on that far, so a
-    // bolt doesn't stutter along at the battle's 30 steps a second), or,
-    // less than nothing, before it: the fighters' time, a step behind
-    // (battle.js's `behind`)
+    // metres off shouldn't fill the screen with its glow; and one far off,
+    // from 80 units to 0.4 of it at 320, so the far fight reads as far, not
+    // as confetti of one brightness); ahead: seconds past the battle's last
+    // step (each bolt's carried on that far, so a bolt doesn't stutter along
+    // at the battle's 30 steps a second), or, less than nothing, before it:
+    // the fighters' time, a step behind (battle.js's `behind`)
     sync(bolts, colourOf, eye = null, ahead = 0) {
       let n = 0;
       for (const b of bolts) {
@@ -83,7 +90,9 @@ export function createBoltDraw(parent, { count = 320 } = {}) {
         const x = b.x + b.vx * by;
         const y = b.y + b.vy * by;
         const z = b.z + b.vz * by;
-        const near = eye ? Math.min(1, Math.max(0.12, (Math.hypot(x - eye.x, y - eye.y, z - eye.z) - look.length) / (look.length * 4 + 2))) : 1;
+        const dist = eye ? Math.hypot(x - eye.x, y - eye.y, z - eye.z) : 0;
+        const near = eye ? Math.min(1, Math.max(0.12, (dist - look.length) / (look.length * 4 + 2))) : 1;
+        const far = eye ? Math.min(1, Math.max(0.4, 1 - (dist - 80) / 400)) : 1;
         d.set(b.vx, b.vy, b.vz).normalize();
         q.setFromUnitVectors(Z, d);
         // (drawn a little behind its point, so it trails from where it is)
@@ -93,11 +102,15 @@ export function createBoltDraw(parent, { count = 320 } = {}) {
         s.set(look.width * HALO.width, look.width * HALO.width, look.length * HALO.length);
         halo.setMatrixAt(n, m.compose(p, q, s));
         const rgb = colourOf(b);
-        const k = look.bright * near;
-        // (the core: the colour toward white at the same brightness; the halo: the colour, dim)
+        const k = look.bright * near * far;
+        // (the core: the colour toward HOT at the same brightness; the halo: the colour, its grey part taken out, dim)
         const w = luminance(rgb) * CORE.white;
-        mesh.setColorAt(n, c.setRGB((rgb[0] * (1 - CORE.white) + w) * k * CORE.bright, (rgb[1] * (1 - CORE.white) + w) * k * CORE.bright, (rgb[2] * (1 - CORE.white) + w) * k * CORE.bright));
-        halo.setColorAt(n, c.setRGB(rgb[0] * k * HALO.bright, rgb[1] * k * HALO.bright, rgb[2] * k * HALO.bright));
+        mesh.setColorAt(n, c.setRGB((rgb[0] * (1 - CORE.white) + HOT_N[0] * w) * k * CORE.bright, (rgb[1] * (1 - CORE.white) + HOT_N[1] * w) * k * CORE.bright, (rgb[2] * (1 - CORE.white) + HOT_N[2] * w) * k * CORE.bright));
+        // (and back to the colour's own luminance, so every side's halo reads as bright: GLOW's rule)
+        const lum = luminance(rgb);
+        const lo = Math.min(rgb[0], rgb[1], rgb[2]) * HALO.pure;
+        const kh = k * HALO.bright * (lum > lo ? lum / (lum - lo) : 1);
+        halo.setColorAt(n, c.setRGB((rgb[0] - lo) * kh, (rgb[1] - lo) * kh, (rgb[2] - lo) * kh));
         n += 1;
       }
       mesh.count = n;

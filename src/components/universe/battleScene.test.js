@@ -68,6 +68,22 @@ describe('createBattleScene', () => {
     draw.dispose();
   });
 
+  it('flashes a wave put up in the open, a small pop, and none for one out of a carrier’s hangar', () => {
+    // (the same battle drawn twice, the one event apart: the flashes' instances counted)
+    const lit = (hangar) => {
+      const parent = new THREE.Group();
+      const draw = createBattleScene(parent, { models: stubModels(), small: true });
+      const battle = createBattle({ war: WARS.starwars, attacker: 0, at: [0, 0, 0], axis: [1, 0], perSide: 2 });
+      draw.show(battle, WARS.starwars);
+      draw.update(1 / 30, 1, new THREE.PerspectiveCamera(), new THREE.Vector3(), [{ type: 'arrive', team: 0, kind: 'xwing', at: new THREE.Vector3(5, 0, 5), hangar }], 0);
+      let n = 0;
+      parent.traverse((o) => o.isInstancedMesh && (n += o.count));
+      draw.dispose();
+      return n;
+    };
+    expect(lit(false) - lit(true)).toBe(1);
+  });
+
   // (the battle steps 1/30 s at a time: drawn where it was at the last step, a
   // fighter would stutter on a faster screen; carried on along its way, it
   // left its line and snapped its nose round at every step, so it's drawn

@@ -162,10 +162,13 @@ import { assetUrl } from '../../lib/assetBase';
 const BOLTS = 40; // (a flak burst is seven bolts, with room for the next)
 const ROUNDS = 8; // the heavy rounds in flight at once (the universe map's)
 const BOLT_COLOR = { falcon: '#ff4a3d', xwing: '#ff3b30', cruiser: '#9df06b', rv: '#5cc8ff' };
+// (the X-wing's and the Falcon's a glow at the nozzle at cruise, as in the
+// films and BF2, not a contrail: under 0.6 of the ship, the universe map's
+// cap on its own, engines.js's ENGINE_CAP; the boost still draws them out)
 const PLUME = {
   cruiser: { color: '#4dff3a', core: '#e6ffd2', width: 0.036, life: 0.42, length: 0.32, wobble: 1.3, sparks: 40 },
-  falcon: { color: '#5cbcff', core: '#eef8ff', width: 0.034, life: 0.45, length: 0.36, wobble: 0 },
-  xwing: { color: '#ff6a36', core: '#fff0dc', width: 0.017, life: 0.38, length: 0.3, wobble: 0 },
+  falcon: { color: '#5cbcff', core: '#eef8ff', width: 0.034, life: 0.2, length: 0.12, wobble: 0 },
+  xwing: { color: '#ff6a36', core: '#fff0dc', width: 0.017, life: 0.15, length: 0.08, wobble: 0 },
   rv: { color: '#ff9a3c', core: '#fff0d8', width: 0.02, life: 0.4, length: 0.3, wobble: 0 },
 };
 const SEAT_KEY = 'tp:universe-seat'; // (the universe map's: one seat, wherever you fly)

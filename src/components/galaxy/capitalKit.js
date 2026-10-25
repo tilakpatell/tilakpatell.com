@@ -58,6 +58,7 @@ import FONDOR_ISD from '../../data/galaxy/kits/fondor-isd.json';
 import { withFallback } from '../../lib/assetBase';
 import { gltfLoader } from '../../lib/three/gltf';
 import { inFrame, joined, packMap } from './capitalHull';
+import { MAPPED_METAL } from './capitalLook';
 import { patchShaders } from './capitalPlating';
 import { onChannel, ormMetal } from './surface/level/levelGltf.js';
 import { splitTextures } from './surface/level/levelPack.js';
@@ -163,8 +164,11 @@ export function kitMaterial(def, maps) {
       m.roughnessMap = t;
       m.roughness = 1;
       if (metal) {
+        // (and no more of it than any capital's map keeps, capitalLook.js's
+        // MAPPED_METAL: at the GLB's 1, the panels mirrored the sky's star
+        // and a whole ship flared white at some angles)
         m.metalnessMap = t;
-        m.metalness = def.metallic ?? 1;
+        m.metalness = Math.min(def.metallic ?? 1, MAPPED_METAL);
       }
     }
   }
