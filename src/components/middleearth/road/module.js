@@ -14,7 +14,7 @@
 // save past the first stage is there to carry on from (the ride waits for
 // the answer), 'menu' {} and 'lore' {} on their keys, 'end' { ridden } at the Havens,
 // 'line' { who, text, at } as one of the cast says something (ambience.js).
-// The world adds: goTo(stageId), setAuto(on), press(name, down) (the touch
+// The world adds: goTo(stageId), setAuto(on), next() (reduced motion's Next, by touch or click), press(name, down) (the touch
 // buttons), carryOn() (from a few metres before a moment the ride was left
 // inside: ./carry.js), restart(), skipToEnd(); and set(s), `s`, `scene` for the checks.
 // In development, window.__ROAD__ = { set(s), info(), world, weather, ambience, vision(on), fast(k), grid(), group(), land(), floor(x, z) }.
@@ -223,6 +223,8 @@ export default {
     let still = 0; // s since the last drag
     let ended = clock.s >= 1;
     const touch = { walk: false, run: false };
+    // (the page's Next, a touch or a click, under reduced motion: taken by the next step, as an Enter)
+    let nudged = false;
     // (what's said before the page listens is held for it, as fromScene holds
     // a scene's: the first stage's card is told on the first frame)
     let held = [];
@@ -467,7 +469,9 @@ export default {
       },
       step(dt, input) {
         dt *= labPace; // (1 but in the lab, where a slow software frame is sped up to reach a beat)
-        const pressed = (name) => KEYS[name].some((c) => input?.pressed?.has?.(c));
+        const nudge = nudged;
+        nudged = false;
+        const pressed = (name) => (name === 'next' && nudge) || KEYS[name].some((c) => input?.pressed?.has?.(c));
         // (while the resume card waits, nothing walks: Enter, under reduced
         // motion, is its yes; the card's own buttons take the rest)
         if (offerOpen) {
@@ -555,6 +559,9 @@ export default {
       },
       setAuto(on) {
         clock = { ...clock, auto: Boolean(on) && !clock.reduced, pausedUntil: 0 };
+      },
+      next() {
+        nudged = true;
       },
       press(name, down) {
         if (name in touch) touch[name] = Boolean(down);
