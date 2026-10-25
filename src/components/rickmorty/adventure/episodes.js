@@ -1,6 +1,7 @@
 // The Rick and Morty adventure's thirteen episodes, as data. A Federation raid
 // wiped the coordinates in Rick's portal gun; each episode wins some back, and
-// the last ends at Evil Rick's lair with every one home.
+// the last goes through Evil Rick's lair and ends with the gun back on Rick's
+// bench, every one home.
 //
 // An episode is { id, title, intro, steps, outro, unlocks }: the lines that
 // open and close it ([who, text]), the steps it waits for in order, and the
