@@ -459,12 +459,14 @@ export const SUBSYSTEMS = {
   // the Federation's battleship, as the show drew it: its shield generators
   // in the engine pods either side, the bridge at the glass along the top up
   // front, the reactor atop the great dome at its back
+  // (on the pods' tops and the hull's glass, scripts/capital-parts.mjs: the
+  // generators were inside the pods and the bridge in the air over the hull)
   fedbattleship: flagship(
     [
-      [-0.31, -0.05, 0.14],
-      [0.31, -0.05, 0.14],
+      [-0.31, 0.05, 0.14],
+      [0.31, 0.05, 0.14],
     ],
-    [0, 0.19, 0.17],
+    [0, 0.15, 0.17],
     [0, 0.28, -0.3],
   ),
   // Gus's superlab barge (scripts/meshy-war.mjs): its shield generators the
@@ -488,7 +490,8 @@ export const SUBSYSTEMS = {
       [0.37, 0.34, -0.29],
     ],
     [0, 0.28, 0.34],
-    [0, -0.37, 0],
+    // (on the rock's foot, not buried in it: scripts/capital-parts.mjs)
+    [0, -0.46, 0],
   ),
 };
 
