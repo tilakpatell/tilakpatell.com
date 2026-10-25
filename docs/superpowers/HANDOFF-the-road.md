@@ -6,6 +6,22 @@ Middle-earth as a journey: one continuous three.js ride from Bag End to the Grey
 
 - The design, the research note, the two plans, this hand-off (pull request: the design docs).
 
+## Done (2026-10-25, the Road)
+
+- **The ride**: one continuous ride from Bag End to the Grey Havens at `/middle-earth/road`, sixteen stages each built as its film moment from the chapters’ own builders, with fifty-one deeds to do, talk with the company, lore and title cards, carry on, and the end on the Red Book’s desk (`lotrRoad`). 1,797 s on auto.
+- **Within the design’s goals**, measured in the container (`evidence/the-road/README.md`, R7): draws 295 and 163 at most on high and low (350, 200), triangles 1.12 M and 338 k (1.2 M, 400 k), the boot 7.1 MB (8), the whole 26.1 MB (45; `WORLD_MB` 27), the UI 11.6 to 13 % walking on a desktop (14) and about a tenth on a phone (22).
+- **Reduced motion** stands the ride still with Next on a key, a click and a thumb; **a phone held upright** opens the field so the company stays in frame.
+
+## Left
+
+- **Task 35, the riders online** (optional; not begun): `road/riders.js` on `universe/shared/room.js`’s `joinAsVisitor` and `online.js`’s `createLimiter`, as the plan’s Task 35 says.
+- **The owner’s steps**: the Gollum figure (`public/models/middleearth/cast/gollum{,-idle,-walk,-run}.glb`, which `road/cast.js` prefers once it exists; the Marshes to Gorgoroth draw two hobbits until then); the voice run of `road/voicelines.js` through `scripts/voices` on the desktop (the lines show as words until then); horses with legs of their own only if the farm pack’s read wrong to the owner’s eye. The WebGPU rows of the probe, on the laptop and the desktop.
+- **Shaders built in the frame**: on low the probe counted 19 late pipelines, the worst a 970 ms link as the next stage came. Compile each stage off the frame as `lands.js` finishes it.
+- **A title card on a phone** takes 15 % of the screen for a stage’s first seconds (Hobbiton’s first-ride card 24 %), over the design’s 22 % with the ribbon while it is up.
+- **Hobbiton’s opening shot on a phone** has Frodo just off the right of the frame until he walks into it (a placed shot; `fovFor` widens the field but not that far).
+- **`M`** is bound (`module.js`’s `KEYS.map`) and does nothing: the map inset of the design was never built.
+- R4’s list of what still falls short (Caradhras’ flakes in the white-out, Moria’s goblins dark on the pillars, the Balrog’s fire cards, Lothlórien’s boats’ sitters standing, the Uruks at the horn out of shot, Tol Brandir far) stands.
+
 ## The lanes
 
 | lane | what | plan | tasks | branch | session | pull request | state |
@@ -17,7 +33,7 @@ Middle-earth as a journey: one continuous three.js ride from Bag End to the Grey
 | R4 stages 7 to 10 | Caradhras and the Doors, Moria, Lothlórien, the Anduin | the same | 23 to 26 | `claude/the-road-4-mountains` | 2026-10-19 (session_01UzfodGSzW2TB9FFiJxSmHP; session_01KdZySbYwzyVSuhX44PRfB5 took it at 14:32 while the first was measuring, not stalled) | #1112 | built, looked at and measured: the four stages, every beat under the targets on both tiers; the numbers and pictures in `evidence/the-road/README.md`; done: merged; next R5 (Task 27, the Marshes) |
 | R5 stages 11 to 14 | the Marshes and the Gate, Ithilien and the Vale, Cirith Ungol, Gorgoroth and the Mountain | the same | 27 to 30 | `claude/the-road-5-mordor`, finished on `claude/dazzling-ramanujan-ak1m8j` | 2026-10-19 (session_018jwwjWBJ86aYFYdmv9GjYB), 2026-10-20 (session_015Er4bG6AGb2eoh5zdZEaMK) | the R6 pull request | done: the four stages built and looked at (the Marshes, Ithilien and Cirith Ungol by the first session, merged in; Gorgoroth and the Mountain by the second), each with its deeds; the pictures in `evidence/the-road/README.md`; the per-beat numbers on both tiers not yet taken (R7) |
 | R6 the end | the White City, the Havens, the desk, the hub’s first step, the journal, the achievement | the same | 31 to 33 | `claude/dazzling-ramanujan-ak1m8j` | 2026-10-20 (session_015Er4bG6AGb2eoh5zdZEaMK) | | done: Tasks 31 (Minas Tirith, the chapter’s own city on the Road’s light, the crowning and the bow), 32 (the Havens, the quay, the white ship and the farewell) and 33 (the end on the Red Book’s desk, the hub’s first step, Watch the passage, the journal’s row, `lotrRoad`); next R7 |
-| R7 polish | the numbers at every stage, the phone, reduced motion, the docs, the riders online | the same | 34, 35 | `claude/the-road-7-polish` | 2026-10-24 (session_01JM4xiyQ1rSk8PzRFuERU6S), 2026-10-25 (session_016zS3M6mG9A4zxbZ5C1xuFt, after the first stalled) | | in progress: the ride first, desktop and phone, and the list of where it falls short |
+| R7 polish | the numbers at every stage, the phone, reduced motion, the docs, the riders online | the same | 34, 35 | `claude/the-road-7-polish` | 2026-10-24 (session_01JM4xiyQ1rSk8PzRFuERU6S), 2026-10-25 (session_016zS3M6mG9A4zxbZ5C1xuFt, after the first stalled) | the R7 pull request | done: Task 34 (every stage under the draws and triangles on high and low, the ride 1,797 s, the boot 7.1 MB and the whole 26.1 MB, the probe’s rows, the phone, reduced motion, the guide and the tour, the docs; the numbers in `evidence/the-road/README.md`); Task 35, the riders online, not begun (optional): see Left |
 
 A session takes the next lane whose state allows it, runs until its budget, merges what is green, fills its row and leaves the next unchecked task for the next session. A lane that does not finish in one session is continued on the same branch by the next.
 
@@ -130,7 +146,7 @@ A session takes the next lane whose state allows it, runs until its budget, merg
 - **The deeps have a floor** (2026-10-22): `daylight.js`'s `refFloor` holds the light the house look measures a point against at least to what the shade's floor stands for. Under Moria's black air that light was none, every glimmer read as full light, and the shade never came, so the halls drew black. A new storm of black air needs nothing more.
 - **What the laptop check found, for every world** (2026-10-22): three's Sprites share one geometry, and a group given back with its geometries freed took it from under every sprite still drawn, freezing WebGPU's frames: `runtime/webgpu.js`'s `keepSpriteGeometry` keeps it. `lib/three/pipelineGuard.js` builds a shader after the frame, when three has emptied the scene's lights: it now leaves a scene's lights in place once its render is over, or the chapters' lit materials drew black on WebGPU. A geometry a lit hook reads the normal of must have one (`grassNodes`' blades have one now, instanced, one element): three puts a zero there, and a normalize makes it NaN.
 
-## R7’s first measure (2026-10-25, for whoever carries the lane)
+## R7’s first measure (2026-10-25, the first session’s notes)
 
 Two sessions ran R7 at once: the first’s pushes were an hour apart while it measured, and the conductor took the lane up again. The first stood down once it saw the second’s commits; its work is merged into the branch. What it measured, every stage from its address after 6 s (`lab/road/measure.mjs`, the dev server, SwiftShader):
 
