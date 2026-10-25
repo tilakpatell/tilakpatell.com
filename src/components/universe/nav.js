@@ -24,6 +24,7 @@ import { MAW, parkNear } from './maw';
 import { WONDERS, reachOf } from './deep';
 import { HOME_RADIUS, ORDER, POSITIONS, REACH, SECTORS, mapSectorOf, sectorOf } from './layout';
 import { MOONS, byId } from './universes';
+import { moonWay } from './words';
 import { LENGTH } from './scale';
 import { pilotId } from './pilotGoal';
 import { SYSTEM_MARKS, SYSTEM_NAMES } from '../galaxy/names';
@@ -128,7 +129,7 @@ export const DESTINATIONS = [
     at: POSITIONS[m.id],
     reach: REACH[m.id],
     color: m.swatch,
-    about: `${m.label}, a planet from Rick and Morty, out in the Citadel's own sector of space. Land on it and you're straight into it, on foot as Morty, with something to do there; its own portal brings you back out to space.`,
+    about: `${m.label}, a planet from the show, out in the Rick and Morty sector. ${moonWay(m)}`,
     to: m.to,
   })),
   ...WONDERS.map((w) => ({

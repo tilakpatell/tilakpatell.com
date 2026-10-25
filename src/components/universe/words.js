@@ -41,3 +41,11 @@ export const jumpState = (ready, wait) => (ready ? 'Jump: ready' : `Jump: chargi
 
 // No ship yet: the one way to say how to get one.
 export const PICK_A_SHIP = 'Pick a ship to fly out to it.';
+
+// A Rick and Morty sector planet's way in and out, as its card and the nav
+// map say it: a whole world (universes.js's `big`) is the cruiser's to land
+// on, the rest are walked into (the guide's planet page says the same).
+export const moonWay = (moon) =>
+  moon.big
+    ? 'It’s a whole world: the cruiser sets down and you climb out as Rick, Morty beside you; take off again and you’re back out in space.'
+    : 'Land on it and you’re straight into it, on foot as Morty, with something to do there; its own portal brings you back out to space.';

@@ -67,17 +67,17 @@ const BOARD = [
 // What a look through the page's portal gun is, and how to get there for real:
 // a planet's on the universe map (and the sector's four on the dial too, once
 // the story's there), the Citadel's a page of its own, C-137's here, and
-// anywhere else is on the dial of Rick's gun in the world above, as the story opens it.
+// anywhere else is on the dial of Rick's gun in the 3D world above, as the story opens it.
 export function LookNote({ d }) {
   if (isPlanet(d.id))
     return (
       <>
-        That’s only a look. {d.name} is a planet on the universe map, out in the Rick and Morty sector: <Link className="underline underline-offset-2" to={`/universe/${d.id}`}>land on it</Link> and you’re in it{DIAL.some((x) => x.id === d.id) ? ', or, after episode 10 (or on Free roam), dial it on Rick’s portal gun in the world at the top of the page' : ''}.
+        That’s only a look. {d.name} is a planet on the universe map, out in the Rick and Morty sector: <Link className="underline underline-offset-2" to={`/universe/${d.id}`}>land on it</Link> and you’re in it{DIAL.some((x) => x.id === d.id) ? ', or, after episode 10 (or on Free roam), dial it on Rick’s portal gun in the 3D world at the top of the page' : ''}.
       </>
     );
   if (d.id === 'citadel') return 'That’s only a look. Enter the Citadel to walk it.';
   if (d.id === 'c137') return 'That’s only a look: you’re in C-137 already.';
-  return 'That’s only a look. To go, dial it on Rick’s portal gun in the world at the top of the page, once the story opens it (or Free roam, in Things to do, opens every place).';
+  return 'That’s only a look. To go, dial it on Rick’s portal gun in the 3D world at the top of the page, once the story opens it (or Free roam, in Things to do, opens every place).';
 }
 
 // Dimension C-137: the Smiths' neighbourhood to walk about in 3D first, then

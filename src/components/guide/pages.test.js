@@ -100,6 +100,24 @@ describe('which guide a page gets', () => {
     expect(tip).toMatch(/back at the portal/);
   });
 
+  it('tells a planet page’s Esc and look as they are: Esc takes off on Gazorpazorp, the portal is the way out elsewhere, and a click holds the mouse', () => {
+    const rows = PAGES['/c-137/planet'].keys[0].rows;
+    const does = (k) => rows.find(([keys]) => keys === k)?.[1] ?? '';
+    expect(does('Esc')).toMatch(/Gazorpazorp/);
+    expect(does('Esc')).toMatch(/portal/);
+    // (both engines look as C-137 does: runtime/look.js, the pointer held after a click)
+    expect(rows.some(([k]) => k === 'Drag')).toBe(false);
+    const look = C137.keys[0].rows.find(([k]) => k === 'Click, then the mouse');
+    expect(rows).toContainEqual(look);
+  });
+
+  it('says only the planets you walk into count on C-137’s list: Gazorpazorp keeps its own', () => {
+    const tip = C137.tips.find(([where]) => where === 'The planets')?.[1] ?? '';
+    const counts = tip.split(/(?<=\.)\s/).find((s) => /counts on this list/.test(s)) ?? '';
+    expect(counts).toMatch(/walk into/);
+    expect(tip).toMatch(/Gazorpazorp keeps its own/);
+  });
+
   it('tips the story on the Citadel’s page: its step heads the line, and the cruiser ends it', () => {
     const tip = PAGES['/c-137/citadel'].tips.find(([where]) => where === 'The story');
     expect(tip?.[1]).toMatch(/episode 10/);

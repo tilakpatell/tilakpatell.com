@@ -4,7 +4,7 @@
 // Fantasy World's climb and Froopyland, and the Citadel.
 /* global window, document */
 import { COURSE, chaseStart, newChase } from '../../src/components/rickmorty/world/games/chase.js';
-import { BASE, OUT, N, check, done, built, goto, use, story, reads, WIPED, SMALL, HEAT, DEALS, JERRY, throughPortal, toast, inArea, cardFor, at, opens, warpUse, caught, before, chasing, playTo, game, homeOf, spotAt, wayInOf, place, PRIME, FAIRY, CITADEL, SECTOR, CITADEL_LINE, citadelUp, citadelReads, citadelToast, linksTo, standOn, later, promptIs, PLACES } from './helpers.mjs';
+import { BASE, OUT, N, check, done, built, goto, use, story, reads, WIPED, SMALL, HEAT, DEALS, JERRY, throughPortal, toast, inArea, cardFor, at, opens, warpUse, caught, before, chasing, playTo, game, homeOf, spotAt, wayInOf, place, PRIME, FAIRY, CITADEL, SECTOR, CITADEL_LINE, citadelUp, citadelReads, citadelToast, linksTo, standOn, later, promptIs, warp, PLACES } from './helpers.mjs';
 
 export const LATE = {
   // a new visitor plays episode 5: the cruiser's chase (taking off ticks
@@ -299,6 +299,13 @@ export const LATE = {
     await inArea(page, 'cablestudio');
     // (each set faces the floor: the flats and the doors from the south, the counter and the couch from the north)
     const FACE = { 'set-ants': N, 'set-legs': N, 'set-sneezy': N, 'set-field': N, 'set-doors': N, 'set-bits': -N, 'set-shmlo': -N };
+    // (the sets' titles where the meter's names send him: the counter's card and the couch's)
+    if (OUT)
+      for (const id of ['set-bits', 'set-shmlo']) {
+        await warp(page, 'cablestudio', ...spotAt('cablestudio', id, FACE[id], 2.5));
+        await later(page, 0.5);
+        await page.screenshot({ path: `${OUT}/episode-8-${id}.png` });
+      }
     const sets = () => game(page, 'cablestudio', 'sequence');
     const switchOn = (id) => warpUse(page, 'cablestudio', id, ...spotAt('cablestudio', id, FACE[id]));
     const countdown = async () => {

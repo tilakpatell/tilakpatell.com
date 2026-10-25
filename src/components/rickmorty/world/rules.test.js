@@ -51,6 +51,7 @@ import {
   WALLS,
   YARDS,
   areaAt,
+  camBlocked,
   canLand,
   collidersIn,
   solidIn,
@@ -67,6 +68,7 @@ import {
   grade,
   inArea,
   linkOpen,
+  hotspotsIn,
   nearHotspot,
   nearLink,
   newCruiser,
@@ -1433,6 +1435,24 @@ describe('C-137: the things to touch', () => {
     expect(nearHotspot(c.area, c.x, c.z, ['birdworld'])).toBe(null);
   });
 
+  it('a spot gone for now or past its until is not among the area’s map spots', () => {
+    const ids = (list) => list.map((h) => h.id);
+    const all = HOTSPOTS.filter((h) => h.area === 'birdworld');
+    expect(ids(hotspotsIn('birdworld'))).toEqual(ids(all));
+    // (nothing done yet: those there from the start, the crystals among them)
+    const start = ids(hotspotsIn('birdworld', []));
+    expect(start).toEqual(ids(all.filter((h) => present(h, []))));
+    expect(start).toContain('bcrystal-path');
+    // (one crystal picked up: that one's dot goes, and only that one)
+    expect(ids(hotspotsIn('birdworld', [], (id) => id === 'bcrystal-path'))).toEqual(start.filter((id) => id !== 'bcrystal-path'));
+    // (Bird World done: the crystals, there till it is, go with it)
+    const until = ids(all.filter((h) => h.until === 'birdworld'));
+    expect(until.length).toBeGreaterThan(0);
+    const after = ids(hotspotsIn('birdworld', ['birdworld']));
+    expect(after.length).toBeGreaterThan(0);
+    for (const id of until) expect(after, id).not.toContain(id);
+  });
+
   // (the town round the street's, out to its hedges, ./town/plan.test.js walks to;
   // a place's spots in a test of their own, so each runs well inside its limit)
   for (const area of [...new Set(HOTSPOTS.filter((o) => !o.town).map((h) => h.area))]) {
@@ -2565,5 +2585,77 @@ describe('a place’s ledges', () => {
     expect(froopy.length).toBeGreaterThan(0);
     expect(froopy.some((c) => c.ledge || c.top != null)).toBe(false);
     expect(solidIn('froopyland').map((c) => c.id)).toEqual(froopy.map((c) => c.id));
+  });
+});
+
+describe('a place’s solids, where they’re drawn', () => {
+  const at = (id, dx, dz) => ({ x: DESTINATIONS.find((d) => d.id === id).centre.x + dx, z: DESTINATIONS.find((d) => d.id === id).centre.z + dz });
+  // is (x, z) inside one of the area's colliders?
+  const held = (area, { x, z }) => collidersIn(area).some((c) => (c.kind === 'circle' ? Math.hypot(x - c.x, z - c.z) < c.r : Math.abs(x - c.x) < c.w / 2 && Math.abs(z - c.z) < c.d / 2));
+
+  it('stands the cable studio’s two lamp poles and the shmlo show’s couch in Morty’s way', () => {
+    // (the poles by the Lil' Bits counter and the couch, and the couch, as ./dimensions/cable.js draws them)
+    for (const [dx, dz] of [
+      [8, 12.2],
+      [-17.9, 8],
+      [-16, 8],
+      [-17.2, 8.4],
+      [-14.8, 7.6],
+    ])
+      expect(held('cablestudio', at('cablestudio', dx, dz)), `${dx}, ${dz}`).toBe(true);
+    // walked at from the booth's side, the couch stops him
+    const from = at('cablestudio', -16, 10.5);
+    const m = walk(newMorty(from), { x: 0, z: -1 }, 2, 'cablestudio');
+    expect(m.z).toBeGreaterThan(at('cablestudio', 0, 8.6).z);
+  });
+});
+
+describe('a place’s solids in the camera’s way', () => {
+  const place = (id) => DESTINATIONS.find((d) => d.id === id);
+  const solid = (area, id) => place(area).solids.find((o) => o.id === id);
+  // is any point on the line from a to b (sixteen steps, as the camera's clearance takes) blocked?
+  const hit = (area, a, b) => Array.from({ length: 16 }, (_, i) => (i + 1) / 16).some((k) => camBlocked(area, a.x + (b.x - a.x) * k, a.y + (b.y - a.y) * k, a.z + (b.z - a.z) * k));
+
+  it('gives a hit with a clay tower’s trunk between Morty’s head and the camera, up on its top', () => {
+    const crystal = HOTSPOTS.find((h) => h.id === 'bcrystal-west');
+    const trunk = solid('birdworld', 'tower-a-trunk');
+    // (his head over the crystal, a metre off the trunk; the camera 5.6 m back, past the trunk)
+    const head = { x: crystal.x, y: crystal.y + 1.75, z: crystal.z };
+    const dx = trunk.x - crystal.x;
+    const dz = trunk.z - crystal.z;
+    const l = Math.hypot(dx, dz);
+    const cam = { x: crystal.x + (dx / l) * 5.6, y: head.y + 0.95, z: crystal.z + (dz / l) * 5.6 };
+    expect(hit('birdworld', head, cam)).toBe(true);
+    // (turned away from it, the camera's clear)
+    expect(hit('birdworld', head, { x: crystal.x - (dx / l) * 5.6, y: cam.y, z: crystal.z - (dz / l) * 5.6 })).toBe(false);
+    // (the trunk's in the way at any height; the tower's top only below it)
+    expect(camBlocked('birdworld', trunk.x, 40, trunk.z)).toBe(true);
+    const top = solid('birdworld', 'tower-a');
+    expect(camBlocked('birdworld', top.x + 1.5, top.top - 1, top.z)).toBe(true);
+    expect(camBlocked('birdworld', top.x + 1.5, top.top + 1, top.z)).toBe(false);
+  });
+
+  it('stands Fantasy World’s privy in its way to its gable, and lets it look down over the well', () => {
+    const privy = solid('fantasy', 'privy');
+    expect(camBlocked('fantasy', privy.x, 2.4, privy.z)).toBe(true);
+    expect(camBlocked('fantasy', privy.x, 4, privy.z)).toBe(false);
+    const well = solid('fantasy', 'well');
+    expect(camBlocked('fantasy', well.x, 2, well.z)).toBe(true);
+    expect(camBlocked('fantasy', well.x, 4, well.z)).toBe(false);
+    // (and nothing out on the open square)
+    expect(camBlocked('fantasy', place('fantasy').arrive.x, 2.4, place('fantasy').arrive.z)).toBe(false);
+  });
+
+  it('passes over what’s drawn lower than it rides, outdoors, and leaves the rooms and C-137 as they were', () => {
+    // (the wedding's long table, at the camera's height behind Morty)
+    const table = solid('squanch', 'table');
+    expect(camBlocked('squanch', table.x, 2.2, table.z)).toBe(false);
+    expect(camBlocked('squanch', table.x, 0.6, table.z)).toBe(true);
+    // (a room's camera is in close under its ceiling: its solids aren't asked)
+    const couch = solid('cablestudio', 'couch');
+    expect(camBlocked('cablestudio', couch.x, 0.5, couch.z)).toBe(false);
+    expect(camBlocked('street', START.x, 1, START.z)).toBe(false);
+    // (every outdoor solid that says how tall it's drawn says so in metres, lower than a cottage)
+    for (const d of DESTINATIONS.filter((p) => p.kind === 'outdoor')) for (const o of d.solids.filter((s) => s.h != null)) expect(o.h > 0 && o.h < 4, `${d.id} ${o.id}`).toBe(true);
   });
 });
