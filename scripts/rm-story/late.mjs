@@ -528,13 +528,13 @@ export const LATE = {
     await opens(page, CITADEL.unlocks, true, 'after episode 10');
     await opens(page, [...SECTOR.unlocks, 'evilrick'], false, 'after episode 10');
     await citadelReads(page, null, CITADEL_LINE([...three, 'votemorty', 'citadelout']));
-    // home: the sector's line, no link, the marker on the garage portal (and Morty's line, said, isn't said again, nor the card shown)
+    // home: the sector's line, no link, the marker on the gun on the bench, the portal still dialled to the Citadel (and Morty's line, said, isn't said again, nor the card shown)
     await page.getByRole('link', { name: 'Back to Dimension C-137' }).click();
     await inArea(page, 'garage');
     await reads(page, SECTOR.steps[0].text);
     check((await page.locator('.rm-hud .rm-objective-link').count()) === 0, 'the sector’s line is a link');
-    await page.waitForFunction(() => window.__C137__.sim.goal?.id === 'garage-portal', null, { timeout: 10000 }).catch(async () => {
-      throw new Error(`the marker’s on ${await page.evaluate(() => window.__C137__.sim.goal?.id ?? null)}, not the garage portal`);
+    await page.waitForFunction(() => window.__C137__.sim.goal?.id === 'dial', null, { timeout: 10000 }).catch(async () => {
+      throw new Error(`the marker’s on ${await page.evaluate(() => window.__C137__.sim.goal?.id ?? null)}, not the gun on the bench`);
     });
     await page.waitForTimeout(2000);
     check((await page.locator('.rm-toast', { hasText: CITADEL.outro[0][1] }).count()) === 0, 'Morty’s line was said again in C-137');
