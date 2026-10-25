@@ -41,9 +41,9 @@ import { trackJob } from './track';
 import { boundsOf, distanceTo } from '../../../lib/land/paths.js';
 
 export const NEAR = 60; // m either side of the road
-const COARSE = 2;
+const COARSE = 2; // the far grid takes every other sample
 
-export const patchOver = (x, z, size, { x0, z0, w, d }, by = 0) => x + size / 2 - by >= x0 && x - size / 2 + by <= x0 + w && z + size / 2 - by >= z0 && z - size / 2 + by <= z0 + d; // the far grid takes every other sample
+export const patchOver = (x, z, size, { x0, z0, w, d }, by = 0) => x + size / 2 - by >= x0 && x - size / 2 + by <= x0 + w && z + size / 2 - by >= z0 && z - size / 2 + by <= z0 + d;
 
 // The paint: the soil’s colours (stages/soils.js) by height and a slow
 // noise, its rock where the land is steep, worn to its dirt on the road. A
