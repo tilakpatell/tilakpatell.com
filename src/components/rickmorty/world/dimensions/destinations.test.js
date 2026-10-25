@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { AREAS, HOTSPOTS, LINKS, MORTY, PEOPLE, ROOM_IDS, TASKS } from '../rules';
-import { newDeal, stepDeal } from '../games/deal';
+import { WORDS as DEAL_WORDS, newDeal, stepDeal } from '../games/deal';
 import { gameGoal } from './gameGoal';
 import { ACHIEVEMENTS } from '../../../Achievements';
 import { KEYS } from '../../../hangar/skills/tree';
-import { DEST_COL, DESTINATIONS, DIAL, DUEL_PLACES, GARAGE_BACK, PLANETS, destArea, destinationById, isBigPlanet, isPlanet, isWayHome, linkTarget, pageOf, planetStart, portalTarget, validArrive } from './destinations';
+import { DEST_COL, DESTINATIONS, DIAL, DUEL_PLACES, GAME_SPOTS, GARAGE_BACK, PICKS, PLANETS, destArea, destinationById, isBigPlanet, isPlanet, isWayHome, linkTarget, pageOf, planetStart, portalTarget, validArrive } from './destinations';
 
 const inside = (a, x, z, pad = 0) => x >= a.x0 + pad && x <= a.x1 - pad && z >= a.z0 + pad && z <= a.z1 - pad;
 const overlap = (a, b) => a.x0 < b.x1 && b.x0 < a.x1 && a.z0 < b.z1 && b.z0 < a.z1;
@@ -35,6 +35,33 @@ describe('the destinations', () => {
   });
   it('know the places with a duel, whose bolts load as Morty gets there', () => {
     expect([...DUEL_PLACES].sort()).toEqual(['blooddome', 'evilrick']);
+  });
+  it('know what goes from reach once used on a visit: a climb’s picks, what starts a duel, and the crew that opens a job', () => {
+    expect([...PICKS].sort()).toEqual(['bcrystal-east', 'bcrystal-grass', 'bcrystal-path', 'bcrystal-trees', 'bcrystal-west', 'heistbadge', 'heister-a1', 'heister-b1', 'pod1', 'pod2', 'pod3', 'ring']);
+    // (Heist-Con's badge and recruits: no 'Recruit' at their homes while they hunt him)
+    for (const id of destinationById('heistcon').collect.spots) expect(PICKS.has(id), id).toBe(true);
+  });
+  it('know each game’s own spots: the task that ends it, a look once it has (a talk where someone stands), and its take', () => {
+    const owns = (d) => [...(d.deal?.items ?? []), ...(d.find?.items ?? []), ...(d.sequence ? [...d.sequence.items, ...(d.sequence.start ? [d.sequence.start] : [])] : []), ...(d.power ? [d.power.from, d.power.to] : []), ...(d.climb?.picks ?? []), ...(d.collect?.start ? d.collect.spots : [])];
+    const want = DESTINATIONS.flatMap((d) => owns(d).map((id) => [id, d.id]));
+    expect(Object.keys(GAME_SPOTS).sort()).toEqual(want.map(([id]) => id).sort());
+    for (const [id, area] of want) {
+      const d = destinationById(area);
+      const g = GAME_SPOTS[id];
+      expect(d.hotspots.some((h) => h.id === id), `${area}: ${id} is a spot`).toBe(true);
+      expect(g.area, id).toBe(area);
+      expect(d.tasks.map((t) => t.id), `${area}: ${id}'s task`).toContain(g.task);
+      expect(g.rest, id).toBe(d.people.some((p) => p.id === id) ? 'Talk' : 'Look');
+      expect(g.take, id).toBe(d.deal?.items.includes(id) ? d.deal.take : d.find?.items.includes(id) ? d.find.take : undefined);
+    }
+    expect(['typewriter', 'claim-moons', 'jerrytv', 'cablebooth', 'heister-a1', 'heistbadge'].map((id) => GAME_SPOTS[id])).toEqual([
+      { area: 'needful', game: 'deal', task: 'needful', rest: 'Look', take: 'Take' },
+      { area: 'pluto', game: 'deal', task: 'pluto', rest: 'Look', take: 'Tell the king' },
+      { area: 'jerryboree', game: 'find', task: 'jerryboree', rest: 'Talk', take: 'Take him' },
+      { area: 'cablestudio', game: 'sequence', task: 'cablestudio', rest: 'Look' },
+      { area: 'heistcon', game: 'collect', task: 'heistcon', rest: 'Talk' },
+      { area: 'heistcon', game: 'collect', task: 'heistcon', rest: 'Look' },
+    ]);
   });
   it('name every Rick and Morty achievement differently', () => {
     const names = KEYS.rickmorty.map((k) => ACHIEVEMENTS[k].name);
@@ -264,6 +291,17 @@ describe('a place that runs on a deal', () => {
       expect(d.deal.lost.split(/[.?]\s/)).toHaveLength(1);
       // the loss is said by `who`, in their own voice (not of themselves by name)
       expect(d.deal.lost).not.toContain(d.say[d.deal.who].who.split(' ')[0]);
+      // (its own words, where it has them, carry every one the HUD reads: the meter calls `taken`, with no fallback)
+      if (d.deal.words) {
+        expect(Object.keys(d.deal.words).sort(), d.id).toEqual(Object.keys(DEAL_WORDS).sort());
+        expect(typeof d.deal.words.taken, d.id).toBe('function');
+        for (const line of [d.deal.words.good, d.deal.words.bad, d.deal.words.blind, d.deal.words.taken(1, 2)]) {
+          expect(line, d.id).not.toMatch(/!/);
+          expect(line.split(/[.?]\s/), d.id).toHaveLength(1);
+        }
+      }
+      // (and what a thing's second press does, for its prompt once it's been looked over)
+      expect(d.deal.take, d.id).toMatch(/^[A-Z][a-z ]+$/);
     }
   });
   it('is Mr. Needful’s five free things, all but one cursed, three looks and one to take', () => {
@@ -271,6 +309,11 @@ describe('a place that runs on a deal', () => {
     expect(shop.deal).toMatchObject({ task: 'needful', items: ['typewriter', 'aftershave', 'cream', 'shopclock', 'shopmirror'], bad: 4, need: 1, looks: 3, who: 'needful' });
     expect(shop.goal).toBe('needful');
     expect(shop.unlock).toEqual({ needful: 'needful' });
+    // (every thing's line tells of a cost, so a clean look says to take it whatever the line says)
+    // (the meter reads the deal's own words, else deal.js's)
+    expect((shop.deal.words ?? DEAL_WORDS).good).not.toBe(DEAL_WORDS.good);
+    expect([shop.deal.words.good, shop.deal.words.bad, shop.deal.words.blind, shop.deal.words.taken(1, 1)]).toEqual(['No curse on that one, whatever it says: once more to take it', DEAL_WORDS.bad, DEAL_WORDS.blind, DEAL_WORDS.taken(1, 1)]);
+    expect(shop.deal.take).toBe('Take');
   });
   it('is Pluto’s four claims on the palace, two of them lies: two weighed up at most, two told the king', () => {
     const pluto = destinationById('pluto');
@@ -280,6 +323,7 @@ describe('a place that runs on a deal', () => {
     const w = pluto.deal.words;
     expect([w.good, w.bad, w.blind, w.taken(1, 2)]).toEqual(['True: once more to tell the king', 'Not true: leave it out', 'No checks left: once more to chance it', 'Told the king 1 of 2']);
     expect(pluto.deal.meter).toEqual({ title: 'The king’s ear', label: 'Checks', icon: 'crown' });
+    expect(pluto.deal.take).toBe('Tell the king');
     // (the map marks the first claim to weigh up, then the one to tell; with nothing left to mark, the king, never a lie)
     expect(pluto.goal).toBe('flippynips');
     const weighed = (uses) => uses.reduce((g, use) => stepDeal(g, { use }), newDeal({ items: pluto.deal.items, bad: pluto.deal.bad, need: 2, looks: 2 }));
@@ -515,7 +559,7 @@ describe('Heist-Con', () => {
     // (every line said there before, word for word)
     expect(['miles', 'heister-a1', 'heister-b1', 'heistotron', 'heistbooth', 'heistbadge'].map((id) => h.say[id])).toEqual([
       { who: 'Miles Knightly', text: '“Kid. You in?” He doesn’t wait. “Get me a muscle and a cat burglar and we’ve got the start of something. Then we double-cross everyone. That’s the job.”' },
-      { who: 'A heister', text: '“Muscle? Sure. I lift things. Sometimes they’re safes.” He hands you a card. It just says MUSCLE.' },
+      { who: 'A muscle', text: '“Muscle? Sure. I lift things. Sometimes they’re safes.” He hands you a card. It just says MUSCLE.' },
       { who: 'A cat burglar', text: '“Lasers, vents, roofs. I’m in if Knightly’s in. Tell him I want a bigger cut than last time.”' },
       { who: null, text: 'Heistotron. A robot built to plan heists. Rick built it to beat Miles, then it heisted Rick’s plan to heist it. It’s giving the keynote.' },
       { who: null, text: 'A booth selling grappling hooks, glass cutters and a book called “Your Crew And You”. Everything is stolen as you watch.' },
@@ -534,7 +578,8 @@ describe('Heist-Con', () => {
     expect(hunters.map((p) => spot(p.id).label)).toEqual(['A muscle', 'A cat burglar']);
     for (const p of hunters) {
       expect(spot(p.id).verb, p.id).toBe('Recruit');
-      expect(h.say[p.id]?.who, p.id).toBeTruthy();
+      // (captioned by the name on his prompt)
+      expect(h.say[p.id]?.who, p.id).toBe(spot(p.id).label);
       const home = spot(p.id);
       for (const [x, z] of p.ai.wander) {
         expect(Math.hypot(x - home.x, z - home.z), `${p.id} strays`).toBeLessThanOrEqual(2.1);
@@ -719,6 +764,12 @@ describe('a place that plays a rhythm', () => {
     expect(show.hotspots.find((h) => h.id === 'mic').verb).toBe('Get schwifty');
     expect(show.collect).toBe(null);
   });
+  it('leaves the show’s verdicts to the show: the heads bark only for a song, never a verdict on one not sung', () => {
+    const barks = destinationById('schwifty').extras.flatMap((e) => e.ai?.bark?.lines ?? []);
+    expect(barks).toContain('SHOW ME WHAT YOU GOT.');
+    expect(barks).not.toContain('I LIKE WHAT YOU GOT. GOOD JOB.');
+    expect(barks).not.toContain('DISQUALIFIED.');
+  });
 });
 
 describe('a place that runs on a find', () => {
@@ -752,12 +803,15 @@ describe('a place that runs on a find', () => {
       expect(d.find.lost).not.toMatch(/!/);
       expect(d.find.lost).not.toContain('Rick');
       expect(d.find.lost.split(/[.?]\s/)).toHaveLength(1);
+      // (what a Jerry's second press does, for his prompt once he's been heard)
+      expect(d.find.take, d.id).toMatch(/^[A-Z][a-z ]+$/);
     }
   });
   it('is the Jerryboree’s six Jerrys standing still, ours dealt each run, forty-five seconds and fifteen a wrong pick', () => {
     const daycare = destinationById('jerryboree');
     expect(daycare.find).toMatchObject({ task: 'jerryboree', items: ['jerryreal', 'jerrytv', 'jerrygown', 'jerrytux', 'jerrytrack', 'jerryrobe'], s: 45, cost: 15, who: 'receptionist', unlock: 'jerryboree' });
     expect(daycare.find.ours).toBe(undefined);
+    expect(daycare.find.take).toBe('Take him');
     expect(daycare.goal).toBe('receptionist');
     expect(daycare.done).toEqual({});
     expect(daycare.unlock).toEqual({});

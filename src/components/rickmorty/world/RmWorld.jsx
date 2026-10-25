@@ -61,12 +61,12 @@ import {
   stepMorty,
 } from './rules';
 import { newFedShip, newShipVoice, onTail, shipSays, stepFedShip } from './ship';
-import { DESTINATIONS, DIAL, DUEL_PLACES, destinationById, isPlanet, isWayHome, linkTarget, portalTarget, readDial, writeDial } from './dimensions/destinations';
+import { DESTINATIONS, DIAL, DUEL_PLACES, PICKS, destinationById, isPlanet, isWayHome, linkTarget, portalTarget, readDial, writeDial } from './dimensions/destinations';
 import { useAdventure } from '../adventure/useAdventure';
 import { EPISODES } from '../adventure/episodes';
 import { dialItems, dialLead, leaveHold, markedTask, newsOf, objectiveLine, showNews } from '../adventure/hud';
 import { arriveAt } from '../adventure/ways';
-import { backLink, boundOf, inLine, planetOf, planetProgress, relabel } from './planetMode';
+import { backLink, boundOf, inLine, planetOf, planetProgress, playOf, relabel } from './planetMode';
 import { dialFirst, dialledNote, isGunKey, portalName, rickAside } from './portalGun';
 import Cards from './WorldCards';
 import RmHud from './RmHud';
@@ -176,8 +176,6 @@ const TALK_UNLOCK = { therapy: 'wong', ...Object.assign({}, ...DESTINATIONS.map(
 // the hotspot that starts the clock: the Purge Planet's siren, Customs'
 // scanner, the wedding's toast
 const FREEZE_SPOTS = new Set(DESTINATIONS.filter((d) => d.freeze).map((d) => d.freeze.spot));
-// (a climb's things to pick up, and what starts a duel (the Blood Dome's ring, the lair's pods): gone from reach once used on this visit)
-const PICKS = new Set(DESTINATIONS.flatMap((d) => [...(d.climb?.picks ?? []), ...(d.people.some((p) => p.ai?.hunt?.duel) ? [...Object.keys(d.acts).filter((k) => d.acts[k] === 'fight'), ...(d.collect?.spots ?? [])] : [])]));
 const ESCAPES = Object.fromEntries(DESTINATIONS.filter((d) => d.escape).map((d) => [d.escape.spot, { ...d.escape, area: d.id }]));
 // and what using a hotspot tells its place's builder
 const ACTS = Object.assign({}, ...DESTINATIONS.map((d) => Object.fromEntries(Object.entries(d.acts).map(([spot, name]) => [spot, [d.id, name]]))));
@@ -1841,10 +1839,12 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
     const room = s.flying ? null : roomAt(s.area, s.m.x, s.m.z);
     const alt = s.flying ? Math.round(s.c.y) : 0;
     const kmh = s.flying ? Math.round((Math.abs(s.c.speed) * 3.6) / 2) * 2 : 0;
-    const key = `${s.area}|${room}|${s.flying}|${s.landing}|${near}|${s.moved}|${alt}|${kmh}`;
+    // (and, at a game's thing, its game as the prompt reads it: a look over, then a take, ./planetMode.js)
+    const play = playOf(s.near, (area, name) => api.current?.act(area, name));
+    const key = `${s.area}|${room}|${s.flying}|${s.landing}|${near}|${s.moved}|${alt}|${kmh}|${relabel(s.near, { done: doneRef.current, ...play })?.verb}`;
     if (key !== hudKey.current) {
       hudKey.current = key;
-      setHud({ area: s.area, room, flying: s.flying, landing: s.landing, near, moved: s.moved, alt, kmh });
+      setHud({ area: s.area, room, flying: s.flying, landing: s.landing, near, moved: s.moved, alt, kmh, play });
     }
     if (++s.frame % 3 === 0) {
       // the place's people, for the map (stage.js's NPC layer says where they are)
@@ -1973,8 +1973,8 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
     if (dir) audioContext();
   };
 
-  // (the garage portal says where it's dialled; a planet's own portal is the way back to space)
-  const here = relabel(hud.near ? PROMPT[hud.near] : null, { planet, portal: planet ? null : portalName(portalTarget(dialRef.current, dialOpen)), bench: !planet && markRef.current?.id === 'dial' });
+  // (the garage portal says where it's dialled; a planet's own portal is the way back to space; a game's thing what its press does now)
+  const here = relabel(hud.near ? PROMPT[hud.near] : null, { planet, portal: planet ? null : portalName(portalTarget(dialRef.current, dialOpen)), bench: !planet && markRef.current?.id === 'dial', done, ...hud.play });
   const back = backLink(planet);
   const placeName = hud.flying ? 'Over the Smiths’ street' : (hud.room ?? AREA_NAME[hud.area]);
   return (

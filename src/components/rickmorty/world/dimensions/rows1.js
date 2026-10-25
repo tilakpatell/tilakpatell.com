@@ -390,8 +390,9 @@ export const ROWS = [
       shopclock: { who: null, text: 'A clock that gains an hour whenever you’re happy and loses two when you’re not.' },
       shopmirror: { who: null, text: 'A mirror that shows you a little better looking and a lot lonelier.' },
     },
-    // (the game: five free things, a curse on all but one, dealt afresh each run: ../games/deal.js)
-    deal: { task: 'needful', items: ['typewriter', 'aftershave', 'cream', 'shopclock', 'shopmirror'], bad: 4, need: 1, looks: 3, who: 'needful', lost: 'Cursed, I’m afraid: back to the door with you, and choose again.' },
+    // (the game: five free things, a curse on all but one, dealt afresh each run: ../games/deal.js;
+    // every thing's line tells of a cost, so the clean one's look says to take it whatever its line says)
+    deal: { task: 'needful', items: ['typewriter', 'aftershave', 'cream', 'shopclock', 'shopmirror'], bad: 4, need: 1, looks: 3, who: 'needful', lost: 'Cursed, I’m afraid: back to the door with you, and choose again.', take: 'Take', words: { good: 'No curse on that one, whatever it says: once more to take it', bad: 'That one’s cursed: leave it be', blind: 'No looks left: once more to chance it', taken: (n, need) => `Taken ${n} of ${need}` } },
     goal: 'needful',
     unlock: { needful: 'needful' },
     kinds: ['needful'],
@@ -459,6 +460,7 @@ export const ROWS = [
       tells: { ours: 'He offers you an apple', jerryreal: 'He looks round for Beth', jerrytv: 'He turns back to his programme', jerrygown: 'He takes his own pulse', jerrytux: 'He straightens his bow tie', jerrytrack: 'He offers you a pear', jerryrobe: 'He ties his robe tighter' },
       s: 45,
       cost: 15,
+      take: 'Take him',
       who: 'receptionist',
       lost: 'Pick-up’s closed: back to the door, and find the right one this time.',
       unlock: 'jerryboree',
@@ -555,7 +557,7 @@ export const ROWS = [
     },
     // the claims weighed up (two checks) and told the king (../games/deal.js):
     // the two true ones told is the task, a lie told is Scroopy's to call out
-    deal: { task: 'pluto', items: ['claim-growing', 'claim-moons', 'claim-mines', 'claim-planet'], bad: ['claim-growing', 'claim-mines'], need: 2, looks: 2, who: 'scroopy', lost: 'That’s a lie, kid, and the whole plain heard it: back to the portal with you.', words: { good: 'True: once more to tell the king', bad: 'Not true: leave it out', blind: 'No checks left: once more to chance it', taken: (n, need) => `Told the king ${n} of ${need}` }, meter: { title: 'The king’s ear', label: 'Checks', icon: 'crown' } },
+    deal: { task: 'pluto', items: ['claim-growing', 'claim-moons', 'claim-mines', 'claim-planet'], bad: ['claim-growing', 'claim-mines'], need: 2, looks: 2, who: 'scroopy', lost: 'That’s a lie, kid, and the whole plain heard it: back to the portal with you.', take: 'Tell the king', words: { good: 'True: once more to tell the king', bad: 'Not true: leave it out', blind: 'No checks left: once more to chance it', taken: (n, need) => `Told the king ${n} of ${need}` }, meter: { title: 'The king’s ear', label: 'Checks', icon: 'crown' } },
     // (the map's own point, once the game has nothing left to mark: the king, never a claim)
     goal: 'flippynips',
     // (the achievement stays on the podium)

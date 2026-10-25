@@ -4,7 +4,7 @@
 // when they're played.
 /* global window, document, StorageEvent */
 import { READY } from '../../src/components/rickmorty/adventure/episodes.js';
-import { BASE, OUT, N, check, done, c137, built, goto, use, place, story, reads, WIPED, ARCADE, throughPortal, gun, toast, inArea, game, arriveOf, standOn, PLACES, CITADEL_LINE, citadelUp, citadelReads, warp, goalIs, dial, warpUse, spotAt, home, cardOnLine, cardFor, achieved } from './helpers.mjs';
+import { BASE, OUT, N, check, done, c137, built, goto, use, place, story, reads, WIPED, ARCADE, throughPortal, gun, toast, inArea, game, arriveOf, standOn, PLACES, CITADEL_LINE, citadelUp, citadelReads, warp, goalIs, dial, warpUse, spotAt, home, cardOnLine, cardFor, achieved, promptIs } from './helpers.mjs';
 
 export const BASICS = {
   // another tab's ticks: kept when this one ticks, and this one's list
@@ -246,6 +246,9 @@ export const BASICS = {
       await page.evaluate(() => window.__C137__.api.act('cablestudio', 'sequence-start'));
       await page.waitForTimeout(1000);
       check((await game(page, 'cablestudio', 'sequence')).phase === 'idle' && !(await page.locator('.rm-cluster[aria-label="Going live"][data-on]').count()), 'a returner’s cable studio started its game again');
+      // (and the booth only says its line: its prompt says so, not 'Start the countdown')
+      await warp(page, 'cablestudio', ...spotAt('cablestudio', 'cablebooth'));
+      await promptIs(page, PLACES.spot('cablestudio', 'cablebooth').label, 'Look', 'with a returner’s channels on air,');
       // the village helped before the climb was built: no meter at the stairs, the stairs never bite, and its achievement comes on the visit
       await goto(page, 'fantasy', ...arriveOf('fantasy'));
       await page.waitForFunction(() => JSON.parse(localStorage.getItem('tp-achievements') ?? '[]').includes('fantasy'), null, { timeout: 30000, polling: 250 }).catch(() => {

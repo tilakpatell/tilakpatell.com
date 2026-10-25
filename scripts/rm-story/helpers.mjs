@@ -301,6 +301,20 @@ export const meterSays = (page, title, text) =>
   page.waitForFunction(([t, s]) => document.querySelector(`.rm-cluster[aria-label="${t}"][data-on]`)?.textContent.includes(s), [title, text], { timeout: 15000, polling: 100 }).catch(async () => {
     throw new Error(`the meter reads “${await meter(page, title).first().textContent().catch(() => '(none)')}”, not “${text}”`);
   });
+// the prompt by Morty at a spot: the name it's at, and what E does there ("E Take")
+export const promptIs = (page, name, verb, where) =>
+  page
+    .waitForFunction(
+      ([n, v]) => {
+        const p = document.querySelector('.rm-prompt[data-kind="spot"]');
+        return p?.querySelector('.rm-prompt-name')?.textContent === n && p.querySelector('.rm-btn')?.textContent.trim() === `E ${v}`;
+      },
+      [name, verb],
+      { timeout: 10000, polling: 100 },
+    )
+    .catch(async () => {
+      throw new Error(`${where} the prompt reads “${await page.locator('.rm-prompt').first().textContent({ timeout: 500 }).catch(() => 'nothing')}”, not “${name} E ${verb}”`);
+    });
 // Morty moved within a place, its game going on
 export const warp = (page, area, x, z, face = N) => page.evaluate(([a, x, z, f]) => window.__C137__.warp(a, x, z, f), [area, x, z, face]);
 // a place's hunters after him now

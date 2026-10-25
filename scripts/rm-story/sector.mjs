@@ -5,7 +5,7 @@
 // last escape on Planet Squanch's own page holds for Morty's line. Either way
 // the sector ends on episode 12's card.
 /* global window, document */
-import { OUT, check, use, inArea, reads, story, at, opens, toast, playTo, game, standOn, later, warpUse, caught, spotAt, wayInOf, homeOf, goalIs, noLink, meter, meterSays, warp, hunting, open, openHeld, openOnCard, cardFor, dial, home, notDone, ticked, low, PLACES, CITADEL, SECTOR, SCORE } from './helpers.mjs';
+import { OUT, check, use, inArea, reads, story, at, opens, toast, playTo, game, standOn, later, warpUse, caught, spotAt, wayInOf, homeOf, goalIs, noLink, meter, meterSays, warp, hunting, open, openHeld, openOnCard, cardFor, dial, home, notDone, ticked, low, promptIs, PLACES, CITADEL, SECTOR, SCORE } from './helpers.mjs';
 
 const [BIRD, GEAR, PLUTO, SQUANCH] = SECTOR.steps[0].steps;
 const COGS = PLACES.dest('gearworld').sequence.items;
@@ -143,6 +143,9 @@ export const SECTOR_CHECKS = {
     };
     await tell('claim-moons', 1);
     await tell('claim-planet', 1);
+    // (weighed true: the next press tells the king, and the prompt says so)
+    const planet = PLACES.spot('pluto', 'claim-planet').label;
+    await promptIs(page, planet, PLACES.dest('pluto').deal.take, 'with a claim weighed true,');
     await tell('claim-growing', 2);
     await toast(page, 'That’s a lie, kid, and the whole plain heard it: back to the portal with you.');
     check((await page.locator('.rm-toast', { hasText: 'Scroopy Noopers' }).count()) === 1, 'the lie wasn’t Scroopy’s to call out');
@@ -154,6 +157,8 @@ export const SECTOR_CHECKS = {
     await page.waitForFunction(() => JSON.parse(window.localStorage.getItem('tp-c137-done') ?? '[]').includes('pluto'), null, { timeout: 30000, polling: 100 }).catch(() => {
       throw new Error('the two true claims didn’t win Pluto');
     });
+    // (the king told: a claim's press only says its line now)
+    await promptIs(page, planet, 'Look', 'with Pluto won,');
     await home(page, 'pluto');
 
     // Planet Squanch: a glass raised, and home inside the minute: the last part, episode 11 over

@@ -1,9 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import { AREAS, HOTSPOTS, LINKS, PLANET_TASKS, TASKS, areaAt, progress } from './rules';
 import { DESTINATIONS, PLANETS, destinationById, isBigPlanet, isPlanet, isWayHome } from './dimensions/destinations';
-import { ALL_DONE_HERE, WAY_HOME, backLink, boundOf, hereHint, inLine, listOf, planetOf, planetPage, planetProgress, relabel } from './planetMode';
+import { newDeal, stepDeal } from './games/deal';
+import { newFind, stepFind } from './games/find';
+import { ALL_DONE_HERE, WAY_HOME, backLink, boundOf, hereHint, inLine, listOf, planetOf, planetPage, planetProgress, playOf, relabel } from './planetMode';
 
 const prompt = (l) => ({ kind: 'link', id: l.id, name: l.label, verb: 'Step through', link: l });
+// a spot's prompt, as RmWorld's PROMPT has it
+const spotPrompt = (id) => {
+  const h = HOTSPOTS.find((o) => o.id === id);
+  return { kind: 'spot', id, name: h.label, verb: h.verb, spot: h };
+};
 
 describe('C-137: a planet played on its own', () => {
   it('knows each planet: where Morty starts, its way home, its name and things to do', () => {
@@ -117,6 +124,78 @@ describe('C-137: a planet played on its own', () => {
     const spot = { kind: 'spot', id: HOTSPOTS[0].id, name: HOTSPOTS[0].label };
     expect(relabel(spot, { planet: purge, portal: 'x' })).toBe(spot);
     expect(relabel(null, { planet: purge })).toBeNull();
+  });
+
+  it('says a done game’s spots only look (or talk, where someone stands), and leaves anyone else’s verb be', () => {
+    const booth = spotPrompt('cablebooth');
+    expect(relabel(booth, { done: ['cablestudio'] })).toMatchObject({ id: 'cablebooth', name: 'The control booth', verb: 'Look' });
+    expect(relabel(booth, { done: [] })).toBe(booth);
+    expect(relabel(booth)).toBe(booth);
+    expect(booth.verb).toBe('Start the countdown');
+    expect(relabel(spotPrompt('set-ants'), { done: ['cablestudio'] }).verb).toBe('Look');
+    // (Heist-Con's plan, booths and badge only look; its recruits, who stand at their spots, talk)
+    const heist = ['heistplan', 'heistbooth', 'heistbadge', 'heister-a1', 'heister-b1'].map((id) => relabel(spotPrompt(id), { done: ['heistcon'] }).verb);
+    expect(heist).toEqual(['Look', 'Look', 'Look', 'Talk', 'Talk']);
+    expect(relabel(spotPrompt('claim-planet'), { done: ['pluto'] }).verb).toBe('Look');
+    expect(relabel(spotPrompt('gcog-nw'), { done: ['gearworld'] }).verb).toBe('Look');
+    expect(relabel(spotPrompt('zeepcells'), { done: ['microverse'] }).verb).toBe('Look');
+    // someone who isn't one of the game's things talks either way
+    for (const done of [[], ['heistcon']]) expect(relabel(spotPrompt('miles'), { done })).toMatchObject({ verb: 'Talk' });
+    expect(relabel(spotPrompt('flippynips'), { done: ['pluto'] }).verb).toBe('Talk');
+    expect(relabel(spotPrompt('gearhead'), { done: ['gearworld'] }).verb).toBe('Talk');
+    // (another task done is no matter)
+    expect(relabel(booth, { done: ['heistcon'] })).toBe(booth);
+  });
+
+  it('says a game’s second press takes the thing, once its first has looked it over or heard him', () => {
+    const shop = DESTINATIONS.find((d) => d.id === 'needful').deal;
+    // (cursed: all but the cream; two looks, so the aftershave's chanced blind)
+    const deal = ['typewriter', 'cream', 'aftershave'].reduce((g, use) => stepDeal(g, { use }), newDeal({ items: shop.items, bad: ['typewriter', 'aftershave', 'shopclock', 'shopmirror'], need: 1, looks: 2 }));
+    expect(deal.seen).toEqual({ typewriter: 'bad', cream: 'good', aftershave: 'blind' });
+    const at = (id, play) => relabel(spotPrompt(id), play).verb;
+    expect(['cream', 'aftershave', 'typewriter', 'shopclock'].map((id) => at(id, { deal }))).toEqual(['Take', 'Take', 'Look', 'Look over']);
+    // (not looked at, it's as it is; done, it only looks)
+    const clock = spotPrompt('shopclock');
+    expect(relabel(clock, { deal })).toBe(clock);
+    expect(at('cream', { deal, done: ['needful'] })).toBe('Look');
+    // Pluto's claims: one weighed true is told the king; one told, or a lie weighed, only looks
+    const claims = DESTINATIONS.find((d) => d.id === 'pluto').deal;
+    const weighed = (uses) => uses.reduce((g, use) => stepDeal(g, { use }), newDeal({ items: claims.items, bad: claims.bad, need: 2, looks: 2 }));
+    expect(at('claim-moons', { deal: weighed(['claim-moons']) })).toBe('Tell the king');
+    expect(at('claim-moons', { deal: weighed(['claim-moons', 'claim-moons']) })).toBe('Look');
+    expect(at('claim-growing', { deal: weighed(['claim-growing']) })).toBe('Look');
+    expect(at('claim-planet', { deal: weighed(['claim-moons']) })).toBe('Weigh up');
+    // the Jerryboree: a Jerry heard is taken by the next press; one ruled out, or not yet heard, talks
+    const jerrys = DESTINATIONS.find((d) => d.id === 'jerryboree').find;
+    const asked = (uses) => uses.reduce((g, use) => stepFind(g, { use }, 0), newFind({ items: jerrys.items, ours: 'jerryreal', s: 45, cost: 15 }));
+    expect(at('jerrytv', { find: asked(['jerrytv']) })).toBe('Take him');
+    expect(at('jerrytv', { find: asked(['jerrytv', 'jerrytv']) })).toBe('Talk');
+    expect(at('jerryrobe', { find: asked(['jerrytv']) })).toBe('Talk');
+    expect(at('jerrytv', { find: asked(['jerrytv']), done: ['jerryboree'] })).toBe('Talk');
+    // (a game not under way, lost or not begun, takes nothing)
+    expect(at('cream', { deal: { ...deal, phase: 'lost' } })).toBe('Look over');
+    expect(at('jerrytv', { find: { ...asked(['jerrytv']), phase: 'lost' } })).toBe('Talk');
+  });
+
+  it('reads the game a prompt’s at, for relabel: the deal’s snapshot at one of its things, the find’s at a Jerry', () => {
+    const calls = [];
+    const act = (area, name) => {
+      calls.push([area, name]);
+      return { phase: 'run', name };
+    };
+    expect(playOf(spotPrompt('cream'), act)).toEqual({ deal: { phase: 'run', name: 'deal' } });
+    expect(playOf(spotPrompt('claim-moons'), act)).toEqual({ deal: { phase: 'run', name: 'deal' } });
+    expect(playOf(spotPrompt('jerrytv'), act)).toEqual({ find: { phase: 'run', name: 'find' } });
+    expect(calls).toEqual([
+      ['needful', 'deal'],
+      ['pluto', 'deal'],
+      ['jerryboree', 'find'],
+    ]);
+    // (anything else asks nothing)
+    for (const p of [spotPrompt('needful'), spotPrompt('cablebooth'), prompt(LINKS[0]), null]) expect(playOf(p, act)).toEqual({});
+    expect(calls).toHaveLength(3);
+    // (a place with no stage yet says nothing)
+    expect(playOf(spotPrompt('cream'), () => undefined)).toEqual({ deal: null });
   });
 
   it('reaches every area, for others online (the places past the portal are out to z 4425)', () => {
