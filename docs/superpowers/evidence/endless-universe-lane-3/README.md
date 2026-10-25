@@ -163,3 +163,22 @@ Nothing on screen changes in PR 3.1, so by the plan it has no browser check: no 
 | `far-rim` | 39, 36,198 | 42, 40,598 | 42, 85,160 | 1,147 / 1,490 / 1,047 |
 
 Frame times are the median where the run kept one, else the one frame, in software GL on a shared container, so they say little.
+
+## PR 3.1's gate, after its reviews
+
+Run again on `eu/lane-3` at `59b937a0`, the two review commits in (`af49ae70`, `59b937a0`), on 2026-10-25, with the container busy (load 16 to 21 on 4 cores during the full test run, other lanes' lint, tests and a dev server running).
+
+| command | outcome |
+| --- | --- |
+| `npm run lint` | green, no warnings (3 min 55 s) |
+| `npm test` | 1,955 files green, 1 skipped; 16 files red with 24 tests, every one a timeout (21 "Test timed out", at 5, 20 or 30 s), 1,006 s |
+| the same 16 files again, `npx vitest run --maxWorkers=2 …` | 16 files, 577 tests, all green (57 s, load 5) |
+| `npm run build` | green (3 min 2 s), with `-- --outDir /dev/shm/lane3-gate2-dist --emptyOutDir`, since the disk had 1.4 GB free |
+| `node scripts/health.mjs --check --skip build` | within budget |
+| `node scripts/flight-island.mjs --check` | ok: 151 files on the island, 39 marked rows, 62 references |
+
+None of the 16 files is one this lane changed. On `main` at `cc5e2eaf`, the coordinator's full run under a lighter load had one red, `art-mix.test.mjs`, the same timeout. `npm run build`'s `prebuild` rewrote `public/github.json` from the network; it was put back, so the tree is clean.
+
+The PR's own checks: `npx vitest run src/components/universe/places src/components/expanse src/components/universe/nav.test.js src/components/universe/budget.test.js src/components/universe/ship.test.js` is 62 files and 679 tests, all green (the reviews added `extent.test.js` and split the long tests). Lane 2's `fingerprint.test.js`, `density.test.js` and `space.test.js` are unchanged since `dcf19687` and green: 52 tests, the speed test's ten sectors under its 600 ms.
+
+`health.mjs`: `big-files` 22, `boundary-breaks` 481 and `cycles` 5, as before Task 1. `src/components/universe/scene.js`: 6,374 lines before and after (`wc -l`); PR 3.1 doesn't touch it. Nothing on screen changes, so there are no new draw calls, triangles, frame times or pops to take: the table above stands.
