@@ -56,3 +56,21 @@ What `src/lib/land/flight/variety.js` gives Tasks 8 to 13, where it differs from
 - Trees stand in the sea. `leafMesh.js` places clutter with no check of the water level, so a generated forest’s 79 m trunks rise out of the shallows along every coast (seen on `e:3,-2:4:0`). The fifty’s lakes and seas do the same today. A rule in `clutterFor` that only round specs take would leave the fifty alone.
 - The flight’s own map (`expanse/flight/mapRules.js`) colours a sea by its own `WATER` table, not by `water.colour`. A generated ocean’s sea there is the kind’s map colour. Task 10’s `groundColour` reads `water.colour`.
 - A ground’s `mark` (footprints) and `wet` colours stay the template’s.
+
+## Task 9: life and places from the variety
+
+### Landed
+
+- `expanseLife(type, biomes, system, fauna = null)` in `src/lib/land/flight/lifeTables.js`, and `lifeFor` passes `spec.fauna ?? null`. A generated planet’s own fauna takes the place of its type’s beasts: each plan is a code-built `grazer`, `skimmer` or `strider` in its tint, `0.3 × density` a km², a flyer at 6 to 50 m; a density of 0 walks none. Factions and pirates are as they were. The fifty have `fauna` null and keep their rows, and `the roster` lock holds.
+- `src/lib/land/flight/landmarkTables.js`: `POI_KITS` (ruins, wreck, outpost, monolith, signal, each at least `LANDMARK_MIN` things and within 60 m of its middle, the least `r` a generated place has), `landmarkRowsOf(spec, poi)`, `FLORA_TRUNKS` (the four green trees already in the tables) and `EXOTIC_KIT`. `clutterKitOf(spec)` is its type’s kit, then its own, then its flora’s tree (a forest or temperate flora, by `pick`, a pick of 1 clamped to the last), then its exotic’s.
+- `src/components/expanse/flight/landmarks.js` stands a POI on `landmarkRowsOf(spec, poi)`, so a generated planet’s places now have their things.
+- The flight’s install pack (`src/components/expanse/flight/pack.js`) gains `/kit/space/spaceship.glb` (the wreck) and `/kit/space/tree.glb` (the exotic trees). `landmarkFiles.test.js` holds a generated forest with every kind of place, and each exotic, to the pack at every level.
+- Where it differs from the lane plan:
+  - `EXOTIC_KIT`’s sizes are 21 (`Tree_Light_1`), 17 (`Tree_Floating_1`) and 5.8 (`Tree_Spikes_2`), not 3, 3 and 1.4. A size is the model’s scale for a row of scale 1 so it stands as tall as the code-built shape it replaces (79 m for a trunk, 26 m for a spire). The plan’s stood a glowing tree 11 m tall on `mid` where `low` draws the code-built one 79 m tall. A test holds each to within a tenth of its shape’s height.
+  - `clutterKitOf` gives a gas or ringed giant no exotic kit, as `generated.js` gives a cloud deck no exotic clutter; otherwise a glowing giant would fetch a tree file it never draws.
+  - The moon test in `lifeTables.test.js` that held an icy moon to ice’s tauntauns now holds it to its own fauna (that moon’s is a flock of skimmers), as the plan’s change means.
+- In the browser (`/fly/…` on the dev server at `mid`, software GL), a generated forest (`e:2,-3:0:1`, a monolith), a glowing desert (`e:2,-3:1:3`, ruins), a spired rock world (`e:2,-3:5:3`, a signal) and a floating ice world (`e:2,-3:8:3`, ruins) each stood their first place with no stand-ins (4 to 9 meshes) and no page error; the console’s only errors were three failed resource loads a page. The forest’s trees came in as the kit’s green trees and the glowing world’s as the kit’s glowing trees. Pictures in `lab/planets/task9/` (not committed).
+
+### Left
+
+- The two new kit files add about 0.68 MB to the flight’s install pack (`spaceship.glb` 187 KB, `tree.glb` 493 KB). `WORLD_MB['/fly']` is measured over the fifty’s landmark files (`landmarkFiles.test.js`), so it doesn’t count a generated planet’s places.
