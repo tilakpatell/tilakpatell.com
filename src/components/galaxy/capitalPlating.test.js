@@ -117,6 +117,15 @@ describe('capitalPlating', () => {
     expect(s.fragmentShader).toMatch(/float on = mix\( 0\.66, step\(/);
   });
 
+  it('takes the sections to their mean where a pixel spans one, and gives a ship of many kilometres blocks a city’s size', () => {
+    const m = new THREE.MeshStandardMaterial();
+    plate(m, unit, 19000);
+    const s = compiled(m);
+    expect(s.fragmentShader).toMatch(/uniform float uLength;/);
+    expect(s.fragmentShader).toMatch(/104\.0 \) \) \) - 0\.5 \) \* \( 1\.0 - smoothstep\( 8\.0, 30\.0, plPx \) \)/);
+    expect(s.fragmentShader).toMatch(/840\.0 \) \) \+ 5\.0 \) - 0\.5 \) \* 1\.6 \* smoothstep\( 3000\.0, 12000\.0, uLength \)/);
+  });
+
   it('takes a bare wall’s windows to their mean far off, which plates and panes are lit', () => {
     const m = new THREE.MeshStandardMaterial();
     plate(m, unit, 19000);

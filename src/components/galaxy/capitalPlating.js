@@ -109,6 +109,7 @@ varying vec3 vShipZ;`;
 const PLATE_FRAG = `
 uniform sampler2D uDetail;
 uniform float uLit;
+uniform float uLength;
 varying vec3 vShip;
 varying vec3 vShipN;
 varying vec3 vShipX;
@@ -247,8 +248,14 @@ vShipZ = normalize( normalMatrix * plToModel[ 2 ] );`,
   #endif
   vec4 plK = mix( vec4( ${[MAPPED.shade, MAPPED.big, MAPPED.cavity, MAPPED.bump].map(f).join(', ')} ), vec4( 1.0 ), plLay );
   float plKr = mix( ${f(MAPPED.rough)}, 1.0, plLay );
-  // (the sections, a box of the ship's space each; the drift; the grime, long fore and aft)
-  float plSec = plHash3( floor( vShip / vec3( 52.0, 26.0, 104.0 ) ) ) - 0.5;
+  // (the sections, a box of the ship's space each, to their mean where a
+  // pixel spans one: far off, each pixel's section a hash, they were a
+  // speckle; on a ship of many kilometres, the Executor's, blocks of them a
+  // city's size, each its own grey, as the films' model's patchwork; the
+  // drift; the grime, long fore and aft)
+  float plPx = length( fwidth( vShip ) );
+  float plSec = ( plHash3( floor( vShip / vec3( 52.0, 26.0, 104.0 ) ) ) - 0.5 ) * ( 1.0 - smoothstep( 8.0, 30.0, plPx ) );
+  plSec += ( plHash3( floor( vShip / vec3( 420.0, 210.0, 840.0 ) ) + 5.0 ) - 0.5 ) * 1.6 * smoothstep( 3000.0, 12000.0, uLength ) * ( 1.0 - smoothstep( 60.0, 240.0, plPx ) );
   float plDrift = ${lite ? '0.0' : 'plNoise3( vShip / 140.0 ) - 0.5'};
   float plGrime = ${lite ? '0.0' : 'plNoise3( vShip * vec3( 0.12, 0.12, 0.006 ) ) * 0.7 + plNoise3( vShip * vec3( 0.4, 0.4, 0.02 ) + 7.0 ) * 0.3 - 0.5'};
   float plShade = plP.shade * plK.x + ( plSec * 0.14 + plDrift * 0.1 - plGrime * 0.12 ) * plK.y;
