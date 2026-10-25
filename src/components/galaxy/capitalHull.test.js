@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
-import { GAME_HULLS, GAME_MAPS, paintMaterial, dressGameHull, dressGameMaps, hullMaterial, inFrame, joined, sizesFor } from './capitalHull';
+import { GAME_HULLS, GAME_MAPS, RELIEF, paintMaterial, dressGameHull, dressGameMaps, hullMaterial, inFrame, joined, sizesFor } from './capitalHull';
 
 // a texture as the loader gives one (the sheets tile)
 const map = () => new THREE.Texture();
@@ -80,6 +80,9 @@ describe('capitalHull', () => {
     const s = compiled(m);
     expect(s.fragmentShader).not.toMatch(/ghPanel/);
     expect(s.fragmentShader).toMatch(/mapN = normalize\( vec3\( mapN\.xy \+ ghDn\.xy/);
+    // (the details' relief at the game hull's calmer strength, gone where a pixel spans its texels)
+    expect(s.fragmentShader).toContain('textureSize( uGhDetailsN, 0 )');
+    expect(s.fragmentShader).toContain(`* ${(0.35).toFixed(4)} * ghFar`);
   });
 
   it('draws the hull’s map alone where the sheets aren’t to be had', () => {
@@ -347,8 +350,10 @@ describe('capitalHull', () => {
   });
 
   it('turns glTF’s green for a hull lit through three’s own frame (the pack’s hulls carry no tangents), and back for one whose parts carry them', async () => {
-    expect(hullMaterial(sheets(), GAME_HULLS.destroyer).normalScale.y).toBe(-1);
-    expect(paintMaterial({ combine: map(), tilingNormal: map(), breakup: map(), breakupNormal: map() }, GAME_HULLS.venator).normalScale.y).toBe(-1);
+    // (and its relief calmed to RELIEF: a lit deck a calm plane, as the game's frames show it)
+    expect(hullMaterial(sheets(), GAME_HULLS.destroyer).normalScale.toArray()).toEqual([RELIEF, -RELIEF]);
+    expect(paintMaterial({ combine: map(), tilingNormal: map(), breakup: map(), breakupNormal: map() }, GAME_HULLS.venator).normalScale.toArray()).toEqual([RELIEF, -RELIEF]);
+    expect(RELIEF).toBeLessThan(1);
     const { root, hull } = ship();
     const tangents = () => {
       const p = packHull();
@@ -356,7 +361,7 @@ describe('capitalHull', () => {
       return p;
     };
     await dressGameHull(root, 'destroyer', { detail: 'high', loadMesh: async () => tangents(), loadTexture: async () => map() });
-    expect(hull.material.normalScale.y).toBe(1);
+    expect(hull.material.normalScale.y).toBe(RELIEF);
   });
 
   it('keeps the parts’ tangents where every part has them, a mirrored part’s handedness turned', () => {

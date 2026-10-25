@@ -93,7 +93,7 @@ export const GAME_HULLS = {
     // tiles its panel normal over the hull's map, T_StarDestroyer_PanelTile_01_N,
     // which the bucket hasn't got)
     panels: { colour: null, normal: tex('sb_endor', 't_stardestroyerpanels_01_nw__normal'), tiling: 1 },
-    details: { colour: null, normal: tex('sb_endor', 't_stardestroyerdetails_01_nw__normal'), tiling: 4, strength: 0.8 },
+    details: { colour: null, normal: tex('sb_endor', 't_stardestroyerdetails_01_nw__normal'), tiling: 4, strength: 0.35 },
   },
   venator: {
     // ('red', the markings, is bare too, but its own mesh: capitalLook.js paints it)
@@ -281,6 +281,10 @@ export function sizesFor(detail, phone = false) {
   return { atlas: 2048, orm: 2048, colour: 2048, normal: 2048 };
 }
 
+// the panel sheets' relief on a game hull: a lit deck a calm plane, as the
+// game's frames show it (the sheets at full strength under a sun 20 to 40
+// degrees up read as crumpled foil, black cracks at 40 to 150 m)
+export const RELIEF = 0.7;
 const f = (v) => v.toFixed(4);
 const vec3 = (a) => `vec3( ${a.map(f).join(', ')} )`;
 
@@ -302,8 +306,9 @@ export function hullMaterial(maps, def, { name = 'M_Hull_01' } = {}) {
   m.normalMap = maps.panelsNormal;
   // (the pack's hulls carry no tangents: three works the frame out from the
   // UVs, and glTF's green is turned for that frame, as GLTFLoader turns it;
-  // swapIn turns it back for a hull whose parts have them)
-  m.normalScale.y = -1;
+  // swapIn turns it back for a hull whose parts have them; the relief at
+  // RELIEF, a lit deck a calm plane as the game's frames have it)
+  m.normalScale.set(RELIEF, -RELIEF);
   const ratio = def.details.tiling / def.panels.tiling;
   const colour = Boolean(maps.panels && maps.details);
   if (!colour && !maps.detailsNormal) return m;
@@ -328,7 +333,9 @@ export function hullMaterial(maps, def, { name = 'M_Hull_01' } = {}) {
   // (the details' relief over the panels', UDN)
   vec3 mapN = texture2D( normalMap, vNormalMapUv ).xyz * 2.0 - 1.0;
   vec3 ghDn = texture2D( uGhDetailsN, vNormalMapUv * ${f(ratio)} ).xyz * 2.0 - 1.0;
-  mapN = normalize( vec3( mapN.xy + ghDn.xy * ${f(def.details.strength ?? 1)}, mapN.z ) );
+  // (and gone where a pixel spans its texels: no glitter of them far off)
+  float ghFar = 1.0 - smoothstep( 0.7, 2.0, length( fwidth( vNormalMapUv * ${f(ratio)} ) ) * float( textureSize( uGhDetailsN, 0 ).x ) );
+  mapN = normalize( vec3( mapN.xy + ghDn.xy * ${f(def.details.strength ?? 1)} * ghFar, mapN.z ) );
   mapN.xy *= normalScale;
   normal = normalize( tbn * mapN );
 #else
@@ -362,8 +369,8 @@ export function paintMaterial(maps, def, { name = def.own } = {}) {
     maps.tilingNormal.channel = 0;
     maps.tilingNormal.repeat.setScalar(def.tiling.tiling);
     m.normalMap = maps.tilingNormal;
-    // (no tangents on the pack's hulls: hullMaterial's)
-    m.normalScale.y = -1;
+    // (no tangents on the pack's hulls, and the relief at RELIEF: hullMaterial's)
+    m.normalScale.set(RELIEF, -RELIEF);
   }
   const ratio = def.breakup.tiling / def.tiling.tiling;
   const relief = sheets && maps.breakupNormal;

@@ -37,7 +37,7 @@
       import { detailMap } from '/src/components/galaxy/capitalPlating.js';
       import { createDamage } from '/src/components/universe/battleDamage.js';
       import { createDebris } from '/src/components/universe/battleDebris.js';
-      import { LOOK } from '/src/components/galaxy/look.js';
+      import { LOOK, keyLight, kickerDir } from '/src/components/galaxy/look.js';
       import { createCapitalShadows } from '/src/components/galaxy/capitalShadow.js';
 
       const q = new URLSearchParams(location.search);
@@ -58,7 +58,9 @@
       // of it in space's way (`house`), at the galaxy's exposure (its post
       // pass leaves what's under 0.8 as drawn: no lift), and the sun's shadow
       // on the capital (galaxy/capitalShadow.js; ?shadows=0 without)
-      const sunDir = new THREE.Vector3(2, 3, 1.5).normalize();
+      // (Endor's sun, the galaxy's own key from it: lifted, cooled, ./look.js's keyLight)
+      const key = keyLight([0.68, 0.36, 0.64], new THREE.Color('#fff4e2').multiplyScalar(1.25));
+      const sunDir = key.dir;
       const env = new THREE.Scene();
       env.add(new THREE.Mesh(new THREE.SphereGeometry(10, 32, 16), new THREE.MeshBasicMaterial({ color: LOOK.space.sky, side: THREE.BackSide })));
       const star = new THREE.Mesh(new THREE.SphereGeometry(1.5, 16, 8), new THREE.MeshBasicMaterial({ color: new THREE.Color('#fff4e0').multiplyScalar(8) }));
@@ -68,10 +70,13 @@
       env.add(star, bounce);
       const pm = new THREE.PMREMGenerator(renderer);
       scene.environment = pm.fromScene(env, 0.02).texture;
-      const sun = new THREE.DirectionalLight('#ffffff', 2.2);
+      const sun = new THREE.DirectionalLight(key.colour, LOOK.space.key.intensity);
       sun.position.copy(sunDir);
+      // (and the kicker from the far side, as a one-sun system has it; not the house's reference)
+      const kicker = new THREE.DirectionalLight(LOOK.space.kicker.colour, LOOK.space.kicker.intensity);
+      kicker.position.copy(kickerDir([0.68, 0.36, 0.64]));
       const ambient = new THREE.AmbientLight(LOOK.space.ambient, 0.32 * LOOK.space.fill);
-      scene.add(sun, sun.target, ambient);
+      scene.add(sun, sun.target, kicker, kicker.target, ambient);
       const shadows = q.get('shadows') === '0' ? null : createCapitalShadows({ renderer, sun, size: 2048 });
       const house = houseOn({ renderer, scene, sun, ambient, keepExposure: true, look: { fog: false, ...LOOK.house } });
 

@@ -106,6 +106,12 @@ varying vec3 vShipN;
 varying vec3 vShipX;
 varying vec3 vShipY;
 varying vec3 vShipZ;`;
+// the plating's relief: the slope its bevels catch the light at, and how
+// dark its grooves go; a lit deck a calm plane under it, as the game's
+// frames show a lit hull (it read as crumpled foil at 4 and 0.35)
+export const SLOPE = 2.6;
+export const CAVITY = 0.22;
+
 const PLATE_FRAG = `
 uniform sampler2D uDetail;
 uniform float uLit;
@@ -177,20 +183,20 @@ Plating plOf( vec3 ship, vec3 n ) {
     vec4 d = textureGrad( uDetail, cx, dxx, dyx );
     o.shade += ( d.b - 0.5 ) * w.x;
     o.cavity += d.a * w.x;
-    o.grad += vec3( 0.0, d.g - 0.5, d.r - 0.5 ) * 4.0 * w.x;
+    o.grad += vec3( 0.0, d.g - 0.5, d.r - 0.5 ) * ${SLOPE.toFixed(3)} * w.x;
     o.lit += plWindows( ship.zy, px ) * wall * w.x;
   }
   if ( w.y > 0.01 ) {
     vec4 d = textureGrad( uDetail, cy, dxy, dyy );
     o.shade += ( d.b - 0.5 ) * w.y;
     o.cavity += d.a * w.y;
-    o.grad += vec3( d.g - 0.5, 0.0, d.r - 0.5 ) * 4.0 * w.y;
+    o.grad += vec3( d.g - 0.5, 0.0, d.r - 0.5 ) * ${SLOPE.toFixed(3)} * w.y;
   }
   if ( w.z > 0.01 ) {
     vec4 d = textureGrad( uDetail, cz, dxz, dyz );
     o.shade += ( d.b - 0.5 ) * w.z;
     o.cavity += d.a * w.z;
-    o.grad += vec3( d.r - 0.5, d.g - 0.5, 0.0 ) * 4.0 * w.z;
+    o.grad += vec3( d.r - 0.5, d.g - 0.5, 0.0 ) * ${SLOPE.toFixed(3)} * w.z;
     o.lit += plWindows( ship.xy, px ) * wall * w.z;
   }
   return o;
@@ -198,7 +204,7 @@ Plating plOf( vec3 ship, vec3 n ) {
 
 // how much of each layer over a model's own map (its detail is the model's),
 // where its texels are no bigger than a pixel; a bare hull has all of each
-export const MAPPED = { shade: 0.45, big: 0.6, cavity: 0.5, bump: 0.45, rough: 0.6 };
+export const MAPPED = { shade: 0.45, big: 0.6, cavity: 0.5, bump: 0.3, rough: 0.6 };
 const f = (v) => v.toFixed(3);
 
 // a patch laid on a material's shaders after any it had (each of the
@@ -262,7 +268,7 @@ vShipZ = normalize( normalMatrix * plToModel[ 2 ] );`,
   float plDrift = ${lite ? '0.0' : 'plNoise3( vShip / 140.0 ) - 0.5'};
   float plGrime = ${lite ? '0.0' : 'plNoise3( vShip * vec3( 0.12, 0.12, 0.006 ) ) * 0.7 + plNoise3( vShip * vec3( 0.4, 0.4, 0.02 ) + 7.0 ) * 0.3 - 0.5'};
   float plShade = plP.shade * plK.x + ( plSec * 0.14 + plDrift * 0.1 - plGrime * 0.12 ) * plK.y;
-  diffuseColor.rgb *= clamp( 1.0 + plShade, 0.4, 1.6 ) * ( 1.0 - plP.cavity * 0.35 * plK.z );`,
+  diffuseColor.rgb *= clamp( 1.0 + plShade, 0.4, 1.6 ) * ( 1.0 - plP.cavity * ${f(CAVITY)} * plK.z );`,
       )
       .replace('#include <roughnessmap_fragment>', `#include <roughnessmap_fragment>\n  roughnessFactor = clamp( mix( roughnessFactor, 0.52 - plShade * 0.8 + plP.cavity * 0.3 + plGrime * 0.12, plKr ), 0.3, 0.92 );`)
       .replace('#include <normal_fragment_maps>', `#include <normal_fragment_maps>\n  normal = normalize( normal - ( vShipX * plP.grad.x + vShipY * plP.grad.y + vShipZ * plP.grad.z ) * plK.w );`)

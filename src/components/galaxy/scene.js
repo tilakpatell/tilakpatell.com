@@ -85,7 +85,7 @@ import { aberrationFor, createPost } from '../universe/post';
 import { createHoloDriver } from './holo/drive';
 import { GLOW, glowAt } from '../universe/battleFx';
 import { bloomGroups } from '../../lib/three/bloom';
-import { LOOK } from './look';
+import { LOOK, keyLight, kickerDir } from './look';
 import { createCapitalShadows, shadowSize } from './capitalShadow';
 import { sendDetailWith } from './capitalPlating';
 import { warm as warmTextures } from '../../lib/three/textures';
@@ -287,8 +287,10 @@ export async function create(canvas, ctx) {
     return precompile(renderer, singlePass(root), cam, target, post.on ? post.composer.readBuffer : undefined);
   };
 
-  // light: each sun from its way, and a little ambient
-  const keys = [new THREE.DirectionalLight('#ffffff', 2.2), new THREE.DirectionalLight('#ffffff', 0)];
+  // light: the ships' key from the first sun's way (lifted and cooled,
+  // ./look.js's keyLight), the second sun or a dim kicker from the far side,
+  // and a little ambient
+  const keys = [new THREE.DirectionalLight('#ffffff', LOOK.space.key.intensity), new THREE.DirectionalLight('#ffffff', 0)];
   for (const k of keys) scene.add(k, k.target);
   // the first sun's shadow on the capital ships (capitalShadow.js): on before
   // anything's compiled, where the device draws shadows, so every shader's
@@ -546,12 +548,18 @@ export async function create(canvas, ctx) {
     effectsNow(true);
     wingmen?.clear();
     respace();
-    // the suns' light
+    // the suns' light (the first the ships' key; with one sun, the second
+    // light the kicker from opposite it)
     world.sunLights.forEach((s, i) => {
-      keys[i].color.copy(s.color);
-      keys[i].position.copy(s.dir).multiplyScalar(100);
+      const k = i === 0 ? keyLight(s.dir, s.color) : { dir: s.dir, colour: s.color };
+      keys[i].color.copy(k.colour);
+      keys[i].position.copy(k.dir).multiplyScalar(100);
     });
-    keys[1].intensity = world.sunLights[1] ? 1.1 : 0;
+    if (!world.sunLights[1]) {
+      keys[1].color.set(LOOK.space.kicker.colour);
+      keys[1].position.copy(kickerDir(world.sunLights[0].dir)).multiplyScalar(100);
+    }
+    keys[1].intensity = world.sunLights[1] ? 1.1 : LOOK.space.kicker.intensity;
     if (!env) reflect(sys);
     hunters?.clear();
     pickups.clear();
@@ -2357,8 +2365,8 @@ export async function create(canvas, ctx) {
       }
       state.eclipse += (eclipse - state.eclipse) * clamp01(dt * 4);
       const light = state.eclipse;
-      keys[0].intensity = 2.2 * light;
-      keys[1].intensity = world.sunLights[1] ? 1.1 * light : 0;
+      keys[0].intensity = LOOK.space.key.intensity * light;
+      keys[1].intensity = (world.sunLights[1] ? 1.1 : LOOK.space.kicker.intensity) * light;
       ambient.intensity = (0.22 + 0.12 * light) * LOOK.space.fill;
     }
     const inTunnel = state.jump?.phase === 'tunnel';

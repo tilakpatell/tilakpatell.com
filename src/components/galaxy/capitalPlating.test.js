@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
-import { MAPPED, detailMap, detailTexture, panes, plate, sendDetailWith, takeDetail } from './capitalPlating';
+import { CAVITY, MAPPED, SLOPE, detailMap, detailTexture, panes, plate, sendDetailWith, takeDetail } from './capitalPlating';
 
 // a material as three compiles it: its shaders, the uniforms they're handed
 const compiled = (m) => {
@@ -25,6 +25,10 @@ describe('capitalPlating', () => {
     // (each patch's line found: the plating, its sheen, its bump, its windows, its cavity)
     for (const line of [/Plating plP = plOf\(/, /roughnessFactor = clamp\( mix\( roughnessFactor/, /normal = normalize\( normal - \( vShipX/, /plP\.lit \* uLit/, /reflectedLight\.indirectDiffuse \*= plAo/]) expect(s.fragmentShader).toMatch(line);
     expect(s.fragmentShader).not.toMatch(/#include <map_fragment>\n\s*#include/);
+    // (its relief calm on a lit deck: the bevels' slope and the grooves' dark)
+    expect(s.fragmentShader.split(`* ${SLOPE.toFixed(3)} * w.`)).toHaveLength(4);
+    expect(s.fragmentShader).toContain(`plP.cavity * ${CAVITY.toFixed(3)} * plK.z`);
+    expect(SLOPE).toBeLessThan(4);
   });
 
   it('goes over a model’s own map with a lighter hand, the more of it the more the map is magnified, and no windows', () => {
