@@ -4,13 +4,15 @@
 // eyepatch and the gun put back on Rick's bench, which ends the story; each
 // fight lost, walked out of through the portal and won, and what's left of it
 // after; a returner who'd done all three places before it was built, and one
-// who'd done the lair first.
+// who'd done the lair first; and the Dome with Hemorrhage's model refused.
 /* global window, document */
 import { check, use, reads, at, opens, toast, playTo, later, warpUse, warp, caught, spotAt, wayInOf, goalIs, noLink, hunting, inArea, open, openOnCard, dial, home, notDone, ticked, isDone, achieved, gun, PLACES, EVIL, SCORE, CABLE } from './helpers.mjs';
 
 const [DOME, LAIR, EYEPATCH, BENCH_STEP] = EVIL.steps;
 // the story's last word: the end card's, and the objective's while it's up (adventure/hud.js)
 const STORY_DONE = 'That’s the whole story: the Checklist tab has the rest.';
+// what a duel called with no duellist stood says (the stage's, dimensions/stage.js)
+const UNLOADED = 'Hemorrhage didn’t load: reload the page for the fight.';
 // a stand in Rick's garage where the bench (the dial) is the nearest thing
 const BENCH = [-301.75, 100.15, Math.PI];
 export const WHO = { blooddome: 'hemorrhage', evilrick: 'evilrick' };
@@ -384,5 +386,29 @@ export const EVIL_CHECKS = {
       await theEnd(page);
     },
     { seed: { 'tp-rm-story': { v: 1, data: { episode: 12, step: 0, got: [], wins: ['cabinet', 'chase'], freeRoam: false } }, 'tp-c137-done': ['evilrick', 'evilmorty'] } },
+  ),
+
+  // Hemorrhage's model never loads (his files refused): the ring's line read,
+  // then a note to reload behind it, and nobody comes
+  'dome-unloaded': Object.assign(
+    async (page) => {
+      // (a figure's model and its clips: hemorrhage.glb, hemorrhage-walk.glb and the rest)
+      await page.route((url) => /\/hemorrhage(-[a-z]+)?\.glb$/.test(url.pathname), (route) => route.abort());
+      await openOnCard(page, '#/c-137', 12);
+      await dial(page, 'blooddome');
+      check((await him(page, 'blooddome')) == null, 'Hemorrhage stood with his model refused');
+      await warpUse(page, 'blooddome', 'ring', ...spotAt('blooddome', 'ring'));
+      await toast(page, said('blooddome', 'ring'));
+      // (the toast's clock is the page's, not the game's)
+      await page.waitForTimeout(1000);
+      check((await page.locator('.rm-toast', { hasText: UNLOADED }).count()) === 0, 'the note covered the ring’s line before it was read');
+      check((await page.locator('.rm-toast', { hasText: said('blooddome', 'ring') }).count()) === 1, 'the ring’s line was cut');
+      await page.locator('.rm-toast', { hasText: UNLOADED }).waitFor({ timeout: 15000 }).catch(() => {
+        throw new Error(`no note saying “${UNLOADED}” after the ring’s line`);
+      });
+      await noFight(page, 'with Hemorrhage not loaded,');
+      check((await hunting(page, 'blooddome')).length === 0, 'something hunted him with Hemorrhage not loaded');
+    },
+    { seed: { 'tp-rm-story': { v: 1, data: { episode: 12, step: 0, got: [], wins: ['cabinet', 'chase'], freeRoam: false } } } },
   ),
 };
