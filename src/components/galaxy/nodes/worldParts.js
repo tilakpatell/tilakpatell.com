@@ -93,7 +93,7 @@ export function shieldMaterial() {
   const vN = normalize(modelWorldMatrix.mul(vec4(normalLocal, 0)).xyz).toVarying('vN');
   const vV = normalize(cameraPosition.sub(w.xyz)).toVarying('vV');
   const f = pow(float(1).sub(abs(dot(vN, vV))), 3);
-  mat.colorNode = vec3(0.35, 0.85, 1.0).mul(f.mul(0.04).add(uniforms.uHit.mul(f.mul(0.5).add(0.1)))).mul(uniforms.uOn);
+  mat.colorNode = vec3(0.35, 0.85, 1.0).mul(f.mul(0.012).add(uniforms.uHit.mul(f.mul(0.5).add(0.1)))).mul(uniforms.uOn);
   mat.uniforms = uniforms;
   return mat;
 }

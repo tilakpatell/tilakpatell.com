@@ -233,7 +233,7 @@ describe('buildSystem', () => {
     const endor = buildSystem(systemById('endor'), { ...kit(), small: false });
     const { mat } = endor.dsShield;
     // (a faint rim at the limb, not a lit bubble; a bump or its failing flares it)
-    expect(mat.fragmentShader).toContain('(f * 0.04 + uHit * (0.1 + 0.5 * f))');
+    expect(mat.fragmentShader).toContain('(f * 0.012 + uHit * (0.1 + 0.5 * f))');
     endor.quiet(true);
     endor.war.holdShield(true);
     endor.update(T0, 0.2, camera, null);

@@ -378,10 +378,10 @@ export function buildSystem(sys, { models, bolts, flashes, small = false, ratio 
         if (p.shield) {
           const R = p.size * 0.66;
           const shell = addSolid({ id: 'ds2-shield', at: p.at, r: R, reach: R, shield: true });
-          // (unseen at rest, as in the films, but for a faint rim at the limb: a bump, or its going down, flares the rim and faintly the face)
+          // (unseen at rest, as in the films, but for the faintest rim at the limb (its two faces add there: at 0.04 it read as a cyan halo): a bump, or its going down, flares the rim and faintly the face)
           const mat = new THREE.ShaderMaterial({
             vertexShader: 'varying vec3 vN; varying vec3 vV; void main() { vec4 w = modelMatrix * vec4(position, 1.0); vN = normalize(mat3(modelMatrix) * normal); vV = normalize(cameraPosition - w.xyz); gl_Position = projectionMatrix * viewMatrix * w; }',
-            fragmentShader: 'uniform float uOn; uniform float uHit; varying vec3 vN; varying vec3 vV; void main() { float f = pow(1.0 - abs(dot(vN, vV)), 3.0); vec3 c = vec3(0.35, 0.85, 1.0) * (f * 0.04 + uHit * (0.1 + 0.5 * f)) * uOn; gl_FragColor = vec4(c, 1.0); }',
+            fragmentShader: 'uniform float uOn; uniform float uHit; varying vec3 vN; varying vec3 vV; void main() { float f = pow(1.0 - abs(dot(vN, vV)), 3.0); vec3 c = vec3(0.35, 0.85, 1.0) * (f * 0.012 + uHit * (0.1 + 0.5 * f)) * uOn; gl_FragColor = vec4(c, 1.0); }',
             uniforms: { uOn: { value: 1 }, uHit: { value: 0 } },
             transparent: true,
             blending: THREE.AdditiveBlending,
