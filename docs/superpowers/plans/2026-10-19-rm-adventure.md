@@ -1,6 +1,6 @@
 # The Rick and Morty adventure: the plan's index
 
-> **For agentic workers:** this is the index. Each phase has its own task-by-task plan, written when the phase starts (from the spec and what the phases before it landed), at `docs/superpowers/plans/2026-10-19-rm-adventure-p<N>-<slug>.md`. A phase's plan goes once its work is merged (P0's to P10's have; P11's is `2026-10-19-rm-adventure-p11-big-score.md`). REQUIRED SUB-SKILL for a phase plan: superpowers:subagent-driven-development or superpowers:executing-plans.
+> **For agentic workers:** this is the index. Each phase has its own task-by-task plan, written when the phase starts (from the spec and what the phases before it landed), at `docs/superpowers/plans/2026-10-19-rm-adventure-p<N>-<slug>.md`. A phase's plan goes once its work is merged (P0's to P12's have; the close's is `2026-10-19-rm-adventure-close.md`). REQUIRED SUB-SKILL for a phase plan: superpowers:subagent-driven-development or superpowers:executing-plans.
 
 **Spec:** `docs/superpowers/specs/2026-10-19-rm-adventure-design.md`
 
@@ -29,14 +29,14 @@
 | P9 | 10 | episode 10 *The Citadel*: the Citadel shows the story's objective and card | none |
 | P10 | 11 | episode 11 *The sector*: Bird World, Gear World, Pluto | (uses `climb`, `sequence`, `deal`) |
 | P11 | 12 | episode 12 *Big score*: Heist-Con | (uses `hunt`, `collect`, `sequence`) |
-| P12 | 13 | episode 13 *Evil Rick* (all exist) | none |
+| P12 | 13 | episode 13 *Evil Rick*: the Blood Dome's and Evil Rick's duels (both exist) as fights with their achievements, the Morty with the eyepatch, the gun back on Rick's bench, which ends the story; C-137's toast a slot | none |
+| close | 13 | the worlds' hand-off; `docs/architecture.md` (C-137's entry, the Citadel's, one for `adventure/`); the README's C-137 row; the backlog; the dial's count wherever the copy has it (`tour/chapters/player.js`, `tour/briefs.js`, `guide/abouts.js`, `guide/c137.js`): thirty-two places; ahead of P13 while its gate holds | none |
 | P13 | 13 | Schmeckles: `purse.js`, `pay.js`, `perks.js`, the bench and the Exchange, coordinates for sale, outfits | none |
-| close | 13 | the worlds' hand-off, `docs/architecture.md`, the README's lines, the backlog, the tour's and the guide's destination counts | none |
 
 ## The gate before P13
 
-P13 starts only when the owner's currency work is on `main`. Its plan opens by reading what landed (`git log --oneline -- src/components/universe/economy.js src/components/universe/EconomyProvider.jsx` and any new wallet module) and writes `purse.js` against it. Until then, P1 to P12 go on; their kinds take `perks` with every value at zero (spec, section 5).
+P13 starts only when the owner's currency work is on `main`. Its plan opens by reading what landed (`git log --oneline -- src/components/universe/economy.js src/components/universe/EconomyProvider.jsx` and any new wallet module) and writes `purse.js` against it. Until then, P1 to P12 go on; their kinds take `perks` with every value at zero (spec, section 5). That log shows 57da9c70d (2026-10-23, Free roam's jobs on the galaxy's worlds: `jobDone` in `economy.js`'s `EARN`), which is the galaxy's, not the owner's currency.
 
 ## Not touched by any phase
 
-Draft PR #1028's files (`src/components/universe/economy.js` and the arsenal's); the galaxy's planet engine and Gazorpazorp (`2026-10-08-rm-worlds-design.md`); any model file.
+PR #1028's files (`src/components/universe/economy.js` and the arsenal's; “One arsenal”, merged since); the galaxy's planet engine and Gazorpazorp (`2026-10-08-rm-worlds-design.md`); any model file.

@@ -1,6 +1,6 @@
 // The deal kind (the spec's "choose n of m, each with a hidden flag a look
-// reveals"): Needful Things' game, and Pluto's to come (P10, with its own
-// words). Each thing for sale carries a curse or none, unseen. A thing's
+// reveals"): Needful Things' game, and Pluto's (P10, with its own words and
+// its lies as ids). Each thing for sale carries a curse or none, unseen. A thing's
 // first use looks it over, and a look says which (`looks` of them, then
 // the rest are a gamble, 'blind'); its second use takes it. Take `need`
 // with no curse and it's won; take a cursed one and it's lost, as caught is.

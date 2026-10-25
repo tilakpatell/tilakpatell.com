@@ -77,8 +77,8 @@ import { speak, stopSpeaking } from './shipVoice';
 import { ROOMS_SAY, SAY } from './say';
 import { gameGoal } from './dimensions/gameGoal';
 import { BANDSTAND, LOT, PARK, POND, POSTERS, ROADS, SHOPS, TOWN_HOUSES, TOWN_TREES } from './town/plan';
-import { lineSaid } from './voicelines';
-import { preloadVoiced, sayVoiced, stopVoiced } from '../../../lib/voiced';
+import { useRmToast } from './useRmToast';
+import { stopVoiced } from '../../../lib/voiced';
 import { useLooks } from '../wardrobe/useLooks';
 import './world.css';
 import { useTravellers } from '../../middleearth/towns/useTravellers';
@@ -197,8 +197,8 @@ const TALK_UNLOCK = { therapy: 'wong', ...Object.assign({}, ...DESTINATIONS.map(
 // the hotspot that starts the clock: the Purge Planet's siren, Customs'
 // scanner, the wedding's toast
 const FREEZE_SPOTS = new Set(DESTINATIONS.filter((d) => d.freeze).map((d) => d.freeze.spot));
-// (a climb's things to pick up: gone from reach once picked up on this visit)
-const PICKS = new Set(DESTINATIONS.flatMap((d) => d.climb?.picks ?? []));
+// (a climb's things to pick up, and what starts a duel (the Blood Dome's ring, the lair's pods): gone from reach once used on this visit)
+const PICKS = new Set(DESTINATIONS.flatMap((d) => [...(d.climb?.picks ?? []), ...(d.people.some((p) => p.ai?.hunt?.duel) ? [...Object.keys(d.acts).filter((k) => d.acts[k] === 'fight'), ...(d.collect?.spots ?? [])] : [])]));
 const ESCAPES = Object.fromEntries(DESTINATIONS.filter((d) => d.escape).map((d) => [d.escape.spot, { ...d.escape, area: d.id }]));
 // and what using a hotspot tells its place's builder
 const ACTS = Object.assign({}, ...DESTINATIONS.map((d) => Object.fromEntries(Object.entries(d.acts).map(([spot, name]) => [spot, [d.id, name]]))));
@@ -231,7 +231,7 @@ const WHEEL_R = 110;
 
 // Where the next thing to do is, for the map's marker: the area and the spot
 // in it, and from anywhere else, the way towards it.
-const GOAL = { cable: ['house', 'spot:cable'], butter: ['house', 'spot:butter'], meeseeks: ['garage', 'spot:meeseeks'], plumbus: ['garage', 'spot:plumbus'], portalpanic: ['garage', 'spot:portalpanic'], quiz: ['school', 'spot:quiz'], fly: ['street', 'cruiser'], portal: ['garage', 'link:garage-portal'], basement: ['garage', 'link:garage-hatch'], roy: ['arcade', 'spot:roy'], roy55: ['arcade', 'spot:roy'], president: ['street', 'spot:president'], oval: ['garage', 'link:garage-oval'], diner: ['street', 'link:diner-door'], mindblowers: ['mindblowers', 'spot:chair'], rickall: ['house', 'spot:egg'], wong: ['wong', 'spot:therapy'], ...Object.fromEntries(DESTINATIONS.flatMap((d) => d.tasks.map((t) => [t.id, [d.id, `spot:${Object.keys(d.done).find((k) => d.done[k] === t.id) ?? d.escape?.after ?? d.escape?.spot ?? d.goal}`]]))), sewer: ['agency', 'spot:sewer'], cabinet: ['arcade', 'spot:cabinet2'], chase: ['street', 'cruiser'], pond: ['street', 'spot:pond'], posters: ['street', 'spot:poster1'] };
+const GOAL = { cable: ['house', 'spot:cable'], butter: ['house', 'spot:butter'], meeseeks: ['garage', 'spot:meeseeks'], plumbus: ['garage', 'spot:plumbus'], portalpanic: ['garage', 'spot:portalpanic'], quiz: ['school', 'spot:quiz'], fly: ['street', 'cruiser'], portal: ['garage', 'link:garage-portal'], dial: ['garage', 'spot:dial'], basement: ['garage', 'link:garage-hatch'], roy: ['arcade', 'spot:roy'], roy55: ['arcade', 'spot:roy'], president: ['street', 'spot:president'], oval: ['garage', 'link:garage-oval'], diner: ['street', 'link:diner-door'], mindblowers: ['mindblowers', 'spot:chair'], rickall: ['house', 'spot:egg'], wong: ['wong', 'spot:therapy'], ...Object.fromEntries(DESTINATIONS.flatMap((d) => d.tasks.map((t) => [t.id, [d.id, `spot:${Object.keys(d.done).find((k) => d.done[k] === t.id) ?? d.escape?.after ?? d.escape?.spot ?? d.goal}`]]))), sewer: ['agency', 'spot:sewer'], cabinet: ['arcade', 'spot:cabinet2'], chase: ['street', 'cruiser'], pond: ['street', 'spot:pond'], posters: ['street', 'spot:poster1'] };
 // (every destination on the dial is through the garage's portal; the other planets are landed on from the universe map)
 const DIALLED = new Set(DIAL.map((d) => d.id));
 const toDest = (via) => Object.fromEntries(DESTINATIONS.filter((d) => !isPlanet(d.id) || DIALLED.has(d.id)).map((d) => [d.id, via]));
@@ -363,23 +363,10 @@ export default function RmWorld({ start = null, onLeave = null, frozen = false, 
   const [open, setOpen] = useState(null);
   const openRef = useRef(null);
   const [gl, setGl] = useState('loading'); // loading | on | failed | lost
-  const [toast, setToast] = useState(null);
+  const { toast, say, due } = useRmToast();
   const pending = useRef([]); // tasks done while something's open over the page, told on the way out
   const api = useRef(null);
 
-  // (what someone says is heard in their own voice where it's been made
-  // (./voicelines.js, lib/voiced.js); the next thing said, voiced or not, stops it)
-  const say = useCallback((t) => {
-    setToast({ ...t, at: performance.now() });
-    if (t.kind === 'say') {
-      const said = lineSaid(t.text);
-      sayVoiced(said?.who, said?.text);
-    }
-  }, []);
-  useEffect(() => {
-    preloadVoiced();
-    return stopVoiced;
-  }, []);
   // the adventure told what's happened (../adventure/), and what it says
   // back: an episode's closing line, and the next one's card (a new
   // visitor's first, once C-137's world is on). While something's open over
@@ -391,7 +378,7 @@ export default function RmWorld({ start = null, onLeave = null, frozen = false, 
   const show = useCallback(
     (out) => {
       const news = newsOf(out);
-      news.say.forEach(say);
+      news.say.forEach((t) => say(t, { after: true }));
       if (news.card != null) setCard(news.card);
     },
     [say],
@@ -414,8 +401,8 @@ export default function RmWorld({ start = null, onLeave = null, frozen = false, 
   const tellDone = useCallback((ids) => {
     const names = ids.map((id) => TASKS.find((t) => t.id === id)?.name).filter(Boolean);
     const p = progress(doneRef.current);
-    setToast({ kind: 'done', who: names.join(' and '), text: p.next ? `${p.count} of ${p.total} done` : `All ${p.total} done. Wubba lubba dub dub.`, at: performance.now() });
-  }, []);
+    say({ kind: 'done', who: names.join(' and '), text: p.next ? `${p.count} of ${p.total} done` : `All ${p.total} done. Wubba lubba dub dub.` }, { after: true });
+  }, [say]);
 
   // A thing to do, done: kept straight away (not only when the page is left),
   // sparks over Morty, and a toast now or when what's open closes.
@@ -486,17 +473,11 @@ export default function RmWorld({ start = null, onLeave = null, frozen = false, 
   // a walkway cabinet's target beaten (told as it's beaten, said when it closes)
   const cabinetWon = useCallback(() => tell({ type: 'win', game: 'cabinet' }), [tell]);
 
-  useEffect(() => {
-    if (!toast) return undefined;
-    const t = setTimeout(() => setToast(null), toast.kind === 'say' ? 5600 : toast.bad ? 3400 : 4400);
-    return () => clearTimeout(t);
-  }, [toast]);
-
   const world = three.on && gl !== 'failed' && gl !== 'lost';
   return (
     <section className="rm-world" aria-labelledby="rm-world-title" data-mode={world ? '3d' : 'cards'}>
       {world ? (
-        <World api={api} done={done} open={open} openPlace={openPlace} complete={complete} unlock={unlock} gl={gl} setGl={setGl} toast={toast} say={say} planet={planet} onLeave={onLeave} earn={earn} earned={earned} frozen={frozen} onHangar={onHangar} cruiser={cruiser} loadout={loadout} skillFx={skillFx} powerPicks={powerPicks} tell={tell} card={card} closeCard={closeCard} />
+        <World api={api} done={done} open={open} openPlace={openPlace} complete={complete} unlock={unlock} gl={gl} setGl={setGl} toast={toast} say={say} due={due} planet={planet} onLeave={onLeave} earn={earn} earned={earned} frozen={frozen} onHangar={onHangar} cruiser={cruiser} loadout={loadout} skillFx={skillFx} powerPicks={powerPicks} tell={tell} card={card} closeCard={closeCard} />
       ) : (
         <Cards done={done} openPlace={openPlace} three={three} gl={gl} toast={toast} retry={() => setGl('loading')} planet={planet} />
       )}
@@ -511,7 +492,7 @@ export default function RmWorld({ start = null, onLeave = null, frozen = false, 
 // hence the reach)
 const ROOM = { bound: boundOf(AREAS), motion: true };
 
-function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast, say, planet, onLeave, earn, earned, frozen, onHangar, cruiser, loadout, skillFx, powerPicks, tell, card, closeCard }) {
+function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast, say, due, planet, onLeave, earn, earned, frozen, onHangar, cruiser, loadout, skillFx, powerPicks, tell, card, closeCard }) {
   // (the cruiser's numbers, read by the frame loop)
   const fitted = useMemo(() => cruiserOf(cruiser), [cruiser]);
   const fittedRef = useRef(fitted);
@@ -573,7 +554,7 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
   const home = arriveAt(useLocation().state);
   const navigate = useNavigate();
   if (!sim.current) sim.current = newSim(planet ?? home ?? START, !!planet || !!home);
-  // (C-137's next is never a planet's: they're done on the planets)
+  // (C-137's next is never a planet's: they're played as planets, landed on or, the sector's four, dialled)
   const prog = planet ? planetProgress(planet, done) : progress(done, { skip: PLANET_TASKS });
   const progRef = useRef(prog);
   progRef.current = prog;
@@ -920,8 +901,9 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
           sound('portalOpen');
           later(onLeave, FADE_MS + (made ? 900 : 0));
         };
+        // (held for the closing line: from when it goes up, if it waits behind a line still being read)
         const hold = leaveHold(out ?? []);
-        if (hold) later(leave, hold);
+        if (hold) later(leave, hold + due());
         else leave();
         return;
       }
@@ -983,13 +965,15 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
           unlock(e.task);
         }
         if (e?.area === l.area) s.escape = null;
-        // (what he's used is for this visit, and the place he's left settles)
+        // (what he's used is for this visit, the place he's left settles, and a fight he walked out of is over)
         s.used = new Set();
+        s.duel = null;
+        setDuel(null);
         api.current?.act(l.area, 'calm');
         setFade(null);
       }, climb ? CLIMB_MS : FADE_MS);
     },
-    [api, complete, unlock, later, stopRickall, planet, onLeave, tell, dialOpen, navigate],
+    [api, complete, unlock, later, stopRickall, planet, onLeave, tell, dialOpen, navigate, due],
   );
   const boardRef = useRef(null);
   const board = useCallback(() => {
@@ -1079,8 +1063,7 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
         playMemory(0);
       }
     } else if (n.id === 'dial') {
-      openDial();
-      tell({ type: 'use', id: 'dial' });
+      if (!tell({ type: 'use', id: 'dial' }).some((o) => o.type === 'end')) openDial(); // (the press that ends the story puts the gun back: Rick's last line read in the clear, not under the dial)
     } else if (n.id === 'pond') {
       // a stone picked up, or thrown (the street's: ./town/skip.js)
       api.current?.act('street', 'skip');
@@ -1111,14 +1094,14 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
         s.escape = { ...e, at: s.t };
         sound('siren');
       }
-      // (done once they've had their say: the President gets in his car then)
+      // (done once they've had their say: the President gets in his car then; what's told of it waits till a long one's read)
       if (TALK_DONE[n.id]) later(() => complete(TALK_DONE[n.id]), TALK_MS);
       // a missing-cat poster read: kept, and the last of them is the thing done
       if (POSTER_IDS.has(n.id) && !postersRead().includes(n.id)) {
         const read = [...postersRead(), n.id];
         local.set(POSTERS_READ, read);
         if (POSTER_IDS.size === read.length) later(() => complete('posters'), TALK_MS);
-        else later(() => say({ kind: 'note', text: `${read.length} of ${POSTER_IDS.size} posters read` }), TALK_MS);
+        else later(() => say({ kind: 'note', text: `${read.length} of ${POSTER_IDS.size} posters read` }, { after: true }), TALK_MS);
       }
       if (COLLECT[n.id] && COLLECT[n.id].spots.every((id) => s.used.has(id))) {
         const c = COLLECT[n.id];

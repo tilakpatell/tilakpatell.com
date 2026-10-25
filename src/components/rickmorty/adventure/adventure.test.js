@@ -162,9 +162,12 @@ describe('the adventure’s store', () => {
     expect(a.dialOpen('heistcon')).toBe(true);
     expect(a.dialOpen('blooddome')).toBe(false); // (episode 12 is built too)
     a.jump(12);
-    expect(a.dialOpen('blooddome')).toBe(true); // (past the last ready episode)
+    expect(a.dialOpen('blooddome')).toBe(true); // (episode 12 done)
+    a.jump(13);
+    expect(a.get().episode).toBe(13); // (the story's end)
+    expect(a.dialOpen('evilrick')).toBe(true);
     a.jump(99);
-    expect(a.get().episode).toBe(12);
+    expect(a.get().episode).toBe(13);
     a.reset();
     expect(a.get()).toEqual(fresh());
   });
@@ -197,7 +200,10 @@ describe('the adventure’s store', () => {
     at({ episode: 1, step: 1 });
     expect(createAdventure({ saves, read: none }).intro()).toBe(null);
     at({ episode: 12, step: 0 });
-    expect(createAdventure({ saves, read: none }).intro()).toBe(null);
+    expect(createAdventure({ saves, read: none, ready: 12 }).intro()).toBe(null);
+    expect(createAdventure({ saves, read: none }).intro()).toBe(12); // (episode 13's card: it's built now)
+    at({ episode: 13, step: 0 });
+    expect(createAdventure({ saves, read: none }).intro()).toBe(null); // (the end)
     at({ episode: 1, step: 0, freeRoam: true });
     expect(createAdventure({ saves, read: none }).intro()).toBe(null);
     store.removeItem(STORY_KEY);
@@ -398,10 +404,33 @@ describe('the adventure’s store', () => {
     const roomed = createAdventure({ saves, read: knowing(['vindicators']) });
     expect(roomed.get()).toMatchObject({ episode: 11, step: 0 });
     expect(roomed.intro()).toBe(11);
-    // both: episode 12 finishes as the visit loads, with no card (episode 13 isn't built)
+    // both: episode 12 finishes as the visit loads, with no card while episode 13 isn't built
+    at({ episode: 11, step: 0 });
+    const old = createAdventure({ saves, read: knowing(['heistcon', 'vindicators']), ready: 12 });
+    expect(old.get()).toMatchObject({ episode: 12, step: 0 });
+    expect(old.intro()).toBe(null);
     at({ episode: 11, step: 0 });
     const both = createAdventure({ saves, read: knowing(['heistcon', 'vindicators']) });
     expect(both.get()).toMatchObject({ episode: 12, step: 0 });
-    expect(both.intro()).toBe(null);
+    expect(both.intro()).toBe(12); // (episode 13's card: it's built now)
+  });
+
+  it('opens episode 13 for a visitor who finished episode 12 before it was built', () => {
+    const at = (data) => store.setItem(STORY_KEY, JSON.stringify({ v: 1, data: { ...fresh(), ...data } }));
+    const knowing = (tasks) => ({ tasks: () => tasks, citadel: () => [] });
+    for (const [tasks, step] of [
+      [[], 0],
+      [['blooddome'], 1],
+      [['blooddome', 'evilrick', 'evilmorty'], 3],
+      [['evilmorty'], 0],
+      [['evilrick', 'evilmorty'], 0],
+    ]) {
+      at({ episode: 12, step: 0 });
+      const a = createAdventure({ saves, read: knowing(tasks) });
+      expect(a.get(), tasks.join()).toMatchObject({ episode: 12, step });
+      expect(a.intro(), tasks.join()).toBe(12);
+    }
+    at({ episode: 12, step: 0, freeRoam: true });
+    expect(createAdventure({ saves, read: none }).intro()).toBe(null);
   });
 });

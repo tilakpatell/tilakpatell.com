@@ -160,9 +160,9 @@ Each toy ticks when it's been used, not when it opens: cable after three channel
 One pull request each, merged to `main` before the next starts.
 
 - **P0, the foundation**: `adventure/` (`episodes.js` with all thirteen episodes as data, `story.js`, `useAdventure.js`), the save and the returners, the dial lock and Free roam, the links, the toys ticking when played, the HUD's parts, and episode 1 playable from the street to Customs and back. Its places all exist, so no kind is needed.
-- **P1 to P12**: episodes 2 to 13, in order, each with its places made games (section 5), the kinds it needs first used, its lines, and its step in `scripts/rm-story-check.mjs`.
+- **P1 to P12**: episodes 2 to 13, in order, each with its places made games (section 5), the kinds it needs first used, its lines, and its scenario in `scripts/rm-story/`, run by `scripts/rm-story-check.mjs`.
 - **P13, Schmeckles** (section 6), once the owner's currency is on `main`.
-- **The close**: the worlds' hand-off, `docs/architecture.md`'s Rick and Morty paragraph, the README's lines, the backlog; and the copy that disagrees with itself (the tour's “thirty-six destinations”, `tour/chapters/player.js`; the guide's twenty-six, `guide/abouts.js`) made right.
+- **The close**: the worlds' hand-off, `docs/architecture.md`'s Rick and Morty entries (C-137's, the Citadel's, and one for `adventure/`), the README's lines, the backlog; and the copy that disagrees with itself made right: the tour's “thirty-six destinations” (`tour/chapters/player.js`) and the twenty-six of `guide/abouts.js`, `guide/c137.js` and `tour/briefs.js`. The dial has thirty-two places.
 
 Done for an episode: played start to finish in the browser on a fresh save (the check below), every new rule tested, the shots of its places before and after, and the CLAUDE.md four green (`npm run lint`, `npm test`, `npm run build`, `node scripts/health.mjs --check --skip build`).
 

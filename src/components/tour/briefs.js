@@ -627,7 +627,7 @@ export const BRIEFS = {
     {
       id: 'walk',
       title: 'Walking',
-      text: 'The Smiths’ house, the school and Blips and Chitz are along the street.',
+      text: 'The Smiths’ house, Rick’s garage, the school, Shoney’s and Dr. Wong’s office are along the street; Blips and Chitz is through the portal.',
       keys: [...WALK, ['Space', 'Jump']],
       touch: WALK_TOUCH,
     },
@@ -645,7 +645,7 @@ export const BRIEFS = {
     {
       id: 'goal',
       title: 'Where to start',
-      text: 'The portal gun’s on Rick’s bench in the garage: dial Blips and Chitz or one of twenty-six places from the show, then step through the portal on the west wall. Or take the cruiser up (E by it). The show’s planets are on the universe map: land on one and you’re in it.',
+      text: 'The story starts at Shoney’s, up the street: the line at the top says what’s next, and each episode opens more of the portal gun’s thirty-two places (Free roam, in Things to do, opens them all). The gun’s on Rick’s bench in the garage, its portal on the west wall. Or take the cruiser up (E by it). The show’s planets are on the universe map: land on one and you’re in it.',
       keys: [
         ['E', 'The portal gun, at Rick’s bench'],
         ['P', 'The portal gun, from anywhere'],

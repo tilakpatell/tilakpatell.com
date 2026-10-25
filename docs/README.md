@@ -10,7 +10,7 @@ What each folder under `docs/` holds, and where to start for a question. Every s
 | `health/` | the rules of the architecture (`RULES.md`), the budgets the measure holds (`budgets.json`), the backlog of repairs | you split a file, add an import or wonder what may import what |
 | `superpowers/specs/` | designs, one per feature or lane, dated | you start on a feature and need the why and the shape |
 | `superpowers/plans/` | the task-by-task plans still being carried out; a plan goes once its work is merged | you are carrying one out |
-| `superpowers/HANDOFF-*.md` | five hand-offs, one an area (`battlefront`, `galaxy`, `universe`, `worlds`, `runtime`): what landed, what is left, the owner’s rules | you continue work in an area |
+| `superpowers/HANDOFF-*.md` | the hand-offs, five for the areas (`battlefront`, `galaxy`, `universe`, `worlds`, `runtime`) and three for lanes (`engine-floor`, `invincible-world`, `the-road`): what landed, what is left, the owner’s rules | you continue work in an area |
 | `superpowers/evidence/` | the numbers behind a lane’s claims, a folder a lane, each with a README; data and text only, the screenshots are remade by the scripts | you want the numbers behind a hand-off’s claims |
 | `research/` | dated notes on techniques, other sites and audits | a design cites one, or you are about to research the same thing |
 | `autopilot/` | the self-improvement loop’s readme, backlog and budget | you run or review the autopilot |
