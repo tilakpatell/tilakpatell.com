@@ -25,17 +25,37 @@
 // A young star is a sprite of its size in pixels at its own distance
 // (deep space's sparks: SPARK_FRAG's falloff), adding light only.
 //
+// Inside a cloud the fog (fog.js) is a few shells round the eye, one
+// full-screen quad each, drawn far to near after the clouds. Each holds the
+// gas from the shell inside it out to itself, read from the same field at
+// the same points in the map, so its wisps stay put as you fly through and
+// the cloud's own march starts where the last shell is (aStart). A shell
+// gives the light the march would have, a share of what it hides, so the
+// fog is no brighter than the cloud; the ship's lamps light the gas round
+// it on top, as the young stars add theirs.
+//
 //   GAS          the look: emit (light a radius of gas gives), absorb (how
 //                much a radius of it hides), dust (how much a radius of
 //                dust hides, on top)
+//   FOG          the fog's: absorb (how much a radius of it hides; the
+//                cloud's emit and dust scale with it, so its colour is the
+//                cloud's), glow (the ship's lamps on the gas round it)
 //   NEBULA_FIELD the field chunk: nebulaField(p, form, core, seed, detail)
-//                → (gas, dust, colour mix, heat), shared with the fog
-//   CLOUD_VERT, CLOUD_FRAG
+//                → (gas, dust, colour mix, heat), and nebulaColour(at,
+//                c0, c1, c2), the gas's colour there; shared with the fog
+//   CLOUD_VERT, CLOUD_FRAG, FOG_VERT, FOG_FRAG
+
+import { tint } from '../palette';
+import { FOG_NEAR } from './rules';
 
 export const GAS = Object.freeze({ emit: 1.5, absorb: 2.0, dust: 3.0 });
+export const FOG = Object.freeze({ absorb: 1.2, glow: 0.1 });
 
 // (a number as GLSL reads a float: 2 would be an int, and GLSL ES won't mix them)
 const f = (x) => (Number.isInteger(x) ? x.toFixed(1) : String(x));
+
+// the ship's lamps: the sun's warm glare most of the way to white
+const LAMP = tint('sun', 0.6).map(f).join(', ');
 
 export const NEBULA_FIELD = `
 uniform sampler3D uVolume;
@@ -52,9 +72,17 @@ vec4 nebulaField(vec3 p, vec4 form, float core, vec3 seed, float detail) {
   float dust = smoothstep(0.7, 0.85, coarse.g) * env;
   float heat = 1.0 + (core - 1.0) * (1.0 - smoothstep(0.0, 0.35, rho));
   return vec4(gas, dust, coarse.g, heat);
+}
+// at, a sample of the field: c0 and c1 mixed by its colour channel, c2
+// where the gas is thickest, and a hot heart (a nursery's) toward a warm
+// white, no channel over 1
+vec3 nebulaColour(vec4 at, vec3 c0, vec3 c1, vec3 c2) {
+  vec3 col = mix(mix(c0, c1, at.z), c2, smoothstep(0.5, 0.9, at.x));
+  return mix(col, vec3(1.0, 0.98, 0.88), clamp((at.w - 1.0) * 0.4, 0.0, 0.5));
 }`;
 
 export const CLOUD_VERT = `
+const float CLEAR = ${f(FOG_NEAR)};
 attribute vec3 aCentre;
 attribute float aRadius;
 attribute float aDist;
@@ -116,8 +144,9 @@ void main() {
   vec4 clip;
   if (D <= 1.02 * R) {
     // the eye in it or at its edge: the whole screen, at the depth the
-    // march starts (or, drawn in, at its middle's)
-    float z = aShape.w > 0.5 ? D : max(aStart, 4.0 * uNear);
+    // march starts (or, drawn in, at its middle's), never nearer than the
+    // fog's first shell, so the ship is never under it
+    float z = aShape.w > 0.5 ? D : max(aStart, CLEAR);
     clip = projectionMatrix * vec4(0.0, 0.0, -z, 1.0);
     clip = vec4(position.xy * clip.w, clip.z, clip.w);
     ray = vec3(position.xy * uTan, -1.0);
@@ -194,9 +223,7 @@ void main() {
       vec4 at = nebulaField(p, vForm, vCore, vSeed, vDetail);
       p += dp;
       if (at.x <= 0.0) continue;
-      vec3 col = mix(mix(vCol0, vCol1, at.z), vCol2, smoothstep(0.5, 0.9, at.x));
-      // (a hot heart, a nursery's, goes toward a warm white: no channel over 1)
-      col = mix(col, vec3(1.0, 0.98, 0.88), clamp((at.w - 1.0) * 0.4, 0.0, 0.5));
+      vec3 col = nebulaColour(at, vCol0, vCol1, vCol2);
       float kappa = at.x * ABSORB + at.y * DUST;
       float lost = 1.0 - exp(-kappa * ds);
       light += through * col * (EMIT * at.w * at.x / kappa) * lost;
@@ -205,5 +232,73 @@ void main() {
     shade = vec4(light, 1.0 - through);
   }
   gl_FragColor = shade;
+  #include <colorspace_fragment>
+}`;
+
+// A shell of the fog: a full-screen quad at its radius's depth, so anything
+// nearer hides it, and the ship (a few units ahead of the eye) is in front
+// of the first. aLayer is (its radius, the gas it holds: from the shell
+// inside it). The ray goes to the map's axes as the clouds' does.
+export const FOG_VERT = `
+attribute vec2 aLayer;
+uniform vec2 uTan;
+varying vec3 vView;
+varying vec3 vMap;
+varying vec2 vLayer;
+void main() {
+  vLayer = aLayer;
+  vec4 clip = projectionMatrix * vec4(0.0, 0.0, -aLayer.x, 1.0);
+  gl_Position = vec4(position.xy * clip.w, min(clip.z, clip.w * 0.999999), clip.w);
+  vView = vec3(position.xy * uTan, -1.0);
+  vMap = vView * mat3(modelViewMatrix);
+}`;
+
+// Each pixel reads the field on a sphere round the eye, so turning the view
+// moves no wisp, halfway along the stretch its shell holds: the last
+// stretch is long, and read at its far end it overstates the gas, a step
+// you'd see as you cross in. What the shell hides is the march's for its
+// stretch, at FOG.absorb; the light it gives is a share of that, the
+// cloud's, so it is never brighter than the cloud's gas. The ship's lamps,
+// two units ahead of the eye where the chase view has it, light the gas
+// round it, as much as the eye is deep in it (uDepth): the edge of a cloud
+// has hardly any to light. The shells' gas isn't scaled by uDepth: they
+// stand in for the stretch the march skips, so they hold all of its gas
+// from the moment the fog shows.
+export const FOG_FRAG = `
+const float ABSORB_FOG = ${f(FOG.absorb)};
+const float DUST_FOG = ${f((GAS.dust * FOG.absorb) / GAS.absorb)};
+const float EMIT_FOG = ${f((GAS.emit * FOG.absorb) / GAS.absorb)};
+const vec3 LAMP = vec3(${LAMP});
+const vec3 SHIP = vec3(0.0, 0.0, -2.0);
+const float LAMP_SIZE = 0.25;
+${NEBULA_FIELD}
+uniform vec3 uCentre;
+uniform float uRadius;
+uniform vec3 uColours[3];
+uniform vec3 uSeed;
+uniform vec4 uForm;
+uniform float uCore;
+uniform float uDepth;
+uniform float uGlow;
+varying vec3 vView;
+varying vec3 vMap;
+varying vec2 vLayer;
+void main() {
+  vec3 p = (normalize(vMap) * (vLayer.x - 0.5 * vLayer.y) - uCentre) / uRadius;
+  vec4 at = nebulaField(p, uForm, uCore, uSeed, 1.0);
+  float kappa = at.x * ABSORB_FOG + at.y * DUST_FOG;
+  if (kappa <= 0.0) discard;
+  float alpha = 1.0 - exp(-kappa * vLayer.y / uRadius);
+  vec3 col = nebulaColour(at, uColours[0], uColours[1], uColours[2]);
+  vec3 light = col * (EMIT_FOG * at.w * at.x / kappa) * alpha;
+  // the lamps' light the shell's stretch scatters to the eye: a point's
+  // inverse square summed along the ray, in closed form, so it is brightest
+  // round the ship and fades away from it
+  vec3 rd = normalize(vView);
+  float b = dot(SHIP, rd);
+  float h = max(length(SHIP - rd * b), LAMP_SIZE);
+  float reach = (atan((vLayer.x - b) / h) - atan((vLayer.x - vLayer.y - b) / h)) / h;
+  light += LAMP * (uGlow * uDepth * at.x * reach);
+  gl_FragColor = vec4(light, alpha);
   #include <colorspace_fragment>
 }`;

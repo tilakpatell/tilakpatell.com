@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { createNebulae } from './index';
 import { GAS } from './shaders';
 import { nebulaBudget } from './budget';
-import { FORMS } from './rules';
+import { FOG_NEAR, FORMS, fogLayers } from './rules';
 import { LOOK } from '../look';
 import { reservedIn } from '../__fixtures__/glsl';
 
@@ -133,6 +133,50 @@ describe('the nebulae’s renderer', () => {
     expect(m.uniforms.uForms.value.map((v) => v.toArray())).toEqual(['cloud', 'shell', 'nursery'].map((f) => [FORMS[f].inner, FORMS[f].peak, FORMS[f].outer, FORMS[f].flat]));
     expect(reservedIn('float sample = 1.0;')).toEqual(['sample']); // (the reading finds one when there is one)
     expect(reservedIn(m.vertexShader + m.fragmentShader)).toEqual([]);
+  });
+
+  it('fogs you inside, and starts the cloud’s march past the fog', () => {
+    const { n } = made('high');
+    n.add({ ...VEIL, form: 'cloud', at: [0, 0, -100] });
+    n.update(cam([0, 0, 0], [0, 0, -1]));
+    expect(n.group.getObjectByName('nebula-fog').visible).toBe(true);
+    expect(attr(n, 'aStart', 0)[0]).toBeCloseTo(fogLayers(nebulaBudget('high'), 900).at(-1), 6);
+    expect(n.inside([0, 0, 0])).toMatchObject({ id: 'veil' });
+    n.update(cam([0, 0, 5000], [0, 0, -1]));
+    expect(n.group.getObjectByName('nebula-fog').visible).toBe(false);
+    expect(attr(n, 'aStart', 0)[0]).toBe(0);
+  });
+
+  it('inside two at once: the deeper one’s fog, both drawn far to near', () => {
+    const { n } = made('high');
+    n.add({ ...VEIL, id: 'a', form: 'cloud', at: [0, 0, -300] });
+    n.add({ ...VEIL, id: 'b', form: 'cloud', at: [0, 0, 600] });
+    n.update(cam([0, 0, 0], [0, 0, -1]));
+    expect(n.inside([0, 0, 0]).id).toBe('a');
+    const all = Array.from({ length: clouds(n).geometry.instanceCount }, (_, i) => i);
+    const both = all.filter((i) => attr(n, 'aKind', i)[0] === 0);
+    expect(both.map((i) => attr(n, 'aDist', i)[0])).toEqual([600, 300]);
+    for (const i of both) expect(attr(n, 'aStart', i)[0]).toBeGreaterThan(0);
+  });
+
+  it('marches the other cloud round the eye from just past the ship, its gas not being in the fog', () => {
+    const { n } = made('high');
+    n.add({ ...VEIL, id: 'a', form: 'cloud', at: [0, 0, -300] });
+    n.add({ ...VEIL, id: 'b', form: 'cloud', at: [0, 0, 600] });
+    n.update(cam([0, 0, 0], [0, 0, -1]));
+    const all = Array.from({ length: clouds(n).geometry.instanceCount }, (_, i) => i);
+    const [b, a] = all.filter((i) => attr(n, 'aKind', i)[0] === 0);
+    expect(attr(n, 'aStart', a)[0]).toBeCloseTo(fogLayers(nebulaBudget('high'), 900).at(-1), 6);
+    expect(attr(n, 'aStart', b)[0]).toBe(FOG_NEAR);
+  });
+
+  it('keeps a cloud round the eye behind the ship, in its gas or not', () => {
+    // (its whole-screen quad never nearer than the fog's first shell, past
+    // the chase camera's ship, so the gas behind the ship isn't drawn over
+    // it, even in a shell's hollow middle, where there is no fog)
+    const v = clouds(made().n).material.vertexShader;
+    expect(v).toContain(`const float CLEAR = ${FOG_NEAR.toFixed(1)};`);
+    expect(v).toContain('max(aStart, CLEAR)');
   });
 
   it('keeps the gas under the bloom, whatever the march', () => {

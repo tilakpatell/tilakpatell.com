@@ -2,7 +2,7 @@
 // the Veil, the Cradle, the Expanse's generated clouds and whatever pockets
 // come after. A nebula shifts with parallax as you fly past, rolls with the
 // stars, and grows as you come in. All of them and their young stars are one
-// draw (shaders.js); the fog round the ship inside one is a second.
+// draw (shaders.js); the fog round the ship inside one is a second (fog.js).
 //
 // createNebulae({ renderer, tier }) → { group, add, remove, update, inside, dispose }
 //   group             'nebulae', for the caller to add under the map; the
@@ -18,7 +18,7 @@
 //   update(camera)    once a frame before the draw (nothing in a nebula moves
 //                     with time)
 //   inside(position) → { id, depth } | null: the deepest cloud a point in the
-//                     map's space is in
+//                     map's space is in (rules.js's insideOf)
 //   dispose()         leaves the parent and frees what it made
 //
 // Each frame every cloud is placed from the camera in doubles (rules.js's
@@ -29,20 +29,28 @@
 // and the nearest row.nearMax get more steps and their young stars, eased in
 // by their level, so none is drawn far off and nothing pops.
 //
+// With the eye inside one (insideOf, at the camera), the deepest's fog is
+// shown round it, its shells out to fogLayers' last, and that cloud starts
+// its march there: the fog holds that stretch, so nothing is counted twice
+// and none of it is drawn over the ship. Another cloud whose sphere holds
+// the eye starts at the first shell, past the ship: the fog holds none of
+// its gas, and starting at the last would lose that much of it.
+//
 // The instances' attributes (by these names; a test and the fog read them):
 //   aCentre  vec3, the middle from the camera, drawn in
 //   aRadius  drawn in;  aDist  the true distance
 //   aDetail  0…1;  aStart  where the march starts along the ray, drawn in
-//            (0 outside);  aKind  0 a cloud, 1 a young star
+//            (past the fog inside, 0 outside);  aKind  0 a cloud, 1 a young star
 //   aCol0…2  the cloud's colours, linear, its brightest channel 1 (a star's
 //            colour in aCol0);  aSeed  where in the noise it reads
 //   aShape   (form, steps, a star's size, 1 when drawn in)
 
 import * as THREE from 'three';
 import { nebulaBudget } from './budget';
-import { FORMS, FORM_INDEX, LIMIT, checkDesc, detailAt, insideOf, placement, seedOf, stepsAt, youngStars } from './rules';
+import { FOG_NEAR, FORMS, FORM_INDEX, LIMIT, checkDesc, detailAt, fogLayers, insideOf, placement, seedOf, stepsAt, youngStars } from './rules';
 import { noiseVolume } from './volume';
 import { CLOUD_FRAG, CLOUD_VERT } from './shaders';
+import { createFog } from './fog';
 
 // the forms in the shader's order (FORM_INDEX's)
 const FORM_LIST = Object.keys(FORM_INDEX).sort((a, b) => FORM_INDEX[a] - FORM_INDEX[b]);
@@ -135,17 +143,15 @@ export function createNebulae({ renderer = null, tier = 'mid' } = {}) {
   group.name = 'nebulae';
   const volume = makeVolume(row.volume, renderer);
   const { mesh, cap } = makeClouds(row, volume);
-  // (the fog's mesh: Task 5 gives it its draw)
-  const fog = new THREE.Mesh();
-  fog.name = 'nebula-fog';
-  fog.visible = false;
-  fog.frustumCulled = false;
-  group.add(mesh, fog);
+  const fog = createFog({ volume, row });
+  group.add(mesh, fog.mesh);
 
   const geometry = mesh.geometry;
   const A = geometry.attributes;
-  const entries = new Map(); // id → { desc, handles, colours, seed, form, stars }
+  const entries = new Map(); // id → { desc, handles, colours, tints, seed, form, stars }
   const handles = new Map(); // handle → id
+  let live = null; // (the entries' descriptions, for insideOf: made again when one comes or goes)
+  const descs = () => (live ??= [...entries.values()].map((e) => e.desc));
   let disposed = false;
 
   const entryOf = (desc) => {
@@ -154,6 +160,7 @@ export function createNebulae({ renderer = null, tier = 'mid' } = {}) {
       desc,
       handles: new Set(),
       colours: colours.map((c) => c.toArray()),
+      tints: colours,
       seed: seedOf(desc.seed),
       form: FORM_INDEX[desc.form],
       stars: youngStars(desc, row.stars).map((s) => ({
@@ -168,7 +175,10 @@ export function createNebulae({ renderer = null, tier = 'mid' } = {}) {
     const desc = checkDesc(given);
     if (disposed) return null;
     let e = entries.get(desc.id);
-    if (!e) entries.set(desc.id, (e = entryOf(desc)));
+    if (!e) {
+      entries.set(desc.id, (e = entryOf(desc)));
+      live = null;
+    }
     const handle = Object.freeze({ id: desc.id });
     handles.set(handle, desc.id);
     e.handles.add(handle);
@@ -181,10 +191,13 @@ export function createNebulae({ renderer = null, tier = 'mid' } = {}) {
     handles.delete(handle);
     const e = entries.get(id);
     e?.handles.delete(handle);
-    if (e && !e.handles.size) entries.delete(id);
+    if (e && !e.handles.size) {
+      entries.delete(id);
+      live = null;
+    }
   };
 
-  const inside = (position) => (disposed ? null : insideOf([...entries.values()].map((e) => e.desc), position));
+  const inside = (position) => (disposed ? null : insideOf(descs(), position));
 
   const eye = new THREE.Vector3();
   const frustum = new THREE.Frustum();
@@ -193,13 +206,13 @@ export function createNebulae({ renderer = null, tier = 'mid' } = {}) {
   const ZERO3 = [0, 0, 0];
 
   let n = 0;
-  const put = (kind, centre, radius, dist, detail, cols, seed, shape) => {
+  const put = (kind, centre, radius, dist, detail, start, cols, seed, shape) => {
     if (n >= cap) return;
     A.aCentre.setXYZ(n, centre[0], centre[1], centre[2]);
     A.aRadius.setX(n, radius);
     A.aDist.setX(n, dist);
     A.aDetail.setX(n, detail);
-    A.aStart.setX(n, 0);
+    A.aStart.setX(n, start);
     A.aKind.setX(n, kind);
     A.aCol0.setXYZ(n, ...cols[0]);
     A.aCol1.setXYZ(n, ...cols[1]);
@@ -220,6 +233,16 @@ export function createNebulae({ renderer = null, tier = 'mid' } = {}) {
     const limit = camera.far * LIMIT;
     frustum.setFromProjectionMatrix(viewProj.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse), camera.coordinateSystem);
     const grow = group.matrixWorld.getMaxScaleOnAxis();
+    // inside one: the deepest's fog round the eye, out to its last shell
+    const deep = insideOf(descs(), cam);
+    let clear = 0;
+    if (deep) {
+      const e = entries.get(deep.id);
+      const layers = fogLayers(row, e.desc.r);
+      clear = layers.at(-1) ?? 0;
+      const centre = [e.desc.at[0] - cam[0], e.desc.at[1] - cam[1], e.desc.at[2] - cam[2]];
+      fog.show({ centre, r: e.desc.r, colours: e.tints, seed: e.seed, form: e.form, depth: deep.depth }, layers);
+    } else fog.hide();
     const seen = [];
     for (const e of entries.values()) {
       const at = placement(e.desc.at, e.desc.r, cam, limit);
@@ -234,13 +257,17 @@ export function createNebulae({ renderer = null, tier = 'mid' } = {}) {
       const { e, at } = seen[i];
       const detail = i < row.nearMax ? detailAt(at.dist, e.desc.r) : 0;
       const drawnIn = at.scale < 1 ? 1 : 0;
-      put(0, at.centre, at.radius, at.dist, detail, e.colours, e.seed, [e.form, stepsAt(detail, row), 0, drawnIn]);
+      // with the fog shown, the cloud it is of starts its march past it, and
+      // another round the eye past the ship, where its quad is (the fog
+      // holds none of its gas)
+      const start = clear && at.dist < e.desc.r ? (e.desc.id === deep.id ? clear : FOG_NEAR) * at.scale : 0;
+      put(0, at.centre, at.radius, at.dist, detail, start, e.colours, e.seed, [e.form, stepsAt(detail, row), 0, drawnIn]);
       if (!(detail > 0)) continue;
       // its young stars, right after it, eased in by its level
       for (const s of e.stars) {
         const d = [s.at[0] - cam[0], s.at[1] - cam[1], s.at[2] - cam[2]];
         const colour = s.colour.map((v) => v * detail);
-        put(1, d.map((v) => v * at.scale), 0, Math.hypot(d[0], d[1], d[2]), detail, [colour, ZERO3, ZERO3], ZERO3, [0, 0, s.size, drawnIn]);
+        put(1, d.map((v) => v * at.scale), 0, Math.hypot(d[0], d[1], d[2]), detail, 0, [colour, ZERO3, ZERO3], ZERO3, [0, 0, s.size, drawnIn]);
       }
     }
     geometry.instanceCount = n;
@@ -260,11 +287,11 @@ export function createNebulae({ renderer = null, tier = 'mid' } = {}) {
     group.removeFromParent();
     geometry.dispose();
     mesh.material.dispose();
+    fog.dispose();
     volume.dispose();
-    fog.geometry.dispose();
-    fog.material.dispose();
     entries.clear();
     handles.clear();
+    live = null;
   };
 
   return { group, add, remove, update, inside, dispose };
