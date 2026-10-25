@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { distText } from '../../runtime/hud/flight/frame.js';
 import { buffChips, createCluster } from './cluster';
 
 // (the tests run in Node: a stand-in for each element, with the calls cluster.js makes)
@@ -26,6 +27,16 @@ const laser = { name: 'Laser cannons', line: 'primary', index: 0, ammo: 0, max: 
 const v = (o = {}) => ({ on: true, shield: 82, low: false, speed: 6, top: 12, boosting: false, kills: 3, lock: null, arms: laser, ...o });
 
 describe('flight cluster', () => {
+  it('says how far the target is as the lock’s bracket does (frame.js’s distText)', () => {
+    const root = dom();
+    const c = createCluster();
+    const said = (dist) => {
+      c.place(root, v({ lock: { name: 'TIE Fighter', dist, hp: null } }));
+      return root.querySelector('.fc-target-dist').textContent;
+    };
+    expect([0.04, 9.26, 9.96, 14.2, 160.5, 1234.4].map(said)).toEqual(['0.0', '9.3', '10.0', '14', '161', '1234']);
+    expect(said(9.96)).toBe(distText(9.96));
+  });
   it('writes the ship', () => {
     const root = dom();
     createCluster().place(root, v());

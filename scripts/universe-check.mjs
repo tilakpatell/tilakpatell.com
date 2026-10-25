@@ -9,7 +9,9 @@
 //     [--dpr 2] (the screen's device pixels to a CSS one: 1 by default; post.js's finish draws a 2× screen otherwise than a 1×)
 //     [--level 3] (the pace's step held at each pose, runtime/quality.js's setLevel: what a weak chip's calibration lands on)
 //     [--lock] (a TIE put ahead and locked by hand at each flying pose, scripts/lib/flight-probes.mjs: the bracket,
-//       the lead and the reticle drawn; the overlay's marks in the report and <pose>.hud.webp, the shot with the HUD)
+//       the lead and the reticle drawn; the overlay's marks in the report and <pose>.hud.webp, the shot with the HUD;
+//       the report's `hud`: what the bracket says of the lock's distance, and how far it is in the map's units, which
+//       must agree to within one where the lock is held and its bracket drawn)
 //
 // It starts the dev server (the poses are a DEV hook, `window.__universe().pose`,
 // which a production build leaves out) unless --url names one, opens
@@ -247,21 +249,31 @@ for (const tier of tiers) {
       }
       const png = await page.screenshot({ type: 'png', timeout: 180000 });
       let marks = null;
+      let hud = null;
       if (args.lock) {
         marks = await page.evaluate(() => window.__fp.overlay());
+        hud = await page.evaluate(() => {
+          const s = window.__universeDebug.state;
+          const at = s.lockTarget?.at;
+          return { lockDist: document.querySelector('.universe-lock-dist')?.textContent ?? null, lockUnits: at && s.ship ? Math.hypot(at.x - s.ship.x, at.y - s.ship.y, at.z - s.ship.z) : null };
+        });
         await page.evaluate(() => {
           const style = document.createElement('style');
           style.textContent = '.universe-hud, .universe-hud * { visibility: visible !important; }';
           document.head.append(style);
         });
-        const hud = await page.screenshot({ type: 'png', timeout: 180000 });
-        await writeFile(join(out, `${name}.hud.webp`), await sharp(hud).webp({ quality: 88 }).toBuffer());
+        const hudPng = await page.screenshot({ type: 'png', timeout: 180000 });
+        await writeFile(join(out, `${name}.hud.webp`), await sharp(hudPng).webp({ quality: 88 }).toBuffer());
       }
       const raw = await sharp(png).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
       const metrics = pixelMetrics({ data: raw.data, width: raw.info.width, height: raw.info.height });
       await writeFile(join(out, `${name}.webp`), await sharp(png).webp({ quality: 88 }).toBuffer());
-      report.poses[name] = { ...numbers, metrics, ...(args.lock ? { lock, overlay: marks } : {}), errors: [...new Set(errors)].slice(0, 5) };
+      report.poses[name] = { ...numbers, metrics, ...(args.lock ? { lock, overlay: marks, hud } : {}), errors: [...new Set(errors)].slice(0, 5) };
       if (metrics.dominantColorShare > 0.98) fail(`${tier} ${name}: the canvas is blank (${metrics.dominantColorShare} one colour)`);
+      // (the bracket's distance in the map's units: only where the lock's held and its bracket is drawn)
+      if (lock?.held && marks?.some((m) => m.c === 'universe-lock' && m.on) && hud.lockUnits !== null) {
+        if (!/^\d+(\.\d)?$/.test(hud.lockDist ?? '') || Math.abs(Number(hud.lockDist) - hud.lockUnits) > 1) fail(`${tier} ${name}: the lock says ${hud.lockDist}, ${hud.lockUnits.toFixed(1)} units off`);
+      }
       console.log(`ok   ${tier.padEnd(4)} ${name.padEnd(20)} calls ${String(numbers.calls).padStart(4)}  tris ${String(numbers.triangles).padStart(8)}  ${String(numbers.frameMs).padStart(6)} ms  entropy ${metrics.colorEntropyBits}  edges ${metrics.edgeDensity}  contrast ${metrics.luminance.contrast}${numbers.shipPx ? `  ship ${numbers.shipPx.w} × ${numbers.shipPx.h} px` : ''}${args.lock ? `  lock ${lock?.held ? 'held' : lock?.skipped ?? 'none'}` : ''}  (${((Date.now() - t0) / 1000).toFixed(0)} s)`);
     } catch (e) {
       report.poses[name] = { error: String(e.message ?? e).split('\n')[0], errors: [...new Set(errors)].slice(0, 5) };

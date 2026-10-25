@@ -4,16 +4,18 @@
 // and the galaxy's own blocks: the speed against the boost's top, the kills
 // this flight and the target, each written only when what it shows has
 // changed (the HUD kit's rule: numbers through refs in the frame loop,
-// never React's state). Called every frame, so it makes nothing per call:
-// what's compared is a number (the text is made only when it's written),
-// and the writers are made once. The pickups' effects over the row are
+// never React's state). Called every frame, so it makes next to nothing per
+// call: what's compared is a number (the text is made only when it's
+// written), but for the target's distance, compared as the short text the
+// lock's bracket says (frame.js's distText, so the two never differ), and
+// the writers are made once. The pickups' effects over the row are
 // chips (buffs): one made per kind while it lasts.
 import { createFlightCluster } from '../../runtime/hud/cluster.js'; // (the writer alone: the kit's index brings its parts and sheets)
+import { distText } from '../../runtime/hud/flight/frame.js';
 
 const text = (el, s) => (el.textContent = s);
 const num = (el, v) => (el.textContent = String(v));
 const speedText = (el, v) => (el.textContent = `SPD ${v}`);
-const dist = (el, v) => (el.textContent = v < 10 ? v.toFixed(1) : String(v)); // (the target's distance: a tenth up close, else whole units)
 const bar = (per) => (el, v) => el.style.setProperty('--v', String(v / per));
 const flag = (name) => (el, on) => el.toggleAttribute(name, on);
 const WRITE = { boost: flag('data-boost'), speed: bar(50), hull: bar(50), hullOn: flag('data-on'), targetOn: flag('data-on') };
@@ -62,7 +64,7 @@ export function createCluster() {
       put(els.target, 'ton', Boolean(t), WRITE.targetOn);
       if (!t) return;
       put(els.tName, 'tn', t.name, text);
-      put(els.tDist, 'td', t.dist < 10 ? Math.round(t.dist * 10) / 10 : Math.round(t.dist), dist);
+      put(els.tDist, 'td', distText(t.dist), text);
       const tough = t.hp !== null && t.hp !== undefined;
       put(els.tHp, 'thon', tough, WRITE.hullOn);
       if (tough) put(els.tHp, 'thp', Math.round(t.hp * 50), WRITE.hull);

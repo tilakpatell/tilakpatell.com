@@ -126,7 +126,7 @@ import { bloomGroups } from '../../lib/three/bloom';
 import { createImpacts, impactGroups } from '../../lib/impact';
 import { debugOn, debugPanel } from '../../lib/debugPanel';
 import { LEAN, OPEN_SPACE, PLANETS, SHIP, SOLIDS, autopilot, crashLoud, forward, headingTo, holdReach, isGoal, isPlace, noseOf, orbiting, parkAt, spawn, startAt, step } from './ship';
-import { HYPER, destinationById, driveById, hyperState, legOf, parkFor, riftExit, shortDistance } from './nav';
+import { HYPER, destinationById, driveById, hyperState, legOf, parkFor, riftExit } from './nav';
 import { REAIM_MS, parkBehind, pilotId, pilotSpace, reached } from './pilotGoal';
 import { FACTIONS, HUNTER_KINDS, NAMES, createHunters } from './hunters';
 import { ION } from './hunterRules';
@@ -202,7 +202,7 @@ import { isMate } from './online/mates';
 import { createLook } from '../../runtime/look';
 import { reticleState } from '../../runtime/hud/reticle';
 import { createAbilitiesWriter, createFlightCluster } from '../../runtime/hud/cluster.js';
-import { createFrame, fillFlight } from '../../runtime/hud/flight/frame.js';
+import { createFrame, distText, fillFlight } from '../../runtime/hud/flight/frame.js';
 import { createFlightHud } from '../../runtime/hud/flight/flightHud.js';
 import { clusterView } from './clusterView';
 import { createRounds } from './rounds';
@@ -2820,7 +2820,7 @@ export async function create(canvas, ctx) {
   // its markup; the distances in the nav map's measure, ship-lengths, so
   // the two agree: nav.js)
   const frame = createFrame();
-  const flightHud = createFlightHud({ distText: shortDistance });
+  const flightHud = createFlightHud({ distText }); // (the map's units, as the galaxy's: one unit for both)
   const hudIn = { on: false, gun: false, foot: false, ship: null, hot: false, hit: false, kill: false, static: false, rect: null, tanHalf: 1, h: 1, lock: null, lockName: '', lockText: null, bracket: undefined, lead: null, life: AIM.life, cands: [], mates: null, to: null, goal: null, navMin: 34, navMax: 260 };
   const toIn = { id: null, name: '', at: null }; // (the pilot flown to, among the mates' arrows)
   const navIn = { at: null, reach: 0, way: false, name: '', text: null }; // (the way to go in flight)
