@@ -39,3 +39,18 @@ Over the plan's five test cubes (`[1, 0, 0]`, `[0, 0, 1]`, `[2, 1, -3]`, `[0, 0,
 | `2,1,-3` | 225 | 76 | 0.98 | 33.4 |
 | `0,0,0` | 113 | 50 | 0.49 | 27.4 |
 | `-3,-1,2` | 260 | 83 | 1.08 | 49.9 |
+
+## A sector made on the main thread
+
+`resolvePlace` for an id in a sector not yet made (Task 3), with `build` on, as only the terminal and tests have it. It makes the whole sector, lattice and all, on the calling thread. Timed in Node 22 on `eu/lane-3` after Task 3, by a scratch script that isn't committed, with the container busy (load 7 to 13 on 4 cores, the other track's checks running):
+
+| | the five | median |
+| --- | --- | --: |
+| cold: the first call in a fresh process, `E:5,7:0` | 133.0, 108.6, 141.4, 122.4, 127.1 ms | 127 ms |
+| warm: after three other sectors, `E:30,-4:0` to `E:34,-4:0` | 93.3, 67.4, 62.3, 51.4, 61.1 ms | 62 ms |
+
+A second cold round gave a median of 130 ms, and four more warm rounds medians of 41 to 98 ms over the same five sectors, so the load is what moved it. At `cc5e2eaf` the plan had `placeOf` 75 to 100 ms cold and about 45 ms warm. Either way it is several frames, which is why the scene never builds: it passes `build: false` and fetches a sector it hasn't got from lane 2's worker pool.
+
+From a sector in hand (`build: false`, found by its own id in a `Map` keyed `'1,0,0'`, as lane 2's chunk grid keys its cells), a resolve takes 10 to 16 µs, card and all: 249 systems and planets of `E:1,0`, twenty times each.
+
+Task 14 adds the terminal's own number, at 4× CPU throttling.
