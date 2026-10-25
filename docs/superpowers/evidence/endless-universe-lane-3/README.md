@@ -94,3 +94,18 @@ A second cold round gave a median of 130 ms, and four more warm rounds medians o
 From a sector in hand (`build: false`, found by its own id in a `Map` keyed `'1,0,0'`, as lane 2's chunk grid keys its cells), a resolve takes 10 to 16 µs, card and all: 249 systems and planets of `E:1,0`, twenty times each.
 
 Task 14 adds the terminal's own number, at 4× CPU throttling.
+
+## Round the ship
+
+`placesAround` (Task 8) over the 27 sectors round `E:1,0` (cubes `[0…2, −1…1, −1…1]`, 6,877 systems), from `E:1,0`'s middle at `t` 2,000 to 2,050, 200 calls after 50 to warm. Timed in Vitest on `eu/lane-3` by a scratch script that isn't committed, with the container busy (load 14 to 16 on 4 cores, the other track's checks running), three runs:
+
+| `max` | rows | warm median, ms | best, ms |
+| --- | --- | --: | --: |
+| 1,800 (mid's far-layer room) | 1,800: 51 systems, 196 planets, 289 moons, 1,264 things | 2.20, 2.45, 1.70 | 1.07 |
+| 6,000 (ultra's) | 2,500: 69 systems, 275 planets, 410 moons, 1,746 things, all within the far plane | 2.47, 2.95, 1.85 | 1.30 |
+
+Under the plan's 4 ms at mid, a sixtieth of the quarter second between refreshes. The cap doesn't bind at ultra: only 2,500 lie within the far plane there.
+
+The first call in a fresh process took 40, 192 and 46 ms. Nearly all of it is the lattice things' rows: `thingRow` costs about 20 µs a thing (its name's seed is BigInt work), and a call keeps up to 1,264 of them at mid. Each body's row less where it is (name, look, park, `src`) is made the first time it's kept and kept with the generator's row in a `WeakMap`, so only a sector's first call pays. That is after a load or a jump; at cruise, a quarter second's flight brings a handful of new things into the far plane.
+
+`aimStars` over the same 27 sectors, the nearest 2,000 of 6,877: a median of 1.03 to 2.36 ms.
