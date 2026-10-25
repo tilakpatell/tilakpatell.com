@@ -125,7 +125,8 @@ export function stage(kit, id, { ground, groundTile = 4, floor, floorTile = 2, w
   // and a place's achievement handed over once while its task is done (done
   // before its game was built: the vat's, the cable studio's; or won over the
   // page: Get Schwifty's; or a duel's, won or done before: its hunter's
-  // `hunt.duel`), said as a win
+  // `hunt.duel`; or a task's own, however it was done: the place's
+  // `achieve`), said as a win
   const granted = new Set();
   const grant = ({ task, unlock = null }, done, state) => {
     if (!done || !unlock || granted.has(task) || state.fading) return;
@@ -327,6 +328,7 @@ export function stage(kit, id, { ground, groundTile = 4, floor, floorTile = 2, w
   // closes), started afresh whenever the place calms ──
   const rh = d.rhythm;
   const du = d.people.find((p) => p.ai?.hunt?.duel)?.ai.hunt.duel ?? null; // (a duel's: its `unlock` handed over once its task's done)
+  const ach = d.achieve ? { task: d.achieve, unlock: d.achieve } : null; // (a task's own, however it's done: place.js's `achieve`)
   const gameTask = (d.power ?? d.deal ?? d.freeze ?? d.find ?? d.sequence ?? d.climb ?? rh)?.task ?? null;
   let cheer = newCheer();
 
@@ -430,6 +432,7 @@ export function stage(kit, id, { ground, groundTile = 4, floor, floorTile = 2, w
         if (ascent && state && cast) climbing(t, dt, state);
         if (rh && state) grant(rh, (state.done ?? []).includes(rh.task), state);
         if (du && state) grant(du, (state.done ?? []).includes(du.task), state);
+        if (ach && state) grant(ach, (state.done ?? []).includes(ach.task), state);
         if (round && gameTask && state) {
           cheer = stepCheer(cheer, { done: (state.done ?? []).includes(gameTask), t });
           if (cheer.hop) round.actions.hop();

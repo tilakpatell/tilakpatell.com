@@ -2,12 +2,35 @@ import { describe, expect, it } from 'vitest';
 import { AREAS, HOTSPOTS, LINKS, MORTY, PEOPLE, ROOM_IDS, TASKS } from '../rules';
 import { newDeal, stepDeal } from '../games/deal';
 import { gameGoal } from './gameGoal';
+import { ACHIEVEMENTS } from '../../../Achievements';
+import { KEYS } from '../../../hangar/skills/tree';
 import { DEST_COL, DESTINATIONS, DIAL, GARAGE_BACK, PLANETS, destArea, destinationById, isBigPlanet, isPlanet, isWayHome, linkTarget, pageOf, planetStart, portalTarget, validArrive } from './destinations';
 
 const inside = (a, x, z, pad = 0) => x >= a.x0 + pad && x <= a.x1 - pad && z >= a.z0 + pad && z <= a.z1 - pad;
 const overlap = (a, b) => a.x0 < b.x1 && b.x0 < a.x1 && a.z0 < b.z1 && b.z0 < a.z1;
 
 describe('the destinations', () => {
+  it('give every place whose task has an achievement a way to earn it', () => {
+    // (a spot's unlock, an escape, a game's or a duel's unlock, or the place's own `achieve` once its task's done;
+    // the Vindicators' is RmWorld's own, at the rooms' win, and the eyepatch Morty's the lair's builder's: ./evilrick.js)
+    const BY_THE_WORLD = ['vindicators', 'evilmorty'];
+    const ways = (d) =>
+      new Set([
+        ...Object.values(d.unlock ?? {}),
+        ...(d.escape ? [d.escape.task] : []),
+        ...(d.collect?.escape ? [d.collect.task] : []),
+        ...['power', 'deal', 'freeze', 'find', 'sequence', 'rhythm', 'climb'].map((k) => d[k]?.unlock).filter(Boolean),
+        ...d.people.map((p) => p.ai?.hunt?.duel?.unlock).filter(Boolean),
+        ...(d.achieve ? [d.achieve] : []),
+        ...BY_THE_WORLD,
+      ]);
+    const none = DESTINATIONS.flatMap((d) => d.tasks.filter((t) => t.id in ACHIEVEMENTS && !ways(d).has(t.id)).map((t) => `${d.id}: ${t.id}`));
+    expect(none).toEqual([]);
+  });
+  it('name every Rick and Morty achievement differently', () => {
+    const names = KEYS.rickmorty.map((k) => ACHIEVEMENTS[k].name);
+    expect(names.filter((n, i) => names.indexOf(n) !== i)).toEqual([]);
+  });
   it('stand in their column, one row each', () => {
     expect(destArea(0)).toEqual({ x0: -470, x1: -330, z0: 875, z1: 925 });
     expect(destArea(3, 40).z0).toBe(1180);

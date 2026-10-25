@@ -58,6 +58,7 @@ export const ROWS = [
   }),
   place(26, {
     id: 'cronenberg',
+    achieve: 'cronenberg',
     name: 'Cronenberg World',
     note: 'The dimension Rick and Morty left behind, after the love potion. Everyone’s a Cronenberg now, except the Smiths who stayed.',
     kind: 'outdoor',
@@ -155,6 +156,7 @@ export const ROWS = [
   }),
   place(28, {
     id: 'prison',
+    achieve: 'prison',
     name: 'The Federation prison',
     note: 'Where the Galactic Federation keeps Rick, in the Brainalyzer, telling Cornvelious Daniel about the Szechuan sauce.',
     kind: 'room',
@@ -261,6 +263,7 @@ export const ROWS = [
   }),
   place(30, {
     id: 'dream',
+    achieve: 'dream',
     name: 'Mr. Goldenfold’s dream',
     note: 'Inside Mr. Goldenfold’s head, three dreams down. Mrs. Pancakes is here, and so is Scary Terry.',
     kind: 'room',
@@ -300,6 +303,7 @@ export const ROWS = [
   }),
   place(31, {
     id: 'agency',
+    achieve: 'agency',
     name: 'The agency',
     note: 'The embassy where Pickle Rick fought his way out and met Jaguar. The guards are still jumpy.',
     kind: 'room',
@@ -435,6 +439,7 @@ export const ROWS = [
   }),
   place(34, {
     id: 'dim35c',
+    achieve: 'dim35c',
     name: 'Dimension 35-C',
     note: 'The pilot’s forest of Mega Trees, where the seeds grow. Rick wanted them bad enough to send Morty up a tree.',
     kind: 'outdoor',

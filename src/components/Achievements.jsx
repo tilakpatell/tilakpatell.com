@@ -161,7 +161,7 @@ export const ACHIEVEMENTS = {
   votemorty: { name: 'Vote Morty', desc: 'Voted in the Citadel’s election (Candidate Morty won anyway)' },
   citadelout: { name: 'Get to the cruiser', desc: 'Got past Evil Morty’s Cop Ricks to the cruiser' },
   locos: { name: 'The Mortytown Locos', desc: 'Walked all three Locos to Cop Morty, outside Morty Mart' },
-  citadelfall: { name: 'Wubba lubba dub dub', desc: 'Helped bring down the Citadel of Ricks from the universe map' },
+  citadelfall: { name: 'The Citadel falls', desc: 'Helped bring down the Citadel of Ricks from the universe map' },
   remover: { name: 'It removes planets', desc: 'Shot down the Federation’s NX-5 Planet Remover before it fired' },
   rifted: { name: 'Through the rift', desc: 'Flew into a rift on the universe map and came out somewhere else' },
   grandtour: { name: 'Seen it all', desc: 'Toured every station, world and wonder on the universe map' },

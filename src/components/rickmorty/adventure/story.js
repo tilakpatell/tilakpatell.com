@@ -112,6 +112,14 @@ export function coordinates(state, opts) {
 
 export const dialOpen = (state, id, opts) => state.freeRoam || coordinates(state, opts).has(id);
 
+// whether the dial places played (`places`) reach past what the story has
+// opened: played when an older story, its last built episode done, had every
+// place open
+export const reachesPast = (state, places, opts) => {
+  const open = coordinates(state, opts);
+  return places.some((p) => !open.has(p));
+};
+
 // what a locked place says on the dial
 export function lockNote(id, opts) {
   const { episodes } = book(opts);

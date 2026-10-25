@@ -56,6 +56,7 @@ export const ROWS = [
   }),
   place(14, {
     id: 'storytrain',
+    achieve: 'storytrain',
     name: 'The Story Train',
     note: 'A carriage on the Story Train, the anthology going past the windows. Someone wants to see your ticket.',
     kind: 'room',
@@ -92,6 +93,7 @@ export const ROWS = [
   }),
   place(15, {
     id: 'fortress',
+    achieve: 'fortress',
     name: 'Rick Prime’s fortress',
     note: 'A cold hangar of Rick Prime’s, somewhere out past the Central Finite Curve. The Omega Device is here.',
     kind: 'room',
@@ -174,6 +176,7 @@ export const ROWS = [
   }),
   place(17, {
     id: 'nimbus',
+    achieve: 'nimbus',
     name: 'Mr. Nimbus’s beach',
     note: 'The shore where the land meets the sea. Mr. Nimbus controls the police, and he’s expecting Rick.',
     kind: 'outdoor',
@@ -213,6 +216,7 @@ export const ROWS = [
   }),
   place(18, {
     id: 'gromflomites',
+    achieve: 'gromflomites',
     name: 'The Gromflomite base',
     note: 'Where the Federation keeps Fart, the being Krombopulos Michael was paid to kill. Guards on every walkway.',
     kind: 'room',
@@ -337,6 +341,7 @@ export const ROWS = [
   }),
   place(20, {
     id: 'snakeplanet',
+    achieve: 'snakeplanet',
     name: 'Snake Planet',
     note: 'A planet of snakes, with a space programme. Everything here is a snake, and most of them bite.',
     kind: 'outdoor',
@@ -379,6 +384,7 @@ export const ROWS = [
   }),
   place(21, {
     id: 'nuptia',
+    achieve: 'nuptia',
     name: 'Nuptia 4',
     note: 'The couples’ retreat on a cliff over the clouds. The machine reads what you think of each other, and makes it.',
     kind: 'outdoor',
@@ -482,6 +488,7 @@ export const ROWS = [
   }),
   place(23, {
     id: 'resort',
+    achieve: 'resort',
     name: 'The Immortality Field Resort',
     note: 'A resort where nobody can die, inside the field. Risotto Groupon runs it, and he has plans for Rick.',
     kind: 'outdoor',

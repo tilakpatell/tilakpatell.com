@@ -51,13 +51,36 @@ describe('the adventure’s store', () => {
     expect(createAdventure({ saves, read: { tasks: () => [], citadel: () => ['daycare'] } }).get().freeRoam).toBe(true);
   });
 
-  it('keeps the story in tp-rm-story, version 1', () => {
+  it('keeps the story in tp-rm-story, version 2', () => {
     createAdventure({ saves, read: none }).feed({ type: 'task', id: 'diner' });
-    expect(JSON.parse(store.getItem('tp-rm-story'))).toMatchObject({ v: 1, data: { step: 1 } });
+    expect(JSON.parse(store.getItem('tp-rm-story'))).toMatchObject({ v: 2, data: { step: 1 } });
     // and the next visit takes it up where it was, not as a new visitor
     const again = createAdventure({ saves, read: none });
     expect(again.started).toBe(false);
     expect(again.get()).toMatchObject({ episode: 0, step: 1 });
+  });
+
+  it('puts a version-1 save on Free roam when what it played reaches past what its story has opened, once', () => {
+    // (finished episode 1 when it was the last built, every place open, and played the vat)
+    const played = { tasks: () => ['diner', 'basement', 'mindblowers', 'customs', 'vat'], citadel: () => [] };
+    store.setItem(STORY_KEY, JSON.stringify({ v: 1, data: { ...fresh(), episode: 1, step: 0 } }));
+    const a = createAdventure({ saves, read: played });
+    expect(a.get()).toMatchObject({ episode: 1, step: 0, freeRoam: true });
+    expect(a.dialOpen('vat')).toBe(true);
+    expect(JSON.parse(store.getItem(STORY_KEY)).v).toBe(2);
+    // (switched off, it stays off: the move's made once)
+    a.setFreeRoam(false);
+    expect(createAdventure({ saves, read: played }).get().freeRoam).toBe(false);
+  });
+
+  it('leaves a version-1 save whose places played are all ones its story has opened as it was', () => {
+    store.setItem(STORY_KEY, JSON.stringify({ v: 1, data: { ...fresh(), episode: 1, step: 0 } }));
+    const a = createAdventure({ saves, read: { tasks: () => ['diner', 'customs', 'meeseeksgolf', 'cable'], citadel: () => [] } });
+    expect(a.get()).toMatchObject({ episode: 1, step: 0, freeRoam: false });
+    expect(a.dialOpen('vat')).toBe(false);
+    // (a planet the universe map lands on too, or the Citadel, isn't only the dial's: no Free roam for those)
+    store.setItem(STORY_KEY, JSON.stringify({ v: 1, data: { ...fresh(), episode: 1, step: 0 } }));
+    expect(createAdventure({ saves, read: { tasks: () => ['birdworld', 'squanch'], citadel: () => ['daycare'] } }).get().freeRoam).toBe(false);
   });
 
   it('starts again on a broken save', () => {

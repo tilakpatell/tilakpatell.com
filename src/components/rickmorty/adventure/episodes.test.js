@@ -32,6 +32,12 @@ describe('the adventure’s episodes', () => {
     }
   });
 
+  it('says how to tell our Jerry at the Jerryboree, in its step', () => {
+    const step = allSteps().find((s) => s.id === 'jerryboree');
+    const ours = DESTINATIONS.find((d) => d.id === 'jerryboree').find.tells.ours; // ('He offers you an apple')
+    expect(step.text.toLowerCase()).toContain(ours.toLowerCase().replace(/^he /, ''));
+  });
+
   it('sends a step to the dial place its task is in', () => {
     const dial = new Set(DIAL.map((d) => d.id));
     for (const s of allSteps()) {

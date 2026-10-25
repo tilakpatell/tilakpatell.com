@@ -90,11 +90,14 @@ export const GARAGE_BACK = { x: -301.2, z: 101.4, face: 0 };
 // (stage.js's NPC behaviour); he's put back at the way in. `spotted`: what's
 // said when one of them sees him and starts (a hunter's own `hunt.spotted`
 // wins).
+// `achieve`: one of the place's tasks whose achievement (of the same id) is
+// handed over once it's done, however it's done (a talk, a collect: stage.js's
+// grant), fresh or done before.
 // A person or one of the crowd may carry `ai` (stage.js): `wander` points in
 // metres from the middle (turned into the world's here), `watch`, `bark`,
 // `hunt`. Anyone who roams is marked so, and isn't in the way.
 const roams = (ai) => Boolean(ai?.wander || ai?.hunt);
-export function place(i, { id, name, note, kind, deep, wide, sky, ceiling, people = [], extras = [], spots = [], solids = [], tasks = [], say = {}, done = {}, unlock = {}, acts = {}, escape = null, goal = null, collect = null, power = null, deal = null, freeze = null, find = null, sequence = null, rhythm = null, climb = null, caught = null, spotted = null, kinds = [] }) {
+export function place(i, { id, name, note, kind, deep, wide, sky, ceiling, people = [], extras = [], spots = [], solids = [], tasks = [], say = {}, done = {}, unlock = {}, acts = {}, escape = null, goal = null, collect = null, power = null, deal = null, freeze = null, find = null, sequence = null, rhythm = null, climb = null, caught = null, spotted = null, achieve = null, kinds = [] }) {
   const area = destArea(i, deep, wide);
   const cx = DEST_X;
   const cz = destZ(i);
@@ -125,6 +128,7 @@ export function place(i, { id, name, note, kind, deep, wide, sky, ceiling, peopl
     acts: { ...acts, ...(power && { [power.from]: 'power-take', [power.to]: 'power-give' }), ...(deal && Object.fromEntries(deal.items.map((s) => [s, `deal-${s}`]))), ...(freeze && { [freeze.spot]: 'freeze-in' }), ...(find && Object.fromEntries(find.items.map((s) => [s, `find-${s}`]))), ...(sequence && { ...Object.fromEntries(sequence.items.map((s) => [s, `sequence-${s}`])), ...(sequence.start && { [sequence.start]: 'sequence-start' }) }), ...(climb?.picks && Object.fromEntries(climb.picks.map((s) => [s, `climb-pick-${s}`]))) },
     escape,
     goal,
+    achieve,
     collect,
     power,
     deal,

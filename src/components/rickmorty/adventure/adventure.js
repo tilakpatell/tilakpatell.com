@@ -1,6 +1,13 @@
 // The adventure's store: the story (./story.js) kept under one key on the
-// runtime's saves, `tp-rm-story`, version 1. It reads the worlds' own keys
+// runtime's saves, `tp-rm-story`, version 2. It reads the worlds' own keys
 // (what's done in C-137 and at the Citadel) and never writes them.
+//
+// Version 2 is version 1's shape, moved on once: a save whose places played
+// reach past what its story has opened goes on Free roam. Version 1 kept any
+// save as it was, and a save that had finished the last episode built, every
+// place open then, found the places it had played shut again once a later
+// episode was built. A place played counts only where the garage portal is
+// the one way in (not a planet, which the universe map lands on too).
 //
 // Made once a page visit (./useAdventure.js): it loads the story, or starts a
 // new one (a visitor with anything done already is a returner, on Free roam),
@@ -9,7 +16,8 @@
 // does its own (saves tell this tab's watchers too), which it knows by the
 // state being the one it holds. Pure: no React, no three.
 
-import { coordinates, current, dialOpen, feed, fresh, lockNote, objective, valid } from './story';
+import { DESTINATIONS, DIAL, isPlanet } from '../world/dimensions/destinations';
+import { coordinates, current, dialOpen, feed, fresh, lockNote, objective, reachesPast, valid } from './story';
 
 export const STORY_KEY = 'tp-rm-story';
 
@@ -18,11 +26,18 @@ const listOf = (read) => {
   return Array.isArray(v) ? v : [];
 };
 
+// the dial place each of C-137's tasks is done in, where only the garage
+// portal goes, and the places played
+const DIAL_IDS = new Set(DIAL.map((d) => d.id));
+const PLACE_OF = new Map(DESTINATIONS.filter((d) => DIAL_IDS.has(d.id) && !isPlanet(d.id)).flatMap((d) => d.tasks.map((t) => [t.id, d.id])));
+const playedAt = ({ tasks }) => tasks.map((id) => PLACE_OF.get(id)).filter(Boolean);
+
 export function createAdventure({ saves, read, episodes, ready }) {
   const book = { ...(episodes && { episodes }), ...(ready != null && { ready }) };
   const known = () => ({ tasks: listOf(read.tasks), citadel: listOf(read.citadel) });
-  // anything older or broken is turned away by valid() below, so it starts afresh
-  saves.register({ key: STORY_KEY, version: 1, migrate: () => null });
+  // version 1 moved on (above); anything older or broken is turned away by
+  // valid() below, so it starts afresh
+  saves.register({ key: STORY_KEY, version: 2, migrate: (old, v) => (v < 1 ? null : valid(old, book) && !old.freeRoam && reachesPast(old, playedAt(known()), book) ? { ...old, freeRoam: true } : old) });
 
   const stored = saves.get(STORY_KEY, null);
   const k = known();

@@ -101,7 +101,7 @@ export const EPISODES = [
     title: 'The Jerry problem',
     intro: [['Morty', 'Rick hid a set on Dad. Dad’s at the Jerryboree, and the rest of it’s at a hospital. Of course it is.']],
     steps: [
-      task('jerryboree', 'Dad’s at the Jerryboree, with a lot of other Dads. Find ours.', 'jerryboree'),
+      task('jerryboree', 'Dad’s at the Jerryboree, with a lot of other Dads. Ours offers you an apple, as he does at home: find him.', 'jerryboree'),
       task('gloopynoops', 'Dial St. Gloopy Noops and take back what’s Jerry’s.', 'gloopynoops'),
     ],
     outro: [['Rick', 'Your father carried coordinates for a year and never noticed. The perfect courier.']],
