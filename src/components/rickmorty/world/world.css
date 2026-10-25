@@ -90,8 +90,11 @@
 .rm-chip:active, .rm-btn:active, .rm-act:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--rm-ink); }
 .rm-chip:focus-visible, .rm-btn:focus-visible, .rm-act:focus-visible, .rm-back:focus-visible, .rm-icon-btn:focus-visible, .rm-card-btn:focus-visible { outline: 3px solid var(--rm-gold); outline-offset: 2px; }
 
-/* toasts: something done, someone talking (a speech bubble), a no */
-.rm-toast { position: absolute; top: clamp(5.5rem, 17%, 9rem); left: 50%; z-index: 4; display: flex; align-items: flex-start; gap: 0.6rem; width: max-content; max-width: min(30rem, calc(100% - 2rem)); padding: 0.65rem 0.95rem; border: 2px solid var(--rm-ink); border-radius: 12px; background: var(--rm-glass); color: #fff; box-shadow: 0 4px 0 rgba(27, 20, 36, 0.6); transform: translateX(-50%); animation: rm-toast 4.4s ease both; }
+/* toasts: something done, someone talking (a speech bubble), a no; under the
+   title's column where that runs lower (measured: RmHud's --rm-under-l), so a
+   two- or three-line objective's lines aren't covered at their ends (a phone
+   has its own rule, under the whole top row) */
+.rm-toast { position: absolute; top: max(clamp(5.5rem, 17%, 9rem), calc(var(--rm-under-l, 0px) + 0.5rem)); left: 50%; z-index: 4; display: flex; align-items: flex-start; gap: 0.6rem; width: max-content; max-width: min(30rem, calc(100% - 2rem)); padding: 0.65rem 0.95rem; border: 2px solid var(--rm-ink); border-radius: 12px; background: var(--rm-glass); color: #fff; box-shadow: 0 4px 0 rgba(27, 20, 36, 0.6); transform: translateX(-50%); animation: rm-toast 4.4s ease both; }
 .rm-toast p { display: grid; gap: 0.15rem; margin: 0; font: 600 0.95rem/1.4 var(--font-sans); }
 .rm-toast b { color: var(--rm-lime); font: 400 1.02rem/1.1 'Luckiest Guy', var(--font-sans); letter-spacing: 0.03em; }
 .rm-toast-tick { display: grid; flex: none; place-items: center; width: 1.6rem; height: 1.6rem; border: 2px solid var(--rm-ink); border-radius: 50%; background: var(--rm-lime); color: var(--rm-ink); font-size: 1rem; }
@@ -321,6 +324,19 @@
   .rm-hint { bottom: calc(138px + var(--rm-pad-b)); font-size: 0.76rem; }
   .rm-toast { top: calc(var(--rm-under, 7rem) + 0.5rem); pointer-events: none; }
 }
+/* a finger's 44 px on a touch screen (RULES UI 2): a chip keeps its drawn
+   36 px (so the column, and the toast under it, stay where they are) with a
+   hit area 4 px over and under it, half the column's gap; the list's ways
+   back are stacked too close for that, so they're 44 tall; the list's close
+   and the dial's are 44 square (the dial's reaching into its head's padding,
+   so the head's no taller) */
+@media (pointer: coarse) {
+  .rm-chip { position: relative; }
+  .rm-chip::after { content: ''; position: absolute; inset: -4px 0; }
+  .rm-icon-btn { width: 44px; height: 44px; }
+  .rm-list-back { min-height: 44px; }
+  .rm-dial-x { display: grid; place-items: center; min-width: 44px; min-height: 44px; margin: -8px -10px -8px 0; }
+}
 @media (min-width: 640px) {
   /* the house and the garage, with the most in them, in the wider column */
   .rm-cards { grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr); }
@@ -541,8 +557,9 @@
 }
 /* a place's game (./games/meter.js): a deal's looks, a freeze's beat, a find's and a sequence's clock, a
    climb's height as the bar, no percent; on a touch screen or a narrow one, its block wide
-   enough for the line, as the chase's is */
+   enough for the line, as the chase's is, and lifted with the foot's pad as the prompt
+   card under it is (190 px at a plain pad; a home bar's inset lifts both alike) */
 .rm-meter-deal .hud-vitals-n, .rm-meter-freeze .hud-vitals-n, .rm-meter-find .hud-vitals-n, .rm-meter-sequence .hud-vitals-n, .rm-meter-climb .hud-vitals-n { display: none; }
 @media (pointer: coarse), (max-width: 767px) {
-  .rm-cluster.rm-meter .hud-vitals-block { width: auto; max-width: 46vw; }
+  .rm-cluster.rm-meter .hud-vitals-block { bottom: calc(178px + var(--rm-pad-b)); width: auto; max-width: 46vw; }
 }

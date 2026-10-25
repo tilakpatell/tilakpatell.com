@@ -35,4 +35,34 @@ describe('C-137’s HUD', () => {
     expect(firstHint({ touch: true })).toContain('The Portal gun button, up top');
     expect(renderToStaticMarkup(<GunChip onOpen={() => {}} />)).toContain('<kbd>P</kbd>');
   });
+
+  it('gives its controls a finger’s 44 px on a touch screen: the chips, the list’s close and ways back, the dial’s close', () => {
+    // (world.css's blocks, each one's braces counted to its close; RULES UI 2: a hit area may be wider than what's drawn)
+    const css = readFileSync(new URL('./world.css', import.meta.url), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+    const blockOf = (query) => {
+      const at = css.indexOf(query);
+      if (at < 0) return '';
+      const open = css.indexOf('{', at);
+      let end = open;
+      for (let depth = 0; end < css.length; end++) if (!(depth += css[end] === '{' ? 1 : css[end] === '}' ? -1 : 0)) break;
+      return css.slice(open + 1, end);
+    };
+    const rule = (block, sel) =>
+      [...block.matchAll(/([^{}]+)\{([^{}]*)\}/g)]
+        .filter(([, s]) => s.split(',').map((x) => x.trim()).includes(sel))
+        .map(([, , body]) => body)
+        .join(';');
+    const px = (body, prop) => Number(body.match(new RegExp(`(?:^|[;{\\s])${prop}:\\s*(-?\\d+)px`))?.[1] ?? NaN);
+    const touch = blockOf('@media (pointer: coarse) {');
+    // a chip, drawn 36 px on a phone: its hit area 4 px over and under it (the column's gap is 8, so it doesn't reach the next)
+    expect(rule(touch, '.rm-chip')).toMatch(/position:\s*relative/);
+    expect(rule(touch, '.rm-chip::after')).toMatch(/inset:\s*-4px 0/);
+    expect(px(rule(blockOf('@media (max-width: 639px)'), '.rm-chip'), 'min-height') + 2 * 4).toBeGreaterThanOrEqual(44);
+    // the list's close and the dial's, 44 square; the list's ways back (stacked too close for a wider hit area), 44 tall
+    for (const sel of ['.rm-icon-btn', '.rm-dial-x']) {
+      expect(px(rule(touch, sel), '(?:min-)?width'), sel).toBeGreaterThanOrEqual(44);
+      expect(px(rule(touch, sel), '(?:min-)?height'), sel).toBeGreaterThanOrEqual(44);
+    }
+    expect(px(rule(touch, '.rm-list-back'), 'min-height')).toBeGreaterThanOrEqual(44);
+  });
 });

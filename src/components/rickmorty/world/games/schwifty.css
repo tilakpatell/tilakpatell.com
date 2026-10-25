@@ -24,15 +24,19 @@
   user-select: none;
   -webkit-user-select: none;
 }
-.schwifty-leave {
+/* Leave, and Pause beside it on a touch screen while the song plays */
+.schwifty-corner {
   position: absolute;
   top: max(14px, env(safe-area-inset-top));
   right: max(16px, env(safe-area-inset-right));
   z-index: 2;
+  display: flex;
+  gap: 8px;
 }
-/* (a finger's 44 px on a touch screen: the small button is the only way out mid-song) */
+/* (a finger's 44 px on a touch screen: the small buttons are the only way out of the song, or to stop it, mid-song) */
 @media (pointer: coarse) {
-  .schwifty-leave {
+  .schwifty-leave,
+  .schwifty-pause {
     min-height: 44px;
   }
 }

@@ -128,7 +128,8 @@ export default function RmHud({
   // Where the top row ends (the taller of the title's column and the map's),
   // measured, for what hangs under it on a phone (./world.css --rm-under):
   // the toast and the cruiser's caption sit just under it however tall the
-  // objective or the chips make it, never over them.
+  // objective or the chips make it, never over them. And where the title's
+  // column alone ends (--rm-under-l), for the toast on a wider screen.
   const top = useRef(null);
   // (the game the place Morty's in runs, if any: its meter's name)
   // (in the street, its one meter is the stone's at the park's pond)
@@ -152,6 +153,8 @@ export default function RmHud({
       const from = stage.getBoundingClientRect().top;
       const bottom = Math.max(0, ...Array.from(row.children, (n) => n.getBoundingClientRect().bottom - from));
       stage.style.setProperty('--rm-under', `${Math.round(bottom)}px`);
+      const left = row.querySelector('.rm-brand');
+      if (left) stage.style.setProperty('--rm-under-l', `${Math.round(left.getBoundingClientRect().bottom - from)}px`);
     };
     fit();
     const ro = typeof ResizeObserver === 'function' ? new ResizeObserver(fit) : null;

@@ -4,7 +4,7 @@
 // Fantasy World's climb and Froopyland, and the Citadel.
 /* global window, document */
 import { COURSE, chaseStart, newChase } from '../../src/components/rickmorty/world/games/chase.js';
-import { BASE, OUT, N, check, done, built, goto, use, story, reads, WIPED, SMALL, HEAT, DEALS, JERRY, throughPortal, toast, inArea, cardFor, at, opens, warpUse, caught, before, chasing, playTo, game, homeOf, spotAt, wayInOf, place, PRIME, FAIRY, CITADEL, SECTOR, CITADEL_LINE, citadelUp, citadelReads, citadelToast, linksTo, standOn, later, promptIs, warp, PLACES } from './helpers.mjs';
+import { BASE, OUT, N, check, done, built, goto, use, story, reads, WIPED, SMALL, HEAT, DEALS, JERRY, throughPortal, toast, inArea, cardFor, at, opens, warpUse, caught, before, chasing, playTo, game, homeOf, spotAt, wayInOf, place, PRIME, FAIRY, CITADEL, SECTOR, CITADEL_LINE, citadelUp, citadelReads, citadelToast, citadelCardAfter, linksTo, standOn, later, promptIs, warp, PLACES } from './helpers.mjs';
 
 export const LATE = {
   // a new visitor plays episode 5: the cruiser's chase (taking off ticks
@@ -537,7 +537,8 @@ export const LATE = {
     check((await page.locator('.citadel-stage .shire-toast', { hasText: 'The cruiser’s away' }).count()) === 1, 'the episode’s closing line cut the escape’s short');
     await citadelToast(page, CITADEL.outro[0][1], CITADEL.outro[0][0]);
     if (OUT) await page.screenshot({ path: `${OUT}/episode-10-outro.png` });
-    // (episode 11's card with it)
+    // (episode 11's card once it's been read, not over it)
+    await citadelCardAfter(page, CITADEL.outro[0][1]);
     await cardFor(page, 10);
     await at(page, 10, 0, 'after the escape');
     await opens(page, CITADEL.unlocks, true, 'after episode 10');

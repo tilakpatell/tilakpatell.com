@@ -88,7 +88,9 @@ export const BASICS = {
   ),
   // on a phone held upright (390 × 664, a touch screen): the portal gun's
   // chip keeps its word (the first hint names it), its dial's foot says tap,
-  // not the keys, and the Checklist's pond row says its button, not E
+  // not the keys, and the Checklist's pond row says its button, not E; and
+  // what's tapped is a finger's 44 px: the dial's close and the list's, the
+  // list's ways back, and each chip's hit area, over and under what's drawn
   'touch-words': Object.assign(
     async (page) => {
       await c137(page);
@@ -102,6 +104,13 @@ export const BASICS = {
       const foot = await page.locator('.rm-dial-foot').textContent();
       const tap = await page.evaluate(async () => (await import('/src/components/rickmorty/world/dimensions/dialKey.js')).TOUCH_FOOT.gun);
       check(foot === tap, `on a phone the dial’s foot says “${foot}”`);
+      const size = (sel) =>
+        page.evaluate((s) => {
+          const r = document.querySelector(s).getBoundingClientRect();
+          return { w: Math.round(r.width), h: Math.round(r.height) };
+        }, sel);
+      const x = await size('.rm-dial-x');
+      check(x.w >= 44 && x.h >= 44, `on a phone the dial’s close is ${x.w} × ${x.h} px`);
       await page.locator('.rm-dial-x').tap();
       await page.locator('.rm-dial-box').waitFor({ state: 'detached', timeout: 5000 });
       await page.getByRole('button', { name: /Things to do/ }).first().tap();
@@ -111,8 +120,43 @@ export const BASICS = {
       const pond = await page.evaluate(async () => (await import('/src/components/rickmorty/world/town/plan.js')).TOWN_TASKS.find((t) => t.id === 'pond'));
       const said = await list.locator('li', { hasText: pond.name }).locator('.rm-list-sub').textContent();
       check(said === pond.touch, `on a phone the pond’s row says “${said}”`);
+      const close = await size('#rm-list .rm-icon-btn');
+      check(close.w >= 44 && close.h >= 44, `on a phone the list’s close is ${close.w} × ${close.h} px`);
+      const backs = await page.evaluate(() => Array.from(document.querySelectorAll('#rm-list .rm-list-back'), (a) => Math.round(a.getBoundingClientRect().height)));
+      check(backs.length > 0 && backs.every((h) => h >= 44), `on a phone the list’s ways back are ${backs.join(', ')} px tall`);
+      // (a chip's drawn 36 px: a tap 3 px over or under it still lands on it, not on the next)
+      const hits = await page.evaluate(() =>
+        Array.from(document.querySelectorAll('.rm-side .rm-chip'))
+          .filter((c) => c.getClientRects().length)
+          .map((c) => {
+            const r = c.getBoundingClientRect();
+            return [r.top - 3, r.bottom + 3].every((y) => c.contains(document.elementFromPoint(r.left + r.width / 2, y)));
+          }),
+      );
+      check(hits.length > 0 && hits.every(Boolean), `on a phone a tap just off a chip misses it (${JSON.stringify(hits)})`);
     },
     { seed: { 'tp-rm-story': { v: 1, data: { episode: 0, step: 3, got: [], wins: [], freeRoam: false } }, 'tp-c137-done': ['diner', 'basement', 'mindblowers'] }, context: { viewport: { width: 390, height: 664 }, hasTouch: true, isMobile: true } },
+  ),
+  // at 1280 × 720 (a laptop) a toast hangs under the objective however many
+  // lines it runs to (Customs' step runs to three), never over their ends
+  'toast-under-line': Object.assign(
+    async (page) => {
+      await c137(page);
+      await reads(page, WIPED.steps[3].text);
+      const rick = await page.evaluate(async () => (await import('/src/components/rickmorty/world/rules.js')).HOTSPOTS.find((h) => h.id === 'rick'));
+      await goto(page, 'garage', rick.x + 0.6, rick.z, Math.PI);
+      await use(page, 'rick');
+      await page.locator('.rm-toast').waitFor({ timeout: 10000 });
+      await page.waitForTimeout(600); // (its rise in)
+      const at = await page.evaluate(() => {
+        const a = document.querySelector('.rm-toast').getBoundingClientRect();
+        const b = document.querySelector('.rm-hud .rm-objective').getBoundingClientRect();
+        return { over: a.top < b.bottom && b.top < a.bottom && a.left < b.right && b.left < a.right, toast: Math.round(a.top), line: Math.round(b.bottom), lines: Math.round(b.height) };
+      });
+      check(at.lines >= 50, `Customs’ step should run to two lines or more (the objective is ${at.lines} px tall)`);
+      check(!at.over, `the toast (from ${at.toast}) is over the objective (to ${at.line})`);
+    },
+    { seed: { 'tp-rm-story': { v: 1, data: { episode: 0, step: 3, got: [], wins: [], freeRoam: false } }, 'tp-c137-done': ['diner', 'basement', 'mindblowers'] } },
   ),
   // Customs' alarm: the pads' swirls ahead of him shut while it's on, so the
   // only portal open is the way home behind him; open again on his next visit

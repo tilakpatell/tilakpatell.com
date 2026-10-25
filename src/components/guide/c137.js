@@ -20,7 +20,7 @@ export const C137 = {
     { label: 'Total Rickall', rows: [['Swipe', 'Aim'], ['Tap', 'Shoot the one in the crosshair (or Remember and Shoot, on their buttons)'], ['Lock', 'The crosshair stays on them as you move']] },
     { label: 'Through the portal', rows: [['Tap', 'The star fires, in a fight'], ['Lock', 'Face whoever you’re fighting (on by itself when they come close)']] },
     { label: 'Plumbus Smash', rows: [['Tap', 'Smash a chute']] },
-    { label: 'Get Schwifty', rows: [['Tap', 'Hit a lane']] },
+    { label: 'Get Schwifty', rows: [['Tap', 'Hit a lane'], ['Pause', 'Its button beside Leave, while the song plays']] },
     { label: 'Pickle Rick’s sewer run', rows: [['Tap', 'Left, Hop, Fire and Right, on their buttons']] },
   ],
   tips: [

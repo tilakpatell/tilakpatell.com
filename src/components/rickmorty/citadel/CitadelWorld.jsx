@@ -33,8 +33,7 @@ import RmEarnNote from '../RmEarnNote';
 import { useAdventure } from '../adventure/useAdventure';
 import { EPISODES } from '../adventure/episodes';
 import EpisodeCard from '../adventure/EpisodeCard';
-import { newsOf } from '../adventure/hud';
-import { ENTER, asksCard, atDoor, storyLead } from './storyline';
+import { ENTER, asksCard, atDoor, sayNews, storyLead } from './storyline';
 import { useUnder } from './useUnder';
 import { useRmEarn } from '../useRmEarn';
 import { seedsOf } from '../earn';
@@ -136,7 +135,7 @@ export default function CitadelWorld({ onLeave, leaveLabel = 'Back to C-137', fr
     },
     [feed],
   );
-  const heardNews = useCallback((k) => setNews((n) => n.slice(k)), []);
+  const heardNews = useCallback((k, keep = []) => setNews((n) => [...keep, ...n.slice(k)]), []); // (`keep`: what's said later, first in line: a card behind its line)
   const door = atDoor(storyAt);
   useEffect(() => {
     tell(ENTER);
@@ -311,17 +310,20 @@ function World({ prog, done, complete, gl, setGl, onLeave, leaveLabel, frozen, o
     const n = intro();
     if (n != null) setCard(n);
   }, [live, asks, intro]);
-  // what the story said back, once the world's live and the toast before it
-  // has gone (the scene's own ending first): an episode's closing line, named
-  // and kept up as long as C-137 keeps one, and the next one's card
+  // (Mortytown on its way down, built the first time: the lift waits for it, and so does the story's news)
+  const [townLoading, setTownLoading] = useState(false);
+  // what the story said back, once the world's live, the toast before it
+  // has gone (the scene's own ending first, or Mortytown's arrival) and
+  // Mortytown isn't on its way: an episode's closing line, named and kept up
+  // as long as C-137 keeps one, and then the next one's card, kept in the
+  // queue till the line's gone (./storyline.js's sayNews)
   useEffect(() => {
-    if (!news.length || !live || toast) return;
-    const said = newsOf(news);
-    heardNews(news.length);
-    const line = said.say.at(-1);
+    if (!news.length || !live || toast || townLoading) return;
+    const { line, card: next, keep } = sayNews(news);
+    heardNews(news.length, keep);
     if (line) setToast({ text: line.text, name: line.who, at: Date.now() });
-    if (said.card != null) setCard(said.card);
-  }, [news, live, toast, heardNews]);
+    if (next != null) setCard(next);
+  }, [news, live, toast, townLoading, heardNews]);
 
   // the concourse's hum, while it's on screen
   useEffect(() => {
@@ -384,7 +386,6 @@ function World({ prog, done, complete, gl, setGl, onLeave, leaveLabel, frozen, o
   // (Mortytown is built the first time: the lift waits for it)
   const liftRef = useRef(null);
   const enterRef = useRef(null); // (for the QA scripts' hook: E at a spot)
-  const [townLoading, setTownLoading] = useState(false);
   const goDown = useCallback(
     async () => {
       const s = sim.current;

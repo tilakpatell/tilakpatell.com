@@ -4,7 +4,8 @@
 // returner whose old ticks pass their parts, whose games rest, and whose
 // last escape on Planet Squanch's own page holds for Morty's line; and
 // Pluto's own page left with that line still waiting, the next page saying
-// it. Either way the sector ends on episode 12's card.
+// it. Either way the sector ends on episode 12's card. And on a phone, a
+// place's meter clear of the prompt card.
 /* global window, document */
 import { OUT, check, use, built, inArea, reads, story, at, opens, toast, playTo, game, standOn, later, warpUse, caught, spotAt, wayInOf, homeOf, goalIs, noLink, meter, meterSays, warp, hunting, open, openHeld, openOnCard, cardFor, dial, home, notDone, ticked, low, promptIs, dotted, cameraAt, PLACES, CITADEL, SECTOR, SCORE } from './helpers.mjs';
 
@@ -262,6 +263,27 @@ export const SECTOR_CHECKS = {
       check((await page.locator('.rm-toast', { hasText: SECTOR.outro[0][1] }).count()) === 0, 'Morty’s line was said again in C-137');
     },
     { seed: { 'tp-rm-story': { v: 1, data: { episode: 10, step: 0, got: [], wins: ['cabinet', 'chase'], freeRoam: false } }, 'tp-c137-done': ['birdworld', 'gearworld', 'pluto'] } },
+  ),
+  // on a phone with a home bar (390 × 664, its 34 px inset), a place's meter
+  // stays clear of the prompt card at a spot: Bird World's, there from the
+  // start, by Birdperson's door
+  'sector-phone': Object.assign(
+    async (page) => {
+      await open(page, '#/c-137/birdworld');
+      // (the home bar's inset, as a phone's env(safe-area-inset-bottom) gives it: Playwright's touch emulation has none)
+      await page.evaluate(() => document.documentElement.style.setProperty('--hud-safe-b', '34px'));
+      await meterSays(page, 'Bird World’s crystals', '0 of 5 crystals found');
+      await warp(page, 'birdworld', ...spotAt('birdworld', 'door'));
+      await page.locator('.rm-prompt[data-kind="spot"]').waitFor({ timeout: 10000 });
+      await page.waitForTimeout(400); // (its rise in)
+      const at = await page.evaluate(() => {
+        const a = document.querySelector('.rm-cluster.rm-meter[data-on] .hud-vitals-block').getBoundingClientRect();
+        const b = document.querySelector('.rm-prompt').getBoundingClientRect();
+        return { over: a.top < b.bottom && b.top < a.bottom && a.left < b.right && b.left < a.right, meter: Math.round(a.bottom), prompt: Math.round(b.top) };
+      });
+      check(!at.over, `on a phone the meter (to ${at.meter}) is over the prompt card (from ${at.prompt})`);
+    },
+    { seed: { 'tp-rm-story': { v: 1, data: { episode: 10, step: 0, got: [], wins: ['cabinet', 'chase'], freeRoam: false } } }, context: { viewport: { width: 390, height: 664 }, hasTouch: true, isMobile: true } },
   ),
   // Pluto's own page the sector's last part: the two true claims told and its
   // portal pressed while the king's line is still being read, Morty's line
