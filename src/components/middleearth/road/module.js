@@ -23,7 +23,7 @@ import * as THREE from 'three';
 import { PACE, newClock, step as stepClock } from './clock';
 import { SAVE, recent, resume, ridden as riddenOf, savedAt, shouldOffer } from './entry';
 import { carryFrom } from './carry';
-import { ABOVE_GROUND, LOOK_LIMIT, pose, settleLook } from './director';
+import { ABOVE_GROUND, LOOK_LIMIT, fovFor, pose, settleLook } from './director';
 import { keyLight, light as lightAt, refFloor, shadeOf, skyLight } from './daylight';
 import { at as lineAt, sOf, total } from './line';
 import { createSky } from './sky';
@@ -397,8 +397,10 @@ export default {
         camera.rotation.z += Math.sin(shook * 39 + 2) * a * 0.12;
       }
       veil.position.copy(camera.position);
-      if (camera.fov !== p.fov) {
-        camera.fov = p.fov;
+      // (a phone held upright opens the field upward: the director's fovFor)
+      const fov = fovFor(p.fov, camera.aspect);
+      if (camera.fov !== fov) {
+        camera.fov = fov;
         camera.updateProjectionMatrix();
       }
       sun.position.copy(camera.position).addScaledVector(sunDir, 100);
