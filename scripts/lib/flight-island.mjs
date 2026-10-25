@@ -34,6 +34,8 @@ export const ISLAND = {
     'scripts/lib/fake-durable.test.mjs',
     'scripts/fixtures/planets.json',
     'scripts/flight-expanse-fixture.mjs',
+    'scripts/planet-contact-sheet.mjs',
+    'scripts/planet-contact-sheet.test.mjs',
     'scripts/flight-island.mjs',
     'scripts/flight-island.test.mjs',
     'scripts/lib/flight-island.mjs',

@@ -5,10 +5,11 @@ import { LIFE, expanseLife } from '../../../lib/land/flight/lifeTables';
 import { SITE_GROUND, SITE_LAYERS } from '../../../lib/land/flight/planetTables';
 import { makeSector } from '../gen/sector.js';
 import { UNIVERSE, hash64 } from '../gen/seed.js';
+import { moonsOf } from '../gen/systems.js';
 import { FIGURES, GALAXY_KINDS, SURFACE_MODELS } from '../../galaxy/shared/models';
 import { SITES } from '../../galaxy/shared/ground';
 import { BUILT_KINDS } from '../../universe/shared/flying';
-import { EXPANSE, PLANETS, expanseRow, lifeOf, planetSpecOf } from './planets';
+import { EXPANSE, PLANETS, expanseRow, lifeOf, moonRowOf, planetSpecOf } from './planets';
 
 const GALAXY = 'tatooine hoth endor yavin bespin dagobah mustafar coruscant naboo kashyyyk kamino geonosis scarif nevarro mandalore lothal sorgan'.split(' ');
 const SECTOR = 'gazorpazorp squanch birdworld gearworld pluto snakeplanet nuptia resort cronenberg purge'.split(' ');
@@ -16,6 +17,9 @@ const FANDOM = 'cybertron middle-earth caribbean albuquerque scranton avengers i
 const KNOWN = new Set([...GALAXY_KINDS, ...BUILT_KINDS, ...FIGURES, ...Object.keys(SURFACE_MODELS), 'figure', 'wedge']);
 
 describe('the flight’s planets, composed', () => {
+  // a planet past the thirteen, one with ground
+  const far = makeSector(UNIVERSE, 3, -2).systems.flatMap((s) => s.planets).find((p) => p.type === 'ice' || p.type === 'desert' || p.type === 'forest');
+
   it('lists the fifty in the roster’s order, the Expanse’s thirteen last', () => {
     expect(PLANETS.map((p) => p.id).slice(0, 37)).toEqual([...GALAXY, ...SECTOR, ...FANDOM]);
     expect(EXPANSE).toHaveLength(13);
@@ -34,12 +38,39 @@ describe('the flight’s planets, composed', () => {
   });
 
   it('flies to any Expanse planet by id, not only the thirteen, either case', () => {
-    const far = makeSector(UNIVERSE, 3, -2).systems.flatMap((s) => s.planets).find((p) => p.type === 'ice' || p.type === 'desert' || p.type === 'forest');
     expect(far).toBeTruthy();
     expect(expanseRow(far.id)).toMatchObject({ id: far.id.toLowerCase(), name: far.name, type: far.type });
     expect(planetSpecOf(far.id)?.id).toBe(far.id.toLowerCase());
     expect(planetSpecOf('e:1,0:99:0')).toBeNull();
     expect(expanseRow('hoth')).toBeNull();
+  });
+
+  it('carries the universe radius, moons and rings on a row', () => {
+    expect(expanseRow(far.id)).toMatchObject({ radius: far.radius, moons: far.moons, rings: Boolean(far.rings) });
+  });
+
+  it('reads a moon from the generator’s moon rows', () => {
+    expect(moonRowOf({ id: 'E:3,-2:1:0', moonList: [{ name: 'Ostra', type: 'rocky', seed: 12345n }] }, { faction: null, traffic: 0.2, hazard: null }, 0)).toEqual({ id: 'e:3,-2:1:0:0', name: 'Ostra', type: 'rocky', seed: '12345', system: { faction: null, traffic: 0.2, hazard: null }, parent: 'e:3,-2:1:0' });
+    expect(moonRowOf({ id: 'E:3,-2:1:0', moonList: [] }, { faction: null, traffic: 0.2, hazard: null }, 0)).toBeNull();
+    expect(moonRowOf({ id: 'E:3,-2:1:0' }, { faction: null, traffic: 0.2, hazard: null }, 0)).toBeNull();
+  });
+
+  it('reads a planet id with its height written', () => {
+    expect(expanseRow('E:1,0,0:0:1')).toEqual(expanseRow('e:1,0:0:1'));
+    expect(expanseRow('e:1,0:0:1')).toMatchObject({ id: 'e:1,0:0:1' });
+    // (another layer is the 3D generator's, not the legacy one's)
+    expect(expanseRow('E:1,0,4:0:1')).toBeNull();
+    for (const id of ['E:1,0:0', 'E:1,0:w1', 'e:1,0:0:1x', null, 42]) expect(expanseRow(id), String(id)).toBeNull();
+  });
+
+  it('lands on a moon the generator makes, by its id, and on none past its planet’s count', () => {
+    const [s, p] = makeSector(UNIVERSE, 3, -2).systems.flatMap((sys) => sys.planets.map((q) => [sys, q])).find(([, q]) => q.moons > 0);
+    const m = moonsOf(p)[0];
+    expect(expanseRow(m.id)).toEqual(moonRowOf({ ...p, moonList: moonsOf(p) }, s, 0));
+    expect(expanseRow(m.id.toLowerCase())).toMatchObject({ id: m.id.toLowerCase(), name: m.name, type: m.type, seed: String(m.seed), parent: p.id.toLowerCase() });
+    expect(planetSpecOf(m.id)).toMatchObject({ id: m.id.toLowerCase(), kind: 'moon', parent: p.id.toLowerCase(), type: m.type === 'icy' ? 'ice' : 'rock', buildable: false });
+    expect(expanseRow(`${p.id}:${p.moons}`)).toBeNull();
+    expect(planetSpecOf(`${p.id}:${p.moons}`)).toBeNull();
   });
 
   it('reads an Expanse planet’s life from its system', () => {

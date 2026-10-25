@@ -2,6 +2,7 @@ import { afterAll, describe, expect, it } from 'vitest';
 import { MAP_N, rasterKey } from '../../../lib/land/flight/mapRaster';
 import { leafOf } from '../../../lib/land/flight/quadtree';
 import { planetSpecOf } from './planets';
+import { roundSpec } from '../../../lib/land/flight/fixtures/generated';
 
 // the terrain worker as the page sees it: a message in, one answer out
 const posted = [];
@@ -33,5 +34,15 @@ describe('the terrain worker’s raster job', () => {
     expect(out.data.key).toBe(leaf.key);
     expect(out.data.heights.length).toBe(81);
     expect(out.data.biome).toBeUndefined();
+  });
+
+  it('keeps a round planet’s fields apart by spot', () => {
+    const leaf = leafOf(6, 0, 0);
+    const one = roundSpec();
+    const two = { ...one, round: { ...one.round, at: [0, 0, 1] } };
+    const a = ask({ key: leaf.key, spec: one, leaf, n: 9, tier: 'mid' }).data.heights;
+    const b = ask({ key: leaf.key, spec: two, leaf, n: 9, tier: 'mid' }).data.heights;
+    expect(a.length).toBe(81);
+    expect(b).not.toEqual(a);
   });
 });

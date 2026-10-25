@@ -7,18 +7,21 @@
 // square's biomes and heights, asked behind the ground.
 
 import { makeLeaf } from '../../../lib/land/flight/leafMesh.js';
-import { planetField } from '../../../lib/land/flight/field.js';
+import { fieldKey, planetField } from '../../../lib/land/flight/field.js';
 import { rasterFor } from '../../../lib/land/flight/mapRaster.js';
 
-// one field a planet: its noises are built once, not once a leaf
+// one field a planet: its noises are built once, not once a leaf. Kept by
+// fieldKey, not the id: a round planet landed at another spot is another
+// chart of it.
 const fields = new Map();
 
 self.onmessage = (e) => {
   const msg = e.data;
   if (!msg || msg.type === 'cancel') return;
   const { key, spec, leaf, n, tier } = msg;
-  let field = fields.get(spec.id);
-  if (!field) fields.set(spec.id, (field = planetField(spec)));
+  const id = fieldKey(spec);
+  let field = fields.get(id);
+  if (!field) fields.set(id, (field = planetField(spec)));
   if (msg.type === 'raster') {
     const { biome, height } = rasterFor(field, leaf);
     self.postMessage({ key, biome, height }, [biome.buffer, height.buffer]);

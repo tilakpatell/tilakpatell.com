@@ -1,7 +1,8 @@
 // The flight's landmarks as data: which walkable site's places stand on each
 // POI (planetTables.js's, from docs/research/2026-10-09-planet-geographies.md),
-// what stands on the ones no site has (catalog kinds and kit models), and the
-// kit models each planet's clutter is drawn as.
+// what stands on the ones no site has (catalog kinds and kit models), what
+// stands on each kind of a generated planet's places, and the kit models each
+// planet's clutter is drawn as.
 //
 // Why here and not in the walkable sites: a site's places are a few hundred
 // metres apart round a landing spot; the flight's POIs are kilometres apart
@@ -19,10 +20,17 @@
 //     that point; extra: rows as LANDMARKS', for a place the site keeps bare)
 //   LANDMARKS[planetId][poiId] → [{ kind | kit: { kit, name }, at: [x, z]
 //     (relative to the POI), yaw, scale, opts? }]
+//   POI_KITS[kind] → rows as LANDMARKS', for a generated planet's place of
+//     that kind (ruins, wreck, outpost, monolith, signal)
+//   landmarkRowsOf(spec, poi) → LANDMARKS' rows for a named POI, else its
+//     kind's POI_KITS rows, else undefined
 //   CLUTTER_KIT[type], CLUTTER_KIT_OF[planetId] → { [kind]: { kit, name, size } }
 //     (size: the model's scale for a row of scale 1, so it stands as tall
 //     as the code-built shape it replaces)
-//   clutterKitOf(spec) → that planet's, its own over its type's
+//   FLORA_TRUNKS → [{ kit, name, size }]: a generated forest's trees, by its flora's pick
+//   EXOTIC_KIT[exotic] → { [kind]: { kit, name, size } }: an exotic planet's own
+//   clutterKitOf(spec) → that planet's: its type's, then its own, then its
+//     flora's tree, then its exotic's (but on a cloud deck)
 
 export const LANDMARK_NEAR = 6000; // m: a landmark is drawn within this of its POI
 export const LANDMARK_FREE = 1.3; // …and freed past this many times it
@@ -194,6 +202,20 @@ export const LANDMARKS = {
   },
 };
 
+// A generated planet's places (generated.js's pois: each a kind, none of
+// them named): what stands on each kind, from the catalog and the kits.
+export const POI_KITS = {
+  ruins: [one('ruins'), one('stonehead', [30, 10], 2.4), one('ruins', [-40, 22], 0.7), one('stonehead', [-12, -34], 0.9, 0.7)],
+  // (the ship lies where it came down, nose in and rolled)
+  wreck: [{ ...one(k('Spaceship_RaeTheRedPanda'), [0, 0], 0.6, 4), pitch: 0.35, roll: -0.5 }, one('crates', [18, 6], 0.4), one('barrel', [-14, 10]), one('fire', [8, -14])],
+  outpost: base(36),
+  monolith: [one(STRUT, [0, 0], 0, 9), ...ring(k('Rock_Large_1'), 5, 26, 1.2)],
+  signal: [one(k('Roof_Radar'), [0, 0], 0, 5), one(k('Roof_Antenna'), [12, 4], 0.5, 5), one(k('SolarPanel_Ground'), [-14, 6], 0.4, 3), ...ring('lamp', 3, 20)],
+};
+
+// a POI's own list where it has one (a named world's), else its kind's
+export const landmarkRowsOf = (spec, poi) => LANDMARKS[spec?.id]?.[poi?.id] ?? POI_KITS[poi?.kind];
+
 // Each kind's kit model where the planet type has one; a kind left out
 // keeps its code-built shape (Hoth's ice spires, the snowspeeder debris, a
 // city's towers). Sizes put a row of scale 1 at about the code shape's size
@@ -219,6 +241,35 @@ export const CLUTTER_KIT_OF = {
   dagobah: { spire: { ...k('DeadTree_5', 'naturemega'), size: 1.6 } },
 };
 
+// A generated planet's trees, where its flora is a forest's or a temperate
+// world's: one of the green trees above, chosen by the flora's pick
+export const FLORA_TRUNKS = [CLUTTER_KIT.forest.trunk, CLUTTER_KIT_OF.yavin.trunk, CLUTTER_KIT_OF.kashyyyk.trunk, CLUTTER_KIT.temperate.trunk];
+const TREED = new Set(['forest', 'temperate']);
+
+// An exotic planet's own trees and spires (variety.js's exotic), each as
+// tall as the code-built shape it stands in for (not green, on purpose: the
+// test of green leaves leaves them out). A crystal world's crystals are the
+// code-built ones.
+export const EXOTIC_KIT = {
+  glowing: { trunk: { ...k('Tree_Light_1'), size: 21 } },
+  floating: { trunk: { ...k('Tree_Floating_1'), size: 17 } },
+  spires: { spire: { ...k('Tree_Spikes_2'), size: 5.8 } },
+  crystal: {},
+};
+// (a cloud deck has no ground to stand them on: generated.js gives it no exotic clutter)
+const DECK = new Set(['gas', 'ringed']);
+
+const floraTrunk = (flora) => {
+  if (!TREED.has(flora?.family) || !Number.isFinite(flora.pick)) return {};
+  const i = Math.min(FLORA_TRUNKS.length - 1, Math.max(0, Math.floor(flora.pick * FLORA_TRUNKS.length)));
+  return { trunk: FLORA_TRUNKS[i] };
+};
+
 export function clutterKitOf(spec) {
-  return { ...(CLUTTER_KIT[spec?.type] ?? {}), ...(CLUTTER_KIT_OF[spec?.id] ?? {}) };
+  return {
+    ...(CLUTTER_KIT[spec?.type] ?? {}),
+    ...(CLUTTER_KIT_OF[spec?.id] ?? {}),
+    ...floraTrunk(spec?.flora),
+    ...((!DECK.has(spec?.type) && EXOTIC_KIT[spec?.exotic]) || {}),
+  };
 }
