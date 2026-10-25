@@ -764,11 +764,9 @@ describe('a place that plays a rhythm', () => {
     expect(show.hotspots.find((h) => h.id === 'mic').verb).toBe('Get schwifty');
     expect(show.collect).toBe(null);
   });
-  it('leaves the show’s verdicts to the show: the heads bark only for a song, never a verdict on one not sung', () => {
+  it('keeps the Cromulon’s three barks: its verdicts have recorded voices of their own, said nowhere else', () => {
     const barks = destinationById('schwifty').extras.flatMap((e) => e.ai?.bark?.lines ?? []);
-    expect(barks).toContain('SHOW ME WHAT YOU GOT.');
-    expect(barks).not.toContain('I LIKE WHAT YOU GOT. GOOD JOB.');
-    expect(barks).not.toContain('DISQUALIFIED.');
+    expect(barks).toEqual(expect.arrayContaining(['SHOW ME WHAT YOU GOT.', 'I LIKE WHAT YOU GOT. GOOD JOB.', 'DISQUALIFIED.']));
   });
 });
 

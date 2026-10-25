@@ -540,8 +540,8 @@ export const ROWS = [
     sky: { top: 0x1a1a4a, mid: 0x4a3a8a, low: 0xd86a4a, sun: 0xffb060, clouds: 0, moons: 0 },
     people: [{ id: 'watert', dx: -4, dz: -12, face: S, ai: { watch: 10, bark: { r: 6, every: 15, lines: ['You here to play, little man? The heads want a song. Give the heads a song.', 'My father was a block of ice. I became water. We all become something.'] } } }],
     extras: [
-      // (the head calls for a song; its verdicts are the show's own, on its end card: ../games/Schwifty.jsx)
-      { kind: 'cromulon', dx: 0, dz: -60, face: S, y: 10, h: 24, ai: { watch: 80, bark: { r: 70, every: 20, lines: ['SHOW ME WHAT YOU GOT.'] } } },
+      // (the head calls for a song, and its verdicts too: recorded in its own voice, as the show's end card shows them, ../games/Schwifty.jsx)
+      { kind: 'cromulon', dx: 0, dz: -60, face: S, y: 10, h: 24, ai: { watch: 80, bark: { r: 70, every: 20, lines: ['SHOW ME WHAT YOU GOT.', 'I LIKE WHAT YOU GOT. GOOD JOB.', 'DISQUALIFIED.'] } } },
       { kind: 'cromulon', dx: -40, dz: -56, face: S + 0.3, y: 10, h: 24 },
       { kind: 'cromulon', dx: 40, dz: -58, face: S - 0.3, y: 10, h: 24 },
       { kind: 'icet', dx: 8, dz: -13, face: S },
