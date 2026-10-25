@@ -56,8 +56,19 @@ describe('C-137’s HUD', () => {
     const touch = blockOf('@media (pointer: coarse) {');
     // a chip, drawn 36 px on a phone: its hit area 4 px over and under it (the column's gap is 8, so it doesn't reach the next)
     expect(rule(touch, '.rm-chip')).toMatch(/position:\s*relative/);
-    expect(rule(touch, '.rm-chip::after')).toMatch(/inset:\s*-4px 0/);
-    expect(px(rule(blockOf('@media (max-width: 639px)'), '.rm-chip'), 'min-height') + 2 * 4).toBeGreaterThanOrEqual(44);
+    // (Tailwind's preflight makes every box border-box: a chip's drawn size takes in its border, and the
+    // ::after hangs off its padding box, inside it; an icon-only chip is drawn its padding twice, its icon
+    // and its border wide, and its min-height tall)
+    const inset = rule(touch, '.rm-chip::after').match(/inset:\s*([^;]+)/)?.[1].trim();
+    const reach = (w) => Math.max(0, Number(inset.match(/^min\(0px,\s*calc\(50%\s*-\s*(\d+)px\)\)$/)?.[1] ?? 0) - w / 2);
+    const border = px(rule(css, '.rm-chip'), 'border');
+    const hit = (drawn) => drawn - 2 * border + 2 * reach(drawn - 2 * border);
+    const phone = rule(blockOf('@media (max-width: 639px)'), '.rm-chip');
+    const icon = 16 * (2 * Number(phone.match(/padding:\s*0\s+([\d.]+)rem/)[1]) + Number(rule(css, '.rm-chip svg').match(/width:\s*([\d.]+)rem/)[1])) + 2 * border;
+    expect(hit(icon)).toBeGreaterThanOrEqual(44);
+    expect(hit(px(phone, 'min-height'))).toBeGreaterThanOrEqual(44);
+    // (and never narrower than the chip: a wide one's hit area is what's drawn)
+    expect(reach(4 * icon)).toBe(0);
     // the list's close and the dial's, 44 square; the list's ways back (stacked too close for a wider hit area), 44 tall
     for (const sel of ['.rm-icon-btn', '.rm-dial-x']) {
       expect(px(rule(touch, sel), '(?:min-)?width'), sel).toBeGreaterThanOrEqual(44);
