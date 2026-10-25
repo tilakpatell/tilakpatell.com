@@ -31,7 +31,7 @@ import { createGroundMap } from '../../../lib/three/groundmapNodes';
 import { noise2 } from '../../../lib/land/layers.js';
 import { run } from './terrain';
 import { soilHook } from './soil';
-import { createBlades } from './blades';
+import { BLADES, createBlades } from './blades';
 import { trackJob } from './track';
 import { boundsOf, distanceTo } from '../../../lib/land/paths.js';
 
@@ -263,6 +263,14 @@ export function moundTop(heightAt, { at: [cx, cz], r, squash = 1, sink = 0 }) {
   return top;
 }
 
+// whether the patch of blades round the camera (`half` metres either way of
+// x, z) meets an area: the mounds’ patch is as many blades as the field’s,
+// and drawn wherever the camera was it cost Hobbiton 187,500 triangles a
+// frame for a hill most of the stage never sees
+export function patchMeets(x, z, half, { x0, z0, w, d }) {
+  return x + half > x0 && x - half < x0 + w && z + half > z0 && z - half < z0 + d;
+}
+
 // the blades over a stage’s mounds: a map of their own over their bounds,
 // fine enough for a dome’s sides (a third of a metre), grass on them short
 // of their foot (where the dome rises too steeply for a texel to follow),
@@ -296,6 +304,8 @@ function moundBlades(land, mounds, colour, { wind, soil, tier }) {
   }
   return {
     ...blades,
+    area: { x0, z0, w, d },
+    half: BLADES[tier].size / 2,
     dispose() {
       blades.dispose();
       groundMap.dispose();
@@ -334,7 +344,8 @@ export function* groundJob(land, { house = null, tier = 'high', soil = null, own
       mesh,
       update(x, z) {
         field.update(x, z);
-        hills.update(x, z);
+        hills.mesh.visible = patchMeets(x, z, hills.half, hills.area);
+        if (hills.mesh.visible) hills.update(x, z);
       },
       dispose() {
         field.dispose();
