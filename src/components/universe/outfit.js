@@ -15,6 +15,7 @@
 // parts and shows statsOf, scene.js flies on statsOf (ship.js's `tune`), and
 // online/protocol.js sends what's fitted (only ids from here are believed).
 
+import { CADENCE, pace } from '../../lib/combat/flight/guns';
 import { PAINTS, STOCK, isOpen as paintOpen, parsePaint } from './paint';
 import { statsOfBuild, statsOfTune } from './shipyard/build';
 import { tuned } from './ship';
@@ -340,15 +341,25 @@ export function readout(kind, loadout, build = null, tune = null) {
   return Object.entries(measures(statsOf(kind, loadout, build, tune))).map(([id, value]) => ({ id, value, bar: Math.min(1, value / BEST[id]), change: Math.round((value - 1) * 100) }));
 }
 // What a part does, in words, for the hangar's list: ['Boost +25%', …].
+// Given the ship (its kind), a gun part says what it does on that ship: on
+// one already at the quickest any gun may fire, punch where a quicker shot
+// can't be had.
 const pct = (v) => `${v > 0 ? '+' : '−'}${Math.round(Math.abs(v) * 100)}%`;
-export function partEffects(p) {
+const some = (v) => Math.round(Math.abs(v) * 100) !== 0;
+export function partEffects(p, kind = null) {
   const out = [];
   if (p.boost) out.push(`Boost ${pct(p.boost)}`);
   if (p.accel) out.push(`Acceleration ${pct(p.accel)}`);
   if (p.cruise) out.push(`Cruise ${pct(p.cruise)}`);
   if (p.agility) out.push(`Agility ${pct(p.agility)}`);
   if (p.level) out.push(`Self-levelling ${pct(p.level)}`);
-  if (p.cadence) out.push(`Fire rate ${pct(1 / p.cadence - 1)}`);
+  if (p.cadence && kind) {
+    const base = CADENCE[kind] ?? 0.18;
+    const g = pace(base, p.cadence, FASTEST);
+    const rate = Math.max(FASTEST, base) / g.gap - 1;
+    if (some(rate)) out.push(`Fire rate ${pct(rate)}`);
+    if (some(g.punch - 1)) out.push(`Punch ${pct(g.punch - 1)}`);
+  } else if (p.cadence) out.push(`Fire rate ${pct(1 / p.cadence - 1)}`);
   if (p.punch) out.push(`${p.punch}× on hunters`);
   if (p.armor) out.push(`Damage taken ${pct(p.armor - 1)}`);
   if (p.regen) out.push(`Recharge ${pct(p.regen - 1)}`);

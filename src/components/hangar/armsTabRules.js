@@ -16,11 +16,12 @@
 import { HAND_WEAPONS, heroById, pickableWith } from '../galaxy/shared/arms';
 import { SHIP_WEAPONS, createArmory } from '../universe/shared/hangar';
 import { BRANCH_LABEL, KEY_LABEL, NODES } from './skills/tree';
+import { CADENCE } from '../../lib/combat/flight/guns';
 
 export const LINE_SLOT = { primary: 'guns', secondary: 'secondary', ordnance: 'ordnance' };
-// each ship's seconds between blaster shots, as both maps fly them (universe/
-// scene.js's and galaxy/scene.js's CADENCE, which neither lends)
-export const STOCK_CADENCE = { xwing: 0.12, falcon: 0.16, cruiser: 0.19, rv: 0.2 };
+// each ship's seconds between blaster shots, as both maps fly them
+// (lib/combat/flight/guns.js's CADENCE)
+export const STOCK_CADENCE = CADENCE;
 
 export function shipLines(ship, loadout, fx = undefined) {
   const arm = createArmory(ship, loadout, fx);

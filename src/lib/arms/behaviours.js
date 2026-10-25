@@ -12,7 +12,11 @@
 //   SHIP_FX, HAND_FX                 the numbers
 //   dropAt(at, dir, speed, fx)       where a seismic charge leaves the ship, and its drift: { at, v }
 //   inRing(at, list, radius, slab)   the targets in a flat ring about `at`
-//   pierce(from, to, list, hit)      the targets a segment meets that aren't in `hit`, nearest first
+//   pierce(from, to, list, hit, radius = (t) => (t.size ?? 1) / 2)   the targets a segment meets
+//                                    (within radius(t) of it) that aren't in `hit`, nearest first
+//   orbsInFlight(w, fastest, { shots = 0, life = 1 })   the most of a weapon's shots in flight
+//                                    at once: each burst's (`shots` more a burst), as many bursts
+//                                    as a shot's seconds (`life` × its own) cover at its quickest
 //   punchAfter(punch, n, falloff)    a bolt's punch after `n` ships
 //   burstDirs(dir, n, cone, rand)    `n` unit directions round `dir`, `cone` radians out
 //   firstFor(from, dir, list, { lock, reach, cone })   the arc's first target: the lock, or the nearest ahead
@@ -72,15 +76,17 @@ function nearest(a, b, p) {
   return { k, d: Math.hypot(a.x + dx * k - p.x, a.y + dy * k - p.y, a.z + dz * k - p.z) };
 }
 
-export function pierce(from, to, list, hit) {
+export function pierce(from, to, list, hit, radius = (t) => (t.size ?? 1) / 2) {
   const out = [];
   for (const t of list) {
     if (hit.has(t.id ?? t)) continue;
     const n = nearest(from, to, t.at);
-    if (n.d <= (t.size ?? 1) / 2) out.push({ t, k: n.k });
+    if (n.d <= radius(t)) out.push({ t, k: n.k });
   }
   return out.sort((a, b) => a.k - b.k).map((o) => o.t);
 }
+
+export const orbsInFlight = (w, fastest, { shots = 0, life = 1 } = {}) => (w.count + shots) * (Math.floor((life * w.life) / (fastest * w.cadence)) + 1);
 
 export const punchAfter = (punch, n, falloff = SHIP_FX.darkmatter.falloff) => punch * falloff ** n;
 

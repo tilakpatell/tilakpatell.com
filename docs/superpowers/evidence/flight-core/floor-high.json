@@ -1,0 +1,272 @@
+{
+  "images": {
+    "belt.hud.webp": {
+      "share": 0.4177907986111111,
+      "max": 201
+    },
+    "belt.webp": {
+      "share": 0.350693359375,
+      "max": 216
+    },
+    "breakingbad.hud.webp": {
+      "share": 0.2467306857638889,
+      "max": 216
+    },
+    "breakingbad.webp": {
+      "share": 0.23571723090277777,
+      "max": 206
+    },
+    "caribbean.hud.webp": {
+      "share": 0.2993391927083333,
+      "max": 240
+    },
+    "caribbean.webp": {
+      "share": 0.20292751736111111,
+      "max": 203
+    },
+    "falcon-sun.hud.webp": {
+      "share": 0.5572601996527777,
+      "max": 148
+    },
+    "falcon-sun.webp": {
+      "share": 0.5891937934027778,
+      "max": 150
+    },
+    "far-rim.hud.webp": {
+      "share": 0.009958767361111112,
+      "max": 183
+    },
+    "far-rim.webp": {
+      "share": 0.009532335069444444,
+      "max": 160
+    },
+    "gaming.hud.webp": {
+      "share": 0.2229709201388889,
+      "max": 233
+    },
+    "gaming.webp": {
+      "share": 0.21620334201388888,
+      "max": 239
+    },
+    "landing-middleearth.hud.webp": {
+      "share": 0.8285188802083333,
+      "max": 175
+    },
+    "landing-middleearth.webp": {
+      "share": 0.829794921875,
+      "max": 196
+    },
+    "maw.hud.webp": {
+      "share": 0.024586588541666666,
+      "max": 210
+    },
+    "maw.webp": {
+      "share": 0.026590711805555556,
+      "max": 221
+    },
+    "middleearth-limb.hud.webp": {
+      "share": 0.5146592881944444,
+      "max": 214
+    },
+    "middleearth-limb.webp": {
+      "share": 0.544921875,
+      "max": 201
+    },
+    "middleearth.hud.webp": {
+      "share": 0.22766059027777777,
+      "max": 204
+    },
+    "middleearth.webp": {
+      "share": 0.2800954861111111,
+      "max": 208
+    },
+    "office.hud.webp": {
+      "share": 0.17346571180555556,
+      "max": 232
+    },
+    "office.webp": {
+      "share": 0.14177734375,
+      "max": 226
+    },
+    "overview.hud.webp": {
+      "share": 0.06528428819444444,
+      "max": 210
+    },
+    "overview.webp": {
+      "share": 0.293525390625,
+      "max": 195
+    },
+    "rickmorty.hud.webp": {
+      "share": 0.22587456597222222,
+      "max": 231
+    },
+    "rickmorty.webp": {
+      "share": 0.23423177083333332,
+      "max": 235
+    },
+    "station.hud.webp": {
+      "share": 0.8478591579861111,
+      "max": 180
+    },
+    "station.webp": {
+      "share": 0.7659635416666667,
+      "max": 164
+    }
+  },
+  "poses": {
+    "overview": {
+      "calls": [
+        99,
+        98
+      ],
+      "triangles": [
+        540710,
+        540630
+      ],
+      "overlay": []
+    },
+    "falcon-sun": {
+      "calls": [
+        81,
+        82
+      ],
+      "triangles": [
+        525608,
+        525688
+      ],
+      "overlay": []
+    },
+    "middleearth-limb": {
+      "calls": [
+        39,
+        39
+      ],
+      "triangles": [
+        106408,
+        106408
+      ],
+      "overlay": []
+    },
+    "rickmorty": {
+      "calls": [
+        43,
+        42
+      ],
+      "triangles": [
+        109402,
+        109374
+      ],
+      "overlay": []
+    },
+    "gaming": {
+      "calls": [
+        42,
+        42
+      ],
+      "triangles": [
+        74350,
+        72350
+      ],
+      "overlay": []
+    },
+    "caribbean": {
+      "calls": [
+        43,
+        43
+      ],
+      "triangles": [
+        156168,
+        156168
+      ],
+      "overlay": []
+    },
+    "middleearth": {
+      "calls": [
+        39,
+        39
+      ],
+      "triangles": [
+        106408,
+        106408
+      ],
+      "overlay": []
+    },
+    "breakingbad": {
+      "calls": [
+        67,
+        67
+      ],
+      "triangles": [
+        102474,
+        102474
+      ],
+      "overlay": []
+    },
+    "office": {
+      "calls": [
+        41,
+        41
+      ],
+      "triangles": [
+        62608,
+        62608
+      ],
+      "overlay": []
+    },
+    "belt": {
+      "calls": [
+        46,
+        46
+      ],
+      "triangles": [
+        465862,
+        465862
+      ],
+      "overlay": []
+    },
+    "maw": {
+      "calls": [
+        43,
+        43
+      ],
+      "triangles": [
+        77374,
+        77374
+      ],
+      "overlay": []
+    },
+    "landing-middleearth": {
+      "calls": [
+        128,
+        128
+      ],
+      "triangles": [
+        181867,
+        181863
+      ],
+      "overlay": []
+    },
+    "station": {
+      "calls": [
+        69,
+        69
+      ],
+      "triangles": [
+        510882,
+        510882
+      ],
+      "overlay": []
+    },
+    "far-rim": {
+      "calls": [
+        42,
+        42
+      ],
+      "triangles": [
+        85164,
+        85166
+      ],
+      "overlay": []
+    }
+  }
+}

@@ -24,7 +24,7 @@
   pointer-events: none;
   transition: opacity 0.3s;
   color: var(--hud-cluster-ink, #e8f4ff);
-  font-family: var(--font-mono);
+  font-family: var(--hud-flight-face, var(--font-mono)); /* (a world's face for its flight HUD, by token) */
 }
 :where(.hud-cluster[data-on]):not(hud-none) { opacity: 1; }
 /* (what goes over the row is the world's: the galaxy's pickups) */

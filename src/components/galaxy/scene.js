@@ -104,7 +104,8 @@ import { createTrail } from '../universe/trail';
 import { ENGINES, SHIP_MODELS, buildShip, BUILT } from '../universe/shipModels';
 import { loadModel } from '../universe/planets';
 import { lockSound, shieldSound, shipEngine } from '../universe/sounds';
-import { AIM, aimAngles, assist, assistAmount, dirTo, edgeOf, intercept, nose, onScreen, track, trackNudge } from '../universe/targeting';
+import { AIM, nose } from '../../lib/combat/flight/targeting';
+import { TRACK_AFTER_SHOT, createSight, shotReach } from '../../lib/combat/flight/sight';
 import { DEFAULTS as CONTROL_DEFAULTS, STICK, dragSteers, keyAxes, keyFlies, stickInput } from '../universe/controls';
 import { SIZE as PILOT_SIZE, createPilots } from '../universe/online/pilots';
 import { GUARD } from '../universe/online/protocol';
@@ -121,12 +122,14 @@ import { INTERDICTION, createInterdiction, cutAt, dropPoint, holdLifts, inWell, 
 import { createInterdictor } from './interdictor';
 import { createWarFront } from './warfront';
 import { createCluster } from './cluster';
-import { PICKUPS, createPickups, gunsUnder } from './pickups';
+import { PICKUPS, createPickups } from './pickups';
 import { createPickupFx } from './pickupFx';
-import { createRadar } from './radar';
-import { drawRadar } from './radarDraw';
-import { armsView, arsenalOf, chargeFor, createArmory, createGalaxyPowers, createRounds, createUniqueArms, fan, picksFor } from '../universe/shared/flying';
+import { createRadar } from '../../lib/combat/flight/radar';
+import { createFrame, distText, fillFlight } from '../../runtime/hud/flight/frame.js';
+import { createFlightHud } from '../../runtime/hud/flight/flightHud.js';
+import { armsView, arsenalOf, chargeFor, createArmory, createGalaxyPowers, createRounds, createUniqueArms, difficultyOf, fan, picksFor } from '../universe/shared/flying';
 import { shotPunch } from './gunRules';
+import { CADENCE, createGuns, pace } from '../../lib/combat/flight/guns';
 import { effectsFor } from './warEffects';
 import { CABS } from './cabs';
 import { warNow } from './warState';
@@ -154,7 +157,6 @@ import { assetUrl } from '../../lib/assetBase';
 
 const BOLTS = 40; // (a flak burst is seven bolts, with room for the next)
 const ROUNDS = 8; // the heavy rounds in flight at once (the universe map's)
-const CADENCE = { xwing: 0.12, falcon: 0.16, cruiser: 0.19, rv: 0.2 };
 const BOLT_COLOR = { falcon: '#ff4a3d', xwing: '#ff3b30', cruiser: '#9df06b', rv: '#5cc8ff' };
 const PLUME = {
   cruiser: { color: '#4dff3a', core: '#e6ffd2', width: 0.036, life: 0.42, length: 0.32, wobble: 1.3, sparks: 40 },
@@ -184,7 +186,6 @@ const NO_TARGETS = Object.freeze([]); // (when there are no hunters to lock on t
 const NO_BUFFS = NO_TARGETS; // (and no pickups' effects to show)
 
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
-const TRACK_AFTER_SHOT = 1500; // ms: a lock the guns picked is followed this long after a shot at it
 const apart = (ax, ay, az, bx, by, bz) => Math.sqrt((ax - bx) * (ax - bx) + (ay - by) * (ay - by) + (az - bz) * (az - bz));
 // the wall clock, in seconds: every pilot's set pieces keep the same time
 const wall = () => Date.now() / 1000;
@@ -344,17 +345,33 @@ export async function create(canvas, ctx) {
   renderer.localClippingEnabled = true;
   const war = reduced ? null : createWarFront(scene, { models, small, reduced, tier, emit: (e) => emit(e), onSolids: () => respace(), allegiance: () => props.allegiance });
 
-  // your guns
+  // your guns (their bolts flown by lib/combat/flight/guns.js)
   const boltGeo = new THREE.CylinderGeometry(0.008, 0.008, 0.6, 6).rotateX(Math.PI / 2);
   const boltMat = new THREE.MeshBasicMaterial({ color: '#ff4a3d', toneMapped: false, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false });
-  const myBolts = Array.from({ length: BOLTS }, () => {
+  const guns = createGuns({ count: BOLTS, point: () => new THREE.Vector3() });
+  const myBolts = guns.bolts.map((b) => {
     const m = new THREE.Mesh(boltGeo, boltMat);
     m.visible = false;
     m.rotation.order = 'YXZ';
-    m.userData = { life: 0, v: [0, 0, 0] };
+    m.userData = b; // (its slot: what the checks read off a bolt)
     scene.add(m);
     return m;
   });
+  // the meshes put where their slots are (turned and sized once, as they're fired)
+  const showBolts = () => {
+    for (let i = 0; i < myBolts.length; i++) {
+      const m = myBolts[i];
+      const b = guns.bolts[i];
+      m.visible = b.on;
+      if (!b.on) continue;
+      m.position.copy(b.at);
+      if (b.fresh) {
+        m.rotation.set(b.pitch, b.heading, 0);
+        m.scale.set(b.scale, b.scale, 1 + (b.scale - 1) * 0.4);
+        b.fresh = false;
+      }
+    }
+  };
   // and the ordnance line's heavy rounds (the universe map's, rounds.js: in the crew's colour, homing on the lock)
   const rounds = createRounds(scene, ROUNDS);
 
@@ -448,13 +465,21 @@ export async function create(canvas, ctx) {
     if (what) emit({ type: 'earn', what, n, side: 'galaxy' });
   };
   const controls = () => props.controls ?? CONTROL_DEFAULTS;
+  // how hard the fight is (the flight setting: universe/difficulty.js), now, as on the universe map
+  const diff = () => difficultyOf(controls().difficulty);
+  if (hunters) hunters.difficulty = diff;
+  // the player's targeting (lib/combat/flight/sight.js); foeBuf: every foe, ungated, for its find
+  const sight = createSight(state);
+  const foeBuf = [];
+  let lockWar = NO_TARGETS; // (this frame's war list: the nose follows the war's ships too)
+  const sightIn = { speed: AIM.bolt, life: AIM.life, help: () => powers.aim(controls()), tracks: (t) => Boolean(hunters?.targets.includes(t) || lockWar.includes(t)) || performance.now() - state.lastShot < TRACK_AFTER_SHOT, foes: foeBuf };
   const flying = () => Boolean(state.ship);
   // the crew's ship powers (powers.js), played out with the scene's own pieces
   // (made before the first frame's shaders are, so its look is made with them)
   const powers = createGalaxyPowers({ parent: scene, reduced, hunters, war, bolts, flashes, crashFx, pops, post, state, emit, controls, strike: (...a) => strike(...a), scored: (...a) => scored(...a), teleport: (pose) => teleport(pose), laser: LASER.rebel });
   // the skill tree's four ship weapons (the universe's uniqueArms.js): fired as the guns are, played out beside the powers
-  const unique = createUniqueArms({ parent: scene, reduced, hunters, war, bolts, flashes, state, emit, strike: (...a) => strike(...a), scored: (...a) => scored(...a) });
-  const cluster = createCluster(); // (the flight cluster's writer: placeShield)
+  const unique = createUniqueArms({ parent: scene, reduced, foes: () => sight.foes, bolts, flashes, state, emit, strike: (from, to, shot) => guns.strike(from, to, shot, UNIQUE_HITS) });
+  const cluster = createCluster(); // (the pickups' chips over the flight cluster: fillShield)
   // what a kill leaves behind (pickups.js: the rules, pickupFx.js: the drawing); none online, and none survive a jump, a landing or a crash
   const pickups = createPickups();
   // the chips over the cluster: the pickups' effects, and, back behind your
@@ -471,7 +496,7 @@ export async function create(canvas, ctx) {
     return chipList;
   };
   const pickupFx = createPickupFx(scene, { prepare: (o) => warm(o), reduced });
-  const gun = { gap: 0, punch: 1 }; // (the guns' delay and punch with rapid fire on, as gunsUnder writes them)
+  const gun = { gap: 0, punch: 1 }; // (the guns' delay and punch with rapid fire on, as pace writes them)
 
   // ── The system you're in ──
   const followDrawn = followRatio(post, (r) => (sky.setRatio(r), state.world?.setRatio(r))); // (the ratio the points are sized by: ./drawnAt.js)
@@ -987,21 +1012,11 @@ export async function create(canvas, ctx) {
   };
   const jitter = () => Math.random() * 2 - 1;
   const shotAt = new THREE.Vector3();
-  // one bolt away, from `at` along `d` (unit): a line's life, punch and size on it
-  const spawnBolt = (at, d, speed, life, punch, damage, scale) => {
-    const b = myBolts.find((m) => !m.visible) ?? myBolts[0];
-    b.position.copy(at);
-    const { heading, pitch } = aimAngles(d);
-    b.rotation.set(pitch, heading, 0);
-    b.scale.set(scale, scale, 1 + (scale - 1) * 0.4);
-    b.userData = { life, v: [d[0] * speed, d[1] * speed, d[2] * speed], punch, damage };
-    b.visible = true;
-  };
   const fire = () => {
     const s = state.ship;
     const now = performance.now();
     const g = state.stats; // (the guns fitted in the hangar: how fast, how hard; a rapid-fire pickup quicker still, and harder where the quickest they may fire holds it back)
-    gunsUnder((CADENCE[state.kind] ?? 0.18) * g.cadence, pickups.mods().delay, FASTEST, gun);
+    pace(CADENCE[state.kind] ?? 0.18, g.cadence * pickups.mods().delay, FASTEST, gun);
     if (!s || props.frozen || state.crash || state.jump) return;
     const arm = arms();
     if (!arm.ready(now, gun.gap)) {
@@ -1020,8 +1035,7 @@ export async function create(canvas, ctx) {
       state.safeUntil = Math.min(state.safeUntil, state.clock);
     }
     const [fx, fz] = forward(s.heading);
-    let dir = nose(s);
-    if (state.lead && state.lead.t <= AIM.life) dir = assist(dir, dirTo(s, state.lead), powers.aim(controls()).assist); // (Force Focus's help onto the game's ships only)
+    const dir = sight.aim(nose(s), s, powers.aim(controls()).assist); // (Force Focus's help onto the game's ships only)
     // from the guns fitted, their barrels in turn; or the ship's own
     const mods = state.model?.modules;
     if (mods?.muzzles.length) {
@@ -1037,9 +1051,12 @@ export async function create(canvas, ctx) {
     let v = [dir[0] * speed, dir[1] * speed, dir[2] * speed];
     if (w.unique) v = unique.fire(arm.id, shotAt, dir, speed, w, punch);
     else if (w.heavy) {
-      rounds.launch(shotAt, dir, speed, { life: AIM.life * w.life, punch, damage: w.damage, homing: w.homing, target: state.lockTarget });
+      rounds.launch(shotAt, dir, speed, { life: AIM.life * w.life, punch, damage: w.damage, homing: w.homing, targetId: state.lockTarget?.id ?? null });
       state.kick = Math.max(state.kick, 0.4);
-    } else for (const d of fan(dir, w.count, w.cone, jitter)) spawnBolt(shotAt, d, speed, AIM.life * w.life, punch, w.damage, g.bolt * w.scale);
+    } else {
+      guns.fire(shotAt, fan(dir, w.count, w.cone, jitter), speed, { life: AIM.life * w.life, punch, damage: w.damage, scale: g.bolt * w.scale });
+      showBolts(); // (keys and touch fire between frames)
+    }
     net?.shot(shotAt, v, w.code);
     emit({ type: 'fire', weapon: arm.id });
     ctx.invalidate();
@@ -1053,7 +1070,6 @@ export async function create(canvas, ctx) {
     ctx.invalidate();
   };
   const popDir = new THREE.Vector3();
-  const shotFrom = new THREE.Vector3();
   // where a shot landed on a hunter or a pilot (hit: { at, size, down }): a kill goes up in the one big burst; a hit that doesn't kill is a
   // flash (the burst is shared, so each hit would cut off the one before it)
   const landed = (hit, normal) => {
@@ -1061,22 +1077,8 @@ export async function create(canvas, ctx) {
     else flashes.at(hit.at, { size: 0.4, life: 0.5 });
   };
   const moveBolts = (dt) => {
-    let any = false;
-    for (const b of myBolts) {
-      if (!b.visible) continue;
-      const d = b.userData;
-      d.life -= dt;
-      if (d.life <= 0) {
-        b.visible = false;
-        continue;
-      }
-      any = true;
-      shotFrom.copy(b.position);
-      b.position.x += d.v[0] * dt;
-      b.position.y += d.v[1] * dt;
-      b.position.z += d.v[2] * dt;
-      if (strike(shotFrom, b.position, d.punch ?? 1, { vel: d.v, damage: d.damage })) b.visible = false;
-    }
+    const any = guns.step(dt, BOLT_HITS);
+    showBolts();
     return any;
   };
   // a heavy round's step (rounds.js flies it): what it meets is what a bolt
@@ -1090,8 +1092,7 @@ export async function create(canvas, ctx) {
     emit({ type: 'boom', big });
   };
   const roundHit = (m, from, to) => {
-    const d = m.userData;
-    const r = strike(from, to, d.punch, { vel: d.v, damage: d.damage });
+    const r = guns.strike(from, to, m.userData, BOLT_HITS); // (its userData: a heavy shot)
     if (!r) return false;
     roundBang(m, r.at ?? m.position, Boolean(r.down));
     return true;
@@ -1143,6 +1144,18 @@ export async function create(canvas, ctx) {
     const ph = pilots.hit(from, to, punch);
     return ph ? pilotShot(ph, punch, normal, false, damage) : null;
   };
+  // the capital ship's parts, as on the universe map
+  const capitalHits = (from, to, shot) => {
+    const ch = pieces?.destroyerHere ? pieces.hit(from, to, shot.punch ?? 1) : null;
+    if (!ch) return null;
+    if (ch.type === 'part' || ch.type === 'bridge') state.hitMark = 1;
+    pops.hit({ point: ch.at, normal: popDir.set(-shot.v[0], 3, -shot.v[2]).normalize(), radius: ch.down ? ch.size * 1.8 : ch.type === 'shielded' ? 0.45 : 0.2 });
+    return ch;
+  };
+  // the hit list: the capital ship's parts, then strike's (the hunters, the war, then another pilot)
+  const BOLT_HITS = [capitalHits, (from, to, shot) => strike(from, to, shot.punch ?? 1, { vel: shot.v, warPunch: shot.warPunch, damage: shot.damage })];
+  // the skill tree's arms: never a pilot
+  const UNIQUE_HITS = [capitalHits, (from, to, shot) => strike(from, to, shot.punch ?? 1, { vel: shot.v, warPunch: shot.warPunch, damage: shot.damage, pilots: false })];
   // a hit on another pilot or one of the hunters after them (a shot's, or a
   // ram's: shipsHit), played: they're told
   const pilotShot = (ph, punch, normal, ram = false, damage = undefined) => {
@@ -1185,6 +1198,8 @@ export async function create(canvas, ctx) {
   const startCrash = (e) => {
     powers.cancel();
     unique.clear();
+    guns.clear(); // (what's in flight goes with you: it can't score once you're down)
+    rounds.clear();
     pickups.clear();
     const s = state.ship;
     const solid = solidsNow.find((o) => o.id === e.id) ?? state.space.solids.find((o) => o.id === e.id);
@@ -1216,6 +1231,8 @@ export async function create(canvas, ctx) {
   const startDestroyed = (by = null, rammed = false) => {
     powers.cancel();
     unique.clear();
+    guns.clear(); // (what's in flight goes with you: it can't score once you're down)
+    rounds.clear();
     pickups.clear();
     const s = state.ship;
     const from = new THREE.Vector3(s.x, s.y, s.z);
@@ -1468,7 +1485,7 @@ export async function create(canvas, ctx) {
   // ── Hyperspace ──
   // (the way the reticle is, from the eye: the star you see behind it, in
   // the chase view as in the cockpit; the jump then comes round onto it)
-  const sight = new THREE.Vector3();
+  const eyeLine = new THREE.Vector3();
   const aimDir = [0, 0, 0];
   const aimOpts = { keep: null, dirs: null }; // (the sky's stars' bearings are the ones it looks along, not worked out again every frame)
   const aimAt = (ship) => {
@@ -1476,8 +1493,8 @@ export async function create(canvas, ctx) {
     let dir = null;
     if (ship && state.sys) {
       const [nx, ny, nz] = nose(ship);
-      sight.set(ship.x + nx * 6, ship.y + ny * 6, ship.z + nz * 6).sub(camera.position);
-      if (sight.lengthSq() > 1e-6) dir = sight.normalize().toArray(aimDir);
+      eyeLine.set(ship.x + nx * 6, ship.y + ny * 6, ship.z + nz * 6).sub(camera.position);
+      if (eyeLine.lengthSq() > 1e-6) dir = eyeLine.normalize().toArray(aimDir);
       else {
         aimDir[0] = nx;
         aimDir[1] = ny;
@@ -1655,7 +1672,7 @@ export async function create(canvas, ctx) {
 
   // ── Flying ──
   const tractorPull = new THREE.Vector3();
-  const candBuf = []; // (what the guns can lock on to: the hunters and the other pilots, in one list, kept)
+  const candBuf = []; // (what the guns can lock on to: the hunters, the war’s, the capital ship’s parts and the other pilots, in one list, kept)
   const fly = (dt, t) => {
     if (state.crash) return crashing(dt);
     if (state.jump) {
@@ -1678,10 +1695,10 @@ export async function create(canvas, ctx) {
       }
     } else {
       input = steering();
-      // the nose follows the lock (targeting.js: a nudge toward the lead,
+      // the nose follows the lock (sight.nudge: a nudge toward the lead,
       // as much as the lock-tracking setting allows, giving way to the stick)
-      if (state.trackable && state.lead && state.lead.t <= AIM.life) {
-        const n = trackNudge(state.ship, state.lead, powers.aim(controls()).track, input);
+      const n = sight.nudge(state.ship, input, powers.aim(controls()).track);
+      if (n) {
         input.turn = clamp(input.turn + n.turn, -1, 1);
         input.climb = clamp(input.climb + n.climb, -1, 1);
       }
@@ -1805,42 +1822,23 @@ export async function create(canvas, ctx) {
     // the guns: the lock, the lead, whether a shot would bend onto it
     let cands = hunters?.targets ?? NO_TARGETS;
     const warCands = war?.targets ?? NO_TARGETS;
-    if (pilots.count || warCands.length) {
+    const capitalCands = pieces?.destroyerHere ? pieces.targets : NO_TARGETS; // (the capital ship's shield parts, then its bridge)
+    if (pilots.count || warCands.length || capitalCands.length) {
       candBuf.length = 0;
       for (const c of cands) candBuf.push(c);
       for (const c of warCands) candBuf.push(c);
+      for (const c of capitalCands) candBuf.push(c);
       for (const c of pilots.targets) candBuf.push(c);
       cands = candBuf;
     }
-    const was = state.lock?.id ?? null;
-    state.lock = cands.length || state.lock ? track(ship, cands, state.lock, dt, { cycle: state.cycle }) : null;
-    state.cycle = 0;
-    const tgt = state.lock ? (cands.find((c) => c.id === state.lock.id) ?? null) : null;
-    state.lockTarget = tgt;
-    // (the nose follows only a lock on a hunter, one picked by hand, or one
-    // being shot at: not a passing pilot or a part of the Citadel the guns
-    // happened on)
-    state.trackable = Boolean(tgt && (hunters?.targets.includes(tgt) || warCands.includes(tgt) || state.lock?.manual || performance.now() - state.lastShot < TRACK_AFTER_SHOT));
-    if (tgt && tgt.id !== was && state.shown && !document.hidden) lockSound();
-    state.lead = tgt ? intercept(ship, AIM.bolt + Math.max(0, ship.speed), tgt.at, tgt.vel) : null;
-    state.hot = Boolean(state.lead && state.lead.t <= AIM.life && assistAmount(nose(ship), dirTo(ship, state.lead), controls().assist) >= 1);
-    let bx = 0;
-    let by = 0;
-    let bz = 0;
-    if (tgt && !reduced) {
-      const vx = tgt.at.x - ship.x;
-      const vy = tgt.at.y - ship.y;
-      const vz = tgt.at.z - ship.z;
-      const l = Math.sqrt(vx * vx + vy * vy + vz * vz) || 1;
-      const k = Math.min(0.3, l * 0.08) / l;
-      bx = vx * k;
-      by = vy * k;
-      bz = vz * k;
-    }
-    const ease = 1 - Math.exp(-dt * 3);
-    state.bias[0] += (bx - state.bias[0]) * ease;
-    state.bias[1] += (by - state.bias[1]) * ease;
-    state.bias[2] += (bz - state.bias[2]) * ease;
+    foeBuf.length = 0; // (every foe, ungated, for the sight's find)
+    for (const c of hunters?.targets ?? NO_TARGETS) if (!c.prey) foeBuf.push(c);
+    for (const c of warCands) foeBuf.push(c);
+    for (const c of capitalCands) foeBuf.push(c);
+    lockWar = warCands;
+    shotReach(arms().weapon, ship, sightIn); // (the line picked: its shot's speed and life)
+    if (sight.update(ship, cands, dt, sightIn) && state.shown && !document.hidden) lockSound();
+    sight.lean(state.bias, ship, dt, reduced);
 
     shipToModel(dt, t, input);
     if (!state.idleSaid && !state.auto && Math.abs(ship.speed) < 0.05 && state.shown && !document.hidden && performance.now() - state.lastInput > IDLE) {
@@ -1871,7 +1869,7 @@ export async function create(canvas, ctx) {
       // (ace: the kind of the faction's ace, when it came along, for its own line)
       const ace = FACTIONS[e.faction]?.ace;
       if (!e.prey) emit({ type: 'hunted', faction: e.faction, ace: ace && e.kinds.includes(ace) ? ace : null });
-    } else if (e.type === 'laser') hurt(e.damage);
+    } else if (e.type === 'laser') hurt(e.damage * diff().damage);
     else if (e.type === 'shot') emit(e);
     else if (e.type === 'escaped' || e.type === 'cleared') {
       // (the last of them rammed down: the crew's ram line for it)
@@ -1963,7 +1961,7 @@ export async function create(canvas, ctx) {
     pickupFx.sync(pickups.list, state.clock);
     if (pickupFx.busy) busy = true;
     if (live) {
-      if (state.clock - state.hitAt > state.stats.delay && state.shield < 100) state.shield = Math.min(100, state.shield + dt * 12 * state.stats.regen);
+      if (state.clock - state.hitAt > state.stats.delay && state.shield < 100) state.shield = Math.min(100, state.shield + dt * 12 * state.stats.regen * diff().regen);
       if (state.shield > 70) state.lowSaid = false;
       state.heat = Math.max(0, state.heat - dt / 45);
       // now and then something happens: the director, run on the system's
@@ -2009,53 +2007,49 @@ export async function create(canvas, ctx) {
       busy = true;
     }
     post.hit(state.hurt);
-    placeShield();
-    placeRadar();
+    fillShield();
+    fillRadar();
     powers.place(props.powers?.current ?? null, flying() && !state.crash && !state.dive && !props.frozen && !state.jump);
     return busy || Boolean(hunters?.count);
   };
 
   // ── The HUD (the page's markup, the universe map's classes) ──
-  // the flight cluster's numbers (cluster.js writes them where the page put its markup)
-  const range = (d) => (d < 10 ? d.toFixed(1) : Math.round(d).toString());
-  // (the one record and the one lock it carries, filled each frame: cluster.js compares what's in them)
-  const clusterLock = { name: '', dist: 0, hp: null };
-  const clusterNow = { on: false, shield: 100, low: false, speed: 0, top: 1, boosting: false, kills: 0, lock: null, arms: null };
+  // the flight cluster's parts, filled into the HUD's record (the shields,
+  // the line picked, the speed, the kills; flightHud.js writes them, and the
+  // target's card from the lock, as the universe map's are); the pickups'
+  // chips over it are the galaxy's own (cluster.js)
+  // (the records, made once and filled each frame)
+  const vitalsNow = { value: 100, max: 100, low: false };
+  const clusterPart = { on: false, vitals: vitalsNow, arms: null, abilities: null };
+  const speedPart = { v: 0, top: 1, boosting: false };
   const armsNow = { name: '', line: 'primary', index: 0, ammo: 0, max: 0, filling: 0 }; // (the record the cluster's arms are written into: armsView fills it each frame)
-  const placeShield = () => {
-    const root = props.cluster?.current;
-    if (!root) return;
-    const v = clusterNow;
-    v.on = flying() && !state.crash && !(state.jump && state.jump.phase !== 'align') && !props.frozen;
+  const fillShield = () => {
+    const on = flying() && !state.crash && !(state.jump && state.jump.phase !== 'align') && !props.frozen;
     const s = state.ship;
-    const t = v.on ? state.lockTarget : null;
-    v.shield = state.shield;
-    v.low = state.shield < 35;
-    v.speed = s?.speed ?? 0;
-    v.top = SHIP.boost * clamp(flightStats().boost ?? 1, TUNE.boost[0], TUNE.boost[1]) * pickups.mods().boost;
-    v.boosting = Boolean(state.keys.boost || state.boostBtn) && v.speed > SHIP.cruise;
-    v.kills = state.kills;
-    if (t) {
-      clusterLock.name = t.name ?? NAMES[t.kind] ?? SHIP_INFO[t.kind]?.name ?? t.kind;
-      clusterLock.dist = apart(t.at.x, t.at.y, t.at.z, s.x, s.y, s.z);
-      clusterLock.hp = (t.hpMax ?? 1) > 1 ? t.hp / t.hpMax : null;
-    }
-    v.lock = t ? clusterLock : null;
-    v.arms = state.kind ? armsView(arms(), armsNow) : null;
-    cluster.place(root, v);
-    cluster.buffs(props.buffs?.current ?? null, v.on ? buffsNow() : NO_BUFFS);
+    clusterPart.on = on;
+    vitalsNow.value = state.shield;
+    vitalsNow.low = state.shield < 35;
+    clusterPart.arms = state.kind ? armsView(arms(), armsNow) : null;
+    speedPart.v = s?.speed ?? 0;
+    speedPart.top = SHIP.boost * clamp(flightStats().boost ?? 1, TUNE.boost[0], TUNE.boost[1]) * pickups.mods().boost;
+    speedPart.boosting = Boolean(state.keys.boost || state.boostBtn) && speedPart.v > SHIP.cruise;
+    frame.cluster = clusterPart;
+    frame.speed = speedPart;
+    frame.kills = state.kills;
+    frame.alt = null; // (the galaxy's space has no floor or ceiling)
+    frame.wanted = null; // (nor its law)
+    cluster.buffs(props.buffs?.current ?? null, on ? buffsNow() : NO_BUFFS);
   };
   // the radar: its contacts gathered and drawn, at most 20 times a second (radar.js keeps its records: nothing's made per tick)
   const radar = createRadar();
-  let radarAt = 0;
   let radarLock = null; // (the lock's id this tick)
   const addHostile = (c) => radar.add(c.id, c.threat ? 'threat' : 'hostile', c.at, c.id === radarLock);
   const addAlly = (c) => radar.add(c.id, 'ally', c.at);
-  const placeRadar = () => {
-    const cv = props.radar?.current;
-    if (!cv || !flying() || state.crash || props.frozen || (state.jump && state.jump.phase !== 'align')) return;
-    if (state.clock - radarAt < 0.05) return;
-    radarAt = state.clock;
+  const radarPart = { points: null, range: 0, dpr: 1 }; // (a tick's picture, for flightHud.js to draw)
+  const fillRadar = () => {
+    frame.radar = null; // (between ticks: the picture drawn last stays)
+    if (!flying() || state.crash || props.frozen || (state.jump && state.jump.phase !== 'align')) return;
+    if (!radar.due(state.clock)) return;
     radarLock = state.lockTarget?.id ?? null;
     radar.start(state.ship);
     for (const c of hunters?.targets ?? NO_TARGETS) addHostile(c);
@@ -2069,8 +2063,10 @@ export async function create(canvas, ctx) {
     if (b && b.you?.team !== null && !b.over) for (const f of b.fighters) if (f.alive && f.team === b.you.team) radar.add(f.id, 'ally', f.seen ?? f.pos);
     for (const p of pickups.list) radar.add(p.id, 'pickup', p.at); // (a number: nothing's made for it each tick; it's never the lock)
     if (state.navGoal) radar.add('nav', 'goal', state.navGoal);
-    const range = radar.range;
-    drawRadar(cv, radar.points(range), { range, dpr: Math.min(2, window.devicePixelRatio || 1) });
+    radarPart.range = radar.range;
+    radarPart.points = radar.points(radarPart.range);
+    radarPart.dpr = Math.min(2, window.devicePixelRatio || 1);
+    frame.radar = radarPart;
   };
   const placeStick = () => {
     const el = props.stick?.current;
@@ -2087,43 +2083,12 @@ export async function create(canvas, ctx) {
     el.style.setProperty('--kx', `${(Math.cos(a) * k * 28).toFixed(1)}px`);
     el.style.setProperty('--ky', `${(Math.sin(a) * k * 28).toFixed(1)}px`);
   };
-  let hud = { root: null };
-  const hudEls = () => {
-    const root = props.hud?.current ?? null;
-    if (root !== hud.root) {
-      const q = (c) => root?.querySelector(c) ?? null;
-      hud = { root, reticle: q('.universe-reticle'), lock: q('.universe-lock'), lockName: q('.universe-lock-name'), lockDist: q('.universe-lock-dist'), lead: q('.universe-lead'), nav: q('.universe-nav'), navName: q('.universe-nav-name'), navDist: q('.universe-nav-dist'), threats: [...(root?.querySelectorAll('.universe-threat') ?? [])], mates: [...(root?.querySelectorAll('.universe-mate') ?? [])], text: new Map(), on: new Map() };
-    }
-    return hud;
-  };
-  const setText = (h, el, s) => {
-    if (!el || h.text.get(el) === s) return;
-    h.text.set(el, s);
-    el.textContent = s;
-  };
-  const setOn = (h, el, on) => {
-    if (!el || h.on.get(el) === on) return;
-    h.on.set(el, on);
-    el.toggleAttribute('data-on', on);
-  };
-  const hudAt = { x: 0, y: 0, z: 0 };
-  const placeMark = (el, p, r = 0) => {
-    const off = !onScreen(p.x, p.y, p.z, rect);
-    let x = p.x;
-    let y = p.y;
-    if (off) {
-      const cx = rect.x + rect.w / 2;
-      const cy = rect.y + rect.h / 2;
-      const k = p.z > 0 ? 1 : -1;
-      const edge = edgeOf((p.x - cx) * k, (p.y - cy) * k, rect);
-      x = edge.x;
-      y = edge.y;
-      el.style.setProperty('--a', `${edge.angle.toFixed(3)}rad`);
-    }
-    el.style.transform = `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0)`;
-    el.toggleAttribute('data-off', off);
-    if (r) el.style.setProperty('--r', `${Math.round(r)}px`);
-  };
+  // the overlay (the kit's, runtime/hud/flight: frame.js's record filled from
+  // hudIn each frame, flightHud.js writing it where the page put its markup)
+  const frame = createFrame();
+  const flightHud = createFlightHud({ distText });
+  const hudIn = { on: false, gun: false, foot: false, ship: null, hot: false, hit: false, kill: false, static: false, rect: null, tanHalf: 1, h: 1, lock: null, lockName: '', lockText: null, bracket: undefined, lead: null, life: AIM.life, cands: [], mates: null, to: null, goal: null, navMin: 34, navMax: 260 };
+  const toIn = { id: null, name: '', at: null }; // (the pilot flown to, among the mates' arrows)
   // The HUD's goal for the plotted course: its name, light-years and bearing, worked out when the course or the system changes (the key),
   // its `at` moved with the ship each frame. "· J" only where there's a key to press.
   const courseKeep = { key: '', goal: null };
@@ -2133,101 +2098,55 @@ export async function create(canvas, ctx) {
     if (courseKeep.key !== key) {
       const to = systemById(id);
       courseKeep.key = key;
-      courseKeep.goal = to && state.sys ? { at: [0, 0, 0], dir: courseTo(state.sys, to), name: `Course: ${to.name}${finePointer() ? ' · J' : ''}`, dist: `${lightYears(state.sys, to).toLocaleString('en-US')} ly`, reach: 0, way: true } : null;
+      courseKeep.goal = to && state.sys ? { at: [0, 0, 0], dir: courseTo(state.sys, to), name: `Course: ${to.name}${finePointer() ? ' · J' : ''}`, text: `${lightYears(state.sys, to).toLocaleString('en-US')} ly`, reach: 0, way: true } : null;
     }
     return courseKeep.goal;
   };
-  const threatList = [];
-  const mateList = [];
   const placeHud = () => {
-    const h = hudEls();
-    if (!h.root) return;
+    const root = props.hud?.current ?? null;
+    if (!root) return flightHud.place(null, frame);
     const s = state.ship;
     const on = flying() && !state.crash && !props.frozen && !(state.jump && state.jump.phase !== 'align');
-    const [nx, ny, nz] = on ? nose(s) : [0, 0, 0];
-    const retOn = on && !state.auto && !state.jump;
-    setOn(h, h.reticle, retOn);
-    if (retOn) {
-      toScreen(s.x + nx * 6, s.y + ny * 6, s.z + nz * 6, hudAt);
-      h.reticle.style.transform = `translate3d(${hudAt.x.toFixed(1)}px, ${hudAt.y.toFixed(1)}px, 0)`;
-      h.reticle.toggleAttribute('data-hot', state.hot);
-      h.reticle.toggleAttribute('data-hit', state.hitMark > 0);
-      h.reticle.toggleAttribute('data-kill', state.killMark > 0);
-    }
+    const v = hudIn;
+    v.on = on;
+    v.gun = !state.auto && !state.jump;
+    v.foot = false;
+    v.ship = s;
+    v.hot = state.hot;
+    v.hit = state.hitMark > 0;
+    v.kill = state.killMark > 0;
+    v.static = false;
+    v.rect = rect;
+    v.tanHalf = tanHalf;
+    v.h = size.h;
     const tgt = on ? state.lockTarget : null;
-    setOn(h, h.lock, Boolean(tgt));
-    if (tgt) {
-      toScreen(tgt.at.x, tgt.at.y, tgt.at.z, hudAt);
-      const px = hudAt.z > 0 ? (tgt.size / (hudAt.z * tanHalf)) * (size.h / 2) * 2.6 : 0;
-      placeMark(h.lock, hudAt, clamp(px, 30, 140));
-      h.lock.toggleAttribute('data-hot', state.hot);
-      setText(h, h.lockName, tgt.name ?? NAMES[tgt.kind] ?? SHIP_INFO[tgt.kind]?.name ?? tgt.kind);
-      setText(h, h.lockDist, range(apart(tgt.at.x, tgt.at.y, tgt.at.z, s.x, s.y, s.z)));
-      const tough = (tgt.hpMax ?? 1) > 1;
-      h.lock.toggleAttribute('data-tough', tough);
-      if (tough) h.lock.style.setProperty('--hp', (tgt.hp / tgt.hpMax).toFixed(3));
-    }
-    let n = 0;
-    if (on && h.threats.length) {
-      threatList.length = 0;
-      for (const c of hunters?.targets ?? NO_TARGETS) if (c.threat && c.id !== tgt?.id) threatList.push(c);
-      for (const c of war?.targets ?? NO_TARGETS) if (c.threat && c.id !== tgt?.id) threatList.push(c);
-      // (and a pilot whose shots have been landing on you)
-      if (pilots.count) for (const c of pilots.targets) if (c.threat && c.id !== tgt?.id) threatList.push(c);
-      threatList.sort((a, b) => apart(a.at.x, a.at.y, a.at.z, s.x, s.y, s.z) - apart(b.at.x, b.at.y, b.at.z, s.x, s.y, s.z));
-      for (const c of threatList) {
-        if (n >= h.threats.length) break;
-        toScreen(c.at.x, c.at.y, c.at.z, hudAt);
-        if (onScreen(hudAt.x, hudAt.y, hudAt.z, rect)) continue;
-        const el = h.threats[n++];
-        setOn(h, el, true);
-        placeMark(el, hudAt);
+    v.lock = tgt;
+    v.lockName = tgt ? (tgt.name ?? NAMES[tgt.kind] ?? SHIP_INFO[tgt.kind]?.name ?? tgt.kind) : '';
+    v.lockText = null;
+    v.bracket = undefined;
+    v.lead = state.lead;
+    v.life = sightIn.life;
+    // (the ones coming at you that you can't see: any target on you, hunters, the war's, a pilot whose shots have been landing)
+    v.cands = sight.cands;
+    // (your allies off the screen, and the pilot you're flying to, ally or not)
+    v.mates = pilots.count ? pilots.mates : null;
+    v.to = null;
+    if (on && pilots.count && state.auto?.pilot) {
+      const at = pilots.at(state.auto.pilot);
+      if (at) {
+        toIn.id = state.auto.pilot;
+        toIn.name = state.auto.name ?? '';
+        toIn.at = at;
+        v.to = toIn;
       }
     }
-    for (let i = n; i < h.threats.length; i++) setOn(h, h.threats[i], false);
-    // your allies off the screen: a green arrow at the edge each, with their
-    // callsign (nearest first, as many as there are arrows), so you can find
-    // your wing
-    let m = 0;
-    if (on && h.mates.length && pilots.count) {
-      mateList.length = 0;
-      for (const c of pilots.mates) mateList.push(c);
-      // (and the pilot you're flying to, ally or not, so you can see where the trip's taking you)
-      const to = state.auto?.pilot;
-      if (to && !mateList.some((c) => c.id === to)) {
-        const at = pilots.at(to);
-        if (at) mateList.push({ id: to, name: state.auto.name ?? '', at });
-      }
-      mateList.sort((a, b) => apart(a.at.x, a.at.y, a.at.z, s.x, s.y, s.z) - apart(b.at.x, b.at.y, b.at.z, s.x, s.y, s.z));
-      for (const c of mateList) {
-        if (m >= h.mates.length) break;
-        toScreen(c.at.x, c.at.y, c.at.z, hudAt);
-        if (onScreen(hudAt.x, hudAt.y, hudAt.z, rect)) continue;
-        const el = h.mates[m++];
-        setOn(h, el, true);
-        setText(h, el.firstChild, c.name);
-        placeMark(el, hudAt);
-      }
-    }
-    for (let i = m; i < h.mates.length; i++) setOn(h, h.mates[i], false);
-    const lead = tgt && state.lead && state.lead.t <= AIM.life ? state.lead : null;
-    let leadOn = false;
-    if (lead) {
-      toScreen(lead.x, lead.y, lead.z, hudAt);
-      leadOn = onScreen(hudAt.x, hudAt.y, hudAt.z, rect, 8);
-      if (leadOn) {
-        h.lead.style.transform = `translate3d(${hudAt.x.toFixed(1)}px, ${hudAt.y.toFixed(1)}px, 0)`;
-        h.lead.toggleAttribute('data-hot', state.hot);
-      }
-    }
-    setOn(h, h.lead, leadOn);
     // the way to go: the jump's bearing while coming round onto it, else
     // wherever the autopilot's taking you
     let goal = null;
-    if (on && state.jump) goal = { at: [s.x + state.jump.dir[0] * 2000, s.y + state.jump.dir[1] * 2000, s.z + state.jump.dir[2] * 2000], name: `Jump: ${state.jump.to.name}`, dist: `${lightYears(state.jump.from, state.jump.to).toLocaleString('en-US')} ly`, reach: 0, way: true };
+    if (on && state.jump) goal = { at: [s.x + state.jump.dir[0] * 2000, s.y + state.jump.dir[1] * 2000, s.z + state.jump.dir[2] * 2000], name: `Jump: ${state.jump.to.name}`, text: `${lightYears(state.jump.from, state.jump.to).toLocaleString('en-US')} ly`, reach: 0, way: true };
     else if (on && state.auto) {
       const g = (state.auto.space ?? state.space).goals[state.auto.id];
-      if (g) goal = { at: g.at, name: g.name ?? state.auto.name ?? '', dist: range(apart(g.at[0], g.at[1], g.at[2], s.x, s.y, s.z)), reach: g.reach ?? g.r, way: false };
+      if (g) goal = { at: g.at, name: g.name ?? state.auto.name ?? '', text: null, reach: g.reach ?? g.r, way: false };
     }
     // (else the course plotted on the galaxy map: the way to jump, as the jump's own bearing, till J goes)
     else if (on && props.course && props.course !== state.sys?.id) {
@@ -2240,15 +2159,9 @@ export async function create(canvas, ctx) {
       }
     }
     state.navGoal = goal ? goal.at : null;
-    setOn(h, h.nav, Boolean(goal));
-    if (goal) {
-      toScreen(goal.at[0], goal.at[1], goal.at[2], hudAt);
-      const px = hudAt.z > 0 && goal.reach ? (goal.reach / (hudAt.z * tanHalf)) * (size.h / 2) * 2.2 : 0;
-      placeMark(h.nav, hudAt, clamp(px, 34, 260));
-      h.nav.toggleAttribute('data-way', goal.way);
-      setText(h, h.navName, goal.name);
-      setText(h, h.navDist, goal.dist);
-    }
+    v.goal = goal;
+    fillFlight(frame, v, toScreen);
+    flightHud.place(root, frame);
   };
 
   // ── Being online ──
@@ -2458,7 +2371,7 @@ export async function create(canvas, ctx) {
     const crashBusy = crashFx.update(dt, camera);
     const fxBusy = pops.update(dt, camera) || crashBusy;
     const adventuring = adventure(dt, t);
-    const rounding = rounds.fly(dt, roundHit, roundGone);
+    const rounding = rounds.fly(dt, roundHit, roundGone, sight.find);
     const shooting = moveBolts(dt) || rounding;
     armory?.update(dt);
     // the speed: dust streaming past, the picture rushing out from the ship
@@ -2629,16 +2542,7 @@ export async function create(canvas, ctx) {
     const r = canvas.getBoundingClientRect();
     return [e.clientX - r.left, e.clientY - r.top];
   };
-  const tapped = { x: 0, y: 0, z: 0 };
-  const pickHunter = (px, py) => {
-    let best = null;
-    for (const c of [...(hunters?.targets ?? []), ...pilots.targets]) {
-      toScreen(c.at.x, c.at.y, c.at.z, tapped);
-      const d = Math.hypot(px - tapped.x, py - tapped.y);
-      if (tapped.z > 0.3 && d <= 48 && (!best || d < best.d)) best = { id: c.id, d };
-    }
-    return best?.id ?? null;
-  };
+  const tapped = { x: 0, y: 0, z: 0 }; // (a tap's projection, kept)
   const pickGoal = (px, py) => {
     let best = null;
     for (const g of state.world?.goals ?? []) {
@@ -2753,8 +2657,8 @@ export async function create(canvas, ctx) {
     endDrag();
     if (d.moved < DRAG && flying()) {
       const [x, y] = localXY(e);
-      const hid = pickHunter(x, y);
-      if (hid) state.lock = { id: hid, out: 0, manual: true };
+      const hid = sight.pickAt(x, y, toScreen); // (any target under the point, or near it: the sight's)
+      if (hid !== null) state.lock = { id: hid, out: 0, manual: true };
       else {
         const gid = pickGoal(x, y);
         if (gid) goTo(gid);
@@ -2852,7 +2756,7 @@ export async function create(canvas, ctx) {
       const [fx, fz] = forward(s.heading);
       return pickups.drop({ x: s.x + fx * gap, y: s.y, z: s.z + fz * gap }, { ace: true, kind, shield: state.shield });
     };
-    window.__galaxyDebug = { pickups, drop: dropAhead, THREE, scene, camera, renderer, post, state, models, hunters, pilots, startJump, goTo, flyTo, net: () => net, pin, destroy: () => startDestroyed(), interdiction, finds, interdictor, war, wingmen, effects: () => state.effects, skyStreaks: () => skyStreaks, happen: (id) => state.ship && happen(id, state.ship), powers, power: (slot) => power(slot), charge: () => powers.fill(), ram: (gap = 6, kind = null) => {
+    window.__galaxyDebug = { pickups, pieces, drop: dropAhead, THREE, scene, camera, renderer, post, state, models, hunters, pilots, arms, startJump, goTo, flyTo, net: () => net, pin, destroy: () => startDestroyed(), interdiction, finds, interdictor, war, wingmen, effects: () => state.effects, skyStreaks: () => skyStreaks, happen: (id) => state.ship && happen(id, state.ship), powers, power: (slot) => power(slot), charge: () => powers.fill(), ram: (gap = 6, kind = null) => {
       // one of the system's hunters (or `kind`) put `gap` dead ahead at your height, coming at you, for checking a ram from a browser
       const s = state.ship;
       if (!s || !hunters) return null;

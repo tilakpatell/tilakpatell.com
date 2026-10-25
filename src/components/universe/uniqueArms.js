@@ -14,19 +14,23 @@
 //   shards, each a small hit along its line.
 // - The Energon arc: lightning to the lock (or the nearest ahead) and on to
 //   up to three more near it, each jump weaker, all at once.
-// Only the game's own ships are touched (the hunters, and the war's battle
-// through its own hit(), the cut on its objectives); never another pilot, as
-// with the powers. Their hits charge the big power as the guns' do.
+// They hit what a bolt does (the scene's foes: the hunters after you,
+// someone else's fight, the front, the capital ship, the Citadel heavy, the
+// rocks; the cut on a battle's objectives), but never another pilot or the
+// traffic: each hit is a shot handed to the scene's own hit list, which
+// plays it as a bolt's and charges the big power as the guns' do.
 //
-// createUniqueArms({ parent, hunters, war, bolts, flashes, state, emit, strike, scored, reduced })
+// createUniqueArms({ parent, foes, bolts, flashes, state, emit, strike, reduced = false })
 //   → { fire(id, at, dir, speed, w, punch) → the shot's velocity (for the wire), frame(dt), clear(), busy, dispose() }
 // (`punch`: what a hit of the line's is worth against the game's ships, the ship's guns and pickups in it)
+// foes() → what they may aim at and reach (the sight's foes: { id, at, size, kind?, sub? });
 // state: the scene's (its ship, its lock, the shake and flare it plays);
-// strike(from, to, punch, opts) and scored(hit, opts): the scene's hit test
-// and what a hit does (as powers.js has them).
+// strike(from, to, shot) → what took it, or null: the scene's hit list
+// (lib/combat/flight/guns.js's strike), a shot { punch, damage, heavy, warPunch, v? }.
 
 import * as THREE from 'three';
 import { SHIP_FX, burstDirs, chain, dropAt, firstFor, inRing, jagged, pierce, punchAfter } from '../../lib/arms/behaviours';
+import { shotRadius } from '../../lib/combat/contact';
 import { AIM, dirTo, intercept } from './targeting';
 import { isObjective, shotAt } from './shipPowers';
 import { createUniqueFx } from './uniqueFx';
@@ -40,32 +44,25 @@ const BLUE = [0.9, 2.6, 3.6];
 const GREEN = [0.4, 2.6, 0.7];
 const SONIC = [0.8, 1.6, 2.8];
 
+// (an orb meets a ship as a bolt would: contact.js's reach for a shot)
+const orbReach = (t) => shotRadius(t.size ?? 1);
 const apart = (a, b) => Math.hypot(a.x - b.x, a.y - b.y, a.z - b.z);
 const unit = (x, y, z) => {
   const l = Math.hypot(x, y, z) || 1;
   return [x / l, y / l, z / l];
 };
 
-export function createUniqueArms({ parent, hunters, war, bolts, flashes, state, emit, strike, scored, reduced = false }) {
+export function createUniqueArms({ parent, foes, bolts, flashes, state, emit, strike, reduced = false }) {
   const fx = createUniqueFx(parent);
   const run = { charges: [], rings: [], orbs: [], rounds: [], arcs: [] };
   let gen = 0; // bumped at a clear: shards still in the air land on nothing
   const v1 = new THREE.Vector3();
   const v2 = new THREE.Vector3();
 
-  // what they may hit: the hunters after you (not prey-chasers' quarry) and the war's
-  const huntersNow = () => (hunters?.targets ?? []).filter((t) => !t.prey);
-  const foes = () => [...huntersNow(), ...(war?.targets ?? [])];
-  // a hit landed on one of them: the hunters' through their damage(), the
-  // war's as a shot at it through its own hit(), as the guns' would be
-  const land = (t, punch, from) => {
-    if (hunters?.targets.includes(t)) {
-      const r = hunters.damage(t.id, punch);
-      return r ? scored(r, { src: 'hunters', normal: v2.set(t.at.x - from.x, t.at.y - from.y + 1, t.at.z - from.z).normalize() }) : null;
-    }
+  // a short shot into it; damage 0: no pilot in reach
+  const land = (t, punch, from, heavy = false) => {
     const s = shotAt(t, from);
-    const r = war?.hit(s.from, s.to, isObjective(t) ? punch * SUB : punch);
-    return r ? scored(r, { src: 'war' }) : null;
+    return strike(s.from, s.to, { punch, damage: 0, heavy, warPunch: isObjective(t) ? punch * SUB : punch });
   };
   const say = (id, what) => emit({ type: 'unique', id, what });
   const shake = (k) => {
@@ -112,7 +109,7 @@ export function createUniqueArms({ parent, hunters, war, bolts, flashes, state, 
   const blast = (c) => {
     const P = SHIP_FX.seismic;
     run.rings.push({ x: c.x, y: c.y, z: c.z, age: 0 });
-    for (const t of inRing(c, foes(), P.radius, P.slab)) land(t, c.punch, c);
+    for (const t of inRing(c, foes(), P.radius, P.slab)) land(t, c.punch, c, true);
     flashes.at(v1.set(c.x, c.y, c.z), { size: 1.2, color: SONIC, life: 0.5, bright: 0.7 });
     shake(0.35);
     say('seismic', 'blast');
@@ -152,7 +149,7 @@ export function createUniqueArms({ parent, hunters, war, bolts, flashes, state, 
       o.x += o.v[0] * dt;
       o.y += o.v[1] * dt;
       o.z += o.v[2] * dt;
-      for (const t of pierce(from, o, list, o.hit)) {
+      for (const t of pierce(from, o, list, o.hit, orbReach)) {
         o.hit.add(t.id ?? t);
         land(t, punchAfter(o.punch, o.n), from);
         o.n += 1;
@@ -179,7 +176,7 @@ export function createUniqueArms({ parent, hunters, war, bolts, flashes, state, 
         length: 0.9,
         // (each shard's hit, as it gets there: along its own line, into whatever it meets)
         onHit: () => {
-          if (was === gen) strike(from, to, P.punch * (r.punch / 3), { pilots: false, warPunch: P.punch * SUB });
+          if (was === gen) strike(from, to, { punch: P.punch * (r.punch / 3), damage: 0, heavy: true, warPunch: P.punch * SUB });
         },
       });
     }
@@ -202,7 +199,7 @@ export function createUniqueArms({ parent, hunters, war, bolts, flashes, state, 
       r.z += r.v[2] * dt;
       // near its target it bursts; into something on the way, it bursts there; at the end of its flight, too
       const near = r.target && apart(r, r.target.at) < P.near;
-      const hit = near ? null : strike(from, r, r.punch, { vel: r.v, pilots: false, warPunch: r.punch * SUB });
+      const hit = near ? null : strike(from, r, { punch: r.punch, damage: 0, heavy: true, warPunch: r.punch * SUB, v: r.v });
       if (near || hit || r.life <= 0) {
         burst(r);
         run.rounds.splice(i, 1);

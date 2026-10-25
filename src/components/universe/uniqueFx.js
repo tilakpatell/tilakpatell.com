@@ -15,10 +15,17 @@
 // space (the map's, where the ship flies).
 
 import * as THREE from 'three';
+import { orbsInFlight } from '../../lib/arms/behaviours';
+import { WEAPONS } from '../../lib/arms/ship';
+import { NODES } from '../hangar/skills/tree';
+import { FASTEST } from './outfit';
+import { AIM } from './targeting';
 
 const CHARGES = 6;
 const RINGS = 4;
-const ORBS = 6;
+// (the orbs: as many as can be in flight at once, every scatter node's extra shot taken, at the quickest the guns may fire)
+const SCATTER = Object.values(NODES).reduce((n, x) => n + (x.does.shots ?? 0), 0);
+const ORBS = orbsInFlight(WEAPONS.darkmatter, FASTEST, { shots: SCATTER, life: AIM.life });
 const GEMS = 6;
 const STRUTS = 96; // the arcs' bright segments, all of them at once
 const Y = new THREE.Vector3(0, 1, 0);

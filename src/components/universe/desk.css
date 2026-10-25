@@ -62,5 +62,5 @@
   .universe-page:not(.galaxy-page) .universe-hangar-btn { left: calc(var(--hud-edge) + 46px); }
   .universe-page:not(.galaxy-page) .universe-navmap-btn[data-ship] { left: calc(var(--hud-edge) + 92px); }
   .universe-page:not(.galaxy-page) .universe-stick { border-width: 1px; }
-  .universe-page:not(.galaxy-page) .universe-reticle { border-width: 1px; }
+  .universe-page:not(.galaxy-page) { --hud-reticle-line: 1px; }
 }

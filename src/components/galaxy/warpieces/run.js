@@ -22,7 +22,7 @@
 //   damage), targets, markers, state, inside, dispose() }
 
 import * as THREE from 'three';
-import { sweptHit } from '../../universe/targeting';
+import { sweptHit } from '../../../lib/combat/flight/targeting';
 import { buildTunnel, frameOf, keepIn } from '../tunnel';
 
 const ZERO = { x: 0, y: 0, z: 0 };

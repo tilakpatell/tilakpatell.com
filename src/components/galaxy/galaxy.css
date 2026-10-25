@@ -90,7 +90,7 @@
   display: inline-flex;
   align-items: center;
   gap: 0.6rem;
-  padding: 0.45rem 1.05rem 0.45rem 0.45rem;
+  padding: 0.45rem 1.05rem;
   border: 1px solid color-mix(in srgb, var(--star) 70%, transparent);
   border-radius: 999px;
   background: rgb(3 8 20 / 0.8);
@@ -102,20 +102,8 @@
 }
 .galaxy-jumpbtn:hover { background: rgb(14 30 60 / 0.85); }
 .galaxy-jumpbtn:focus-visible { outline: 2px solid var(--star); outline-offset: 3px; }
-.galaxy-jumpbtn-k {
-  display: grid;
-  place-items: center;
-  width: 1.75rem;
-  height: 1.75rem;
-  border-radius: 50%;
-  background: var(--star);
-  color: var(--btn-ink);
-  font-family: var(--font-mono);
-  font-size: 0.78rem;
-  font-weight: 700;
-}
 .galaxy-page[data-jumping] .galaxy-jumpbtn { display: none; }
-@media (pointer: coarse) { .galaxy-jumpbtn-k { display: none; } .galaxy-jumpbtn { padding-left: 1.05rem; min-height: 44px; } }
+@media (pointer: coarse) { .galaxy-jumpbtn .hud-cap { display: none; } .galaxy-jumpbtn { min-height: 44px; } }
 @media (prefers-reduced-motion: no-preference) { .galaxy-jumpbtn { animation: galaxy-jump-in 0.22s ease-out; } }
 @keyframes galaxy-jump-in { from { opacity: 0; scale: 0.92; } }
 /* (the line on how to fly wraps, clear of the corners; and gives way to the jump) */

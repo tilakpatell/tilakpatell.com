@@ -8,14 +8,15 @@
 // createRounds(parent, count) → {
 //   list,                         the meshes (each its userData: { life, v, punch, damage, heavy, homing, target, age })
 //   setColor(hex),                the crew's (arsenalOf(kind).heavy)
-//   launch(at, dir, speed, { life, punch, damage, homing, target }) → mesh,
-//   fly(dt, hit, expire) → bool,  each round on a step: hit(m, from, to) → true when it's spent (the scene drew
+//   launch(at, dir, speed, { life, punch, damage, homing, targetId }) → mesh,
+//   fly(dt, hit, expire, find) → bool,  each round on a step, homing on find(its target's id) (homeOn): hit(m, from, to) → true when it's spent (the scene drew
 //                                 the bang); expire(m) when its life runs out; true while any's in flight
+//   clear(),                      every round put away (hidden, homing on nothing): you're shot down or crashed
 //   dispose() }
 
 import * as THREE from 'three';
 import { aimAngles } from './targeting';
-import { nearTarget, steerRound } from './roundRules';
+import { homeOn, nearTarget, steerRound } from './roundRules';
 
 export function createRounds(parent, count) {
   const glowTex = (() => {
@@ -59,16 +60,16 @@ export function createRounds(parent, count) {
       glowMat.color.set(hex).multiplyScalar(2.2);
       tailMat.color.set(hex).multiplyScalar(2);
     },
-    launch(at, d, speed, { life, punch, damage, homing, target }) {
+    launch(at, d, speed, { life, punch, damage, homing, targetId }) {
       const m = list.find((x) => !x.visible) ?? list[0];
       m.position.copy(at);
       const { heading, pitch } = aimAngles(d);
       m.rotation.set(pitch, heading, 0);
-      m.userData = { life, v: [d[0] * speed, d[1] * speed, d[2] * speed], punch, damage, heavy: true, homing, target, age: 0 };
+      m.userData = { life, v: [d[0] * speed, d[1] * speed, d[2] * speed], punch, damage, heavy: true, homing, targetId: targetId ?? null, target: null, age: 0 };
       m.visible = true;
       return m;
     },
-    fly(dt, hit, expire) {
+    fly(dt, hit, expire, find) {
       let any = false;
       for (const m of list) {
         if (!m.visible) continue;
@@ -80,6 +81,7 @@ export function createRounds(parent, count) {
           continue;
         }
         any = true;
+        if (find) homeOn(d, find);
         steerRound(d, m.position, dt, scratch);
         from.copy(m.position);
         m.position.x += d.v[0] * dt;
@@ -95,6 +97,13 @@ export function createRounds(parent, count) {
         hit(m, from, to);
       }
       return any;
+    },
+    clear() {
+      for (const m of list) {
+        m.visible = false;
+        m.userData.target = null;
+        m.userData.targetId = null;
+      }
     },
     dispose() {
       for (const m of list) parent.remove(m);

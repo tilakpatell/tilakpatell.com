@@ -34,7 +34,7 @@ const AS_IT_CAME = { name: 'As it came', module: true, open: true, hint: null, b
 const tuneRows = (slot, unlocked) => [{ ...AS_IT_CAME, id: STOCK_BUILD[slot] }, ...moduleRows(slot, unlocked).filter((r) => !isStockModule(slot, r.id))];
 
 // a row's model: whichever kind of thing the slot holds, said the same way
-function rowsFor(slot, unlocked, tuning) {
+function rowsFor(slot, unlocked, tuning, ship) {
   if (tuning) return tuneRows(slot, unlocked);
   if (BUILD_SLOTS.includes(slot)) return moduleRows(slot, unlocked);
   return partsFor(slot).map((p) => ({
@@ -44,7 +44,7 @@ function rowsFor(slot, unlocked, tuning) {
     open: isOpen(p, unlocked),
     hint: p.hint,
     blurb: p.blurb,
-    does: slot === 'paint' ? [] : partEffects(p),
+    does: slot === 'paint' ? [] : partEffects(p, ship),
     mass: p.mass ?? 0,
     power: p.power ?? 0,
     paint: slot === 'paint' ? p : null,
@@ -52,13 +52,13 @@ function rowsFor(slot, unlocked, tuning) {
   }));
 }
 
-export default function YardCatalogue({ slot, onSlot, draft, live, unlocked, economy, onStage, onLook, onHull, onRoll, onPaste, onSay }) {
+export default function YardCatalogue({ slot, ship = null, onSlot, draft, live, unlocked, economy, onStage, onLook, onHull, onRoll, onPaste, onSay }) {
   const id = useId();
   const [code, setCode] = useState('');
   const isBuild = BUILD_SLOTS.includes(slot);
   // (a slot after the hull, on the crew's own ship: tuning, not a build)
   const tuning = isBuild && slot !== 'hull' && !draft.build;
-  const rows = rowsFor(slot, unlocked, tuning);
+  const rows = rowsFor(slot, unlocked, tuning, ship);
   const stagedId = isBuild ? (tuning ? (draft.tune?.[slot] ?? STOCK_BUILD[slot]) : (draft.build ?? null)?.[slot]) : (draft.loadout[slot] ?? STOCK);
   const flownId = isBuild ? (live.build ? live.build[slot] : slot === 'hull' ? null : (live.tune?.[slot] ?? STOCK_BUILD[slot])) : (live.loadout[slot] ?? STOCK);
 

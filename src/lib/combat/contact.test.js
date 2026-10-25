@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CONTACT, bodyRadius, closingSpeed, contact, keptSpeed, knock, shove, sweptSpheres, touchAt } from './contact';
+import { CONTACT, bodyRadius, closingSpeed, contact, keptSpeed, knock, shotRadius, shove, sweptSpheres, touchAt } from './contact';
 
 describe('contact', () => {
   it('is a glance under soft and a ram from it', () => {
@@ -21,6 +21,11 @@ describe('contact', () => {
   });
   it('bodyRadius is tighter than a laser’s hit radius', () => {
     expect(bodyRadius(0.3)).toBeCloseTo(0.23, 5);
+  });
+  it('shotRadius is a touch more than the size (the bolt’s rule), wider than bodyRadius', () => {
+    expect(shotRadius(1)).toBe(1.02);
+    expect(shotRadius(0.3)).toBe(0.39);
+    expect(shotRadius(0.3)).toBeGreaterThan(bodyRadius(0.3));
   });
   it('knocks the other ship off its line by shove', () => {
     expect(contact(10, 0.3).push).toBe(shove(10, 0.3));
