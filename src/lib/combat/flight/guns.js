@@ -1,9 +1,28 @@
 // The flight core's guns, as plain rules both maps fire by (the universe
 // map's scene.js and the galaxy's, and the C-137 street's): each ship's
-// pace, a fan of shots, a homing round's steering, the pace under a cut
-// and one shot's punch. Pure, tested (guns.test.js; fan and steer through
-// universe/weapons.test.js, gunsUnder through galaxy/pickups.test.js,
-// shotPunch through galaxy/gunRules.test.js, where they were).
+// pace, a fan of shots, a homing round's steering, the pace under a cut,
+// one shot's punch, and the pool of bolts in flight. Pure, tested
+// (guns.test.js; fan and steer through universe/weapons.test.js, gunsUnder
+// through galaxy/pickups.test.js, shotPunch through galaxy/gunRules.test.js,
+// where they were).
+//
+//   createGuns({ count = 40, point }) → { bolts, fire, step, strike, clear }
+//     point: () → a point { x, y, z } (the scene's THREE.Vector3, so its hit
+//       tests get what they always did); made here, once, and never after
+//     bolts: the slots, { on, at, from, v, life, punch, damage, heavy, warPunch,
+//       heading, pitch, scale, fresh } (fresh: true till the scene has turned and
+//       sized the mesh it draws the slot with)
+//     fire(at, dirs, speed, { life, punch, damage, heavy = false, scale }): a bolt
+//       along each unit direction, from a copy of at (a full pool takes slot 0)
+//     step(dt, sources) → any still in flight: each bolt on by v·dt, offered to
+//       the sources in order till one takes it
+//     strike(from, to, shot, sources) → what took it, or null: one shot's
+//       segment offered to the sources, from copies of from and to
+//     clear(): every bolt gone
+//   a source: (from, to, shot) → truthy if it took the shot (and played what
+//     the hit does: that's the scene's)
+//   a shot: { punch, damage, v, heavy, warPunch }; strike's `v` is the way
+//     from → to when the shot has none
 
 // seconds between shots with the trigger held (the X-wing's four cannons
 // fire in turn, so it's quickest; the RV is a man with a gun out of the window)
@@ -93,3 +112,100 @@ export function gunsUnder(base, delay, fastest, out = { gap: 0, punch: 1 }) {
 // one shot's punch on a hunter: the guns fitted in the shipyard (g), the
 // pickups' rapid fire (gun) and the weapon's own (w)
 export const shotPunch = (w, g, gun) => (g?.punch ?? 1) * (gun?.punch ?? 1) * (w?.punch ?? 1);
+
+const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
+
+export function createGuns({ count = 40, point }) {
+  const bolts = [];
+  for (let i = 0; i < count; i++) bolts.push({ on: false, at: point(), from: point(), v: [0, 0, 0], life: 0, punch: 1, damage: undefined, heavy: false, warPunch: 1, heading: 0, pitch: 0, scale: 1, fresh: false });
+  // (strike's segment and shot, kept)
+  const sFrom = point();
+  const sTo = point();
+  const sShot = { punch: 1, damage: undefined, v: [0, 0, 0], heavy: false, warPunch: 1 };
+  const free = () => {
+    for (let i = 0; i < bolts.length; i++) if (!bolts[i].on) return bolts[i];
+    return bolts[0];
+  };
+  return {
+    bolts,
+    fire(at, dirs, speed, { life, punch, damage, heavy = false, scale }) {
+      for (let i = 0; i < dirs.length; i++) {
+        const d = dirs[i];
+        const b = free();
+        b.on = true;
+        b.fresh = true;
+        b.at.x = at.x;
+        b.at.y = at.y;
+        b.at.z = at.z;
+        b.v[0] = d[0] * speed;
+        b.v[1] = d[1] * speed;
+        b.v[2] = d[2] * speed;
+        b.life = life;
+        b.punch = punch;
+        b.damage = damage;
+        b.heavy = heavy;
+        b.warPunch = punch;
+        b.scale = scale;
+        // (targeting.js's aimAngles, without its arrays: the same to the bit)
+        const l = Math.sqrt(d[0] * d[0] + d[1] * d[1] + d[2] * d[2]) || 1;
+        b.heading = Math.atan2(-(d[0] / l), -(d[2] / l));
+        b.pitch = Math.asin(clamp(d[1] / l, -1, 1));
+      }
+    },
+    step(dt, sources) {
+      let any = false;
+      for (let i = 0; i < bolts.length; i++) {
+        const b = bolts[i];
+        if (!b.on) continue;
+        b.life -= dt;
+        if (b.life <= 0) {
+          b.on = false;
+          continue;
+        }
+        any = true;
+        b.from.x = b.at.x;
+        b.from.y = b.at.y;
+        b.from.z = b.at.z;
+        b.at.x += b.v[0] * dt;
+        b.at.y += b.v[1] * dt;
+        b.at.z += b.v[2] * dt;
+        for (let k = 0; k < sources.length; k++) {
+          if (sources[k](b.from, b.at, b)) {
+            b.on = false;
+            break;
+          }
+        }
+      }
+      return any;
+    },
+    strike(from, to, shot, sources) {
+      sFrom.x = from.x;
+      sFrom.y = from.y;
+      sFrom.z = from.z;
+      sTo.x = to.x;
+      sTo.y = to.y;
+      sTo.z = to.z;
+      sShot.punch = shot.punch;
+      sShot.damage = shot.damage;
+      if (shot.v) {
+        sShot.v[0] = shot.v[0];
+        sShot.v[1] = shot.v[1];
+        sShot.v[2] = shot.v[2];
+      } else {
+        sShot.v[0] = to.x - from.x;
+        sShot.v[1] = to.y - from.y;
+        sShot.v[2] = to.z - from.z;
+      }
+      sShot.heavy = shot.heavy ?? false;
+      sShot.warPunch = shot.warPunch ?? shot.punch;
+      for (let k = 0; k < sources.length; k++) {
+        const r = sources[k](sFrom, sTo, sShot);
+        if (r) return r;
+      }
+      return null;
+    },
+    clear() {
+      for (let i = 0; i < bolts.length; i++) bolts[i].on = false;
+    },
+  };
+}

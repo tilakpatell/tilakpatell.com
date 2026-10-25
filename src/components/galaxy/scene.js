@@ -104,7 +104,7 @@ import { createTrail } from '../universe/trail';
 import { ENGINES, SHIP_MODELS, buildShip, BUILT } from '../universe/shipModels';
 import { loadModel } from '../universe/planets';
 import { lockSound, shieldSound, shipEngine } from '../universe/sounds';
-import { AIM, aimAngles, nose } from '../../lib/combat/flight/targeting';
+import { AIM, nose } from '../../lib/combat/flight/targeting';
 import { TRACK_AFTER_SHOT, createSight } from '../../lib/combat/flight/sight';
 import { DEFAULTS as CONTROL_DEFAULTS, STICK, dragSteers, keyAxes, keyFlies, stickInput } from '../universe/controls';
 import { SIZE as PILOT_SIZE, createPilots } from '../universe/online/pilots';
@@ -130,7 +130,7 @@ import { createFrame, distText, fillFlight } from '../../runtime/hud/flight/fram
 import { createFlightHud } from '../../runtime/hud/flight/flightHud.js';
 import { armsView, arsenalOf, chargeFor, createArmory, createGalaxyPowers, createRounds, createUniqueArms, fan, picksFor } from '../universe/shared/flying';
 import { shotPunch } from './gunRules';
-import { CADENCE } from '../../lib/combat/flight/guns';
+import { CADENCE, createGuns } from '../../lib/combat/flight/guns';
 import { effectsFor } from './warEffects';
 import { CABS } from './cabs';
 import { warNow } from './warState';
@@ -346,17 +346,33 @@ export async function create(canvas, ctx) {
   renderer.localClippingEnabled = true;
   const war = reduced ? null : createWarFront(scene, { models, small, reduced, tier, emit: (e) => emit(e), onSolids: () => respace(), allegiance: () => props.allegiance });
 
-  // your guns
+  // your guns (their bolts flown by lib/combat/flight/guns.js)
   const boltGeo = new THREE.CylinderGeometry(0.008, 0.008, 0.6, 6).rotateX(Math.PI / 2);
   const boltMat = new THREE.MeshBasicMaterial({ color: '#ff4a3d', toneMapped: false, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false });
-  const myBolts = Array.from({ length: BOLTS }, () => {
+  const guns = createGuns({ count: BOLTS, point: () => new THREE.Vector3() });
+  const myBolts = guns.bolts.map((b) => {
     const m = new THREE.Mesh(boltGeo, boltMat);
     m.visible = false;
     m.rotation.order = 'YXZ';
-    m.userData = { life: 0, v: [0, 0, 0] };
+    m.userData = b; // (its slot: what the checks read off a bolt)
     scene.add(m);
     return m;
   });
+  // the meshes put where their slots are (turned and sized once, as they're fired)
+  const showBolts = () => {
+    for (let i = 0; i < myBolts.length; i++) {
+      const m = myBolts[i];
+      const b = guns.bolts[i];
+      m.visible = b.on;
+      if (!b.on) continue;
+      m.position.copy(b.at);
+      if (b.fresh) {
+        m.rotation.set(b.pitch, b.heading, 0);
+        m.scale.set(b.scale, b.scale, 1 + (b.scale - 1) * 0.4);
+        b.fresh = false;
+      }
+    }
+  };
   // and the ordnance line's heavy rounds (the universe map's, rounds.js: in the crew's colour, homing on the lock)
   const rounds = createRounds(scene, ROUNDS);
 
@@ -460,7 +476,7 @@ export async function create(canvas, ctx) {
   // (made before the first frame's shaders are, so its look is made with them)
   const powers = createGalaxyPowers({ parent: scene, reduced, hunters, war, bolts, flashes, crashFx, pops, post, state, emit, controls, strike: (...a) => strike(...a), scored: (...a) => scored(...a), teleport: (pose) => teleport(pose), laser: LASER.rebel });
   // the skill tree's four ship weapons (the universe's uniqueArms.js): fired as the guns are, played out beside the powers
-  const unique = createUniqueArms({ parent: scene, reduced, hunters, war, bolts, flashes, state, emit, strike: (...a) => strike(...a), scored: (...a) => scored(...a) });
+  const unique = createUniqueArms({ parent: scene, reduced, hunters, war, bolts, flashes, state, emit, strike: (...a) => uniqueStrike(...a), scored: (...a) => scored(...a) });
   const cluster = createCluster(); // (the flight cluster's writer: placeShield)
   // what a kill leaves behind (pickups.js: the rules, pickupFx.js: the drawing); none online, and none survive a jump, a landing or a crash
   const pickups = createPickups();
@@ -994,16 +1010,6 @@ export async function create(canvas, ctx) {
   };
   const jitter = () => Math.random() * 2 - 1;
   const shotAt = new THREE.Vector3();
-  // one bolt away, from `at` along `d` (unit): a line's life, punch and size on it
-  const spawnBolt = (at, d, speed, life, punch, damage, scale) => {
-    const b = myBolts.find((m) => !m.visible) ?? myBolts[0];
-    b.position.copy(at);
-    const { heading, pitch } = aimAngles(d);
-    b.rotation.set(pitch, heading, 0);
-    b.scale.set(scale, scale, 1 + (scale - 1) * 0.4);
-    b.userData = { life, v: [d[0] * speed, d[1] * speed, d[2] * speed], punch, damage };
-    b.visible = true;
-  };
   const fire = () => {
     const s = state.ship;
     const now = performance.now();
@@ -1045,7 +1051,10 @@ export async function create(canvas, ctx) {
     else if (w.heavy) {
       rounds.launch(shotAt, dir, speed, { life: AIM.life * w.life, punch, damage: w.damage, homing: w.homing, target: state.lockTarget });
       state.kick = Math.max(state.kick, 0.4);
-    } else for (const d of fan(dir, w.count, w.cone, jitter)) spawnBolt(shotAt, d, speed, AIM.life * w.life, punch, w.damage, g.bolt * w.scale);
+    } else {
+      guns.fire(shotAt, fan(dir, w.count, w.cone, jitter), speed, { life: AIM.life * w.life, punch, damage: w.damage, scale: g.bolt * w.scale });
+      showBolts(); // (keys and touch fire between frames)
+    }
     net?.shot(shotAt, v, w.code);
     emit({ type: 'fire', weapon: arm.id });
     ctx.invalidate();
@@ -1059,7 +1068,6 @@ export async function create(canvas, ctx) {
     ctx.invalidate();
   };
   const popDir = new THREE.Vector3();
-  const shotFrom = new THREE.Vector3();
   // where a shot landed on a hunter or a pilot (hit: { at, size, down }): a kill goes up in the one big burst; a hit that doesn't kill is a
   // flash (the burst is shared, so each hit would cut off the one before it)
   const landed = (hit, normal) => {
@@ -1067,22 +1075,8 @@ export async function create(canvas, ctx) {
     else flashes.at(hit.at, { size: 0.4, life: 0.5 });
   };
   const moveBolts = (dt) => {
-    let any = false;
-    for (const b of myBolts) {
-      if (!b.visible) continue;
-      const d = b.userData;
-      d.life -= dt;
-      if (d.life <= 0) {
-        b.visible = false;
-        continue;
-      }
-      any = true;
-      shotFrom.copy(b.position);
-      b.position.x += d.v[0] * dt;
-      b.position.y += d.v[1] * dt;
-      b.position.z += d.v[2] * dt;
-      if (strike(shotFrom, b.position, d.punch ?? 1, { vel: d.v, damage: d.damage })) b.visible = false;
-    }
+    const any = guns.step(dt, BOLT_HITS);
+    showBolts();
     return any;
   };
   // a heavy round's step (rounds.js flies it): what it meets is what a bolt
@@ -1096,8 +1090,7 @@ export async function create(canvas, ctx) {
     emit({ type: 'boom', big });
   };
   const roundHit = (m, from, to) => {
-    const d = m.userData;
-    const r = strike(from, to, d.punch, { vel: d.v, damage: d.damage });
+    const r = guns.strike(from, to, m.userData, BOLT_HITS); // (its userData: a heavy shot)
     if (!r) return false;
     roundBang(m, r.at ?? m.position, Boolean(r.down));
     return true;
@@ -1148,6 +1141,19 @@ export async function create(canvas, ctx) {
     if (!atPilots) return null;
     const ph = pilots.hit(from, to, punch);
     return ph ? pilotShot(ph, punch, normal, false, damage) : null;
+  };
+  // the hit list: strike's (the hunters, the war, then another pilot)
+  const BOLT_HITS = [(from, to, shot) => strike(from, to, shot.punch ?? 1, { vel: shot.v, warPunch: shot.warPunch, damage: shot.damage })];
+  // the skill tree's arms: never a pilot
+  const UNIQUE_HITS = [(from, to, shot) => strike(from, to, shot.punch ?? 1, { vel: shot.v, warPunch: shot.warPunch, damage: shot.damage, pilots: false })];
+  // uniqueArms' strike(from, to, punch, opts), as a shot
+  const STILL = [0, 0, 0];
+  const uniqueShot = { punch: 1, damage: undefined, v: STILL, heavy: false, warPunch: 1 };
+  const uniqueStrike = (from, to, punch, { vel = null, warPunch = punch } = {}) => {
+    uniqueShot.punch = punch;
+    uniqueShot.warPunch = warPunch;
+    uniqueShot.v = vel ?? STILL;
+    return guns.strike(from, to, uniqueShot, UNIQUE_HITS);
   };
   // a hit on another pilot or one of the hunters after them (a shot's, or a
   // ram's: shipsHit), played: they're told

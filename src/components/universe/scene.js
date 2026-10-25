@@ -187,13 +187,13 @@ import { readBuildWire, readTune, tuneKey, writeBuild } from './shipyard/build';
 import { readLooks } from '../rickmorty/wardrobe/looks';
 import { BUILT_KINDS, buildTraffic } from './trafficModels';
 import { entrySound, lockSound, shipEngine, wellSound } from './sounds';
-import { AIM, aimAngles, nose } from './targeting';
+import { AIM, nose } from './targeting';
 import { TRACK_AFTER_SHOT, createSight } from '../../lib/combat/flight/sight';
 import { DEFAULTS as CONTROL_DEFAULTS, STICK, dragSteers, keyAxes, keyFlies, stickInput } from './controls';
 import { byId } from './universes';
 import { SIZE as PILOT_SIZE, createPilots } from './online/pilots';
 import { arsenalOf, createArmory, fan } from './weapons';
-import { CADENCE } from '../../lib/combat/flight/guns';
+import { CADENCE, createGuns } from '../../lib/combat/flight/guns';
 import { JAMMED, jumpState } from './words';
 import { CORE, GENS, citadelGeometry, createSiege, segmentSphere } from './siege';
 import { createCitadelSiege } from './citadelSiege';
@@ -626,17 +626,33 @@ export async function create(canvas, ctx) {
   const streak = streaks(rand);
   camera.add(streak.lines);
 
-  // shots: a few glowing bolts, reused
+  // shots: a few glowing bolts, flown by lib/combat/flight/guns.js
   const boltGeo = new THREE.CylinderGeometry(0.008, 0.008, 0.6, 6).rotateX(Math.PI / 2); // (long: they're quick)
   const boltMat = new THREE.MeshBasicMaterial({ color: '#ff4a3d', toneMapped: false, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false });
-  const bolts = Array.from({ length: BOLTS }, () => {
+  const guns = createGuns({ count: BOLTS, point: () => new THREE.Vector3() });
+  const bolts = guns.bolts.map((b) => {
     const m = new THREE.Mesh(boltGeo, boltMat);
     m.visible = false;
     m.rotation.order = 'YXZ';
-    m.userData = { life: 0, v: [0, 0, 0] };
+    m.userData = b; // (its slot: what the checks read off a bolt)
     map.add(m);
     return m;
   });
+  // the meshes put where their slots are (turned and sized once, as they're fired)
+  const showBolts = () => {
+    for (let i = 0; i < bolts.length; i++) {
+      const m = bolts[i];
+      const b = guns.bolts[i];
+      m.visible = b.on;
+      if (!b.on) continue;
+      m.position.copy(b.at);
+      if (b.fresh) {
+        m.rotation.set(b.pitch, b.heading, 0);
+        m.scale.set(b.scale, b.scale, 1 + (b.scale - 1) * 0.4);
+        b.fresh = false;
+      }
+    }
+  };
 
   // the planets' maps first (half size on a phone or anything below a
   // desktop, lib/device), so nothing pops in; a weak device starts with the
@@ -2344,7 +2360,7 @@ export async function create(canvas, ctx) {
   Object.defineProperty(state, 'space', { get: () => ({ solids: solidsNow, edge: Infinity }) });
   const powers = createGalaxyPowers({ parent: map, reduced, hunters, war: null, bolts: powerBolts, flashes: powerFlashes, crashFx, pops, post: powerPost, state, emit, controls, strike: (...a) => powerStrike(...a), scored: (...a) => powerScored(...a), teleport: (pose) => powerTeleport(pose) });
   // the skill tree's four ship weapons (uniqueArms.js): fired as the guns are, played out beside the powers
-  const unique = createUniqueArms({ parent: map, reduced, hunters, war: null, bolts: powerBolts, flashes: powerFlashes, state, emit, strike: (...a) => powerStrike(...a), scored: (...a) => powerScored(...a) });
+  const unique = createUniqueArms({ parent: map, reduced, hunters, war: null, bolts: powerBolts, flashes: powerFlashes, state, emit, strike: (...a) => uniqueStrike(...a), scored: (...a) => powerScored(...a) });
   // the big one charged by what the guns hit (a power's own hits, `by` it, charge nothing)
   // (a hit at the front is the war's battle's, as the galaxy's are: an objective charges it more, a capital ship's hull and shield nothing)
   const charge = (hh) => powers.gain(chargeFor(hh.war ?? hh, { war: Boolean(hh.war), ace: FACTIONS_ALL[hh.faction]?.ace === hh.kind }), `hunters:${hh.id}`);
@@ -2370,17 +2386,6 @@ export async function create(canvas, ctx) {
   };
   const shotAt = new THREE.Vector3();
   const jitter = () => Math.random() * 2 - 1;
-  // one bolt away, from `at` along `d` (unit) at `speed`
-  const spawnBolt = (at, d, speed, w, g) => {
-    const b = bolts.find((m) => !m.visible) ?? bolts[0];
-    b.position.copy(at);
-    const { heading, pitch } = aimAngles(d);
-    b.rotation.set(pitch, heading, 0);
-    const k = g.bolt * w.scale;
-    b.scale.set(k, k, 1 + (k - 1) * 0.4);
-    b.userData = { life: AIM.life * w.life, v: [d[0] * speed, d[1] * speed, d[2] * speed], punch: (g.punch ?? 1) * w.punch, damage: w.damage, heavy: false };
-    b.visible = true;
-  };
   // a heavy round away, homing on whatever the guns have locked
   const launch = (at, d, speed, w, g) => {
     rounds.launch(at, d, speed, { life: AIM.life * w.life, punch: (g.punch ?? 1) * w.punch, damage: w.damage, homing: w.homing, target: state.lockTarget });
@@ -2426,7 +2431,10 @@ export async function create(canvas, ctx) {
     let v = [dir[0] * speed, dir[1] * speed, dir[2] * speed];
     if (w.unique) v = unique.fire(arm.id, shotAt, dir, speed, w, (g.punch ?? 1) * w.punch);
     else if (w.heavy) launch(shotAt, dir, speed, w, g);
-    else for (const d of fan(dir, w.count, w.cone, jitter)) spawnBolt(shotAt, d, speed, w, g);
+    else {
+      guns.fire(shotAt, fan(dir, w.count, w.cone, jitter), speed, { life: AIM.life * w.life, punch: (g.punch ?? 1) * w.punch, damage: w.damage, scale: g.bolt * w.scale });
+      showBolts(); // (keys and touch fire between frames)
+    }
     net?.shot(shotAt, v, w.code);
     emit({ type: 'fire', weapon: arm.id });
     ctx.invalidate();
@@ -2548,75 +2556,9 @@ export async function create(canvas, ctx) {
     emit({ type: 'siege', what: 'down', mine: mine || siegeMine, near });
   };
   const popDir = new THREE.Vector3();
-  const shotFrom = new THREE.Vector3();
   const moveBolts = (dt) => {
-    let any = false;
-    for (const b of bolts) {
-      if (!b.visible) continue;
-      const d = b.userData;
-      d.life -= dt;
-      if (d.life <= 0) {
-        b.visible = false;
-        continue;
-      }
-      any = true;
-      shotFrom.copy(b.position);
-      b.position.x += d.v[0] * dt;
-      b.position.y += d.v[1] * dt;
-      b.position.z += d.v[2] * dt;
-      if (npcs?.count) npcWorld.stims.push({ type: 'shot', at: { x: shotFrom.x, y: shotFrom.y, z: shotFrom.z }, aim: { x: b.position.x, y: b.position.y, z: b.position.z }, radius: 160, from: 'you', loudness: 1 });
-      // into someone: a pop (the big ships just take it)
-      // a hunter: down, or (the tougher ones) a hit that sparks off it
-      const hh = hunters?.hit(shotFrom, b.position, d.punch ?? 1) ?? farHit(shotFrom, b.position, d.punch ?? 1) ?? frontHit(shotFrom, b.position, d.punch ?? 1);
-      if (hh) {
-        b.visible = false;
-        state.hitMark = 1; // the reticle flashes
-        hunterShot(hh, popDir.set(-d.v[0], 3, -d.v[2]).normalize());
-        continue;
-      }
-      // another pilot: they're told, and it comes off their shields
-      // (or one of the hunters after them: it's theirs, so they're told that too)
-      const ph = pilots.hit(shotFrom, b.position, d.punch ?? 1);
-      if (ph) {
-        b.visible = false;
-        state.hitMark = 1;
-        pilotShot(ph, d.punch ?? 1, d.damage, popDir.set(-d.v[0], 3, -d.v[2]).normalize());
-        continue;
-      }
-      // the Citadel (its shield, a generator, its core)
-      if (citadelGeo && siegeHit(shotFrom, b.position, d.punch ?? 1, false)) {
-        b.visible = false;
-        continue;
-      }
-      // the capital ship: a shield part or its bridge (down, or a hit that
-      // sparks off it), or its hull (a splash off its shield, or a spark)
-      const ch = capitalHit(shotFrom, b.position, d.punch ?? 1);
-      if (ch) {
-        b.visible = false;
-        pops.hit({ point: ch.at, normal: popDir.set(-d.v[0], 3, -d.v[2]).normalize(), radius: ch.down ? ch.size * 1.8 : ch.type === 'shielded' ? 0.45 : 0.2 });
-        continue;
-      }
-      // the NX-5
-      if (remover && removerHit(shotFrom, b.position, d.punch ?? 1)) {
-        b.visible = false;
-        continue;
-      }
-      const h = traffic?.hit(shotFrom, b.position) ?? null;
-      if (h) {
-        b.visible = false;
-        trafficShot(h, popDir.set(-d.v[0], 3, -d.v[2]).normalize());
-      } else if (leviathans.hit(shotFrom, b.position)) {
-        b.visible = false;
-        leviathanShot();
-      } else {
-        const mh = meteors.hit(shotFrom, b.position) ?? mines.hit(shotFrom, b.position);
-        if (mh) {
-          b.visible = false;
-          pops.hit({ point: mh.at, normal: popDir.set(-d.v[0], 3, -d.v[2]).normalize(), radius: mh.size * 1.6 });
-          state.hitMark = 1;
-        }
-      }
-    }
+    const any = guns.step(dt, BOLT_HITS);
+    showBolts();
     return any;
   };
   // what a hit on each kind of ship does (a shot's, or a ram's: shipsHit),
@@ -2730,74 +2672,101 @@ export async function create(canvas, ctx) {
     state.flare = Math.max(state.flare, 1.4);
     emit({ type: 'boom', big });
   };
-  // what a round meets on its step (rounds.js flies it): the first thing
-  // in the order the bolts meet them; true when it's spent
-  const missileHit = (m, from, to) => {
-    const d = m.userData;
-    const hh = hunters?.hit(from, to, d.punch) ?? farHit(from, to, d.punch) ?? frontHit(from, to, d.punch);
-    if (hh) {
-      charge(hh);
-      if (hh.down) {
-        emit({ type: 'kill', kind: hh.kind, hunter: true });
-        state.heat += 1;
-        killed(hh);
-      }
-      state.hitMark = 1;
-      boom(m, hh.at, hh.down);
-      if (hh.down) burn(hh.at, hh.size);
-      return true;
-    }
-    const ph = pilots.hit(from, to, d.punch);
-    if (ph) {
-      state.hitMark = 1;
-      if (ph.hunter) {
-        // one of the hunters after another pilot: theirs to take down
-        net?.hunterHit(ph.id, ph.hunter, d.punch);
-        if (ph.down) {
-          emit({ type: 'kill', kind: ph.kind, hunter: true });
-          if (state.helped.once(`${ph.id}:${ph.hunter}`)) pay('hunterHelped');
-        }
-      } else net?.hit(ph.id, d.damage);
-      boom(m, ph.at, Boolean(ph.down));
-      if (ph.down) burn(ph.at, ph.size);
-      return true;
-    }
-    if (citadelGeo) {
-      const at = siegeHit(from, m.position, d.punch, true);
-      if (at) {
-        boom(m, at.clone(), true);
-        return true;
-      }
-    }
-    const ch = capitalHit(from, to, d.punch);
-    if (ch) {
-      boom(m, ch.at, ch.down || ch.type === 'shielded');
-      return true;
-    }
-    if (remover) {
-      const at = removerHit(from, to, d.punch);
-      if (at) {
-        boom(m, at, true);
-        return true;
-      }
-    }
+  // What a shot meets on its step, in the order the bolts meet them (each
+  // source the test and what the hit does; null when it doesn't take it):
+  // a bolt's (guns.step), a heavy round's (missileHit) and the skill tree's
+  // arms' (uniqueStrike). A round blasts where it hits (`round`, set while
+  // missileHit asks; boom spends it).
+  let round = null;
+  const shotNormal = (shot) => popDir.set(-shot.v[0], 3, -shot.v[2]).normalize();
+  const heardHits = (from, to) => {
+    if (npcs?.count && !round) npcWorld.stims.push({ type: 'shot', at: { x: from.x, y: from.y, z: from.z }, aim: { x: to.x, y: to.y, z: to.z }, radius: 160, from: 'you', loudness: 1 });
+    return null;
+  };
+  // into someone: a pop (the big ships just take it); a hunter: down, or
+  // (the tougher ones) a hit that sparks off it
+  const foeHits = (test) => (from, to, shot) => {
+    const hh = test(from, to, shot);
+    if (!hh) return null;
+    state.hitMark = 1; // the reticle flashes
+    hunterShot(hh, shotNormal(shot));
+    if (round) boom(round, hh.at, hh.down);
+    return hh;
+  };
+  const hunterHits = foeHits((from, to, shot) => hunters?.hit(from, to, shot.punch ?? 1)); // (looked up at each hit)
+  const farHits = foeHits((from, to, shot) => farHit(from, to, shot.punch ?? 1));
+  const frontHits = foeHits((from, to, shot) => frontHit(from, to, shot.punch ?? 1));
+  // another pilot: they're told, and it comes off their shields
+  // (or one of the hunters after them: it's theirs, so they're told that too)
+  const pilotHits = (from, to, shot) => {
+    const ph = pilots.hit(from, to, shot.punch ?? 1);
+    if (!ph) return null;
+    state.hitMark = 1;
+    pilotShot(ph, shot.punch ?? 1, shot.damage, shotNormal(shot));
+    if (round) boom(round, ph.at, Boolean(ph.down));
+    return ph;
+  };
+  // the Citadel (its shield, a generator, its core)
+  const citadelHits = (from, to, shot) => {
+    const at = citadelGeo && siegeHit(from, to, shot.punch ?? 1, shot.heavy);
+    if (!at) return null;
+    if (round) boom(round, at.clone(), true);
+    return at;
+  };
+  // the capital ship: a shield part or its bridge (down, or a hit that
+  // sparks off it), or its hull (a splash off its shield, or a spark)
+  const capitalHits = (from, to, shot) => {
+    const ch = capitalHit(from, to, shot.punch ?? 1);
+    if (!ch) return null;
+    pops.hit({ point: ch.at, normal: shotNormal(shot), radius: ch.down ? ch.size * 1.8 : ch.type === 'shielded' ? 0.45 : 0.2 });
+    if (round) boom(round, ch.at, ch.down || ch.type === 'shielded');
+    return ch;
+  };
+  // the NX-5
+  const removerHits = (from, to, shot) => {
+    const at = remover && removerHit(from, to, shot.punch ?? 1);
+    if (!at) return null;
+    if (round) boom(round, at, true);
+    return at;
+  };
+  const trafficHits = (from, to, shot) => {
     const h = traffic?.hit(from, to) ?? null;
-    if (h) {
-      if (!h.glance) {
-        emit({ type: 'kill', kind: h.kind });
-        state.heat += h.civil ? 1.5 : 1;
-        deed(h.civil ? 'killCivil' : 'killPatrol');
-      }
-      boom(m, h.at, !h.glance);
-      if (!h.glance) burn(h.at, h.size);
-    } else if (leviathans.hit(from, to)) {
-      boom(m, m.position.clone());
-      leviathanShot();
-    } else {
-      const mh = meteors.hit(from, to) ?? mines.hit(from, to);
-      if (mh) boom(m, mh.at);
-    }
-    return false;
+    if (!h) return null;
+    trafficShot(h, shotNormal(shot));
+    if (round) boom(round, h.at, !h.glance);
+    return h;
+  };
+  const leviathanHits = (from, to) => {
+    if (!leviathans.hit(from, to)) return null;
+    if (round) boom(round, round.position.clone());
+    leviathanShot();
+    return true;
+  };
+  const rockHits = (from, to, shot) => {
+    const mh = meteors.hit(from, to) ?? mines.hit(from, to);
+    if (!mh) return null;
+    pops.hit({ point: mh.at, normal: shotNormal(shot), radius: mh.size * 1.6 });
+    state.hitMark = 1;
+    if (round) boom(round, mh.at);
+    return mh;
+  };
+  const BOLT_HITS = [heardHits, hunterHits, farHits, frontHits, pilotHits, citadelHits, capitalHits, removerHits, trafficHits, leviathanHits, rockHits];
+  const UNIQUE_HITS = [hunterHits, farHits, frontHits];
+  // uniqueArms' strike(from, to, punch, opts), as a shot
+  const STILL = [0, 0, 0];
+  const uniqueShot = { punch: 1, damage: undefined, v: STILL, heavy: false, warPunch: 1 };
+  const uniqueStrike = (from, to, punch, { vel = null, warPunch = punch } = {}) => {
+    uniqueShot.punch = punch;
+    uniqueShot.warPunch = warPunch;
+    uniqueShot.v = vel ?? STILL;
+    return guns.strike(from, to, uniqueShot, UNIQUE_HITS);
+  };
+  // a round's step (rounds.js flies it): true when it's spent
+  const missileHit = (m, from, to) => {
+    round = m;
+    const hit = guns.strike(from, to, m.userData, BOLT_HITS); // (its userData: a heavy shot)
+    round = null;
+    return Boolean(hit);
   };
   const missileGone = (m) => boom(m, m.position.clone());
   const moveMissiles = (dt) => rounds.fly(dt, missileHit, missileGone);

@@ -4,6 +4,7 @@
 //
 // CONTACT: every number of the law (closing speeds in units a second).
 // bodyRadius(size) → a ship's body for contact, from its size (its length).
+// shotRadius(size) → how near a shot must pass a ship's middle to hit it.
 // sweptSpheres(a0, a1, b0, b1, r) → how far through the frame (0 to 1) two
 //   spheres moving at once came within `r` of each other, or null. Points
 //   are { x, y, z } or [x, y, z].
@@ -51,8 +52,10 @@ export const CONTACT = {
   rock: 0.3, // its bank rocked by this for each unit a second of the knock (at most 1.1)
 };
 
-// tighter than hunterRules' hitRadius, which forgives a laser
+// tighter than shotRadius, which forgives a laser
 export const bodyRadius = (size) => size * 0.5 + 0.08;
+// the bolt's (hunterRules' hitRadius; dark matter's pierce)
+export const shotRadius = (size) => size * 0.9 + 0.12;
 
 const X = (p) => (Array.isArray(p) ? p[0] : p.x);
 const Y = (p) => (Array.isArray(p) ? p[1] : p.y);
