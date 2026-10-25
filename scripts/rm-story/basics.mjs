@@ -81,6 +81,8 @@ export const BASICS = {
         return { h: window.innerHeight, w: window.innerWidth, thumbs: [...under('.rm-hud-bottom .rm-stick'), ...under('.rm-hud-bottom .rm-pad button')], top: [...under('.rm-hud-top .rm-brand'), ...under('.rm-hud-top .rm-side')] };
       });
       check(at.thumbs.length >= 2, `sideways, the stick and buttons are ${JSON.stringify(at.thumbs)}`);
+      // (the first hint names the Portal gun button: its word is there sideways too, at this width)
+      check(await page.locator('.rm-chip-gun span', { hasText: 'Portal gun' }).isVisible(), 'sideways, the portal gun’s chip has lost its word');
       for (const t of at.thumbs) check(t.top >= 0 && t.bottom <= at.h && t.right <= at.w, `sideways, a thumb’s control is off the screen (${JSON.stringify(t)} in ${at.w} × ${at.h})`);
       for (const r of at.top) for (const t of at.thumbs) check(!(r.top < t.bottom && t.top < r.bottom && r.left < t.right && t.left < r.right), `sideways, the top row (${JSON.stringify(r)}) runs into a thumb’s control (${JSON.stringify(t)})`);
     },

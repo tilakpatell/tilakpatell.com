@@ -36,6 +36,16 @@ describe('C-137’s HUD', () => {
     expect(renderToStaticMarkup(<GunChip onOpen={() => {}} />)).toContain('<kbd>P</kbd>');
   });
 
+  it('keeps the portal gun chip’s word held sideways too, from 640 px wide, where the row beside the map has room for it', () => {
+    // (measured on 667 × 375 and 844 × 390: the title's column is no taller and never meets the row; at
+    // 568 × 320 it would grow, so a narrower phone keeps the bare swirl)
+    const css = readFileSync(new URL('./world.css', import.meta.url), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+    const at = css.indexOf('@media (pointer: coarse) and (max-height: 500px) and (min-width: 640px)');
+    expect(at).toBeGreaterThan(-1);
+    const block = css.slice(css.indexOf('{', at) + 1, css.indexOf('}', css.indexOf('{', at) + 1) + 1);
+    expect(block).toMatch(/\.rm-chip\.rm-chip-gun span\s*\{\s*display:\s*inline/);
+  });
+
   it('gives its controls a finger’s 44 px on a touch screen: the chips, the list’s close and ways back, the dial’s close', () => {
     // (world.css's blocks, each one's braces counted to its close; RULES UI 2: a hit area may be wider than what's drawn)
     const css = readFileSync(new URL('./world.css', import.meta.url), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
