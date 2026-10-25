@@ -123,6 +123,19 @@ describe('the toast slot', () => {
     expect(shown.map((t) => t.kind)).toEqual(['done', 'note', 'done', 'say', 'done']);
   });
 
+  it('says how long till what waits goes up: nought with nothing waiting', () => {
+    const c = clock();
+    const { slot } = slotOn(c);
+    expect(slot.due()).toBe(0);
+    slot.put(REVEAL);
+    expect(slot.due()).toBe(0);
+    c.to(1000);
+    slot.put(OUTRO, { after: true });
+    expect(slot.due()).toBe(TOAST_MS.say - 1000);
+    c.to(TOAST_MS.say);
+    expect(slot.due()).toBe(0);
+  });
+
   it('drops what waits when it’s cleared', () => {
     const c = clock();
     const { slot, shown } = slotOn(c);

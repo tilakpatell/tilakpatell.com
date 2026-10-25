@@ -8,10 +8,11 @@
 //   toastLife(t) → how long `t` stays up (ms).
 //   readFor(t, now) → ms till `t` has been read: a line said, its lineHold
 //     (./living.js), at most as long as it's up; anything else, nought.
-//   createToastSlot({ show, now, later, cancel }) → { put(t, { after }), clear() }
+//   createToastSlot({ show, now, later, cancel }) → { put(t, { after }), due(), clear() }
 //     `show(t)` puts `t` (stamped `at`) up; `after`: wait till what's up has
 //     been read. One waits at a time: a later one takes its place, and it
-//     waits on behind a line said meanwhile. `clear()` drops what waits.
+//     waits on behind a line said meanwhile. `due()`: ms till what waits goes
+//     up (nought with nothing waiting). `clear()` drops what waits.
 
 import { lineHold } from './living';
 
@@ -32,9 +33,10 @@ export function createToastSlot({ show, now = () => performance.now(), later = s
     up = { ...t, at: now() };
     show(up);
   };
+  const left = () => (up && now() < up.at + toastLife(up) ? readFor(up, now()) : 0);
   const next = () => {
     timer = null;
-    const wait = up && now() < up.at + toastLife(up) ? readFor(up, now()) : 0;
+    const wait = left();
     if (wait > 0) timer = later(next, wait);
     else {
       const t = waiting;
@@ -48,6 +50,7 @@ export function createToastSlot({ show, now = () => performance.now(), later = s
       waiting = t;
       if (timer == null) next();
     },
+    due: () => (waiting ? left() : 0),
     clear() {
       if (timer != null) cancel(timer);
       timer = null;

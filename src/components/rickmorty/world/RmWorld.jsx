@@ -363,7 +363,7 @@ export default function RmWorld({ start = null, onLeave = null, frozen = false, 
   const [open, setOpen] = useState(null);
   const openRef = useRef(null);
   const [gl, setGl] = useState('loading'); // loading | on | failed | lost
-  const { toast, say } = useRmToast();
+  const { toast, say, due } = useRmToast();
   const pending = useRef([]); // tasks done while something's open over the page, told on the way out
   const api = useRef(null);
 
@@ -477,7 +477,7 @@ export default function RmWorld({ start = null, onLeave = null, frozen = false, 
   return (
     <section className="rm-world" aria-labelledby="rm-world-title" data-mode={world ? '3d' : 'cards'}>
       {world ? (
-        <World api={api} done={done} open={open} openPlace={openPlace} complete={complete} unlock={unlock} gl={gl} setGl={setGl} toast={toast} say={say} planet={planet} onLeave={onLeave} earn={earn} earned={earned} frozen={frozen} onHangar={onHangar} cruiser={cruiser} loadout={loadout} skillFx={skillFx} powerPicks={powerPicks} tell={tell} card={card} closeCard={closeCard} />
+        <World api={api} done={done} open={open} openPlace={openPlace} complete={complete} unlock={unlock} gl={gl} setGl={setGl} toast={toast} say={say} due={due} planet={planet} onLeave={onLeave} earn={earn} earned={earned} frozen={frozen} onHangar={onHangar} cruiser={cruiser} loadout={loadout} skillFx={skillFx} powerPicks={powerPicks} tell={tell} card={card} closeCard={closeCard} />
       ) : (
         <Cards done={done} openPlace={openPlace} three={three} gl={gl} toast={toast} retry={() => setGl('loading')} planet={planet} />
       )}
@@ -492,7 +492,7 @@ export default function RmWorld({ start = null, onLeave = null, frozen = false, 
 // hence the reach)
 const ROOM = { bound: boundOf(AREAS), motion: true };
 
-function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast, say, planet, onLeave, earn, earned, frozen, onHangar, cruiser, loadout, skillFx, powerPicks, tell, card, closeCard }) {
+function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast, say, due, planet, onLeave, earn, earned, frozen, onHangar, cruiser, loadout, skillFx, powerPicks, tell, card, closeCard }) {
   // (the cruiser's numbers, read by the frame loop)
   const fitted = useMemo(() => cruiserOf(cruiser), [cruiser]);
   const fittedRef = useRef(fitted);
@@ -901,8 +901,9 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
           sound('portalOpen');
           later(onLeave, FADE_MS + (made ? 900 : 0));
         };
+        // (held for the closing line: from when it goes up, if it waits behind a line still being read)
         const hold = leaveHold(out ?? []);
-        if (hold) later(leave, hold);
+        if (hold) later(leave, hold + due());
         else leave();
         return;
       }
@@ -972,7 +973,7 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
         setFade(null);
       }, climb ? CLIMB_MS : FADE_MS);
     },
-    [api, complete, unlock, later, stopRickall, planet, onLeave, tell, dialOpen, navigate],
+    [api, complete, unlock, later, stopRickall, planet, onLeave, tell, dialOpen, navigate, due],
   );
   const boardRef = useRef(null);
   const board = useCallback(() => {
