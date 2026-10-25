@@ -1,2 +1,3 @@
 {"date":"2026-10-06","sha":"07b523e3","pr":null,"metrics":{"big-files":30,"lint-disables":54,"todo-notes":0}}
 {"date":"2026-10-15","sha":"5caaedb6","pr":1007,"metrics":{"big-files":30,"boundary-breaks":481,"cycles":5,"lint-disables":54,"todo-notes":0,"kbd-styles":70,"hud-kit":1,"stack-pages":0,"glsl-sites":619,"renderers":16,"loops":58,"client-json-kb":1256,"doc-binaries":1,"art-mix":7}}
+{"date":"2026-10-25","sha":"368c7af4","pr":1242,"metrics":{"big-files":22,"boundary-breaks":475,"cycles":5,"lint-disables":54,"todo-notes":0,"kbd-styles":66,"hud-kit":0,"stack-pages":0,"glsl-sites":613,"renderers":14,"loops":58,"client-json-kb":1256,"doc-binaries":1,"art-mix":7}}

@@ -1,63 +1,43 @@
 {
-  "date": "2026-10-11",
-  "sha": "80557a7c8",
+  "date": "2026-10-25",
+  "sha": "368c7af4",
   "metrics": {
     "big-files": {
-      "value": 30,
+      "value": 22,
       "unit": "files",
       "label": "source files over 1500 lines",
       "detail": [
         {
           "file": "src/components/universe/scene.js",
-          "n": 6148
-        },
-        {
-          "file": "src/components/middleearth/towns/moria/props.js",
-          "n": 4576
+          "n": 6320
         },
         {
           "file": "src/components/galaxy/surface/scene.js",
-          "n": 4131
-        },
-        {
-          "file": "src/components/middleearth/towns/rivendell/props.js",
-          "n": 3863
-        },
-        {
-          "file": "src/components/middleearth/towns/doom/props.js",
-          "n": 3405
-        },
-        {
-          "file": "src/components/middleearth/shire/props.js",
-          "n": 3379
-        },
-        {
-          "file": "src/components/middleearth/towns/cirithungol/props.js",
-          "n": 3340
+          "n": 4412
         },
         {
           "file": "src/components/universe/footScene.js",
-          "n": 3300
+          "n": 3531
         },
         {
-          "file": "src/components/middleearth/towns/amonhen/props.js",
-          "n": 3203
+          "file": "src/components/middleearth/shire/build.js",
+          "n": 3221
         },
         {
           "file": "src/components/universe/crews.js",
-          "n": 3180
+          "n": 3196
+        },
+        {
+          "file": "src/components/middleearth/towns/cirithungol/props.js",
+          "n": 3179
         },
         {
           "file": "src/components/rickmorty/world/roy/scene.js",
-          "n": 3164
-        },
-        {
-          "file": "src/components/middleearth/towns/minastirith/props.js",
-          "n": 3095
+          "n": 3144
         },
         {
           "file": "src/components/middleearth/towns/edoras/props.js",
-          "n": 3086
+          "n": 3030
         },
         {
           "file": "src/components/cockpit/vehicles/rv.js",
@@ -65,27 +45,23 @@
         },
         {
           "file": "src/components/galaxy/scene.js",
-          "n": 2889
+          "n": 2997
         },
         {
-          "file": "src/components/middleearth/towns/lorien/props.js",
-          "n": 2767
+          "file": "src/components/middleearth/towns/minastirith/props.js",
+          "n": 2968
         },
         {
-          "file": "src/components/middleearth/towns/weathertop/props.js",
-          "n": 2668
+          "file": "src/components/middleearth/towns/doom/props.js",
+          "n": 2799
+        },
+        {
+          "file": "src/components/rickmorty/world/RmWorld.jsx",
+          "n": 2416
         },
         {
           "file": "src/components/middleearth/towns/marshes/props.js",
-          "n": 2381
-        },
-        {
-          "file": "src/components/avengers/world/scene.js",
-          "n": 2157
-        },
-        {
-          "file": "src/components/avengers/world/rules.js",
-          "n": 2143
+          "n": 2345
         },
         {
           "file": "src/components/galaxy/surface/props/forest.js",
@@ -96,16 +72,40 @@
           "n": 2077
         },
         {
-          "file": "src/components/rickmorty/world/RmWorld.jsx",
-          "n": 2074
-        },
-        {
           "file": "src/components/galaxy/surface/props/core.js",
           "n": 1883
         },
         {
           "file": "src/components/middleearth/towns/edoras/folk.js",
-          "n": 1831
+          "n": 1749
+        },
+        {
+          "file": "src/components/dotmatrix/scene.js",
+          "n": 1666
+        },
+        {
+          "file": "src/components/middleearth/towns/minastirith/folk.js",
+          "n": 1588
+        },
+        {
+          "file": "src/components/cybertron/world/CybertronBackdrop3D.js",
+          "n": 1557
+        },
+        {
+          "file": "src/components/universe/stations.js",
+          "n": 1540
+        },
+        {
+          "file": "src/components/rickmorty/portal/Portal3D.js",
+          "n": 1500
+        },
+        {
+          "file": "src/components/albuquerque/world/scene.js",
+          "n": 1493
+        },
+        {
+          "file": "src/components/universe/deepspace.js",
+          "n": 1485
         }
       ]
     },
@@ -115,22 +115,7 @@
       "label": "imports across a line docs/health/RULES.md draws",
       "detail": [
         {
-          "file": "src/lib/land/flats.js → src/components/galaxy/surface/noise.js",
-          "n": 1,
-          "note": "lib knows no page"
-        },
-        {
-          "file": "src/lib/land/layers.js → src/components/galaxy/surface/noise.js",
-          "n": 1,
-          "note": "lib knows no page"
-        },
-        {
           "file": "src/lib/land/layers.test.js → src/components/galaxy/surface/terrain.js",
-          "n": 1,
-          "note": "lib knows no page"
-        },
-        {
-          "file": "src/lib/land/rivers.js → src/components/galaxy/surface/noise.js",
           "n": 1,
           "note": "lib knows no page"
         },
@@ -161,11 +146,6 @@
         },
         {
           "file": "src/lib/three/figureCalls.test.js → src/components/rickmorty/portal/meshyCast.js",
-          "n": 1,
-          "note": "lib knows no page"
-        },
-        {
-          "file": "src/lib/three/noiseTex.js → src/components/galaxy/surface/noise.js",
           "n": 1,
           "note": "lib knows no page"
         },
@@ -238,6 +218,26 @@
           "file": "src/components/albuquerque/world/AbqWorld.jsx → src/components/middleearth/towns/useTravellers.js",
           "n": 1,
           "note": "worlds are islands"
+        },
+        {
+          "file": "src/components/albuquerque/world/scene.js → src/components/middleearth/towns/ghosts.js",
+          "n": 1,
+          "note": "worlds are islands"
+        },
+        {
+          "file": "src/components/albuquerque/world/scene.js → src/components/office/people.js",
+          "n": 1,
+          "note": "worlds are islands"
+        },
+        {
+          "file": "src/components/albuquerque/world/scene.js → src/components/office/stage3d.js",
+          "n": 1,
+          "note": "worlds are islands"
+        },
+        {
+          "file": "src/components/albuquerque/world/scene.js → src/components/rickmorty/wardrobe/looks.js",
+          "n": 1,
+          "note": "worlds are islands"
         }
       ]
     },
@@ -255,15 +255,15 @@
           "n": 2
         },
         {
-          "file": "src/pages/Galaxy.jsx → src/pages/GalaxySurface.jsx",
-          "n": 2
-        },
-        {
           "file": "src/runtime/index.js → src/runtime/useWorld.js",
           "n": 2
         },
         {
           "file": "src/components/universe/footScene.js → src/components/universe/landings/furnish.js → src/components/universe/landings/people.js",
+          "n": 3
+        },
+        {
+          "file": "src/pages/Galaxy.jsx → src/pages/GalaxyLanding.jsx → src/pages/GalaxySurface.jsx",
           "n": 3
         }
       ]
@@ -382,21 +382,17 @@
       "detail": []
     },
     "kbd-styles": {
-      "value": 70,
+      "value": 66,
       "unit": "rules",
       "label": "Key-cap rules outside the house .kbd",
       "detail": [
         {
           "file": "src/components/cockpit/cockpit.css",
-          "n": 7
-        },
-        {
-          "file": "src/components/universe/universe.css",
           "n": 6
         },
         {
           "file": "src/components/galaxy/surface/surface.css",
-          "n": 5
+          "n": 4
         },
         {
           "file": "src/components/rickmorty/world/world.css",
@@ -423,12 +419,12 @@
           "n": 3
         },
         {
-          "file": "src/styles/lazy/middleearth.css",
+          "file": "src/components/universe/universe.css",
           "n": 3
         },
         {
-          "file": "src/components/avengers/world/world.css",
-          "n": 2
+          "file": "src/styles/lazy/middleearth.css",
+          "n": 3
         },
         {
           "file": "src/components/caribbean/tide/tide.css",
@@ -463,6 +459,10 @@
           "n": 1
         },
         {
+          "file": "src/components/avengers/world/world.css",
+          "n": 1
+        },
+        {
           "file": "src/components/deathstar/inside/inside.css",
           "n": 1
         },
@@ -489,15 +489,10 @@
       ]
     },
     "hud-kit": {
-      "value": 1,
+      "value": 0,
       "unit": "worlds",
       "label": "worlds whose HUD is off the HUD kit",
-      "detail": [
-        {
-          "file": "src/components/deathstar",
-          "n": 1
-        }
-      ]
+      "detail": []
     },
     "stack-pages": {
       "value": 0,
@@ -506,7 +501,7 @@
       "detail": []
     },
     "glsl-sites": {
-      "value": 617,
+      "value": 613,
       "unit": "sites",
       "label": "GLSL sites a WebGPU port removes",
       "detail": [
@@ -515,12 +510,12 @@
           "n": 18
         },
         {
-          "file": "src/components/avengers/world/scene.js",
+          "file": "src/components/cybertron/planet3d.js",
           "n": 17
         },
         {
-          "file": "src/components/cybertron/planet3d.js",
-          "n": 17
+          "file": "src/components/universe/post.js",
+          "n": 16
         },
         {
           "file": "src/components/albuquerque/world/scene.js",
@@ -535,20 +530,8 @@
           "n": 14
         },
         {
-          "file": "src/components/middleearth/towns/moria/props.js",
+          "file": "src/components/middleearth/towns/moria/propsShaders.js",
           "n": 14
-        },
-        {
-          "file": "src/components/cockpit/scene.js",
-          "n": 13
-        },
-        {
-          "file": "src/components/universe/post.js",
-          "n": 13
-        },
-        {
-          "file": "src/components/avengers/hq/engine.js",
-          "n": 12
         },
         {
           "file": "src/components/deathstar/Trench3D.js",
@@ -563,12 +546,24 @@
           "n": 12
         },
         {
-          "file": "src/components/middleearth/towns/doom/props.js",
+          "file": "src/components/middleearth/towns/doom/propsShaders.js",
           "n": 12
+        },
+        {
+          "file": "src/components/cockpit/scene.js",
+          "n": 10
+        },
+        {
+          "file": "src/components/avengers/world/scene/kit.js",
+          "n": 9
         },
         {
           "file": "src/components/universe/planetShading.js",
           "n": 9
+        },
+        {
+          "file": "src/components/avengers/world/scene/terrain.js",
+          "n": 8
         },
         {
           "file": "src/components/travel/globe3d/scene.js",
@@ -599,16 +594,244 @@
           "n": 5
         },
         {
-          "file": "src/components/middleearth/towns/amonhen/props.js",
+          "file": "src/components/middleearth/towns/amonhen/propsShaders.js",
           "n": 5
         },
         {
-          "file": "src/components/middleearth/towns/weathertop/props.js",
+          "file": "src/components/middleearth/towns/weathertop/propsShaders.js",
           "n": 5
         },
         {
           "file": "src/components/universe/rmWorlds.js",
           "n": 5
+        }
+      ]
+    },
+    "renderers": {
+      "value": 14,
+      "unit": "sites",
+      "label": "renderer constructors outside the runtime",
+      "detail": [
+        {
+          "file": "src/components/albuquerque/metherria/scene.js",
+          "n": 1
+        },
+        {
+          "file": "src/components/battlefront/backdrop/scene.js",
+          "n": 1
+        },
+        {
+          "file": "src/components/cybertron/game/scene.js",
+          "n": 1
+        },
+        {
+          "file": "src/components/cybertron/world/CybertronBackdrop3D.js",
+          "n": 1
+        },
+        {
+          "file": "src/components/deathstar/DeathStar3D.js",
+          "n": 1
+        },
+        {
+          "file": "src/components/deathstar/Trench3D.js",
+          "n": 1
+        },
+        {
+          "file": "src/components/galaxy/surface/heroStage.js",
+          "n": 1
+        },
+        {
+          "file": "src/components/office/stage3d.js",
+          "n": 1
+        },
+        {
+          "file": "src/components/rickmorty/GalaxyBackdrop.jsx",
+          "n": 1
+        },
+        {
+          "file": "src/components/rickmorty/cruiser3d.js",
+          "n": 1
+        },
+        {
+          "file": "src/components/rickmorty/wardrobe/preview.js",
+          "n": 1
+        },
+        {
+          "file": "src/components/universe/shipyard/showroom.js",
+          "n": 1
+        },
+        {
+          "file": "src/lib/stage3d.js",
+          "n": 1
+        },
+        {
+          "file": "src/lib/three/renderer.js",
+          "n": 1
+        }
+      ]
+    },
+    "loops": {
+      "value": 58,
+      "unit": "files",
+      "label": "frame loops outside the runtime",
+      "detail": [
+        {
+          "file": "src/App.jsx",
+          "n": 1
+        },
+        {
+          "file": "src/components/CommandPalette.jsx",
+          "n": 1
+        },
+        {
+          "file": "src/components/Guide.jsx",
+          "n": 1
+        },
+        {
+          "file": "src/components/GuidePanel.jsx",
+          "n": 1
+        },
+        {
+          "file": "src/components/Hyperspace.jsx",
+          "n": 1
+        },
+        {
+          "file": "src/components/Nav.jsx",
+          "n": 1
+        },
+        {
+          "file": "src/components/RouteLine.jsx",
+          "n": 1
+        },
+        {
+          "file": "src/components/ScrollSaber.jsx",
+          "n": 1
+        },
+        {
+          "file": "src/components/avengers/ArcReactor.jsx",
+          "n": 1
+        },
+        {
+          "file": "src/components/avengers/ShieldThrow.jsx",
+          "n": 1
+        },
+        {
+          "file": "src/components/battlefront/backdrop/backdrop.worker.js",
+          "n": 1
+        },
+        {
+          "file": "src/components/battlefront/backdrop/host.js",
+          "n": 1
+        },
+        {
+          "file": "src/components/caribbean/Compass.jsx",
+          "n": 1
+        },
+        {
+          "file": "src/components/caribbean/tide/DeadMansTide.jsx",
+          "n": 1
+        },
+        {
+          "file": "src/components/cybertron/GroundBridge.jsx",
+          "n": 1
+        },
+        {
+          "file": "src/components/cybertron/Planet.jsx",
+          "n": 1
+        },
+        {
+          "file": "src/components/cybertron/Visor.jsx",
+          "n": 1
+        },
+        {
+          "file": "src/components/cybertron/game/GameWorld.jsx",
+          "n": 1
+        },
+        {
+          "file": "src/components/cybertron/rollout/RollOut.jsx",
+          "n": 1
+        },
+        {
+          "file": "src/components/cybertron/world/CybertronBackdrop.jsx",
+          "n": 1
+        },
+        {
+          "file": "src/components/deathstar/Readout.jsx",
+          "n": 1
+        },
+        {
+          "file": "src/components/deathstar/TrenchRun.jsx",
+          "n": 1
+        },
+        {
+          "file": "src/components/eagler/Eaglercraft.jsx",
+          "n": 1
+        },
+        {
+          "file": "src/components/expanse/flight/PlanetMap.jsx",
+          "n": 1
+        },
+        {
+          "file": "src/components/hyperspace3d/scene.js",
+          "n": 1
+        }
+      ]
+    },
+    "client-json-kb": {
+      "value": 1256,
+      "unit": "kB",
+      "label": "records over 64 KB parsed as JavaScript",
+      "detail": [
+        {
+          "file": "src/data/bf2017/physics/soldier.json",
+          "n": 334,
+          "note": "src/components/battlefront/module.js"
+        },
+        {
+          "file": "src/data/bf2017/collection.json",
+          "n": 305,
+          "note": "src/lib/battlefront/cards.js"
+        },
+        {
+          "file": "src/data/bf2017/physics/bones.json",
+          "n": 133,
+          "note": "src/lib/battlefront/soldier.js"
+        },
+        {
+          "file": "src/data/bf2017/damage.json",
+          "n": 127,
+          "note": "src/lib/combat/damage.js"
+        },
+        {
+          "file": "src/data/bf2017/shapes.json",
+          "n": 115,
+          "note": "src/lib/bf2017/ui/shapes.js"
+        },
+        {
+          "file": "src/data/bf2017/icons.json",
+          "n": 97,
+          "note": "src/lib/bf2017/icons.js"
+        },
+        {
+          "file": "src/data/bf2017/strings.json",
+          "n": 79,
+          "note": "src/lib/battlefront/rulebook.js"
+        },
+        {
+          "file": "src/data/bf2017/ai.creatures.json",
+          "n": 66,
+          "note": "src/lib/battlefront/ai/creature.js"
+        }
+      ]
+    },
+    "doc-binaries": {
+      "value": 1,
+      "unit": "files",
+      "label": "files over 1 MB committed under docs/",
+      "detail": [
+        {
+          "file": "docs/superpowers/evidence/bf2017-coverage/ledger.json.gz",
+          "n": 1449
         }
       ]
     },
