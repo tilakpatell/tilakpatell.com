@@ -25,12 +25,16 @@
 // blue where the normal it came from is on the colour's set (the
 // TextureArray_02 parts), as the level's own ISDs take it (levelGltf.js's
 // ormMetal); where it isn't (the props preset's), that blue is another
-// layout's and the part a dielectric, F0 0.04 (the game's reflectance 0.5). Not drawn: the texture array the game's NAM.b picks a slice of
-// (the props' A_Generic_01, a metal grain a metre across). The windows
-// (SS_StarDestroyer_Windows_01: a warm light, EmissiveColor 1, 1, 0.52, its
-// panes a heightmap's, which the bucket hasn't got) are lit on their own
-// UVs' grid, a pane each cell (half a unit across, 1.4 m, a unit up, 2 m),
-// a frame round it, some dark, their mean far off (windowsMaterial). Each
+// layout's and the part a dielectric, F0 0.04 (the game's reflectance
+// 0.5). Not drawn: the texture array the game's NAM.b picks a slice of (the
+// props' A_Generic_01, a metal grain a metre across). The windows
+// (SS_StarDestroyer_Windows_01: a warm light, EmissiveColor 1, 1, 0.52) are
+// lit on their own UVs' grid, a pane each cell (half a unit across, 1.4 m,
+// a unit up, 2 m), its shape the game's own heightmap's (its
+// ParallaxOcclusionHeightmap, published with Bespin's pack: a trapezoid,
+// and one upside down beside it, their recess the pane), a plain pane in a
+// frame while it comes or if it doesn't; some dark, their mean far off
+// (windowsMaterial, paneHeight, withPanes). Each
 // material is the game's (`userData.gameHull`): no paint, no plating over
 // it; an engine's burns aft as every engine does.
 //
@@ -45,7 +49,7 @@
 //   GAME_KITS (a kit's slug → its kit), kitOf(key) (a slug's, or a kind's:
 //   the war's Star Destroyer is Endor's), lodsFor(detail, phone) → [top,
 //   rest] | null, mapSize(row, slug, tier), kitMaterial(def, maps),
-//   windowsMaterial(def) and
+//   windowsMaterial(def), paneHeight(loadTexture, phone), withPanes(m, map) and
 //   dressGameKit(root, key, { detail, phone, aniso, loadPart, loadTexture }) → Promise<boolean>
 
 import * as THREE from 'three';
@@ -171,28 +175,54 @@ export function kitMaterial(def, maps) {
 
 // the windows: a grey frame, and in it a pane a cell of their UVs' grid
 // lit in the game's warm light (its windows all burn, EmissiveIntensity
-// 500,000: a few in seven dark here), each its own brightness; where a
-// pixel spans a cell, their mean
+// 500,000: a few in seven dark here), each its own brightness, a dark one
+// dark glass; where a pixel spans a cell, their mean
 export const WINDOW_LIGHT = { colour: [1, 0.96, 0.62], intensity: 1.5, lit: 0.85 };
+// the game's heightmap of the panes (512 × 256: two panes, a cell each, the
+// surface white, the recess black with the pane's inside in it), and how
+// much of a cell its recess is (0.23; the plain pane's 0.36)
+export const WINDOW_HEIGHT = `${LEVELS}/bespin/m2bes/tex/t_stardestroyer_windows_01_h`;
+const PANE_MEAN = { plain: 0.64 * 0.56, height: 0.231 };
+export const paneHeight = (loadTexture = packMap, phone = false) => loadTexture(WINDOW_HEIGHT, phone ? 256 : 512, { aniso: 4, srgb: false, repeat: true });
+// the heightmap on a windows material, when it comes (its uniforms read each frame: no new program)
+export function withPanes(m, map) {
+  if (!map || !m?.userData.panes) return m;
+  m.userData.panes.height.value = map;
+  m.userData.panes.use.value = 1;
+  return m;
+}
 export function windowsMaterial(def) {
   const m = new THREE.MeshStandardMaterial({ name: `${def.name}|game`, color: 0x4a4d52, roughness: 0.5, metalness: 0 });
   m.userData.gameHull = true;
   m.emissive.setRGB(...WINDOW_LIGHT.colour);
   m.emissiveIntensity = WINDOW_LIGHT.intensity;
   m.defines = { USE_UV: '' };
+  const panes = { height: { value: null }, use: { value: 0 } };
+  m.userData.panes = panes;
+  const lit = WINDOW_LIGHT.lit.toFixed(2);
   patchShaders(m, 'kitwindows', (shader) => {
-    shader.fragmentShader = shader.fragmentShader.replace(
+    shader.uniforms.kwHeight = panes.height;
+    shader.uniforms.kwUse = panes.use;
+    shader.fragmentShader = shader.fragmentShader.replace('#include <common>', '#include <common>\nuniform sampler2D kwHeight;\nuniform float kwUse;').replace(
       '#include <emissivemap_fragment>',
       `#include <emissivemap_fragment>
-  // (a pane a cell: half a unit across, a unit up; its frame round it)
+  // (a pane a cell: half a unit across, a unit up; the game's from its
+  // heightmap, the recess the pane, the inside of it a little lit and
+  // shaded as its depth goes; a plain one in a frame till that comes)
   vec2 kwCell = vUv * vec2( 2.0, 1.0 );
   vec2 kwF = fract( kwCell );
-  float kwPane = step( 0.18, kwF.x ) * step( kwF.x, 0.82 ) * step( 0.22, kwF.y ) * step( kwF.y, 0.78 );
+  float kwPlain = step( 0.18, kwF.x ) * step( kwF.x, 0.82 ) * step( 0.22, kwF.y ) * step( kwF.y, 0.78 );
+  float kwH = texture2D( kwHeight, vUv ).r;
+  float kwPane = mix( kwPlain, ( 1.0 - smoothstep( 0.15, 0.55, kwH ) ) * ( 0.8 + 1.3 * kwH ), kwUse );
   float kwHash = fract( sin( dot( floor( kwCell ), vec2( 12.9898, 78.233 ) ) ) * 43758.5453 );
-  float kwOn = kwPane * step( 1.0 - ${WINDOW_LIGHT.lit.toFixed(2)}, kwHash ) * ( 0.65 + 0.35 * fract( kwHash * 7.13 ) );
+  float kwLit = step( 1.0 - ${lit}, kwHash );
+  float kwOn = kwPane * kwLit * ( 0.65 + 0.35 * fract( kwHash * 7.13 ) );
   // (the mean where a pixel spans a cell: no sparkle far off)
-  float kwMean = 0.64 * 0.56 * ${WINDOW_LIGHT.lit.toFixed(2)} * 0.82;
-  totalEmissiveRadiance *= mix( kwOn, kwMean, smoothstep( 0.35, 1.0, length( fwidth( kwCell ) ) ) );`,
+  float kwBlur = smoothstep( 0.35, 1.0, length( fwidth( kwCell ) ) );
+  float kwMean = mix( ${PANE_MEAN.plain.toFixed(4)}, ${PANE_MEAN.height.toFixed(4)}, kwUse ) * ${lit} * 0.82;
+  totalEmissiveRadiance *= mix( kwOn, kwMean, kwBlur );
+  // (a dark pane dark glass in its frame, close to)
+  diffuseColor.rgb *= 1.0 - 0.7 * min( kwPane, 1.0 ) * ( 1.0 - kwLit ) * ( 1.0 - kwBlur );`,
     );
   });
   return m;
@@ -224,11 +254,15 @@ export async function dressGameKit(root, key, { detail = 'high', phone = false, 
   const slugs = new Map(); // pack/slug → { pack, slug, colour }
   const drawn = (prim) => !HULL.test(prim.material.name) && !DAMAGE.test(prim.material.name);
   for (const p of ids) for (const prim of loaded.get(p.id).prims.filter(drawn)) for (const s of prim.material.slots) slugs.set(`${p.pack}/${s.slug}`, { pack: p.pack, slug: s.slug, colour: s.slot === 'map' });
+  // (and the windows' panes, the game's heightmap of them, if the kit has windows)
+  const windowed = [...loaded.values()].some((part) => part.prims.some((prim) => drawn(prim) && WINDOW.test(prim.material.name)));
+  const height = windowed ? paneHeight(loadTexture, phone) : null;
   const maps = Object.fromEntries(
     await Promise.all(
       [...slugs].map(([id, { pack, slug, colour }]) => loadTexture(`${LEVELS}/${pack}/tex/${slug}`, mapSize(kit.tex[slug], slug, tier), { aniso, srgb: colour, repeat: true }).then((t) => [id, t])),
     ),
   );
+  const panes = await height;
   // (every colour map, or the ship as it came: a part without one would be a bare grey block)
   if ([...slugs].some(([id, { colour }]) => colour && !maps[id])) return false;
   // the parts' primitives in the kit's frame, joined a material at a time
@@ -250,7 +284,7 @@ export async function dressGameKit(root, key, { detail = 'high', phone = false, 
   }
   const meshes = [];
   for (const { def, pack, list } of materials.values()) {
-    const material = kitMaterial(def, Object.fromEntries(def.slots.map((x) => [x.slug, maps[`${pack}/${x.slug}`] ?? null])));
+    const material = withPanes(kitMaterial(def, Object.fromEntries(def.slots.map((x) => [x.slug, maps[`${pack}/${x.slug}`] ?? null]))), panes);
     // (a normal on the unique set is lit through that set's frame, not the
     // parts' tangents, which are the tiling set's: three's own frame from the
     // normal map's UVs, and glTF's green turned for it, as GLTFLoader turns it)

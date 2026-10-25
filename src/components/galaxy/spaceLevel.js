@@ -21,7 +21,7 @@ import { createLevelArea } from './levelArea';
 import { LIGHTS } from '../../data/bf2017/light';
 import { METRES } from './surface/missions/starfighter';
 import { levelHull } from './capitalHull';
-import { windowsMaterial } from './capitalKit';
+import { paneHeight, windowsMaterial, withPanes } from './capitalKit';
 import { budget, device } from '../../lib/device';
 
 const _v = new THREE.Vector3();
@@ -43,13 +43,18 @@ const greyed = (root) =>
 // (the Star Destroyer's windows, which the export gives no map (the game's
 // SS_StarDestroyer_Windows_01 lights its panes from a heightmap the bucket
 // hasn't got): lit as the war's ship's are, a pane a cell of their own UVs'
-// grid, capitalKit.js's windowsMaterial, one for the level, not greyed; the
-// Venator's and the Lucrehulk's, another shader's on another layout, are)
+// grid in the game's own heightmap's shape, capitalKit.js's windowsMaterial,
+// one for the level, not greyed; the Venator's and the Lucrehulk's, another
+// shader's on another layout, are)
 const ISD_WINDOWS = /^M_Windows$/;
-export const litWindows = (root, made = {}) => {
+export const litWindows = (root, made = {}, { panes = paneHeight } = {}) => {
   root.traverse((o) => {
     if (!o.isMesh || Array.isArray(o.material) || o.material?.map || !ISD_WINDOWS.test(o.material?.name ?? '')) return;
-    made.windows ??= windowsMaterial({ name: 'M_Windows' });
+    if (!made.windows) {
+      made.windows = windowsMaterial({ name: 'M_Windows' });
+      const m = made.windows;
+      panes()?.then((t) => withPanes(m, t));
+    }
     o.material = made.windows;
   });
   return made;

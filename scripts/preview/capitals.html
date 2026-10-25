@@ -147,6 +147,8 @@
       const close = q.get('views') === 'close';
       // (?views=deck: down on the deck from a fighter's height, at 20, 60, 200 and 800 m, to tune the plating by)
       const deck = q.get('views') === 'deck';
+      // (?views=windows: beside a pane of the ship's own window strips, at 15, 40, 120 and 400 m, the panes close and their mean far off)
+      const windows = q.get('views') === 'windows';
       const near = fighter
         ? (() => {
             const len = LENGTH[kind] ?? 1000;
@@ -158,8 +160,28 @@
             ];
           })()
         : null;
+      const pane = windows
+        ? (() => {
+            let strip = null;
+            slot.holder.traverse((o) => o.isMesh && !strip && /window/i.test([o.material].flat()[0]?.name ?? '') && (strip = o));
+            if (!strip) return null;
+            // (a vertex a third of the way along the strip, outward along its normal)
+            const g = strip.geometry;
+            const i = Math.floor(g.attributes.position.count / 3);
+            const at = new THREE.Vector3().fromBufferAttribute(g.attributes.position, i).applyMatrix4(strip.matrixWorld);
+            const n = new THREE.Vector3().fromBufferAttribute(g.attributes.normal, i).transformDirection(strip.matrixWorld);
+            const len = LENGTH[kind] ?? 1000;
+            return [15, 40, 120, 400].map((m) => {
+              const h = m / len;
+              const eye = at.clone().addScaledVector(n, h).add(new THREE.Vector3(0, h * 0.25, h * 0.4));
+              return { at: eye.toArray(), look: at.toArray(), fov: 50, near: h / 20 };
+            });
+          })()
+        : null;
       const views = near
         ? [...near, ...near]
+        : pane
+        ? pane
         : deck
         ? (() => {
             // (the hull under a point a little to port of the keel, two fifths forward: the deck there)
@@ -192,7 +214,7 @@
             { at: [0.32, 0.3, -0.75], look: [0, 0.12, -0.3], fov: 34 },
           ];
       views.forEach((v, i) => {
-        const cam = new THREE.PerspectiveCamera(v.fov, W / H, 0.005, 20);
+        const cam = new THREE.PerspectiveCamera(v.fov, W / H, v.near ?? 0.005, 20);
         cam.position.set(...v.at);
         cam.lookAt(...v.look);
         cam.updateMatrixWorld(true);

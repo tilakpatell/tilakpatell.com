@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
-import { GAME_KITS, MESH_TRIS, WINDOW_LIGHT, dressGameKit, kitMaterial, kitOf, lodsFor, mapSize, windowsMaterial } from './capitalKit';
+import { GAME_KITS, MESH_TRIS, WINDOW_HEIGHT, WINDOW_LIGHT, dressGameKit, kitMaterial, kitOf, lodsFor, mapSize, windowsMaterial, withPanes } from './capitalKit';
 
 const map = () => new THREE.Texture();
 const compiled = (m) => {
@@ -103,9 +103,34 @@ describe('capitalKit', () => {
     expect(w.emissive.b).toBeLessThan(w.emissive.r);
     expect(w.emissiveIntensity).toBe(WINDOW_LIGHT.intensity);
     expect(w.defines.USE_UV).toBe('');
-    const s = compiled(windowsMaterial({ name: 'M_Windows' }));
+    const plain = windowsMaterial({ name: 'M_Windows' });
+    const s = compiled(plain);
     expect(s.fragmentShader).toMatch(/vec2 kwCell = vUv \* vec2\( 2\.0, 1\.0 \);/);
-    expect(s.fragmentShader).toMatch(/totalEmissiveRadiance \*= mix\( kwOn, kwMean, smoothstep\( 0\.35, 1\.0, length\( fwidth\( kwCell \) \) \) \);/);
+    expect(s.fragmentShader).toMatch(/float kwH = texture2D\( kwHeight, vUv \)\.r;/);
+    expect(s.fragmentShader).toMatch(/totalEmissiveRadiance \*= mix\( kwOn, kwMean, kwBlur \);/);
+    // (the plain pane till the game's heightmap comes; then its shape, the same program)
+    expect(s.uniforms.kwUse.value).toBe(0);
+    const height = map();
+    expect(withPanes(plain, height)).toBe(plain);
+    expect(s.uniforms.kwHeight.value).toBe(height);
+    expect(s.uniforms.kwUse.value).toBe(1);
+    expect(withPanes(plain, null)).toBe(plain);
+    expect(s.uniforms.kwHeight.value).toBe(height);
+  });
+
+  it('asks for the game’s heightmap of the panes once a kit draws windows, and lights them by it', async () => {
+    const { root, nose } = cut();
+    const windows = { name: 'M_Windows', roughness: 0.7, slots: [] };
+    const asked = [];
+    const height = map();
+    await dressGameKit(root, 'destroyer', {
+      loadPart: async () => ({ prims: [PROPS, windows].map((material) => ({ geometry: tri(), matrix: new THREE.Matrix4(), material })) }),
+      loadTexture: async (path, size) => (asked.push([path, size]), path === WINDOW_HEIGHT ? height : map()),
+    });
+    expect(asked.filter(([path]) => path === WINDOW_HEIGHT)).toEqual([[WINDOW_HEIGHT, 512]]);
+    const lit = nose.children.find((o) => o.name === 'kit:M_Windows');
+    expect(lit.material.userData.panes.height.value).toBe(height);
+    expect(lit.material.userData.panes.use.value).toBe(1);
   });
 
   it('puts the kit’s parts in the cut’s place, a material a mesh, the cut’s own parts gone and its hull kept', async () => {
