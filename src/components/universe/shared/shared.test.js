@@ -18,7 +18,7 @@ const FACE = [
   [wallet, ['EARN', 'LEVELS', 'TITLES', 'createPayLedger', 'tellSkills', 'useEarn', 'useEconomy']],
   [powerBar, ['PowerBar']],
   [fit, ['statsOf', 'useShipyardPage']],
-  [space, ['PLACES', 'SECTORS', 'SECTOR_RADIUS', 'STARS', 'sectorOf']],
+  [space, ['PALETTE', 'PLACES', 'SECTORS', 'SECTOR_RADIUS', 'STARS', 'sectorOf', 'tint']],
   [far, ['SKY_FAR', 'createFarStars', 'universeBudget']],
 ];
 
