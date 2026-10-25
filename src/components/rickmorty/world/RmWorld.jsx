@@ -554,7 +554,7 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
   const home = arriveAt(useLocation().state);
   const navigate = useNavigate();
   if (!sim.current) sim.current = newSim(planet ?? home ?? START, !!planet || !!home);
-  // (C-137's next is never a planet's: they're done on the planets)
+  // (C-137's next is never a planet's: they're played as planets, landed on or, the sector's four, dialled)
   const prog = planet ? planetProgress(planet, done) : progress(done, { skip: PLANET_TASKS });
   const progRef = useRef(prog);
   progRef.current = prog;

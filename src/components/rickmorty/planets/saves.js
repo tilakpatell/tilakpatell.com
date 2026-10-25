@@ -1,5 +1,5 @@
 // What the Rick and Morty planets keep between visits, each a book by planet
-// id, and nothing else written anywhere (C-137's tp-rm-done and the galaxy's
+// id, and nothing else written anywhere (C-137's tp-c137-done and the galaxy's
 // tp-galaxy-* are left alone): the places found, the quests done, and the
 // best run at each planet's mission. Every read is an empty book on a first
 // visit, a private window or a key that isn't one.

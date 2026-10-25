@@ -1104,7 +1104,7 @@ export const MEMORIES = [
 export const MEMORY_COLORS = { blue: '#52d6ff', purple: '#b47cff', red: '#ff4d5e', pink: '#ff8fd0' };
 
 // the planets' things to do, done on the planets themselves (landed on from
-// the universe map): the small ones'; a big planet's are retired with TASKS'
+// the universe map, or for the sector's four dialled too): the small ones'; a big planet's are retired with TASKS'
 export const PLANET_TASKS = new Set(DESTINATIONS.filter((d) => isPlanet(d.id) && !isBigPlanet(d.id)).flatMap((d) => d.tasks.map((t) => t.id)));
 
 // What's done and what's next. `done` is the ids finished, in any order.
