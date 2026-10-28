@@ -50,17 +50,18 @@ export default function Battlefront() {
     }
     setChoice(c);
   };
-  // (the adapter's features are read once, asynchronously: until then neither world is begun)
-  const [features, setFeatures] = useState(null);
+  // (the adapter's features and limits are read once, asynchronously: until then neither world is begun; they're held
+  // to what the build's programs need, play.json's needs)
+  const [adapter, setAdapter] = useState(null);
   useEffect(() => {
-    if (!level || features) return undefined;
+    if (!level || adapter) return undefined;
     let live = true;
-    probeAdapter().then((f) => live && setFeatures(f));
+    probeAdapter().then((a) => live && setAdapter(a));
     return () => {
       live = false;
     };
-  }, [level, features]);
-  const support = features && engineSupport({ ...probeBrowser(window), features }, { beforeIsolation: true });
+  }, [level, adapter]);
+  const support = adapter && engineSupport({ ...probeBrowser(window), ...adapter }, { beforeIsolation: true, needs: play.needs ?? null });
   const engine = level ? playOn({ level, play, support, search, choice, back }) : null;
   useEffect(() => {
     if (engine?.go) window.location.assign(engine.go);
