@@ -60,11 +60,18 @@ describe('which build the site plays', () => {
   const at = (id, created, problems = []) => ({ id, created, problems });
 
   it('takes the newest good build newer than the one it plays, and none when nothing is newer', () => {
-    const current = { id: 'main-a', created: '2026-10-28T09:00:00Z' };
-    const cs = [at('main-a', '2026-10-28T09:00:00Z'), at('main-b', '2026-10-29T09:00:00Z'), at('main-c', '2026-10-30T09:00:00Z', ['missing ui/main.js'])];
-    expect(newest(cs, current)).toBe('main-b');
-    expect(newest([at('main-a', '2026-10-28T09:00:00Z'), at('main-old', '2026-10-27T09:00:00Z')], current)).toBeNull();
-    expect(newest(cs, null)).toBe('main-b');
+    const current = { id: 'main-0000000a', created: '2026-10-28T09:00:00Z' };
+    const cs = [at('main-0000000a', '2026-10-28T09:00:00Z'), at('main-0000000b', '2026-10-29T09:00:00Z'), at('main-0000000c', '2026-10-30T09:00:00Z', ['missing ui/main.js'])];
+    expect(newest(cs, current)).toBe('main-0000000b');
+    expect(newest([at('main-0000000a', '2026-10-28T09:00:00Z'), at('main-000000ff', '2026-10-27T09:00:00Z')], current)).toBeNull();
+    expect(newest(cs, null)).toBe('main-0000000b');
+  });
+
+  it('takes only a build of bf2-web’s main on its own, never a branch’s or a worktree’s', () => {
+    const current = { id: 'main-da7a51b3', created: '2026-10-28T09:09:08Z' };
+    // (2026-10-28: the desktop's round-1030 worktree build, uploaded beside main's, was adopted until this)
+    expect(newest([at('r1030-306142c9', '2026-10-28T15:15:35Z')], current)).toBeNull();
+    expect(newest([at('r1030-306142c9', '2026-10-28T15:15:35Z'), at('main-f675e260', '2026-10-28T14:00:00Z')], current)).toBe('main-f675e260');
   });
 
   it('names the build in play.json with its size, keeping the rest', () => {

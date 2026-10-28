@@ -14,6 +14,8 @@
 //     self-contained, so going back to it brings its rulebooks back too) when all are there, else the shared folder's
 //   newest(candidates, current) → the newest adoptable build's id newer than current's, or null
 //     candidates: [{ id, created, problems }]   current: { id, created } | null
+//     only a build of bf2-web's main (MAIN_BUILD, main-<sha8>, as the desktop names them) is taken on its own: a
+//     build the desktop made from a branch or a worktree is played only when it's named (adopt --build)
 //   adopted(play, id, manifest, uiData) → play.json for that build
 //   uploadPlan(manifest, { prefix, previous, previousPrefix, existing }) → [{ action, key, path?, from? }]
 //     copy a file the previous build has byte for byte (by its sha256), skip one already there, put the rest;
@@ -89,11 +91,13 @@ export function uiDataFor(id, own, shared) {
   return { uiData: SHARED_UI, problems: rulebookProblems(shared) };
 }
 
+export const MAIN_BUILD = /^main-[0-9a-f]{8}$/;
+
 const time = (created) => (Number.isFinite(Date.parse(created)) ? Date.parse(created) : -Infinity);
 
 export function newest(candidates, current = null) {
   const after = current ? time(current.created) : -Infinity;
-  const ok = candidates.filter((c) => !c.problems.length && c.id !== current?.id && time(c.created) > after);
+  const ok = candidates.filter((c) => MAIN_BUILD.test(c.id) && !c.problems.length && c.id !== current?.id && time(c.created) > after);
   ok.sort((a, b) => time(b.created) - time(a.created) || (a.id < b.id ? 1 : -1));
   return ok[0]?.id ?? null;
 }
