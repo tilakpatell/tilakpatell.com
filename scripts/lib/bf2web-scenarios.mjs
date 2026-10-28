@@ -3,7 +3,8 @@
 // for their lists) for scripts/bf2web-golden.mjs. Each names its bf2-web
 // sources, its gate and its scripts, line for line as the gate writes them.
 //
-//   MODULES[name] → { sources, gate, scenarios({ webPort }) → { [scenario]: lines[] }, argv? }
+//   MODULES[name] → { sources, gate, scenarios({ webPort, site }) → { [scenario]: lines[] } }
+//     or, for a driver that takes a scenario's name and prints its records: { sources, gate, named: [scenario, …] }
 
 // Onslaught's custom-menu defaults with the Medium intensity row and the menu's
 // smallest score limit (bf2-web WebPort/tests/arcade-round.mjs, onslaughtRules)
@@ -52,6 +53,16 @@ export const MODULES = {
       unlimited: [rulesLine(), 'setup', 'human 0', 'human 2', 'human 1', 'state'],
       oneLife: [rulesLine({ lives: 1 }), 'setup', 'human 0', 'state'],
     }),
+  },
+  blaster: {
+    sources: ['physics/player/blaster-weapon.cpp', 'physics/player/blaster-driver.cpp'],
+    gate: 'WebPort/tests/blaster-weapon.mjs',
+    named: ['hold', 'release', 'tap', 'wall', 'rng'],
+  },
+  health: {
+    sources: ['physics/player/soldier-health.cpp', 'physics/player/blaster-weapon.cpp', 'physics/player/soldier-health-driver.cpp'],
+    gate: 'WebPort/tests/soldier-health.mjs',
+    named: ['bot-body', 'bot-head', 'bot-30m', 'bot-50m', 'assault-body', 'assault-head', 'ai-on-assault', 'assault-regen', 'trooper-regen', 'bot-regen', 'threshold', 'respawn'],
   },
   spawns: {
     sources: ['physics/player/spawn-finder.cpp', 'ai/spawn-waves.cpp', 'ai/spawn-driver.cpp'],

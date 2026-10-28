@@ -44,13 +44,19 @@ for (const [name, mod] of Object.entries(MODULES)) {
   // -ffp-contract=off: no fused multiply-adds, as bf2-web's deterministic flags (and JavaScript) have it
   run(cxx, ['-std=c++17', '-O2', '-ffp-contract=off', ...mod.sources.map((s) => join(webPort, s)), '-o', exe]);
   const scenarios = {};
-  for (const [scenario, lines] of Object.entries(await mod.scenarios({ webPort, site: ROOT }))) {
+  const parse = (text) => text.trim().split('\n').filter(Boolean).map((l) => JSON.parse(l));
+  // a named driver takes the scenario's name and prints its records; a scripted one reads a script and writes a file
+  const named = mod.named ? Object.fromEntries(mod.named.map((n) => [n, [n]])) : await mod.scenarios({ webPort, site: ROOT });
+  for (const [scenario, lines] of Object.entries(named)) {
+    if (mod.named) {
+      scenarios[scenario] = { script: lines, records: parse(run(exe, lines, { cwd: webPort })) };
+      continue;
+    }
     const script = join(work, `${name}.${scenario}.txt`);
     const output = join(work, `${name}.${scenario}.jsonl`);
     await writeFile(script, lines.join('\n') + '\n');
-    run(exe, mod.argv ? mod.argv(script, output) : [script, output], { cwd: webPort });
-    const records = (await readFile(output, 'utf8')).trim().split('\n').filter(Boolean).map((l) => JSON.parse(l));
-    scenarios[scenario] = { script: lines, records };
+    run(exe, [script, output], { cwd: webPort });
+    scenarios[scenario] = { script: lines, records: parse(await readFile(output, 'utf8')) };
   }
   const fixture = { from: { repo: 'tilakpatell/bf2-web', commit, sources: mod.sources, gate: mod.gate }, scenarios };
   await writeFile(join(OUT, `${name}.json`), JSON.stringify(fixture) + '\n');
