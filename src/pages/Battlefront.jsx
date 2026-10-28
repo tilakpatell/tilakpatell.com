@@ -61,7 +61,7 @@ export default function Battlefront() {
     };
   }, [level, features]);
   const support = features && engineSupport({ ...probeBrowser(window), features }, { beforeIsolation: true });
-  const engine = level ? playOn({ level, play, support, search, choice }) : null;
+  const engine = level ? playOn({ level, play, support, search, choice, back }) : null;
   useEffect(() => {
     if (engine?.go) window.location.assign(engine.go);
   }, [engine?.go]);

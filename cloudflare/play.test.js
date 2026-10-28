@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { ENGINE, ISOLATED, contentType, playRoute, servePlay } from './play.js';
+import { RETURN_VERSION } from './playReturn.js';
 
 const config = { build: 'b1', site: 'sites/b1/', export: 'extract/', uiData: 'library/ui/frontend/', exportAllow: ['fonts/', 'strings/'] };
 const manifest = { schema: 'bf2-play-site/1', entries: ['index.html', 'original-frame-graph.js', 'original-frame-graph.wasm', 'scene.json', 'ui/main.js', 'runtime/world-play.mjs'].map((path) => ({ path })) };
@@ -80,6 +81,15 @@ describe('serving the play site', () => {
     expect(again.status).toBe(304);
   });
 
+  it('serves the page with the way back added, under an ETag the script is part of', async () => {
+    const res = await serve(`${ENGINE}b1/`);
+    expect(res.headers.get('etag')).toBe(`"${'sites/b1/index.html'.length}-${RETURN_VERSION}"`);
+    const html = await res.text();
+    expect(html.startsWith('<!doctype html><script>(')).toBe(true);
+    expect(res.headers.get('content-length')).toBe(String(new TextEncoder().encode(html).length));
+    expect((await serve(`${ENGINE}b1/`, { range: 'bytes=0-3' })).status).toBe(200);
+  });
+
   it('refuses a file the manifest doesn’t list, even when the bucket has it', async () => {
     const env = { PLAY: bucket(files) };
     const res = await serve(`${ENGINE}b1/secret.bin`, {}, env);
@@ -115,6 +125,22 @@ describe('serving the play site', () => {
     // (the page and a range are never kept)
     await servePlay(ask(`${ENGINE}b1/`), env, config, new Map(), null, cache);
     expect(kept.has(`https://tilakpatell.com${ENGINE}b1/`)).toBe(false);
+  });
+
+  it('asks R2 again when a read fails, and answers a 503 of its own when it fails again', async () => {
+    const flaky = (fails) => {
+      const inner = bucket(files);
+      let left = fails;
+      return { gets: inner.gets, get: async (key, opts) => (left-- > 0 ? Promise.reject(new Error('Network connection lost')) : inner.get(key, opts)) };
+    };
+    const once = await serve(`${ENGINE}b1/original-frame-graph.wasm`, {}, { PLAY: flaky(1) });
+    expect(once.status).toBe(200);
+    expect(await once.text()).toBe('wasm-bytes');
+    const down = await serve(`${ENGINE}b1/original-frame-graph.wasm`, {}, { PLAY: flaky(99) });
+    expect(down.status).toBe(503);
+    expect(down.headers.get('cross-origin-embedder-policy')).toBe('require-corp');
+    expect(down.headers.get('cache-control')).toBe('no-store');
+    expect(down.headers.get('content-type')).toMatch(/^text\/plain/);
   });
 
   it('leaves everything to the site without the binding', async () => {
