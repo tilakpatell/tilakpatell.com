@@ -20,7 +20,9 @@
 //   registerEngineCache(win)   the page's side: registers it, and asks for the storage to be kept (persist)
 //   WORKER_SOURCE   the script the Worker sends
 //
-// engineWorker and registerEngineCache run as their source text, so neither may reach outside itself.
+// engineWorker, following and registerEngineCache run as their source text, so none may reach outside itself.
+
+import { sourceOf } from './source.js';
 
 export const ENGINE_CACHE = 'tp-engine-';
 
@@ -145,4 +147,5 @@ export function registerEngineCache(win) {
   nav.storage?.persist?.().catch(() => {});
 }
 
-export const WORKER_SOURCE = `(${engineWorker})(self, ${cacheKeep}, (paths) => (${following})(paths, ${AHEAD}));\n`;
+// (with the bundler's __name stood in for: source.js)
+export const WORKER_SOURCE = sourceOf(`(${engineWorker})(self, ${cacheKeep}, (paths) => (${following})(paths, ${AHEAD}));`);

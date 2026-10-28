@@ -106,7 +106,7 @@ describe('the way back from the engine’s page', () => {
     expect(plain.startsWith('<!doctype html><canvas></canvas><script>(')).toBe(true);
     expect(plain).toContain('(location.search));');
     // (and the worker that keeps the build on disk registered after it, engineCache.js)
-    expect(plain.endsWith('(window);</script>')).toBe(true);
+    expect(plain).toMatch(/\(window\);\n\}\)\(\);\n<\/script>$/);
     expect(withReturn('<body><p></p></body></html>')).toMatch(/<p><\/p><script>.*<\/script><\/body><\/html>$/s);
     expect(RETURN_VERSION).toMatch(/^[0-9a-f]{8}$/);
   });
