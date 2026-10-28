@@ -120,6 +120,61 @@ export function generateEvaluateRecords({ seed = 0xe7a1, count = 2000 } = {}) {
   return out;
 }
 
+// TacticInfo bots: which of the 22 settings slots exist (and which have move,
+// projectile and melee settings), a spawn in a vehicle, Hide's limit range,
+// the sim rate, then 8 decisions (act bits, tactic, the random draw for a Hide)
+export const TACTICS_RECORD = 128;
+export const TACTICS_RESULT = 320;
+export const RETAIL_TACTICS = {
+  records: '300e49bdb1f1abd2e8331b9af2e5d743f868bd9f8ab6ee411a5c27068b9aec67',
+  results: '587f8f53810634a7fd06fcef782f5a4a3c89ebebaf10f9d948cf9973a7678dc5',
+  construct: '331971ef07786092f0a03c67f2e7d2e2a4f890d30b5dc5c0de70c79284586f43',
+  melee: 'bd63319ff4f9305bb49d52d77be755c880dd0a3b49c826a8e87655755cdfa4d1',
+};
+export function generateTacticsRecords({ seed = 0x7ac71c5, count = 3000 } = {}) {
+  const { below, chance, pick } = rng(seed);
+  const out = new Uint8Array(8 + count * TACTICS_RECORD);
+  header(out, 'BF2I', count);
+  const v = new DataView(out.buffer);
+  for (let i = 0; i < count; i++) {
+    const r = 8 + i * TACTICS_RECORD;
+    let slots = 0;
+    let moves = 0;
+    let projectiles = 0;
+    let melees = 0;
+    for (let k = 0; k < 22; k++) {
+      if (chance(k === 2 || k === 3 ? 0.8 : 0.35)) slots |= 1 << k;
+      if (chance(0.75)) moves |= 1 << k;
+      if (chance(0.7)) projectiles |= 1 << k;
+      if (chance(0.7)) melees |= 1 << k;
+    }
+    // Assault_PvE_Tactics: Vehicle, Attack, Flee, Evade
+    if (i === 0) slots = (1 << 0) | (1 << 2) | (1 << 4) | (1 << 21);
+    v.setUint32(r, slots >>> 0, true);
+    v.setUint32(r + 4, moves >>> 0, true);
+    v.setUint32(r + 8, projectiles >>> 0, true);
+    v.setUint32(r + 12, melees >>> 0, true);
+    out[r + 16] = chance(0.25) ? 1 : 0;
+    const lo = pick([0, 0.5, 1, 2, 3.5, 10]);
+    const hi = pick([0, 1, 2, 4.25, 8, 20]);
+    v.setFloat32(r + 20, lo, true);
+    v.setFloat32(r + 24, hi, true);
+    v.setUint32(r + 28, pick([30, 30, 60, 20, 1]), true);
+    const followNoTarget = (slots >> 18) & 1 && !((slots >> 19) & 1);
+    let tactic = 0;
+    for (let step = 0; step < 8; step++) {
+      const act = pick([1, 2, 4, 4, 8, 0x10, 0x11, 0x14, 0x22, 0x40, 0x24, below(128)]);
+      if (!chance(0.45)) tactic = chance(0.25) ? 4 : below(23);
+      if (followNoTarget && tactic === 19) tactic = 20;
+      const e = r + 32 + step * 12;
+      v.setUint32(e, act, true);
+      v.setUint32(e + 4, tactic, true);
+      v.setFloat32(e + 8, pick([0, 0.25, 1, 2.75, 7.3, 100.9, 12345.5, -1, -3.5]), true);
+    }
+  }
+  return out;
+}
+
 // SoldierKnowledge v36's fields the tree reads, by their offsets (WebPort/ai/battleai-bf2-tree.h), one read each
 export function knowledgeOf(v, at) {
   return {
