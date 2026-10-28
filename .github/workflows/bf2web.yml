@@ -1,0 +1,114 @@
+name: bf2-web
+# Hoth's engine from bf2-web to the site, with no one in the loop while bf2-web keeps to the contract
+# (docs/decisions/2026-10-28-bf2web-pipeline.md):
+#
+#   bf2-web's main moves → build (the desktop: bf2-web's own entry point builds, plays a round on the GPU, exports;
+#   the site's uploader sends what changed to sites/<build>/) → adopt (GitHub's runner: the build held to the
+#   contract, opened headless through the Worker's code, play.json pointed at it, pushed) → deploy.yml.
+#
+# It runs when bf2-web says (its notify workflow sends repository_dispatch bf2web-main with the commit), every six
+# hours in case that was missed, or from the Actions tab: stage build (a commit, default bf2-web's main), adopt (a
+# build, default the newest good one) or both. A build that breaks the contract is refused with what broke: that is
+# the one time a person (or a session) is needed.
+run-name: >-
+  ${{ format('bf2-web: {0}{1}', github.event_name == 'workflow_dispatch' && inputs.stage || 'both', (inputs.build || inputs.sha || github.event.client_payload.sha) && format(' · {0}', inputs.build || inputs.sha || github.event.client_payload.sha) || '') }}
+on:
+  repository_dispatch:
+    types: [bf2web-main]
+  schedule:
+    - cron: '41 */6 * * *'
+  workflow_dispatch:
+    inputs:
+      stage:
+        description: 'build (the desktop makes it), adopt (the site plays it) or both'
+        required: true
+        type: choice
+        options: [both, build, adopt]
+        default: both
+      sha:
+        description: 'build: the bf2-web commit (default its main)'
+        required: false
+        type: string
+      build:
+        description: 'adopt: the build id, e.g. main-da7a51b3 (default the newest good one)'
+        required: false
+        type: string
+permissions:
+  contents: write
+  actions: write
+concurrency:
+  group: bf2web
+  cancel-in-progress: false
+jobs:
+  build:
+    if: ${{ github.event_name != 'workflow_dispatch' || inputs.stage != 'adopt' }}
+    runs-on: [self-hosted, gpu]
+    timeout-minutes: 360
+    # (the desktop's one GPU: one build at a time, queued behind another)
+    concurrency:
+      group: bf2web-desktop
+    outputs:
+      build: ${{ steps.make.outputs.build }}
+      made: ${{ steps.make.outputs.made }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          sparse-checkout: |
+            scripts
+            src/data/bf2web
+          persist-credentials: false
+      - name: Build, play and upload
+        id: make
+        shell: powershell
+        run: |
+          $flags = @()
+          if ($env:SHA) { $flags += @('--sha', $env:SHA) }
+          node scripts/desktop/bf2web-build.mjs @flags
+          exit $LASTEXITCODE
+        env:
+          SHA: ${{ inputs.sha || github.event.client_payload.sha }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          GCM_INTERACTIVE: never
+          GIT_TERMINAL_PROMPT: '0'
+  adopt:
+    needs: build
+    if: ${{ always() && !cancelled() && (needs.build.result == 'success' || needs.build.result == 'skipped') && (github.event_name != 'workflow_dispatch' || inputs.stage != 'build') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+      R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Hold the builds to the contract, and name the newest good one
+        id: adopt
+        run: node scripts/bf2web-adopt.mjs ${{ inputs.build && format('--build {0}', inputs.build) || '' }}
+      - name: Open it the way a visitor's browser does
+        if: ${{ steps.adopt.outputs.adopted != '' }}
+        run: |
+          npx playwright-core install --with-deps chromium
+          node scripts/bf2web-smoke.mjs
+      - name: The play site's tests
+        if: ${{ steps.adopt.outputs.adopted != '' }}
+        run: npx vitest run cloudflare src/components/battlefront src/lib/bf2web scripts/lib/bf2web-site.test.mjs scripts/desktop/bf2web-build.test.mjs
+      - name: Point the site at it, and deploy
+        if: ${{ steps.adopt.outputs.adopted != '' }}
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src/data/bf2web/play.json
+          git commit -m "Hoth plays bf2-web's $BUILD" -m "Adopted by the bf2-web workflow (docs/decisions/2026-10-28-bf2web-pipeline.md): the build held to the contract and opened through the Worker's code."
+          git pull --rebase origin main
+          git push origin HEAD:main
+          # (a push made with the workflow's token starts no workflow, so the deploy is asked for by name)
+          gh workflow run deploy.yml --ref main
+          echo "- Hoth now plays **$BUILD**; deploy.yml started" >> "$GITHUB_STEP_SUMMARY"
+        env:
+          BUILD: ${{ steps.adopt.outputs.adopted }}
+          GH_TOKEN: ${{ github.token }}

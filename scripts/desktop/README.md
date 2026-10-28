@@ -215,3 +215,11 @@ run and what the numbers decide.
 | `../../.github/ISSUE_TEMPLATE/gen3d.yml`, `voices.yml`, `motion.yml` | the issue forms |
 | `bf2017-desk.mjs`, `bf2017-<job>.mjs` | lane W’s picture jobs (above) and what they share |
 | `../../.github/workflows/bf2017-desktop.yml` | their workflow, started by hand |
+
+## bf2-web's play site
+
+`.github/workflows/bf2web.yml` builds bf2-web's main on this machine when it moves (or every six hours, or from the
+Actions tab) and the site adopts it ([the decision](../../docs/decisions/2026-10-28-bf2web-pipeline.md)). The job is
+`scripts/desktop/bf2web-build.mjs`; it needs `BF2WEB_REPO` (this machine's bf2-web checkout) and `BF2_EXPORT` (the
+export folder, whose `web/` holds `data/`) in the runner's `.env`, and bf2-web's own entry point
+`WebPort/deploy/build-play-site.mjs` at the commit it builds. `node scripts/desktop/bf2web-build.mjs --dry` says what it would run.
