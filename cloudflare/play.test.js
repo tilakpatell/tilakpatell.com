@@ -188,6 +188,17 @@ describe('serving the play site', () => {
     expect(await res.text()).toContain('tp-engine-');
   });
 
+  it('lists the build’s files for that worker to read ahead, a year under the build, whatever the browser takes', async () => {
+    for (const headers of [{}, { 'accept-encoding': 'br' }]) {
+      const res = await serve(`${ENGINE}b1/tp-files.json`, headers);
+      expect(res.status).toBe(200);
+      expect(res.headers.get('cache-control')).toContain('immutable');
+      expect(res.headers.get('cross-origin-embedder-policy')).toBe('require-corp');
+      expect(await res.json()).toEqual({ build: 'b1', files: manifest.entries.map((e) => e.path) });
+    }
+    expect(await serve(`${ENGINE}b0/tp-files.json`)).toBeNull();
+  });
+
   it('leaves everything to the site without the binding', async () => {
     expect(await serve(`${ENGINE}b1/`, {}, {})).toBeNull();
   });
