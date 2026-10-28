@@ -38,6 +38,38 @@ const insidePolygon = (xz, x, z) => {
   return inside;
 };
 
+// A mesh as bf2-web's BFNAVPK1 package (its runtime/nav/navgraph-v43.js
+// buildNavPackage's layout: the header, a JSON manifest with the counts, then
+// the sections, four bytes a value), from the planner's own arrays so both
+// sides read the same numbers
+export async function navPackage(mesh) {
+  const { navArraysFromMesh } = await import('../../src/lib/battlefront/bf2web/navMesh.js');
+  const a = navArraysFromMesh(mesh);
+  const A = a.areaEdgeStart.length - 1, E = a.edgeAdjacent.length;
+  let manifest = Buffer.from(JSON.stringify({ schema: 'bf2web-nav-package/1', name: 'site-test', counts: { graphs: 1, areas: A, edges: E } }));
+  manifest = Buffer.concat([manifest, Buffer.alloc((4 - (manifest.length % 4)) % 4, 0x20)]);
+  const words = 16 * A + (A + 1) + 6 * E;
+  const out = Buffer.alloc(16 + manifest.length + 4 * words);
+  out.write('BFNAVPK1', 0, 'latin1');
+  out.writeUInt32LE(1, 8);
+  out.writeUInt32LE(manifest.length, 12);
+  manifest.copy(out, 16);
+  let p = 16 + manifest.length;
+  const f32 = (list) => list.forEach((x) => ((p = out.writeFloatLE(x, p)), 0));
+  const u32 = (list) => list.forEach((x) => ((p = out.writeUInt32LE(x >>> 0, p)), 0));
+  f32(a.areaPos);
+  u32(new Array(A).fill(0)); // areaRadius
+  f32(a.areaBounds);
+  u32(new Array(A).fill(0)); // areaUsageFlags
+  for (let k = 0; k < A; k++) u32([a.areaEdgeStart[k + 1] - a.areaEdgeStart[k], 0, 0, 0]); // areaFlags: flags1 & 0x7f, the edge count
+  u32(new Array(A).fill(0)); // areaGraph
+  u32(a.areaEdgeStart);
+  f32(a.edgePos);
+  u32(a.edgeAdjacent);
+  u32(new Array(2 * E).fill(0)); // edgeFlags
+  return out;
+}
+
 export const MODULES = {
   arcadeRound: {
     sources: ['ai/arcade-round.cpp', 'ai/arcade-driver.cpp'],
@@ -63,6 +95,30 @@ export const MODULES = {
     sources: ['physics/player/soldier-health.cpp', 'physics/player/blaster-weapon.cpp', 'physics/player/soldier-health-driver.cpp'],
     gate: 'WebPort/tests/soldier-health.mjs',
     named: ['bot-body', 'bot-head', 'bot-30m', 'bot-50m', 'assault-body', 'assault-head', 'ai-on-assault', 'assault-regen', 'trooper-regen', 'bot-regen', 'threshold', 'respawn'],
+  },
+  nav: {
+    sources: ['ai/nav-mesh.cpp', 'ai/nav-driver.cpp'],
+    gate: 'WebPort/tests/hoth-nav.mjs',
+    // the driver reads the package first: the test's grid, packed
+    prepare: async ({ work, write }) => {
+      const { navGrid } = await import('../../src/lib/battlefront/bf2web/fixtures/navGrid.js');
+      const file = `${work}/grid.bfnav`;
+      await write(file, await navPackage(navGrid()));
+      return [file];
+    },
+    // the gate's kinds of query on the grid: points on, off and between the floors, paths across the holes and the
+    // ramp, to the island (partial) and off the mesh, straight lines into walls, random patrol goals, seeded pairs
+    scenarios: async () => ({
+      grid: [
+        'closest 6 0.5 6 3', 'closest 18 0 10 3', 'closest -2 0 -2 5', 'closest 100 0 100 3', 'closest 19.5 3 13 1',
+        'area 6 0.5 6 2', 'area 18 0.5 10 2', 'area 30 3.5 20 2', 'area 6 9 6 2',
+        'path 2 0.2 2 30 3 30', 'path 2 0.2 2 26 2.5 18', 'path 6 0.6 14 30 2.6 6', 'path 2 0.2 2 44 4 10',
+        'path 14 1 2 14 1.4 30', 'path -1 0 -1 6 0.5 6', 'path 2 0.2 2 2.5 0.2 2.5',
+        'straight 2 0.2 2 14 1 2', 'straight 2 0.2 10 26 2 10', 'straight 10 1 30 10 1 2', 'straight 30 2.8 34 30 2.8 2',
+        'random 7 12 2 0.2 2 20 1.5 18 14', 'random 99 6 42 4 10 42 4 10 6',
+        'pairs 1234 16 20 1.5 18 22',
+      ],
+    }),
   },
   spawns: {
     sources: ['physics/player/spawn-finder.cpp', 'ai/spawn-waves.cpp', 'ai/spawn-driver.cpp'],

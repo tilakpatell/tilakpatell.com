@@ -47,6 +47,8 @@ for (const [name, mod] of Object.entries(MODULES)) {
   const parse = (text) => text.trim().split('\n').filter(Boolean).map((l) => JSON.parse(l));
   // a named driver takes the scenario's name and prints its records; a scripted one reads a script and writes a file
   const named = mod.named ? Object.fromEntries(mod.named.map((n) => [n, [n]])) : await mod.scenarios({ webPort, site: ROOT });
+  // a driver that reads an input before its script (the nav package) is handed it first
+  const before = mod.prepare ? await mod.prepare({ work, write: writeFile }) : [];
   for (const [scenario, lines] of Object.entries(named)) {
     if (mod.named) {
       scenarios[scenario] = { script: lines, records: parse(run(exe, lines, { cwd: webPort })) };
@@ -55,7 +57,7 @@ for (const [name, mod] of Object.entries(MODULES)) {
     const script = join(work, `${name}.${scenario}.txt`);
     const output = join(work, `${name}.${scenario}.jsonl`);
     await writeFile(script, lines.join('\n') + '\n');
-    run(exe, [script, output], { cwd: webPort });
+    run(exe, [...before, script, output], { cwd: webPort });
     scenarios[scenario] = { script: lines, records: parse(await readFile(output, 'utf8')) };
   }
   const fixture = { from: { repo: 'tilakpatell/bf2-web', commit, sources: mod.sources, gate: mod.gate }, scenarios };
