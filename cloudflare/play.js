@@ -6,13 +6,16 @@
 // front end and the HUD read) and /ui-data/ (the front end's rulebooks). Only a file the build's manifest lists is
 // served from the build. Everything is cross-origin isolated, as the engine's threads need (COOP, COEP require-corp:
 // the page loads nothing from another origin). A build's files are a year and immutable under its id; the roots,
-// whose paths don't carry it, are asked again each visit (304 by their ETag).
+// whose paths don't carry it, are asked again each visit (304 by their ETag). The page itself is served with the site's
+// way back added (playReturn.js), under an ETag of its object's and the script's, so a new script is a new page.
 //
 //   playRoute(pathname, config) → { key, root, path } | null   (null: not the play site's, the site's files answer)
 //   servePlay(request, env, config, manifests, ctx?, cache?) → Promise<Response | null>
 //     cache: the edge's (caches.default): a build's immutable file, asked whole, is answered from it and put in it,
 //     so a visit after the first costs no read of the bucket
 //   contentType(path)   ISOLATED: the headers   ENGINE: the page's path
+
+import { RETURN_VERSION, withReturn } from './playReturn.js';
 
 export const ENGINE = '/battlefront/engine/';
 export const ISOLATED = { 'cross-origin-opener-policy': 'same-origin', 'cross-origin-embedder-policy': 'require-corp', 'cross-origin-resource-policy': 'same-origin' };
@@ -82,7 +85,9 @@ export async function servePlay(request, env, config, manifests, ctx = null, cac
     if (hit) return hit;
   }
   if (route.root === 'site' && !(await listed(env, config, manifests)).has(route.path)) return isolatedNotFound();
-  const object = await env.PLAY.get(route.key, { range: request.headers, onlyIf: request.headers });
+  const page = route.root === 'site' && route.path === 'index.html';
+  // (the page whole, and its precondition the Worker's: its ETag isn't the object's)
+  const object = await env.PLAY.get(route.key, page ? {} : { range: request.headers, onlyIf: request.headers });
   if (!object) return isolatedNotFound();
   const headers = new Headers({
     ...ISOLATED,
@@ -91,6 +96,15 @@ export async function servePlay(request, env, config, manifests, ctx = null, cac
     'accept-ranges': 'bytes',
     'cache-control': immutable ? 'public, max-age=31536000, immutable' : 'public, max-age=0, must-revalidate',
   });
+  if (page) {
+    const etag = `"${String(object.httpEtag).replace(/^W\/|"/g, '')}-${RETURN_VERSION}"`;
+    headers.set('etag', etag);
+    headers.delete('accept-ranges');
+    if (request.headers.get('if-none-match') === etag) return new Response(null, { status: 304, headers });
+    const html = new TextEncoder().encode(withReturn(await new Response(object.body).text()));
+    headers.set('content-length', String(html.length));
+    return new Response(request.method === 'HEAD' ? null : html, { status: 200, headers });
+  }
   // (a precondition the object meets, If-None-Match among them: no body)
   if (!('body' in object) || !object.body) return new Response(null, { status: 304, headers });
   if (object.range && request.headers.has('range')) {

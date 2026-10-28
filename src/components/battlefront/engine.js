@@ -5,8 +5,10 @@
 // world, ?engine=1 goes even where the browser seems unable (to see why it fails). The engine’s page is opened by the
 // browser itself, not the router: its headers isolate it, and isolation holds only for a page loaded so. Pure.
 //
-//   ENGINE_LEVELS   CHOICE_KEY   engineUrl(play) → the play site’s address, or null while no build is published
-//   playOn({ level, play, support, search, choice }) → { go: url } | { ask: { url, mb } } | { wait: true } | null (the site’s world)
+//   ENGINE_LEVELS   CHOICE_KEY   engineUrl(play, back) → the play site’s address, or null while no build is published
+//     back: the way back (components/battlefront’s wayBack), carried as ?from= so the engine’s page can return there
+//     (cloudflare/playReturn.js)
+//   playOn({ level, play, support, search, choice, back }) → { go: url } | { ask: { url, mb } } | { wait: true } | null (the site’s world)
 //     support: lib/bf2web/engineSupport’s answer for this browser, asked beforeIsolation; null while its adapter’s
 //     features are being read (wait: neither world is begun)
 //     choice: what the visitor said before on this device, 'engine' | 'site' | null
@@ -16,10 +18,13 @@ export const ENGINE_LEVELS = ['hoth'];
 // localStorage: 'engine' | 'site', the visitor's answer on this device
 export const CHOICE_KEY = 'tp-bf2-engine';
 
-export const engineUrl = (play) => (play?.build && play.site ? `/battlefront/engine/${play.build}/` : null);
+export function engineUrl(play, back = null) {
+  if (!play?.build || !play.site) return null;
+  return `/battlefront/engine/${play.build}/${back?.to ? `?from=${encodeURIComponent(back.to)}` : ''}`;
+}
 
-export function playOn({ level, play, support, search = '', choice = null }) {
-  const url = engineUrl(play);
+export function playOn({ level, play, support, search = '', choice = null, back = null }) {
+  const url = engineUrl(play, back);
   if (!url || !ENGINE_LEVELS.includes(level)) return null;
   const asked = new URLSearchParams(search).get('engine');
   if (asked === '0') return null;

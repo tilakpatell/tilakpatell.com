@@ -29,6 +29,12 @@ describe('where Hoth is played', () => {
     expect(playOn({ level: 'endor', play, support: null })).toBeNull();
   });
 
+  it('carries the way back to the engine’s page', () => {
+    const back = { label: 'Back to Hoth', to: '/galaxy/hoth' };
+    expect(playOn({ level: 'hoth', play, support: able, choice: 'engine', back })).toEqual({ go: '/battlefront/engine/b1/?from=%2Fgalaxy%2Fhoth' });
+    expect(engineUrl(play, null)).toBe('/battlefront/engine/b1/');
+  });
+
   it('lets the address choose', () => {
     expect(playOn({ level: 'hoth', play, support: able, search: '?engine=0', choice: 'engine' })).toBeNull();
     expect(playOn({ level: 'hoth', play, support: unable, search: '?from=/galaxy/hoth&engine=1' })).toEqual({ go: '/battlefront/engine/b1/' });
