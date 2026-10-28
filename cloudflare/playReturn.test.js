@@ -104,7 +104,9 @@ describe('the way back from the engine’s page', () => {
   it('adds itself to the exported page, which has no </body>, or before one', () => {
     const plain = withReturn('<!doctype html><canvas></canvas>');
     expect(plain.startsWith('<!doctype html><canvas></canvas><script>(')).toBe(true);
-    expect(plain.endsWith('(location.search));</script>')).toBe(true);
+    expect(plain).toContain('(location.search));');
+    // (and the worker that keeps the build on disk registered after it, engineCache.js)
+    expect(plain.endsWith('(window);</script>')).toBe(true);
     expect(withReturn('<body><p></p></body></html>')).toMatch(/<p><\/p><script>.*<\/script><\/body><\/html>$/s);
     expect(RETURN_VERSION).toMatch(/^[0-9a-f]{8}$/);
   });

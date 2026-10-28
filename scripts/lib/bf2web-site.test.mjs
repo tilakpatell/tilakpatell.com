@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CONTRACT, SHARED_UI, adopted, programNeeds, contractProblems, hookProblems, missingFiles, newest, rulebookProblems, uiDataFor, uploadPlan } from './bf2web-site.mjs';
+import { CONTRACT, ENCODINGS, SHARED_UI, adopted, compressible, encodingsOf, programNeeds, contractProblems, hookProblems, missingFiles, newest, rulebookProblems, uiDataFor, uploadPlan } from './bf2web-site.mjs';
 
 const sha = (c) => c.repeat(64);
 const entry = (path, bytes = 10, s = sha('a')) => ({ path, role: 'retail-derived', bytes, sha256: s });
@@ -103,6 +103,18 @@ describe('what a build asks of the visitor’s GPU', () => {
     const { limits, features } = programNeeds([dual, wide], new Set(['material/dual']));
     expect(features).toEqual(['dual-source-blending']);
     expect(limits.maxSampledTexturesPerShaderStage).toBe(0);
+  });
+});
+
+describe('the brotli copies', () => {
+  it('are made for the binary files Cloudflare sends as they are, not what it compresses on its own or a tiny file', () => {
+    const typeOf = (p) => (/\.(wasm|json|js)$/.test(p) ? 'application/wasm' : 'application/octet-stream');
+    const m = manifest([entry('scene-t-1.pixels', 22_000_000), entry('scene-r-0.res', 53_000_000), entry('tiny.dbx', 600)]);
+    expect(compressible(m, typeOf).map((e) => e.path)).toEqual(['scene-t-1.pixels', 'scene-r-0.res']);
+  });
+
+  it('are listed in encodings.json by path, with their sizes', () => {
+    expect(encodingsOf(new Map([['b.res', 2], ['a.pixels', 9]]), 9)).toEqual({ schema: ENCODINGS, quality: 9, br: { 'a.pixels': 9, 'b.res': 2 } });
   });
 });
 

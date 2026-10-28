@@ -13,10 +13,16 @@
 //   servePlay(request, env, config, manifests, ctx?, cache?) → Promise<Response | null>
 //     cache: the edge's (caches.default): a build's immutable file, asked whole, is answered from it and put in it,
 //     so a visit after the first costs no read of the bucket
-//   contentType(path)   ISOLATED: the headers   ENGINE: the page's path
+//   contentType(path)   ISOLATED: the headers   ENGINE: the page's path   /battlefront/engine/sw.js: engineCache.js's worker
+//   <build>/tp-files.json: the paths the build's manifest lists, for that worker to read ahead of the engine's loader
+// A build file the browser takes brotli for (Accept-Encoding br), asked whole, that the build has a brotli copy of
+// (sites/<build>/<path>.br, listed in its encodings.json: scripts/bf2web-compress.mjs writes them for the binary files
+// Cloudflare doesn't compress on its own, the textures and scene data, about a quarter of a first visit) is answered
+// with that copy as it is, Content-Encoding br, for the browser to decode; it isn't kept at the edge.
 // A read R2 fails (it can, now and then, and a level's load is some 2,500 reads) is asked once again; failing again,
 // the answer is a plain 503, isolated, never Cloudflare's own HTML error page, which the engine would read as data.
 
+import { FILES, WORKER_SOURCE } from './engineCache.js';
 import { RETURN_VERSION, withReturn } from './playReturn.js';
 
 export const ENGINE = '/battlefront/engine/';
@@ -81,12 +87,36 @@ async function listed(env, config, manifests) {
   }
 }
 
+// the build's brotli copies (encodings.json, written last by scripts/bf2web-compress.mjs), read once an isolate and
+// kept: the paths that have one; none without the file
+async function brotliCopies(env, config, manifests) {
+  const key = `${config.build}#br`;
+  if (!manifests.has(key)) {
+    manifests.set(key, (async () => {
+      const object = await read(env, config.site + 'encodings.json');
+      return new Set(Object.keys(object ? (await object.json()).br ?? {} : {}));
+    })());
+  }
+  try {
+    return await manifests.get(key);
+  } catch (error) {
+    manifests.delete(key);
+    throw error;
+  }
+}
+
 const isolatedNotFound = () => new Response('Not found', { status: 404, headers: { ...ISOLATED, 'content-type': 'text/plain; charset=utf-8' } });
 const unavailable = () =>
   new Response('Unavailable, try again', { status: 503, headers: { ...ISOLATED, 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'no-store', 'retry-after': '1' } });
 
+// the service worker that keeps a build on the visitor's disk (engineCache.js), asked again each visit so a change
+// reaches everyone
+const engineWorkerScript = () =>
+  new Response(WORKER_SOURCE, { status: 200, headers: { ...ISOLATED, 'content-type': 'text/javascript; charset=utf-8', 'cache-control': 'public, max-age=0, must-revalidate' } });
+
 export async function servePlay(request, env, config, manifests, ctx = null, cache = null) {
   const url = new URL(request.url);
+  if (url.pathname === ENGINE + 'sw.js' && config?.build) return engineWorkerScript();
   const route = playRoute(url.pathname, config);
   if (!route) return null;
   if (!env.PLAY) return null;
@@ -100,7 +130,40 @@ export async function servePlay(request, env, config, manifests, ctx = null, cac
 async function answer(request, url, route, env, config, manifests, ctx, cache) {
   if (request.method !== 'GET' && request.method !== 'HEAD') return new Response(null, { status: 405, headers: { ...ISOLATED, allow: 'GET, HEAD' } });
   const immutable = route.root === 'site' && url.pathname.startsWith(ENGINE) && route.path !== 'index.html';
-  const cacheable = cache && immutable && request.method === 'GET' && !request.headers.has('range');
+  const whole = !request.headers.has('range');
+  // (the build's own list, unless the build has a file of that name)
+  if (immutable && route.path === FILES) {
+    const paths = await listed(env, config, manifests);
+    if (!paths.has(FILES)) {
+      const body = JSON.stringify({ build: config.build, files: [...paths] });
+      return new Response(request.method === 'HEAD' ? null : body, {
+        status: 200,
+        headers: { ...ISOLATED, 'content-type': 'application/json', 'cache-control': 'public, max-age=31536000, immutable' },
+      });
+    }
+  }
+  if (immutable && whole && /\bbr\b/.test(request.headers.get('accept-encoding') ?? '')) {
+    const listedPaths = await listed(env, config, manifests);
+    if (!listedPaths.has(route.path)) return isolatedNotFound();
+    if ((await brotliCopies(env, config, manifests)).has(route.path)) {
+      const copy = await read(env, route.key + '.br', { onlyIf: request.headers });
+      if (copy) {
+        const headers = new Headers({
+          ...ISOLATED,
+          'content-type': contentType(route.path),
+          'content-encoding': 'br',
+          vary: 'accept-encoding',
+          etag: copy.httpEtag,
+          'cache-control': 'public, max-age=31536000, immutable',
+        });
+        if (!('body' in copy) || !copy.body) return new Response(null, { status: 304, headers });
+        headers.set('content-length', String(copy.size));
+        // (encodeBody manual: the bytes are brotli already, sent as they are)
+        return new Response(request.method === 'HEAD' ? null : copy.body, { status: 200, headers, encodeBody: 'manual' });
+      }
+    }
+  }
+  const cacheable = cache && immutable && request.method === 'GET' && whole;
   if (cacheable) {
     const hit = await cache.match(request);
     if (hit) return hit;
@@ -116,6 +179,7 @@ async function answer(request, url, route, env, config, manifests, ctx, cache) {
     etag: object.httpEtag,
     'accept-ranges': 'bytes',
     'cache-control': immutable ? 'public, max-age=31536000, immutable' : 'public, max-age=0, must-revalidate',
+    ...(immutable ? { vary: 'accept-encoding' } : {}),
   });
   if (page) {
     const etag = `"${String(object.httpEtag).replace(/^W\/|"/g, '')}-${RETURN_VERSION}"`;
