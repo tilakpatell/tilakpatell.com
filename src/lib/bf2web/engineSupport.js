@@ -3,7 +3,9 @@
 // the memory the World frames grow into. What is missing is named, so the route can say why it fell back to the
 // site’s world. Pure: the caller reads the browser.
 //
-//   engineSupport({ gpu, isolated, sharedMemory, wasm, deviceMemory, mobile }) → { ok, missing: [why, …] }
+//   engineSupport({ gpu, isolated, sharedMemory, wasm, deviceMemory, mobile }, { beforeIsolation }) → { ok, missing: [why, …] }
+//     beforeIsolation: asked on a page that isn’t isolated itself, before going to the engine’s page, whose own
+//     headers isolate it: isolation and shared memory aren’t asked
 //   probeBrowser(win = globalThis) → the facts engineSupport takes
 
 // GB: the World frames grow linear memory to about 1.3 GB after loading and the threaded build caps it at 2 GiB
@@ -20,12 +22,12 @@ export const WHY = {
   mobile: 'a phone or tablet',
 };
 
-export function engineSupport({ gpu = false, isolated = false, sharedMemory = false, wasm = false, deviceMemory = null, mobile = false } = {}) {
+export function engineSupport({ gpu = false, isolated = false, sharedMemory = false, wasm = false, deviceMemory = null, mobile = false } = {}, { beforeIsolation = false } = {}) {
   const missing = [];
   if (!wasm) missing.push(WHY.wasm);
   if (!gpu) missing.push(WHY.gpu);
-  if (!isolated) missing.push(WHY.isolated);
-  if (!sharedMemory) missing.push(WHY.sharedMemory);
+  if (!beforeIsolation && !isolated) missing.push(WHY.isolated);
+  if (!beforeIsolation && !sharedMemory) missing.push(WHY.sharedMemory);
   // (a browser that doesn't say is given the benefit of the doubt: Firefox and Safari keep deviceMemory to themselves)
   if (deviceMemory !== null && deviceMemory < MIN_MEMORY_GB) missing.push(WHY.memory);
   if (mobile) missing.push(WHY.mobile);

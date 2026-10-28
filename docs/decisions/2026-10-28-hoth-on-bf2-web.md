@@ -14,14 +14,14 @@ What was found, 2026-10-28, on `bf2-web` main at `da7a51b` (round 1029):
 
 ## Decision
 
-- **On Hoth the site runs `bf2-web`’s engine.** Its build and the cooked Hoth scene are published to the bucket by a job on the owner’s desktop, named by a manifest; the site’s Battlefront route opens the engine’s own page, which loads them from `assets.tilakpatell.com` and draws with the visitor’s WebGPU. That page alone is cross-origin isolated (COOP `same-origin`, COEP `credentialless`), for the engine’s threads.
+- **On Hoth the site runs `bf2-web`’s engine.** Its build and the cooked Hoth scene are exported by `bf2-web`’s own step (`WORLD_EXPORT`, its `export-play-site.mjs`) on the owner’s desktop and uploaded to the private bucket (`bf2017-assets/sites/<build-id>/`); the site’s Worker serves that play site at `/battlefront/engine/`, and the Battlefront route opens it, where the engine draws with the visitor’s WebGPU. That page and its files alone are cross-origin isolated (COOP `same-origin`, COEP `require-corp`, as `bf2-web`’s servers send), for the engine’s threads; everything it loads is the Worker’s, on the site’s origin.
 - **The three.js world is the fallback**, where the engine can’t run (no WebGPU, no isolation, too little memory, no build published), and plays by `bf2-web`’s rules: `src/lib/battlefront/bf2web/` translates them to JavaScript, each held to `bf2-web`’s native driver on its gate’s scenarios (`scripts/bf2web-golden.mjs` writes the records; the tests replay them to the float) or to the retail digests `bf2-web` recorded. The bot brain and the soldier controller are not translated: the engine runs them.
 - **Never the engine’s source.** Neither repository holds it; what the site serves is the compiled build the owner publishes.
 
 ## Consequences
 
 - Hoth looks and plays as the port does, on a desktop GPU with WebGPU; a phone or a browser without it gets the site’s world on the same rules.
-- The site serves BF2’s engine, compiled, from a public domain. Whether the permission the 2017 drop came with covers it is the owner’s to say before the first publish; until then the build stays in the private bucket and the route falls back.
+- The site serves BF2’s engine, compiled, and the cooked retail scene to every visitor. `bf2-web`’s own deploy notes (`WebPort/docs/DEPLOY.md`) keep both private, behind an authenticated Worker; asked on 2026-10-28, the owner chose public for every visitor, on the permission the 2017 material came with. The site’s Worker reads the play site from the private bucket through a binding and serves only the files its manifest names.
 - A change in `bf2-web`’s rules is a new golden run (`node scripts/bf2web-golden.mjs`) and a failing test until the JavaScript follows.
 - The engine’s page keeps its own loop and GPU device, outside `src/runtime`; it is one page, not a world module.
 - `docs/README.md`’s “the site does not port or publish any game engine” no longer holds for Hoth.
@@ -29,5 +29,4 @@ What was found, 2026-10-28, on `bf2-web` main at `da7a51b` (round 1029):
 ## Revisit when
 
 - `bf2-web` plays another level (a level is a manifest and a route), or its engine runs without threads (the isolation goes).
-- The owner says the engine may not be published: the route keeps the fallback and this entry is replaced.
-- A browser the site cares about can’t take `credentialless` (Safari’s WebGPU without it): `require-corp`, with the bucket sending CORP.
+- The owner puts the engine behind authentication (planned, 2026-10-28) or takes it private: the Worker’s engine paths check it or go, and the route keeps the fallback for whoever can’t pass.

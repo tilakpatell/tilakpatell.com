@@ -1,6 +1,8 @@
-// The Worker's one piece of code, run for /audio/* alone (wrangler.jsonc's
-// run_worker_first); every other path is answered from the build's files
-// with no code run and nothing counted. Cloudflare's files answer a request
+// The Worker's code, run for /audio/* and bf2-web's play site alone
+// (wrangler.jsonc's run_worker_first); every other path is answered from the
+// build's files with no code run and nothing counted. The play site (its
+// page under /battlefront/engine/ and the roots it asks for) is read from the
+// private bucket (cloudflare/play.js); what isn't its goes to the files. Cloudflare's files answer a request
 // for part of a file (`Range`) with the whole file, 200, and Safari plays an
 // <audio> only from a server that answers 206: the Music page's sitar
 // (/audio/sitar-listen.mp3) is played so. So for audio the file is asked for
@@ -11,7 +13,13 @@
 // before. (docs/stack/cloudflare.md)
 //
 //   ranged(request, response) → Promise<Response>
-//   default.fetch(request, env) → env.ASSETS' answer for the path, ranged
+//   default.fetch(request, env) → the play site's answer, else env.ASSETS' for the path, ranged
+
+import play from '../src/data/bf2web/play.json';
+import { servePlay } from './play.js';
+
+// (the play site's manifests, read once an isolate)
+const manifests = new Map();
 
 const ONE = /^bytes=(\d*)-(\d*)$/;
 
@@ -39,6 +47,8 @@ export async function ranged(request, response) {
 
 export default {
   async fetch(request, env) {
+    const served = await servePlay(request, env, play, manifests);
+    if (served) return served;
     return ranged(request, await env.ASSETS.fetch(request));
   },
 };

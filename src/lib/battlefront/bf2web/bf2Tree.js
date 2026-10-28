@@ -95,9 +95,9 @@ function evalSelection(selection, child, c, sp) {
   return r;
 }
 
-// useTactic (SoldierBehaviorInterface.h), with BF2’s “limit > 0”: a scripted tactic is always allowed; one past its
+// takeTactic: useTactic (SoldierBehaviorInterface.h), with BF2’s “limit > 0”: a scripted tactic is always allowed; one past its
 // time limit isn’t; a new one needs its bit in the available mask and a team token, which it takes
-function useTactic(s, t, k) {
+function takeTactic(s, t, k) {
   if (k.tacticScripted === t) return true;
   if (k.tacticCurrent === t && k.tacticTimeActiveLimit > 0 && k.tacticTimeActiveLimit < k.tacticTimeActive) return false;
   const tokens = s.tactics[t];
@@ -155,8 +155,8 @@ function canFireProjectile(k, s) {
   return !!s.tokenFree[k.projectileTokenType] && inCover && settled;
 }
 
-// useChargeGrenade: the pool’s type 5
-function useChargeGrenade(k, s) {
+// chargeGrenade: useChargeGrenade, the pool’s type 5
+function chargeGrenade(k, s) {
   const d = k.targetDistance;
   if (!k.allowFire || !k.projectileFires) return false;
   if ((!k.guessHasHumanTarget && !k.hasScriptedTargets) || d < k.projectileLowerRange || d === k.projectileLowerRange || k.projectileUpperRange <= d) return false;
@@ -237,7 +237,7 @@ const leafMoveToCoverWhileMoving = (c) => set(c, { move: 2, act: attackWhileMovi
 const leafFireWithProjectile = (c) => set(c, { act: attackElseAim(c.in), fireProjectile: bit(canFireProjectile(c.in, c.shared)), move: notInCover(c.in) });
 const leafAttackMoveToCover = (c) => set(c, { move: 2, act: attackWhileMoving(c.in), commitToAlternateCover: bit(coverRequestUpdated(c.in)), guessMeleeAttack: meleeA(c.in) });
 const leafAttackFire = (c) => set(c, {
-  act: attackElseAim(c.in), fireProjectile: bit(canFireProjectile(c.in, c.shared) || useChargeGrenade(c.in, c.shared)),
+  act: attackElseAim(c.in), fireProjectile: bit(canFireProjectile(c.in, c.shared) || chargeGrenade(c.in, c.shared)),
   guessMeleeAttack: meleeA(c.in), move: notInCover(c.in),
 });
 const leafBerserkMove = (c) => set(c, { move: M.berserk, act: attackWhileMoving(c.in), guessMeleeAttack: meleeA(c.in), fireProjectile: bit(canFireProjectile(c.in, c.shared)) });
@@ -276,7 +276,7 @@ const followChaseAim = (c) => set(c, { move: M.chaseTarget, act: 2 });
 const followChaseWhileMoving = (c) => set(c, { move: M.chaseTarget, tactic: T.follow, act: attackWhileMoving(c.in) });
 function followFire(c) {
   const k = c.in;
-  set(c, { act: attackElseAim(k), fireProjectile: bit(canFireProjectile(k, c.shared) || useChargeGrenade(k, c.shared)), guessMeleeAttack: meleeA(k) });
+  set(c, { act: attackElseAim(k), fireProjectile: bit(canFireProjectile(k, c.shared) || chargeGrenade(k, c.shared)), guessMeleeAttack: meleeA(k) });
   c.out.move = k.coverIsInCover && k.guessFollowMoveToCover ? 2 : notInCover(k);
   return WAIT;
 }
@@ -338,7 +338,7 @@ function select(c, sp, rows) {
 function combatTactics(c, sp) {
   const k = c.in;
   const s = c.shared;
-  const use = (t) => useTactic(s, t, k);
+  const use = (t) => takeTactic(s, t, k);
   // isFleeValid: not “failed to find cover”, not “completed”
   const failedToFindCover = !(k.panic || k.coverTimeInCover <= 2 || k.coverTactic === T.flee);
   const completed = !(!k.coverIsInCover || k.coverTimeInCover <= 2 || k.coverTactic !== T.flee ||
@@ -383,14 +383,14 @@ const followAlerted = (c, sp) => decorate(c, { coverEnabled: bit(!c.in.guessFoll
 const enemyFollow = (c, sp) => decorate(c, { tactic: T.follow }, () => pair(c, sp, followScriptedAim, !c.in.isAlerted, followAlerted));
 
 const enemySearchArea = (c, sp) => select(c, sp, [
-  [() => c.in.executeActionTrigger && useTactic(c.shared, T.executeSearchAction, c.in), enemyExecuteSearchAction],
+  [() => c.in.executeActionTrigger && takeTactic(c.shared, T.executeSearchAction, c.in), enemyExecuteSearchAction],
   [() => true, enemySearchAreaMove],
 ]);
 
 const enemyGoToAttackPoint = (c, sp) => decorate(c, { tactic: T.goToAttackPoint, guessMeleeAttack: 0 }, () => {
   const k = c.in;
   let r = FAIL;
-  if (k.guessGoToAttackPoint && useTactic(c.shared, T.goToAttackPoint, k)) r = evalSelection(1, goToAttackPointMove, c, sp);
+  if (k.guessGoToAttackPoint && takeTactic(c.shared, T.goToAttackPoint, k)) r = evalSelection(1, goToAttackPointMove, c, sp);
   if (r === FAIL) {
     if (k.isAlerted && k.targetValid) r = evalSelection(2, goToAttackPointFire, c, sp);
     if (r === FAIL) r = evalSelection(3, leafStayScriptedAim, c, sp);
@@ -399,7 +399,7 @@ const enemyGoToAttackPoint = (c, sp) => decorate(c, { tactic: T.goToAttackPoint,
 });
 const enemyMelee = (c, sp) => decorate(c, { coverEnabled: 0 }, () => {
   const k = c.in;
-  return pair(c, sp, enemyMeleeCharge, k.isAlerted && k.targetValid && isMeleeChargeValid(k) && useTactic(c.shared, T.meleeCharge, k), enemyGoToAttackPoint);
+  return pair(c, sp, enemyMeleeCharge, k.isAlerted && k.targetValid && isMeleeChargeValid(k) && takeTactic(c.shared, T.meleeCharge, k), enemyGoToAttackPoint);
 });
 
 const idleVehicle = (c, sp) => select(c, sp, [[() => notMovingToVehicle(c.in), idleMoveToVehicle], [() => true, idleInVehicle]]);
@@ -408,7 +408,7 @@ const enemyIdle = (c, sp) => select(c, sp, [[() => c.in.inVehicle || c.in.hasScr
 // enemy_Enemy: the root for a bot not on a human’s squad
 function enemyEnemy(c, sp) {
   const k = c.in;
-  const use = (t) => useTactic(c.shared, t, k);
+  const use = (t) => takeTactic(c.shared, t, k);
   const t = k.tacticScripted !== 0 ? k.tacticScripted : k.tacticCurrent;
   const followable = !(((t - 11) >>> 0) < 4 || t === T.goToTarget);
   return select(c, sp, [
@@ -436,9 +436,9 @@ function friendlyTactics(c, sp) {
   const k = c.in;
   return select(c, sp, [
     [() => k.coverIsInCover && !coverRequestUpdated(k) && k.blinded, friendlyBlinded],
-    [() => !k.coverIsInCover && !k.inVehicle && k.allowFire && k.isAlerted && isCloseCombatValid(k) && useTactic(c.shared, T.closeCombat, k), friendlyCloseCombat],
+    [() => !k.coverIsInCover && !k.inVehicle && k.allowFire && k.isAlerted && isCloseCombatValid(k) && takeTactic(c.shared, T.closeCombat, k), friendlyCloseCombat],
     [() => k.coverIsInCover && k.coverIsProtective && !coverRequestUpdated(k) && k.suppressionTicks !== 0, friendlySuppressed],
-    [() => k.friendlySuppress && useTactic(c.shared, T.squadEngage, k), friendlyEngage],
+    [() => k.friendlySuppress && takeTactic(c.shared, T.squadEngage, k), friendlyEngage],
     [() => true, friendlySquadMovement],
   ]);
 }
@@ -452,7 +452,7 @@ function friendly(c, sp) {
     [() => k.hasScriptedPath, friendlyScriptedPath],
     [() => !k.inVehicle && k.friendlyEnterVehicle, friendlyEnterVehicle],
     [() => k.inVehicle, friendlyInVehicle],
-    [() => k.coverId === 0 && k.coverTactic === T.squadEngage && k.friendlySuppress && !k.coverIsInCover && k.targetCanSee && useTactic(c.shared, T.squadEngage, k), friendlyEngageInOpen],
+    [() => k.coverId === 0 && k.coverTactic === T.squadEngage && k.friendlySuppress && !k.coverIsInCover && k.targetCanSee && takeTactic(c.shared, T.squadEngage, k), friendlyEngageInOpen],
     [() => true, friendlySquadTactics],
   ]);
 }

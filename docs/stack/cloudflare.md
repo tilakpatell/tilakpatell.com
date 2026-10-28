@@ -10,8 +10,8 @@ Cloudflare answers for tilakpatell.com since 2026-10-21. Its DNS holds the domai
 
 Nothing under `src/` knows about Cloudflare (the site asks `ASSET_BASE`, whatever it is, for the heavy files). These do:
 
-- `wrangler.jsonc`: the Worker's name, the account's id, the build's files (`./dist`), the site's `404.html` for a path with no file, and the script for `/audio/*` alone.
-- `cloudflare/worker.js` (tested beside it): that script, which answers a `Range` on audio.
+- `wrangler.jsonc`: the Worker's name, the account's id, the build's files (`./dist`), the site's `404.html` for a path with no file, the script's paths (`/audio/*` and `bf2-web`'s play site) and the R2 binding `PLAY` (the private `bf2017-assets`).
+- `cloudflare/worker.js` (tested beside it): that script, which answers a `Range` on audio, and hands the play site's paths to `cloudflare/play.js` (tested beside it): `bf2-web`'s exported play site read from the bucket, only the files its manifest lists, cross-origin isolated ([the decision](../decisions/2026-10-28-hoth-on-bf2-web.md)).
 - `public/_headers`: the header rules, copied into `dist/` by the build; `cloudflare/headers.test.js` holds them.
 - `scripts/assets-manifest.mjs`: the preconnect to the bucket's origin it puts in the page's head.
 - `scripts/site-hashes.mjs` (tested beside it): the worlds' pictures copied under their hash at build, `dist/h/<hash12>/<path>`, which `src/lib/assetBase.js` asks first and `public/sw.js` maps to an installed pack.
@@ -21,7 +21,7 @@ Nothing under `src/` knows about Cloudflare (the site asks `ASSET_BASE`, whateve
 
 ## How the site uses it
 
-- **Files, and code for audio alone.** A request for one of a Worker's files runs no code and is neither billed nor counted against the Workers free plan's 100,000 requests a day. `run_worker_first: ["/audio/*"]` runs `cloudflare/worker.js` for those paths only, so only audio requests count.
+- **Files, and code for audio alone.** A request for one of a Worker's files runs no code and is neither billed nor counted against the Workers free plan's 100,000 requests a day. `run_worker_first` runs `cloudflare/worker.js` for audio and the play site's paths (`/battlefront/engine/*`, `/ui/*`, `/export/*`, `/ui-data/*`) only, so only those requests count; `/ui/bf2017/*`, the site's own, is passed back to its files.
 - **The deploy.** One job, `deploy`, lints, tests and builds `main`, then runs `npx --yes wrangler@4.149.0 deploy` with the secret `CLOUDFLARE_API_TOKEN` (it fails, naming the secret, without it). Wrangler hashes every file and sends only the ones the Worker doesn't hold (the first time, 11,362 files in 229 s; after, about 30 s). The job's environment, `cloudflare`, lists each deploy in the repository's Deployments with the site's address, done once the upload has gone through.
 - **Headers** (`public/_headers`): `/assets/*` (Vite's hashed names) and `/h/*` (the pictures under their hash) a year and `immutable`; the worlds' pictures (`/textures/*`, `/hdri/*`, `/cc0/*`, `/fonts/*`) `max-age=0, stale-while-revalidate=604800`, drawn from the browser's copy while it asks again behind them ([the decision](../decisions/2026-10-22-pictures-fresh-in-the-background.md)); every file `Access-Control-Allow-Origin: *`, as GitHub Pages sent, which the Minecraft player on its own origin needs for `/eagler/*.bin`. Everything else (models among it: the code that comes with a model reads its nodes' names) keeps Cloudflare's default, `max-age=0, must-revalidate`, and is answered 304 when unchanged.
 - **The pictures under their hash, from the site** ([the decision](../decisions/2026-10-22-pictures-fresh-in-the-background.md)): the build copies every picture under `textures/`, `cc0/` and `hdri/` the bucket doesn't hold to `h/<hash12>/<path>` (`scripts/site-hashes.mjs`: 510 files, 149 MB on 2026-10-22) and gives the bundle the hashes; the loaders ask there first and the plain path if that fails. The year-long cache the bucket gives, without the owner's keys, on every build; wrangler sends each file's bytes once whatever its paths.
@@ -61,7 +61,7 @@ The owner's ceiling, 2026-10-21: **$20 to $30 a month** for Cloudflare. A paid p
 
 ## Rules
 
-- Code runs for the paths in `run_worker_first` alone (`/audio/*`); a path joins it only for something the files can't do, and a script for every path waits for Workers Paid. Nothing enforces it.
+- Code runs for the paths in `run_worker_first` alone (audio and the play site); a path joins it only for something the files can't do, and a script for every path waits for Workers Paid. Nothing enforces it.
 - `dist/` stays under 20,000 files and 25 MiB a file (wrangler counted 12,279 on 2026-10-21, and the build 12,308 with the 510 hashed pictures on 2026-10-22; the largest, `public/eagler/1.12.2.bin`, is 22.2 MiB). The upload fails past either; nothing checks before.
 - No `/*` rule in `public/_headers` sets `Cache-Control`, and no two rules that set it match one path: Cloudflare joins a header two matching rules set with a comma. `cloudflare/headers.test.js` enforces it for the paths it names.
 - Wrangler at an exact version, and `compatibility_date` no newer than its local runtime knows. Nothing enforces it; `wrangler dev` refuses to start.

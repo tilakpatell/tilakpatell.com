@@ -1,9 +1,12 @@
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 import { Navigate, useLocation, useNavigate, useParams } from 'react-router-dom';
 import BattlefrontWorld from '../components/battlefront/BattlefrontWorld.jsx';
 import { LEVEL_MODES, LEVELS, MODES, firstModeOf, menuRouteFor, routeFor, wayBack } from '../components/battlefront';
 import { useDocumentTitle } from '../lib/hooks';
 import { useInWorld } from '../components/universe/online/useOnline';
+import { playOn } from '../components/battlefront/engine.js';
+import { engineSupport, probeBrowser } from '../lib/bf2web/engineSupport.js';
+import play from '../data/bf2web/play.json';
 
 // The game's own front end (its Start, main menu and Play screens), loaded
 // with the page only when it is asked for.
@@ -28,6 +31,13 @@ export default function Battlefront() {
   const back = wayBack(search);
   useDocumentTitle(level ? 'Battlefront · Hoth' : 'Battlefront');
   useInWorld(); // (a full-screen game: no page pointers over it)
+  // Hoth on bf2-web's engine where it can run (components/battlefront/engine.js): the browser itself opens its page,
+  // whose headers isolate it for the engine's threads; the site's world stands in everywhere else
+  const engine = level ? playOn({ level, play, support: engineSupport(probeBrowser(window), { beforeIsolation: true }), search }) : null;
+  useEffect(() => {
+    if (engine) window.location.assign(engine);
+  }, [engine]);
+  if (engine) return <main className="bf-page" aria-busy="true" />;
   if (!level)
     return (
       <main className="bf-page">

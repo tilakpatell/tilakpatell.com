@@ -2,9 +2,11 @@
 // uploaded by .github/workflows/deploy.yml (docs/stack/cloudflare.md). A path
 // with no file answers with dist/404.html; a folder's index.html answers at
 // its path with the slash; public/_headers holds the cache rule and lets any
-// site read the files. Code runs for /audio/* alone (cloudflare/worker.js:
-// the part of a file a Range asks for, which Safari's <audio> needs); every
-// other request is a file, with no code run and nothing counted.
+// site read the files. Code runs for /audio/* (cloudflare/worker.js: the
+// part of a file a Range asks for, which Safari's <audio> needs) and for
+// bf2-web's play site, read from the private bucket through the PLAY binding
+// (cloudflare/play.js: /battlefront/engine/ and the roots its page asks for);
+// every other request is a file, with no code run and nothing counted.
 {
   "name": "tilakpatell-com",
   // (the owner's account: an id, not a key, so it can be read here; the token
@@ -21,6 +23,8 @@
     "directory": "./dist",
     "binding": "ASSETS",
     "not_found_handling": "404-page",
-    "run_worker_first": ["/audio/*"]
-  }
+    "run_worker_first": ["/audio/*", "/battlefront/engine/*", "/ui/*", "/export/*", "/ui-data/*"]
+  },
+  // (bf2-web's exported play sites, src/data/bf2web/play.json naming the one served)
+  "r2_buckets": [{ "binding": "PLAY", "bucket_name": "bf2017-assets" }]
 }

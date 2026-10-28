@@ -16,6 +16,10 @@ describe('whether a browser can run bf2-web’s engine', () => {
     expect(engineSupport().missing).toContain(WHY.wasm);
   });
 
+  it('asks no isolation of the page before the engine’s', () => {
+    expect(engineSupport({ ...desktop, isolated: false, sharedMemory: false }, { beforeIsolation: true })).toEqual({ ok: true, missing: [] });
+  });
+
   it('gives a browser that keeps its memory to itself the benefit of the doubt', () => {
     expect(engineSupport({ ...desktop, deviceMemory: null }).ok).toBe(true);
   });
