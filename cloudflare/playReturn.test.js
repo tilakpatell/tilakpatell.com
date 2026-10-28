@@ -5,10 +5,22 @@ import { RETURN_VERSION, returnFrom, watchReturn, withReturn } from './playRetur
 function page() {
   const observers = [];
   const assigned = [];
+  const copied = [];
   const body = { className: '', children: [], append: (e) => body.children.push(e) };
   const head = { children: [], append: (e) => head.children.push(e) };
+  const element = (tag) => {
+    const e = { tag, style: {}, children: [], attributes: {} };
+    // (the bones' own fields kept out of what the tests compare)
+    Object.defineProperties(e, {
+      setAttribute: { value: (k, v) => (e.attributes[k] = v) },
+      append: { value: (c) => e.children.push(c) },
+      remove: { value: () => body.children.splice(body.children.indexOf(e), 1) },
+    });
+    return e;
+  };
   const win = {
-    document: { body, head, createElement: (tag) => ({ tag }) },
+    navigator: { userAgent: 'test', gpu: { requestAdapter: async () => ({ info: { vendor: 'nvidia', architecture: 'ampere', device: '', description: 'RTX 3050 Laptop' } }) }, clipboard: { writeText: async (t) => (copied.push(t), undefined) } },
+    document: { body, head, createElement: element, querySelector: (q) => body.children.find((c) => q === '.' + c.className) ?? null },
     location: { assign: (to) => assigned.push(to) },
     MutationObserver: class {
       constructor(fn) {
@@ -25,7 +37,7 @@ function page() {
     body.className = `play-${s}`;
     for (const o of observers) o.fn();
   };
-  return { win, body, head, observers, assigned, state };
+  return { win, body, head, observers, assigned, copied, state };
 }
 
 describe('the way back from the engine’s page', () => {
@@ -39,7 +51,7 @@ describe('the way back from the engine’s page', () => {
   it('puts the link in the corner, shown on the front end only', () => {
     const p = page();
     watchReturn(p.win, returnFrom('?from=/galaxy/hoth'));
-    expect(p.body.children).toEqual([{ tag: 'a', className: 'tp-return', href: '/#/galaxy/hoth', textContent: 'Back to Hoth' }]);
+    expect(p.body.children).toMatchObject([{ tag: 'a', className: 'tp-return', href: '/#/galaxy/hoth', textContent: 'Back to Hoth' }]);
     expect(p.head.children[0].textContent).toContain('body:not(.play-menu) .tp-return{display:none}');
   });
 
@@ -62,8 +74,31 @@ describe('the way back from the engine’s page', () => {
   it('keeps the game’s own Quit without a world to go back to', () => {
     const p = page();
     watchReturn(p.win, returnFrom(''));
-    expect(p.observers).toEqual([]);
     expect(p.body.children[0].href).toBe('/#/battlefront');
+    p.state('loading');
+    p.win.__playFlow.sessions.push({ endReason: 'quit', passed: true });
+    p.state('menu');
+    expect(p.assigned).toEqual([]);
+  });
+
+  it('keeps a failed round’s reason up, and copies it with the GPU the browser gave', async () => {
+    const p = page();
+    watchReturn(p.win, returnFrom('?from=/galaxy/hoth'));
+    p.state('loading');
+    p.win.__playFlow.sessions.push({ endReason: 'failed', passed: false, level: 'Hoth_01', error: 'Error: world-startup-presentation-timeout: frame 0\n    at warm' });
+    p.state('menu');
+    const box = p.body.children.find((c) => c.className === 'tp-failed');
+    expect(box.textContent).toBe('The round stopped: Error: world-startup-presentation-timeout: frame 0');
+    expect(box.attributes.role).toBe('alert');
+    await box.children[0].onclick();
+    expect(JSON.parse(p.copied[0])).toMatchObject({ endReason: 'failed', level: 'Hoth_01', adapter: { description: 'RTX 3050 Laptop' } });
+    expect(box.children[0].textContent).toBe('Copied');
+    expect(p.assigned).toEqual([]);
+    // (one box: the next failure takes its place)
+    p.state('loading');
+    p.win.__playFlow.sessions.push({ endReason: 'failed', passed: false, error: 'TypeError: Failed to fetch' });
+    p.state('menu');
+    expect(p.body.children.filter((c) => c.className === 'tp-failed').map((c) => c.textContent)).toEqual(['The round stopped: TypeError: Failed to fetch']);
   });
 
   it('adds itself to the exported page, which has no </body>, or before one', () => {
@@ -80,5 +115,6 @@ describe('the way back from the engine’s page', () => {
     new Function('window', 'location', script)(p.win, { search: '?from=/galaxy/hoth' });
     expect(p.body.children[0].href).toBe('/#/galaxy/hoth');
     expect(p.observers).toHaveLength(1);
+    // (it reaches nothing outside itself: Date and JSON are the page's own)
   });
 });

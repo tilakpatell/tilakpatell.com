@@ -3,10 +3,12 @@
 // with ?from=<the galaxy world they came from> (components/battlefront/engine.js); the script puts a link back in the
 // corner while the game's front end shows, and after a round's Quit (the play page's own Quit: the instance shut down,
 // the front end back, window.__playFlow's last session ended 'quit') goes there. Without a from, the link goes to the
-// site's Battlefront and Quit stays the game's (back to its front end).
+// site's Battlefront and Quit stays the game's (back to its front end). A round that fails (the session's passed
+// false: a download dropped, frame 0 never drawn, the GPU lost) leaves its reason in the corner, which the play page
+// shows for 15 s only, with a button that copies it and the GPU the browser gave, for the visitor to send on.
 //
 //   returnFrom(search) → { to, label, onQuit }   to: the site's address (the site routes by its hash)
-//   watchReturn(win, back)   the page's side: the link, and the Quit watched on the body's play-<state> class
+//   watchReturn(win, back)   the page's side: the link, the Quit and a failed round watched on the body's play-<state> class
 //   withReturn(html) → the page with the script   RETURN_VERSION: the script's hash, in the page's ETag
 //
 // returnFrom and watchReturn run in the page as their source text, so neither may reach outside itself.
@@ -33,7 +35,29 @@ export function watchReturn(win, back) {
   link.textContent = back.label;
   doc.head.append(style);
   doc.body.append(link);
-  if (!back.onQuit) return;
+  // A round that failed: the play page shows why for 15 s; this keeps it up, with the GPU the browser gave, and a
+  // button that copies both, for the visitor to send on
+  const failed = (s) => {
+    const box = doc.createElement('div');
+    box.className = 'tp-failed';
+    box.setAttribute('role', 'alert');
+    box.style.cssText = 'position:fixed;left:20px;bottom:20px;z-index:2147483647;max-width:560px;padding:12px 14px;font:13px/1.4 system-ui,sans-serif;color:#fff;background:rgba(80,0,0,.85);border:1px solid rgba(255,120,120,.6)';
+    const why = String(s.error ?? s.endReason ?? 'unknown').split('\n')[0];
+    box.textContent = `The round stopped: ${why}`;
+    const copy = doc.createElement('button');
+    copy.textContent = 'Copy the details';
+    copy.style.cssText = 'display:block;margin-top:8px;font:inherit;color:#fff;background:none;border:1px solid #fff;padding:4px 10px;cursor:pointer';
+    copy.onclick = async () => {
+      const adapter = await win.navigator.gpu?.requestAdapter({ powerPreference: 'high-performance' }).catch(() => null);
+      const info = adapter?.info ? { vendor: adapter.info.vendor, architecture: adapter.info.architecture, device: adapter.info.device, description: adapter.info.description } : null;
+      const text = JSON.stringify({ error: String(s.error ?? ''), endReason: s.endReason ?? null, level: s.level ?? null, mode: s.mode ?? null, adapter: info, userAgent: win.navigator.userAgent, at: new Date().toISOString() }, null, 2);
+      await win.navigator.clipboard?.writeText(text).catch(() => null);
+      copy.textContent = 'Copied';
+    };
+    box.append(copy);
+    doc.querySelector('.tp-failed')?.remove();
+    doc.body.append(box);
+  };
   let seen = 0;
   new win.MutationObserver(() => {
     const flow = win.__playFlow;
@@ -41,7 +65,10 @@ export function watchReturn(win, back) {
     const sessions = flow.sessions ?? [];
     if (sessions.length === seen) return;
     seen = sessions.length;
-    if (sessions.at(-1)?.endReason === 'quit') win.location.assign(back.to);
+    const last = sessions.at(-1);
+    if (last?.endReason === 'quit') {
+      if (back.onQuit) win.location.assign(back.to);
+    } else if (last && last.passed === false) failed(last);
   }).observe(doc.body, { attributes: true, attributeFilter: ['class'] });
 }
 
