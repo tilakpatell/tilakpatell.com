@@ -18,9 +18,11 @@
 //   FILES   the build's list's name   following(paths, ahead) → Map(path → the next paths of its series)
 //   engineWorker(self, keep, follow)   the service worker's side; the Worker serves it at /battlefront/engine/sw.js
 //   registerEngineCache(win)   the page's side: registers it, and asks for the storage to be kept (persist)
+//   warmOrder(paths)   warmEngineBuild(win, order)   the round's files put on the disk while the front end shows
 //   WORKER_SOURCE   the script the Worker sends
 //
-// engineWorker, following and registerEngineCache run as their source text, so none may reach outside itself.
+// engineWorker, following, registerEngineCache, warmOrder and warmEngineBuild run as their source text, so none may
+// reach outside itself.
 
 import { sourceOf } from './source.js';
 
@@ -59,6 +61,7 @@ export function following(paths, ahead = AHEAD) {
 export function engineWorker(self, keep, follow) {
   const NAME = 'tp-engine-';
   const LIST = 'tp-files.json';
+  const WARM = 'x-tp-warm';
   const pruned = new Set();
   const lists = new Map();
   const onDisk = new Set();
@@ -127,6 +130,16 @@ export function engineWorker(self, keep, follow) {
     const url = new URL(request.url);
     const kept = url.origin === self.location.origin ? keep(url.pathname) : null;
     if (!kept) return;
+    // (the page's own warming, warmEngineBuild: the file onto the disk, answered with no body, nothing read ahead)
+    if (request.headers.get(WARM)) {
+      event.respondWith(
+        (async () => {
+          const cache = await self.caches.open(NAME + kept.build);
+          return new Response(null, { status: (await fill(cache, kept.build, url.href)) ? 204 : 502 });
+        })(),
+      );
+      return;
+    }
     event.respondWith(
       (async () => {
         const cache = await self.caches.open(NAME + kept.build);
@@ -161,6 +174,56 @@ export function registerEngineCache(win) {
   nav.serviceWorker.register('/battlefront/engine/sw.js', { scope: '/battlefront/engine/' }).catch(() => {});
   // (a best-effort store can be cleared when the disk is short; asked, the browser may keep it)
   nav.storage?.persist?.().catch(() => {});
+}
+
+// The order bf2-web's loader asks for a round's files in (tests/original-game-frame.mjs: the system textures, the scene,
+// its textures, partitions, mesh sets, terrain, Enlighten, collision, tiles, atlases, IES), each series by its number:
+// the files a round reads, as it reads them, the page's own files (runtime/, ui/) left out.
+export function warmOrder(paths) {
+  const ranks = ['system-', 'scene.json', 'world-solutions', 'scene-t-', 'scene-p-', 'scene-m-', 'scene-tc-', 'scene-r-', 'scene-e-', 'scene-collision', 'scene-terrain-tile', 'scene-atlas-', 'scene-ies-'];
+  const rankOf = (path) => {
+    let best = -1;
+    ranks.forEach((r, i) => {
+      if (path.startsWith(r) && (best < 0 || r.length > ranks[best].length)) best = i;
+    });
+    return best;
+  };
+  return paths
+    .filter((p) => !p.includes('/'))
+    .map((path) => ({ path, rank: rankOf(path), n: Number(/-(\d+)[.]/.exec(path)?.[1] ?? 0) }))
+    .filter((f) => f.rank >= 0)
+    .sort((a, b) => a.rank - b.rank || a.n - b.n || (a.path < b.path ? -1 : 1))
+    .map((f) => f.path);
+}
+
+// The page's side of the warming: once the front end shows (the body's play-menu) and the worker answers for the page,
+// the round's files are asked for in the loader's order, four at a time, for the worker to put on the disk; the menu's
+// time is the download's, and the round's own load then finds them there. Not on a connection that asks to save data.
+export function warmEngineBuild(win, order) {
+  const nav = win.navigator;
+  if (!nav?.serviceWorker || nav.connection?.saveData || typeof win.fetch !== 'function') return;
+  const doc = win.document;
+  const dir = win.location.pathname.replace(/[^/]*$/, '');
+  let started = false;
+  const start = async () => {
+    if (started || !doc.body.classList?.contains('play-menu')) return;
+    started = true;
+    if (!nav.serviceWorker.controller) await new Promise((r) => nav.serviceWorker.addEventListener('controllerchange', r, { once: true }));
+    const list = await win.fetch(dir + 'tp-files.json').then((r) => (r.status === 200 ? r.json() : { files: [] }));
+    const files = order(list.files ?? []);
+    let next = 0;
+    const lane = async () => {
+      while (next < files.length) {
+        const path = files[next++];
+        // (a 200 is a file sent whole, the worker not there: its bytes aren't wanted here)
+        const r = await win.fetch(dir + path, { headers: { 'x-tp-warm': '1' } }).catch(() => null);
+        if (r?.status === 200) r.body?.cancel?.().catch?.(() => {});
+      }
+    };
+    await Promise.all([lane(), lane(), lane(), lane()]);
+  };
+  new win.MutationObserver(() => start().catch(() => {})).observe(doc.body, { attributes: true, attributeFilter: ['class'] });
+  start().catch(() => {});
 }
 
 // (with the bundler's __name stood in for: source.js)

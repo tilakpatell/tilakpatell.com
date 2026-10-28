@@ -105,8 +105,11 @@ describe('the way back from the engine’s page', () => {
     const plain = withReturn('<!doctype html><canvas></canvas>');
     expect(plain.startsWith('<!doctype html><canvas></canvas><script>(')).toBe(true);
     expect(plain).toContain('(location.search));');
-    // (and the worker that keeps the build on disk registered after it, engineCache.js)
-    expect(plain).toMatch(/\(window\);\n\}\)\(\);\n<\/script>$/);
+    // (the hidden tab's timers first, playTimers.js; the way back; then the worker that keeps the build on disk
+    // registered, and the round's files warmed onto it, engineCache.js)
+    const order = ['MessageChannel', '(location.search));', '/battlefront/engine/sw.js', 'x-tp-warm'].map((s) => plain.indexOf(s));
+    expect(order.every((at, i) => at > 0 && (i === 0 || at > order[i - 1]))).toBe(true);
+    expect(plain.endsWith('})();\n</script>')).toBe(true);
     expect(withReturn('<body><p></p></body></html>')).toMatch(/<p><\/p><script>.*<\/script><\/body><\/html>$/s);
     expect(RETURN_VERSION).toMatch(/^[0-9a-f]{8}$/);
   });
