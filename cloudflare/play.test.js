@@ -127,6 +127,22 @@ describe('serving the play site', () => {
     expect(kept.has(`https://tilakpatell.com${ENGINE}b1/`)).toBe(false);
   });
 
+  it('asks R2 again when a read fails, and answers a 503 of its own when it fails again', async () => {
+    const flaky = (fails) => {
+      const inner = bucket(files);
+      let left = fails;
+      return { gets: inner.gets, get: async (key, opts) => (left-- > 0 ? Promise.reject(new Error('Network connection lost')) : inner.get(key, opts)) };
+    };
+    const once = await serve(`${ENGINE}b1/original-frame-graph.wasm`, {}, { PLAY: flaky(1) });
+    expect(once.status).toBe(200);
+    expect(await once.text()).toBe('wasm-bytes');
+    const down = await serve(`${ENGINE}b1/original-frame-graph.wasm`, {}, { PLAY: flaky(99) });
+    expect(down.status).toBe(503);
+    expect(down.headers.get('cross-origin-embedder-policy')).toBe('require-corp');
+    expect(down.headers.get('cache-control')).toBe('no-store');
+    expect(down.headers.get('content-type')).toMatch(/^text\/plain/);
+  });
+
   it('leaves everything to the site without the binding', async () => {
     expect(await serve(`${ENGINE}b1/`, {}, {})).toBeNull();
   });
