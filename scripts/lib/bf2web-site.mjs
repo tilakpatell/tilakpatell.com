@@ -23,6 +23,9 @@
 //     default 16), and the dual-source blend. The site asks the visitor's GPU for them before it sends anyone to the
 //     engine (lib/bf2web/engineSupport). Compute isn't counted: what its programs ask isn't known to stop a round.
 //   adopted(play, id, manifest, uiData, needs) → play.json for that build
+//   compressible(manifest, typeOf) → the entries worth a brotli copy: the binary files Cloudflare sends as they are
+//     (typeOf: cloudflare/play.js's contentType, application/octet-stream), 1 KB or more
+//   ENCODINGS: encodings.json's schema   encodingsOf(sizes, quality) → encodings.json for those copies
 //   uploadPlan(manifest, { prefix, previous, previousPrefix, existing }) → [{ action, key, path?, from? }]
 //     copy a file the previous build has byte for byte (by its sha256), skip one already there, put the rest;
 //     the manifest always last
@@ -140,6 +143,16 @@ export function programNeeds(graphics = [], used = null) {
 export function adopted(play, id, manifest, uiData = play.uiData, needs = play.needs ?? null) {
   const bytes = manifest.entries.reduce((n, e) => n + e.bytes, 0);
   return { ...play, build: id, site: `sites/${id}/`, uiData, mb: Math.round(bytes / 1e6), ...(needs ? { needs } : {}) };
+}
+
+// (Cloudflare compresses what it calls text, the wasm and the JSON among it, on its own: 104 MB of engine reaches a
+// browser as 17. Not the rest, which is most of a build: 1.65 GB of textures, 0.3 GB of scene data.)
+export const ENCODINGS = 'bf2-play-encodings/1';
+
+export const compressible = (manifest, typeOf) => manifest.entries.filter((e) => e.bytes >= 1024 && typeOf(e.path) === 'application/octet-stream');
+
+export function encodingsOf(sizes, quality) {
+  return { schema: ENCODINGS, quality, br: Object.fromEntries([...sizes].sort(([a], [b]) => (a < b ? -1 : 1))) };
 }
 
 export function uploadPlan(manifest, { prefix, previous = null, previousPrefix = null, existing = [] }) {

@@ -20,17 +20,17 @@ on:
   workflow_dispatch:
     inputs:
       stage:
-        description: 'build (the desktop makes it), adopt (the site plays it) or both'
+        description: 'build (the desktop makes it), adopt (the site plays it), both, or compress (brotli copies of a build''s binary files)'
         required: true
         type: choice
-        options: [both, build, adopt]
+        options: [both, build, adopt, compress]
         default: both
       sha:
         description: 'build: the bf2-web commit (default its main)'
         required: false
         type: string
       build:
-        description: 'adopt: the build id, e.g. main-da7a51b3 (default the newest good one)'
+        description: 'adopt or compress: the build id, e.g. main-da7a51b3 (adopt: default the newest good one; compress: the one play.json names)'
         required: false
         type: string
 permissions:
@@ -41,7 +41,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   build:
-    if: ${{ github.event_name != 'workflow_dispatch' || inputs.stage != 'adopt' }}
+    if: ${{ github.event_name != 'workflow_dispatch' || (inputs.stage != 'adopt' && inputs.stage != 'compress') }}
     runs-on: [self-hosted, gpu]
     timeout-minutes: 360
     # (the desktop's one GPU: one build at a time, queued behind another)
@@ -73,7 +73,7 @@ jobs:
           GIT_TERMINAL_PROMPT: '0'
   adopt:
     needs: build
-    if: ${{ always() && !cancelled() && (needs.build.result == 'success' || needs.build.result == 'skipped') && (github.event_name != 'workflow_dispatch' || inputs.stage != 'build') }}
+    if: ${{ always() && !cancelled() && (needs.build.result == 'success' || needs.build.result == 'skipped') && (github.event_name != 'workflow_dispatch' || (inputs.stage != 'build' && inputs.stage != 'compress')) }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
@@ -88,7 +88,10 @@ jobs:
       - run: npm ci
       - name: Hold the builds to the contract, and name the newest good one
         id: adopt
-        run: node scripts/bf2web-adopt.mjs ${{ inputs.build && format('--build {0}', inputs.build) || '' }}
+        # (the build named by hand passed in the environment, never into the script's text)
+        run: node scripts/bf2web-adopt.mjs ${BUILD:+--build "$BUILD"}
+        env:
+          BUILD: ${{ inputs.build }}
       - name: Open it the way a visitor's browser does
         if: ${{ steps.adopt.outputs.adopted != '' }}
         run: |
@@ -112,3 +115,33 @@ jobs:
         env:
           BUILD: ${{ steps.adopt.outputs.adopted }}
           GH_TOKEN: ${{ github.token }}
+      # (after it plays: a first visit then gets the textures and scene data a quarter smaller, the Worker serving the
+      # copies once encodings.json is up; a run cut off is run again with stage compress)
+      - name: Brotli copies of its binary files
+        if: ${{ steps.adopt.outputs.adopted != '' }}
+        continue-on-error: true
+        run: node scripts/bf2web-compress.mjs --build "$BUILD"
+        env:
+          BUILD: ${{ steps.adopt.outputs.adopted }}
+  compress:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.stage == 'compress' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+      R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          sparse-checkout: |
+            scripts
+            cloudflare
+            src/data/bf2web
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - name: Brotli copies of the build's binary files
+        run: node scripts/bf2web-compress.mjs ${BUILD:+--build "$BUILD"}
+        env:
+          BUILD: ${{ inputs.build }}

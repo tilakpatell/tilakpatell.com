@@ -3,7 +3,7 @@ import { ENGINE, ISOLATED, contentType, playRoute, servePlay } from './play.js';
 import { RETURN_VERSION } from './playReturn.js';
 
 const config = { build: 'b1', site: 'sites/b1/', export: 'extract/', uiData: 'library/ui/frontend/', exportAllow: ['fonts/', 'strings/'] };
-const manifest = { schema: 'bf2-play-site/1', entries: ['index.html', 'original-frame-graph.js', 'original-frame-graph.wasm', 'scene.json', 'ui/main.js', 'runtime/world-play.mjs'].map((path) => ({ path })) };
+const manifest = { schema: 'bf2-play-site/1', entries: ['index.html', 'original-frame-graph.js', 'original-frame-graph.wasm', 'scene.json', 'scene-r-0.res', 'ui/main.js', 'runtime/world-play.mjs'].map((path) => ({ path })) };
 
 // an R2 binding over a map of keys to text, answering ranges and If-None-Match as R2 does
 function bucket(files) {
@@ -29,6 +29,9 @@ const files = {
   'sites/b1/original-frame-graph.wasm': 'wasm-bytes',
   'sites/b1/ui/main.js': 'export {}',
   'sites/b1/secret.bin': 'not listed',
+  'sites/b1/scene-r-0.res': 'scene bytes, whole',
+  'sites/b1/scene-r-0.res.br': 'BR',
+  'sites/b1/encodings.json': JSON.stringify({ schema: 'bf2-play-encodings/1', br: { 'scene-r-0.res': 2 } }),
   'extract/fonts/a.ttf': 'font',
   'extract/models/a.glb': 'model',
   'library/ui/frontend/screens.json': '{}',
@@ -141,6 +144,40 @@ describe('serving the play site', () => {
     expect(down.headers.get('cross-origin-embedder-policy')).toBe('require-corp');
     expect(down.headers.get('cache-control')).toBe('no-store');
     expect(down.headers.get('content-type')).toMatch(/^text\/plain/);
+  });
+
+  it('sends a build file’s brotli copy, whole, to a browser that takes brotli, for it to decode', async () => {
+    const env = { PLAY: bucket(files) };
+    const res = await serve(`${ENGINE}b1/scene-r-0.res`, { 'accept-encoding': 'gzip, deflate, br, zstd' }, env);
+    expect(res.status).toBe(200);
+    expect(res.headers.get('content-encoding')).toBe('br');
+    expect(res.headers.get('content-type')).toBe('application/octet-stream');
+    expect(res.headers.get('vary')).toBe('accept-encoding');
+    expect(res.headers.get('accept-ranges')).toBeNull();
+    expect(res.headers.get('cross-origin-embedder-policy')).toBe('require-corp');
+    expect(await res.text()).toBe('BR');
+    expect(env.PLAY.gets).toContain('sites/b1/scene-r-0.res.br');
+  });
+
+  it('sends the file itself to a browser that doesn’t take brotli, for a range, and for a file with no copy', async () => {
+    expect(await (await serve(`${ENGINE}b1/scene-r-0.res`, { 'accept-encoding': 'gzip' })).text()).toBe('scene bytes, whole');
+    const ranged = await serve(`${ENGINE}b1/scene-r-0.res`, { 'accept-encoding': 'br', range: 'bytes=0-4' });
+    expect(ranged.status).toBe(206);
+    expect(ranged.headers.get('content-encoding')).toBeNull();
+    const plain = await serve(`${ENGINE}b1/original-frame-graph.wasm`, { 'accept-encoding': 'br' });
+    expect(plain.headers.get('content-encoding')).toBeNull();
+    expect(await plain.text()).toBe('wasm-bytes');
+    // (a build without encodings.json: every file as itself)
+    const bare = { ...files };
+    delete bare['sites/b1/encodings.json'];
+    expect(await (await serve(`${ENGINE}b1/scene-r-0.res`, { 'accept-encoding': 'br' }, { PLAY: bucket(bare) })).text()).toBe('scene bytes, whole');
+  });
+
+  it('answers the brotli copy’s ETag with a 304', async () => {
+    const first = await serve(`${ENGINE}b1/scene-r-0.res`, { 'accept-encoding': 'br' });
+    const again = await serve(`${ENGINE}b1/scene-r-0.res`, { 'accept-encoding': 'br', 'if-none-match': first.headers.get('etag') });
+    expect(again.status).toBe(304);
+    expect(again.headers.get('content-encoding')).toBe('br');
   });
 
   it('leaves everything to the site without the binding', async () => {
