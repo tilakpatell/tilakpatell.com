@@ -1,7 +1,8 @@
 // Adopts a bf2-web build for Hoth (docs/decisions/2026-10-28-bf2web-pipeline.md): reads the private bucket's
 // sites/, holds each build newer than the one play.json names to the contract (scripts/lib/bf2web-site.mjs: its
 // manifest, every file uploaded at its size, the play page's hooks, the nine rulebooks) and names the newest that
-// passes in src/data/bf2web/play.json. A build that fails is said, with why: that is a change in bf2-web the site
+// passes in src/data/bf2web/play.json, with what its programs ask of a visitor's GPU (needs: the site sends to the
+// engine only a GPU that has it, lib/bf2web/engineSupport). A build that fails is said, with why: that is a change in bf2-web the site
 // hasn't caught up with, for a person to look at; nothing is guessed round it.
 //
 //   node --env-file=.env.local scripts/bf2web-adopt.mjs [--build <id>] [--check]
@@ -14,7 +15,7 @@ import { appendFileSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { open } from './lib/bf2web-r2.mjs';
-import { MAIN_BUILD, SHARED_UI, adopted, contractProblems, hookProblems, missingFiles, newest, uiDataFor } from './lib/bf2web-site.mjs';
+import { MAIN_BUILD, SHARED_UI, adopted, contractProblems, hookProblems, missingFiles, newest, programNeeds, uiDataFor } from './lib/bf2web-site.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const PLAY = join(ROOT, 'src/data/bf2web/play.json');
@@ -40,6 +41,15 @@ async function examine(id) {
   const ui = uiDataFor(id, await r2.files(prefix + 'ui-data/'), await r2.files(SHARED_UI));
   problems.push(...ui.problems);
   return { id, created: manifest.created ?? null, manifest, uiData: ui.uiData, problems };
+}
+
+// what the programs the build draws (its pipeline cache, pipelines.json) ask of the GPU; null when it has no programs
+async function needsOf(id) {
+  const prefix = `sites/${id}/`;
+  const [cooked, programs, pipelines] = await Promise.all(['cooked-programs.json', 'programs.json', 'pipelines.json'].map((f) => r2.json(prefix + f)));
+  if (!cooked && !programs) return null;
+  const used = Array.isArray(pipelines) ? new Set(pipelines.map((p) => p.name)) : null;
+  return programNeeds([...(cooked ?? []), ...(programs ?? [])], used);
 }
 
 const say = (b) => console.log(`${b.id}${b.created ? ` (${b.created})` : ''}: ${b.problems.length ? `refused\n  - ${b.problems.join('\n  - ')}` : 'good'}`);
@@ -75,7 +85,9 @@ if (asked) {
   chosen = examined.find((b) => b.id === id);
 }
 
-const next = adopted(play, chosen.id, chosen.manifest, chosen.uiData);
+const needs = await needsOf(chosen.id);
+const next = adopted(play, chosen.id, chosen.manifest, chosen.uiData, needs);
+if (needs) console.log('its GPU needs:', JSON.stringify(needs));
 if (check) console.log('--check: play.json would name', chosen.id, `(${next.mb} MB, rulebooks ${next.uiData})`);
 else {
   writeFileSync(PLAY, JSON.stringify(next, null, 2) + '\n');

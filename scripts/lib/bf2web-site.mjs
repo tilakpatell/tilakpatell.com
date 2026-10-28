@@ -16,7 +16,13 @@
 //     candidates: [{ id, created, problems }]   current: { id, created } | null
 //     only a build of bf2-web's main (MAIN_BUILD, main-<sha8>, as the desktop names them) is taken on its own: a
 //     build the desktop made from a branch or a worktree is played only when it's named (adopt --build)
-//   adopted(play, id, manifest, uiData) → play.json for that build
+//   programNeeds(graphics, used) → { features, limits }: what the programs the build draws (used: the names its
+//     pipeline cache, pipelines.json, lists) ask of the GPU. Each stage's bindings are counted against WebGPU's
+//     per-stage limits: a layout over one can't be made, its pipeline never comes and the engine waits on it for good
+//     (frame 0 never presents: 2026-10-28, ten of Hoth's materials sample 23 textures in one pixel stage, over the
+//     default 16), and the dual-source blend. The site asks the visitor's GPU for them before it sends anyone to the
+//     engine (lib/bf2web/engineSupport). Compute isn't counted: what its programs ask isn't known to stop a round.
+//   adopted(play, id, manifest, uiData, needs) → play.json for that build
 //   uploadPlan(manifest, { prefix, previous, previousPrefix, existing }) → [{ action, key, path?, from? }]
 //     copy a file the previous build has byte for byte (by its sha256), skip one already there, put the rest;
 //     the manifest always last
@@ -102,9 +108,38 @@ export function newest(candidates, current = null) {
   return ok[0]?.id ?? null;
 }
 
-export function adopted(play, id, manifest, uiData = play.uiData) {
+const STAGE_LIMITS = ['maxSampledTexturesPerShaderStage', 'maxSamplersPerShaderStage', 'maxStorageBuffersPerShaderStage', 'maxStorageTexturesPerShaderStage', 'maxUniformBuffersPerShaderStage'];
+
+function stageCounts(bindings = []) {
+  const n = Object.fromEntries(STAGE_LIMITS.map((k) => [k, 0]));
+  for (const b of bindings) {
+    const l = b.layout ?? {};
+    if (l.texture) n.maxSampledTexturesPerShaderStage++;
+    else if (l.sampler) n.maxSamplersPerShaderStage++;
+    else if (l.storageTexture) n.maxStorageTexturesPerShaderStage++;
+    else if (l.buffer?.type === 'uniform') n.maxUniformBuffersPerShaderStage++;
+    else if (l.buffer) n.maxStorageBuffersPerShaderStage++;
+  }
+  return n;
+}
+
+export function programNeeds(graphics = [], used = null) {
+  const limits = Object.fromEntries([...STAGE_LIMITS, 'maxBindGroups'].map((k) => [k, 0]));
+  const features = new Set();
+  const take = (k, v) => (limits[k] = Math.max(limits[k], v));
+  for (const r of graphics) {
+    if (used && !used.has(r.name)) continue;
+    const stages = [r.vertex?.bindings ?? [], r.pixel?.bindings ?? []];
+    for (const bindings of stages) for (const [k, v] of Object.entries(stageCounts(bindings))) take(k, v);
+    for (const b of stages.flat()) if (Number.isInteger(b?.group)) take('maxBindGroups', b.group + 1);
+    if (String(r.pixel?.wgsl ?? '').includes('enable dual_source_blending')) features.add('dual-source-blending');
+  }
+  return { features: [...features].sort(), limits };
+}
+
+export function adopted(play, id, manifest, uiData = play.uiData, needs = play.needs ?? null) {
   const bytes = manifest.entries.reduce((n, e) => n + e.bytes, 0);
-  return { ...play, build: id, site: `sites/${id}/`, uiData, mb: Math.round(bytes / 1e6) };
+  return { ...play, build: id, site: `sites/${id}/`, uiData, mb: Math.round(bytes / 1e6), ...(needs ? { needs } : {}) };
 }
 
 export function uploadPlan(manifest, { prefix, previous = null, previousPrefix = null, existing = [] }) {

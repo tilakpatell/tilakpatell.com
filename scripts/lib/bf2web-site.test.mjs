@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CONTRACT, SHARED_UI, adopted, contractProblems, hookProblems, missingFiles, newest, rulebookProblems, uiDataFor, uploadPlan } from './bf2web-site.mjs';
+import { CONTRACT, SHARED_UI, adopted, programNeeds, contractProblems, hookProblems, missingFiles, newest, rulebookProblems, uiDataFor, uploadPlan } from './bf2web-site.mjs';
 
 const sha = (c) => c.repeat(64);
 const entry = (path, bytes = 10, s = sha('a')) => ({ path, role: 'retail-derived', bytes, sha256: s });
@@ -79,6 +79,30 @@ describe('which build the site plays', () => {
     const m = manifest([entry('big', 2_000_000_000)]);
     expect(adopted(play, 'main-b', m)).toEqual({ ...play, build: 'main-b', site: 'sites/main-b/', mb: 2000 });
     expect(adopted(play, 'main-b', m, 'sites/main-b/ui-data/').uiData).toBe('sites/main-b/ui-data/');
+    expect(adopted(play, 'main-b', m, undefined, { features: [], limits: { maxBindGroups: 4 } }).needs).toEqual({ features: [], limits: { maxBindGroups: 4 } });
+  });
+});
+
+describe('what a build asks of the visitor’s GPU', () => {
+  const tex = (group, binding) => ({ group, binding, layout: { texture: { sampleType: 'float', viewDimension: '2d' } } });
+  const smp = (group, binding) => ({ group, binding, layout: { sampler: { type: 'filtering' } } });
+  const ubo = (group, binding) => ({ group, binding, layout: { buffer: { type: 'uniform' } } });
+
+  it('counts each stage’s bindings against WebGPU’s per-stage limits, and the groups a layout spans', () => {
+    // (Hoth's worst material: 23 textures in its pixel stage, over the default 16, so a GPU that allows 16 never makes its pipeline)
+    const material = { vertex: { bindings: [ubo(0, 0)] }, pixel: { wgsl: 'fn main() {}', bindings: [ubo(0, 1), ...Array.from({ length: 23 }, (_, i) => tex(1, i)), smp(2, 0), smp(2, 1)] } };
+    const { limits, features } = programNeeds([material]);
+    expect(limits).toMatchObject({ maxSampledTexturesPerShaderStage: 23, maxSamplersPerShaderStage: 2, maxUniformBuffersPerShaderStage: 1, maxBindGroups: 3 });
+    expect(features).toEqual([]);
+  });
+
+  it('asks for dual-source blending when a material blends so, and counts only the programs the build draws', () => {
+    const dual = { name: 'material/dual', vertex: { bindings: [] }, pixel: { wgsl: 'enable dual_source_blending;\nfn main() {}', bindings: [] } };
+    const wide = { name: 'material/unused', vertex: { bindings: [] }, pixel: { wgsl: '', bindings: Array.from({ length: 30 }, (_, i) => tex(0, i)) } };
+    expect(programNeeds([dual, wide]).limits.maxSampledTexturesPerShaderStage).toBe(30);
+    const { limits, features } = programNeeds([dual, wide], new Set(['material/dual']));
+    expect(features).toEqual(['dual-source-blending']);
+    expect(limits.maxSampledTexturesPerShaderStage).toBe(0);
   });
 });
 
