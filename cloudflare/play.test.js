@@ -180,6 +180,14 @@ describe('serving the play site', () => {
     expect(again.headers.get('content-encoding')).toBe('br');
   });
 
+  it('serves the worker that keeps a build on disk, asked again each visit', async () => {
+    const res = await serve(`${ENGINE}sw.js`);
+    expect(res.status).toBe(200);
+    expect(res.headers.get('content-type')).toMatch(/^text\/javascript/);
+    expect(res.headers.get('cache-control')).toContain('max-age=0');
+    expect(await res.text()).toContain('tp-engine-');
+  });
+
   it('leaves everything to the site without the binding', async () => {
     expect(await serve(`${ENGINE}b1/`, {}, {})).toBeNull();
   });

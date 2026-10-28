@@ -13,7 +13,7 @@
 //   servePlay(request, env, config, manifests, ctx?, cache?) → Promise<Response | null>
 //     cache: the edge's (caches.default): a build's immutable file, asked whole, is answered from it and put in it,
 //     so a visit after the first costs no read of the bucket
-//   contentType(path)   ISOLATED: the headers   ENGINE: the page's path
+//   contentType(path)   ISOLATED: the headers   ENGINE: the page's path   /battlefront/engine/sw.js: engineCache.js's worker
 // A build file the browser takes brotli for (Accept-Encoding br), asked whole, that the build has a brotli copy of
 // (sites/<build>/<path>.br, listed in its encodings.json: scripts/bf2web-compress.mjs writes them for the binary files
 // Cloudflare doesn't compress on its own, the textures and scene data, about a quarter of a first visit) is answered
@@ -21,6 +21,7 @@
 // A read R2 fails (it can, now and then, and a level's load is some 2,500 reads) is asked once again; failing again,
 // the answer is a plain 503, isolated, never Cloudflare's own HTML error page, which the engine would read as data.
 
+import { WORKER_SOURCE } from './engineCache.js';
 import { RETURN_VERSION, withReturn } from './playReturn.js';
 
 export const ENGINE = '/battlefront/engine/';
@@ -107,8 +108,14 @@ const isolatedNotFound = () => new Response('Not found', { status: 404, headers:
 const unavailable = () =>
   new Response('Unavailable, try again', { status: 503, headers: { ...ISOLATED, 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'no-store', 'retry-after': '1' } });
 
+// the service worker that keeps a build on the visitor's disk (engineCache.js), asked again each visit so a change
+// reaches everyone
+const engineWorkerScript = () =>
+  new Response(WORKER_SOURCE, { status: 200, headers: { ...ISOLATED, 'content-type': 'text/javascript; charset=utf-8', 'cache-control': 'public, max-age=0, must-revalidate' } });
+
 export async function servePlay(request, env, config, manifests, ctx = null, cache = null) {
   const url = new URL(request.url);
+  if (url.pathname === ENGINE + 'sw.js' && config?.build) return engineWorkerScript();
   const route = playRoute(url.pathname, config);
   if (!route) return null;
   if (!env.PLAY) return null;
