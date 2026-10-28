@@ -1,8 +1,8 @@
 {
-  "_about": "bf2-web's exported play site (WebPort/tools/export-play-site.mjs) as the site serves it: the build in the private bucket bf2017-assets that /battlefront/engine/<build>/ maps to (cloudflare/play.js), and the roots its page asks for by absolute path. build null: no build published, Hoth plays on the site's world. mb: what a first visit downloads (the build manifest's totals, 2026-10-28: 104 MB of engine, 2,093 MB of the cooked scene). docs/decisions/2026-10-28-hoth-on-bf2-web.md",
+  "_about": "bf2-web's exported play site (WebPort/tools/export-play-site.mjs) as the site serves it: the build in the private bucket bf2017-assets that /battlefront/engine/<build>/ maps to (cloudflare/play.js), and the roots its page asks for by absolute path. build null: no build published, Hoth plays on the site's world. export: the game's export as the bucket already holds it (web/, the folder bf2-web's BF2_EXPORT_ROOT names), so DEPLOY.md's extract/ copy isn't needed. mb: what a first visit downloads (the build manifest's totals, 2026-10-28: 104 MB of engine, 2,093 MB of the cooked scene). docs/decisions/2026-10-28-hoth-on-bf2-web.md",
   "build": "main-da7a51b3",
   "site": "sites/main-da7a51b3/",
-  "export": "extract/",
+  "export": "web/",
   "uiData": "library/ui/frontend/",
   "exportAllow": [
     "fonts/",
