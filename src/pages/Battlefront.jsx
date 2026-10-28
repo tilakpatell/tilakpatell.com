@@ -1,10 +1,11 @@
-import { lazy, Suspense, useEffect } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { Navigate, useLocation, useNavigate, useParams } from 'react-router-dom';
 import BattlefrontWorld from '../components/battlefront/BattlefrontWorld.jsx';
 import { LEVEL_MODES, LEVELS, MODES, firstModeOf, menuRouteFor, routeFor, wayBack } from '../components/battlefront';
 import { useDocumentTitle } from '../lib/hooks';
 import { useInWorld } from '../components/universe/online/useOnline';
-import { playOn } from '../components/battlefront/engine.js';
+import { CHOICE_KEY, playOn } from '../components/battlefront/engine.js';
+import EngineChoice from '../components/battlefront/EngineChoice.jsx';
 import { engineSupport, probeBrowser } from '../lib/bf2web/engineSupport.js';
 import play from '../data/bf2web/play.json';
 
@@ -33,11 +34,33 @@ export default function Battlefront() {
   useInWorld(); // (a full-screen game: no page pointers over it)
   // Hoth on bf2-web's engine where it can run (components/battlefront/engine.js): the browser itself opens its page,
   // whose headers isolate it for the engine's threads; the site's world stands in everywhere else
-  const engine = level ? playOn({ level, play, support: engineSupport(probeBrowser(window), { beforeIsolation: true }), search }) : null;
+  // (the visitor's answer to the download, kept on this device; storage may be refused)
+  const [choice, setChoice] = useState(() => {
+    try {
+      return localStorage.getItem(CHOICE_KEY);
+    } catch {
+      return null;
+    }
+  });
+  const choose = (c) => {
+    try {
+      localStorage.setItem(CHOICE_KEY, c);
+    } catch {
+      // (not kept: asked again next visit)
+    }
+    setChoice(c);
+  };
+  const engine = level ? playOn({ level, play, support: engineSupport(probeBrowser(window), { beforeIsolation: true }), search, choice }) : null;
   useEffect(() => {
-    if (engine) window.location.assign(engine);
-  }, [engine]);
-  if (engine) return <main className="bf-page" aria-busy="true" />;
+    if (engine?.go) window.location.assign(engine.go);
+  }, [engine?.go]);
+  if (engine?.go) return <main className="bf-page" aria-busy="true" />;
+  if (engine?.ask)
+    return (
+      <main className="bf-page">
+        <EngineChoice mb={engine.ask.mb} onEngine={() => choose('engine')} onSite={() => choose('site')} />
+      </main>
+    );
   if (!level)
     return (
       <main className="bf-page">

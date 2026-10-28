@@ -102,6 +102,21 @@ describe('serving the play site', () => {
     expect(await serve('/universe')).toBeNull();
   });
 
+  it('keeps a build’s file at the edge after the first read, and serves it from there', async () => {
+    const env = { PLAY: bucket(files) };
+    const kept = new Map();
+    const cache = { match: async (r) => kept.get(r.url)?.clone() ?? null, put: async (r, res) => void kept.set(r.url, res) };
+    const first = await servePlay(ask(`${ENGINE}b1/original-frame-graph.wasm`), env, config, new Map(), null, cache);
+    expect(await first.text()).toBe('wasm-bytes');
+    const reads = env.PLAY.gets.length;
+    const second = await servePlay(ask(`${ENGINE}b1/original-frame-graph.wasm`), env, config, new Map(), null, cache);
+    expect(await second.text()).toBe('wasm-bytes');
+    expect(env.PLAY.gets.length).toBe(reads);
+    // (the page and a range are never kept)
+    await servePlay(ask(`${ENGINE}b1/`), env, config, new Map(), null, cache);
+    expect(kept.has(`https://tilakpatell.com${ENGINE}b1/`)).toBe(false);
+  });
+
   it('leaves everything to the site without the binding', async () => {
     expect(await serve(`${ENGINE}b1/`, {}, {})).toBeNull();
   });

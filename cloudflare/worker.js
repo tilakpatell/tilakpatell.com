@@ -46,8 +46,8 @@ export async function ranged(request, response) {
 }
 
 export default {
-  async fetch(request, env) {
-    const served = await servePlay(request, env, play, manifests);
+  async fetch(request, env, ctx) {
+    const served = await servePlay(request, env, play, manifests, ctx, globalThis.caches?.default ?? null);
     if (served) return served;
     return ranged(request, await env.ASSETS.fetch(request));
   },

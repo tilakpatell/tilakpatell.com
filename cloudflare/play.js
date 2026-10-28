@@ -9,7 +9,9 @@
 // whose paths don't carry it, are asked again each visit (304 by their ETag).
 //
 //   playRoute(pathname, config) → { key, root, path } | null   (null: not the play site's, the site's files answer)
-//   servePlay(request, env, config, manifests) → Promise<Response | null>
+//   servePlay(request, env, config, manifests, ctx?, cache?) → Promise<Response | null>
+//     cache: the edge's (caches.default): a build's immutable file, asked whole, is answered from it and put in it,
+//     so a visit after the first costs no read of the bucket
 //   contentType(path)   ISOLATED: the headers   ENGINE: the page's path
 
 export const ENGINE = '/battlefront/engine/';
@@ -67,16 +69,21 @@ async function listed(env, config, manifests) {
 
 const isolatedNotFound = () => new Response('Not found', { status: 404, headers: { ...ISOLATED, 'content-type': 'text/plain; charset=utf-8' } });
 
-export async function servePlay(request, env, config, manifests) {
+export async function servePlay(request, env, config, manifests, ctx = null, cache = null) {
   const url = new URL(request.url);
   const route = playRoute(url.pathname, config);
   if (!route) return null;
   if (!env.PLAY) return null;
   if (request.method !== 'GET' && request.method !== 'HEAD') return new Response(null, { status: 405, headers: { ...ISOLATED, allow: 'GET, HEAD' } });
+  const immutable = route.root === 'site' && url.pathname.startsWith(ENGINE) && route.path !== 'index.html';
+  const cacheable = cache && immutable && request.method === 'GET' && !request.headers.has('range');
+  if (cacheable) {
+    const hit = await cache.match(request);
+    if (hit) return hit;
+  }
   if (route.root === 'site' && !(await listed(env, config, manifests)).has(route.path)) return isolatedNotFound();
   const object = await env.PLAY.get(route.key, { range: request.headers, onlyIf: request.headers });
   if (!object) return isolatedNotFound();
-  const immutable = route.root === 'site' && url.pathname.startsWith(ENGINE) && route.path !== 'index.html';
   const headers = new Headers({
     ...ISOLATED,
     'content-type': contentType(route.path),
@@ -93,5 +100,11 @@ export async function servePlay(request, env, config, manifests) {
     return new Response(request.method === 'HEAD' ? null : object.body, { status: 206, headers });
   }
   headers.set('content-length', String(object.size));
-  return new Response(request.method === 'HEAD' ? null : object.body, { status: 200, headers });
+  const response = new Response(request.method === 'HEAD' ? null : object.body, { status: 200, headers });
+  if (cacheable) {
+    const put = cache.put(request, response.clone());
+    if (ctx) ctx.waitUntil(put);
+    else await put;
+  }
+  return response;
 }
