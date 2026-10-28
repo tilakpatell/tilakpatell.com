@@ -15,6 +15,7 @@
 
 import { registerEngineCache } from './engineCache.js';
 import { sourceOf } from './source.js';
+import { steadyTimers } from './playTimers.js';
 
 export function returnFrom(search) {
   const from = new URLSearchParams(String(search).replace(/^\?/, '')).get('from');
@@ -75,9 +76,9 @@ export function watchReturn(win, back) {
   }).observe(doc.body, { attributes: true, attributeFilter: ['class'] });
 }
 
-// (with the service worker that keeps the build on the visitor's disk, engineCache.js; the bundler's __name stood
-// in for, source.js)
-const SCRIPT = `<script>${sourceOf(`(${watchReturn})(window, (${returnFrom})(location.search));\n(${registerEngineCache})(window);`)}</script>`;
+// (first the page's short timers kept going while its tab is hidden, playTimers.js; then the way back; then the
+// service worker that keeps the build on the visitor's disk, engineCache.js; the bundler's __name stood in for, source.js)
+const SCRIPT = `<script>${sourceOf(`(${steadyTimers})(window);\n(${watchReturn})(window, (${returnFrom})(location.search));\n(${registerEngineCache})(window);`)}</script>`;
 
 // FNV-1a, 32-bit: a new script is a new page for the browser's cache
 let h = 0x811c9dc5;

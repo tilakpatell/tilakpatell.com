@@ -64,6 +64,22 @@ export function engineWorker(self, keep, follow) {
   const onDisk = new Set();
   const coming = new Map();
   const same = { ignoreVary: true };
+  // (the engine's loader asks again for nothing: a dropped answer, or the Worker's 503, is asked again here, after
+  // half a second, then one and a half, then four; a 404 is the answer)
+  const network = async (request) => {
+    let last = null;
+    for (const wait of [0, 500, 1500, 4000]) {
+      if (wait) await new Promise((r) => setTimeout(r, wait));
+      try {
+        last = await self.fetch(request);
+        if (last.status < 500) return last;
+      } catch (error) {
+        last = error;
+      }
+    }
+    if (last instanceof Error || !last?.status) throw last;
+    return last;
+  };
   const prune = async (build) => {
     if (pruned.has(build)) return;
     pruned.add(build);
@@ -90,7 +106,7 @@ export function engineWorker(self, keep, follow) {
         url,
         (async () => {
           if (!(await cache.match(url, same))) {
-            const response = await self.fetch(url);
+            const response = await network(url);
             if (response.status !== 200) return false;
             await cache.put(url, response);
             await prune(build);
@@ -124,7 +140,7 @@ export function engineWorker(self, keep, follow) {
         if (coming.has(dir + kept.path)) await coming.get(dir + kept.path);
         const hit = await cache.match(request, same);
         if (hit) return hit;
-        const response = await self.fetch(request);
+        const response = await network(request);
         if (response.status === 200)
           event.waitUntil(
             (async () => {

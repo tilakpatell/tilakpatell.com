@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { FILES, WORKER_SOURCE, cacheKeep, engineWorker, following, registerEngineCache } from './engineCache.js';
 
 const ORIGIN = 'https://tilakpatell.com';
@@ -114,6 +114,32 @@ describe('the engine’s build kept on the visitor’s disk', () => {
     await first;
     expect((await second).body).toBe(`bytes of ${ORIGIN}${dir}scene-p-1.dbx`);
     expect(w.asked.filter((u) => u.endsWith('scene-p-1.dbx'))).toHaveLength(1);
+  });
+
+  it('asks again for a dropped answer or a 503, and takes a 404 as the answer', async () => {
+    vi.useFakeTimers();
+    try {
+      const dir = '/battlefront/engine/main-da7a51b3/';
+      const tries = new Map();
+      const w = worker((url) => {
+        const n = (tries.get(url) ?? 0) + 1;
+        tries.set(url, n);
+        if (url.endsWith('flaky.res') && n === 1) throw new TypeError('Failed to fetch');
+        if (url.endsWith('flaky.res') && n === 2) return { status: 503, body: 'Unavailable, try again' };
+        if (url.endsWith('gone.res')) return { status: 404, body: 'Not found' };
+        return { status: 200, body: `bytes of ${url}` };
+      });
+      const flaky = w.get(dir + 'flaky.res');
+      await vi.runAllTimersAsync();
+      expect((await flaky).body).toBe(`bytes of ${ORIGIN}${dir}flaky.res`);
+      expect(tries.get(ORIGIN + dir + 'flaky.res')).toBe(3);
+      const gone = w.get(dir + 'gone.res');
+      await vi.runAllTimersAsync();
+      expect((await gone).status).toBe(404);
+      expect(tries.get(ORIGIN + dir + 'gone.res')).toBe(1);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('works as before without the build’s list', async () => {
