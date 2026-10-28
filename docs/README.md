@@ -31,4 +31,4 @@ What each folder under `docs/` holds, and where to start for a question. Every s
 
 ## What is not here
 
-The site does not reconstruct, port or publish any game engine. The Battlefront II (2017) material is data the site reads (`decisions/2026-10-10-battlefront-2017-assets.md`, `assets/battlefront-2017.md`); the engine is three’s renderers, TSL and Rapier (`decisions/2026-10-10-the-engine-in-place.md`).
+The site holds no game engine’s source. The Battlefront II (2017) material is data the site reads (`decisions/2026-10-10-battlefront-2017-assets.md`, `assets/battlefront-2017.md`); the engine is three’s renderers, TSL and Rapier (`decisions/2026-10-10-the-engine-in-place.md`), but on Hoth, which is `bf2-web`’s: its compiled engine on the visitor’s GPU, published by the owner, and its rules under the fallback (`decisions/2026-10-28-hoth-on-bf2-web.md`).

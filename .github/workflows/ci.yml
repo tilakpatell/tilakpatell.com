@@ -41,7 +41,7 @@ jobs:
       - run: npm run build
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          VITE_ASSET_BASE: https://assets.invalid/storage/v1/object/public/assets
+          VITE_ASSET_BASE: https://assets.invalid
       - run: npm run build
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

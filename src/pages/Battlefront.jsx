@@ -1,9 +1,13 @@
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { Navigate, useLocation, useNavigate, useParams } from 'react-router-dom';
 import BattlefrontWorld from '../components/battlefront/BattlefrontWorld.jsx';
 import { LEVEL_MODES, LEVELS, MODES, firstModeOf, menuRouteFor, routeFor, wayBack } from '../components/battlefront';
 import { useDocumentTitle } from '../lib/hooks';
 import { useInWorld } from '../components/universe/online/useOnline';
+import { CHOICE_KEY, playOn } from '../components/battlefront/engine.js';
+import EngineChoice from '../components/battlefront/EngineChoice.jsx';
+import { engineSupport, probeAdapter, probeBrowser } from '../lib/bf2web/engineSupport.js';
+import play from '../data/bf2web/play.json';
 
 // The game's own front end (its Start, main menu and Play screens), loaded
 // with the page only when it is asked for.
@@ -28,6 +32,46 @@ export default function Battlefront() {
   const back = wayBack(search);
   useDocumentTitle(level ? 'Battlefront · Hoth' : 'Battlefront');
   useInWorld(); // (a full-screen game: no page pointers over it)
+  // Hoth on bf2-web's engine where it can run (components/battlefront/engine.js): the browser itself opens its page,
+  // whose headers isolate it for the engine's threads; the site's world stands in everywhere else
+  // (the visitor's answer to the download, kept on this device; storage may be refused)
+  const [choice, setChoice] = useState(() => {
+    try {
+      return localStorage.getItem(CHOICE_KEY);
+    } catch {
+      return null;
+    }
+  });
+  const choose = (c) => {
+    try {
+      localStorage.setItem(CHOICE_KEY, c);
+    } catch {
+      // (not kept: asked again next visit)
+    }
+    setChoice(c);
+  };
+  // (the adapter's features are read once, asynchronously: until then neither world is begun)
+  const [features, setFeatures] = useState(null);
+  useEffect(() => {
+    if (!level || features) return undefined;
+    let live = true;
+    probeAdapter().then((f) => live && setFeatures(f));
+    return () => {
+      live = false;
+    };
+  }, [level, features]);
+  const support = features && engineSupport({ ...probeBrowser(window), features }, { beforeIsolation: true });
+  const engine = level ? playOn({ level, play, support, search, choice }) : null;
+  useEffect(() => {
+    if (engine?.go) window.location.assign(engine.go);
+  }, [engine?.go]);
+  if (engine?.go || engine?.wait) return <main className="bf-page" aria-busy="true" />;
+  if (engine?.ask)
+    return (
+      <main className="bf-page">
+        <EngineChoice mb={engine.ask.mb} onEngine={() => choose('engine')} onSite={() => choose('site')} />
+      </main>
+    );
   if (!level)
     return (
       <main className="bf-page">

@@ -1,5 +1,5 @@
 // Where a heavy asset is fetched from. scripts/assets-upload.mjs puts the
-// big models and textures in a Supabase Storage bucket by content hash and
+// big models and textures in the public bucket on Cloudflare R2 by content hash and
 // writes src/data/assets-manifest.json; with VITE_ASSET_BASE set at build,
 // a path the manifest names is asked of the bucket (its CDN, a year's cache),
 // anything else of the site as before. The build keeps only the entries whose
