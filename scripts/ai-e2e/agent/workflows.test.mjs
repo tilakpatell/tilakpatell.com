@@ -13,15 +13,16 @@ import { REPO } from '../contract/repo.mjs';
 const DIR = join(REPO, '.github', 'workflows');
 const FLOWS = Object.fromEntries(readdirSync(DIR).filter((f) => /\.ya?ml$/.test(f)).map((f) => [f, parse(readFileSync(join(DIR, f), 'utf8'))]));
 const gpu = (job) => [job['runs-on']].flat().includes('gpu');
-// the triggers only someone with write access to the repository can fire
-const TRUSTED_ONLY = ['workflow_dispatch', 'schedule'];
+// the triggers only someone with write access to the repository can fire (repository_dispatch: a POST to the
+// repository's dispatches endpoint, which takes a token with write access to it, as bf2-web's notify workflow holds)
+const TRUSTED_ONLY = ['workflow_dispatch', 'schedule', 'repository_dispatch'];
 const TRUSTED = /OWNER.*MEMBER.*COLLABORATOR|author_association/;
 
 describe('the workflows that use the desktop’s GPU', () => {
   const jobs = Object.entries(FLOWS).flatMap(([f, w]) => Object.entries(w.jobs).filter(([, j]) => gpu(j)).map(([name, j]) => [`${f} ${name}`, j, w]));
 
   it('are the ones expected', () => {
-    expect(jobs.map(([n]) => n).sort()).toEqual(['ai-health.yml gpu', 'bf2017-desktop.yml make', 'bf2017-desktop.yml stream', 'desktop-doctor.yml doctor', 'gen3d.yml make', 'motion.yml make', 'voices.yml make']);
+    expect(jobs.map(([n]) => n).sort()).toEqual(['ai-health.yml gpu', 'bf2017-desktop.yml make', 'bf2017-desktop.yml stream', 'bf2web.yml build', 'desktop-doctor.yml doctor', 'gen3d.yml make', 'motion.yml make', 'voices.yml make']);
   });
 
   it.each(jobs)('%s runs only on the self-hosted gpu runner, with a time limit', (name, job) => {

@@ -44,6 +44,9 @@ jobs:
     if: ${{ github.event_name != 'workflow_dispatch' || inputs.stage != 'adopt' }}
     runs-on: [self-hosted, gpu]
     timeout-minutes: 360
+    # (the desktop's one GPU: one build at a time, queued behind another)
+    concurrency:
+      group: bf2web-desktop
     outputs:
       build: ${{ steps.make.outputs.build }}
       made: ${{ steps.make.outputs.made }}

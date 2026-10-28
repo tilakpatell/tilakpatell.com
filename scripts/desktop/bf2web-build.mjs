@@ -50,7 +50,10 @@ async function main(argv, env) {
   if (missing.length) throw new Error(`the desktop needs:\n  - ${missing.join('\n  - ')}`);
   const git = (...a) => String(execFileSync('git', ['-C', repo, ...a], { encoding: 'utf8' })).trim();
   git('fetch', '--quiet', 'origin', 'main');
-  const sha = option('--sha') ? git('rev-parse', option('--sha')) : git('rev-parse', 'origin/main');
+  // (a commit asked for comes from the Actions tab or bf2-web's dispatch: hex only, so git never reads it as an option)
+  const asked = option('--sha');
+  if (asked && !/^[0-9a-f]{7,40}$/.test(asked)) throw new Error(`not a commit: ${asked}`);
+  const sha = git('rev-parse', '--verify', `${asked ?? 'origin/main'}^{commit}`);
   const id = buildId(sha);
   const output = (k, v) => env.GITHUB_OUTPUT && appendFileSync(env.GITHUB_OUTPUT, `${k}=${v}\n`);
   const { open } = await import('../lib/bf2web-r2.mjs');
