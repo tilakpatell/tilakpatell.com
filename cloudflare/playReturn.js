@@ -14,6 +14,7 @@
 // returnFrom and watchReturn run in the page as their source text, so neither may reach outside itself.
 
 import { registerEngineCache } from './engineCache.js';
+import { sourceOf } from './source.js';
 
 export function returnFrom(search) {
   const from = new URLSearchParams(String(search).replace(/^\?/, '')).get('from');
@@ -74,8 +75,9 @@ export function watchReturn(win, back) {
   }).observe(doc.body, { attributes: true, attributeFilter: ['class'] });
 }
 
-// (with the service worker that keeps the build on the visitor's disk, engineCache.js)
-const SCRIPT = `<script>(${watchReturn})(window, (${returnFrom})(location.search));(${registerEngineCache})(window);</script>`;
+// (with the service worker that keeps the build on the visitor's disk, engineCache.js; the bundler's __name stood
+// in for, source.js)
+const SCRIPT = `<script>${sourceOf(`(${watchReturn})(window, (${returnFrom})(location.search));\n(${registerEngineCache})(window);`)}</script>`;
 
 // FNV-1a, 32-bit: a new script is a new page for the browser's cache
 let h = 0x811c9dc5;
