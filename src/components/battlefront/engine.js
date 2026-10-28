@@ -6,8 +6,9 @@
 // browser itself, not the router: its headers isolate it, and isolation holds only for a page loaded so. Pure.
 //
 //   ENGINE_LEVELS   CHOICE_KEY   engineUrl(play) → the play site’s address, or null while no build is published
-//   playOn({ level, play, support, search, choice }) → { go: url } | { ask: { url, mb } } | null (the site’s world)
-//     support: lib/bf2web/engineSupport’s answer for this browser, asked beforeIsolation
+//   playOn({ level, play, support, search, choice }) → { go: url } | { ask: { url, mb } } | { wait: true } | null (the site’s world)
+//     support: lib/bf2web/engineSupport’s answer for this browser, asked beforeIsolation; null while its adapter’s
+//     features are being read (wait: neither world is begun)
 //     choice: what the visitor said before on this device, 'engine' | 'site' | null
 
 // the levels bf2-web plays
@@ -23,6 +24,8 @@ export function playOn({ level, play, support, search = '', choice = null }) {
   const asked = new URLSearchParams(search).get('engine');
   if (asked === '0') return null;
   if (asked === '1') return { go: url };
-  if (!support?.ok || choice === 'site') return null;
+  if (choice === 'site') return null;
+  if (!support) return { wait: true };
+  if (!support.ok) return null;
   return choice === 'engine' ? { go: url } : { ask: { url, mb: play.mb ?? null } };
 }

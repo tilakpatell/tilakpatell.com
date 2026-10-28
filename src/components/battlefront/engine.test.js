@@ -22,6 +22,13 @@ describe('where Hoth is played', () => {
     expect(engineUrl({ build: null })).toBeNull();
   });
 
+  it('waits while the browser’s GPU is being asked, unless the answer can’t matter', () => {
+    expect(playOn({ level: 'hoth', play, support: null })).toEqual({ wait: true });
+    expect(playOn({ level: 'hoth', play, support: null, choice: 'site' })).toBeNull();
+    expect(playOn({ level: 'hoth', play, support: null, search: '?engine=0' })).toBeNull();
+    expect(playOn({ level: 'endor', play, support: null })).toBeNull();
+  });
+
   it('lets the address choose', () => {
     expect(playOn({ level: 'hoth', play, support: able, search: '?engine=0', choice: 'engine' })).toBeNull();
     expect(playOn({ level: 'hoth', play, support: unable, search: '?from=/galaxy/hoth&engine=1' })).toEqual({ go: '/battlefront/engine/b1/' });
