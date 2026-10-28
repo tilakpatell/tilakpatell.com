@@ -78,7 +78,7 @@ Where things live and how the bigger pieces fit. The [README](../README.md) has 
 
 Installs ([the design](superpowers/specs/2026-10-07-infinite-worlds-design.md)): each world declares what it fetches in `src/components/<world>/pack.js`, gathered by `src/components/worlds/packs.js`. `scripts/packs.mjs` writes `dist/packs/<slug>.json` at build and fails on a missed asset (`scripts/pack-check.mjs`); `install.js` fetches a pack into the Cache API as `tp-pack-<slug>-<v>`, and `public/sw.js` (registered by `src/lib/sw.js` only while a pack is installed) answers installed files from it. `WorldGate.jsx` is the front door and `src/pages/Worlds.jsx` the list. Check: `scripts/sw-check.mjs`.
 
-The heavy assets ([the decision](decisions/2026-10-09-heavy-assets-mirrored-on-supabase-storage.md); on Cloudflare R2 since 2026-10-21, [the move](decisions/2026-10-21-heavy-assets-on-r2.md)) are mirrored to the public bucket `site-assets` by `scripts/assets-upload.mjs`, which writes `src/data/assets-manifest.json`. With `VITE_ASSET_BASE` set, `src/lib/assetBase.js` sends those fetches to the bucket and falls back to the site’s own file on the first failure. Check: `node scripts/sw-check.mjs --bucket`.
+The heavy assets ([the decision](decisions/2026-10-09-heavy-assets-mirrored-on-supabase-storage.md); on Cloudflare R2 since 2026-10-21, [the move](decisions/2026-10-21-heavy-assets-on-r2.md)) are mirrored to the public bucket `tilak-assets` (`site-assets` on Supabase, the name the scripts' comments still use), at `https://assets.tilakpatell.com`, by `scripts/assets-upload.mjs`, which writes `src/data/assets-manifest.json`. With `VITE_ASSET_BASE` set, `src/lib/assetBase.js` sends those fetches to the bucket and falls back to the site’s own file on the first failure. Check: `node scripts/sw-check.mjs --bucket`.
 
 The chunk services, pure and tested: `chunkGrid.js` (which cells to ask for round a moving point and which to let go), `workers.js` (`rt.workers`, a pool per name with priorities and cancel) and `origin.js` (`rt.origin`, a floating origin moved in whole cells). Minecraft streams its chunks through the first two (`components/minecraft/stream.js`).
 
@@ -146,7 +146,7 @@ The shared world over a planet is `src/components/expanse/flight/shared.js`, com
 
 ## Hosting
 
-**The site is static, and Cloudflare serves it** ([the decision](decisions/2026-10-21-cloudflare-for-the-site.md), [the page](stack/cloudflare.md)). `.github/workflows/deploy.yml` lints, tests and builds `main`, then uploads `dist/` to the Worker `tilakpatell-com`, tilakpatell.com's custom domain (`wrangler.jsonc`: its files, with code for `/audio/*` alone, `cloudflare/worker.js`, which answers a `Range`). The headers are `public/_headers`'. GitHub Pages served the site until 2026-10-21. The heavy assets are still the Supabase bucket's (above) until they move to R2.
+**The site is static, and Cloudflare serves it** ([the decision](decisions/2026-10-21-cloudflare-for-the-site.md), [the page](stack/cloudflare.md)). `.github/workflows/deploy.yml` lints, tests and builds `main`, then uploads `dist/` to the Worker `tilakpatell-com`, tilakpatell.com's custom domain (`wrangler.jsonc`: its files, with code for `/audio/*` alone, `cloudflare/worker.js`, which answers a `Range`). The headers are `public/_headers`'. GitHub Pages served the site until 2026-10-21. The heavy assets are R2's (above); Supabase keeps only the database and Realtime (below).
 
 ## Tests
 

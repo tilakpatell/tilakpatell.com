@@ -61,7 +61,7 @@ import { createManifestDriver } from './runtime/manifest';
 const driver = createManifestDriver({
   assets,                       // runtime/assets.js instance
   manifest,                     // fetched JSON (or imported)
-  base: import.meta.env.BASE_URL, // or the Supabase bucket origin
+  base: import.meta.env.BASE_URL, // or the bucket's origin, https://assets.tilakpatell.com
 });
 
 await driver.boot();            // gate the first frame on the boot slice
@@ -74,7 +74,7 @@ The driver only translates rows into calls on the existing `assets` queue
 (dedupe, priority, concurrency, ownership) — it does no fetching of its own, so
 it stays pure and testable.
 
-## Supabase follow-up (needs project keys)
+## A queryable manifest (not started; the bucket is R2's since 2026-10-21)
 
 Moving the manifest to a queryable table (so "uploaded vs pending" is a query,
 not a filename guess) and streaming objects from the bucket is the next step.

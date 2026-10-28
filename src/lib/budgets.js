@@ -26,8 +26,9 @@
 // and LODs wait (levelStream.js says it paused; a higher level raises it).
 // _source: the GPU-first design's §4 N4 (under 12 MB on high, 6 on mid;
 // low 3 by the same halving) and the research note's egress arithmetic
-// (Supabase Pro's 250 GB cached a month: a 400 MB visit is 625 visits,
-// 1,200 MB on ultra about 210). docs/superpowers/specs/2026-10-11-gpu-
+// (Supabase Pro's 250 GB cached a month, where the bucket was then: a 400 MB
+// visit is 625 visits, 1,200 MB on ultra about 210; on R2 since 2026-10-21 a
+// visit's bytes cost nothing to send, so the rows hold for the visitor). docs/superpowers/specs/2026-10-11-gpu-
 // first-renderer-design.md.
 //
 // `near` and `mid` are a kit model's bands in metres (lib/three/kit's
