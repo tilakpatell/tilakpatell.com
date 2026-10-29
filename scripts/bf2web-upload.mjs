@@ -15,6 +15,7 @@ import { fileURLToPath } from 'node:url';
 import { encodePath, objectUrl } from './lib/bucket.mjs';
 import { BUCKET, open } from './lib/bf2web-r2.mjs';
 import { contractProblems, uploadPlan } from './lib/bf2web-site.mjs';
+import { attemptUpload, completeUploadResponse } from './lib/bf2web-upload-response.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const args = process.argv.slice(2);
@@ -41,17 +42,6 @@ const bytesOf = (p) => manifest.entries.find((e) => e.path === p.path)?.bytes ??
 console.log(`${id}: ${count('put')} to send (${Math.round(plan.filter((p) => p.action === 'put').reduce((n, p) => n + bytesOf(p), 0) / 1e6)} MB), ${count('copy')} copied from ${previousId ?? 'none'}, ${count('skip')} already there`);
 if (dry) process.exit(0);
 
-// (three tries, a second and then four apart: R2 can drop a request now and then)
-async function attempt(what, fn) {
-  for (let n = 1; ; n++) {
-    try {
-      return await fn();
-    } catch (error) {
-      if (n === 3) throw new Error(`${what}: ${error.message}`);
-      await new Promise((r) => setTimeout(r, 1000 * 4 ** (n - 1)));
-    }
-  }
-}
 async function send(p) {
   if (p.action === 'skip') return;
   const url = objectUrl(BUCKET, p.key);
@@ -62,9 +52,9 @@ async function send(p) {
           const body = readFileSync(p.file ?? join(dir, p.path));
           return { method: 'PUT', body, headers: { 'content-md5': createHash('md5').update(body).digest('base64'), 'content-type': 'application/octet-stream' } };
         })();
-  await attempt(`${p.action} ${p.key}`, async () => {
+  await attemptUpload(`${p.action} ${p.key}`, async () => {
     const r = await r2.fetch(url, init);
-    if (!r.ok) throw new Error(`HTTP ${r.status} ${(await r.text().catch(() => '')).slice(0, 200)}`);
+    await completeUploadResponse(r, { copy: p.action === 'copy' });
   });
 }
 
