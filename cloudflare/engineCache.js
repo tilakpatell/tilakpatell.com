@@ -134,15 +134,26 @@ export function engineWorker(self, keep, follow) {
     if (request.headers.get(WARM)) {
       event.respondWith(
         (async () => {
-          const cache = await self.caches.open(NAME + kept.build);
-          return new Response(null, { status: (await fill(cache, kept.build, url.href)) ? 204 : 502 });
+          try {
+            const cache = await self.caches.open(NAME + kept.build);
+            return new Response(null, { status: (await fill(cache, kept.build, url.href)) ? 204 : 502 });
+          } catch {
+            return new Response(null, { status: 502 });
+          }
         })(),
       );
       return;
     }
     event.respondWith(
       (async () => {
-        const cache = await self.caches.open(NAME + kept.build);
+        // Disk caching is optional: a denied or unavailable store must not turn a usable network response into
+        // a failed engine load. Keep the existing network retries when the browser cannot open/read its cache.
+        let cache;
+        try {
+          cache = await self.caches.open(NAME + kept.build);
+        } catch {
+          return network(request);
+        }
         const dir = `${url.origin}/battlefront/engine/${kept.build}/`;
         event.waitUntil(
           seriesOf(kept.build)
@@ -151,7 +162,12 @@ export function engineWorker(self, keep, follow) {
         );
         // (one already on its way: waited for, not asked again)
         if (coming.has(dir + kept.path)) await coming.get(dir + kept.path);
-        const hit = await cache.match(request, same);
+        let hit;
+        try {
+          hit = await cache.match(request, same);
+        } catch {
+          return network(request);
+        }
         if (hit) return hit;
         const response = await network(request);
         if (response.status === 200)
