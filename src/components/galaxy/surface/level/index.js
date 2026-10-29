@@ -82,9 +82,8 @@ export function countedBytes(load, { live = () => true, onFirst = () => {} } = {
   counted.skipped = () => skipped;
   return counted;
 }
-// (bytesOf: the Battlefront world's level takes the same fetcher through
-// the galaxy's face, galaxy/shared/level.js, so its meshes and cells come
-// from the bucket as the galaxy's do, the site's copy when it cannot)
+// (bytesOf: a pack file's bytes from the bucket, the site's copy when it
+// cannot)
 export const bytesOf = (world) => (path) => withFallback((u) => fetch(u).then((r) => packBytes(r, u)))(packUrl(world, path));
 
 export const packJson = (world, path) => bytesOf(world)(path).then((b) => JSON.parse(new TextDecoder().decode(b)));

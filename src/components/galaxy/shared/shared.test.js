@@ -3,8 +3,6 @@ import * as models from './models';
 import * as ground from './ground';
 import * as fight from './fight';
 import * as weather from './weather';
-import * as level from './level';
-import * as stage from './stage';
 import * as fx from './fx';
 import * as arms from './arms';
 
@@ -15,8 +13,6 @@ const FACE = [
   [ground, ['SITES', 'makeHeight', 'siteOf']],
   [fight, ['ABILITIES', 'JET', 'abilitiesOf', 'forceOf', 'hitOf', 'jetStep', 'newJet', 'sensesFor', 'startBurst', 'stepBurst', 'strafeStep']],
   [weather, ['createWeather', 'strikeAt']],
-  [level, ['createLevelLoader', 'createLevelPhysics', 'createLevelScene', 'createLevelStream', 'imageLayerOf', 'instancesOf', 'packBytes', 'packUrl', 'tierTexture', 'wantsEngine', 'wanted']],
-  [stage, ['HeroStage', 'stageFor']],
   [fx, ['LASER', 'createBolts', 'createFlashes', 'createHandArms']],
   [arms, ['HAND_WEAPONS', 'HERO_KEY', 'HILTS', 'PICKABLE', 'SABER_COLORS', 'heroById', 'pickableWith', 'readCrewStyle', 'skinsOf']],
 ];

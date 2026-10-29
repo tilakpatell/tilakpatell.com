@@ -27,7 +27,7 @@
 //   the last; the TIE bomber flights as the attacker's waves; the final push
 //   and the defender's reserve as the galaxy's battles have them; and each
 //   side's pilots (`pilots[team]`), twenty names from the game's space-battle
-//   lists (lib/battlefront/ai/names.js) in the battle's seed's order, for the
+//   lists (lib/bf2017/ai/names.js) in the battle's seed's order, for the
 //   flights and the mode's HUD.
 // - shipsClear(battle, avoid) → the capital ships that stand inside one
 //   another or inside the planet's, the station's or the shield's solids
@@ -38,7 +38,7 @@
 // fights it in place of the war's own while it's on.
 
 import { PLAN } from '../../../universe/battlePlan';
-import { namesFor } from '../../../../lib/battlefront/ai/names.js';
+import { namesFor } from '../../../../lib/bf2017/ai/names.js';
 import { eraOf, fightersOf, heroesOf, kitsOf } from './starfighterKits';
 
 export const METRES = 53.3; // a battle unit in metres (galaxy/battles.js's M)

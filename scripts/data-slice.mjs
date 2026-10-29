@@ -1,11 +1,8 @@
-// The Battlefront rulebook’s big records out of the JavaScript chunks (lane
-// FL1 of the engine floor, after scripts/library-slice.mjs’s shape).
-// src/data/bf2017/ai.json (530 KB), screens.json (756 KB), Hoth’s map and
-// lighting (511 KB) and the rulebook’s other records were imported as JSON,
-// which the build inlines as a module: the `instantAction` chunk was 2.2 MB
-// and `FrontEnd` 860 KB, parsed by the JavaScript parser before
-// Battlefront’s first screen. This plugin serves
-// each as `virtual:bf2017-<name>`:
+// The game's big UI records out of the JavaScript chunks (lane FL1 of the
+// engine floor, after scripts/library-slice.mjs’s shape). screens.json
+// (756 KB) and ui.json were imported as JSON, which the build inlines as a
+// module, parsed by the JavaScript parser before a world's first screen.
+// This plugin serves each as `virtual:bf2017-<name>`:
 //
 // - a record whose readers read only some of its keys, as those keys
 //   (scripts/lib/data-slice.mjs reads the readers; its test holds RECORDS to
@@ -35,27 +32,13 @@ import { identOf, keysReadBy, sliceFor } from './lib/data-slice.mjs';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url)).replace(/\/+$/, '');
 
-const RULEBOOK = 'src/lib/battlefront/rulebook.js';
 const row = (name, file, readers, fetch = true) => ({ name, specifier: `virtual:bf2017-${name}`, file: `src/data/bf2017/${file}`, readers, whole: true, fetch });
 
-// the three the design names, then the rulebook's other records that only it
-// imports (the galaxy imports strings, points, classes, heroes, modes, cameras
-// and squads itself, so those stay JSON imports: served here as well, a
-// galaxy chunk would carry them twice)
+// (the site's own Battlefront game, whose rulebook read the rest, went on 2026-10-29: docs/superpowers/plans/
+// 2026-10-29-battlefront-engine-only.md; the worlds' HUD kit reads these two)
 export const RECORDS = [
-  row('ai', 'ai.json', [RULEBOOK]),
-  row('ui', 'ui.json', [RULEBOOK, 'src/lib/bf2017/ui/index.js'], false),
+  row('ui', 'ui.json', ['src/lib/bf2017/ui/index.js'], false),
   row('screens', 'screens.json', ['src/lib/bf2017/ui/screens.js']),
-  row('hoth', 'maps/hoth.json', [RULEBOOK]),
-  row('hothLighting', 'maps/hoth.lighting.json', [RULEBOOK]),
-  row('weapons', 'weapons.json', [RULEBOOK]),
-  row('cards', 'cards.json', [RULEBOOK]),
-  row('abilities', 'abilities.json', [RULEBOOK]),
-  row('kits', 'kits.json', [RULEBOOK]),
-  row('teams', 'teams.json', [RULEBOOK]),
-  row('vehicles', 'vehicles.json', [RULEBOOK]),
-  row('arcade', 'arcade.json', [RULEBOOK]),
-  row('reinforcements', 'reinforcements.json', [RULEBOOK]),
 ];
 
 const PREFIX = '\0bf2017-record:';

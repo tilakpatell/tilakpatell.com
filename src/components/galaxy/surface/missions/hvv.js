@@ -21,8 +21,8 @@
 // front. A bot's mark is the nearest enemy, the enemy's target weighed
 // RULES.pull metres nearer. Hit points are the game's (bf2017Abilities.json,
 // abilityRules.js's gameHealth), healing after the game's delay at its rate
-// (bf2017/heroes.json's regen). A difficulty (lib/battlefront/ai/difficulty.js's
-// row, `difficulty`) scales a blaster bot's chance to hit by its aim scale and
+// (bf2017/heroes.json's regen). A difficulty (the game's difficulty row, as the
+// site's old Battlefront game read it, `difficulty`) scales a blaster bot's chance to hit by its aim scale and
 // a bot's damage to you by its damage; the bots' decisions stay hand rules
 // (`source: "hand"`: no hero-bot record exists, their minds are logic graphs).
 //

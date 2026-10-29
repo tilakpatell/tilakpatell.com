@@ -7,11 +7,10 @@
 // (the galaxy’s is a system, Tatooine’s: /galaxy alone sends the visitor
 // to the last system flown, and the flown galaxy is what its port is
 // about. The lanes’ /galaxy/hoth/surface is not here: it sends the visitor
-// to Battlefront’s Hoth now, src/pages/GalaxyLanding.jsx, the world
-// measured first)
+// to bf2-web's engine now (src/pages/GalaxyLanding.jsx), whose page and
+// build are its own, not the site's)
 
 export const HEAVY = [
-  { journey: 'battlefront', route: '/battlefront/hoth' },
   { journey: 'galaxy', route: '/galaxy/tatooine' },
   { journey: 'fly', route: '/fly/hoth' }, // planet flight (Hoth, the planet its journey defaults to)
   { journey: 'universe', route: '/universe' },

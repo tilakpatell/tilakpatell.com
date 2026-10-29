@@ -29,9 +29,9 @@ A Rust crate under `wasm/<name>/` stands behind the same interface as the JavaSc
 
 | port | replaces | loaded by | before → after | kept? |
 | --- | --- | --- | --- | --- |
-| `wasm/navsearch` → `src/lib/wasm/navsearch/` (20 KB) | the navgrid’s A*, `searchJs` in `src/lib/battlefront/navSearch.js` | `src/lib/battlefront/navWasm.js`’s `loadNavSearch()`, as the Battlefront’s build starts | 153.6 → 51.2 µs a search, the same cells for all 2,946 of a minute’s searches | yes |
+| `wasm/navsearch` → `src/lib/wasm/navsearch/` (20 KB) | the navgrid’s A*, `searchJs` in the site’s own Battlefront game | its `navWasm.js`’s `loadNavSearch()` | 153.6 → 51.2 µs a search, the same cells for all 2,946 of a minute’s searches | gone, 2026-10-29, with the game it served (`docs/superpowers/plans/2026-10-29-battlefront-engine-only.md`) |
 
-Nothing else in the Battlefront’s step came near the plan’s threshold (1.5 ms a frame): the whole step is about 0.5 ms a frame on the lane’s container. A new port follows the same shape: a crate under `wasm/<name>/` with its own `cargo test`, built by `node scripts/wasm-build.mjs <name>` into `src/lib/wasm/<name>/` (the glue and the `.wasm` committed: CI has no Rust), loaded through `lib/wasm/load`, swapped in behind the JavaScript’s interface, and a test file that runs the JavaScript’s tests again through it.
+Nothing else in that game’s step came near the plan’s threshold (1.5 ms a frame): the whole step was about 0.5 ms a frame on the lane’s container. No crate is in the site today. A new port follows the same shape: a crate under `wasm/<name>/` with its own `cargo test`, built by `node scripts/wasm-build.mjs <name>` into `src/lib/wasm/<name>/` (the glue and the `.wasm` committed: CI has no Rust), loaded through `lib/wasm/load`, swapped in behind the JavaScript’s interface, and a test file that runs the JavaScript’s tests again through it.
 
 ## What the site does not use, and why
 

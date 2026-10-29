@@ -1,5 +1,5 @@
 // The squadron behaviour tree on a fixture flight (the bots lane, task 6):
-// one fighter flying the game's dogfight tree (src/lib/battlefront/ai/
+// one fighter flying the game's dogfight tree (src/lib/bf2017/ai/
 // squadron.js, ai.squadron.json) against three enemies circling 400 m round
 // the middle at 90 m/s, one of them turning onto its tail now and then,
 // for each of twelve seeds (where the fighter and the enemies start). A
@@ -11,7 +11,7 @@
 //   node scripts/battlefront-squadron.mjs [--seeds 12] [--seconds 120] [--tree PF_DogfightBehaviour]
 
 import { readFileSync } from 'node:fs';
-import { createSquadronMind, DOGFIGHT } from '../src/lib/battlefront/ai/squadron.js';
+import { createSquadronMind, DOGFIGHT } from '../src/lib/bf2017/ai/squadron.js';
 import { seeded } from '../src/lib/seeded.js';
 
 const args = process.argv.slice(2);

@@ -113,7 +113,7 @@ export function createLevelPhysics({ physics, pack, loadBin, tier = 'high', budg
   const shapes = new Map(); // mesh → Promise<colliders | null>
   const cells = new Map(); // key → { bodies, queue, heightfields, dropped, colliders, triangles }
   let heightAt = null;
-  let holes = null; // (the terrain's own holes, lib/land/holes.js: a 64 m square holding one is a mesh without them)
+  let holes = null; // (the terrain's own holes, { any, at }, as setTerrain's caller gives them: a 64 m square holding one is a mesh without them)
   let disposed = false;
   let stepMs = 0;
 

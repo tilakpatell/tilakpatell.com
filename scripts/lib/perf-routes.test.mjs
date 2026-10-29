@@ -10,10 +10,9 @@ const probe = readFileSync(new URL('../perf-probe.mjs', import.meta.url), 'utf8'
 const patterns = [...app.matchAll(/<Route path="(\/[^"]*)"/g)].map(([, p]) => new RegExp(`^${p.replace(/\/:[\w]+\?/g, '(?:/[^/]+)?').replace(/\/:[\w]+/g, '/[^/]+')}$`));
 
 describe('the heavy worlds the probe measures (lane P0)', () => {
-  // (the lanes’ /galaxy/hoth/surface is Battlefront’s Hoth now, measured once)
+  // (the lanes’ /galaxy/hoth/surface opens bf2-web's engine now, whose page and build aren't the site's)
   it('are the ones the performance lanes name, in their order', () => {
     expect(HEAVY.map((h) => h.route)).toEqual([
-      '/battlefront/hoth',
       '/galaxy/tatooine',
       '/fly/hoth', // planet flight
       '/universe',

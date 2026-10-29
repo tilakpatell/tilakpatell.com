@@ -38,9 +38,7 @@ export const WORLD_MB = {
   '/dot-matrix/64': 7, // the castle's and Bob-omb Ridge's texture sets at phone size, two skies, and Mario, the cast and the props (fan-made Sketchfab models, 2 MB)
   '/earth': 2, // NASA's globe at phone size, the stars and the plane
   '/dot-matrix/minecraft': 2, // drawn in code from the pack's tiles: the block strip, the skins and the sky's and HUD's sprites (under a tenth of an MB today)
-  '/battlefront': 13, // the game's sounds for Hoth, the whole set (src/data/bf2017/sounds.json: 112 names, 352 takes, 12.4 MB as encoded 2026-10-12). A first life asks for 7.0 MB of it (scripts/bf2017-sound-check.mjs, 245 files): the 241 one-shots fetched as the world starts (the blasters, the feet, the cues, the bed and its one-shots: 4.4 MB) and the four stems it streams (the loading intro and loop, a medium stem, the end of round: 2.6 MB); the abilities, the commanders' lines and the high and tension stems come when they are called for. The level pack streams by cell from the bucket and is the galaxy's packBytes, not counted here
-  // (Hoth's snow maps ride inside the 13: 0.25 MB at a phone's size, 1.5 on high, 4.6 on ultra: scripts/bf2017-snow.mjs)
-  // (the soldiers' LOD0 cuts, the snowtrooper's 18 MB and the Hoth trooper's 27, stream from the bucket near the eye under lib/three/walrusCuts' FULL_SHARE, 30 MB on high and 160 on ultra, none below; like the level pack, not counted here)
+  '/battlefront': 0, // bf2-web's engine: its own page and build, from the private bucket (cloudflare/play.js), not the site's files
 };
 
 // The worlds that need a real GPU (lib/fit's starWarsFit): the Star Wars

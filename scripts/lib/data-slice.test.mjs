@@ -76,8 +76,8 @@ describe('identOf', () => {
 });
 
 describe('RECORDS, against the readers on disk', () => {
-  it('names the three records the design takes out of the chunks', () => {
-    for (const f of ['ai.json', 'screens.json', 'ui.json']) expect(RECORDS.map((r) => r.file)).toContain(`src/data/bf2017/${f}`);
+  it('names the records the worlds’ HUD kit reads', () => {
+    expect(RECORDS.map((r) => r.file)).toEqual(['src/data/bf2017/ui.json', 'src/data/bf2017/screens.json']);
   });
 
   it('serves no record another file imports as JSON itself (a chunk would carry it twice)', () => {
@@ -112,7 +112,7 @@ describe('RECORDS, against the readers on disk', () => {
 });
 
 describe('recordCode', () => {
-  const row = RECORDS.find((r) => r.specifier === 'virtual:bf2017-ai');
+  const row = RECORDS.find((r) => r.specifier === 'virtual:bf2017-screens');
 
   it('inlines the record where there is no page to fetch it (dev, Vitest, SSR)', async () => {
     const code = recordCode(row, { root: ROOT, fetch: false });
@@ -123,7 +123,7 @@ describe('recordCode', () => {
 
   it('in the client build, waits on the record’s request from the shared module, before any reader runs', () => {
     const code = recordCode(row, { root: ROOT, fetch: true });
-    expect(code).toBe(`import { ai } from ${JSON.stringify('\0bf2017-records')};\nexport default await ai;\n`);
+    expect(code).toBe(`import { screens } from ${JSON.stringify('\0bf2017-records')};\nexport default await screens;\n`);
   });
 
   it('keeps a record whose row says not to fetch it inline, even in the client build', () => {
@@ -140,7 +140,6 @@ describe('groupCode', () => {
   it('makes every fetched record’s request at once, each from the file’s built URL', () => {
     for (const r of RECORDS.filter((x) => x.fetch)) expect(code).toContain(`import ${r.name}Url from "/${r.file}?url";`);
     expect(code).toContain('import screensUrl from "/src/data/bf2017/screens.json?url";');
-    expect(code).toMatch(/^export const ai = get\("src\/data\/bf2017\/ai\.json", aiUrl\);$/m);
     expect(code).toMatch(/^export const screens = get\("src\/data\/bf2017\/screens\.json", screensUrl\);$/m);
     expect(code).not.toContain('ui.json');
     expect(code).not.toContain('await');
@@ -154,7 +153,6 @@ describe('groupCode', () => {
     const run = new Function('fetch', ...fetched.map((r) => `${r.name}Url`), `${body}\nreturn { ${fetched.map((r) => r.name).join(', ')} };`);
     const out = run(fake, ...fetched.map((r) => r.name));
     expect(calls).toEqual(fetched.map((r) => r.name));
-    await expect(out.ai).resolves.toEqual({ from: 'ai' });
     await expect(out.screens).rejects.toThrow('src/data/bf2017/screens.json: 404 from screens');
   });
 });
