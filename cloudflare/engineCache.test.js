@@ -42,7 +42,7 @@ function worker(network = (url) => ({ status: 200, body: `bytes of ${url}` }), f
     await Promise.all(waits);
     return res;
   };
-  return { on, stores, asked, get };
+  return { on, stores, asked, get, self };
 }
 
 describe('the engine’s build kept on the visitor’s disk', () => {
@@ -60,6 +60,22 @@ describe('the engine’s build kept on the visitor’s disk', () => {
     expect((await w.get(path)).body).toBe(`bytes of ${ORIGIN}${path}`);
     expect(w.asked).toEqual([ORIGIN + path]);
     expect([...w.stores.keys()]).toEqual(['tp-engine-main-da7a51b3']);
+  });
+
+  it.each(['open', 'match'])('still loads an engine asset from the network when Cache Storage %s fails', async (operation) => {
+    const w = worker();
+    const unavailable = async () => { throw new Error('Cache Storage unavailable'); };
+    w.self.caches.open = operation === 'open' ? unavailable : async () => ({ match: unavailable, put: unavailable });
+    const path = '/battlefront/engine/main-da7a51b3/scene-r-0.res';
+    for (let i = 0; i < 2; i++) expect((await w.get(path)).body).toBe(`bytes of ${ORIGIN}${path}`);
+    expect(w.asked).toEqual([ORIGIN + path, ORIGIN + path]);
+  });
+
+  it('reports a failed warm without downloading a file it cannot cache', async () => {
+    const w = worker();
+    w.self.caches.open = async () => { throw new Error('Cache Storage unavailable'); };
+    expect((await w.get('/battlefront/engine/main-da7a51b3/scene-r-0.res', { headers: { 'x-tp-warm': '1' } })).status).toBe(502);
+    expect(w.asked).toEqual([]);
   });
 
   it('leaves the page, ranges, other methods, other roots and a failed answer alone', async () => {
