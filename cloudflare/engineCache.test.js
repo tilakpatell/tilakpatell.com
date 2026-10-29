@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest';
-import { FILES, WORKER_SOURCE, cacheKeep, engineWorker, following, registerEngineCache } from './engineCache.js';
+import { describe, expect, it, vi } from 'vitest';
+import { FILES, WORKER_SOURCE, cacheKeep, engineWorker, following, registerEngineCache, warmEngineBuild, warmOrder } from './engineCache.js';
 
 const ORIGIN = 'https://tilakpatell.com';
 
@@ -116,10 +116,95 @@ describe('the engine’s build kept on the visitor’s disk', () => {
     expect(w.asked.filter((u) => u.endsWith('scene-p-1.dbx'))).toHaveLength(1);
   });
 
+  it('asks again for a dropped answer or a 503, and takes a 404 as the answer', async () => {
+    vi.useFakeTimers();
+    try {
+      const dir = '/battlefront/engine/main-da7a51b3/';
+      const tries = new Map();
+      const w = worker((url) => {
+        const n = (tries.get(url) ?? 0) + 1;
+        tries.set(url, n);
+        if (url.endsWith('flaky.res') && n === 1) throw new TypeError('Failed to fetch');
+        if (url.endsWith('flaky.res') && n === 2) return { status: 503, body: 'Unavailable, try again' };
+        if (url.endsWith('gone.res')) return { status: 404, body: 'Not found' };
+        return { status: 200, body: `bytes of ${url}` };
+      });
+      const flaky = w.get(dir + 'flaky.res');
+      await vi.runAllTimersAsync();
+      expect((await flaky).body).toBe(`bytes of ${ORIGIN}${dir}flaky.res`);
+      expect(tries.get(ORIGIN + dir + 'flaky.res')).toBe(3);
+      const gone = w.get(dir + 'gone.res');
+      await vi.runAllTimersAsync();
+      expect((await gone).status).toBe(404);
+      expect(tries.get(ORIGIN + dir + 'gone.res')).toBe(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('works as before without the build’s list', async () => {
     const w = worker();
     await w.get('/battlefront/engine/main-da7a51b3/scene-m-0.res');
     expect(w.asked).toEqual([ORIGIN + '/battlefront/engine/main-da7a51b3/scene-m-0.res']);
+  });
+
+  it('puts a warmed file on the disk and answers with no body, reading nothing ahead', async () => {
+    const dir = '/battlefront/engine/main-da7a51b3/';
+    const w = worker(undefined, ['scene-m-0.res', 'scene-m-1.res']);
+    const warmed = await w.get(dir + 'scene-m-0.res', { headers: { 'x-tp-warm': '1' } });
+    expect(warmed.status).toBe(204);
+    expect(w.asked).toEqual([ORIGIN + dir + 'scene-m-0.res']);
+    // (the engine's ask, after: the disk's)
+    expect((await w.get(dir + 'scene-m-0.res')).body).toBe(`bytes of ${ORIGIN}${dir}scene-m-0.res`);
+    expect(w.asked.filter((u) => u.endsWith('scene-m-0.res'))).toHaveLength(1);
+  });
+
+  it('orders a round’s files as the loader asks for them, the page’s own left out', () => {
+    const paths = ['runtime/world-play.mjs', 'ui/main.js', 'index.html', 'scene-m-1.res', 'scene-collision.bfsw', 'scene-t-1.pixels', 'scene-t-10.dbx', 'scene-t-1.dbx', 'scene.json', 'system-0.xml', 'scene-tc-0.bin', 'scene-terrain-tiles.json', 'scene-terrain-tile-3_4.bfsw', 'scene-m-0.res', 'world-solutions.bin', 'programs.json'];
+    expect(warmOrder(paths)).toEqual(['system-0.xml', 'scene.json', 'world-solutions.bin', 'scene-t-1.dbx', 'scene-t-1.pixels', 'scene-t-10.dbx', 'scene-m-0.res', 'scene-m-1.res', 'scene-tc-0.bin', 'scene-collision.bfsw', 'scene-terrain-tile-3_4.bfsw', 'scene-terrain-tiles.json']);
+  });
+
+  it('warms the round’s files once the front end shows and the worker answers, four at a time', async () => {
+    const asked = [];
+    let inFlight = 0;
+    let most = 0;
+    const observers = [];
+    const classes = new Set();
+    const files = Array.from({ length: 10 }, (_, i) => `scene-m-${i}.res`);
+    const win = {
+      navigator: { serviceWorker: { controller: {}, addEventListener: () => {} }, connection: {} },
+      location: { pathname: '/battlefront/engine/main-da7a51b3/' },
+      document: { body: { classList: { contains: (c) => classes.has(c) } } },
+      MutationObserver: class {
+        constructor(fn) {
+          observers.push(fn);
+        }
+        observe() {}
+      },
+      fetch: async (url, init) => {
+        if (url.endsWith('tp-files.json')) return { status: 200, json: async () => ({ files }) };
+        asked.push([url, init?.headers?.['x-tp-warm']]);
+        most = Math.max(most, ++inFlight);
+        await new Promise((r) => setTimeout(r, 1));
+        inFlight--;
+        return { status: 204 };
+      },
+    };
+    warmEngineBuild(win, warmOrder);
+    await new Promise((r) => setTimeout(r, 5));
+    expect(asked).toEqual([]);
+    classes.add('play-menu');
+    observers.forEach((fn) => fn());
+    await new Promise((r) => setTimeout(r, 60));
+    expect(asked.map(([u]) => u)).toEqual(files.map((f) => '/battlefront/engine/main-da7a51b3/' + f));
+    expect(asked.every(([, warm]) => warm === '1')).toBe(true);
+    expect(most).toBe(4);
+    // (not on a connection that saves data)
+    const before = asked.length;
+    warmEngineBuild({ ...win, navigator: { ...win.navigator, connection: { saveData: true } } }, warmOrder);
+    observers.at(-1)?.();
+    await new Promise((r) => setTimeout(r, 10));
+    expect(asked.length).toBe(before);
   });
 
   it('is registered by the page for its scope, the storage asked to be kept', async () => {
