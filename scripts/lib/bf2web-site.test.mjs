@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CONTRACT, ENCODINGS, SHARED_UI, adopted, compressible, encodingsOf, programNeeds, contractProblems, hookProblems, missingFiles, newest, rulebookProblems, uiDataFor, uploadPlan } from './bf2web-site.mjs';
+import { CONTRACT, ENCODINGS, SHARED_UI, adopted, compressible, encodingsOf, floorNeeds, programNeeds, contractProblems, hookProblems, missingFiles, newest, rulebookProblems, uiDataFor, uploadPlan } from './bf2web-site.mjs';
 
 const sha = (c) => c.repeat(64);
 const entry = (path, bytes = 10, s = sha('a')) => ({ path, role: 'retail-derived', bytes, sha256: s });
@@ -128,5 +128,17 @@ describe('uploading a build', () => {
     expect(plan.find((p) => p.key === 'sites/n/new.res')).toEqual({ action: 'put', key: 'sites/n/new.res', path: 'new.res' });
     expect(plan.at(-1)).toEqual({ action: 'put', key: 'sites/n/manifest.json', path: 'manifest.json' });
     expect(uploadPlan(m, { prefix: 'sites/n/' }).filter((p) => p.action === 'put')).toHaveLength(m.entries.length + 1);
+  });
+
+});
+
+describe('a build that sends its own floor', () => {
+  it('is held to its page’s floor: its features, its limits with requires over them, the textures it packs capped', () => {
+    const floor = { features: ['texture-compression-bc'], limits: { maxTextureDimension2D: 8192, maxBufferSize: 268435456 } };
+    const requires = { maxBindGroups: 4, maxSampledTexturesPerShaderStage: 23, maxStorageBuffersPerShaderStage: 10 };
+    expect(floorNeeds(floor, 16, requires)).toEqual({ features: ['texture-compression-bc'], limits: { maxTextureDimension2D: 8192, maxBufferSize: 268435456, maxBindGroups: 4, maxSampledTexturesPerShaderStage: 16, maxStorageBuffersPerShaderStage: 10 } });
+    // (a page with no packing asks the full count; one under the cap keeps its own)
+    expect(floorNeeds(floor, null, requires).limits.maxSampledTexturesPerShaderStage).toBe(23);
+    expect(floorNeeds(floor, 16, { maxSampledTexturesPerShaderStage: 12 }).limits.maxSampledTexturesPerShaderStage).toBe(12);
   });
 });

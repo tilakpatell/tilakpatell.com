@@ -1,9 +1,10 @@
 // Adopts a bf2-web build for Hoth (docs/decisions/2026-10-28-bf2web-pipeline.md): reads the private bucket's
 // sites/, holds each build newer than the one play.json names to the contract (scripts/lib/bf2web-site.mjs: its
 // manifest, every file uploaded at its size, the play page's hooks, the nine rulebooks) and names the newest that
-// passes in src/data/bf2web/play.json, with what its programs ask of a visitor's GPU (needs: the site sends to the
-// engine only a GPU that has it, lib/bf2web/engineSupport). A build that fails is said, with why: that is a change in bf2-web the site
-// hasn't caught up with, for a person to look at; nothing is guessed round it.
+// passes in src/data/bf2web/play.json, with what it asks of a visitor's GPU (needs: its page's own floor where it
+// sends one, else what its programs bind; the site sends to the engine only a GPU that has it,
+// lib/bf2web/engineSupport). A build that fails is said, with why: that is a change in bf2-web the site hasn't caught
+// up with, for a person to look at; nothing is guessed round it.
 //
 //   node --env-file=.env.local scripts/bf2web-adopt.mjs [--build <id>] [--check]
 //     (no --build: the newest good build of bf2-web's main, main-<sha8>, newer than play.json's; a build from a
@@ -15,7 +16,7 @@ import { appendFileSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { open } from './lib/bf2web-r2.mjs';
-import { MAIN_BUILD, SHARED_UI, adopted, contractProblems, hookProblems, missingFiles, newest, programNeeds, uiDataFor } from './lib/bf2web-site.mjs';
+import { MAIN_BUILD, SHARED_UI, adopted, contractProblems, floorNeeds, hookProblems, missingFiles, newest, programNeeds, uiDataFor } from './lib/bf2web-site.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const PLAY = join(ROOT, 'src/data/bf2web/play.json');
@@ -43,9 +44,16 @@ async function examine(id) {
   return { id, created: manifest.created ?? null, manifest, uiData: ui.uiData, problems };
 }
 
-// what the programs the build draws (its pipeline cache, pipelines.json) ask of the GPU; null when it has no programs
+// what the build asks of the GPU: its own floor where it sends one (play-config.json's requires, and its page's FLOOR
+// and PACKED_SAMPLED_TEXTURES, runtime/play-quality.mjs, read as the module it is: it imports nothing), else what the
+// programs it draws (its pipeline cache, pipelines.json) bind; null when it has neither
 async function needsOf(id) {
   const prefix = `sites/${id}/`;
+  const [config, quality] = await Promise.all([r2.json(prefix + 'play-config.json'), r2.text(prefix + 'runtime/play-quality.mjs')]);
+  if (config?.requires && quality?.includes('export const FLOOR')) {
+    const page = await import('data:text/javascript;base64,' + Buffer.from(quality).toString('base64'));
+    return floorNeeds(page.FLOOR, page.PACKED_SAMPLED_TEXTURES ?? null, config.requires);
+  }
   const [cooked, programs, pipelines] = await Promise.all(['cooked-programs.json', 'programs.json', 'pipelines.json'].map((f) => r2.json(prefix + f)));
   if (!cooked && !programs) return null;
   const used = Array.isArray(pipelines) ? new Set(pipelines.map((p) => p.name)) : null;

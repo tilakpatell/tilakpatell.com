@@ -22,6 +22,11 @@
 //     (frame 0 never presents: 2026-10-28, ten of Hoth's materials sample 23 textures in one pixel stage, over the
 //     default 16), and the dual-source blend. The site asks the visitor's GPU for them before it sends anyone to the
 //     engine (lib/bf2web/engineSupport). Compute isn't counted: what its programs ask isn't known to stop a round.
+//   floorNeeds(floor, packed, requires) → { features, limits }: a build that sends its own floor (its runtime/
+//     play-quality.mjs's FLOOR, and play-config.json's requires: the most a stage of its catalog binds) is held to what
+//     its page refuses below (belowFloor) rather than to its programs' raw counts: FLOOR's features, FLOOR's limits with
+//     requires over them, the sampled textures capped at packed (PACKED_SAMPLED_TEXTURES: SH-10's renderer draws a
+//     program over the device's limit through texture arrays, so Hoth's 23 need 16)
 //   adopted(play, id, manifest, uiData, needs) → play.json for that build
 //   compressible(manifest, typeOf) → the entries worth a brotli copy: the binary files Cloudflare sends as they are
 //     (typeOf: cloudflare/play.js's contentType, application/octet-stream), 1 KB or more
@@ -138,6 +143,12 @@ export function programNeeds(graphics = [], used = null) {
     if (String(r.pixel?.wgsl ?? '').includes('enable dual_source_blending')) features.add('dual-source-blending');
   }
   return { features: [...features].sort(), limits };
+}
+
+export function floorNeeds(floor = {}, packed = null, requires = {}) {
+  const limits = { ...(floor.limits ?? {}), ...(requires ?? {}) };
+  if (Number.isInteger(packed) && limits.maxSampledTexturesPerShaderStage > packed) limits.maxSampledTexturesPerShaderStage = packed;
+  return { features: [...new Set(floor.features ?? [])].sort(), limits };
 }
 
 export function adopted(play, id, manifest, uiData = play.uiData, needs = play.needs ?? null) {
