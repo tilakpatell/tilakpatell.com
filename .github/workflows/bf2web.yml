@@ -73,7 +73,10 @@ jobs:
           GIT_TERMINAL_PROMPT: '0'
   adopt:
     needs: build
-    if: ${{ always() && !cancelled() && (needs.build.result == 'success' || needs.build.result == 'skipped') && (github.event_name != 'workflow_dispatch' || (inputs.stage != 'build' && inputs.stage != 'compress')) }}
+    # (whatever the build's result: a desktop that can't build, or a build that failed, doesn't keep a good build already
+    # in the bucket, one the desktop uploaded by hand among them, from Hoth; adopt takes only main builds that pass the
+    # contract)
+    if: ${{ always() && !cancelled() && (github.event_name != 'workflow_dispatch' || (inputs.stage != 'build' && inputs.stage != 'compress')) }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
