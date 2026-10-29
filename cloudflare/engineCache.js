@@ -3,7 +3,8 @@
 // fetched, so a second visit reads its 2.2 GB from disk, not the network. The browser's own HTTP cache would keep
 // them too (a year, immutable) but drops what it likes when it's full, and a build is far bigger than most of what
 // it holds. A build's files never change under its id, so a kept copy is always right; the cache is per build
-// (tp-engine-<build>), and once a newer build is kept the older ones are deleted. Nothing else is touched: the
+// (tp-engine-<build>), and once another build is kept, inactive builds can be deleted. Open pages keep their own
+// build caches, including older pages that finish loading across a deployment. Nothing else is touched: the
 // page itself (it carries the way back, and is asked again each visit), the roots it asks for outside the build
 // (/ui/, /export/, /ui-data/), a range, anything but GET. (bf2-web has an OPFS cache of its own, runtime/
 // payload-cache.js, which its play page doesn't use yet; when it does, this can go.)
@@ -85,8 +86,31 @@ export function engineWorker(self, keep, follow) {
   };
   const prune = async (build) => {
     if (pruned.has(build)) return;
+    // Another open page may still request an explicitly retained older build. Include uncontrolled windows,
+    // too: activation/claim can be in progress. If clients cannot be listed, keep caches and retry another time.
+    let clients;
+    try {
+      if (typeof self.clients?.matchAll !== 'function') return;
+      clients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+      if (!Array.isArray(clients)) return;
+    } catch { return; }
+    const active = new Set([NAME + build]);
+    for (const client of clients) {
+      let url;
+      try { url = new URL(client.url); } catch { return; }
+      const pageBuild = url.origin === self.location.origin && /^\/battlefront\/engine\/([A-Za-z0-9._-]+)(?:\/|$)/.exec(url.pathname)?.[1];
+      if (pageBuild) active.add(NAME + pageBuild);
+    }
+    for (const name of await self.caches.keys()) {
+      if (!name.startsWith(NAME) || active.has(name)) continue;
+      if (await self.caches.delete(name)) {
+        const retired = name.slice(NAME.length);
+        const prefix = `${self.location.origin}/battlefront/engine/${retired}/`;
+        for (const url of onDisk) if (url.startsWith(prefix)) onDisk.delete(url);
+        pruned.delete(retired);
+      }
+    }
     pruned.add(build);
-    for (const name of await self.caches.keys()) if (name.startsWith(NAME) && name !== NAME + build) await self.caches.delete(name);
   };
   // the build's series, once a worker's life (the list is a year under its build in the browser's own cache)
   const seriesOf = (build) => {
