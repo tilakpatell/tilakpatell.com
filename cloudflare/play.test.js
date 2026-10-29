@@ -184,6 +184,47 @@ describe('serving the play site', () => {
     expect(kept.has(`https://tilakpatell.com${ENGINE}b1/`)).toBe(false);
   });
 
+  it('serves the R2 asset when the optional edge cache cannot read', async () => {
+    const cache = { match: async () => { throw new Error('edge cache read unavailable'); }, put: async () => {} };
+    const env = { PLAY: bucket(files) };
+    const response = await servePlay(ask(`${ENGINE}b1/original-frame-graph.wasm`), env, config, new Map(), null, cache);
+    expect(response.status).toBe(200);
+    expect(await response.text()).toBe('wasm-bytes');
+    expect(response.headers.get('cross-origin-embedder-policy')).toBe('require-corp');
+    expect(response.headers.get('cache-control')).toContain('immutable');
+    expect(env.PLAY.gets).toContain('sites/b1/original-frame-graph.wasm');
+    const unlisted = await servePlay(ask(`${ENGINE}b1/secret.bin`), env, config, new Map(), null, cache);
+    expect(unlisted.status).toBe(404);
+    expect(env.PLAY.gets).not.toContain('sites/b1/secret.bin');
+  });
+
+  it.each(['throw', 'reject'])('serves the asset when edge cache writes %s, with or without a Worker context', async (failure) => {
+    const cache = { match: async () => null, put: () => {
+      if (failure === 'throw') throw new Error('edge cache write unavailable');
+      return Promise.reject(new Error('edge cache write unavailable'));
+    } };
+    for (const context of [false, true]) {
+      const pending = [], ctx = context ? { waitUntil: promise => pending.push(promise) } : null;
+      const response = await servePlay(ask(`${ENGINE}b1/original-frame-graph.wasm`), { PLAY: bucket(files) }, config, new Map(), ctx, cache);
+      expect(response.status).toBe(200);
+      expect(await response.text()).toBe('wasm-bytes');
+      if (context) {
+        expect(pending).toHaveLength(1);
+        expect((await Promise.allSettled(pending)).map(result => result.status)).toEqual(['fulfilled']);
+      }
+    }
+  });
+
+  it('still reports an R2 outage when the edge cache cannot read', async () => {
+    const cache = { match: async () => { throw new Error('edge cache unavailable'); }, put: async () => {} };
+    let reads = 0;
+    const env = { PLAY: { get: async () => { reads++; throw new Error('R2 unavailable'); } } };
+    const response = await servePlay(ask(`${ENGINE}b1/original-frame-graph.wasm`), env, config, new Map(), null, cache);
+    expect(response.status).toBe(503);
+    expect(response.headers.get('retry-after')).toBe('1');
+    expect(reads).toBe(2);
+  });
+
   it('asks R2 again when a read fails, and answers a 503 of its own when it fails again', async () => {
     const flaky = (fails) => {
       const inner = bucket(files);
