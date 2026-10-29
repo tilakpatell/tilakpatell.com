@@ -70,9 +70,10 @@ export function watchReturn(win, back) {
     if (sessions.length === seen) return;
     seen = sessions.length;
     const last = sessions.at(-1);
-    if (last?.endReason === 'quit') {
+    if (last?.passed === false) failed(last);
+    else if (last?.endReason === 'quit') {
       if (back.onQuit) win.location.assign(back.to);
-    } else if (last && last.passed === false) failed(last);
+    }
   }).observe(doc.body, { attributes: true, attributeFilter: ['class'] });
 }
 
