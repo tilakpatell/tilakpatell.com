@@ -21,6 +21,16 @@ describe('the system’s card', () => {
       expect(html, id).not.toContain('planets.svg');
     }
   });
+  it('opens the engine first on Hoth, with its free roam on a button of its own', () => {
+    const hoth = panel('hoth', { ship: 'xwing', onLand: noop, districts: [{ id: 'base', name: 'Echo Base' }] });
+    expect(hoth).toContain('Play Battlefront on Hoth');
+    expect(hoth).toContain('Free roam on Hoth');
+    expect(hoth).toContain('Free roam at Echo Base');
+    expect(hoth).not.toContain('Land on Hoth');
+    const endor = panel('endor', { ship: 'xwing', onLand: noop });
+    expect(endor).toContain('Land on Endor');
+    expect(endor).not.toContain('Play Battlefront');
+  });
   it('keeps the way to the Death Star in words, with a crew aboard', () => {
     const html = panel('yavin', { ship: 'falcon', at: 'yavin' });
     expect(html).toContain('Fly to the Death Star');

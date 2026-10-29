@@ -12,6 +12,8 @@
 //   STARFIGHTER                  system → where its Starfighter Assault is flown (the starfighter lane's rows)
 //   BATTLEFRONT                  system → the Battlefront game's own route for its Galactic Assault, once it has one
 //   modesFor(system, ctx)        → [{ ...MODES row, state: 'live' | 'soon' | 'none', why, to, options? }]
+//                                  (on a world bf2-web's engine plays, ctx.engine's: Galactic Assault is the engine's
+//                                  round, free roam the rest, and the site's own missions there withheld)
 //                                  (a `where` card, lane 6's Strike, Extraction, Ewok Hunt and Supremacy, only where the game fights it)
 //   missionForMode(system, mode, missions) → the mission id the surface runs for it (null: free roam)
 //   liveLine(system, ctx)        the names of what's live there, in a line (the Land button's)
@@ -22,6 +24,7 @@ import { info } from '../../../lib/bf2017/ui/info';
 import { tilesFor } from '../../../lib/bf2017/films';
 import { MISSIONS } from './missions';
 import { systemById } from '../systems';
+import { GAME_MENU } from '../gameLevels';
 import { STARFIGHTER as FLOWN } from './missions/starfighterMaps';
 
 const ICONS = '/battlefront/icons/UI/SVG';
@@ -67,13 +70,17 @@ export function missionForMode(system, mode, missions = MISSIONS) {
 
 const surface = (system, q) => `/galaxy/${system}/surface?${q}`;
 
-export function modesFor(system, { missions = MISSIONS, book = BOOK, starfighter = STARFIGHTER } = {}) {
+export function modesFor(system, { missions = MISSIONS, book = BOOK, starfighter = STARFIGHTER, engine = GAME_MENU } = {}) {
   const game = book.worlds?.[system]?.modes ?? [];
   const place = book.names?.worlds?.[system]?.text ?? systemById(system)?.name ?? 'this world';
   const brief = systemById(system)?.game ?? null;
+  const played = engine[system] ?? null;
   return MODES.filter((m) => !m.where || game.includes(m.id)).map((m) => {
     const card = { ...m, state: 'none', why: null, to: null };
     if (m.id === 'free') return { ...card, state: 'live', to: surface(system, 'mode=free') };
+    // (Battlefront here is bf2-web's engine: its round in the lead tile, the flight over the world as anywhere, and free roam the rest)
+    if (played && m.id === 'galacticAssault') return { ...card, name: 'Play Battlefront', about: `${m.name} on the game’s own ${place}, in bf2-web’s engine.`, state: 'live', to: played };
+    if (played && !(m.id === 'starfighter' && starfighter[system])) return { ...card, why: `Free roam only: Battlefront on ${place} is the engine’s, under Play Battlefront.` };
     if (m.id === 'story') {
       const options = ofMode(system, 'story', missions).map((x) => ({ id: x.id, name: x.name, to: surface(system, `mission=${x.id}`) }));
       // (a world whose story is played elsewhere: the Death Star's trench run)

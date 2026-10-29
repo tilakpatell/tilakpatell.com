@@ -106,8 +106,9 @@ describe('missions played as quests', () => {
     expect(Math.hypot(canyon.at[0] - down.gates[0][0], canyon.at[1] - down.gates[0][1])).toBeLessThan(200);
   });
 
-  it('runs Hoth’s first transport from its ramp to the ion cannon, on foot', () => {
-    const m = missionOf('hoth', 'transport');
+  it('runs Hoth’s first transport from its ramp to the ion cannon, on foot (its row, withheld while the engine plays Hoth)', () => {
+    const m = MISSIONS.hoth.transport;
+    expect(missionOf('hoth', 'transport')).toBeNull();
     expect(m?.kind).toBe('quest');
     expect(m.ride).toBeFalsy();
     const site = siteOf('hoth');
@@ -148,8 +149,8 @@ describe('missions played as quests', () => {
     for (const [system, list] of Object.entries(MISSIONS))
       for (const m of Object.values(list)) {
         const sys = SYSTEMS.find((s) => s.id === system);
-        // (a world that lands in the game's menu has no surface page: its briefing links the menu and none of these,
-        // which stay in the table unreached, kept for the free-roam mode: gameLevels.js, the 2026-10-13 design)
+        // (a world bf2-web's engine plays is free roam on its surface: its briefing links the engine and none of these,
+        // which stay in the table withheld, missionOf: gameLevels.js, the 2026-10-29 decision)
         if (gameMenuFor(system)) {
           expect([sys.game.to, ...(sys.game.also ?? []).map((a) => a.to)].join(' '), `${system} ${m.id}`).not.toContain(`/galaxy/${system}/surface`);
           continue;
@@ -195,7 +196,9 @@ describe('the galactic assaults', () => {
       const site = siteOf(system);
       const h = makeHeight(site.ground);
       it('is the system’s, reached as a mission there', () => {
-        expect(missionOf(system, 'assault')).toBe(m);
+        expect(MISSIONS[system].assault).toBe(m);
+        // (withheld on a world bf2-web's engine plays: its battle is the engine's, gameLevels.js)
+        expect(missionOf(system, 'assault')).toBe(gameMenuFor(system) ? null : m);
         expect(m.kind).toBe('assault');
         expect(m.system).toBe(system);
         expect(m.ride).toBeNull();
@@ -268,19 +271,19 @@ describe('the galactic assaults', () => {
 describe('Heroes vs Villains and Blast', () => {
   it('runs on every world whose level has their grounds, each briefing listing them', () => {
     expect([...GROUNDS].sort()).toEqual([...MODE_WORLDS].sort());
-    for (const w of GROUNDS) for (const id of ['hvv', 'blast']) expect(missionOf(w, id)?.kind, `${w} ${id}`).toBe(id);
+    for (const w of GROUNDS) for (const id of ['hvv', 'blast']) expect(MISSIONS[w][id]?.kind, `${w} ${id}`).toBe(id);
   });
   for (const w of GROUNDS) {
     const site = siteOf(w);
     const h = makeHeight(site.ground);
     it(`plays ${w}’s two grounds on dry land within reach, fielding soldiers there are figures for`, () => {
       for (const id of ['hvv', 'blast']) {
-        const m = missionOf(w, id);
+        const m = MISSIONS[w][id];
         expect(Math.hypot(...m.start), id).toBeLessThan(REACH);
         expect(h(...m.start), id).toBeGreaterThan((site.water?.level ?? -Infinity) + 0.2);
         for (const when of ['start', 'won', 'lost']) for (const crew of ['xwing', 'falcon', 'cruiser', 'rv']) expect(m.lines[when][crew]?.length, `${id} ${when} ${crew}`).toBeGreaterThan(0);
       }
-      const blast = missionOf(w, 'blast');
+      const blast = MISSIONS[w].blast;
       for (const side of ['attack', 'defend']) for (const [kind] of blast.sides[side].kinds) expect(Boolean(buildFigure(kind) || SURFACE_MODELS[kind] || PROPS[kind]), kind).toBe(true);
       for (const p of blast.posts) expect(Math.hypot(...p.at) + p.r, p.id).toBeLessThan(REACH);
     });
