@@ -17,6 +17,7 @@ import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright-core';
 import { ENGINE, servePlay } from '../cloudflare/play.js';
 import { open } from './lib/bf2web-r2.mjs';
+import { optionalPlayPath } from './lib/bf2web-smoke.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const args = process.argv.slice(2);
@@ -27,7 +28,6 @@ const build = option('--build', play.build);
 const config = { ...play, build, site: `sites/${build}/`, uiData: option('--ui-data', play.uiData) };
 const port = Number(option('--port', 8622));
 const wait = Number(option('--wait', 240000));
-const OPTIONAL = /^\/(profile\/|ui-data\/backdrop\/)/;
 
 const r2 = open();
 const manifests = new Map();
@@ -49,7 +49,7 @@ const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
 const failed = [];
 page.on('response', (r) => {
   const path = new URL(r.url()).pathname;
-  if (r.status() >= 400 && !OPTIONAL.test(path)) failed.push(`${r.status()} ${path}`);
+  if (r.status() >= 400 && !optionalPlayPath(path)) failed.push(`${r.status()} ${path}`);
 });
 page.on('pageerror', (e) => failed.push(`page error: ${e.message.slice(0, 200)}`));
 const problems = [];
