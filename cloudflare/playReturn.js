@@ -3,7 +3,8 @@
 // with ?from=<the galaxy world they came from> (components/battlefront/engine.js); the script puts a link back in the
 // corner while the game's front end shows, and after a round's Quit (the play page's own Quit: the instance shut down,
 // the front end back, window.__playFlow's last session ended 'quit') goes there. Without a from, the link goes to the
-// site's Battlefront and Quit stays the game's (back to its front end). A round that fails (the session's passed
+// site's home and Quit stays the game's (back to its front end). The site's Battlefront route would reopen the engine.
+// A round that fails (the session's passed
 // false: a download dropped, frame 0 never drawn, the GPU lost) leaves its reason in the corner, which the play page
 // shows for 15 s only, with a button that copies it and the GPU the browser gave, for the visitor to send on.
 //
@@ -20,7 +21,7 @@ import { steadyTimers } from './playTimers.js';
 export function returnFrom(search) {
   const from = new URLSearchParams(String(search).replace(/^\?/, '')).get('from');
   const m = from && /^\/galaxy\/([a-z0-9-]+)$/.exec(from);
-  if (!m) return { to: '/#/battlefront', label: 'Back to the site', onQuit: false };
+  if (!m) return { to: '/#/', label: 'Back to the site', onQuit: false };
   return { to: `/#${from}`, label: `Back to ${m[1][0].toUpperCase()}${m[1].slice(1)}`, onQuit: true };
 }
 

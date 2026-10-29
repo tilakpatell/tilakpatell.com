@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { ENGINE, ISOLATED, contentType, playRoute, servePlay } from './play.js';
 import { RETURN_VERSION } from './playReturn.js';
@@ -219,5 +220,21 @@ describe('the engine’s bare address', () => {
     expect(await servePlay(new Request('https://x.test/battlefront/engine/b1/'), {}, config, null)).toBeNull();
     expect((await servePlay(new Request('https://x.test/battlefront/engine/sw.js'), {}, config, null)).status).toBe(200);
     expect(await servePlay(new Request('https://x.test/battlefront/engine/'), {}, { build: null, site: null }, null)).toBeNull();
+  });
+
+  it('routes every public entry through the Worker and a canonical build directory', async () => {
+    const source = readFileSync(new URL('../wrangler.jsonc', import.meta.url), 'utf8');
+    const config = JSON.parse(source.replace(/^\s*\/\/.*$/gm, ''));
+    const runsWorker = (path) => config.assets.run_worker_first.some((pattern) =>
+      pattern.endsWith('*') ? path.startsWith(pattern.slice(0, -1)) : path === pattern);
+    const paths = ['/battlefront', '/battlefront/', '/battlefront/engine', '/battlefront/engine/', '/battlefront/engine/b1'];
+    for (const path of paths) {
+      expect(runsWorker(path), path).toBe(true);
+      const res = await servePlay(new Request('https://x.test' + path + '?from=%2Fgalaxy%2Fhoth&quality=high'), {}, { build: 'b1', site: 'sites/b1/' }, null);
+      expect(res.status, path).toBe(302);
+      expect(res.headers.get('location')).toBe('https://x.test/battlefront/engine/b1/?from=%2Fgalaxy%2Fhoth&quality=high');
+      expect(res.headers.get('cache-control')).toBe('no-store');
+      expect(new URL('runtime/world-play.mjs', res.headers.get('location')).pathname).toBe('/battlefront/engine/b1/runtime/world-play.mjs');
+    }
   });
 });
