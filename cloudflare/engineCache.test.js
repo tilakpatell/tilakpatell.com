@@ -15,7 +15,7 @@ function worker(network = (url) => ({ status: 200, body: `bytes of ${url}` }), f
     location: { origin: ORIGIN },
     addEventListener: (type, fn) => (on[type] = fn),
     skipWaiting: () => {},
-    clients: { claim: async () => {} },
+    clients: { claim: async () => {}, matchAll: async () => [] },
     fetch: async (request) => {
       const url = urlOf(request);
       if (url.endsWith('/' + FILES)) return files ? { status: 200, json: async () => ({ files }) } : { status: 404 };
@@ -95,6 +95,50 @@ describe('the engine’s build kept on the visitor’s disk', () => {
     await w.get('/battlefront/engine/main-da7a51b3/a.res');
     await w.get('/battlefront/engine/main-f675e260/a.res');
     expect([...w.stores.keys()]).toEqual(['tp-engine-main-f675e260']);
+  });
+
+  it('retains both active pages when an older build downloads after the newer build', async () => {
+    const w = worker();
+    const dir = '/battlefront/engine/';
+    const listing = [];
+    w.self.clients.matchAll = async (options) => {
+      listing.push(options);
+      return [{ url: ORIGIN + dir + 'old/' }, { url: ORIGIN + dir + 'new/?from=/galaxy/hoth' }];
+    };
+    w.stores.set('tp-engine-inactive', new Map());
+    w.stores.set('other-application', new Map());
+    await w.get(dir + 'new/a.res');
+    await w.get(dir + 'old/late.res');
+    expect([...w.stores.keys()].sort()).toEqual(['other-application', 'tp-engine-new', 'tp-engine-old']);
+    const reads = w.asked.length;
+    expect((await w.get(dir + 'new/a.res')).body).toBe(`bytes of ${ORIGIN}${dir}new/a.res`);
+    expect(w.asked).toHaveLength(reads);
+    expect(listing).toContainEqual({ type: 'window', includeUncontrolled: true });
+  });
+
+  it('warms a retired build again after its cache was pruned', async () => {
+    const w = worker();
+    const dir = '/battlefront/engine/';
+    const warm = { headers: { 'x-tp-warm': '1' } };
+    await w.get(dir + 'old/a.res', warm);
+    await w.get(dir + 'new/b.res', warm);
+    expect(w.stores.has('tp-engine-old')).toBe(false);
+    w.self.clients.matchAll = async () => [{ url: ORIGIN + dir + 'old/' }, { url: ORIGIN + dir + 'new/' }];
+    expect((await w.get(dir + 'old/a.res', warm)).status).toBe(204);
+    expect(w.stores.get('tp-engine-old').has(ORIGIN + dir + 'old/a.res')).toBe(true);
+    expect(w.asked.filter(url => url.endsWith('/old/a.res'))).toHaveLength(2);
+  });
+
+  it.each(['missing', 'rejected'])('keeps existing caches when active client listing is %s', async (failure) => {
+    const w = worker();
+    w.stores.set('tp-engine-old', new Map());
+    w.self.clients.matchAll = failure === 'missing' ? undefined : async () => { throw new Error('Client listing unavailable'); };
+    expect((await w.get('/battlefront/engine/new/a.res')).status).toBe(200);
+    expect(w.stores.has('tp-engine-old')).toBe(true);
+    // Listing failure must not permanently mark the new build pruned; retry when the API is available.
+    w.self.clients.matchAll = async () => [];
+    await w.get('/battlefront/engine/new/b.res');
+    expect(w.stores.has('tp-engine-old')).toBe(false);
   });
 
   it('reads the build’s numbered series, each file followed by the next few of its own', () => {
