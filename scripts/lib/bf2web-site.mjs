@@ -27,13 +27,19 @@
 //     its page refuses below (belowFloor) rather than to its programs' raw counts: FLOOR's features, FLOOR's limits with
 //     requires over them, the sampled textures capped at packed (PACKED_SAMPLED_TEXTURES: SH-10's renderer draws a
 //     program over the device's limit through texture arrays, so Hoth's 23 need 16)
-//   adopted(play, id, manifest, uiData, needs) → play.json for that build
+//   levelProblems(config, worlds) → [why, …]: play-config.json's levels against the galaxy's worlds (worlds: src/data/
+//     bf2017/modes.json's, each world's ground levels). The galaxy opens the engine on the worlds whose ground they are
+//     (src/lib/bf2web/levels.js), so a build that lists none of theirs is refused, not adopted to take the engine off
+//     Hoth; a level no world has beside one that is, is left to the engine
+//   adopted(play, id, manifest, uiData, needs, levels) → play.json for that build (levels: its play-config.json's)
 //   compressible(manifest, typeOf) → the entries worth a brotli copy: the binary files Cloudflare sends as they are
 //     (typeOf: cloudflare/play.js's contentType, application/octet-stream), 1 KB or more
 //   ENCODINGS: encodings.json's schema   encodingsOf(sizes, quality) → encodings.json for those copies
 //   uploadPlan(manifest, { prefix, previous, previousPrefix, existing }) → [{ action, key, path?, from? }]
 //     copy a file the previous build has byte for byte (by its sha256), skip one already there, put the rest;
 //     the manifest always last
+
+import { worldsOf } from '../../src/lib/bf2web/levels.js';
 
 export const CONTRACT = {
   schema: 'bf2-play-site/1',
@@ -151,7 +157,13 @@ export function floorNeeds(floor = {}, packed = null, requires = {}) {
   return { features: [...new Set(floor.features ?? [])].sort(), limits };
 }
 
-export function adopted(play, id, manifest, uiData = play.uiData, needs = play.needs ?? null) {
+export function levelProblems(config, worlds) {
+  const levels = config?.levels;
+  if (!Array.isArray(levels) || !levels.length || !levels.every((l) => typeof l === 'string' && l)) return ['play-config.json lists no levels'];
+  return worldsOf(levels, worlds).length ? [] : [`its levels are no galaxy world’s ground: ${levels.join(', ')}`];
+}
+
+export function adopted(play, id, manifest, uiData = play.uiData, needs = play.needs ?? null, levels = null) {
   const bytes = manifest.entries.reduce((n, e) => n + e.bytes, 0);
   // Already-open pages still need their immutable files after the pointer changes. Retain only roots that have
   // actually been published, never discover/serve arbitrary bucket builds. An intentional retirement removes
@@ -162,7 +174,7 @@ export function adopted(play, id, manifest, uiData = play.uiData, needs = play.n
     retainedBuilds[play.build] = { site, export: exportRoot, uiData: previousUi, exportAllow: [...(exportAllow ?? [])] };
   }
   delete retainedBuilds[id];
-  return { ...play, build: id, site: `sites/${id}/`, uiData, mb: Math.round(bytes / 1e6), retainedBuilds, ...(needs ? { needs } : {}) };
+  return { ...play, build: id, site: `sites/${id}/`, uiData, ...(levels ? { levels: [...levels] } : {}), mb: Math.round(bytes / 1e6), retainedBuilds, ...(needs ? { needs } : {}) };
 }
 
 // (Cloudflare compresses what it calls text, the wasm and the JSON among it, on its own: 104 MB of engine reaches a

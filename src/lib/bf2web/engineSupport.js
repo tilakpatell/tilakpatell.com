@@ -1,7 +1,6 @@
 // Whether a visitor’s browser can run bf2-web’s engine (docs/decisions/2026-10-28-hoth-on-bf2-web.md): WebGPU for its
 // renderer, with the adapter features its programs need, WebAssembly threads for the engine (SharedArrayBuffer, which needs the page cross-origin isolated) and
-// the memory the World frames grow into. What is missing is named, so the route can say why it fell back to the
-// site’s world. Pure: the caller reads the browser.
+// the memory the World frames grow into. What is missing is named, so the route can say why it can’t run here. Pure: the caller reads the browser.
 //
 //   engineSupport({ gpu, features, limits, software, isolated, sharedMemory, wasm, deviceMemory, cores, mobile },
 //     { beforeIsolation, needs }) → { ok, missing: [why, …] }

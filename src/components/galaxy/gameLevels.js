@@ -1,5 +1,6 @@
 // The worlds bf2-web's engine plays (docs/decisions/2026-10-29-battlefront-is-
-// bf2-webs-engine.md): flying into one, or landing on it, opens the engine's
+// bf2-webs-engine.md), as its build lists them (lib/bf2web/levels.js's
+// ENGINE_WORLDS: Hoth's alone today): flying into one, or landing on it, opens the engine's
 // menu over the game's own level (`/battlefront/<level>`), and nothing of the
 // galaxy's surface is fetched or built on the way. The galaxy's own surface of
 // such a world is free roam, on a button of its own (the panel's and the
@@ -8,7 +9,7 @@
 // The address is written out here, with the way back to this world in its
 // `from`, because a world does not import another world's files;
 // src/pages/battlefrontRoutes.test.js holds each row to the Battlefront
-// route. Pure.
+// route. Pure but for the build's record.
 //
 //   gameMenuFor(system) → the engine's address, or null for a world that lands on its surface
 //   freeRoamOnly(system) → true for a world the engine plays: its surface is free roam alone
@@ -16,7 +17,9 @@
 //                                          (free: the surface's free roam, an engine world's own button)
 //   groundBattle(systemRow) → where a world's battle is fought on the ground, or null
 
-export const GAME_MENU = { hoth: '/battlefront/hoth?from=%2Fgalaxy%2Fhoth' };
+import { ENGINE_WORLDS } from '../../lib/bf2web/levels.js'; // (with its extension: the prerender reads this file in Node)
+
+export const GAME_MENU = Object.fromEntries(ENGINE_WORLDS.map((w) => [w, `/battlefront/${w}?from=${encodeURIComponent(`/galaxy/${w}`)}`]));
 
 export const gameMenuFor = (system) => GAME_MENU[system] ?? null;
 

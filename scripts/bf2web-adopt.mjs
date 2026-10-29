@@ -3,8 +3,9 @@
 // manifest, every file uploaded at its size, the play page's hooks, the nine rulebooks) and names the newest that
 // passes in src/data/bf2web/play.json, with what it asks of a visitor's GPU (needs: its page's own floor where it
 // sends one, else what its programs bind; the site sends to the engine only a GPU that has it,
-// lib/bf2web/engineSupport). A build that fails is said, with why: that is a change in bf2-web the site hasn't caught
-// up with, for a person to look at; nothing is guessed round it.
+// lib/bf2web/engineSupport) and the levels it plays (its play-config.json's: the galaxy opens the engine on the
+// worlds whose ground they are, lib/bf2web/levels.js). A build that fails is said, with why: that is a change in
+// bf2-web the site hasn't caught up with, for a person to look at; nothing is guessed round it.
 //
 //   node --env-file=.env.local scripts/bf2web-adopt.mjs [--build <id>] [--check]
 //     (no --build: the newest good build of bf2-web's main, main-<sha8>, newer than play.json's; a build from a
@@ -16,10 +17,12 @@ import { appendFileSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { open } from './lib/bf2web-r2.mjs';
-import { MAIN_BUILD, SHARED_UI, adopted, contractProblems, floorNeeds, hookProblems, missingFiles, newest, programNeeds, uiDataFor } from './lib/bf2web-site.mjs';
+import { MAIN_BUILD, SHARED_UI, adopted, contractProblems, floorNeeds, hookProblems, levelProblems, missingFiles, newest, programNeeds, uiDataFor } from './lib/bf2web-site.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const PLAY = join(ROOT, 'src/data/bf2web/play.json');
+// (the galaxy's worlds and the game's levels on each: a build's levels must be one's ground, levelProblems)
+const WORLDS = JSON.parse(readFileSync(join(ROOT, 'src/data/bf2017/modes.json'), 'utf8')).worlds;
 const args = process.argv.slice(2);
 const option = (k) => (args.includes(k) ? args[args.indexOf(k) + 1] : null);
 const asked = option('--build');
@@ -29,27 +32,29 @@ const output = (k, v) => process.env.GITHUB_OUTPUT && appendFileSync(process.env
 const r2 = open();
 const play = JSON.parse(readFileSync(PLAY, 'utf8'));
 
-// one build, whole: its manifest against the contract, its files, its page's hooks, its rulebooks
+// one build, whole: its manifest against the contract, its files, its page's hooks, the levels it plays, its rulebooks
 async function examine(id) {
   const prefix = `sites/${id}/`;
   const manifest = await r2.json(prefix + 'manifest.json');
   if (!manifest) return { id, created: null, problems: ['no manifest.json: not uploaded, or not finished'] };
   const problems = contractProblems(manifest);
+  const config = await r2.json(prefix + 'play-config.json');
   if (!problems.length) {
     problems.push(...missingFiles(manifest, prefix, await r2.files(prefix)));
     problems.push(...hookProblems(await r2.text(prefix + 'runtime/world-play.mjs')));
+    problems.push(...levelProblems(config, WORLDS));
   }
   const ui = uiDataFor(id, await r2.files(prefix + 'ui-data/'), await r2.files(SHARED_UI));
   problems.push(...ui.problems);
-  return { id, created: manifest.created ?? null, manifest, uiData: ui.uiData, problems };
+  return { id, created: manifest.created ?? null, manifest, config, uiData: ui.uiData, problems };
 }
 
 // what the build asks of the GPU: its own floor where it sends one (play-config.json's requires, and its page's FLOOR
 // and PACKED_SAMPLED_TEXTURES, runtime/play-quality.mjs, read as the module it is: it imports nothing), else what the
 // programs it draws (its pipeline cache, pipelines.json) bind; null when it has neither
-async function needsOf(id) {
+async function needsOf(id, config) {
   const prefix = `sites/${id}/`;
-  const [config, quality] = await Promise.all([r2.json(prefix + 'play-config.json'), r2.text(prefix + 'runtime/play-quality.mjs')]);
+  const quality = await r2.text(prefix + 'runtime/play-quality.mjs');
   if (config?.requires && quality?.includes('export const FLOOR')) {
     const page = await import('data:text/javascript;base64,' + Buffer.from(quality).toString('base64'));
     return floorNeeds(page.FLOOR, page.PACKED_SAMPLED_TEXTURES ?? null, config.requires);
@@ -93,12 +98,12 @@ if (asked) {
   chosen = examined.find((b) => b.id === id);
 }
 
-const needs = await needsOf(chosen.id);
-const next = adopted(play, chosen.id, chosen.manifest, chosen.uiData, needs);
+const needs = await needsOf(chosen.id, chosen.config);
+const next = adopted(play, chosen.id, chosen.manifest, chosen.uiData, needs, chosen.config.levels);
 if (needs) console.log('its GPU needs:', JSON.stringify(needs));
-if (check) console.log('--check: play.json would name', chosen.id, `(${next.mb} MB, rulebooks ${next.uiData})`);
+if (check) console.log('--check: play.json would name', chosen.id, `(${next.mb} MB, rulebooks ${next.uiData}, levels ${next.levels?.join(', ')})`);
 else {
   writeFileSync(PLAY, JSON.stringify(next, null, 2) + '\n');
-  console.log('play.json names', chosen.id, `(${next.mb} MB, rulebooks ${next.uiData})`);
+  console.log('play.json names', chosen.id, `(${next.mb} MB, rulebooks ${next.uiData}, levels ${next.levels?.join(', ')})`);
 }
 output('adopted', check ? '' : chosen.id);

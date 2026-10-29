@@ -122,6 +122,9 @@ route reaches a deleted file.
   No moves while other sessions are editing them.
 - `/battlefront` with no level, and the way back with no world, go to the galaxy, not into the engine again (this
   joins #1267's fix, without overlapping it).
+  - Done by #1267 alone: its way back with no world goes to the site's home, so a bare `/battlefront` opening the
+    engine is no loop. `modes` is left out of `play.json` until something reads it (`hoth-a82a3be8` lists
+    `SkirmishOnslaught`).
 
 ## Out of scope
 
