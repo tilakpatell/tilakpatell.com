@@ -43,6 +43,25 @@ What stands in the way, 2026-10-28:
 
 ## Consequences
 
+### Publishing a build the desktop has already checked (2026-10-29)
+
+The `publish` stage accepts `site`, `ui_data`, `ui_sha256`, `build` and the full engine `sha`.
+It reuses a completed desktop build without repeating its GPU run. The publisher
+requires its passing build report and original hardware direct-check report,
+matching commit and export directory, all required build steps, and every local
+file matching the export manifest by size and SHA-256. Diagnostic overlays are
+refused. An existing bucket build name cannot be replaced with a different
+manifest. The rulebooks are pinned by the digest printed by `bf2web-publish.mjs
+--check`; any rulebooks already published under that build must match byte for
+byte. The normal hosted adoption, browser smoke, tests and deploy follow;
+a failed publish cannot trigger adoption.
+
+The desktop step loads the runner's `.env` for each invocation. A long-running
+runner can otherwise miss `BF2WEB_REPO` added after it started, which stopped run
+40884631018 before uploading the validated round-1035 build. Workflow-provided
+credentials retain environment precedence and are never printed. Publishing
+does not change the engine or relax the original build's checks.
+
 - A `bf2-web` round that keeps to the contract reaches the site in one desktop run and one adopt run, with no session involved.
 - The site’s pull-request review is not part of this path: the adopt job commits `play.json` (data, one file) to main after its own checks, and `deploy.yml` runs lint, the tests and the build again before anything goes live. Going back to an earlier build is one line in `play.json`, or `stage: adopt` with that build.
 - Until `bf2-web` has its entry point and recipe (and `feat/deploy-bundle` on its main), the build stage stops and says so; adopt, upload and smoke work today on the builds the desktop uploads by hand.
