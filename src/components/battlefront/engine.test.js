@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { engineUrl, playOn } from './engine.js';
+import { engineOnly, engineUrl, playOn } from './engine.js';
 
 const play = { build: 'b1', site: 'sites/b1/', mb: 2197 };
 const able = { ok: true, missing: [] };
@@ -38,5 +38,19 @@ describe('where Hoth is played', () => {
   it('lets the address choose', () => {
     expect(playOn({ level: 'hoth', play, support: able, search: '?engine=0', choice: 'engine' })).toBeNull();
     expect(playOn({ level: 'hoth', play, support: unable, search: '?from=/galaxy/hoth&engine=1' })).toEqual({ go: '/battlefront/engine/b1/' });
+  });
+});
+
+describe('Battlefront is the engine only', () => {
+  it('goes to the engine where the browser can run it, with the way back', () => {
+    expect(engineOnly({ level: 'hoth', play, support: able })).toEqual({ go: '/battlefront/engine/b1/' });
+    expect(engineOnly({ play, support: able, back: { to: '/galaxy/hoth' } })).toEqual({ go: '/battlefront/engine/b1/?from=%2Fgalaxy%2Fhoth' });
+  });
+
+  it('waits while the GPU is being asked, then names what is missing instead of another world', () => {
+    expect(engineOnly({ level: 'hoth', play, support: null })).toEqual({ wait: true });
+    expect(engineOnly({ level: 'hoth', play, support: unable })).toEqual({ unavailable: ['no WebGPU'] });
+    expect(engineOnly({ level: 'endor', play, support: able }).unavailable[0]).toMatch(/endor/);
+    expect(engineOnly({ level: 'hoth', play: { build: null, site: null }, support: able }).unavailable).toHaveLength(1);
   });
 });

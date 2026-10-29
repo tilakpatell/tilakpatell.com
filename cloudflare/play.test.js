@@ -203,3 +203,21 @@ describe('serving the play site', () => {
     expect(await serve(`${ENGINE}b1/`, {}, {})).toBeNull();
   });
 });
+
+describe('the engine’s bare address', () => {
+  it('sends /battlefront/engine and an older build’s page to the current build, with the query', async () => {
+    const config = { build: 'b1', site: 'sites/b1/' };
+    for (const path of ['/battlefront/engine', '/battlefront/engine/', '/battlefront/engine/old-build/', '/battlefront/engine/old-build']) {
+      const r = await servePlay(new Request('https://x.test' + path + '?from=%2Fgalaxy%2Fhoth'), {}, config, null);
+      expect(r.status).toBe(302);
+      expect(r.headers.get('location')).toBe('https://x.test/battlefront/engine/b1/?from=%2Fgalaxy%2Fhoth');
+    }
+  });
+
+  it('leaves the current build, its service worker and an unpublished site alone', async () => {
+    const config = { build: 'b1', site: 'sites/b1/' };
+    expect(await servePlay(new Request('https://x.test/battlefront/engine/b1/'), {}, config, null)).toBeNull();
+    expect((await servePlay(new Request('https://x.test/battlefront/engine/sw.js'), {}, config, null)).status).toBe(200);
+    expect(await servePlay(new Request('https://x.test/battlefront/engine/'), {}, { build: null, site: null }, null)).toBeNull();
+  });
+});

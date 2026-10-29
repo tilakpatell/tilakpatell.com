@@ -1,101 +1,50 @@
-import { lazy, Suspense, useEffect, useState } from 'react';
-import { Navigate, useLocation, useNavigate, useParams } from 'react-router-dom';
-import BattlefrontWorld from '../components/battlefront/BattlefrontWorld.jsx';
-import { LEVEL_MODES, LEVELS, MODES, firstModeOf, menuRouteFor, routeFor, wayBack } from '../components/battlefront';
+import { useEffect, useState } from 'react';
+import { useLocation, useParams } from 'react-router-dom';
+import { wayBack } from '../components/battlefront';
 import { useDocumentTitle } from '../lib/hooks';
 import { useInWorld } from '../components/universe/online/useOnline';
-import { CHOICE_KEY, playOn } from '../components/battlefront/engine.js';
-import EngineChoice from '../components/battlefront/EngineChoice.jsx';
+import { engineOnly } from '../components/battlefront/engine.js';
 import { engineSupport, probeAdapter, probeBrowser } from '../lib/bf2web/engineSupport.js';
 import play from '../data/bf2web/play.json';
 
-// The game's own front end (its Start, main menu and Play screens), loaded
-// with the page only when it is asked for.
-const FrontEnd = lazy(() => import('../components/battlefront/screens/FrontEnd.jsx'));
-const playable = (level, mode) => LEVELS.includes(level) && MODES.includes(mode) && (LEVEL_MODES[level]?.includes(mode) ?? true);
-
-// Battlefront: the 2017 game's Galactic Assault on its own maps
-// (docs/superpowers/specs/2026-10-10-battlefront-game-design.md).
-// `/battlefront` opens the game's front end (Start → main menu → Play →
-// the multiplayer modes and their levels); `/battlefront/<level>/<mode>`
-// opens the battle, through its loading screen; `/battlefront/<level>`
-// with no mode mounts the level's world behind the game's main menu (where
-// the galaxy lands: the level loads while the player is in the menus, and
-// the menu chooses the mode). One level so far; a level this world has not
-// got goes to the front end.
+// Battlefront is bf2-web's engine and game only (the owner, 2026-10-29): `/battlefront` and `/battlefront/<level>[/<mode>]`
+// all open the engine's own page, which has the game's front end, levels and modes (docs/decisions/2026-10-28-hoth-on-
+// bf2-web.md). The browser itself opens it, because its headers isolate it for the engine's threads. Where the engine can't
+// run, the page says why, and no other world stands in. A galaxy world's ?from= goes on, so the engine's menu and end of
+// round lead back there.
 export default function Battlefront() {
-  const { level, mode } = useParams();
-  const navigate = useNavigate();
-  // (the address's knobs, ?gpu= and ?post=, go on with the player into the
-  // battle, and so does where they came from: a galaxy world's ?from=)
-  const { search, state } = useLocation();
+  const { level } = useParams();
+  const { search } = useLocation();
   const back = wayBack(search);
   useDocumentTitle(level ? 'Battlefront · Hoth' : 'Battlefront');
   useInWorld(); // (a full-screen game: no page pointers over it)
-  // Hoth on bf2-web's engine where it can run (components/battlefront/engine.js): the browser itself opens its page,
-  // whose headers isolate it for the engine's threads; the site's world stands in everywhere else
-  // (the visitor's answer to the download, kept on this device; storage may be refused)
-  const [choice, setChoice] = useState(() => {
-    try {
-      return localStorage.getItem(CHOICE_KEY);
-    } catch {
-      return null;
-    }
-  });
-  const choose = (c) => {
-    try {
-      localStorage.setItem(CHOICE_KEY, c);
-    } catch {
-      // (not kept: asked again next visit)
-    }
-    setChoice(c);
-  };
-  // (the adapter's features and limits are read once, asynchronously: until then neither world is begun; they're held
-  // to what the build's programs need, play.json's needs)
+  // (the adapter's features and limits, read once, asynchronously, held to what the build's programs need: play.json's needs)
   const [adapter, setAdapter] = useState(null);
   useEffect(() => {
-    if (!level || adapter) return undefined;
+    if (adapter) return undefined;
     let live = true;
     probeAdapter().then((a) => live && setAdapter(a));
     return () => {
       live = false;
     };
-  }, [level, adapter]);
+  }, [adapter]);
   const support = adapter && engineSupport({ ...probeBrowser(window), ...adapter }, { beforeIsolation: true, needs: play.needs ?? null });
-  const engine = level ? playOn({ level, play, support, search, choice, back }) : null;
+  const engine = engineOnly({ level: level ?? 'hoth', play, support, back });
   useEffect(() => {
-    if (engine?.go) window.location.assign(engine.go);
-  }, [engine?.go]);
-  if (engine?.go || engine?.wait) return <main className="bf-page" aria-busy="true" />;
-  if (engine?.ask)
+    if (engine.go) window.location.assign(engine.go);
+  }, [engine.go]);
+  if (engine.unavailable)
     return (
       <main className="bf-page">
-        <EngineChoice mb={engine.ask.mb} onEngine={() => choose('engine')} onSite={() => choose('site')} />
+        <h1>Star Wars Battlefront II</h1>
+        <p>This browser can’t run the game’s engine:</p>
+        <ul>
+          {engine.unavailable.map((why) => (
+            <li key={why}>{why}</li>
+          ))}
+        </ul>
+        <p>It needs a desktop browser with WebGPU on a discrete GPU. On Windows, set the browser to High performance under Settings › System › Display › Graphics.</p>
       </main>
     );
-  if (!level)
-    return (
-      <main className="bf-page">
-        <h1 className="sr-only">Star Wars Battlefront II</h1>
-        <Suspense fallback={null}>
-          {/* (a round set up here, with no world behind: the level's page begins it, the options handed on with the move) */}
-          <FrontEnd playable={playable} onPlay={(l, m, options) => (options ? navigate(`${menuRouteFor(l)}${search}`, { state: { round: options } }) : navigate(`${routeFor(l, m)}${search}`))} />
-        </Suspense>
-      </main>
-    );
-  if (!LEVELS.includes(level)) return <Navigate to="/battlefront" replace />;
-  if (!mode)
-    return (
-      <main className="bf-page">
-        <h1 className="sr-only">Star Wars Battlefront II</h1>
-        <BattlefrontWorld level={level} mode={firstModeOf(level)} menu back={back} playable={playable} round={state?.round ?? null} onOther={(l, m) => navigate(`${routeFor(l, m)}${search}`)} />
-      </main>
-    );
-  if (!playable(level, mode)) return <Navigate to={routeFor()} replace />;
-  return (
-    <main className="bf-page">
-      <h1 className="sr-only">Battlefront: Galactic Assault on Hoth</h1>
-      <BattlefrontWorld level={level} mode={mode} back={back} />
-    </main>
-  );
+  return <main className="bf-page" aria-busy="true" />;
 }
