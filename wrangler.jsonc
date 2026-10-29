@@ -23,7 +23,7 @@
     "directory": "./dist",
     "binding": "ASSETS",
     "not_found_handling": "404-page",
-    "run_worker_first": ["/audio/*", "/battlefront/engine/*", "/ui/*", "/export/*", "/ui-data/*"]
+    "run_worker_first": ["/audio/*", "/battlefront", "/battlefront/", "/battlefront/engine", "/battlefront/engine/*", "/ui/*", "/export/*", "/ui-data/*"]
   },
   // (bf2-web's exported play sites, src/data/bf2web/play.json naming the one served)
   "r2_buckets": [{ "binding": "PLAY", "bucket_name": "bf2017-assets" }]

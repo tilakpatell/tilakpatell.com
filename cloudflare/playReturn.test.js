@@ -41,11 +41,11 @@ function page() {
 }
 
 describe('the way back from the engine’s page', () => {
-  it('goes back to the galaxy world the visitor came from, else to the site’s Battlefront', () => {
+  it('goes back to the galaxy world the visitor came from, else to the site home without reopening the engine', () => {
     expect(returnFrom('?from=%2Fgalaxy%2Fhoth')).toEqual({ to: '/#/galaxy/hoth', label: 'Back to Hoth', onQuit: true });
     expect(returnFrom('?seed=3&from=/galaxy/endor')).toEqual({ to: '/#/galaxy/endor', label: 'Back to Endor', onQuit: true });
     for (const search of ['', '?from=https://evil.example/', '?from=//evil.example', '?from=/galaxy/../x', '?from=/universe'])
-      expect(returnFrom(search)).toEqual({ to: '/#/battlefront', label: 'Back to the site', onQuit: false });
+      expect(returnFrom(search)).toEqual({ to: '/#/', label: 'Back to the site', onQuit: false });
   });
 
   it('puts the link in the corner, shown on the front end only', () => {
@@ -74,7 +74,7 @@ describe('the way back from the engine’s page', () => {
   it('keeps the game’s own Quit without a world to go back to', () => {
     const p = page();
     watchReturn(p.win, returnFrom(''));
-    expect(p.body.children[0].href).toBe('/#/battlefront');
+    expect(p.body.children[0].href).toBe('/#/');
     p.state('loading');
     p.win.__playFlow.sessions.push({ endReason: 'quit', passed: true });
     p.state('menu');
