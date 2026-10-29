@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { CONTRACT, ENCODINGS, SHARED_UI, adopted, compressible, encodingsOf, floorNeeds, programNeeds, contractProblems, hookProblems, missingFiles, newest, rulebookProblems, uiDataFor, uploadPlan } from './bf2web-site.mjs';
+import { CONTRACT, ENCODINGS, SHARED_UI, adopted, compressible, encodingsOf, floorNeeds, programNeeds, contractProblems, hookProblems, levelProblems, missingFiles, newest, rulebookProblems, uiDataFor, uploadPlan } from './bf2web-site.mjs';
+import BOOK from '../../src/data/bf2017/modes.json' with { type: 'json' };
 
 const sha = (c) => c.repeat(64);
 const entry = (path, bytes = 10, s = sha('a')) => ({ path, role: 'retail-derived', bytes, sha256: s });
@@ -81,6 +82,19 @@ describe('which build the site plays', () => {
       retainedBuilds: { 'main-a': { site: play.site, export: play.export, uiData: play.uiData, exportAllow: play.exportAllow } } });
     expect(adopted(play, 'main-b', m, 'sites/main-b/ui-data/').uiData).toBe('sites/main-b/ui-data/');
     expect(adopted(play, 'main-b', m, undefined, { features: [], limits: { maxBindGroups: 4 } }).needs).toEqual({ features: [], limits: { maxBindGroups: 4 } });
+    // (the levels it plays, its play-config.json's; a build that sends none keeps the ones play.json had)
+    expect(adopted(play, 'main-b', m, undefined, null, ['Hoth_01', 'Endor_01']).levels).toEqual(['Hoth_01', 'Endor_01']);
+    expect(adopted({ ...play, levels: ['Hoth_01'] }, 'main-b', m).levels).toEqual(['Hoth_01']);
+  });
+
+  it('takes a build only when its levels are a galaxy world’s ground, so the engine stays on the worlds it plays', () => {
+    // (hoth-a82a3be8's play-config.json, 2026-10-29: levels Hoth_01, modes SkirmishOnslaught)
+    expect(levelProblems({ levels: ['Hoth_01'], modes: ['SkirmishOnslaught'] }, BOOK.worlds)).toEqual([]);
+    expect(levelProblems({ levels: ['Hoth_01', 'Crait_01'] }, BOOK.worlds)).toEqual([]);
+    expect(levelProblems({ levels: ['Crait_01'] }, BOOK.worlds)).toEqual(['its levels are no galaxy world’s ground: Crait_01']);
+    expect(levelProblems({ levels: [] }, BOOK.worlds)).toEqual(['play-config.json lists no levels']);
+    expect(levelProblems({}, BOOK.worlds)).toEqual(['play-config.json lists no levels']);
+    expect(levelProblems(null, BOOK.worlds)).toEqual(['play-config.json lists no levels']);
   });
 
   it('keeps the exact published roots across adoption and rollback without nesting histories', () => {

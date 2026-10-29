@@ -16,7 +16,7 @@ export default function Battlefront() {
   const { level } = useParams();
   const { search } = useLocation();
   const back = wayBack(search);
-  useDocumentTitle(level ? 'Battlefront · Hoth' : 'Battlefront');
+  useDocumentTitle(level ? `Battlefront · ${level[0].toUpperCase()}${level.slice(1)}` : 'Battlefront');
   useInWorld(); // (a full-screen game: no page pointers over it)
   // (the adapter's features and limits, read once, asynchronously, held to what the build's programs need: play.json's needs)
   const [adapter, setAdapter] = useState(null);

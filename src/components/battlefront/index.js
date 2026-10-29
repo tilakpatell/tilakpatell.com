@@ -3,9 +3,11 @@
 // went on 2026-10-29 (docs/superpowers/plans/2026-10-29-battlefront-engine-only.md). A link from a galaxy world
 // carries where it came from (`from`, that world's own page), so the engine's way back leads there.
 
+import { ENGINE_WORLDS } from '../../lib/bf2web/levels.js';
+
 export const ROUTE = '/battlefront';
-// the levels the engine plays (bf2-web's play-config.json levels; Hoth's alone for now)
-export const LEVELS = ['hoth'];
+// the galaxy's worlds the engine plays, as its build lists their levels (lib/bf2web/levels.js: Hoth's alone today)
+export const LEVELS = ENGINE_WORLDS;
 // a level's way into the engine, with the way back
 export const menuRouteFor = (level = 'hoth', { from = null } = {}) => `${ROUTE}/${level}${from ? `?from=${encodeURIComponent(from)}` : ''}`;
 // the way back a route's search names, or null: a galaxy world's page alone

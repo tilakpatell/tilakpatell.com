@@ -1,9 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { LEVELS, ROUTE, menuRouteFor, wayBack } from './index.js';
+import { ENGINE_WORLDS } from '../../lib/bf2web/levels.js';
 
 describe('Battlefront’s face', () => {
   it('names a level’s way into the engine, with the way back a galaxy world gives it', () => {
     expect(ROUTE).toBe('/battlefront');
+    // (the build's: lib/bf2web/levels.js)
+    expect(LEVELS).toBe(ENGINE_WORLDS);
     expect(LEVELS).toEqual(['hoth']);
     expect(menuRouteFor()).toBe('/battlefront/hoth');
     expect(menuRouteFor('hoth', { from: '/galaxy/hoth' })).toBe('/battlefront/hoth?from=%2Fgalaxy%2Fhoth');

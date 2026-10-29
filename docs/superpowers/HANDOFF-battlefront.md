@@ -8,8 +8,27 @@ The owner’s export of the game (gameplay records as EBX JSON, MeshSets, clips,
 
 ## The engine
 
+### Its files
+
+Everything of the engine's on the site; the engine's source stays in `bf2-web`.
+
+| Where | What |
+| --- | --- |
+| `src/lib/bf2web/levels.js` | the galaxy's worlds the engine plays: `play.json`'s `levels` (the build's `play-config.json`'s) matched to each world's ground in `src/data/bf2017/modes.json` |
+| `src/lib/bf2web/engineSupport.js` | whether a browser can run it: WebGPU with the build's `needs`, threads, memory, cores |
+| `src/components/battlefront/index.js`, `engine.js` | the way in: `/battlefront/<world>` to the build's page, the way back as `?from=` |
+| `src/pages/Battlefront.jsx` | the page that sends a browser there, or says why it can't |
+| `src/components/galaxy/gameLevels.js` | the galaxy's side: flying into or landing on an engine world opens the engine, its free roam on a button |
+| `src/data/bf2web/play.json` | the build the site plays: its folder, export roots, rulebooks, size, `needs`, `levels`, the builds kept for pages still open |
+| `cloudflare/play.js`, `worker.js` | the Worker: serves the build from the private bucket at `/battlefront/engine/<build>/` |
+| `cloudflare/playReturn.js`, `playTimers.js`, `engineCache.js`, `source.js` | what the Worker adds to the engine's page: the way back, timers that keep a hidden tab loading, the build kept on disk, functions sent as text |
+| `scripts/bf2web-adopt.mjs`, `-upload`, `-compress`, `-smoke`, `-deploy-continuity`; `scripts/lib/bf2web-site.mjs`, `-r2`, `-smoke` | the pipeline: hold a build to the contract (levels among it), upload, compress, open it headless, name it in `play.json` |
+| `scripts/desktop/bf2web-build.mjs`, `bf2web-publish.mjs` | the owner's desktop: build `bf2-web`'s main, publish a finished build |
+| `.github/workflows/bf2web.yml` | the six-hourly and dispatched run of all of it |
+
 ### Landed
 
+- **Which worlds open the engine is the build's** (2026-10-29). The adopt step writes the build's `levels` (its `play-config.json`'s) into `play.json`, and refuses a build that lists no galaxy world's level (`levelProblems`). `src/lib/bf2web/levels.js`'s `ENGINE_WORLDS` matches them to the worlds whose ground they are, and the galaxy's `GAME_MENU` and Battlefront's `LEVELS` are made from it: when `bf2-web` lists Endor's level, Endor opens the engine, and its surface becomes free roam, with no code change. `hoth-a82a3be8` lists `Hoth_01` (and the mode `SkirmishOnslaught`, not read yet). A bare `/battlefront` opens the engine; its way back without a world goes home (#1267), not into the engine again.
 - **Hoth is `bf2-web`’s** ([the decision](../decisions/2026-10-28-hoth-on-bf2-web.md)). A browser that can run it goes from `/battlefront/hoth` to `bf2-web`’s exported play site (its engine in WebAssembly, its WebGPU renderer and lighting, its front end, bots, combat and round), served by the Worker from the private bucket at `/battlefront/engine/<build>/` (`cloudflare/play.js`, `src/data/bf2web/play.json`, `src/components/battlefront/engine.js`). A browser that can’t is told why, on `/battlefront` (`src/pages/Battlefront.jsx`); the JS port of `bf2-web`’s rules that was to run the site’s world for it went with that world on 2026-10-29.
 - **Hoth’s free roam, on a button** (2026-10-29). Flying into Hoth or landing on it opens the engine (`src/components/galaxy/gameLevels.js`’s `GAME_MENU`). The panel’s “Free roam on Hoth” and “Free roam at Echo Base” and the briefing’s “Free roam on Hoth” go to the galaxy’s own Hoth (`/galaxy/hoth/surface?mode=free`), whose mode menu leads with Play Battlefront, back to the engine (`surface/modes.js`). The site’s own Hoth missions (the first transport, its assault, the Heroes vs Villains and Blast arenas) stay in their tables, withheld by `surface/missions/index.js`’s `missionOf` on a world the engine plays (`freeRoamOnly`).
 
