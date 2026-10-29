@@ -1,6 +1,6 @@
 // Browser proof of an already-open build across a Worker config switch. Synthetic two-build fixture only;
 // real HTTP/module redirects and Worker servePlay, no engine/retail content/GPU. Optional --worker selects a control.
-// node scripts/bf2web-deploy-continuity.mjs [--worker .scratch/control/play.js] [--out .scratch/deploy-continuity]
+// node scripts/bf2web-deploy-continuity.mjs [--service-worker] [--worker .scratch/control/play.js] [--out .scratch/deploy-continuity]
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -10,6 +10,7 @@ import { chromium } from 'playwright-core';
 import { adopted } from './lib/bf2web-site.mjs';
 
 const args = process.argv.slice(2), option = (name, fallback) => args.includes(name) ? args[args.indexOf(name) + 1] : fallback;
+const withServiceWorker = args.includes('--service-worker');
 const { servePlay } = await import(pathToFileURL(path.resolve(option('--worker', 'cloudflare/play.js'))).href);
 const out = path.resolve(option('--out', '.scratch/deploy-continuity'));
 fs.mkdirSync(out, { recursive: true });
@@ -44,7 +45,7 @@ const env = { PLAY: { async get(key) {
   return { body, size: body.length, httpEtag: '"fixture"', json: async () => JSON.parse(value) };
 } } };
 const manifests = new Map(), requests = [];
-const report = { schema: 'bf2-deployment-continuity/1', synthetic: true, passed: false, requests };
+const report = { schema: 'bf2-deployment-continuity/1', synthetic: true, serviceWorker: withServiceWorker, passed: false, requests };
 const server = http.createServer(async (req, res) => {
   try {
     const origin = 'http://' + req.headers.host;
@@ -63,9 +64,25 @@ try {
   const flags = ['--disable-gpu', '--disable-webgl', '--disable-software-rasterizer'];
   browser = await chromium.launch({ executablePath: process.env.ENGINE_TEST_BROWSER ?? 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe', headless: true, args: flags });
   report.browser = browser.version(); report.flags = flags;
-  const page = await browser.newPage();
+  const context = await browser.newContext();
+  const page = await context.newPage();
   await page.goto(`http://127.0.0.1:${server.address().port}/battlefront/engine/old/`);
   await page.waitForFunction(() => globalThis.ready === true);
+  if (withServiceWorker) {
+    await page.evaluate(async () => {
+      await globalThis.navigator.serviceWorker.register('/battlefront/engine/sw.js', { scope: '/battlefront/engine/' });
+      await globalThis.navigator.serviceWorker.ready;
+      if (!globalThis.navigator.serviceWorker.controller) await new Promise(resolve => globalThis.navigator.serviceWorker.addEventListener('controllerchange', resolve, { once: true }));
+      await globalThis.caches.open('tp-engine-inactive-before-old');
+      await globalThis.fetch('./runtime/world-play.mjs', { cache: 'no-store' });
+    });
+    // Cache writes/pruning are background waitUntil work; wait for their observable completion.
+    await page.waitForFunction(async () => {
+      const names = await globalThis.caches.keys();
+      return names.includes('tp-engine-old') && !names.includes('tp-engine-inactive-before-old');
+    });
+    await page.evaluate(() => globalThis.caches.open('tp-engine-inactive-before-new').then(() => undefined));
+  }
   // The old runtime is already loaded. Adoption switches the active config before it imports its UI,
   // fetches rulebooks/fonts and dynamically imports a late runtime module.
   config = { ...adopted(config, 'new', manifest, 'sites/new/ui-data/'), export: 'exports/new/' };
@@ -78,11 +95,24 @@ try {
   assert.deepEqual(report.result, { value: { ui: 'old', dependency: 'old', rules: 'old', font: 'old', late: 'old' } });
   assert.deepEqual(report.late, { value: 'old' });
   assert.equal(requests.some(row => row.path.includes('/engine/new/')), false);
-  const fresh = await browser.newPage();
+  const fresh = await context.newPage();
   await fresh.goto(`http://127.0.0.1:${server.address().port}/battlefront/engine/new/`);
   await fresh.waitForFunction(() => globalThis.ready === true);
   report.fresh = await fresh.evaluate(() => globalThis.runtime.start());
   assert.deepEqual(report.fresh, { ui: 'new', dependency: 'new', rules: 'new', font: 'new', late: 'new' });
+  if (withServiceWorker) {
+    await page.waitForFunction(async () => {
+      const names = await globalThis.caches.keys();
+      return names.includes('tp-engine-new') && !names.includes('tp-engine-inactive-before-new');
+    });
+    report.cacheNames = await page.evaluate(() => globalThis.caches.keys());
+    assert.ok(report.cacheNames.includes('tp-engine-old'), 'new build must keep the open old page cache');
+    assert.ok(report.cacheNames.includes('tp-engine-new'), 'new build must create its own cache');
+    assert.equal(report.cacheNames.some(name => name.startsWith('tp-engine-inactive-')), false, 'inactive caches must be pruned');
+    await page.context().setOffline(true);
+    report.offlineOldLate = await page.evaluate(() => globalThis.fetch('./runtime/late.mjs').then(response => response.text()));
+    assert.equal(report.offlineOldLate, modules['runtime/late.mjs']);
+  }
   report.passed = true;
 } catch (error) { report.error = String(error.stack ?? error); }
 finally {
@@ -90,5 +120,5 @@ finally {
   server.closeAllConnections(); await new Promise(resolve => server.close(resolve));
   fs.writeFileSync(path.join(out, 'report.json'), JSON.stringify(report, null, 2) + '\n');
 }
-console.log(JSON.stringify({ passed: report.passed, result: report.result, late: report.late, fresh: report.fresh, error: report.error, requests: requests.length }));
+console.log(JSON.stringify({ passed: report.passed, serviceWorker: report.serviceWorker, result: report.result, late: report.late, fresh: report.fresh, cacheNames: report.cacheNames, error: report.error, requests: requests.length }));
 process.exitCode = report.passed ? 0 : 1;
