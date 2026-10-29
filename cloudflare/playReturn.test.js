@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { RETURN_VERSION, returnFrom, watchReturn, withReturn } from './playReturn.js';
 
 // a page's bones: elements as records, the body's class watched as the play page sets it
-function page() {
+function page({ batchMutations = false } = {}) {
   const observers = [];
   const assigned = [];
   const copied = [];
@@ -32,20 +32,28 @@ function page() {
     },
     __playFlow: { state: 'boot', sessions: [] },
   };
+  let scheduled = false;
   const state = (s) => {
     win.__playFlow.state = s;
     body.className = `play-${s}`;
-    for (const o of observers) o.fn();
+    if (!batchMutations) for (const o of observers) o.fn();
+    else if (!scheduled) {
+      scheduled = true;
+      queueMicrotask(() => {
+        scheduled = false;
+        for (const o of observers) o.fn();
+      });
+    }
   };
   return { win, body, head, observers, assigned, copied, state };
 }
 
 describe('the way back from the engine’s page', () => {
-  it('goes back to the galaxy world the visitor came from, else to the site’s Battlefront', () => {
+  it('goes back to the galaxy world the visitor came from, else to the site home without reopening the engine', () => {
     expect(returnFrom('?from=%2Fgalaxy%2Fhoth')).toEqual({ to: '/#/galaxy/hoth', label: 'Back to Hoth', onQuit: true });
     expect(returnFrom('?seed=3&from=/galaxy/endor')).toEqual({ to: '/#/galaxy/endor', label: 'Back to Endor', onQuit: true });
     for (const search of ['', '?from=https://evil.example/', '?from=//evil.example', '?from=/galaxy/../x', '?from=/universe'])
-      expect(returnFrom(search)).toEqual({ to: '/#/battlefront', label: 'Back to the site', onQuit: false });
+      expect(returnFrom(search)).toEqual({ to: '/#/', label: 'Back to the site', onQuit: false });
   });
 
   it('puts the link in the corner, shown on the front end only', () => {
@@ -74,11 +82,41 @@ describe('the way back from the engine’s page', () => {
   it('keeps the game’s own Quit without a world to go back to', () => {
     const p = page();
     watchReturn(p.win, returnFrom(''));
-    expect(p.body.children[0].href).toBe('/#/battlefront');
+    expect(p.body.children[0].href).toBe('/#/');
     p.state('loading');
     p.win.__playFlow.sessions.push({ endReason: 'quit', passed: true });
     p.state('menu');
     expect(p.assigned).toEqual([]);
+  });
+
+  it('returns after a completed Quit when menu and the next preload batch into one observer callback', async () => {
+    const p = page({ batchMutations: true });
+    watchReturn(p.win, returnFrom('?from=/galaxy/hoth'));
+    // A requested Quit has not completed shutdown and has no session record yet.
+    p.state('ending');
+    await Promise.resolve();
+    expect(p.assigned).toEqual([]);
+    // world-play.finish() appends the completed record, then synchronously changes menu -> loading.
+    p.win.__playFlow.sessions.push({ endReason: 'quit', passed: true });
+    p.state('menu');
+    p.state('loading');
+    expect(p.assigned).toEqual([]);
+    await Promise.resolve();
+    expect(p.assigned).toEqual(['/#/galaxy/hoth']);
+    p.state('menu');
+    await Promise.resolve();
+    expect(p.assigned).toEqual(['/#/galaxy/hoth']);
+  });
+
+  it.each(['failed', 'quit'])('retains a completed %s failure under batched mutations without leaving the page', async (endReason) => {
+    const p = page({ batchMutations: true });
+    watchReturn(p.win, returnFrom('?from=/galaxy/hoth'));
+    p.state('ending');
+    p.win.__playFlow.sessions.push({ endReason, passed: false, error: 'Error: runtime shutdown failed' });
+    p.state('menu');
+    await Promise.resolve();
+    expect(p.assigned).toEqual([]);
+    expect(p.body.children.find((c) => c.className === 'tp-failed')?.textContent).toBe('The round stopped: Error: runtime shutdown failed');
   });
 
   it('keeps a failed round’s reason up, and copies it with the GPU the browser gave', async () => {

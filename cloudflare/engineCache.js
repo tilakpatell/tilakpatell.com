@@ -3,7 +3,8 @@
 // fetched, so a second visit reads its 2.2 GB from disk, not the network. The browser's own HTTP cache would keep
 // them too (a year, immutable) but drops what it likes when it's full, and a build is far bigger than most of what
 // it holds. A build's files never change under its id, so a kept copy is always right; the cache is per build
-// (tp-engine-<build>), and once a newer build is kept the older ones are deleted. Nothing else is touched: the
+// (tp-engine-<build>), and once another build is kept, inactive builds can be deleted. Open pages keep their own
+// build caches, including older pages that finish loading across a deployment. Nothing else is touched: the
 // page itself (it carries the way back, and is asked again each visit), the roots it asks for outside the build
 // (/ui/, /export/, /ui-data/), a range, anything but GET. (bf2-web has an OPFS cache of its own, runtime/
 // payload-cache.js, which its play page doesn't use yet; when it does, this can go.)
@@ -67,6 +68,18 @@ export function engineWorker(self, keep, follow) {
   const onDisk = new Set();
   const coming = new Map();
   const same = { ignoreVary: true };
+  let writable = true;
+  const put = async (cache, request, response) => {
+    try {
+      await cache.put(request, response);
+      return true;
+    } catch {
+      // A quota or disk error makes speculative downloads useless. Keep existing cache reads and demanded network
+      // requests working, but stop trying to fill this worker's cache until a fresh worker can try again.
+      writable = false;
+      return false;
+    }
+  };
   // (the engine's loader asks again for nothing: a dropped answer, or the Worker's 503, is asked again here, after
   // half a second, then one and a half, then four; a 404 is the answer)
   const network = async (request) => {
@@ -85,8 +98,31 @@ export function engineWorker(self, keep, follow) {
   };
   const prune = async (build) => {
     if (pruned.has(build)) return;
+    // Another open page may still request an explicitly retained older build. Include uncontrolled windows,
+    // too: activation/claim can be in progress. If clients cannot be listed, keep caches and retry another time.
+    let clients;
+    try {
+      if (typeof self.clients?.matchAll !== 'function') return;
+      clients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+      if (!Array.isArray(clients)) return;
+    } catch { return; }
+    const active = new Set([NAME + build]);
+    for (const client of clients) {
+      let url;
+      try { url = new URL(client.url); } catch { return; }
+      const pageBuild = url.origin === self.location.origin && /^\/battlefront\/engine\/([A-Za-z0-9._-]+)(?:\/|$)/.exec(url.pathname)?.[1];
+      if (pageBuild) active.add(NAME + pageBuild);
+    }
+    for (const name of await self.caches.keys()) {
+      if (!name.startsWith(NAME) || active.has(name)) continue;
+      if (await self.caches.delete(name)) {
+        const retired = name.slice(NAME.length);
+        const prefix = `${self.location.origin}/battlefront/engine/${retired}/`;
+        for (const url of onDisk) if (url.startsWith(prefix)) onDisk.delete(url);
+        pruned.delete(retired);
+      }
+    }
     pruned.add(build);
-    for (const name of await self.caches.keys()) if (name.startsWith(NAME) && name !== NAME + build) await self.caches.delete(name);
   };
   // the build's series, once a worker's life (the list is a year under its build in the browser's own cache)
   const seriesOf = (build) => {
@@ -104,6 +140,7 @@ export function engineWorker(self, keep, follow) {
   // a file fetched onto the disk, once: true when it's there
   const fill = (cache, build, url) => {
     if (onDisk.has(url)) return Promise.resolve(true);
+    if (!writable) return Promise.resolve(false);
     if (!coming.has(url))
       coming.set(
         url,
@@ -111,7 +148,7 @@ export function engineWorker(self, keep, follow) {
           if (!(await cache.match(url, same))) {
             const response = await network(url);
             if (response.status !== 200) return false;
-            await cache.put(url, response);
+            if (!(await put(cache, url, response))) return false;
             await prune(build);
           }
           onDisk.add(url);
@@ -134,15 +171,26 @@ export function engineWorker(self, keep, follow) {
     if (request.headers.get(WARM)) {
       event.respondWith(
         (async () => {
-          const cache = await self.caches.open(NAME + kept.build);
-          return new Response(null, { status: (await fill(cache, kept.build, url.href)) ? 204 : 502 });
+          try {
+            const cache = await self.caches.open(NAME + kept.build);
+            return new Response(null, { status: (await fill(cache, kept.build, url.href)) ? 204 : 502 });
+          } catch {
+            return new Response(null, { status: 502 });
+          }
         })(),
       );
       return;
     }
     event.respondWith(
       (async () => {
-        const cache = await self.caches.open(NAME + kept.build);
+        // Disk caching is optional: a denied or unavailable store must not turn a usable network response into
+        // a failed engine load. Keep the existing network retries when the browser cannot open/read its cache.
+        let cache;
+        try {
+          cache = await self.caches.open(NAME + kept.build);
+        } catch {
+          return network(request);
+        }
         const dir = `${url.origin}/battlefront/engine/${kept.build}/`;
         event.waitUntil(
           seriesOf(kept.build)
@@ -151,13 +199,18 @@ export function engineWorker(self, keep, follow) {
         );
         // (one already on its way: waited for, not asked again)
         if (coming.has(dir + kept.path)) await coming.get(dir + kept.path);
-        const hit = await cache.match(request, same);
+        let hit;
+        try {
+          hit = await cache.match(request, same);
+        } catch {
+          return network(request);
+        }
         if (hit) return hit;
         const response = await network(request);
-        if (response.status === 200)
+        if (response.status === 200 && writable)
           event.waitUntil(
             (async () => {
-              await cache.put(request, response.clone());
+              if (!(await put(cache, request, response.clone()))) return;
               onDisk.add(dir + kept.path);
               await prune(kept.build);
             })().catch(() => {}),
@@ -211,13 +264,16 @@ export function warmEngineBuild(win, order) {
     if (!nav.serviceWorker.controller) await new Promise((r) => nav.serviceWorker.addEventListener('controllerchange', r, { once: true }));
     const list = await win.fetch(dir + 'tp-files.json').then((r) => (r.status === 200 ? r.json() : { files: [] }));
     const files = order(list.files ?? []);
-    let next = 0;
+    let next = 0, stopped = false;
     const lane = async () => {
-      while (next < files.length) {
+      while (!stopped && next < files.length) {
         const path = files[next++];
         // (a 200 is a file sent whole, the worker not there: its bytes aren't wanted here)
         const r = await win.fetch(dir + path, { headers: { 'x-tp-warm': '1' } }).catch(() => null);
         if (r?.status === 200) r.body?.cancel?.().catch?.(() => {});
+        // Only 204 confirms the bytes were cached. Stop every lane after a failed warm or absent worker instead
+        // of fetching the rest of a multi-gigabyte build that cannot be kept. Already-started requests may finish.
+        if (r?.status !== 204) stopped = true;
       }
     };
     await Promise.all([lane(), lane(), lane(), lane()]);

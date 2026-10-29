@@ -1,3 +1,4 @@
+import { setImmediate } from 'node:timers';
 import { describe, expect, it, vi } from 'vitest';
 import { FILES, WORKER_SOURCE, cacheKeep, engineWorker, following, registerEngineCache, warmEngineBuild, warmOrder } from './engineCache.js';
 
@@ -14,7 +15,7 @@ function worker(network = (url) => ({ status: 200, body: `bytes of ${url}` }), f
     location: { origin: ORIGIN },
     addEventListener: (type, fn) => (on[type] = fn),
     skipWaiting: () => {},
-    clients: { claim: async () => {} },
+    clients: { claim: async () => {}, matchAll: async () => [] },
     fetch: async (request) => {
       const url = urlOf(request);
       if (url.endsWith('/' + FILES)) return files ? { status: 200, json: async () => ({ files }) } : { status: 404 };
@@ -42,7 +43,7 @@ function worker(network = (url) => ({ status: 200, body: `bytes of ${url}` }), f
     await Promise.all(waits);
     return res;
   };
-  return { on, stores, asked, get };
+  return { on, stores, asked, get, self };
 }
 
 describe('the engine’s build kept on the visitor’s disk', () => {
@@ -62,6 +63,22 @@ describe('the engine’s build kept on the visitor’s disk', () => {
     expect([...w.stores.keys()]).toEqual(['tp-engine-main-da7a51b3']);
   });
 
+  it.each(['open', 'match'])('still loads an engine asset from the network when Cache Storage %s fails', async (operation) => {
+    const w = worker();
+    const unavailable = async () => { throw new Error('Cache Storage unavailable'); };
+    w.self.caches.open = operation === 'open' ? unavailable : async () => ({ match: unavailable, put: unavailable });
+    const path = '/battlefront/engine/main-da7a51b3/scene-r-0.res';
+    for (let i = 0; i < 2; i++) expect((await w.get(path)).body).toBe(`bytes of ${ORIGIN}${path}`);
+    expect(w.asked).toEqual([ORIGIN + path, ORIGIN + path]);
+  });
+
+  it('reports a failed warm without downloading a file it cannot cache', async () => {
+    const w = worker();
+    w.self.caches.open = async () => { throw new Error('Cache Storage unavailable'); };
+    expect((await w.get('/battlefront/engine/main-da7a51b3/scene-r-0.res', { headers: { 'x-tp-warm': '1' } })).status).toBe(502);
+    expect(w.asked).toEqual([]);
+  });
+
   it('leaves the page, ranges, other methods, other roots and a failed answer alone', async () => {
     const w = worker((url) => ({ status: url.endsWith('missing.res') ? 404 : 200, body: 'x' }));
     expect(await w.get('/battlefront/engine/main-da7a51b3/', { mode: 'navigate' })).toBeNull();
@@ -78,6 +95,50 @@ describe('the engine’s build kept on the visitor’s disk', () => {
     await w.get('/battlefront/engine/main-da7a51b3/a.res');
     await w.get('/battlefront/engine/main-f675e260/a.res');
     expect([...w.stores.keys()]).toEqual(['tp-engine-main-f675e260']);
+  });
+
+  it('retains both active pages when an older build downloads after the newer build', async () => {
+    const w = worker();
+    const dir = '/battlefront/engine/';
+    const listing = [];
+    w.self.clients.matchAll = async (options) => {
+      listing.push(options);
+      return [{ url: ORIGIN + dir + 'old/' }, { url: ORIGIN + dir + 'new/?from=/galaxy/hoth' }];
+    };
+    w.stores.set('tp-engine-inactive', new Map());
+    w.stores.set('other-application', new Map());
+    await w.get(dir + 'new/a.res');
+    await w.get(dir + 'old/late.res');
+    expect([...w.stores.keys()].sort()).toEqual(['other-application', 'tp-engine-new', 'tp-engine-old']);
+    const reads = w.asked.length;
+    expect((await w.get(dir + 'new/a.res')).body).toBe(`bytes of ${ORIGIN}${dir}new/a.res`);
+    expect(w.asked).toHaveLength(reads);
+    expect(listing).toContainEqual({ type: 'window', includeUncontrolled: true });
+  });
+
+  it('warms a retired build again after its cache was pruned', async () => {
+    const w = worker();
+    const dir = '/battlefront/engine/';
+    const warm = { headers: { 'x-tp-warm': '1' } };
+    await w.get(dir + 'old/a.res', warm);
+    await w.get(dir + 'new/b.res', warm);
+    expect(w.stores.has('tp-engine-old')).toBe(false);
+    w.self.clients.matchAll = async () => [{ url: ORIGIN + dir + 'old/' }, { url: ORIGIN + dir + 'new/' }];
+    expect((await w.get(dir + 'old/a.res', warm)).status).toBe(204);
+    expect(w.stores.get('tp-engine-old').has(ORIGIN + dir + 'old/a.res')).toBe(true);
+    expect(w.asked.filter(url => url.endsWith('/old/a.res'))).toHaveLength(2);
+  });
+
+  it.each(['missing', 'rejected'])('keeps existing caches when active client listing is %s', async (failure) => {
+    const w = worker();
+    w.stores.set('tp-engine-old', new Map());
+    w.self.clients.matchAll = failure === 'missing' ? undefined : async () => { throw new Error('Client listing unavailable'); };
+    expect((await w.get('/battlefront/engine/new/a.res')).status).toBe(200);
+    expect(w.stores.has('tp-engine-old')).toBe(true);
+    // Listing failure must not permanently mark the new build pruned; retry when the API is available.
+    w.self.clients.matchAll = async () => [];
+    await w.get('/battlefront/engine/new/b.res');
+    expect(w.stores.has('tp-engine-old')).toBe(false);
   });
 
   it('reads the build’s numbered series, each file followed by the next few of its own', () => {
@@ -157,6 +218,47 @@ describe('the engine’s build kept on the visitor’s disk', () => {
     // (the engine's ask, after: the disk's)
     expect((await w.get(dir + 'scene-m-0.res')).body).toBe(`bytes of ${ORIGIN}${dir}scene-m-0.res`);
     expect(w.asked.filter((u) => u.endsWith('scene-m-0.res'))).toHaveLength(1);
+  });
+
+  it('stops speculative downloads after a cache write fails, while demanded files still load', async () => {
+    const dir = '/battlefront/engine/main-da7a51b3/';
+    const files = Array.from({ length: 12 }, (_, i) => `scene-m-${i}.res`);
+    const w = worker(undefined, files);
+    w.self.caches.open = async () => ({
+      match: async (request) => urlOf(request).endsWith(files[10]) ? { status: 200, body: 'already cached' } : null,
+      put: async () => { throw new DOMException('Disk full', 'QuotaExceededError'); },
+    });
+    expect((await w.get(dir + files[0], { headers: { 'x-tp-warm': '1' } })).status).toBe(502);
+    const before = w.asked.length;
+    expect((await w.get(dir + files[1])).body).toBe(`bytes of ${ORIGIN}${dir}${files[1]}`);
+    expect((await w.get(dir + files[10])).body).toBe('already cached');
+    expect(w.asked.slice(before)).toEqual([ORIGIN + dir + files[1]]);
+  });
+
+  it.each(['quota', 'uncontrolled', 'network'])('stops page warming after %s failure instead of requesting the whole build', async (failure) => {
+    const dir = '/battlefront/engine/main-da7a51b3/';
+    const files = Array.from({ length: 12 }, (_, i) => `scene-m-${i}.res`);
+    const w = worker(undefined, files);
+    w.self.caches.open = async () => ({ match: async () => null, put: async () => { throw new DOMException('Disk full', 'QuotaExceededError'); } });
+    const asked = [], cancelled = [];
+    const win = {
+      navigator: { serviceWorker: { controller: {} } },
+      location: { pathname: dir },
+      document: { body: { classList: { contains: () => true } } },
+      MutationObserver: class { observe() {} },
+      fetch: async (url, init) => {
+        if (url.endsWith('tp-files.json')) return { status: 200, json: async () => ({ files }) };
+        asked.push(url);
+        if (failure === 'network') throw new TypeError('Failed to fetch');
+        if (failure === 'uncontrolled') return { status: 200, body: { cancel: async () => cancelled.push(url) } };
+        return w.get(url, { headers: init.headers });
+      },
+    };
+    warmEngineBuild(win, warmOrder);
+    await new Promise((resolve) => setImmediate(resolve));
+    expect(asked).toEqual(files.slice(0, 4).map((file) => dir + file));
+    if (failure === 'quota') expect(w.asked).toHaveLength(4);
+    if (failure === 'uncontrolled') expect(cancelled).toEqual(asked);
   });
 
   it('orders a round’s files as the loader asks for them, the page’s own left out', () => {
