@@ -34,3 +34,16 @@ export function playOn({ level, play, support, search = '', choice = null, back 
   if (!support.ok) return null;
   return choice === 'engine' ? { go: url } : { ask: { url, mb: play.mb ?? null } };
 }
+
+// Battlefront is bf2-web's engine and game only (the owner, 2026-10-29: "battlefront should ONLY be the engine and game"):
+// no site world behind it and no choice between the two. Where the engine can run, the page goes to it; where it can't,
+// the reasons are named and nothing else plays.
+//   engineOnly({ level, play, support, back }) → { go: url } | { wait: true } | { unavailable: [why, …] }
+export function engineOnly({ level = 'hoth', play, support, back = null }) {
+  const url = engineUrl(play, back);
+  if (!url) return { unavailable: ['no engine build is published'] };
+  if (!ENGINE_LEVELS.includes(level)) return { unavailable: [`bf2-web does not play ${level} yet`] };
+  if (!support) return { wait: true };
+  if (!support.ok) return { unavailable: support.missing };
+  return { go: url };
+}
