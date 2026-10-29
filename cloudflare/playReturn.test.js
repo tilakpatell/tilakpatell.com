@@ -108,15 +108,15 @@ describe('the way back from the engine’s page', () => {
     expect(p.assigned).toEqual(['/#/galaxy/hoth']);
   });
 
-  it('retains a completed failure under batched mutations without leaving the page', async () => {
+  it.each(['failed', 'quit'])('retains a completed %s failure under batched mutations without leaving the page', async (endReason) => {
     const p = page({ batchMutations: true });
     watchReturn(p.win, returnFrom('?from=/galaxy/hoth'));
     p.state('ending');
-    p.win.__playFlow.sessions.push({ endReason: 'failed', passed: false, error: 'Error: frame 0 failed' });
+    p.win.__playFlow.sessions.push({ endReason, passed: false, error: 'Error: runtime shutdown failed' });
     p.state('menu');
     await Promise.resolve();
     expect(p.assigned).toEqual([]);
-    expect(p.body.children.find((c) => c.className === 'tp-failed')?.textContent).toBe('The round stopped: Error: frame 0 failed');
+    expect(p.body.children.find((c) => c.className === 'tp-failed')?.textContent).toBe('The round stopped: Error: runtime shutdown failed');
   });
 
   it('keeps a failed round’s reason up, and copies it with the GPU the browser gave', async () => {

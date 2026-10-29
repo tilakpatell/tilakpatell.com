@@ -18,9 +18,11 @@ before returning to the site.
 
 The return script now reads newly completed session records regardless of
 the transient current state. A requested Quit alone still cannot navigate:
-the record exists only after `finish()` releases the old instance. Existing
-Quit/failure handling and the once-per-record guard are unchanged. This does
-not alter engine loading, shutdown, gameplay or the original frontend.
+the record exists only after `finish()` releases the old instance. Failed
+records take precedence over the requested ending reason: a Quit whose
+runtime teardown failed now stays on the page with its diagnostics. The
+once-per-record guard is unchanged. This does not alter engine loading,
+shutdown, gameplay or the original frontend.
 
 Validation on site base `cd911e86ca66eda1599069bdfcd89efef1c50e1e`:
 
@@ -30,7 +32,11 @@ Validation on site base `cd911e86ca66eda1599069bdfcd89efef1c50e1e`:
   8 passed in `playReturn.test.js`).
 - After the fix, it returns once; a merely requested Quit never navigates.
   A completed failed session still retains its error and stays on the page.
-- 59 tests pass across the six focused `play`, `playReturn`, `worker`,
+- A second negative case reproduced a completed record with `endReason:
+  'quit'` and `passed: false` navigating away and hiding its error (1 failed,
+  9 passed before the ordering fix). Both ordinary and Quit-related failures
+  now remain visible without navigation.
+- 60 tests pass across the six focused `play`, `playReturn`, `worker`,
   `engineCache`, `playTimers` and `source` suites. The source serialization
   check also passes. ESLint and `git diff --check` pass.
 
