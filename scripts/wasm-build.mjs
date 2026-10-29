@@ -16,7 +16,9 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
-const names = process.argv.slice(2).length ? process.argv.slice(2) : readdirSync(join(ROOT, 'wasm')).filter((n) => existsSync(join(ROOT, 'wasm', n, 'Cargo.toml')));
+// (none today: navsearch, the only crate, went with the site's Battlefront game on 2026-10-29)
+const crates = existsSync(join(ROOT, 'wasm')) ? readdirSync(join(ROOT, 'wasm')).filter((n) => existsSync(join(ROOT, 'wasm', n, 'Cargo.toml'))) : [];
+const names = process.argv.slice(2).length ? process.argv.slice(2) : crates;
 for (const name of names) {
   const crate = join(ROOT, 'wasm', name);
   const out = join(ROOT, 'src/lib/wasm', name);

@@ -1,15 +1,12 @@
-// The Battlefront world's face (docs/health/RULES.md, "Worlds are islands"):
-// its route, for a page or another world that links to it (the galaxy's
-// landing menu, its system's panel and its briefing point Hoth's Galactic
-// Assault here: the flow design's decision 3, flipped by the 2026-10-11
-// deploy-flow design), and its module. A link from a galaxy world carries
-// where it came from (`from`, that world's own page), so the game's menu
-// and its end of round lead back there rather than to the universe map.
+// Battlefront's face (docs/health/RULES.md, "Worlds are islands"): bf2-web's engine, on the levels it plays
+// (docs/decisions/2026-10-28-hoth-on-bf2-web.md; engine.js sends the visitor there). The site's own Battlefront game
+// went on 2026-10-29 (docs/superpowers/plans/2026-10-29-battlefront-engine-only.md). A link from a galaxy world
+// carries where it came from (`from`, that world's own page), so the engine's way back leads there.
 
 export const ROUTE = '/battlefront';
-export const routeFor = (level = 'hoth', mode = 'galacticAssault', { from = null } = {}) => `${ROUTE}/${level}/${mode}${from ? `?from=${encodeURIComponent(from)}` : ''}`;
-// the game's menu over a level's world (no mode named: the menu chooses it;
-// docs/superpowers/specs/2026-10-13-hoth-landing-game-menu-design.md)
+// the levels the engine plays (bf2-web's play-config.json levels; Hoth's alone for now)
+export const LEVELS = ['hoth'];
+// a level's way into the engine, with the way back
 export const menuRouteFor = (level = 'hoth', { from = null } = {}) => `${ROUTE}/${level}${from ? `?from=${encodeURIComponent(from)}` : ''}`;
 // the way back a route's search names, or null: a galaxy world's page alone
 // (`/galaxy/<system>`), never another origin or an arbitrary path
@@ -19,11 +16,3 @@ export function wayBack(search = '') {
   if (!m) return null;
   return { label: `Back to ${m[1][0].toUpperCase()}${m[1].slice(1)}`, to: from };
 }
-export const LEVELS = ['hoth'];
-// the modes the game world runs (src/lib/battlefront/modes/index.js), and those each level's pack plays:
-// a level's own modes are its map rulebook's (modes.json); a pack that lands adds its row
-export const MODES = ['galacticAssault', 'strike', 'extraction', 'ewokHunt', 'supremacy'];
-export const LEVEL_MODES = { hoth: ['galacticAssault', 'supremacy'] };
-// the mode a level's world is mounted in behind the menu, or null for a level this world has not got
-export const firstModeOf = (level) => LEVEL_MODES[level]?.[0] ?? null;
-export { default as battlefrontModule } from './module.js';

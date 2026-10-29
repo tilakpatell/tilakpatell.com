@@ -10,7 +10,7 @@
 //   `TK-772`, `TK-350` … for the Empire). namer(lists, faction) →
 //   (fighterId) → a name, the same one for a fighter every time.
 // - The minds: the bots lane's squadron behaviour trees
-//   (`src/lib/battlefront/ai/squadron.js`, its `squadronCommand(fighter,
+//   (`src/lib/bf2017/ai/squadron.js`, its `squadronCommand(fighter,
 //   world, dt)`) when they are on main; until then the adapter over the
 //   galaxy's own pilots (universe/battleAi.js, which flies them in the
 //   battle): commandOf reads what a fighter did in a step (its nose's turn,
@@ -22,7 +22,7 @@ import { turnRatesAt, topSpeed } from '../../../../lib/flight/starfighter';
 import { NAMES } from '../../../universe/wars';
 
 // the bots lane's files, taken only when they're there (a guarded import: Vite's glob is empty without them)
-const SQUADRON = import.meta.glob('../../../../lib/battlefront/ai/squadron.js');
+const SQUADRON = import.meta.glob('../../../../lib/bf2017/ai/squadron.js');
 const NAME_BOOK = import.meta.glob('../../../../data/bf2017/ai.names.json', { import: 'default' });
 
 export const hasSquadron = () => Object.keys(SQUADRON).length > 0;

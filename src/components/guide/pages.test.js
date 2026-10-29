@@ -40,14 +40,6 @@ describe('which guide a page gets', () => {
     expect(guideFor('/c-137/squanch/deeper')).toBe(null);
   });
 
-  it('gives the Battlefront world its own on every level and mode, with its keys: Space a hero’s jump', () => {
-    for (const p of ['/battlefront', '/battlefront/hoth', '/battlefront/hoth/galacticAssault']) expect(guideFor(p)?.key, p).toBe('/battlefront');
-    const rows = PAGES['/battlefront'].keys.flatMap((g) => g.rows);
-    expect(rows.find(([k]) => k === 'Space')?.[1]).toMatch(/jump/i);
-    expect(rows.find(([k]) => k === 'double Space')?.[1]).toMatch(/dodge/i);
-    expect(guideFor('/battlefront/hoth/galacticAssault/deeper')).toBe(null);
-  });
-
   it('keeps C-137’s keys and tips in a file of their own', () => {
     const g = guideFor('/c-137');
     expect(g.keys).toBe(C137.keys);

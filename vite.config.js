@@ -1,4 +1,3 @@
-import { existsSync } from 'node:fs'
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { configDefaults } from 'vitest/config'
@@ -7,18 +6,9 @@ import prerender from './scripts/prerender.mjs'
 import packs from './scripts/packs.mjs'
 import assetManifest from './scripts/assets-manifest.mjs'
 import siteHashes from './scripts/site-hashes.mjs'
-import bf2Dev from './scripts/bf2-dev.mjs'
 import librarySlice from './scripts/library-slice.mjs'
 import dataSlice from './scripts/data-slice.mjs'
 import rapierWasm from './scripts/rapier-wasm.mjs'
-
-// Whether this checkout has the game's sounds on disk (the Hoth set under
-// public/audio/galaxy/bf2017, src/data/bf2017/sounds.json): 'gone' once
-// they are published and have left git, and then the Battlefront world asks
-// only the bucket for them, or for none where there is no bucket, so a
-// missing sound is never a request that fails (sound/sounds.js's HERE).
-// Read by Vite as any VITE_ variable of the shell's; one set there wins.
-process.env.VITE_BF2017_SOUNDS ??= existsSync(new URL('./public/audio/galaxy/bf2017/ambience-bed-01.mp3', import.meta.url)) ? 'here' : 'gone'
 
 export default defineConfig({
   // each react-icons icon a module of its own, so the entry chunk carries
@@ -27,16 +17,14 @@ export default defineConfig({
   // and search (scripts/prerender.mjs), and each world's install pack
   // (scripts/packs.mjs), and the heavy assets' manifest, only the entries
   // still true of public/ (scripts/assets-manifest.mjs)
-  // (and, in dev with BF2_ROOT set, the local Battlefront export at /bf2/:
-  // scripts/bf2-dev.mjs; nothing when it is unset)
   // (and the object library's slice of the asset manifest as a virtual
   // module, so the galaxy's chunk carries a few paths and not 16 MB:
-  // scripts/library-slice.mjs, lane D3; and the Battlefront rulebook's
-  // three big records fetched as JSON, not parsed in its chunks:
+  // scripts/library-slice.mjs, lane D3; and the game UI's
+  // two big records fetched as JSON, not parsed in its chunks:
   // scripts/data-slice.mjs, lane FL1)
   // (and Rapier's wasm import sent to the shim that streams the binary:
   // scripts/rapier-wasm.mjs, lane X3)
-  plugins: [librarySlice(), dataSlice(), rapierWasm(), iconsApart(), react(), prerender(), packs(), assetManifest(), siteHashes(), bf2Dev()],
+  plugins: [librarySlice(), dataSlice(), rapierWasm(), iconsApart(), react(), prerender(), packs(), assetManifest(), siteHashes()],
   // (the icons' modules import react-icons' own GenIcon: bundled up front in dev)
   // (scanned from the site's own page only: the tool pages under scripts/ and
   // .claude/ import aliases and packages the site doesn't, and a failed scan
@@ -51,7 +39,7 @@ export default defineConfig({
   base: '/',
   // Rapier's packages carry only a `module` entry, which Node's own
   // resolution (what Vite's SSR uses for a dependency it leaves external)
-  // does not read: the tests and scripts/x2-profile.mjs load them through
+  // does not read: the tests and the scripts load them through
   // Vite instead, so scripts/rapier-wasm.mjs meets their wasm import there
   // too (lane X3)
   ssr: { noExternal: ['@dimforge/rapier3d', '@dimforge/rapier3d-simd'] },
@@ -63,7 +51,7 @@ export default defineConfig({
   // the skills and the other branches' worktrees under .claude, and the
   // scratch checkouts under lab/, bring their own tests; the AI tiers are
   // `npm run test:ai` (vitest.ai.config.js), slower than this run promises
-  test: { exclude: [...configDefaults.exclude, '.claude/**', '.agents/**', 'lab/**', 'scripts/health/fixtures/**', 'scripts/ai-e2e/**', '**/*.fuzz.test.js', '**/*.scenario.test.js', 'src/lib/battlefront/**/arena.test.js'] },
+  test: { exclude: [...configDefaults.exclude, '.claude/**', '.agents/**', 'lab/**', 'scripts/health/fixtures/**', 'scripts/ai-e2e/**', '**/*.fuzz.test.js', '**/*.scenario.test.js'] },
   build: {
     // the chunk graph scripts/packs.mjs reads for each world's pack
     manifest: true,

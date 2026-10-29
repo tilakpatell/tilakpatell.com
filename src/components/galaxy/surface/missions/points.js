@@ -4,9 +4,8 @@
 // (2017) has them. The prices are the game's record (src/data/bf2017/
 // points.json: Online/BattlepointCostData, a level's own Galactic Assault
 // table where it has one, else the default list); what a deed earns is by
-// hand there, as the game is played. Pure, so it's tested. The Battlefront
-// world's own (lib/battlefront/battlePoints.js) reads the whole rulebook,
-// which the galaxy's chunk doesn't carry: this reads the one table.
+// hand there, as the game is played. Pure, so it's tested. It reads the one
+// table, not the whole rulebook, which the galaxy's chunk doesn't carry.
 //
 //   EARN                           what a deed earns: { kill, assist, objectiveTick, heroKill, squadSpawn, capture, … }
 //   priceOf(kind, id, { system })  an offer's price: a class nothing, a hero by heroes.js's id (the game's own for them looked up), an enforcer by its body or the game's unit

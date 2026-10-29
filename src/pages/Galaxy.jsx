@@ -359,10 +359,9 @@ export default function Galaxy() {
   // near a planet you can land on: the surface's code, and its page's, come ahead
   useEffect(() => {
     if (!(at === 'planet' || at === 'cloudcity') || !canLand(current)) return;
-    // (a world on the game's own level: the game's page and its screens come ahead instead)
+    // (a world bf2-web's engine plays: its launching page comes ahead instead)
     if (wayDown(current).game) {
       import('./Battlefront').catch(() => {});
-      import('../components/battlefront/screens/index.js').catch(() => {});
       return;
     }
     prefetchSurface();

@@ -21,12 +21,9 @@
 //   DISTRICT=<id> … surface: the world's district (?district=) instead of its main map
 //   SHOT_WAIT=600000 … (ms for the screenshot: a whole level's frame in software GL can take a minute)
 //   PROFILE=60 … (lane X2: the main thread's CPU profile over that many
-//     seconds of play, after the counts: the Battlefront's player deployed
-//     and walking, a surface's camera turning; <name>.cpuprofile for
+//     seconds of play, after the counts: a surface's camera turning; <name>.cpuprofile for
 //     DevTools and <name>.profile.json, its time by module and function per
 //     frame, scripts/cpu-profile.mjs)
-//   …/galaxy-check.mjs battlefront hoth (the Battlefront world,
-//     /battlefront/<id>/galacticAssault, its player deployed as an assault)
 //   BUDGET=1 … (or BUDGET=path/to/baseline.json): each world held to its
 //     quality level's row of the budget table (src/lib/budgets.js, the
 //     quality modes design: docs/superpowers/specs/2026-10-07-quality-modes-
@@ -104,10 +101,9 @@ const browser = await chromium.launch({ executablePath: chrome, args: ['--use-gl
 // The main thread's CPU profile over `seconds` of play (lane X2): sampled
 // every 0.5 ms through the DevTools protocol, the frames counted by the
 // page's own requestAnimationFrame, and summed by module and function
-// (cpu-profile.mjs). On the Battlefront the player walks forward and turns;
-// elsewhere the camera turns (the mouse dragged), so the LOD and the stream
-// have something to do.
-async function profileOf(page, seconds, file, bf) {
+// (cpu-profile.mjs). The camera turns (the mouse dragged), so the LOD and the
+// stream have something to do.
+async function profileOf(page, seconds, file) {
   const cdp = await page.context().newCDPSession(page);
   await cdp.send('Profiler.enable');
   await cdp.send('Profiler.setSamplingInterval', { interval: 500 });
@@ -124,15 +120,12 @@ async function profileOf(page, seconds, file, bf) {
   const t0 = Date.now();
   const { width, height } = page.viewportSize();
   await page.mouse.move(width / 2, height / 2);
-  if (bf) await page.keyboard.down('w');
-  else await page.mouse.down();
+  await page.mouse.down();
   for (let k = 0; Date.now() - t0 < seconds * 1000; k++) {
     await page.mouse.move(width / 2 + Math.sin(k / 6) * width * 0.3, height / 2, { steps: 4 });
-    if (bf && k % 20 === 10) await page.keyboard.press('Space');
     await page.waitForTimeout(250);
   }
-  if (bf) await page.keyboard.up('w');
-  else await page.mouse.up();
+  await page.mouse.up();
   const { profile } = await cdp.send('Profiler.stop');
   const frames = await page.evaluate(() => {
     const n = window.__frames;
@@ -228,14 +221,13 @@ for (const id of list.split(',')) {
     // (the console's errors, less what a sandbox or a software renderer always says: lib/noise.mjs)
     page.on('console', (m) => m.type() === 'error' && !noisy(m.text()) && errors.push(m.text()));
     const t0 = Date.now();
-    const bf = mode === 'battlefront';
     // (`world@district`: a district of a world, its own pack, held to the row
     // alone; or DISTRICT=village for every world asked for)
     const [world, atDistrict] = id.split('@');
     const district = atDistrict ?? process.env.DISTRICT ?? null;
-    const path = bf ? `/battlefront/${id}/galacticAssault` : mode === 'surface' ? `/galaxy/${world}/surface${district ? `?district=${district}` : ''}` : `/galaxy/${world}`;
+    const path = mode === 'surface' ? `/galaxy/${world}/surface${district ? `?district=${district}` : ''}` : `/galaxy/${world}`;
     await page.goto(`${base}/?quality=${quality}&calibrate=off${gpu ? `&gpu=${gpu}` : ''}#${path}`, { waitUntil: 'domcontentloaded' });
-    const ready = bf ? () => Boolean(window.__battlefront?.view?.()?.level?.loaded) : mode === 'surface' ? () => Boolean(window.__surfaceScene?.renderer) : () => typeof window.__galaxy === 'function' && Boolean(window.__galaxy().system);
+    const ready = mode === 'surface' ? () => Boolean(window.__surfaceScene?.renderer) : () => typeof window.__galaxy === 'function' && Boolean(window.__galaxy().system);
     try {
       await page.waitForFunction(ready, null, { timeout: Number(process.env.PHASE_WAIT ?? 180000) });
     } catch {
@@ -319,7 +311,6 @@ for (const id of list.split(',')) {
     // planet on its sun side, facing it, stopped. The seeded randomness alone
     // can't hold it there: three.js draws on Math.random for every object's
     // id, so a change that makes more objects moves the ship.)
-    if (bf) await page.evaluate(() => window.__battlefront.do('deploy', { classId: 'd-orig-assault' }));
     if (mode === 'space' && !process.env.LIVE) {
       await page.waitForFunction(() => !window.__galaxy().jump, null, { timeout: 120000 }).catch(() => {});
       await page.evaluate(() => {
@@ -377,7 +368,7 @@ for (const id of list.split(',')) {
     const stats = await within('the counted frames', countAt, page.evaluate(
       (surface) =>
         new Promise((done) => {
-          const renderer = surface === 'battlefront' ? window.__RUNTIME__.gfx.renderer : surface ? window.__surfaceScene.renderer : window.__galaxyDebug.renderer;
+          const renderer = surface ? window.__surfaceScene.renderer : window.__galaxyDebug.renderer;
           const info = renderer.info;
           const wasAuto = info.autoReset;
           info.autoReset = false;
@@ -423,7 +414,7 @@ for (const id of list.split(',')) {
           };
           requestAnimationFrame(tick);
         }),
-      bf ? 'battlefront' : mode === 'surface',
+      mode === 'surface',
     ));
     stage(`${stats.frames} counted frames`, countAt);
     // (DIAG=1: what each of the scene's top groups costs, by drawing a frame
@@ -469,7 +460,7 @@ for (const id of list.split(',')) {
       },
       (e) => errors.push(`the screenshot did not come in ${((Date.now() - shotAt) / 1000).toFixed(0)} s: ${String(e?.message ?? e).split('\n')[0]}`),
     );
-    const profile = process.env.PROFILE ? await profileOf(page, Number(process.env.PROFILE), `${out}/${name}`, bf) : null;
+    const profile = process.env.PROFILE ? await profileOf(page, Number(process.env.PROFILE), `${out}/${name}`) : null;
     if (bytesRun && mode === 'surface') {
       const after = stats.level?.stream ?? null;
       const row = budget(quality);

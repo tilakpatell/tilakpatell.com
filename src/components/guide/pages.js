@@ -253,33 +253,6 @@ export const PAGES = {
     ],
   },
   // planet flight: end
-  '/battlefront': {
-    keys: [
-      {
-        label: 'On foot',
-        rows: [
-          ['W A S D / ← ↑ ↓ →', 'Walk'],
-          ['Shift', 'Run'],
-          ['Ctrl / Z / C', 'Crouch, while held'],
-          ['Space', 'Jump, as a hero (a trooper keeps to the ground)'],
-          ['double Space', 'Dodge: a roll the way you’re going'],
-          ['Click, then the mouse', 'Look round (Esc lets go)'],
-        ],
-      },
-      {
-        label: 'Fighting',
-        rows: [
-          ['Left button', 'Fire; a saber hero strikes, and the Emperor’s lightning runs while it is held'],
-          ['Right button', 'Aim down the sights; a saber hero holds up the blade to block'],
-          ['Q E F / 1 2 3', 'The three abilities (a grenade leaves the hand when you let go)'],
-          ['R', 'Vent the gun’s heat'],
-          ['hold E', 'Use: a gate’s panel, a bomb'],
-        ],
-      },
-      { label: 'The battle', rows: [['Enter', 'Deploy'], ['Tab', 'The scoreboard, while held']] },
-    ],
-    tips: [['Heroes', 'In Galactic Assault, once you have 4,000 Battle Points, the deploy screen offers your side’s heroes: each on its own health, gun or saber and three abilities, wearing the three star cards you picked for it in the Collection.']],
-  },
   '/deathstar/inside': {
     about: ABOUT['/deathstar/inside'],
     keys: [

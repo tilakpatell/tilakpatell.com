@@ -22,8 +22,6 @@ export const GUIDES = {
   '/deathstar': { title: 'The Death Star', nudge: true },
   '/deathstar/inside': { title: 'Aboard the Death Star', nudge: true },
   '/fly': { title: 'Planet flight', nudge: true }, // planet flight (scripts/flight-island.mjs removes this row)
-  // (no note by the "?": the game's own screens stand over the world from the first frame)
-  '/battlefront': { title: 'Battlefront' },
   '/caribbean': { title: 'The Caribbean', nudge: true },
   '/invincible': { title: 'Invincible', nudge: true },
   '/hogwarts': { title: 'Hogwarts', nudge: true },
@@ -55,7 +53,6 @@ const RULES = [
   [/^\/galaxy\/[^/]+\/mission$/, '/galaxy/mission'],
   [/^\/galaxy\/[^/]+$/, '/galaxy'],
   [/^\/fly\/[^/]+$/, '/fly'], // planet flight
-  [/^\/battlefront\/[^/]+(\/[^/]+)?$/, '/battlefront'],
   [/^\/middle-earth\/road$/, '/middle-earth/road'], // (the Road is a ride of its own, not a place on it)
   [/^\/middle-earth\/[^/]+$/, '/middle-earth/place'],
   [/^\/avengers\/[^/]+$/, '/avengers'], // a building's game opens over the compound, so it's the compound's guide

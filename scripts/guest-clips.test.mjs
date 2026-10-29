@@ -11,7 +11,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import * as THREE from 'three';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { parseGlb } from '../src/components/battlefront/figures/fixtures/glb.js';
+import { parseGlb } from '../src/lib/three/fixtures/glb.js';
 import { clearGLTFCache } from '../src/lib/three/gltfCache.js';
 import { loadWalrusBody, packUrls } from '../src/lib/three/walrus.js';
 import { hashOf } from './lib/asset-manifest.mjs';

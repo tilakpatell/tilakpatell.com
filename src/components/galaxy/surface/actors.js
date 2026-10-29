@@ -43,7 +43,7 @@
 //   (sat where it stands: a booth's), hears / greets / chats (needs.js's
 //   manner, where its kind's isn't right), creature (the game's creature
 //   settings it walks by: an actor entity's name, `Actor_Jawa_01`, or the
-//   settings', `CLS_Jawa`; lib/battlefront/ai/creature.js: its path or its
+//   settings', `CLS_Jawa`; lib/bf2017/ai/creature.js: its path or its
 //   wander at its own speed, and its reaction to you) }]
 // site.wants: [{ id, kind, at: [x, z], pause?, slots?, spots?, clip?, base?,
 //   face? }] (where the people go, and what they do there: needs.js)
@@ -83,7 +83,7 @@ import { atPriority } from '../../../lib/assetLoad';
 import { device } from '../../../lib/device';
 import { detailLevel } from '../../../lib/detail';
 import { firstCut, wantsUpgrade } from '../../../lib/net/progressive';
-import { createCreatureMind, settingsFor } from '../../../lib/battlefront/ai/creature.js';
+import { createCreatureMind, settingsFor } from '../../../lib/bf2017/ai/creature.js';
 
 const TALK = 4.5; // metres: close enough to turn to you
 const THERE = 0.6; // metres from where it's going: there

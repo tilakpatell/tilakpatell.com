@@ -135,7 +135,7 @@ describe('Heroes vs Villains', () => {
   });
 
   it('takes a difficulty: its aim and its damage to you, and nothing else of the bots changes', () => {
-    // (the difficulty row as lib/battlefront/ai/difficulty.js gives it: rookie's numbers)
+    // (the game's difficulty row: rookie's numbers)
     const rookie = { key: 'multiplayer:rookie', aim: { scale: 1.5 }, damage: 0.75 };
     const run = (difficulty) => {
       const b = newHvv(hoth(), { seed: 4, difficulty });

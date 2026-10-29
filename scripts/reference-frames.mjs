@@ -14,8 +14,8 @@
 //     [--out docs/superpowers/evidence/gpu-first/reference] [--label name] [--keep] [--plain]
 //
 // A world is `litWorld` (the lit fixture: scripts/light-fixture/index.html,
-// at the tier --quality names), `battlefront:<id>` (/battlefront/<id>/galacticAssault),
-// a route starting with / as it is, or a galaxy world’s id (/galaxy/<id>/surface).
+// at the tier --quality names), a route starting with / as it is, or a galaxy world’s
+// id (/galaxy/<id>/surface).
 // Each is opened on Vite’s dev server with ?quality=<q>&calibrate=off&gpu=<leg>&traa=off
 // (the dev-only hooks: ?traa=off leaves the chain’s TRAA out,
 // window.__RUNTIME__.gfx.jitter(i) or the fixture’s window.__lit.jitter(i)
@@ -71,7 +71,7 @@ const settle = Number(args.settle) || 8000;
 const OUT = typeof args.out === 'string' && isAbsolute(args.out) ? args.out : join(ROOT, typeof args.out === 'string' ? args.out : 'docs/superpowers/evidence/gpu-first/reference');
 mkdirSync(OUT, { recursive: true });
 
-const routeOf = (w) => (w === 'litWorld' ? null : w.startsWith('/') ? w : w.startsWith('battlefront:') ? `/battlefront/${w.slice(12)}/galacticAssault` : `/galaxy/${w}/surface`);
+const routeOf = (w) => (w === 'litWorld' ? null : w.startsWith('/') ? w : `/galaxy/${w}/surface`);
 const slug = (w) => w.replace(/^\/+/, '').replace(/[^a-z0-9]+/gi, '-');
 const three = JSON.parse(readFileSync(join(ROOT, 'node_modules/three/package.json'), 'utf8')).version;
 let commit = null;

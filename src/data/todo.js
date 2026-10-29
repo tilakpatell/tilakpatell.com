@@ -436,14 +436,14 @@ export const THINGS_TO_DO = [
   },
   {
     id: 'galactic-assault',
-    title: 'Fight for the command posts on Hoth',
-    to: '/battlefront/hoth?from=%2Fgalaxy%2Fhoth', // (the game's own menu over its Hoth: components/galaxy/gameLevels.js)
+    title: 'Play Battlefront II on Hoth',
+    to: '/battlefront/hoth?from=%2Fgalaxy%2Fhoth', // (bf2-web's engine: components/galaxy/gameLevels.js, components/battlefront/engine.js)
     area: '/galaxy/surface',
     kind: 'game',
     audience: 'both',
     seconds: 600,
-    phone: true,
-    blurb: 'The 2017 game’s own Hoth behind its own menu. Two armies and the posts between them, in a battle sim that is seeded and tested.',
+    phone: false,
+    blurb: 'The 2017 game’s engine, ported to the web by bf2-web and running on your graphics chip: its own front end, then a round on Hoth.',
     done: { visited: '/battlefront/hoth' },
   },
   {

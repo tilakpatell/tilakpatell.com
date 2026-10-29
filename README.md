@@ -73,7 +73,7 @@ The front door is a map of the site: the portfolio’s pages are stations round 
 | World | Fandom | What you do there |
 | --- | --- | --- |
 | [A galaxy far, far away](https://tilakpatell.com/galaxy) | Star Wars | Eighteen systems to fly and jump between, three wars fought by everyone online, and the films’ worlds to land on and walk |
-| [Battlefront](https://tilakpatell.com/battlefront) | Star Wars | Galactic Assault on Hoth, from Battlefront II (2017)’s own level, figures and HUD |
+| [Battlefront](https://tilakpatell.com/battlefront) | Star Wars | Battlefront II (2017) on Hoth, on bf2-web’s port of the game’s engine, running on your graphics chip |
 | [The Death Star](https://tilakpatell.com/deathstar) | Star Wars | The trench run, and [both stations](https://tilakpatell.com/deathstar/inside) to walk room by room |
 | [Middle-earth](https://tilakpatell.com/middle-earth) | The Lord of the Rings | The Red Book in Bag End’s study, [the Road](https://tilakpatell.com/middle-earth/road) from the Shire to the Grey Havens, and a town at every stop |
 | [Cybertron](https://tilakpatell.com/cybertron) | Transformers | Iacon at war as Optimus, a truck whenever you like |

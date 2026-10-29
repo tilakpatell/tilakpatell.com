@@ -5,7 +5,7 @@
 // a server that types it wrong (anything but application/wasm makes the
 // streaming call throw a TypeError) gets the whole body and `instantiate`
 // from bytes, so a misnamed type costs the overlap, never the module. In
-// Node (the tests, scripts/x2-profile.mjs through Vite's SSR) the `?url`
+// Node (the tests, and scripts through Vite's SSR) the `?url`
 // value is a path, read from disk. The imports object is the module's
 // (Rapier's: its glue module under the name its wasm was linked against).
 //
