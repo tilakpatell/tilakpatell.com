@@ -77,9 +77,26 @@ describe('which build the site plays', () => {
   it('names the build in play.json with its size, keeping the rest', () => {
     const play = { _about: 'x', build: 'main-a', site: 'sites/main-a/', export: 'web/', uiData: 'library/ui/frontend/', exportAllow: ['fonts/'], mb: 1 };
     const m = manifest([entry('big', 2_000_000_000)]);
-    expect(adopted(play, 'main-b', m)).toEqual({ ...play, build: 'main-b', site: 'sites/main-b/', mb: 2000 });
+    expect(adopted(play, 'main-b', m)).toEqual({ ...play, build: 'main-b', site: 'sites/main-b/', mb: 2000,
+      retainedBuilds: { 'main-a': { site: play.site, export: play.export, uiData: play.uiData, exportAllow: play.exportAllow } } });
     expect(adopted(play, 'main-b', m, 'sites/main-b/ui-data/').uiData).toBe('sites/main-b/ui-data/');
     expect(adopted(play, 'main-b', m, undefined, { features: [], limits: { maxBindGroups: 4 } }).needs).toEqual({ features: [], limits: { maxBindGroups: 4 } });
+  });
+
+  it('keeps the exact published roots across adoption and rollback without nesting histories', () => {
+    const a = { build: 'a', site: 'sites/a/', uiData: 'sites/a/ui-data/', export: 'export-a/', exportAllow: ['fonts/'] };
+    const m = manifest([]);
+    const b = adopted(a, 'b', m, 'sites/b/ui-data/');
+    const c = adopted(b, 'c', m, 'sites/c/ui-data/');
+    expect(Object.keys(c.retainedBuilds)).toEqual(['a', 'b']);
+    expect(c.retainedBuilds.a.uiData).toBe('sites/a/ui-data/');
+    expect(c.retainedBuilds.b.uiData).toBe('sites/b/ui-data/');
+    expect(c.retainedBuilds.b).not.toHaveProperty('retainedBuilds');
+    expect(adopted(c, 'c', m, c.uiData).retainedBuilds).toEqual(c.retainedBuilds);
+    const rollback = adopted(c, 'a', m, a.uiData);
+    expect(Object.keys(rollback.retainedBuilds)).toEqual(['b', 'c']);
+    expect(rollback.retainedBuilds.c.uiData).toBe('sites/c/ui-data/');
+    expect(adopted({ ...a, build: null }, 'b', m).retainedBuilds).toEqual({});
   });
 });
 

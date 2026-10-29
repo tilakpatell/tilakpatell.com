@@ -2,11 +2,13 @@
 // the page bf2-web exports (WebPort/tools/export-play-site.mjs: the page, every file it loads, the front end's ui/
 // and manifest.json) under /battlefront/engine/<build>/, read through the R2 binding PLAY. Its page also asks for
 // three roots by absolute path, which bf2-web's own servers map: /ui/ (the front end, the site's copy beside the
-// page; the site's own /ui/bf2017/ is left to its files), /export/ (the game's export, extract/, only the folders the
+// page; the site's own /ui/bf2017/ is left to its files), /export/ (the game's export, only the folders the
 // front end and the HUD read) and /ui-data/ (the front end's rulebooks). Only a file the build's manifest lists is
 // served from the build. Everything is cross-origin isolated, as the engine's threads need (COOP, COEP require-corp:
 // the page loads nothing from another origin). A build's files are a year and immutable under its id; the roots,
-// whose paths don't carry it, are asked again each visit (304 by their ETag). The page itself is served with the site's
+// whose paths don't carry it, redirect to the requesting engine build's qualified path. Requests outside an engine
+// page still use the current roots and revalidate. Previously published roots are explicitly retained by adoption;
+// unpublished bucket builds are never discovered or served. The page itself is served with the site's
 // way back added (playReturn.js), under an ETag of its object's and the script's, so a new script is a new page.
 //
 //   playRoute(pathname, config) → { key, root, path } | null   (null: not the play site's, the site's files answer)
@@ -37,27 +39,40 @@ export const contentType = (path) => TYPES[/\.([a-z0-9]+)$/i.exec(path)?.[1]?.to
 
 const safe = (rest) => !rest.split('/').some((part) => part === '..' || part === '.' || part === '');
 
-export function playRoute(pathname, config) {
-  if (!config?.build || !config.site) return null;
-  if (pathname.startsWith(ENGINE)) {
-    const [build, ...parts] = pathname.slice(ENGINE.length).split('/');
-    if (build !== config.build) return null;
-    const path = parts.join('/') || 'index.html';
-    return safe(path) ? { root: 'site', path, key: config.site + path } : null;
-  }
-  if (pathname.startsWith('/ui/') && !pathname.startsWith('/ui/bf2017/')) {
-    const path = 'ui/' + pathname.slice('/ui/'.length);
-    return safe(path) ? { root: 'site', path, key: config.site + path } : null;
+// Retention is an explicit publication record, not permission to read any build found in the bucket.
+function configForBuild(config, build) {
+  if (build === config?.build) return config;
+  const retained = config?.retainedBuilds;
+  return retained && Object.hasOwn(retained, build) ? { ...config, ...retained[build], build } : null;
+}
+
+function externalRoute(pathname, config) {
+  if (pathname.startsWith('/ui-data/')) {
+    const path = pathname.slice('/ui-data/'.length);
+    return safe(path) ? { root: 'uiData', path, key: config.uiData + path } : null;
   }
   if (pathname.startsWith('/export/')) {
     const path = pathname.slice('/export/'.length);
     return safe(path) && config.exportAllow.some((p) => path.startsWith(p)) ? { root: 'export', path, key: config.export + path } : null;
   }
-  if (pathname.startsWith('/ui-data/')) {
-    const path = pathname.slice('/ui-data/'.length);
-    return safe(path) ? { root: 'uiData', path, key: config.uiData + path } : null;
-  }
   return null;
+}
+
+export function playRoute(pathname, config) {
+  if (!config?.build || !config.site) return null;
+  if (pathname.startsWith(ENGINE)) {
+    const [build, ...parts] = pathname.slice(ENGINE.length).split('/');
+    const selected = configForBuild(config, build);
+    if (!selected) return null;
+    const path = parts.join('/') || 'index.html';
+    if (path.startsWith('ui-data/') || path.startsWith('export/')) return externalRoute('/' + path, selected);
+    return safe(path) ? { root: 'site', path, key: selected.site + path } : null;
+  }
+  if (pathname.startsWith('/ui/') && !pathname.startsWith('/ui/bf2017/')) {
+    const path = 'ui/' + pathname.slice('/ui/'.length);
+    return safe(path) ? { root: 'site', path, key: config.site + path } : null;
+  }
+  return externalRoute(pathname, config);
 }
 
 // an R2 read, asked once again when it throws; null for a key the bucket hasn't got
@@ -119,16 +134,42 @@ export async function servePlay(request, env, config, manifests, ctx = null, cac
   if (url.pathname === ENGINE + 'sw.js' && config?.build) return engineWorkerScript();
   // Public entry addresses and an older build's page lead to the current build, with the query intact. The build
   // directory needs its trailing slash: otherwise the page's relative modules and assets resolve outside it.
-  // These redirects name a moving build, so they are never cached. An old build's other files stay unrouted.
+  // These redirects name a moving build, so they are never cached. Explicitly retained files remain available
+  // to already-open pages; fresh navigation to a build directory still starts the current version.
   const entry = url.pathname === '/battlefront' || url.pathname === '/battlefront/';
-  const named = /^\/battlefront\/engine(?:\/([^/]+))?\/?$/.exec(url.pathname);
-  if (config?.build && (entry || (named && named[1] !== 'sw.js' && (named[1] !== config.build || !url.pathname.endsWith('/')))))
+  const named = /^\/battlefront\/engine(?:\/([^/]+))?(?:\/(index\.html))?\/?$/.exec(url.pathname);
+  if (config?.build && (entry || (named && named[1] !== 'sw.js' && (named[1] !== config.build || (!url.pathname.endsWith('/') && !named[2])))))
     return new Response(null, { status: 302, headers: { location: new URL(`${ENGINE}${config.build}/${url.search}`, url).toString(), 'cache-control': 'no-store' } });
+
+  // Older exports request these roots by absolute URL. Redirect each request to the build that initiated it,
+  // so relative imports use the final versioned module URL and HTTP caches cannot mix two generations at /ui/.
+  // Same-origin referrers identify a published build only; they are never used as an R2 prefix or authorization.
+  if (url.pathname.startsWith('/ui/') || url.pathname.startsWith('/ui-data/') || url.pathname.startsWith('/export/')) {
+    let referringBuild = null;
+    try {
+      const referring = new URL(request.headers.get('referer'));
+      if (referring.origin === url.origin) referringBuild = /^\/battlefront\/engine\/([^/]+)\//.exec(referring.pathname)?.[1] ?? null;
+    } catch { /* normal unversioned request */ }
+    if (referringBuild && !url.pathname.startsWith('/ui/bf2017/')) {
+      const selected = configForBuild(config, referringBuild);
+      if (!selected) return new Response('This build is no longer available. Reload to open the current version.', {
+        status: 410, headers: { ...ISOLATED, 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'no-store' },
+      });
+      const target = `${ENGINE}${referringBuild}${url.pathname}`;
+      if (playRoute(target, config)) {
+        if (request.method !== 'GET' && request.method !== 'HEAD') return new Response(null, { status: 405, headers: { ...ISOLATED, allow: 'GET, HEAD' } });
+        return new Response(null, {
+          status: 302, headers: { ...ISOLATED, location: new URL(target + url.search, url).toString(), 'cache-control': 'no-store' },
+        });
+      }
+    }
+  }
   const route = playRoute(url.pathname, config);
   if (!route) return null;
   if (!env.PLAY) return null;
+  const selected = url.pathname.startsWith(ENGINE) ? configForBuild(config, url.pathname.slice(ENGINE.length).split('/')[0]) : config;
   try {
-    return await answer(request, url, route, env, config, manifests, ctx, cache);
+    return await answer(request, url, route, env, selected, manifests, ctx, cache);
   } catch {
     return unavailable();
   }
@@ -189,6 +230,8 @@ async function answer(request, url, route, env, config, manifests, ctx, cache) {
     ...(immutable ? { vary: 'accept-encoding' } : {}),
   });
   if (page) {
+    // Absolute-root requests from the document and its modules must retain the same-origin build path.
+    headers.set('referrer-policy', 'same-origin');
     const etag = `"${String(object.httpEtag).replace(/^W\/|"/g, '')}-${RETURN_VERSION}"`;
     headers.set('etag', etag);
     headers.delete('accept-ranges');

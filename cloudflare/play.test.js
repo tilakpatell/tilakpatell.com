@@ -40,6 +40,58 @@ const files = {
 const ask = (path, headers = {}) => new Request(`https://tilakpatell.com${path}`, { headers });
 const serve = (path, headers, env = { PLAY: bucket(files) }) => servePlay(ask(path, headers), env, config, new Map());
 
+describe('an open build across a deployment', () => {
+  const previous = { site: 'sites/b0/', uiData: 'sites/b0/ui-data/', export: 'extract-old/', exportAllow: ['fonts/'] };
+  const next = { ...config, uiData: 'sites/b1/ui-data/', retainedBuilds: { b0: previous } };
+  const oldFiles = { ...files,
+    'sites/b0/manifest.json': JSON.stringify(manifest),
+    'sites/b0/runtime/world-play.mjs': 'old runtime',
+    'sites/b0/ui/main.js': 'old UI',
+    'sites/b0/ui-data/screens.json': 'old rules',
+    'sites/b1/ui-data/screens.json': 'new rules',
+    'extract-old/fonts/a.ttf': 'old font',
+    'sites/unpublished/manifest.json': JSON.stringify(manifest),
+    'sites/unpublished/ui/main.js': 'private unadopted UI',
+  };
+
+  it('keeps only explicitly retained build files available and manifest-checked', async () => {
+    const env = { PLAY: bucket(oldFiles) }, manifests = new Map();
+    for (const [path, expected] of [['runtime/world-play.mjs', 'old runtime'], ['ui/main.js', 'old UI'], ['ui-data/screens.json', 'old rules'], ['export/fonts/a.ttf', 'old font']]) {
+      const res = await servePlay(ask(`${ENGINE}b0/${path}`), env, next, manifests);
+      expect(res?.status, path).toBe(200);
+      expect(await res.text()).toBe(expected);
+    }
+    expect((await servePlay(ask(`${ENGINE}b0/not-listed.js`), env, next, manifests)).status).toBe(404);
+    expect(await servePlay(ask(`${ENGINE}unpublished/ui/main.js`), env, next, manifests)).toBeNull();
+    expect(env.PLAY.gets.some(key => key.startsWith('sites/unpublished/'))).toBe(false);
+    expect((await servePlay(ask(`${ENGINE}b0/`), env, next, manifests)).headers.get('location')).toBe(`https://tilakpatell.com${ENGINE}b1/`);
+    expect((await servePlay(ask(`${ENGINE}b0/index.html?from=/galaxy/hoth`), env, next, manifests)).headers.get('location')).toBe(`https://tilakpatell.com${ENGINE}b1/?from=/galaxy/hoth`);
+    expect((await servePlay(ask(`${ENGINE}b1/index.html`), env, next, manifests)).status).toBe(200);
+  });
+
+  it('pins buildless UI, rulebooks and export requests to the referring engine build', async () => {
+    const env = { PLAY: bucket(oldFiles) }, manifests = new Map();
+    for (const path of ['/ui/main.js', '/ui-data/screens.json', '/export/fonts/a.ttf']) {
+      for (const build of ['b0', 'b1']) {
+        const res = await servePlay(ask(path + '?v=1', { referer: `https://tilakpatell.com${ENGINE}${build}/runtime/world-play.mjs` }), env, next, manifests);
+        expect(res.status).toBe(302);
+        expect(res.headers.get('location')).toBe(`https://tilakpatell.com${ENGINE}${build}${path}?v=1`);
+        expect(res.headers.get('cache-control')).toBe('no-store');
+      }
+    }
+    const unavailable = await servePlay(ask('/ui/main.js', { referer: `https://tilakpatell.com${ENGINE}unpublished/` }), env, next, manifests);
+    expect(unavailable.status).toBe(410);
+    expect(unavailable.headers.get('cache-control')).toBe('no-store');
+    for (const referer of ['', 'https://elsewhere.test/battlefront/engine/b0/', 'https://tilakpatell.com/galaxy']) {
+      const res = await servePlay(ask('/ui/main.js', { referer }), env, next, manifests);
+      expect(res.status).toBe(200);
+      expect(await res.text()).toBe('export {}');
+    }
+    const post = new Request('https://tilakpatell.com/ui/main.js', { method: 'POST', headers: { referer: `https://tilakpatell.com${ENGINE}b0/` } });
+    expect((await servePlay(post, env, next, manifests)).status).toBe(405);
+  });
+});
+
 describe('the play site’s routes', () => {
   it('maps the build’s page and files, and refuses another build or a climb', () => {
     expect(playRoute(`${ENGINE}b1/`, config)).toEqual({ root: 'site', path: 'index.html', key: 'sites/b1/index.html' });
@@ -81,6 +133,7 @@ describe('serving the play site', () => {
   it('asks the page again each visit, and answers its ETag with a 304', async () => {
     const page = await serve(`${ENGINE}b1/`);
     expect(page.headers.get('cache-control')).toContain('max-age=0');
+    expect(page.headers.get('referrer-policy')).toBe('same-origin');
     const again = await serve(`${ENGINE}b1/`, { 'if-none-match': page.headers.get('etag') });
     expect(again.status).toBe(304);
   });
