@@ -1,3 +1,4 @@
+import { setImmediate } from 'node:timers';
 import { describe, expect, it, vi } from 'vitest';
 import { FILES, WORKER_SOURCE, cacheKeep, engineWorker, following, registerEngineCache, warmEngineBuild, warmOrder } from './engineCache.js';
 
@@ -173,6 +174,47 @@ describe('the engine’s build kept on the visitor’s disk', () => {
     // (the engine's ask, after: the disk's)
     expect((await w.get(dir + 'scene-m-0.res')).body).toBe(`bytes of ${ORIGIN}${dir}scene-m-0.res`);
     expect(w.asked.filter((u) => u.endsWith('scene-m-0.res'))).toHaveLength(1);
+  });
+
+  it('stops speculative downloads after a cache write fails, while demanded files still load', async () => {
+    const dir = '/battlefront/engine/main-da7a51b3/';
+    const files = Array.from({ length: 12 }, (_, i) => `scene-m-${i}.res`);
+    const w = worker(undefined, files);
+    w.self.caches.open = async () => ({
+      match: async (request) => urlOf(request).endsWith(files[10]) ? { status: 200, body: 'already cached' } : null,
+      put: async () => { throw new DOMException('Disk full', 'QuotaExceededError'); },
+    });
+    expect((await w.get(dir + files[0], { headers: { 'x-tp-warm': '1' } })).status).toBe(502);
+    const before = w.asked.length;
+    expect((await w.get(dir + files[1])).body).toBe(`bytes of ${ORIGIN}${dir}${files[1]}`);
+    expect((await w.get(dir + files[10])).body).toBe('already cached');
+    expect(w.asked.slice(before)).toEqual([ORIGIN + dir + files[1]]);
+  });
+
+  it.each(['quota', 'uncontrolled', 'network'])('stops page warming after %s failure instead of requesting the whole build', async (failure) => {
+    const dir = '/battlefront/engine/main-da7a51b3/';
+    const files = Array.from({ length: 12 }, (_, i) => `scene-m-${i}.res`);
+    const w = worker(undefined, files);
+    w.self.caches.open = async () => ({ match: async () => null, put: async () => { throw new DOMException('Disk full', 'QuotaExceededError'); } });
+    const asked = [], cancelled = [];
+    const win = {
+      navigator: { serviceWorker: { controller: {} } },
+      location: { pathname: dir },
+      document: { body: { classList: { contains: () => true } } },
+      MutationObserver: class { observe() {} },
+      fetch: async (url, init) => {
+        if (url.endsWith('tp-files.json')) return { status: 200, json: async () => ({ files }) };
+        asked.push(url);
+        if (failure === 'network') throw new TypeError('Failed to fetch');
+        if (failure === 'uncontrolled') return { status: 200, body: { cancel: async () => cancelled.push(url) } };
+        return w.get(url, { headers: init.headers });
+      },
+    };
+    warmEngineBuild(win, warmOrder);
+    await new Promise((resolve) => setImmediate(resolve));
+    expect(asked).toEqual(files.slice(0, 4).map((file) => dir + file));
+    if (failure === 'quota') expect(w.asked).toHaveLength(4);
+    if (failure === 'uncontrolled') expect(cancelled).toEqual(asked);
   });
 
   it('orders a round’s files as the loader asks for them, the page’s own left out', () => {

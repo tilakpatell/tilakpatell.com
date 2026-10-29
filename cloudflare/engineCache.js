@@ -67,6 +67,18 @@ export function engineWorker(self, keep, follow) {
   const onDisk = new Set();
   const coming = new Map();
   const same = { ignoreVary: true };
+  let writable = true;
+  const put = async (cache, request, response) => {
+    try {
+      await cache.put(request, response);
+      return true;
+    } catch {
+      // A quota or disk error makes speculative downloads useless. Keep existing cache reads and demanded network
+      // requests working, but stop trying to fill this worker's cache until a fresh worker can try again.
+      writable = false;
+      return false;
+    }
+  };
   // (the engine's loader asks again for nothing: a dropped answer, or the Worker's 503, is asked again here, after
   // half a second, then one and a half, then four; a 404 is the answer)
   const network = async (request) => {
@@ -104,6 +116,7 @@ export function engineWorker(self, keep, follow) {
   // a file fetched onto the disk, once: true when it's there
   const fill = (cache, build, url) => {
     if (onDisk.has(url)) return Promise.resolve(true);
+    if (!writable) return Promise.resolve(false);
     if (!coming.has(url))
       coming.set(
         url,
@@ -111,7 +124,7 @@ export function engineWorker(self, keep, follow) {
           if (!(await cache.match(url, same))) {
             const response = await network(url);
             if (response.status !== 200) return false;
-            await cache.put(url, response);
+            if (!(await put(cache, url, response))) return false;
             await prune(build);
           }
           onDisk.add(url);
@@ -170,10 +183,10 @@ export function engineWorker(self, keep, follow) {
         }
         if (hit) return hit;
         const response = await network(request);
-        if (response.status === 200)
+        if (response.status === 200 && writable)
           event.waitUntil(
             (async () => {
-              await cache.put(request, response.clone());
+              if (!(await put(cache, request, response.clone()))) return;
               onDisk.add(dir + kept.path);
               await prune(kept.build);
             })().catch(() => {}),
@@ -227,13 +240,16 @@ export function warmEngineBuild(win, order) {
     if (!nav.serviceWorker.controller) await new Promise((r) => nav.serviceWorker.addEventListener('controllerchange', r, { once: true }));
     const list = await win.fetch(dir + 'tp-files.json').then((r) => (r.status === 200 ? r.json() : { files: [] }));
     const files = order(list.files ?? []);
-    let next = 0;
+    let next = 0, stopped = false;
     const lane = async () => {
-      while (next < files.length) {
+      while (!stopped && next < files.length) {
         const path = files[next++];
         // (a 200 is a file sent whole, the worker not there: its bytes aren't wanted here)
         const r = await win.fetch(dir + path, { headers: { 'x-tp-warm': '1' } }).catch(() => null);
         if (r?.status === 200) r.body?.cancel?.().catch?.(() => {});
+        // Only 204 confirms the bytes were cached. Stop every lane after a failed warm or absent worker instead
+        // of fetching the rest of a multi-gigabyte build that cannot be kept. Already-started requests may finish.
+        if (r?.status !== 204) stopped = true;
       }
     };
     await Promise.all([lane(), lane(), lane(), lane()]);
