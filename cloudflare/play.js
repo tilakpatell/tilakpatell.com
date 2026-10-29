@@ -172,8 +172,10 @@ async function answer(request, url, route, env, config, manifests, ctx, cache) {
   }
   const cacheable = cache && immutable && request.method === 'GET' && whole;
   if (cacheable) {
-    const hit = await cache.match(request);
-    if (hit) return hit;
+    try {
+      const hit = await cache.match(request);
+      if (hit) return hit;
+    } catch { /* The edge cache is optional; the manifest-checked R2 read still answers. */ }
   }
   if (route.root === 'site' && !(await listed(env, config, manifests)).has(route.path)) return isolatedNotFound();
   const page = route.root === 'site' && route.path === 'index.html';
@@ -208,7 +210,14 @@ async function answer(request, url, route, env, config, manifests, ctx, cache) {
   headers.set('content-length', String(object.size));
   const response = new Response(request.method === 'HEAD' ? null : object.body, { status: 200, headers });
   if (cacheable) {
-    const put = cache.put(request, response.clone());
+    const copy = response.clone();
+    const put = (async () => {
+      try { await cache.put(request, copy); }
+      catch {
+        // Abandon the failed cache branch without awaiting the caller's still-unread body.
+        try { copy.body?.cancel().catch(() => {}); } catch { /* already consumed or locked */ }
+      }
+    })();
     if (ctx) ctx.waitUntil(put);
     else await put;
   }
