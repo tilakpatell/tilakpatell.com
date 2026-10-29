@@ -8,6 +8,7 @@ import http from 'node:http';
 import { pathToFileURL } from 'node:url';
 import { chromium } from 'playwright-core';
 import { adopted } from './lib/bf2web-site.mjs';
+import { optionalPlayPath } from './lib/bf2web-smoke.mjs';
 
 const args = process.argv.slice(2), option = (name, fallback) => args.includes(name) ? args[args.indexOf(name) + 1] : fallback;
 const withServiceWorker = args.includes('--service-worker');
@@ -95,6 +96,12 @@ try {
   assert.deepEqual(report.result, { value: { ui: 'old', dependency: 'old', rules: 'old', font: 'old', late: 'old' } });
   assert.deepEqual(report.late, { value: 'old' });
   assert.equal(requests.some(row => row.path.includes('/engine/new/')), false);
+  report.backdrop = await page.evaluate(async () => {
+    const response = await globalThis.fetch('/ui-data/backdrop/main.jpg');
+    return { status: response.status, url: response.url };
+  });
+  assert.equal(report.backdrop.status, 404);
+  assert.ok(optionalPlayPath(new URL(report.backdrop.url).pathname), 'a redirected optional backdrop must remain optional in the publication smoke check');
   const fresh = await context.newPage();
   await fresh.goto(`http://127.0.0.1:${server.address().port}/battlefront/engine/new/`);
   await fresh.waitForFunction(() => globalThis.ready === true);
