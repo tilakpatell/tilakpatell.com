@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { RETURN_VERSION, returnFrom, watchReturn, withReturn } from './playReturn.js';
 
 // a page's bones: elements as records, the body's class watched as the play page sets it
-function page() {
+function page({ batchMutations = false } = {}) {
   const observers = [];
   const assigned = [];
   const copied = [];
@@ -32,10 +32,18 @@ function page() {
     },
     __playFlow: { state: 'boot', sessions: [] },
   };
+  let scheduled = false;
   const state = (s) => {
     win.__playFlow.state = s;
     body.className = `play-${s}`;
-    for (const o of observers) o.fn();
+    if (!batchMutations) for (const o of observers) o.fn();
+    else if (!scheduled) {
+      scheduled = true;
+      queueMicrotask(() => {
+        scheduled = false;
+        for (const o of observers) o.fn();
+      });
+    }
   };
   return { win, body, head, observers, assigned, copied, state };
 }
@@ -79,6 +87,36 @@ describe('the way back from the engine’s page', () => {
     p.win.__playFlow.sessions.push({ endReason: 'quit', passed: true });
     p.state('menu');
     expect(p.assigned).toEqual([]);
+  });
+
+  it('returns after a completed Quit when menu and the next preload batch into one observer callback', async () => {
+    const p = page({ batchMutations: true });
+    watchReturn(p.win, returnFrom('?from=/galaxy/hoth'));
+    // A requested Quit has not completed shutdown and has no session record yet.
+    p.state('ending');
+    await Promise.resolve();
+    expect(p.assigned).toEqual([]);
+    // world-play.finish() appends the completed record, then synchronously changes menu -> loading.
+    p.win.__playFlow.sessions.push({ endReason: 'quit', passed: true });
+    p.state('menu');
+    p.state('loading');
+    expect(p.assigned).toEqual([]);
+    await Promise.resolve();
+    expect(p.assigned).toEqual(['/#/galaxy/hoth']);
+    p.state('menu');
+    await Promise.resolve();
+    expect(p.assigned).toEqual(['/#/galaxy/hoth']);
+  });
+
+  it.each(['failed', 'quit'])('retains a completed %s failure under batched mutations without leaving the page', async (endReason) => {
+    const p = page({ batchMutations: true });
+    watchReturn(p.win, returnFrom('?from=/galaxy/hoth'));
+    p.state('ending');
+    p.win.__playFlow.sessions.push({ endReason, passed: false, error: 'Error: runtime shutdown failed' });
+    p.state('menu');
+    await Promise.resolve();
+    expect(p.assigned).toEqual([]);
+    expect(p.body.children.find((c) => c.className === 'tp-failed')?.textContent).toBe('The round stopped: Error: runtime shutdown failed');
   });
 
   it('keeps a failed round’s reason up, and copies it with the GPU the browser gave', async () => {

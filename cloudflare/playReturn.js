@@ -65,15 +65,16 @@ export function watchReturn(win, back) {
   };
   let seen = 0;
   new win.MutationObserver(() => {
-    const flow = win.__playFlow;
-    if (flow?.state !== 'menu') return;
-    const sessions = flow.sessions ?? [];
+    // finish() appends only after the instance shuts down. Its menu -> preload/loading transitions can share a
+    // MutationObserver delivery, so the completed record, not the transient current state, is the return signal.
+    const sessions = win.__playFlow?.sessions ?? [];
     if (sessions.length === seen) return;
     seen = sessions.length;
     const last = sessions.at(-1);
-    if (last?.endReason === 'quit') {
+    if (last?.passed === false) failed(last);
+    else if (last?.endReason === 'quit') {
       if (back.onQuit) win.location.assign(back.to);
-    } else if (last && last.passed === false) failed(last);
+    }
   }).observe(doc.body, { attributes: true, attributeFilter: ['class'] });
 }
 
