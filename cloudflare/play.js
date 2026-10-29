@@ -117,6 +117,11 @@ const engineWorkerScript = () =>
 export async function servePlay(request, env, config, manifests, ctx = null, cache = null) {
   const url = new URL(request.url);
   if (url.pathname === ENGINE + 'sw.js' && config?.build) return engineWorkerScript();
+  // /battlefront/engine with no build named, or an older build's page: the current build's page, with the address's
+  // query (the owner, 2026-10-29: the bare address opened the site's old pages). An old build's other files stay unrouted.
+  const named = /^\/battlefront\/engine(?:\/([^/]+))?\/?$/.exec(url.pathname);
+  if (config?.build && named && named[1] !== config.build && named[1] !== 'sw.js')
+    return Response.redirect(new URL(`${ENGINE}${config.build}/${url.search}`, url).toString(), 302);
   const route = playRoute(url.pathname, config);
   if (!route) return null;
   if (!env.PLAY) return null;
