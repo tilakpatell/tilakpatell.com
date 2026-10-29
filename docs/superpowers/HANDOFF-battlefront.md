@@ -11,6 +11,7 @@ The owner’s export of the game (gameplay records as EBX JSON, MeshSets, clips,
 ### Landed
 
 - **Hoth is `bf2-web`’s** ([the decision](../decisions/2026-10-28-hoth-on-bf2-web.md)). A browser that can run it goes from `/battlefront/hoth` to `bf2-web`’s exported play site (its engine in WebAssembly, its WebGPU renderer and lighting, its front end, bots, combat and round), served by the Worker from the private bucket at `/battlefront/engine/<build>/` (`cloudflare/play.js`, `src/data/bf2web/play.json`, `src/components/battlefront/engine.js`). A browser that can’t is told why, on `/battlefront` (`src/pages/Battlefront.jsx`); the JS port of `bf2-web`’s rules that was to run the site’s world for it went with that world on 2026-10-29.
+- **Hoth’s free roam, on a button** (2026-10-29). Flying into Hoth or landing on it opens the engine (`src/components/galaxy/gameLevels.js`’s `GAME_MENU`). The panel’s “Free roam on Hoth” and “Free roam at Echo Base” and the briefing’s “Free roam on Hoth” go to the galaxy’s own Hoth (`/galaxy/hoth/surface?mode=free`), whose mode menu leads with Play Battlefront, back to the engine (`surface/modes.js`). The site’s own Hoth missions (the first transport, its assault, the Heroes vs Villains and Blast arenas) stay in their tables, withheld by `surface/missions/index.js`’s `missionOf` on a world the engine plays (`freeRoamOnly`).
 
 ### Left
 

@@ -294,7 +294,7 @@ export default function Galaxy() {
   const onCrash = useCallback(
     (id) => {
       if (!id || !canLand(id) || leaving) return false;
-      // (a world on the game's own level: its menu, and nothing of the surface fetched)
+      // (a world bf2-web's engine plays: the engine's menu, and nothing of the surface fetched)
       const { to, game } = wayDown(id);
       if (!game) prefetchSurface();
       setLeaving({ to, crash: true });
@@ -317,11 +317,12 @@ export default function Galaxy() {
   const landing = usePrepareProgress(surfaceModule); // (the surface's prepare, for Land's loading screen)
   const landingWait = usePrepareWait(surfaceModule, landing, Boolean(leaving?.prep)); // (and why, once it holds)
   const land = useCallback(
-    (id, district = null) => {
+    (id, district = null, how = {}) => {
       if (!canLand(id) || leaving) return;
       audioContext();
-      const { to, game } = wayDown(id, district);
-      // (a world on the game's own level lands in the game's menu: by the route, with no surface made or handed over)
+      const { to, game } = wayDown(id, district, how);
+      // (a world bf2-web's engine plays lands in the engine's menu: by the route, with no surface made or handed over;
+      // its free roam, how.free, is the surface's like any world's)
       if (game) {
         leave(to, { land: true });
         return;
@@ -365,8 +366,6 @@ export default function Galaxy() {
       return;
     }
     prefetchSurface();
-    // (the route's own page first: GalaxyLanding.jsx, which asks for the surface's)
-    import('./GalaxyLanding').catch(() => {});
     import('./GalaxySurface').catch(() => {});
   }, [at, current]);
 
@@ -607,7 +606,7 @@ export default function Galaxy() {
         onLeave={() => leave('/universe/starwars', { jump: true })}
         found={found}
         onBoard={(path) => leave(path)}
-        onLand={canLand(sys.id) ? (district) => land(sys.id, district) : null}
+        onLand={canLand(sys.id) ? (district, how) => land(sys.id, district, how) : null}
         districts={SITES[sys.id]?.districts ?? []}
         tucked={tucked}
         onTuck={tuck}

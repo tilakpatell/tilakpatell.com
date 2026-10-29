@@ -37,6 +37,7 @@ import { GROUNDS } from './arenas';
 import { hvvMission } from './hvv';
 import { blastMission } from './blast';
 import { siteOf } from '../sites';
+import { freeRoamOnly } from '../../gameLevels';
 
 export const MISSIONS = {
   endor: {
@@ -410,7 +411,9 @@ for (const system of GROUNDS) {
   list.blast = blastMission(system);
 }
 
-export const missionOf = (system, id) => MISSIONS[system]?.[id] ?? null;
+// (none on a world bf2-web's engine plays: its surface is free roam, and the
+// engine's round its battle, gameLevels.js; its rows stay, withheld)
+export const missionOf = (system, id) => (freeRoamOnly(system) ? null : (MISSIONS[system]?.[id] ?? null));
 
 // What of a site a mission may lay its own over while it runs (the Purge
 // Planet's night, the snakes' shelling): the look of it, never its land.

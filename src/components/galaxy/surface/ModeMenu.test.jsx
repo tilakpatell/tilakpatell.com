@@ -5,12 +5,12 @@ import { modesFor } from './modes';
 import { tilesFor } from '../../../lib/bf2017/films';
 
 describe('the mode menu', () => {
-  const html = renderToStaticMarkup(<ModeMenu place="Hoth" cards={modesFor('hoth')} onPick={() => {}} onDeploy={() => {}} onClose={() => {}} onAsk={() => {}} />);
+  const html = renderToStaticMarkup(<ModeMenu place="Endor" cards={modesFor('endor')} onPick={() => {}} onDeploy={() => {}} onClose={() => {}} onAsk={() => {}} />);
   it('shows every card, the live ones to play and the rest with why', () => {
-    for (const c of modesFor('hoth')) expect(html).toContain(c.name);
+    for (const c of modesFor('endor')) expect(html).toContain(c.name);
     expect(html).toContain('is-live');
-    // (a mode the level has and no mission on the site yet: Hoth's hero arena, with no rows for it)
-    const soon = renderToStaticMarkup(<ModeMenu place="Hoth" cards={modesFor('hoth', { missions: { hoth: {} } })} onPick={() => {}} onDeploy={() => {}} onClose={() => {}} onAsk={() => {}} />);
+    // (a mode the level has and no mission on the site yet: Endor's hero arena, with no rows for it)
+    const soon = renderToStaticMarkup(<ModeMenu place="Endor" cards={modesFor('endor', { missions: { endor: {} } })} onPick={() => {}} onDeploy={() => {}} onClose={() => {}} onAsk={() => {}} />);
     expect(soon).toContain('is-soon');
     expect(soon).toContain('the site’s map of it isn’t made yet');
     expect(html).toContain('aria-disabled="true"');
@@ -24,7 +24,7 @@ describe('the mode menu', () => {
 
 describe("the mode menu's cards, as the game names them", () => {
   const GAME = { galacticAssault: 'PlanetaryBattles', starfighter: 'SpaceBattle', hvv: 'HeroesVersusVillains', blast: 'Blast' };
-  const cards = modesFor('hoth');
+  const cards = modesFor('endor');
 
   it("names each card with the game's own name for its mode", async () => {
     const { info } = await import('../../../lib/bf2017/ui/info');
@@ -42,18 +42,19 @@ describe("the mode menu's cards, as the game names them", () => {
   it("describes each mode in the game's words", async () => {
     const { info } = await import('../../../lib/bf2017/ui/info');
     expect(cards.find((c) => c.id === 'galacticAssault').about).toBe(info('mode', 'PlanetaryBattles').blurb);
-    const html = renderToStaticMarkup(<ModeMenu place="Hoth" cards={cards} onPick={() => {}} onDeploy={() => {}} onClose={() => {}} />);
+    const html = renderToStaticMarkup(<ModeMenu place="Endor" cards={cards} onPick={() => {}} onDeploy={() => {}} onClose={() => {}} />);
     expect(html).toContain(info('mode', 'SpaceBattle').blurb);
   });
 
   it("writes the Land button's line in the same names", async () => {
     const { landLine } = await import('./landLine');
     const { systemById } = await import('../systems');
-    for (const name of landLine(systemById('hoth')).split(' · ')) expect(cards.map((c) => c.name)).toContain(name);
+    for (const name of landLine(systemById('endor')).split(' · ')) expect(cards.map((c) => c.name)).toContain(name);
   });
 });
 
 describe("the mode menu, laid out as the game's multiplayer screen", () => {
+  // (Hoth's, as it is: bf2-web's engine in the lead tile, free roam the rest)
   const cards = modesFor('hoth');
   const draw = (list = cards) => renderToStaticMarkup(<ModeMenu place="Hoth" cards={list} onPick={() => {}} onDeploy={() => {}} onClose={() => {}} onAsk={() => {}} />);
   const between = (html, from, to) => html.slice(html.indexOf(from), html.indexOf(to));

@@ -5,7 +5,7 @@ import { useDocumentTitle } from '../lib/hooks';
 import { audioContext } from '../lib/audio';
 import { FILMS, SYSTEMS, eraById, eraOf, filmLabel, parseSystem, systemById, yearLabel } from '../components/galaxy/systems';
 import { canLand } from '../components/galaxy/surface/sites';
-import { landsOnSurface } from '../components/galaxy/gameLevels';
+import { freeRoamOnly, wayDown } from '../components/galaxy/gameLevels';
 import { modesFor } from '../components/galaxy/surface/modes';
 import { starfighterAt } from '../components/galaxy/surface/missions/starfighterMaps';
 import { CRAWLS } from '../components/galaxy/crawls';
@@ -99,9 +99,10 @@ export default function GalaxyMission() {
                   <RiFilmLine className="h-4 w-4" aria-hidden="true" /> Play its opening crawl
                 </button>
               )}
-              {canLand(sys.id) && landsOnSurface(sys.id) && (
-                <Link to={`/galaxy/${sys.id}/surface`} className="btn btn-ghost">
-                  <RiArrowDownLine className="h-4 w-4" aria-hidden="true" /> Land on {sys.id === 'bespin' ? 'Cloud City' : sys.name} and look round
+              {/* (a world bf2-web's engine plays: its surface is free roam, on a button of its own, gameLevels.js) */}
+              {canLand(sys.id) && (
+                <Link to={freeRoamOnly(sys.id) ? wayDown(sys.id, null, { free: true }).to : `/galaxy/${sys.id}/surface`} className="btn btn-ghost">
+                  <RiArrowDownLine className="h-4 w-4" aria-hidden="true" /> {freeRoamOnly(sys.id) ? `Free roam on ${sys.name}` : `Land on ${sys.id === 'bespin' ? 'Cloud City' : sys.name} and look round`}
                 </Link>
               )}
               <button type="button" className="btn btn-ghost" onClick={() => navigate(`/galaxy/${sys.id}`)}>
@@ -157,8 +158,8 @@ export default function GalaxyMission() {
           </section>
         </div>
 
-        {/* what's played down there, as the landing's menu has it (modes.js); a world that lands in the game's own menu has no such menu (gameLevels.js) */}
-        {canLand(sys.id) && landsOnSurface(sys.id) && (
+        {/* what's played down there, as the landing's menu has it (modes.js; on a world bf2-web's engine plays, the engine and free roam) */}
+        {canLand(sys.id) && (
           <section className="mission-card" aria-labelledby="mission-modes">
             <h2 id="mission-modes" className="mission-h">
               Down on {sys.name}

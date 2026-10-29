@@ -3,7 +3,7 @@ import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { BLOOM } from '../../lib/three/bloom';
-import { landsOnSurface } from '../galaxy/gameLevels';
+import { freeRoamOnly } from '../galaxy/gameLevels';
 import { LOOK_FOLDERS, oklabDistance, validateLook } from './looks';
 
 const COMPONENTS = fileURLToPath(new URL('..', import.meta.url));
@@ -85,10 +85,10 @@ describe('every world says its art', () => {
     for (const { folder, routes } of LOOK_FOLDERS) {
       expect(existsSync(join(COMPONENTS, folder)), folder).toBe(true);
       expect(routes.length, folder).toBeGreaterThan(0);
-      // (a route that draws the folder: a game world's surface address only sends on to the game's menu)
+      // (a route that draws the folder: a world the engine plays is free roam on its surface, so no mission there)
       for (const r of routes) {
-        const system = /^\/galaxy\/([^/]+)\/surface/.exec(r)?.[1];
-        if (system) expect(landsOnSurface(system), `${folder}: ${r}`).toBe(true);
+        const system = /^\/galaxy\/([^/?]+)\/surface/.exec(r)?.[1];
+        if (system && freeRoamOnly(system)) expect(r, `${folder}: ${r}`).not.toMatch(/[?&](mission|mode)=(?!free\b)/);
       }
     }
     expect([...EXPECTED_MISSING].sort()).toEqual([...new Set(EXPECTED_MISSING)].sort());

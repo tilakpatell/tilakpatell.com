@@ -16,7 +16,7 @@ import { Film } from '../../runtime/hud';
 import { filmFor, tilesFor } from '../../lib/bf2017/films';
 import '../../lib/bf2017/fonts.css';
 import { landLine } from './surface/landLine';
-import { gameMenuFor } from './gameLevels';
+import { freeRoamOnly, gameMenuFor } from './gameLevels';
 
 // Beside the galaxy (a bottom sheet on a phone): the system you're in, as
 // its card: the game's loading film of it (Battlefront II's, where the game
@@ -246,16 +246,22 @@ export default function GalaxyPanel({ system, at, ship, onShip, onHangar = null,
       <div className="mt-4 flex flex-wrap gap-2">
         {crew && onLand && (
           <button type="button" className="btn btn-primary" onClick={() => onLand()}>
-            <RiArrowDownLine className="h-4 w-4" aria-hidden="true" /> Land on {system.id === 'bespin' ? 'Cloud City' : system.name}
+            <RiArrowDownLine className="h-4 w-4" aria-hidden="true" /> {gameMenuFor(system.id) ? `Play Battlefront on ${system.name}` : `Land on ${system.id === 'bespin' ? 'Cloud City' : system.name}`}
+          </button>
+        )}
+        {/* (a world bf2-web's engine plays: Land opens the engine, and its own surface is free roam, on this button: gameLevels.js) */}
+        {crew && onLand && freeRoamOnly(system.id) && (
+          <button type="button" className="btn btn-ghost" onClick={() => onLand(null, { free: true })}>
+            <RiArrowDownLine className="h-4 w-4" aria-hidden="true" /> Free roam on {system.name}
           </button>
         )}
         {/* (what's played down there: the landing's menu, surface/modes.js) */}
-        {crew && onLand && landLine(system) && <p className="w-full text-xs text-muted">Down there: {landLine(system)}{gameMenuFor(system.id) ? '' : ' · Free roam'}</p>}
+        {crew && onLand && landLine(system) && <p className="w-full text-xs text-muted">Down there: {landLine(system)} · Free roam</p>}
         {crew &&
           onLand &&
           districts.map((d) => (
-            <button key={d.id} type="button" className="btn btn-ghost" onClick={() => onLand(d.id)}>
-              <RiArrowDownLine className="h-4 w-4" aria-hidden="true" /> Land at {d.name}
+            <button key={d.id} type="button" className="btn btn-ghost" onClick={() => onLand(d.id, { free: freeRoamOnly(system.id) })}>
+              <RiArrowDownLine className="h-4 w-4" aria-hidden="true" /> {freeRoamOnly(system.id) ? 'Free roam at' : 'Land at'} {d.name}
             </button>
           ))}
         <button type="button" className={crew && onLand ? 'btn btn-ghost' : 'btn btn-primary'} onClick={onMap}>

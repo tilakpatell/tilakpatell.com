@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { matchPath } from 'react-router-dom';
 import { describe, expect, it } from 'vitest';
-import { landsOnSurface } from '../components/galaxy/gameLevels';
+import { freeRoamOnly } from '../components/galaxy/gameLevels';
 import { GUIDES } from '../components/guide/routes';
 import { SHELL_KEYS } from '../lib/visited';
 import { THING_AUDIENCES, THINGS_TO_DO, isDone, todoFor } from './todo';
@@ -43,11 +43,11 @@ describe('the things to do', () => {
     for (const t of THINGS_TO_DO) expect(routed(pats, t.to), `${t.id}: ${t.to}`).toBe(true);
   });
 
-  it('never sends anyone to a surface that is no place any more: a game world’s ground is the game’s own menu', () => {
+  it('never sends anyone to a mission the engine’s world withholds: its surface is free roam, its battle the engine’s', () => {
     for (const t of THINGS_TO_DO)
       for (const to of [t.to, ...visitedOf(t)]) {
         const system = /^\/galaxy\/([^/?]+)\/surface/.exec(to)?.[1];
-        if (system) expect(landsOnSurface(system), `${t.id}: ${to}`).toBe(true);
+        if (system && freeRoamOnly(system)) expect(to, `${t.id}: ${to}`).not.toMatch(/[?&](mission|mode)=(?!free\b)/);
       }
     expect(THINGS_TO_DO.find((t) => t.id === 'galactic-assault')).toMatchObject({ to: '/battlefront/hoth?from=%2Fgalaxy%2Fhoth', done: { visited: '/battlefront/hoth' } });
   });

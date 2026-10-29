@@ -26,18 +26,21 @@ describe('the modes on a world', () => {
     expect(MODES.find((m) => m.id === 'galacticAssault').name).toBe(BOOK.names.modes.galacticAssault.text);
     expect(MODES.find((m) => m.id === 'hvv').name).toBe('Heroes vs Villains');
   });
-  it('Hoth: Galactic Assault, Heroes vs Villains, Blast and its story live (lane H’s rows); a mode the level has and no mission yet, coming', () => {
-    // (Hoth lands in the game's own menu and never on this menu: gameLevels.js, the 2026-10-13 design; so no card here knows the Battlefront world)
-    expect(gameMenuFor('hoth')).toBe('/battlefront/hoth?from=%2Fgalaxy%2Fhoth');
-    for (const c of modesFor('hoth')) for (const to of [c.to, ...(c.options ?? []).map((o) => o.to)]) expect(to ?? '', c.id).not.toMatch(/^\/battlefront\//);
-    expect(card('endor', 'galacticAssault')).toMatchObject({ state: 'live', to: '/galaxy/endor/surface?mode=galacticAssault', mission: 'assault' });
-    expect(card('hoth', 'story')).toMatchObject({ state: 'live', to: '/galaxy/hoth/surface?mission=transport' });
-    expect(card('hoth', 'hvv')).toMatchObject({ state: 'live', to: '/galaxy/hoth/surface?mode=hvv', mission: 'hvv' });
-    expect(card('hoth', 'blast')).toMatchObject({ state: 'live', to: '/galaxy/hoth/surface?mode=blast', mission: 'blast' });
-    expect(card('hoth', 'hvv', { missions: { hoth: {} } })).toMatchObject({ state: 'soon' });
-    expect(card('hoth', 'hvv', { missions: { hoth: {} } }).why).toMatch(/Hoth/);
+  it('Hoth: bf2-web’s engine in the lead tile and free roam the rest, the site’s own missions there withheld', () => {
+    // (Hoth's battle is the engine's, gameLevels.js: the 2026-10-29 decision)
+    expect(card('hoth', 'galacticAssault')).toMatchObject({ state: 'live', name: 'Play Battlefront', to: gameMenuFor('hoth') });
+    for (const id of ['story', 'hvv', 'blast', 'supremacy']) expect(card('hoth', id), id).toMatchObject({ state: 'none', why: expect.stringMatching(/^Free roam only/) });
+    expect(card('hoth', 'free')).toMatchObject({ state: 'live', to: '/galaxy/hoth/surface?mode=free' });
     // (no space level over Hoth)
     expect(card('hoth', 'starfighter').state).toBe('none');
+    // (with no engine there, the site's own rows, as lane H made them; a mode the level has and no mission yet, coming)
+    const own = { engine: {} };
+    expect(card('hoth', 'story', own)).toMatchObject({ state: 'live', to: '/galaxy/hoth/surface?mission=transport' });
+    expect(card('hoth', 'hvv', own)).toMatchObject({ state: 'live', to: '/galaxy/hoth/surface?mode=hvv', mission: 'hvv' });
+    expect(card('hoth', 'blast', own)).toMatchObject({ state: 'live', to: '/galaxy/hoth/surface?mode=blast', mission: 'blast' });
+    expect(card('hoth', 'hvv', { ...own, missions: { hoth: {} } })).toMatchObject({ state: 'soon' });
+    expect(card('hoth', 'hvv', { ...own, missions: { hoth: {} } }).why).toMatch(/Hoth/);
+    expect(card('endor', 'galacticAssault')).toMatchObject({ state: 'live', to: '/galaxy/endor/surface?mode=galacticAssault', mission: 'assault' });
   });
   it('Starfighter Assault: live over Endor and Kamino (lane A’s), coming where the game has the space level and the site has not flown it yet', () => {
     expect(card('endor', 'starfighter')).toMatchObject({ state: 'live', to: '/galaxy/endor?battle=starfighter' });
@@ -48,21 +51,25 @@ describe('the modes on a world', () => {
     expect(card('dagobah', 'galacticAssault').state).toBe('none');
     expect(card('dagobah', 'story').state).toBe('live');
   });
-  it('?mode= and ?mission= come to the same mission', () => {
-    expect(missionForMode('hoth', 'galacticAssault')).toBe('assault');
-    expect(missionOf('hoth', missionForMode('hoth', 'galacticAssault'))).toBe(missionOf('hoth', 'assault'));
+  it('?mode= and ?mission= come to the same mission, and to none on a world the engine plays', () => {
+    expect(missionForMode('endor', 'galacticAssault')).toBe('assault');
+    expect(missionOf('endor', missionForMode('endor', 'galacticAssault'))).toBe(missionOf('endor', 'assault'));
+    expect(missionOf('endor', 'assault')).toBeTruthy();
     expect(missionForMode('hoth', 'story')).toBe('transport');
+    expect(missionOf('hoth', missionForMode('hoth', 'story'))).toBeNull();
+    expect(missionOf('hoth', 'assault')).toBeNull();
     expect(missionForMode('hoth', 'free')).toBeNull();
     expect(missionForMode('hoth', 'nonsense')).toBeNull();
     expect(missionForMode('dagobah', 'galacticAssault')).toBeNull();
   });
   it('a mission of a new kind joins its mode’s card', () => {
-    const missions = { hoth: { arena: { id: 'arena', kind: 'hvv', name: 'Echo Base arena' } } };
-    expect(card('hoth', 'hvv', { missions })).toMatchObject({ state: 'live', to: '/galaxy/hoth/surface?mode=hvv' });
-    expect(missionForMode('hoth', 'hvv', missions)).toBe('arena');
+    const missions = { endor: { arena: { id: 'arena', kind: 'hvv', name: 'Bright Tree arena' } } };
+    expect(card('endor', 'hvv', { missions })).toMatchObject({ state: 'live', to: '/galaxy/endor/surface?mode=hvv' });
+    expect(missionForMode('endor', 'hvv', missions)).toBe('arena');
   });
   it('the Land button’s line, and the ask kept', () => {
-    expect(liveLine('hoth')).toBe('Galactic Assault · Heroes vs Villains · Blast · Story');
+    expect(liveLine('hoth')).toBe('Play Battlefront');
+    expect(liveLine('hoth', { engine: {} })).toBe('Galactic Assault · Heroes vs Villains · Blast · Story');
     expect(readAsk('never')).toBe('never');
     expect(readAsk(null)).toBe('ask');
   });
@@ -85,7 +92,7 @@ describe('the other modes on the menus (lane 6)', () => {
     expect(card('naboo', 'strike').why).toMatch(/Naboo/);
     expect(card('kessel', 'extraction')?.state ?? 'not landable').not.toBe('live');
     expect(card('endor', 'ewokHunt')).toMatchObject({ state: 'soon' });
-    expect(card('hoth', 'supremacy')).toMatchObject({ state: 'soon' });
+    expect(card('hoth', 'supremacy', { engine: {} })).toMatchObject({ state: 'soon' });
     // (and no card where the game has none: Hoth has no Strike)
     expect(card('hoth', 'strike')).toBe(undefined);
   });
