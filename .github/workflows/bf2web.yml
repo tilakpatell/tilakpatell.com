@@ -20,10 +20,10 @@ on:
   workflow_dispatch:
     inputs:
       stage:
-        description: 'build (the desktop makes it), adopt (the site plays it), both, or compress (brotli copies of a build''s binary files)'
+        description: 'build, publish an already validated desktop build, adopt, both, or compress'
         required: true
         type: choice
-        options: [both, build, adopt, compress]
+        options: [both, build, publish, adopt, compress]
         default: both
       sha:
         description: 'build: the bf2-web commit (default its main)'
@@ -31,6 +31,18 @@ on:
         type: string
       build:
         description: 'adopt or compress: the build id, e.g. main-da7a51b3 (adopt: default the newest good one; compress: the one play.json names)'
+        required: false
+        type: string
+      site:
+        description: 'publish: absolute desktop path of an already completed build (its passing build and direct-check reports must be beside it)'
+        required: false
+        type: string
+      ui_data:
+        description: 'publish: absolute desktop path of the matching frontend rulebooks'
+        required: false
+        type: string
+      ui_sha256:
+        description: 'publish: rulebook digest printed by bf2web-publish.mjs --check'
         required: false
         type: string
 permissions:
@@ -61,12 +73,22 @@ jobs:
         id: make
         shell: powershell
         run: |
+          $runnerSettings = Join-Path (Split-Path (Split-Path $env:RUNNER_WORKSPACE -Parent) -Parent) '.env'
+          if ($env:STAGE -eq 'publish') {
+            node "--env-file-if-exists=$runnerSettings" scripts/desktop/bf2web-publish.mjs --site $env:SITE --build $env:BUILD --sha $env:SHA --ui-data $env:UI_DATA --ui-sha256 $env:UI_SHA256
+            exit $LASTEXITCODE
+          }
           $flags = @()
           if ($env:SHA) { $flags += @('--sha', $env:SHA) }
-          node scripts/desktop/bf2web-build.mjs @flags
+          node "--env-file-if-exists=$runnerSettings" scripts/desktop/bf2web-build.mjs @flags
           exit $LASTEXITCODE
         env:
           SHA: ${{ inputs.sha || github.event.client_payload.sha }}
+          STAGE: ${{ inputs.stage }}
+          SITE: ${{ inputs.site }}
+          BUILD: ${{ inputs.build }}
+          UI_DATA: ${{ inputs.ui_data }}
+          UI_SHA256: ${{ inputs.ui_sha256 }}
           R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
           R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
           GCM_INTERACTIVE: never
@@ -76,7 +98,7 @@ jobs:
     # (whatever the build's result: a desktop that can't build, or a build that failed, doesn't keep a good build already
     # in the bucket, one the desktop uploaded by hand among them, from Hoth; adopt takes only main builds that pass the
     # contract)
-    if: ${{ always() && !cancelled() && (github.event_name != 'workflow_dispatch' || (inputs.stage != 'build' && inputs.stage != 'compress')) }}
+    if: ${{ always() && !cancelled() && (github.event_name != 'workflow_dispatch' || (inputs.stage != 'build' && inputs.stage != 'compress')) && (inputs.stage != 'publish' || needs.build.result == 'success') }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
@@ -84,6 +106,10 @@ jobs:
       R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
     steps:
       - uses: actions/checkout@v7
+        with:
+          # Adoption changes only main's build pointer, even when a publisher is
+          # dispatched from its review branch. Never push that branch's code.
+          ref: main
       - uses: actions/setup-node@v7
         with:
           node-version: 22
@@ -94,7 +120,7 @@ jobs:
         # (the build named by hand passed in the environment, never into the script's text)
         run: node scripts/bf2web-adopt.mjs ${BUILD:+--build "$BUILD"}
         env:
-          BUILD: ${{ inputs.build }}
+          BUILD: ${{ inputs.build || needs.build.outputs.build }}
       - name: Open it the way a visitor's browser does
         if: ${{ steps.adopt.outputs.adopted != '' }}
         run: |
@@ -102,7 +128,7 @@ jobs:
           node scripts/bf2web-smoke.mjs
       - name: The play site's tests
         if: ${{ steps.adopt.outputs.adopted != '' }}
-        run: npx vitest run cloudflare src/components/battlefront src/lib/bf2web scripts/lib/bf2web-site.test.mjs scripts/desktop/bf2web-build.test.mjs
+        run: npx vitest run cloudflare src/components/battlefront src/lib/bf2web scripts/lib/bf2web-site.test.mjs scripts/desktop/bf2web-build.test.mjs scripts/desktop/bf2web-publish.test.mjs
       - name: Point the site at it, and deploy
         if: ${{ steps.adopt.outputs.adopted != '' }}
         run: |
