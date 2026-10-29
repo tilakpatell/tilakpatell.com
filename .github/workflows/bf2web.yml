@@ -68,6 +68,8 @@ jobs:
           sparse-checkout: |
             scripts
             src/data/bf2web
+            src/data/bf2017
+            src/lib/bf2web
           persist-credentials: false
       - name: Build, play and upload
         id: make
@@ -166,6 +168,8 @@ jobs:
             scripts
             cloudflare
             src/data/bf2web
+            src/data/bf2017
+            src/lib/bf2web
           persist-credentials: false
       - uses: actions/setup-node@v7
         with:
