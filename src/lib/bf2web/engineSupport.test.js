@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { FEATURES, LIMITS, MIN_MEMORY_GB, WHY, engineSupport, probeAdapter, probeBrowser } from './engineSupport.js';
+import { FEATURES, LIMITS, MIN_CORES, MIN_MEMORY_GB, WHY, engineSupport, probeAdapter, probeBrowser } from './engineSupport.js';
 
-const browser = { gpu: true, isolated: true, sharedMemory: true, wasm: true, deviceMemory: 8, mobile: false };
+const browser = { gpu: true, isolated: true, sharedMemory: true, wasm: true, deviceMemory: 8, cores: null, mobile: false };
 // (a desktop's adapter: more than WebGPU's defaults)
 const limits = { maxSampledTexturesPerShaderStage: 48, maxSamplersPerShaderStage: 16, maxStorageBuffersPerShaderStage: 10, maxStorageTexturesPerShaderStage: 8, maxUniformBuffersPerShaderStage: 12, maxBindGroups: 4 };
 const desktop = { ...browser, features: [...FEATURES, 'shader-f16'], limits };
@@ -38,6 +38,20 @@ describe('whether a browser can run bf2-web’s engine', () => {
     expect(engineSupport({ ...desktop, limits: {} }, { needs }).missing).toHaveLength(Object.keys(needs.limits).length);
   });
 
+  it('holds a build that sends its own floor to it: 16 textures a stage where its renderer packs Hoth’s 23', () => {
+    // (main-32a7a627's, as the adopt step reads them off its page, scripts/lib/bf2web-site.mjs floorNeeds)
+    const floor = { features: ['texture-compression-bc'], limits: { maxTextureDimension2D: 8192, maxBufferSize: 268435456, maxStorageBufferBindingSize: 134217728, maxBindGroups: 4, maxSampledTexturesPerShaderStage: 16, maxSamplersPerShaderStage: 8, maxStorageTexturesPerShaderStage: 5, maxStorageBuffersPerShaderStage: 10, maxUniformBuffersPerShaderStage: 3 } };
+    const laptop = { ...desktop, features: ['texture-compression-bc'], limits: { ...limits, maxSampledTexturesPerShaderStage: 16, maxTextureDimension2D: 16384, maxBufferSize: 2 ** 31, maxStorageBufferBindingSize: 2 ** 31 } };
+    expect(engineSupport(laptop, { needs: floor })).toEqual({ ok: true, missing: [] });
+    expect(engineSupport({ ...laptop, limits: { ...laptop.limits, maxStorageBuffersPerShaderStage: 8 } }, { needs: floor }).missing).toEqual([WHY.limit('maxStorageBuffersPerShaderStage', 8, 10)]);
+  });
+
+  it('turns away a software GPU and too few cores, as the engine’s page does', () => {
+    expect(engineSupport({ ...desktop, software: true }).missing).toEqual([WHY.software]);
+    expect(engineSupport({ ...desktop, cores: MIN_CORES - 2 }).missing).toEqual([WHY.cores]);
+    expect(engineSupport({ ...desktop, cores: MIN_CORES }).ok).toBe(true);
+  });
+
   it('asks no isolation of the page before the engine’s', () => {
     expect(engineSupport({ ...desktop, isolated: false, sharedMemory: false }, { beforeIsolation: true })).toEqual({ ok: true, missing: [] });
   });
@@ -55,11 +69,14 @@ describe('whether a browser can run bf2-web’s engine', () => {
   it('reads the features and limits off the adapter the engine’s page asks for, and none without one', async () => {
     const asked = [];
     const gpu = (adapter) => ({ requestAdapter: async (opts) => (asked.push(opts), adapter) });
-    expect(await probeAdapter(gpu({ features: new Set(FEATURES), limits: { ...limits, maxTextureDimension2D: 16384 } }))).toEqual({ features: FEATURES, limits });
+    expect(await probeAdapter(gpu({ features: new Set(FEATURES), limits: { ...limits, maxTextureDimension2D: 16384, maxComputeInvocationsPerWorkgroup: 1024 } }))).toEqual({ features: FEATURES, limits: { ...limits, maxTextureDimension2D: 16384 }, software: false });
     expect(asked).toEqual([{ powerPreference: 'high-performance' }]);
+    // (a fallback adapter, or SwiftShader named in its info)
+    expect((await probeAdapter(gpu({ features: new Set(), limits, isFallbackAdapter: true }))).software).toBe(true);
+    expect((await probeAdapter(gpu({ features: new Set(), limits, info: { description: 'Google SwiftShader' } }))).software).toBe(true);
     expect(Object.keys((await probeAdapter(gpu({ features: new Set(), limits }))).limits)).toEqual(LIMITS);
-    expect(await probeAdapter(gpu(null))).toEqual({ features: [], limits: {} });
-    expect(await probeAdapter({ requestAdapter: async () => { throw new Error('lost'); } })).toEqual({ features: [], limits: {} });
-    expect(await probeAdapter(undefined)).toEqual({ features: [], limits: {} });
+    expect(await probeAdapter(gpu(null))).toEqual({ features: [], limits: {}, software: false });
+    expect(await probeAdapter({ requestAdapter: async () => { throw new Error('lost'); } })).toEqual({ features: [], limits: {}, software: false });
+    expect(await probeAdapter(undefined)).toEqual({ features: [], limits: {}, software: false });
   });
 });

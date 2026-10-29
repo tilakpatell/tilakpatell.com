@@ -15,15 +15,18 @@
   "mb": 2199,
   "needs": {
     "features": [
-      "dual-source-blending"
+      "texture-compression-bc"
     ],
     "limits": {
-      "maxSampledTexturesPerShaderStage": 23,
+      "maxTextureDimension2D": 8192,
+      "maxBufferSize": 268435456,
+      "maxStorageBufferBindingSize": 134217728,
+      "maxBindGroups": 4,
+      "maxSampledTexturesPerShaderStage": 16,
       "maxSamplersPerShaderStage": 8,
-      "maxStorageBuffersPerShaderStage": 7,
-      "maxStorageTexturesPerShaderStage": 1,
-      "maxUniformBuffersPerShaderStage": 3,
-      "maxBindGroups": 4
+      "maxStorageTexturesPerShaderStage": 5,
+      "maxStorageBuffersPerShaderStage": 10,
+      "maxUniformBuffersPerShaderStage": 3
     }
   }
 }
