@@ -153,7 +153,16 @@ export function floorNeeds(floor = {}, packed = null, requires = {}) {
 
 export function adopted(play, id, manifest, uiData = play.uiData, needs = play.needs ?? null) {
   const bytes = manifest.entries.reduce((n, e) => n + e.bytes, 0);
-  return { ...play, build: id, site: `sites/${id}/`, uiData, mb: Math.round(bytes / 1e6), ...(needs ? { needs } : {}) };
+  // Already-open pages still need their immutable files after the pointer changes. Retain only roots that have
+  // actually been published, never discover/serve arbitrary bucket builds. An intentional retirement removes
+  // that entry from play.json together with its bucket files; ordinary adoption does not expire active pages.
+  const retainedBuilds = { ...play.retainedBuilds };
+  if (play.build && play.build !== id) {
+    const { site, export: exportRoot, uiData: previousUi, exportAllow } = play;
+    retainedBuilds[play.build] = { site, export: exportRoot, uiData: previousUi, exportAllow: [...(exportAllow ?? [])] };
+  }
+  delete retainedBuilds[id];
+  return { ...play, build: id, site: `sites/${id}/`, uiData, mb: Math.round(bytes / 1e6), retainedBuilds, ...(needs ? { needs } : {}) };
 }
 
 // (Cloudflare compresses what it calls text, the wasm and the JSON among it, on its own: 104 MB of engine reaches a
