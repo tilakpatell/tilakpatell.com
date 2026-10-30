@@ -1,9 +1,9 @@
 {
   "_about": "bf2-web's exported play site (WebPort/tools/export-play-site.mjs) as the site serves it: the build in the private bucket bf2017-assets that /battlefront/engine/<build>/ maps to (cloudflare/play.js), and the roots its page asks for by absolute path. build null: no build published, and the engine plays nowhere. export: the game's export as the bucket already holds it (web/, the folder bf2-web's BF2_EXPORT_ROOT names), so DEPLOY.md's extract/ copy isn't needed. mb: what a first visit downloads (the build manifest's totals, 2026-10-28: 104 MB of engine, 2,093 MB of the cooked scene). docs/decisions/2026-10-28-hoth-on-bf2-web.md needs: what the build's programs ask of the visitor's GPU, written by scripts/bf2web-adopt.mjs (lib/bf2web/engineSupport sends to the engine only a GPU that has it). levels: the levels the build plays (its play-config.json's, written by the adopt step); the galaxy opens the engine on the worlds whose ground they are (src/lib/bf2web/levels.js).",
-  "build": "main-c23686c8",
-  "site": "sites/main-c23686c8/",
+  "build": "r1038-11c7e2b0",
+  "site": "sites/r1038-11c7e2b0/",
   "export": "web/",
-  "uiData": "sites/main-c23686c8/ui-data/",
+  "uiData": "sites/r1038-11c7e2b0/ui-data/",
   "levels": [
     "Hoth_01"
   ],
@@ -15,7 +15,7 @@
     "movies/",
     "films/"
   ],
-  "mb": 2151,
+  "mb": 2159,
   "needs": {
     "features": [
       "texture-compression-bc"
@@ -76,6 +76,19 @@
       "site": "sites/r1037-b29f4bf3/",
       "export": "web/",
       "uiData": "sites/r1037-b29f4bf3/ui-data/",
+      "exportAllow": [
+        "fonts/",
+        "strings/",
+        "svg/",
+        "textures/",
+        "movies/",
+        "films/"
+      ]
+    },
+    "main-c23686c8": {
+      "site": "sites/main-c23686c8/",
+      "export": "web/",
+      "uiData": "sites/main-c23686c8/ui-data/",
       "exportAllow": [
         "fonts/",
         "strings/",
