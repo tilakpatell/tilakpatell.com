@@ -101,7 +101,7 @@ jobs:
     # in the bucket, one the desktop uploaded by hand among them, from Hoth; adopt takes only main builds that pass the
     # contract)
     if: ${{ always() && !cancelled() && (github.event_name != 'workflow_dispatch' || (inputs.stage != 'build' && inputs.stage != 'compress')) && (inputs.stage != 'publish' || needs.build.result == 'success') }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04  # Playwright has no chromium for ubuntu-latest (26.04) yet: run 41052884531
     timeout-minutes: 30
     env:
       R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
@@ -156,7 +156,7 @@ jobs:
           BUILD: ${{ steps.adopt.outputs.adopted }}
   compress:
     if: ${{ github.event_name == 'workflow_dispatch' && inputs.stage == 'compress' }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 120
     env:
       R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
