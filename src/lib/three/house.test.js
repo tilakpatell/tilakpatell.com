@@ -307,6 +307,23 @@ describe('a world with its own tone map and an ambient light (the universe map)'
     // (full light: the key and the ambient, over pi)
     expect(house.uniforms.uLookRef.value.g).toBeCloseTo((2 + new THREE.Color(0xb8c4ff).g * 0.4) / Math.PI, 5);
   });
+
+  it('leans the shade it takes toward grey when the look asks, as bright', () => {
+    const scene = new THREE.Scene();
+    const ambient = new THREE.AmbientLight(0x9fb0d8, 0.32);
+    scene.add(ambient, new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshStandardMaterial()));
+    const house = houseOn({ renderer: {}, scene, ambient, toneMap: false, look: { fog: false, grey: 0.8 } });
+    const c = house.uniforms.uLookShadow.value;
+    const blue = new THREE.Color(shadowFor({ hemiSky: 0x9fb0d8, hemi: 0.32 }));
+    expect(c.getHex()).toBe(shadowFor({ hemiSky: 0x9fb0d8, hemi: 0.32, grey: 0.8 }));
+    // (bluer than grey still, but far less than the plain shade; its brightness kept)
+    const spread = (x) => x.b - x.r;
+    expect(spread(c)).toBeGreaterThan(0);
+    expect(spread(c)).toBeLessThan(spread(blue) * 0.3);
+    const lum = (x) => 0.2126 * x.r + 0.7152 * x.g + 0.0722 * x.b;
+    expect(lum(c)).toBeCloseTo(lum(blue), 2);
+    expect(shadowFor({ hemiSky: 0x9fb0d8, hemi: 0.32, grey: 1 })).toBe(new THREE.Color().setScalar(lum(blue)).getHex());
+  });
 });
 
 describe('a world lit by an HDR environment', () => {

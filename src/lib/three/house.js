@@ -29,7 +29,9 @@
 //   houseShader(shader, { fog, ground }, chunks) → { vertexShader, fragmentShader, swapped }
 //
 // A look: { shadow, edge: [from, to], mix, fogLow, fogHigh, fogBelow, halo,
-// fogMix, exposure, fog (false: leave the world's own fog as it is) }. All the materials of one world share one set of uniforms, so a
+// fogMix, exposure, fog (false: leave the world's own fog as it is), grey
+// (houseOn: how far the shade it takes from the sky light leans to grey,
+// shadowFor) }. All the materials of one world share one set of uniforms, so a
 // frame sets them once. Call adopt() after anything else that patches the
 // world's materials (lib/three/groundwork's groundWorld): its shade then
 // replaces their tints, and one shadow colour reaches everything.
@@ -265,8 +267,10 @@ export function createHouse(look = {}) {
 // A shadow colour from a sky light, for a world (or a mood) that gives none
 // of its own: the sky light's hue leaned a third toward violet, as bright as
 // the sky light lets it be: pale lilac under a day sky, deep blue at night,
-// never grey. `mood` is { shadow?, hemiSky (hex), hemi (intensity) }; its own
-// `shadow` wins. Returns a hex colour.
+// never grey. `mood` is { shadow?, hemiSky (hex), hemi (intensity), grey? };
+// its own `shadow` wins; `grey` (0…1) leans the colour that far toward its
+// own grey, as bright (a world drawn as a film's or a game's is, the
+// galaxy's space: a cool grey shade, not a coloured one). Returns a hex colour.
 const VIOLET = new THREE.Color(0x7a6ad8);
 const lumOf = (c) => 0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b;
 export function shadowFor(mood) {
@@ -276,6 +280,7 @@ export function shadowFor(mood) {
   const c = sky.clone().lerp(VIOLET, 0.35);
   const l = lumOf(c);
   if (l > 0) c.multiplyScalar(want / l);
+  if (mood.grey) c.lerp(new THREE.Color(want, want, want), mood.grey);
   return c.getHex();
 }
 
@@ -328,7 +333,7 @@ export function houseOn({ renderer, scene, sun = null, hemi = null, ambient = nu
       if (hex !== seen.hex || sky.intensity !== seen.k) {
         seen.hex = hex;
         seen.k = sky.intensity;
-        house.set({ shadow: shadowFor({ hemiSky: hex, hemi: sky.intensity }) });
+        house.set({ shadow: shadowFor({ hemiSky: hex, hemi: sky.intensity, grey: look.grey }) });
       }
     }
     if (adopt) house.adopt(scene);

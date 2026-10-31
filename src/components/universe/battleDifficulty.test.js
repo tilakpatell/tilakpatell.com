@@ -59,8 +59,8 @@ describe('difficulty', () => {
 describe('the fight round you, at each difficulty', () => {
   const war = WARS.starwars;
   // a pilot circling the attacked objective ship (14 units off it, a turn every nine seconds)
-  const circling = (d, seconds = 60) => {
-    const b = createBattle({ war, attacker: 0, at: [0, 0, 0], axis: [1, 0], perSide: 10, rand: seededRand('difficulty'), tickets: false, tactics: true });
+  const circling = (d, seconds = 60, seed = 'difficulty') => {
+    const b = createBattle({ war, attacker: 0, at: [0, 0, 0], axis: [1, 0], perSide: 10, rand: seededRand(seed), tickets: false, tactics: true });
     b.setYou(0);
     b.setDifficulty(d);
     const ship = b.capitals.find((c) => c.objective);
@@ -74,11 +74,17 @@ describe('the fight round you, at each difficulty', () => {
     return { b, hurt: hurt / seconds };
   };
 
+  // (over six half-minute battles: one battle's dice decide too much of it, one seed
+  // going 0.28 and the next 0.85 of the harder one's on the same code, and
+  // anything that moves in the battle, its objectives' places among them,
+  // deals them again)
   it('hurts a pilot circling the attacked objective a third less at 0.6 than at 1, and no more than a few fighters are on you at once', () => {
-    const one = circling(1);
-    const easy = circling(0.6);
-    expect(easy.hurt).toBeLessThanOrEqual(one.hurt * 0.7);
-    expect(one.hurt).toBeGreaterThan(0);
+    const seeds = ['difficulty', 'a', 'b', 'c', 'd', 'e'];
+    const sum = (d) => seeds.reduce((n, seed) => n + circling(d, 30, seed).hurt, 0);
+    const one = sum(1);
+    const easy = sum(0.6);
+    expect(easy).toBeLessThanOrEqual(one * 0.7);
+    expect(one).toBeGreaterThan(0);
     const hard = circling(1.6, 20);
     expect(hard.b.you.on).toBeLessThanOrEqual(pressureOf(1.6).onYou + 1);
   });

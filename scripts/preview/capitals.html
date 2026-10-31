@@ -1,0 +1,240 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Capitals</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        background: #05070b;
+      }
+      canvas {
+        display: block;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- A capital ship close, as the battles draw it, for scripts/capitals-shot.mjs
+         (through the dev server): galaxy/models.js's own slot (its file for
+         this tier, ?quality=, its tune and its fit), under a sun and a planet's
+         bounce light like a system's, from four places a pilot flies past it:
+         ahead and above, the flank, under the hull, and the bridge tower from
+         astern (or, ?views=nose, its side and top with an arrow along +z, the
+         way it flies; ?views=close, a fighter's eye on its plating and its
+         engines). ?kind=destroyer&quality=high&w=640&h=360&break=gen-port,bridge
+         (`break`: those parts torn off first, galaxy/capitalParts.js; `split`:
+         it broken up and that many seconds on; `hits=1`: the battle's own hit
+         volumes over it, universe/wars.js's SUBSYSTEMS and TURRETS, drawn
+         through the hull: the shield generators red, the bridge magenta, the
+         reactor orange, the batteries yellow) -->
+    <script type="module">
+      import * as THREE from 'three';
+      import { houseOn } from '/src/lib/three/house.js';
+      import { SUBSYSTEMS, TURRETS } from '/src/components/universe/wars.js';
+      import { MODELS, createModels } from '/src/components/galaxy/models.js';
+      import { LENGTH } from '/src/components/galaxy/capitalLook.js';
+      import { detailMap } from '/src/components/galaxy/capitalPlating.js';
+      import { createDamage } from '/src/components/universe/battleDamage.js';
+      import { createDebris } from '/src/components/universe/battleDebris.js';
+      import { LOOK, keyLight, kickerDir } from '/src/components/galaxy/look.js';
+      import { createCapitalShadows } from '/src/components/galaxy/capitalShadow.js';
+
+      const q = new URLSearchParams(location.search);
+      const kind = q.get('kind') ?? 'destroyer';
+      const W = Number(q.get('w') ?? 640);
+      const H = Number(q.get('h') ?? 360);
+      const breaks = (q.get('break') ?? '').split(',').filter(Boolean);
+      const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+      renderer.setSize(W * 2, H * 2);
+      renderer.setScissorTest(true);
+      renderer.outputColorSpace = THREE.SRGBColorSpace;
+      document.body.appendChild(renderer.domElement);
+      const scene = new THREE.Scene();
+      scene.background = new THREE.Color('#03050a');
+      // lit as a system lights its ships (galaxy/scene.js): its sun, a little
+      // ambient, what metal reflects there (its star, a dark sky, a grey-blue
+      // bounce opposite: galaxy/look.js's `space`), the house look over all
+      // of it in space's way (`house`), at the galaxy's exposure (its post
+      // pass leaves what's under 0.8 as drawn: no lift), and the sun's shadow
+      // on the capital (galaxy/capitalShadow.js; ?shadows=0 without)
+      // (Endor's sun, the galaxy's own key from it: lifted, cooled, ./look.js's keyLight)
+      const key = keyLight([0.68, 0.36, 0.64], new THREE.Color('#fff4e2').multiplyScalar(1.25));
+      const sunDir = key.dir;
+      const env = new THREE.Scene();
+      env.add(new THREE.Mesh(new THREE.SphereGeometry(10, 32, 16), new THREE.MeshBasicMaterial({ color: LOOK.space.sky, side: THREE.BackSide })));
+      const star = new THREE.Mesh(new THREE.SphereGeometry(1.5, 16, 8), new THREE.MeshBasicMaterial({ color: new THREE.Color('#fff4e0').multiplyScalar(8) }));
+      star.position.copy(sunDir).multiplyScalar(7);
+      const bounce = new THREE.Mesh(new THREE.SphereGeometry(2.4, 16, 8), new THREE.MeshBasicMaterial({ color: new THREE.Color(...LOOK.space.bounce) }));
+      bounce.position.set(sunDir.x, -sunDir.y * 0.5, sunDir.z).multiplyScalar(-7);
+      env.add(star, bounce);
+      const pm = new THREE.PMREMGenerator(renderer);
+      scene.environment = pm.fromScene(env, 0.02).texture;
+      const sun = new THREE.DirectionalLight(key.colour, LOOK.space.key.intensity);
+      sun.position.copy(sunDir);
+      // (and the kicker from the far side, as a one-sun system has it; not the house's reference)
+      const kicker = new THREE.DirectionalLight(LOOK.space.kicker.colour, LOOK.space.kicker.intensity);
+      kicker.position.copy(kickerDir([0.68, 0.36, 0.64]));
+      const ambient = new THREE.AmbientLight(LOOK.space.ambient, 0.32 * LOOK.space.fill);
+      scene.add(sun, sun.target, kicker, kicker.target, ambient);
+      const shadows = q.get('shadows') === '0' ? null : createCapitalShadows({ renderer, sun, size: 2048 });
+      const house = houseOn({ renderer, scene, sun, ambient, keepExposure: true, look: { fog: false, ...LOOK.house } });
+
+      const models = createModels();
+      const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+      const slot = models.slot(kind, 1, { parts: true });
+      const t0 = performance.now();
+      while (performance.now() - t0 < 180000 && MODELS[kind] && !slot.real) await wait(250);
+      // (and its cut, where it has parts: made in spare time once it's here)
+      const t1 = performance.now();
+      while (performance.now() - t1 < 20000 && !slot.parts) await wait(250);
+      // (and the plating's detail map, baked in its worker)
+      const t2 = performance.now();
+      while (performance.now() - t2 < 20000 && !(detailMap().value?.image?.width > 1)) await wait(250);
+      scene.add(slot.holder);
+      // (?with=xwing: a fighter at its own length hovering over the deck, its shadow on the hull)
+      const withKind = q.get('with');
+      let fighter = null;
+      if (withKind) {
+        const len = LENGTH[kind] ?? 1000;
+        const f = models.slot(withKind, Number(q.get('withSize') ?? 12.5) / len);
+        const t3 = performance.now();
+        while (performance.now() - t3 < 60000 && MODELS[withKind] && !f.real) await wait(250);
+        const ray = new THREE.Raycaster(new THREE.Vector3(0.06, 2, 0.18), new THREE.Vector3(0, -1, 0));
+        slot.holder.updateMatrixWorld(true);
+        const y = ray.intersectObject(slot.holder, true)[0]?.point.y ?? 0;
+        f.holder.position.set(0.06, y + 30 / len, 0.18);
+        scene.add(f.holder);
+        house.adopt(f.holder);
+        fighter = f;
+      }
+      // (?hits=1: each hit volume a sphere of its reach, in the ship's frame, one long, bow to +z)
+      if (q.get('hits') === '1') {
+        const COLOUR = { shieldgen: '#ff3030', bridge: '#ff30ff', reactor: '#ff8000' };
+        const ball = (at, r, colour) => {
+          const geo = new THREE.SphereGeometry(r, 20, 12);
+          for (const mat of [new THREE.MeshBasicMaterial({ color: colour, transparent: true, opacity: 0.45, depthTest: false }), new THREE.MeshBasicMaterial({ color: colour, wireframe: true, depthTest: false })]) {
+            const m = new THREE.Mesh(geo, mat);
+            m.position.set(...at);
+            m.renderOrder = 10;
+            scene.add(m);
+          }
+        };
+        for (const s of SUBSYSTEMS[kind] ?? []) ball(s.at, s.r, COLOUR[s.kind] ?? '#ffffff');
+        // (a battery's reach in the battle: 0.012 of the ship's length, battleCapitals.js)
+        for (const t of TURRETS[kind] ?? []) ball(t, 0.012, '#ffe000');
+      }
+      house.adopt(slot.holder);
+      house.follow?.();
+      // (the LOD's levels by distance: these shots are all close, so the full model)
+      slot.holder.updateMatrixWorld(true);
+      const parts = slot.parts ?? null;
+      // (?split=12: the ship broken up by the battle's own damage, battleDamage.js,
+      // and this many seconds of its sections drifting; ?break=…: those parts torn
+      // off it the same way first)
+      const split = Number(q.get('split') ?? 0);
+      const debris = createDebris(scene, { count: 160 });
+      const fires = { add: () => ({}), unfollow() {} };
+      const damage = createDamage(scene, { fires, flashes: { at() {} }, debris, models });
+      const cap = { id: 1, pos: { x: 0, y: 0, z: 0 }, fwd: { x: 0, y: 0, z: 1 }, up: { x: 0, y: 1, z: 0 }, size: 1, hull: 1, hullMax: 1, spheres: [{ c: { x: 0, y: 0, z: 0 }, r: 0.2 }] };
+      slot.holder.updateMatrixWorld(true);
+      for (const id of breaks) damage.sub(cap, slot, id, { x: 0, y: 0.1, z: -0.3 }, 0.02);
+      if (split) {
+        damage.breakUp(cap, slot);
+        for (let t = 0; t < split; t += 0.25) debris.update(0.25);
+      } else if (breaks.length) for (let t = 0; t < 6; t += 0.25) debris.update(0.25);
+      // (the shards' sparks are the scene's glows; here, only the shards)
+
+      // (?views=nose: the side and the top, an arrow along the way it flies, +z, to check its nose)
+      const nose = q.get('views') === 'nose';
+      if (nose) scene.add(new THREE.ArrowHelper(new THREE.Vector3(0, 0, 1), new THREE.Vector3(0, 0.32, -0.2), 0.55, 0xff3030, 0.1, 0.05));
+      // (?views=close: a fighter's eye, along the deck and by the tower, the plating close)
+      const close = q.get('views') === 'close';
+      // (?views=deck: down on the deck from a fighter's height, at 20, 60, 200 and 800 m, to tune the plating by)
+      const deck = q.get('views') === 'deck';
+      // (?views=windows: beside a pane of the ship's own window strips, at 15, 40, 120 and 400 m, the panes close and their mean far off)
+      const windows = q.get('views') === 'windows';
+      const near = fighter
+        ? (() => {
+            const len = LENGTH[kind] ?? 1000;
+            const p = new THREE.Vector3();
+            fighter.holder.getWorldPosition(p);
+            return [
+              { at: [p.x + 90 / len, p.y + 60 / len, p.z + 120 / len], look: [p.x, p.y - 30 / len, p.z], fov: 50 },
+              { at: [p.x - 40 / len, p.y + 160 / len, p.z - 20 / len], look: [p.x, p.y - 30 / len, p.z], fov: 50 },
+            ];
+          })()
+        : null;
+      const pane = windows
+        ? (() => {
+            let strip = null;
+            slot.holder.traverse((o) => o.isMesh && !strip && /window/i.test([o.material].flat()[0]?.name ?? '') && (strip = o));
+            if (!strip) return null;
+            // (a vertex a third of the way along the strip, outward along its normal)
+            const g = strip.geometry;
+            const i = Math.floor(g.attributes.position.count / 3);
+            const at = new THREE.Vector3().fromBufferAttribute(g.attributes.position, i).applyMatrix4(strip.matrixWorld);
+            const n = new THREE.Vector3().fromBufferAttribute(g.attributes.normal, i).transformDirection(strip.matrixWorld);
+            const len = LENGTH[kind] ?? 1000;
+            return [15, 40, 120, 400].map((m) => {
+              const h = m / len;
+              const eye = at.clone().addScaledVector(n, h).add(new THREE.Vector3(0, h * 0.25, h * 0.4));
+              return { at: eye.toArray(), look: at.toArray(), fov: 50, near: h / 20 };
+            });
+          })()
+        : null;
+      const views = near
+        ? [...near, ...near]
+        : pane
+        ? pane
+        : deck
+        ? (() => {
+            // (the hull under a point a little to port of the keel, two fifths forward: the deck there)
+            const ray = new THREE.Raycaster(new THREE.Vector3(0.05, 2, 0.2), new THREE.Vector3(0, -1, 0));
+            const y = ray.intersectObject(slot.holder, true)[0]?.point.y ?? 0;
+            const len = LENGTH[kind] ?? 1000;
+            return [20, 60, 200, 800].map((m) => {
+              const h = m / len;
+              return { at: [0.05, y + h, 0.2 + h * 1.5], look: [0.02, y, 0.2 - h * 2.5], fov: 55 };
+            });
+          })()
+        : close
+        ? [
+            { at: [0.16, 0.035, 0.12], look: [0.02, 0.0, -0.1], fov: 60 },
+            { at: [-0.2, 0.06, -0.12], look: [0.0, 0.05, -0.3], fov: 55 },
+            { at: [0.1, -0.12, 0.05], look: [0.0, -0.08, -0.15], fov: 60 },
+            { at: [0.12, 0.02, -0.62], look: [0.0, 0.0, -0.45], fov: 55 },
+          ]
+        : nose
+        ? [
+            { at: [-1.1, 0.02, 0], look: [0, 0.05, 0], fov: 50 },
+            { at: [0, 1.2, 0.001], look: [0, 0, 0], fov: 50 },
+            { at: [-0.7, 0.2, 0.8], look: [0, 0, 0], fov: 45 },
+            { at: [0.5, 0.25, -0.9], look: [0, 0, 0], fov: 45 },
+          ]
+        : [
+            { at: [-0.55, 0.32, 0.7], look: [0, 0, 0.05], fov: 40 },
+            { at: [-0.75, 0.04, -0.05], look: [0, 0, -0.05], fov: 40 },
+            { at: [0.35, -0.38, 0.45], look: [0, -0.05, 0], fov: 40 },
+            { at: [0.32, 0.3, -0.75], look: [0, 0.12, -0.3], fov: 34 },
+          ];
+      views.forEach((v, i) => {
+        const cam = new THREE.PerspectiveCamera(v.fov, W / H, v.near ?? 0.005, 20);
+        cam.position.set(...v.at);
+        cam.lookAt(...v.look);
+        cam.updateMatrixWorld(true);
+        const x = (i % 2) * W;
+        const y = (1 - Math.floor(i / 2)) * H;
+        renderer.setViewport(x, y, W, H);
+        renderer.setScissor(x, y, W, H);
+        shadows?.place(cam, [slot, ...(fighter ? [fighter] : [])]);
+        renderer.render(scene, cam);
+        shadows?.home();
+      });
+      window.__slot = slot; // (for a check to look into)
+      window.__renderer = renderer;
+      document.title = JSON.stringify({ kind, url: MODELS[kind]?.url ?? null, real: slot.real, parts: parts?.ids ?? [], with: fighter ? { kind: withKind, real: fighter.real } : null });
+      window.__done = true;
+    </script>
+  </body>
+</html>

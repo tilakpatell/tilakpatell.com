@@ -14,7 +14,7 @@
 //          NEAR times its size; half the rocks, the biggest
 //   ultra  the same, every rock
 //
-// createSpacePieces(sysId, { detail, load }) → { group, goals, ready, update(t), dispose() }
+// createSpacePieces(sysId, { detail, load, dress }) → { group, goals, ready, update(t), dispose() }
 //   goals: the level, for the autopilot (places.js’s spaceGoals), known at once
 //   ready: a promise, when what this level draws is placed
 //   load(url) → Promise<gltf | null> (gltfCache’s loadGLTF; a test’s stand-in)
@@ -45,7 +45,7 @@ export const TIERS = {
 
 const farMaterial = () => new MeshStandardNodeMaterial({ vertexColors: true, roughness: 0.6, metalness: 0.3 });
 
-export function createSpacePieces(sysId, { detail = device().detail, load = (url) => loadGLTF(url) } = {}) {
+export function createSpacePieces(sysId, { detail = device().detail, load = (url) => loadGLTF(url), dress = null } = {}) {
   const group = new THREE.Group();
   group.name = `space-level-${sysId}`;
   const tier = TIERS[detail] ?? TIERS.high;
@@ -82,6 +82,14 @@ export function createSpacePieces(sysId, { detail = device().detail, load = (url
         for (const p of rockPieces) want(p.url, load);
         const got = new Map(await Promise.all([...urls].map(async ([url, p]) => [url, await p])));
         if (dead) return;
+        // (a capital's near cut dressed as the war's ship of its kind is, where the caller dresses: galaxy/spaceKits.js)
+        const dressed = new Map();
+        if (dress) {
+          for (const p of shown) if (p.kind === 'capital' && got.get(p.url) && !dressed.has(p.url)) dressed.set(p.url, dress(got.get(p.url), p.model).catch(() => null));
+          for (const [url, d] of dressed) dressed.set(url, await d);
+          if (dead) return;
+        }
+        const near = (p, gltf) => dressed.get(p.url)?.clone(true) ?? cloneScene(gltf);
         for (const p of shown) {
           const full = !tier.farOnly || !p.far ? got.get(p.url) : null;
           const farOne = p.far ? got.get(p.far) : null;
@@ -92,10 +100,10 @@ export function createSpacePieces(sysId, { detail = device().detail, load = (url
           holder.scale.fromArray(p.scale);
           if (full && farOne && (p.kind === 'capital' || p.kind === 'dock')) {
             const lod = new THREE.LOD();
-            lod.addLevel(cloneScene(full), 0);
+            lod.addLevel(near(p, full), 0);
             lod.addLevel(farOne.clone(true), p.size * scale(p) * NEAR); // (in the world’s units: its size is metres, its scale a hundredth)
             holder.add(lod);
-          } else holder.add(full ? cloneScene(full) : farOne.clone(true));
+          } else holder.add(full ? near(p, full) : farOne.clone(true));
           holder.userData.piece = p.model;
           group.add(holder);
         }

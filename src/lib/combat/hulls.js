@@ -27,6 +27,7 @@
 //     26 directions’ points at `r` and the middle as its probes, no shapes.
 //   segmentHit(hull, pose, a, b) → { t, part, property, point, normal } | null
 //   hullContact(small, smallPose, big, bigPose) → { normal, depth, at, part } | null
+//   halfTurn(hull) → the same hull turned half round about its up
 
 import { readHull } from '../physics/shapesBin.js';
 
@@ -399,6 +400,46 @@ function finish(radius, parts, rays, probes, solids) {
   let reach = 0;
   for (const list of [rays.tris, p]) for (let i = 0; i < list.length; i += 3) reach = Math.max(reach, Math.hypot(list[i], list[i + 1], list[i + 2]));
   return { radius: radius || reach, parts, rays, probes: Float32Array.from(p), solids };
+}
+
+// A hull turned half round about its up (x and z the other way), for a
+// model the site turned nose first after its hull was fitted to it drawn
+// tail first: the same shapes, where the ship now is. A rotation keeps
+// every triangle's winding and every tree box a box.
+export function halfTurn(hull) {
+  const points = (src) => {
+    const out = Float32Array.from(src);
+    for (let i = 0; i < out.length; i += 3) {
+      out[i] = -out[i];
+      out[i + 2] = -out[i + 2];
+    }
+    return out;
+  };
+  const boxes = (src) => {
+    const out = Float32Array.from(src);
+    for (let i = 0; i < out.length; i += 6) {
+      const [x0, z0] = [out[i], out[i + 2]];
+      out[i] = -out[i + 3];
+      out[i + 3] = -x0;
+      out[i + 2] = -out[i + 5];
+      out[i + 5] = -z0;
+    }
+    return out;
+  };
+  const planes = (src) => {
+    const out = Float32Array.from(src);
+    for (let i = 0; i < out.length; i += 4) {
+      out[i] = -out[i];
+      out[i + 2] = -out[i + 2];
+    }
+    return out;
+  };
+  return {
+    ...hull,
+    rays: { ...hull.rays, tris: points(hull.rays.tris), box: boxes(hull.rays.box) },
+    probes: points(hull.probes),
+    solids: hull.solids.map((s) => ({ ...s, planes: planes(s.planes), box: boxes(s.box) })),
+  };
 }
 
 export function hullOf(bin) {

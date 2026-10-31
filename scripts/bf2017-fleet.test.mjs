@@ -7,10 +7,10 @@ import { FLEET, writtenTurn } from './bf2017-fleet.mjs';
 import { qmul } from './lib/rig-clips.mjs';
 
 // the space layer's rows the fleet is written for, as galaxy/models.js has
-// them on a laptop (MODELS is this device's: a test runs at ultra, and on a
-// desktop the kits' rows are their ultra cuts and the fighters' the game's
+// them on a phone (MODELS is this device's: a test runs at ultra, and on a
+// computer the kits' rows are their ultra cuts and the fighters' the game's
 // plain surface cuts, the space fidelity design's)
-const MODELS = modelsAt('mid');
+const MODELS = modelsAt('mid', { phone: true });
 const rowOf = (file) => (file.startsWith('hq/') ? HQ[file.slice(3)] : MODELS[file]);
 const at = (path) => new URL(`../public${path}`, import.meta.url);
 // a file's bytes: on disk, or as published to the bucket (src/data/galaxyAssets.json)
@@ -60,7 +60,7 @@ describe('the fleets on the game’s ships', () => {
   it('writes the close-up Nebulon-B from the game’s own frigate at its first LOD, with its engine and lights, over Daniel Andersson’s', () => {
     const row = FLEET.find((r) => r[0] === 'hq/nebulon');
     expect(row[3]).toMatchObject({ cut: 0, parts: '*_engine_01_mesh,*_emissive_01_mesh' });
-    expect(HQ).toEqual({ nebulon: { url: '/models/galaxy/hq/nebulon.glb', nose: 0 } }); // (the Star Destroyer's close-up cut is the kit's ultra cut since)
+    expect(HQ).toEqual({ nebulon: { url: '/models/galaxy/hq/nebulon.glb', nose: Math.PI } }); // (the Star Destroyer's close-up cut is the kit's ultra cut since; written engines to +z, the frigate is turned half round to fly bow first)
     const credits = JSON.parse(readFileSync(new URL('../src/data/modelCredits.json', import.meta.url), 'utf8'));
     expect(credits['galaxy-nebulonhq'].author).toBe('EA DICE');
     expect(credits['galaxy-destroyerhq']).toBeUndefined();

@@ -98,7 +98,8 @@ export function isDataMap(slot, row = null, slug = '') {
 // each material's references) and says which material wanted which map in
 // which slot, for the scene to bind from one shared cache.
 //
-//   splitTextures(buffer) → { buffer, slots: [{ material, slot, uri }] }
+//   splitTextures(buffer) → { buffer, slots: [{ material, slot, uri, texCoord? }] }
+//   (texCoord: the UV set the GLB binds the map on, where it isn't the first)
 const SLOTS = [
   ['map', (m) => m.pbrMetallicRoughness?.baseColorTexture, (m) => delete m.pbrMetallicRoughness.baseColorTexture],
   ['metalRough', (m) => m.pbrMetallicRoughness?.metallicRoughnessTexture, (m) => delete m.pbrMetallicRoughness.metallicRoughnessTexture],
@@ -124,7 +125,7 @@ export function splitTextures(buffer) {
       const ref = get(m);
       if (!ref) continue;
       const uri = imageUri(json, ref);
-      if (uri && !uri.startsWith('data:')) slots.push({ material, slot, uri });
+      if (uri && !uri.startsWith('data:')) slots.push({ material, slot, uri, ...(ref.texCoord ? { texCoord: ref.texCoord } : {}) });
       drop(m);
     }
   });

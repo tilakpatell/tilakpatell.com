@@ -75,19 +75,23 @@ import { audioContext } from '../../lib/audio';
 import { clamp01, disposeTree, precompile, precompilePasses, singlePass } from '../../lib/three/renderer';
 import { prepareScene } from '../../lib/three/gpuWork';
 import { settle as settleWithin } from '../../lib/settle';
-import { device, pixelRatio, quality as qualityNow } from '../../lib/device';
+import { budget, device, pixelRatio, quality as qualityNow } from '../../lib/device';
 import { fromVideo } from '../../lib/videoLook';
 import { dropTransmission } from '../../lib/three/glass';
 import { gltfStats } from '../../lib/three/gltfCache';
 import { STEPS } from '../../lib/three/pace';
 import { FOV } from '../universe/flight';
-import { createPost } from '../universe/post';
+import { aberrationFor, createPost } from '../universe/post';
 import { createHoloDriver } from './holo/drive';
 import { GLOW, glowAt } from '../universe/battleFx';
 import { bloomGroups } from '../../lib/three/bloom';
-import { LOOK } from './look';
+import { LOOK, keyLight, kickerDir } from './look';
+import { createCapitalShadows, shadowSize } from './capitalShadow';
+import { sendDetailWith } from './capitalPlating';
+import { warm as warmTextures } from '../../lib/three/textures';
 import { followRatio } from './drawnAt';
 import { houseOn } from '../../lib/three/house';
+import { grainFor } from '../../lib/three/noise';
 import { SHIP, TUNE, autopilot, forward, spawn, step } from '../universe/ship';
 import { REAIM_MS, parkBehind, pilotSpace, reached } from '../universe/pilotGoal';
 import { createHunters } from '../universe/hunters';
@@ -158,10 +162,13 @@ import { assetUrl } from '../../lib/assetBase';
 const BOLTS = 40; // (a flak burst is seven bolts, with room for the next)
 const ROUNDS = 8; // the heavy rounds in flight at once (the universe map's)
 const BOLT_COLOR = { falcon: '#ff4a3d', xwing: '#ff3b30', cruiser: '#9df06b', rv: '#5cc8ff' };
+// (the X-wing's and the Falcon's a glow at the nozzle at cruise, as in the
+// films and BF2, not a contrail: under 0.6 of the ship, the universe map's
+// cap on its own, engines.js's ENGINE_CAP; the boost still draws them out)
 const PLUME = {
   cruiser: { color: '#4dff3a', core: '#e6ffd2', width: 0.036, life: 0.42, length: 0.32, wobble: 1.3, sparks: 40 },
-  falcon: { color: '#5cbcff', core: '#eef8ff', width: 0.034, life: 0.45, length: 0.36, wobble: 0 },
-  xwing: { color: '#ff6a36', core: '#fff0dc', width: 0.017, life: 0.38, length: 0.3, wobble: 0 },
+  falcon: { color: '#5cbcff', core: '#eef8ff', width: 0.034, life: 0.2, length: 0.12, wobble: 0 },
+  xwing: { color: '#ff6a36', core: '#fff0dc', width: 0.017, life: 0.15, length: 0.08, wobble: 0 },
   rv: { color: '#ff9a3c', core: '#fff0d8', width: 0.02, life: 0.4, length: 0.3, wobble: 0 },
 };
 const SEAT_KEY = 'tp:universe-seat'; // (the universe map's: one seat, wherever you fly)
@@ -190,7 +197,8 @@ const apart = (ax, ay, az, bx, by, bz) => Math.sqrt((ax - bx) * (ax - bx) + (ay 
 // the wall clock, in seconds: every pilot's set pieces keep the same time
 const wall = () => Date.now() / 1000;
 
-// what metal reflects in a system: its star, a little of the sky
+// what metal reflects in a system, and the light its models' shade is made
+// of: its star, the dark of its sky, a bounce opposite (./look.js's `space`)
 function systemEnvironment(renderer, sys) {
   const env = new THREE.Scene();
   const made = [];
@@ -200,9 +208,9 @@ function systemEnvironment(renderer, sys) {
     env.add(m);
     made.push(geo, mat);
   };
-  add(new THREE.SphereGeometry(10, 32, 16), new THREE.MeshBasicMaterial({ color: '#0c1220', side: THREE.BackSide }));
+  add(new THREE.SphereGeometry(10, 32, 16), new THREE.MeshBasicMaterial({ color: LOOK.space.sky, side: THREE.BackSide }));
   sys.suns.forEach((s, i) => add(new THREE.SphereGeometry(i ? 1.1 : 1.5, 16, 8), new THREE.MeshBasicMaterial({ color: new THREE.Color(s.color).multiplyScalar(i ? 5 : 8) }), new THREE.Vector3(...s.dir).normalize().multiplyScalar(7)));
-  add(new THREE.SphereGeometry(2.4, 16, 8), new THREE.MeshBasicMaterial({ color: new THREE.Color(0.3, 0.38, 0.9) }), new THREE.Vector3(...s3(sys.suns[0].dir)).multiplyScalar(-7));
+  add(new THREE.SphereGeometry(2.4, 16, 8), new THREE.MeshBasicMaterial({ color: new THREE.Color(...LOOK.space.bounce) }), new THREE.Vector3(...s3(sys.suns[0].dir)).multiplyScalar(-7));
   const pmrem = new THREE.PMREMGenerator(renderer);
   const rt = pmrem.fromScene(env, 0.02);
   pmrem.dispose();
@@ -282,17 +290,27 @@ export async function create(canvas, ctx) {
     return precompile(renderer, singlePass(root), cam, target, post.on ? post.composer.readBuffer : undefined);
   };
 
-  // light: each sun from its way, and a little ambient
-  const keys = [new THREE.DirectionalLight('#ffffff', 2.2), new THREE.DirectionalLight('#ffffff', 0)];
+  // light: the ships' key from the first sun's way (lifted and cooled,
+  // ./look.js's keyLight), the second sun or a dim kicker from the far side,
+  // and a little ambient
+  const keys = [new THREE.DirectionalLight('#ffffff', LOOK.space.key.intensity), new THREE.DirectionalLight('#ffffff', 0)];
   for (const k of keys) scene.add(k, k.target);
-  const ambient = new THREE.AmbientLight('#9fb0d8', 0.32);
+  // the first sun's shadow on the capital ships (capitalShadow.js): on before
+  // anything's compiled, where the device draws shadows, so every shader's
+  // made once with it
+  const shadows = createCapitalShadows({ renderer, sun: keys[0], size: shadowSize(device(), budget()) });
+  // (the capitals' plating's detail map, baked in its worker, sent in spare
+  // time before the hulls take it: capitalPlating.js)
+  sendDetailWith((t) => warmTextures(renderer, [t], { idle: true }));
+  const ambient = new THREE.AmbientLight(LOOK.space.ambient, 0.32 * LOOK.space.fill);
   // (inside a level's area of its own, the scene under its light: areaLook.js)
   let areaLook = null;
   scene.add(ambient);
   // the house look (lib/three/house), as on the universe map: the ships'
-  // and stations' shade one colour, from the space light; the post pass
+  // and stations' shade one colour, from the space light, in space's way
+  // (./look.js's `house`: a cool grey, the relief kept in it); the post pass
   // already tone-maps the house's way, and space has no fog
-  house = houseOn({ renderer, scene, sun: keys[0], ambient, toneMap: false, look: { fog: false } });
+  house = houseOn({ renderer, scene, sun: keys[0], ambient, toneMap: false, look: { fog: false, ...LOOK.house } });
   let houseFrames = 0;
 
   const sky = createSky({ small, level: device().detail, renderer });
@@ -533,12 +551,18 @@ export async function create(canvas, ctx) {
     effectsNow(true);
     wingmen?.clear();
     respace();
-    // the suns' light
+    // the suns' light (the first the ships' key; with one sun, the second
+    // light the kicker from opposite it)
     world.sunLights.forEach((s, i) => {
-      keys[i].color.copy(s.color);
-      keys[i].position.copy(s.dir).multiplyScalar(100);
+      const k = i === 0 ? keyLight(s.dir, s.color) : { dir: s.dir, colour: s.color };
+      keys[i].color.copy(k.colour);
+      keys[i].position.copy(k.dir).multiplyScalar(100);
     });
-    keys[1].intensity = world.sunLights[1] ? 1.1 : 0;
+    if (!world.sunLights[1]) {
+      keys[1].color.set(LOOK.space.kicker.colour);
+      keys[1].position.copy(kickerDir(world.sunLights[0].dir)).multiplyScalar(100);
+    }
+    keys[1].intensity = world.sunLights[1] ? 1.1 : LOOK.space.kicker.intensity;
     if (!env) reflect(sys);
     hunters?.clear();
     pickups.clear();
@@ -2344,9 +2368,9 @@ export async function create(canvas, ctx) {
       }
       state.eclipse += (eclipse - state.eclipse) * clamp01(dt * 4);
       const light = state.eclipse;
-      keys[0].intensity = 2.2 * light;
-      keys[1].intensity = world.sunLights[1] ? 1.1 * light : 0;
-      ambient.intensity = 0.22 + 0.12 * light;
+      keys[0].intensity = LOOK.space.key.intensity * light;
+      keys[1].intensity = (world.sunLights[1] ? 1.1 : LOOK.space.kicker.intensity) * light;
+      ambient.intensity = (0.22 + 0.12 * light) * LOOK.space.fill;
     }
     const inTunnel = state.jump?.phase === 'tunnel';
     // (inside a level's area of its own, Kamino's storm, its dome is the sky: the galaxy's hidden)
@@ -2386,6 +2410,11 @@ export async function create(canvas, ctx) {
         post.rush(k, (camP.x + 1) / 2, (camP.y + 1) / 2);
       }
     } else post.rush(0);
+    // the finish the universe map's frame has and the 2017 game's own has on
+    // (its film grain, a touch of chromatic aberration at the edges: bf2-web's
+    // reading of the retail settings), each by the visitor's video settings
+    post.grain(grainFor({ rush: state.streak, reduced }) * video.grain);
+    post.aberration(aberrationFor({ rush: state.streak, hit: state.hurt, tier }) * video.aberration);
     // out in the open on the sublight drive, the stars stretch a little
     if (!state.jump && flying()) {
       const fast = clamp01((Math.abs(state.ship.speed) - SHIP.boost) / 40);
@@ -2411,8 +2440,10 @@ export async function create(canvas, ctx) {
     post.overlay(showCab ? cabScene : null, camIn);
     // (the shade follows the suns through an eclipse; what's come in since, taken on now and then)
     house.follow({ adopt: houseFrames++ % 30 === 0 });
+    shadows?.place(camera, models.slots);
     renderer.info.reset();
     post.render(size.w, size.h);
+    shadows?.home();
     if (first) {
       first = false;
       emit({ type: 'ready' });
@@ -2977,6 +3008,8 @@ export async function create(canvas, ctx) {
       pilots.dispose();
       fleet.dispose();
       models.dispose();
+      shadows?.dispose();
+      sendDetailWith(null);
       bolts.dispose();
       flashes.dispose();
       speedLines.dispose();

@@ -173,7 +173,10 @@ const jsonl = async (name) => {
     .filter((line) => line.trim())
     .map((line) => JSON.parse(line));
 };
-const models = new Map((await jsonl('models.jsonl')).map((row) => [row.name, row]));
+// (models.jsonl, read when a game model wants it: a run of the site's hulls
+// alone, --only executor,lucrehulk, needs no export)
+let modelRows = null;
+const modelsOf = async () => (modelRows ??= new Map((await jsonl('models.jsonl')).map((row) => [row.name, row])));
 let records = null; // physics.jsonl by res, read when a capital wants it
 
 // A physics asset's shapes and its parts' properties (from its raw header),
@@ -261,6 +264,7 @@ try {
   // parts beside its model (the close-up Nebulon-B's engine block and
   // lights: the fleet row's `parts`) was stood on the box of them all.
   async function placed(doc, name, partsGlob = null) {
+    const models = await modelsOf();
     const entry = models.get(name);
     if (!entry) throw new Error(`no ${name} in models.jsonl`);
     if (partsGlob) {

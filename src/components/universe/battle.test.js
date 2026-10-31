@@ -195,14 +195,16 @@ describe('the fixed step', () => {
     expect(b.clock).toBeCloseTo(BATTLE.steps * BATTLE.step, 9);
     expect(b.ahead).toBeLessThan(BATTLE.step);
   });
-  it('locks on to a fighter where it’s drawn: on along its way by the time still owed', () => {
+  it('locks on to a fighter where it’s drawn: between its last two steps, by how far the frame is into the next', () => {
     const b = make();
     b.setYou(0);
     b.update(0.05, null);
     const f = b.fighters.find((o) => o.team === 1 && o.alive);
     const t = b.targets.find((o) => o.id === f.id);
-    expect(t.at.x).toBeCloseTo(f.pos.x + f.vel.x * b.ahead, 9);
-    expect(t.at.z).toBeCloseTo(f.pos.z + f.vel.z * b.ahead, 9);
+    const a = b.ahead / BATTLE.step;
+    expect(b.behind).toBeCloseTo(BATTLE.step - b.ahead, 9);
+    expect(t.at.x).toBeCloseTo(f.prev.x + (f.pos.x - f.prev.x) * a, 9);
+    expect(t.at.z).toBeCloseTo(f.prev.z + (f.pos.z - f.prev.z) * a, 9);
     // and a shot through where it's drawn hits it
     expect(shotAt(b, t.at)?.id).toBe(f.id);
   });

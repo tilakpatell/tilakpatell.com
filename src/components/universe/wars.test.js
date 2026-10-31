@@ -41,6 +41,11 @@ describe('the wars', () => {
       }
   });
 
+  it('keeps the Lucrehulk’s batteries off the open bow between its ring’s arms', () => {
+    // (scripts/capital-parts.mjs: no hull over or under the keel there)
+    for (const [x, , z] of TURRETS.lucrehulk) expect(z > 0.3 && Math.abs(x) < 0.05, `${x}, ${z}`).toBe(false);
+  });
+
   it('gives every flagship two shield generators, then a bridge, then a reactor', () => {
     for (const w of all)
       for (const s of w.sides) {

@@ -333149,6 +333149,42 @@
     "from": "models/galaxy/bf2017/levels/sb_endor/tex/endor_mine_rebel_cs.512.ktx2",
     "tier": "pack"
   },
+  "models/galaxy/bf2017/levels/sb_endor/tex/mc80_paneltile_breakup_02_rgba.1024.ktx2": {
+    "hash": "0b37b7928616",
+    "bytes": 1308647,
+    "from": "models/galaxy/bf2017/levels/sb_endor/tex/mc80_paneltile_breakup_02_rgba.1024.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/sb_endor/tex/mc80_paneltile_breakup_02_rgba.256.ktx2": {
+    "hash": "58e843c11272",
+    "bytes": 82542,
+    "from": "models/galaxy/bf2017/levels/sb_endor/tex/mc80_paneltile_breakup_02_rgba.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/sb_endor/tex/mc80_paneltile_breakup_02_rgba.512.ktx2": {
+    "hash": "6f91b8ebe5df",
+    "bytes": 322019,
+    "from": "models/galaxy/bf2017/levels/sb_endor/tex/mc80_paneltile_breakup_02_rgba.512.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/sb_endor/tex/mc80_surfacedetail_02_n.1024.ktx2": {
+    "hash": "1d8ba0270b4c",
+    "bytes": 177214,
+    "from": "models/galaxy/bf2017/levels/sb_endor/tex/mc80_surfacedetail_02_n.1024.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/sb_endor/tex/mc80_surfacedetail_02_n.256.ktx2": {
+    "hash": "65ceb5a28a27",
+    "bytes": 34302,
+    "from": "models/galaxy/bf2017/levels/sb_endor/tex/mc80_surfacedetail_02_n.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/sb_endor/tex/mc80_surfacedetail_02_n.512.ktx2": {
+    "hash": "202b04249683",
+    "bytes": 77939,
+    "from": "models/galaxy/bf2017/levels/sb_endor/tex/mc80_surfacedetail_02_n.512.ktx2",
+    "tier": "pack"
+  },
   "models/galaxy/bf2017/levels/sb_endor/tex/t_corvettecr90_extras_cs.1024.ktx2": {
     "hash": "d470200e08eb",
     "bytes": 472353,
@@ -333695,6 +333731,24 @@
     "from": "models/galaxy/bf2017/levels/sb_endor/tex/t_mc80_engineskirt_02_nam__orm_eeab5d9e.512.ktx2",
     "tier": "pack"
   },
+  "models/galaxy/bf2017/levels/sb_endor/tex/t_mc80_hull_01_combine_rgba.1024.ktx2": {
+    "hash": "0a1aa926e79a",
+    "bytes": 798787,
+    "from": "models/galaxy/bf2017/levels/sb_endor/tex/t_mc80_hull_01_combine_rgba.1024.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/sb_endor/tex/t_mc80_hull_01_combine_rgba.256.ktx2": {
+    "hash": "3a17d52c285a",
+    "bytes": 70580,
+    "from": "models/galaxy/bf2017/levels/sb_endor/tex/t_mc80_hull_01_combine_rgba.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/sb_endor/tex/t_mc80_hull_01_combine_rgba.512.ktx2": {
+    "hash": "08d4d78342bb",
+    "bytes": 233752,
+    "from": "models/galaxy/bf2017/levels/sb_endor/tex/t_mc80_hull_01_combine_rgba.512.ktx2",
+    "tier": "pack"
+  },
   "models/galaxy/bf2017/levels/sb_endor/tex/t_mc80_mechanicaldetails_02_cs.1024.ktx2": {
     "hash": "198839924971",
     "bytes": 360023,
@@ -333873,6 +333927,18 @@
     "hash": "de1047ac7e7c",
     "bytes": 12418,
     "from": "models/galaxy/bf2017/levels/sb_endor/tex/t_mc80_windows_01_ns__orm_62d679e2.512.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/sb_endor/tex/t_mc80_windows_01_rgba.1024.ktx2": {
+    "hash": "63a10ef6b73d",
+    "bytes": 90777,
+    "from": "models/galaxy/bf2017/levels/sb_endor/tex/t_mc80_windows_01_rgba.1024.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/sb_endor/tex/t_mc80_windows_01_rgba.512.ktx2": {
+    "hash": "b49ec96d3c30",
+    "bytes": 27625,
+    "from": "models/galaxy/bf2017/levels/sb_endor/tex/t_mc80_windows_01_rgba.512.ktx2",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/sb_endor/tex/t_scimitar_01_line_cs.128.ktx2": {
@@ -339429,6 +339495,18 @@
     "hash": "2c8e9a14d4ee",
     "bytes": 4420,
     "from": "models/galaxy/bf2017/levels/sb_fondor/meshes/fondor_drydock_innerrim_02_mesh.lod5.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/sb_fondor/meshes/imperialcruiser_hull_01_mesh.lod1.glb": {
+    "hash": "0ca26b62a242",
+    "bytes": 308176,
+    "from": "models/galaxy/bf2017/levels/sb_fondor/meshes/imperialcruiser_hull_01_mesh.lod1.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/sb_fondor/meshes/imperialcruiser_hull_01_mesh.lod2.glb": {
+    "hash": "7889c511e522",
+    "bytes": 215292,
+    "from": "models/galaxy/bf2017/levels/sb_fondor/meshes/imperialcruiser_hull_01_mesh.lod2.glb",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/sb_fondor/meshes/lucrehulkclass_droidbattleship_light_small_01_mesh.lod0.glb": {
@@ -347429,6 +347507,102 @@
     "from": "models/galaxy/bf2017/levels/sb_fondor/tex/t_fondor_drydock_hangarwalls_nmr__orm_58c34d36.512.ktx2",
     "tier": "pack"
   },
+  "models/galaxy/bf2017/levels/sb_fondor/tex/t_imperialcruiser_hull_01_combine_rgba.1024.ktx2": {
+    "hash": "69e208af7613",
+    "bytes": 1256417,
+    "from": "models/galaxy/bf2017/levels/sb_fondor/tex/t_imperialcruiser_hull_01_combine_rgba.1024.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/sb_fondor/tex/t_imperialcruiser_hull_01_combine_rgba.2048.ktx2": {
+    "hash": "c2f17afc17f3",
+    "bytes": 4743983,
+    "from": "models/galaxy/bf2017/levels/sb_fondor/tex/t_imperialcruiser_hull_01_combine_rgba.2048.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/sb_fondor/tex/t_imperialcruiser_hull_01_combine_rgba.256.ktx2": {
+    "hash": "e0fa1dacb6bf",
+    "bytes": 84718,
+    "from": "models/galaxy/bf2017/levels/sb_fondor/tex/t_imperialcruiser_hull_01_combine_rgba.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/sb_fondor/tex/t_imperialcruiser_hull_01_combine_rgba.512.ktx2": {
+    "hash": "d0877c331784",
+    "bytes": 326739,
+    "from": "models/galaxy/bf2017/levels/sb_fondor/tex/t_imperialcruiser_hull_01_combine_rgba.512.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/sb_fondor/tex/t_imperialcruiser_paneltile_01_n.1024.ktx2": {
+    "hash": "ad3eba802fca",
+    "bytes": 397003,
+    "from": "models/galaxy/bf2017/levels/sb_fondor/tex/t_imperialcruiser_paneltile_01_n.1024.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/sb_fondor/tex/t_imperialcruiser_paneltile_01_n.2048.ktx2": {
+    "hash": "5bcbe2e0695f",
+    "bytes": 1175036,
+    "from": "models/galaxy/bf2017/levels/sb_fondor/tex/t_imperialcruiser_paneltile_01_n.2048.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/sb_fondor/tex/t_imperialcruiser_paneltile_01_n.256.ktx2": {
+    "hash": "456d5981d35f",
+    "bytes": 47493,
+    "from": "models/galaxy/bf2017/levels/sb_fondor/tex/t_imperialcruiser_paneltile_01_n.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/sb_fondor/tex/t_imperialcruiser_paneltile_01_n.512.ktx2": {
+    "hash": "38b46972e0df",
+    "bytes": 140929,
+    "from": "models/galaxy/bf2017/levels/sb_fondor/tex/t_imperialcruiser_paneltile_01_n.512.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/sb_fondor/tex/t_imperialcruiser_paneltile_breakup_01_rgba.1024.ktx2": {
+    "hash": "c5b0c94f5ae2",
+    "bytes": 179327,
+    "from": "models/galaxy/bf2017/levels/sb_fondor/tex/t_imperialcruiser_paneltile_breakup_01_rgba.1024.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/sb_fondor/tex/t_imperialcruiser_paneltile_breakup_01_rgba.2048.ktx2": {
+    "hash": "b685388eba41",
+    "bytes": 635095,
+    "from": "models/galaxy/bf2017/levels/sb_fondor/tex/t_imperialcruiser_paneltile_breakup_01_rgba.2048.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/sb_fondor/tex/t_imperialcruiser_paneltile_breakup_01_rgba.256.ktx2": {
+    "hash": "1dc72f76b26f",
+    "bytes": 22799,
+    "from": "models/galaxy/bf2017/levels/sb_fondor/tex/t_imperialcruiser_paneltile_breakup_01_rgba.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/sb_fondor/tex/t_imperialcruiser_paneltile_breakup_01_rgba.512.ktx2": {
+    "hash": "39f8b1b02203",
+    "bytes": 61784,
+    "from": "models/galaxy/bf2017/levels/sb_fondor/tex/t_imperialcruiser_paneltile_breakup_01_rgba.512.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/sb_fondor/tex/t_imperialcruiser_paneltile_breakup_02_rgba.1024.ktx2": {
+    "hash": "dddd1c81a1a0",
+    "bytes": 1205685,
+    "from": "models/galaxy/bf2017/levels/sb_fondor/tex/t_imperialcruiser_paneltile_breakup_02_rgba.1024.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/sb_fondor/tex/t_imperialcruiser_paneltile_breakup_02_rgba.2048.ktx2": {
+    "hash": "b96c2f6b58b6",
+    "bytes": 4549861,
+    "from": "models/galaxy/bf2017/levels/sb_fondor/tex/t_imperialcruiser_paneltile_breakup_02_rgba.2048.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/sb_fondor/tex/t_imperialcruiser_paneltile_breakup_02_rgba.256.ktx2": {
+    "hash": "07a6b4bb614b",
+    "bytes": 80183,
+    "from": "models/galaxy/bf2017/levels/sb_fondor/tex/t_imperialcruiser_paneltile_breakup_02_rgba.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/sb_fondor/tex/t_imperialcruiser_paneltile_breakup_02_rgba.512.ktx2": {
+    "hash": "df75f9d70660",
+    "bytes": 308804,
+    "from": "models/galaxy/bf2017/levels/sb_fondor/tex/t_imperialcruiser_paneltile_breakup_02_rgba.512.ktx2",
+    "tier": "pack"
+  },
   "models/galaxy/bf2017/levels/sb_fondor/tex/t_mc80_destructionstructure_cs.512.ktx2": {
     "hash": "9b776a9eb35a",
     "bytes": 73943,
@@ -353433,6 +353607,18 @@
     "hash": "0046037c3ce7",
     "bytes": 2432,
     "from": "models/galaxy/bf2017/levels/sb_kamino/meshes/hangar_forcefield_sb_mesh.lod0.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/sb_kamino/meshes/jedicruiser_hull_01_mesh.lod1.glb": {
+    "hash": "ceae25500b6c",
+    "bytes": 324580,
+    "from": "models/galaxy/bf2017/levels/sb_kamino/meshes/jedicruiser_hull_01_mesh.lod1.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/sb_kamino/meshes/jedicruiser_hull_01_mesh.lod2.glb": {
+    "hash": "990ca0dcd3dd",
+    "bytes": 221720,
+    "from": "models/galaxy/bf2017/levels/sb_kamino/meshes/jedicruiser_hull_01_mesh.lod2.glb",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/sb_kamino/meshes/lucrehulkclass_droidbattleship_light_small_02_mesh.lod0.glb": {
@@ -359613,6 +359799,54 @@
     "hash": "043d03e06936",
     "bytes": 268282,
     "from": "models/galaxy/bf2017/levels/sb_kamino/tex/t_floor_02_nam__orm_dcdc28d6.512.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/sb_kamino/tex/t_jedicruiser_hull_01_combine_rgba.1024.ktx2": {
+    "hash": "9b1e5485afef",
+    "bytes": 1225391,
+    "from": "models/galaxy/bf2017/levels/sb_kamino/tex/t_jedicruiser_hull_01_combine_rgba.1024.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/sb_kamino/tex/t_jedicruiser_hull_01_combine_rgba.2048.ktx2": {
+    "hash": "f3d16a854baa",
+    "bytes": 4560619,
+    "from": "models/galaxy/bf2017/levels/sb_kamino/tex/t_jedicruiser_hull_01_combine_rgba.2048.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/sb_kamino/tex/t_jedicruiser_hull_01_combine_rgba.256.ktx2": {
+    "hash": "4ecaa23dc206",
+    "bytes": 84772,
+    "from": "models/galaxy/bf2017/levels/sb_kamino/tex/t_jedicruiser_hull_01_combine_rgba.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/sb_kamino/tex/t_jedicruiser_hull_01_combine_rgba.512.ktx2": {
+    "hash": "041b2120a064",
+    "bytes": 324976,
+    "from": "models/galaxy/bf2017/levels/sb_kamino/tex/t_jedicruiser_hull_01_combine_rgba.512.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/sb_kamino/tex/t_jedicruiser_paneltile_breakup_02_rgba.1024.ktx2": {
+    "hash": "9b6e96c57055",
+    "bytes": 1201644,
+    "from": "models/galaxy/bf2017/levels/sb_kamino/tex/t_jedicruiser_paneltile_breakup_02_rgba.1024.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/sb_kamino/tex/t_jedicruiser_paneltile_breakup_02_rgba.2048.ktx2": {
+    "hash": "d119acfd2b1a",
+    "bytes": 4531332,
+    "from": "models/galaxy/bf2017/levels/sb_kamino/tex/t_jedicruiser_paneltile_breakup_02_rgba.2048.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/sb_kamino/tex/t_jedicruiser_paneltile_breakup_02_rgba.256.ktx2": {
+    "hash": "242b1c3d5f5c",
+    "bytes": 80356,
+    "from": "models/galaxy/bf2017/levels/sb_kamino/tex/t_jedicruiser_paneltile_breakup_02_rgba.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/sb_kamino/tex/t_jedicruiser_paneltile_breakup_02_rgba.512.ktx2": {
+    "hash": "47cca247e9c1",
+    "bytes": 309098,
+    "from": "models/galaxy/bf2017/levels/sb_kamino/tex/t_jedicruiser_paneltile_breakup_02_rgba.512.ktx2",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/sb_kamino/tex/t_kam_basemetaldome_01_cs.1024.ktx2": {

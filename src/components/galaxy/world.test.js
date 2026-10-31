@@ -229,6 +229,44 @@ describe('buildSystem', () => {
     scarif.dispose();
   });
 
+  it('keeps the second Death Star’s shield unseen at rest, and flashes it once as it fails', () => {
+    const endor = buildSystem(systemById('endor'), { ...kit(), small: false });
+    const { mat } = endor.dsShield;
+    // (a faint rim at the limb, not a lit bubble; a bump or its failing flares it)
+    expect(mat.fragmentShader).toContain('(f * 0.012 + uHit * (0.1 + 0.5 * f))');
+    endor.quiet(true);
+    endor.war.holdShield(true);
+    endor.update(T0, 0.2, camera, null);
+    expect(mat.uniforms.uHit.value).toBe(0);
+    endor.war.holdShield(false);
+    endor.update(T0 + 0.2, 0.2, camera, null);
+    expect(mat.uniforms.uHit.value).toBe(1); // (the flash, as it goes down)
+    expect(endor.events.some((e) => e.id === 'shield-down')).toBe(true);
+    // and it dies away, not lit again while it stays down
+    endor.update(T0 + 0.4, 0.2, camera, null);
+    expect(mat.uniforms.uHit.value).toBeCloseTo(1 - 0.2 * 1.5, 10);
+    endor.update(T0 + 0.6, 0.2, camera, null);
+    expect(mat.uniforms.uHit.value).toBeCloseTo(1 - 0.4 * 1.5, 10);
+    endor.dispose();
+  });
+
+  it('hides the shield with its station, and lights no flash for a Death Star not seen (a level that draws its own)', () => {
+    const endor = buildSystem(systemById('endor'), { ...kit(), small: false });
+    const { mat } = endor.dsShield;
+    endor.war.holdShield(true);
+    endor.update(T0, 0.2, camera, null);
+    endor.war.station('deathstar2', false);
+    endor.war.holdShield(false);
+    endor.update(T0 + 0.2, 0.2, camera, null);
+    expect(mat.uniforms.uHit.value).toBe(0);
+    let bubble = null;
+    endor.group.traverse((o) => o.material === mat && (bubble = o));
+    expect(bubble.visible).toBe(false);
+    endor.war.station('deathstar2', true);
+    expect(bubble.visible).toBe(true);
+    endor.dispose();
+  });
+
   it('holds Scarif’s superlaser while the war’s battle is on, brings the Death Star in when the war says, and gives it back its cycle', () => {
     const k = kit();
     const slots = [];
