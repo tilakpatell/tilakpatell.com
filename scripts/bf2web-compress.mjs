@@ -5,7 +5,9 @@
 // kept only when it saves a tenth; one there already is skipped, so a run cut off is run again from where it stopped;
 // encodings.json, listing them, goes last, and the Worker serves none until it is there.
 //
-//   node --env-file=.env.local scripts/bf2web-compress.mjs [--build <id>] [--quality 9] [--pool 4] [--dry]
+//   node --env-file=.env.local scripts/bf2web-compress.mjs [--build <id>] [--quality 9] [--pool 4] [--force] [--dry]
+//     --force: makes every copy again, over those there (a release at a harder quality, after the quick copies the adopt made); the site serves
+//     the old copies until each is replaced, and a run cut off is run again whole
 //     --build: default the one src/data/bf2web/play.json names
 
 import { createHash } from 'node:crypto';
@@ -25,6 +27,8 @@ const option = (k, d) => (args.includes(k) ? args[args.indexOf(k) + 1] : d);
 const id = option('--build', JSON.parse(readFileSync(join(ROOT, 'src/data/bf2web/play.json'), 'utf8')).build);
 const quality = Number(option('--quality', 9));
 const pool = Number(option('--pool', 4));
+const force = args.includes('--force');
+const began = Date.now();
 const brotli = promisify(brotliCompress);
 if (!/^[A-Za-z0-9._-]+$/.test(id ?? '')) throw new Error('usage: bf2web-compress.mjs [--build <id>] [--quality 9] [--pool 4] [--dry]');
 
@@ -37,6 +41,7 @@ const todo = compressible(manifest, contentType);
 const raw = todo.reduce((n, e) => n + e.bytes, 0);
 const sizes = new Map();
 for (const e of todo) if (there.has(prefix + e.path + '.br')) sizes.set(e.path, there.get(prefix + e.path + '.br'));
+const before = [...sizes.values()].reduce((n, size) => n + size, 0);
 console.log(`${id}: ${todo.length} binary files, ${Math.round(raw / 1e6)} MB; ${sizes.size} copies there already`);
 if (args.includes('--dry')) process.exit(0);
 
@@ -53,7 +58,7 @@ async function attempt(what, fn) {
 
 let done = 0;
 let kept = 0;
-const queue = todo.filter((e) => !sizes.has(e.path));
+const queue = force ? [...todo] : todo.filter((e) => !sizes.has(e.path));
 const total = queue.length;
 await Promise.all(
   Array.from({ length: pool }, async () => {
@@ -85,3 +90,4 @@ await attempt('put encodings.json', async () => {
 });
 const saved = [...sizes].reduce((n, [p, size]) => n + (todo.find((e) => e.path === p)?.bytes ?? 0) - size, 0);
 console.log(`${id}: ${kept} copies made, ${sizes.size} listed; a first visit ${Math.round(saved / 1e6)} MB smaller`);
+console.log(`${id}: quality ${quality}, ${Math.round((Date.now() - began) / 1000)} s, copies ${Math.round(before / 1048576)} MiB before, ${Math.round([...sizes.values()].reduce((n, size) => n + size, 0) / 1048576)} MiB after`);

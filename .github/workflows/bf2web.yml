@@ -45,6 +45,10 @@ on:
         description: 'publish: rulebook digest printed by bf2web-publish.mjs --check'
         required: false
         type: string
+      compress_quality:
+        description: 'compress: brotli quality; above 9 makes every copy again (a release: about 1.6 CPU hours)'
+        required: false
+        type: string
 permissions:
   contents: write
   actions: write
@@ -175,6 +179,7 @@ jobs:
         with:
           node-version: 22
       - name: Brotli copies of the build's binary files
-        run: node scripts/bf2web-compress.mjs ${BUILD:+--build "$BUILD"}
+        run: node scripts/bf2web-compress.mjs ${BUILD:+--build "$BUILD"} ${QUALITY:+--quality "$QUALITY" --force}
         env:
           BUILD: ${{ inputs.build }}
+          QUALITY: ${{ inputs.compress_quality }}

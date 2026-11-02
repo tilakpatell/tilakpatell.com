@@ -2,12 +2,13 @@
 // build and direct-check reports, commit, directory and every exported digest must
 // agree before the existing uploader can write anything. Adoption still runs the
 // hosted contract, browser smoke and site checks in bf2web.yml.
-import { appendFileSync, readFileSync, readdirSync, realpathSync } from 'node:fs';
+import { appendFileSync, readFileSync, realpathSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 import { isAbsolute, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { contractProblems, rulebookProblems } from '../lib/bf2web-site.mjs';
+import { uiDataFiles } from '../lib/bf2web-ui-files.mjs';
 import { REPO } from './lib.mjs';
 
 const need = (ok, reason) => { if (!ok) throw new Error(`bf2web-publish: ${reason}`); };
@@ -48,9 +49,9 @@ export function verifyExportFiles(site, manifest) {
 }
 
 export function readRulebooks(directory) {
-  const entries = readdirSync(directory).filter((name) => name.endsWith('.json')).sort().map((path) => {
+  const entries = uiDataFiles(directory).map((path) => {
     const bytes = readFileSync(join(directory, path));
-    JSON.parse(bytes.toString('utf8'));
+    if (path.endsWith('.json')) JSON.parse(bytes.toString('utf8'));
     return { path, bytes: bytes.length, sha256: digest(bytes) };
   });
   const problems = rulebookProblems(entries.map((entry) => ({ key: entry.path })));
