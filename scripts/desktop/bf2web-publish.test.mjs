@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createHash } from 'node:crypto';
-import { mkdtempSync, writeFileSync, rmSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { CONTRACT } from '../lib/bf2web-site.mjs';
@@ -40,6 +40,23 @@ describe('publishing an existing verified desktop build', () => {
       expect(verifyExportFiles(root, manifest)).toBe(1);
       writeFileSync(file, 'changed'); expect(() => verifyExportFiles(root, manifest)).toThrow(/bytes changed/);
       manifest.entries[0].path = '..\\outside'; expect(() => verifyExportFiles(root, manifest)).toThrow(/backslash/);
+    } finally {
+      expect(dirname(resolve(root))).toBe(resolve(tmpdir()));
+      rmSync(root, { recursive: true });
+    }
+  });
+  it('pins the menu backdrop in its folder, and only JSON is parsed', () => {
+    const root = mkdtempSync(join(tmpdir(), 'bf2-backdrop-'));
+    try {
+      for (const name of CONTRACT.rulebooks) writeFileSync(join(root, name), '{}');
+      mkdirSync(join(root, 'backdrop'));
+      writeFileSync(join(root, 'backdrop', 'backdrop.json'), '{"cameras":{}}');
+      writeFileSync(join(root, 'backdrop', 'cam7-38mm.png'), 'not json');
+      writeFileSync(join(root, 'notes.txt'), 'left out');
+      const paths = readRulebooks(root).entries.map((entry) => entry.path);
+      expect(paths).toContain('backdrop/backdrop.json');
+      expect(paths).toContain('backdrop/cam7-38mm.png');
+      expect(paths).not.toContain('notes.txt');
     } finally {
       expect(dirname(resolve(root))).toBe(resolve(tmpdir()));
       rmSync(root, { recursive: true });

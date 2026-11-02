@@ -9,7 +9,8 @@
 //     --previous: the build to copy from (default: the one src/data/bf2web/play.json names)
 
 import { createHash } from 'node:crypto';
-import { existsSync, readFileSync, readdirSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
+import { uiDataFiles } from './lib/bf2web-ui-files.mjs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { encodePath, objectUrl } from './lib/bucket.mjs';
@@ -35,7 +36,7 @@ const previous = previousId && previousId !== id ? await r2.json(`sites/${previo
 const prefix = `sites/${id}/`;
 const plan = uploadPlan(manifest, { prefix, previous, previousPrefix: previous ? `sites/${previousId}/` : null, existing: await r2.files(prefix) });
 const uiDir = option('--ui-data');
-if (uiDir && existsSync(uiDir)) for (const f of readdirSync(uiDir).filter((n) => n.endsWith('.json'))) plan.splice(-1, 0, { action: 'put', key: `${prefix}ui-data/${f}`, file: join(uiDir, f) });
+if (uiDir && existsSync(uiDir)) for (const f of uiDataFiles(uiDir)) plan.splice(-1, 0, { action: 'put', key: `${prefix}ui-data/${f}`, file: join(uiDir, f) });
 
 const count = (a) => plan.filter((p) => p.action === a).length;
 const bytesOf = (p) => manifest.entries.find((e) => e.path === p.path)?.bytes ?? 0;
