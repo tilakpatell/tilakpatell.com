@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { FEATURES, LIMITS, MIN_CORES, MIN_MEMORY_GB, WHY, engineSupport, probeAdapter, probeBrowser } from './engineSupport.js';
+import { ADVICE, FEATURES, LIMITS, MIN_CORES, MIN_MEMORY_GB, WHY, advice, engineSupport, probeAdapter, probeBrowser } from './engineSupport.js';
+import play from '../../data/bf2web/play.json';
 
 const browser = { gpu: true, isolated: true, sharedMemory: true, wasm: true, deviceMemory: 8, cores: null, mobile: false };
 // (a desktop's adapter: more than WebGPU's defaults)
@@ -62,7 +63,9 @@ describe('whether a browser can run bf2-web’s engine', () => {
 
   it('reads the facts off a window', () => {
     const win = { navigator: { gpu: {}, deviceMemory: 8, userAgent: 'Mozilla/5.0 (Windows NT 10.0)' }, crossOriginIsolated: true, SharedArrayBuffer: function SharedArrayBuffer() {}, WebAssembly: {} };
-    expect(probeBrowser(win)).toEqual(browser);
+    expect(probeBrowser(win)).toEqual({ ...browser, os: 'windows' });
+    expect(probeBrowser({ navigator: { userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Safari/605.1.15', platform: 'MacIntel' } }).os).toBe('macos');
+    expect(probeBrowser({ navigator: { userAgentData: { platform: 'macOS', mobile: false } } }).os).toBe('macos');
     expect(probeBrowser({ navigator: { userAgent: 'iPhone' } })).toMatchObject({ gpu: false, isolated: false, mobile: true, deviceMemory: null });
   });
 
@@ -78,5 +81,60 @@ describe('whether a browser can run bf2-web’s engine', () => {
     expect(await probeAdapter(gpu(null))).toEqual({ features: [], limits: {}, software: false });
     expect(await probeAdapter({ requestAdapter: async () => { throw new Error('lost'); } })).toEqual({ features: [], limits: {}, software: false });
     expect(await probeAdapter(undefined)).toEqual({ features: [], limits: {}, software: false });
+  });
+
+  // 2026-11-03: r1055's needs named maxVertexAttributes (12) and maxInterStageShaderVariables (14), which the probe never
+  // read, so every GPU was turned away with "the GPU allows no where the engine needs 12" (the owner's MacBook Pro M3 Pro
+  // in Edge among them). WebGPU's defaults for both are 16, which every adapter meets.
+  describe('a Mac (Edge or Chrome: Dawn on Metal) against the build the site serves', () => {
+    // a GPUSupportedLimits as browsers make it: every limit a getter on its prototype, no own properties
+    const supportedLimits = (values) => {
+      class GPUSupportedLimits {}
+      for (const [k, v] of Object.entries(values)) Object.defineProperty(GPUSupportedLimits.prototype, k, { get: () => v });
+      return new GPUSupportedLimits();
+    };
+    // (the shape Dawn's Metal backend reports on Apple silicon, PhysicalDeviceMTL.mm; not a measured Mac)
+    const m3 = {
+      maxTextureDimension2D: 16384, maxBufferSize: 2 ** 32 - 4, maxStorageBufferBindingSize: 2 ** 32 - 4, maxBindGroups: 4, maxVertexAttributes: 30,
+      maxInterStageShaderVariables: 28, maxSampledTexturesPerShaderStage: 16, maxSamplersPerShaderStage: 16, maxStorageBuffersPerShaderStage: 10,
+      maxStorageTexturesPerShaderStage: 8, maxUniformBuffersPerShaderStage: 12, maxComputeInvocationsPerWorkgroup: 1024,
+    };
+    const gpu = (limits) => ({ requestAdapter: async () => ({ features: new Set(['texture-compression-bc', 'dual-source-blending']), limits: supportedLimits(limits), info: { vendor: 'apple', architecture: 'metal-3' } }) });
+    const mac = { ...browser, deviceMemory: null, cores: 12 };
+
+    it('reads every limit the needs name, off the prototype, and lets the Mac through', async () => {
+      const adapter = await probeAdapter(gpu(m3), Object.keys(play.needs.limits));
+      expect(adapter.limits.maxVertexAttributes).toBe(30);
+      expect(adapter.limits.maxInterStageShaderVariables).toBe(28);
+      expect(engineSupport({ ...mac, ...adapter }, { beforeIsolation: true, needs: play.needs })).toEqual({ ok: true, missing: [] });
+      // (and at WebGPU's defaults, 16 and 16)
+      const defaults = await probeAdapter(gpu({ ...m3, maxVertexAttributes: 16, maxInterStageShaderVariables: 16 }), Object.keys(play.needs.limits));
+      expect(engineSupport({ ...mac, ...defaults }, { beforeIsolation: true, needs: play.needs }).ok).toBe(true);
+    });
+
+    it('reads the two limits even when the caller names none', async () => {
+      const adapter = await probeAdapter(gpu(m3));
+      expect(adapter.limits).toMatchObject({ maxVertexAttributes: 30, maxInterStageShaderVariables: 28 });
+    });
+
+    it('reads every limit any build the site holds names (a new name in a build\'s needs can’t go unread)', async () => {
+      const names = Object.keys(play.needs?.limits ?? {});
+      const read = Object.keys((await probeAdapter(gpu(m3), names)).limits);
+      for (const name of names) expect(read).toContain(name);
+    });
+
+    it('names a limit the browser didn’t report as unreported, not as "no"', () => {
+      expect(WHY.limit('maxVertexAttributes', undefined, 12)).toBe('the browser didn’t report maxVertexAttributes (the engine needs 12)');
+      expect(WHY.limit('maxStorageBuffersPerShaderStage', 8, 10)).toBe('the GPU allows 8 where the engine needs 10 (maxStorageBuffersPerShaderStage)');
+      expect(engineSupport({ ...mac, features: ['texture-compression-bc'], limits: {} }, { beforeIsolation: true, needs: play.needs }).missing.join('\n')).not.toMatch(/allows no/);
+    });
+
+    it('gives a Mac its own advice, not the Windows graphics setting', () => {
+      expect(advice('macos')).toBe(ADVICE.macos);
+      expect(advice('macos')).not.toMatch(/High performance|Windows|discrete/);
+      expect(advice('macos')).toMatch(/Chrome or Edge/);
+      expect(advice('windows')).toMatch(/High performance/);
+      expect(advice(undefined)).toBe(ADVICE.other);
+    });
   });
 });
