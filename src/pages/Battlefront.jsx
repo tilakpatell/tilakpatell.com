@@ -4,7 +4,7 @@ import { wayBack } from '../components/battlefront';
 import { useDocumentTitle } from '../lib/hooks';
 import { useInWorld } from '../components/universe/online/useOnline';
 import { engineOnly } from '../components/battlefront/engine.js';
-import { engineSupport, probeAdapter, probeBrowser } from '../lib/bf2web/engineSupport.js';
+import { advice, engineSupport, probeAdapter, probeBrowser } from '../lib/bf2web/engineSupport.js';
 import play from '../data/bf2web/play.json';
 
 // Battlefront is bf2-web's engine and game only (the owner, 2026-10-29): `/battlefront` and `/battlefront/<level>[/<mode>]`
@@ -23,7 +23,7 @@ export default function Battlefront() {
   useEffect(() => {
     if (adapter) return undefined;
     let live = true;
-    probeAdapter().then((a) => live && setAdapter(a));
+    probeAdapter(undefined, Object.keys(play.needs?.limits ?? {})).then((a) => live && setAdapter(a));
     return () => {
       live = false;
     };
@@ -43,7 +43,7 @@ export default function Battlefront() {
             <li key={why}>{why}</li>
           ))}
         </ul>
-        <p>It needs a desktop browser with WebGPU on a discrete GPU. On Windows, set the browser to High performance under Settings › System › Display › Graphics.</p>
+        <p>{advice(probeBrowser(window).os)}</p>
       </main>
     );
   return <main className="bf-page" aria-busy="true" />;
