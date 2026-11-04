@@ -134,11 +134,27 @@ export function createFarStars(parent, { places, skyFar }) {
   points.frustumCulled = false;
   // (a point's size is in the frame's pixels as drawn: the page's px times
   // the ratio the frame is drawn at)
+  // (the canvas's height on the page is read once and again only when it's
+  // resized: read on every draw, it made the page lay itself out again in
+  // the middle of a frame whenever the HUD had written to it)
   const px = new THREE.Vector2();
+  let tall = 0; // the canvas's height on the page, once read (0: to read)
+  let watched = null;
+  let sizes = null;
   points.onBeforeRender = (renderer) => {
     const target = renderer.getRenderTarget();
     const h = target ? target.height : renderer.getDrawingBufferSize(px).y;
-    mat.uniforms.uDpr.value = h / (renderer.domElement.clientHeight || h / renderer.getPixelRatio());
+    const el = renderer.domElement;
+    if (el !== watched) {
+      watched = el;
+      tall = 0;
+      sizes?.disconnect();
+      sizes = typeof ResizeObserver === 'function' && el ? new ResizeObserver(() => (tall = 0)) : null;
+      sizes?.observe?.(el);
+    }
+    const page = tall || el?.clientHeight || 0;
+    if (sizes) tall = page;
+    mat.uniforms.uDpr.value = h / (page || h / renderer.getPixelRatio());
   };
   parent.add(points);
 
@@ -192,6 +208,7 @@ export function createFarStars(parent, { places, skyFar }) {
       places.forEach((p, i) => {
         if (p.group && hidden[i]) p.group.visible = true;
       });
+      sizes?.disconnect();
       parent.remove(points);
       geo.dispose();
       mat.dispose();
