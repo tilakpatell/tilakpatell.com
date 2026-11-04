@@ -37,6 +37,7 @@ export const shipAhead = (kind) => spares.want(kind);
 
 export const takeShip = (kind) =>
   spares.take(kind).then((made) => {
+    performance.mark?.('universe:ship-made', { detail: kind }); // (scripts/ship-load-check.mjs: built, before its shaders)
     // (made ahead, perhaps a visit ago: the crew in the wardrobe's looks as they are now)
     Promise.resolve(made?.setLooks?.(readLooks(local.get(LOOK_KEY)))).catch(() => {});
     return made;

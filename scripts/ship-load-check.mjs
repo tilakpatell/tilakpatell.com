@@ -87,7 +87,7 @@ const read = (page) =>
     const re = new RegExp(files);
     const got = performance.getEntriesByType('resource').filter((r) => re.test(r.name));
     const at = (name) => performance.getEntriesByName(name, 'mark').map((m) => ({ t: m.startTime, kind: m.detail }));
-    return { first: window.__ship.first, standIn: at('universe:ship-stand-in'), full: at('universe:ship-full'), frames: window.__ship.frames.slice(), asked: got.length ? Math.min(...got.map((r) => r.startTime)) : null, landed: got.length ? Math.max(...got.map((r) => r.responseEnd)) : null };
+    return { first: window.__ship.first, standIn: at('universe:ship-stand-in'), made: at('universe:ship-made'), full: at('universe:ship-full'), frames: window.__ship.frames.slice(), asked: got.length ? Math.min(...got.map((r) => r.startTime)) : null, landed: got.length ? Math.max(...got.map((r) => r.responseEnd)) : null };
   }, SHIP_FILES.source);
 
 const waitFor = async (page, fn, arg, ms = TIMEOUT) => {
@@ -141,6 +141,7 @@ async function run(base, net) {
     standInSeenMs: full == null ? null : Math.max(0, Math.round(full - one.first)),
     // (in the scene, seen or not: from the stand-in going in to the model mounted over it)
     standInInSceneMs: full == null ? null : Math.round(full - (one.standIn[0]?.t ?? full)),
+    madeAtMs: Math.round(one.made[0]?.t ?? NaN), // (built and handed over, before its shaders were made)
     shipFirstAskedMs: one.asked == null ? null : Math.round(one.asked),
     shipLastByteMs: one.landed == null ? null : Math.round(one.landed),
     // (the frames on either side of the swap; in software every frame is long, so compare runs, not budgets)
