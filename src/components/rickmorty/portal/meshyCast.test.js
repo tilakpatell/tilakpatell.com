@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import * as THREE from 'three';
+import { disposeTree } from '../../../lib/three/renderer';
 import { assetUrl, createMeshyCast, cullWithin, FOLDERS, heading, INK_TALLEST, SET_PIECES } from './meshyCast';
 import { meshyRig as fixtureRig, swingClip } from '../../../lib/three/meshyRig.fixture';
 
@@ -221,6 +222,19 @@ describe('a Meshy figure’s line', () => {
   it('has none unless the cast is asked for one', async () => {
     const { cast, c } = await castOf();
     expect(inksOf(c).inks).toHaveLength(0);
+    cast.dispose();
+  });
+
+  it('is the cast’s, line and all: every mesh marked shared, so a kept cast’s figure freed keeps what the cast holds', async () => {
+    const cast = createMeshyCast({ kinds: KINDS, loader: fakeLoader(), ink: 0.01 });
+    await cast.load(null, ['rick']);
+    const c = cast.make('rick');
+    const { meshes, inks } = inksOf(c);
+    for (const o of [...meshes, ...inks]) expect(o.userData.shared).toBe(true);
+    let freed = 0;
+    for (const o of meshes) o.geometry.addEventListener('dispose', () => (freed += 1));
+    disposeTree(c.group, { keepShared: true });
+    expect(freed).toBe(0);
     cast.dispose();
   });
 });

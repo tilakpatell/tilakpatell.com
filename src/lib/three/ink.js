@@ -127,6 +127,7 @@ export function inkHull(root, width, { clipY = null, color = INK, near = 0 } = {
     } else h = new THREE.Mesh(o.geometry, mat);
     h.userData.ink = true;
     h.userData.noPaint = true;
+    if (o.userData.shared) h.userData.shared = true; // (its geometry is its figure's: a kept cast's stays with the cast; its material's freed with the line)
     h.frustumCulled = false;
     h.castShadow = false;
     h.position.copy(o.position);

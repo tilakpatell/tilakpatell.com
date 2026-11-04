@@ -452,6 +452,12 @@ function createMeshyCast({ kinds = MESHY, rigged = RIGGED, cull = false, ink = 0
     body.add(model);
     // (its line before the culling, so the line's culled with it)
     const line = ink > 0 && inkHull && !SET_PIECES.has(spec.a) && spec.h <= INK_TALLEST ? inkHull(model, ink, { near: INK_NEAR }) : null;
+    // (its meshes the cast's, as a set piece's are, below: their geometry and
+    // the loader's materials go with the cast, not with the figure; what's
+    // made for it alone, its line and a clone's shirt, goes with release)
+    model.traverse((o) => {
+      if (o.isMesh) o.userData.shared = true;
+    });
     if (cull)
       model.traverse((o) => {
         if (o.isSkinnedMesh) cullWithin(o, group, spec.h);

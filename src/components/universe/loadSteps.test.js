@@ -14,6 +14,8 @@ describe('loadSteps', () => {
     steps.shaders(0.5);
     steps.shaders(1);
     steps.near(1);
+    steps.ship(0);
+    steps.ship(1);
     steps.prepare(0, 'pictures');
     steps.prepare(1, 'first draw');
     expect(seen).toEqual([
@@ -22,7 +24,9 @@ describe('loadSteps', () => {
       [0.3, 'shaders'],
       [0.45, 'shaders'],
       [0.5, 'load'],
-      [0.5, 'pictures'],
+      [0.5, 'ship'],
+      [0.55, 'ship'],
+      [0.55, 'pictures'],
       [0.97, 'first draw'],
     ]);
   });

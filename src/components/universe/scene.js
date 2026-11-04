@@ -112,7 +112,7 @@ import { CHASE, DIVE_MS, FOV, chaseDist, cover, cameraFrom, focusPose, overviewP
 import { easeOpen, sameOpen } from './openPart';
 import { BELT, BODIES, ORDER, POSITIONS, REACH, RIM, RING, SECTORS, SECTOR_OF, SUN, inExpanse, mapSectorOf, sectorOf } from './layout';
 import { HOME_SPREAD } from './scale';
-import { MODEL_PLANETS, buildPlanet, loadModels, loadTextures } from './planets';
+import { MODEL_PLANETS, buildPlanet, growsIn, loadModels, loadTextures } from './planets';
 import { createLazy, standIn, wanted as nearEnough } from './nearby';
 import { loadSteps } from './loadSteps';
 import { buildSun } from './sun';
@@ -178,6 +178,7 @@ import { createBelt, createDust } from './belt';
 import { createTrail } from './trail';
 import { ENGINES, LENGTH, SHIP_MODELS, buildShip } from './shipModels';
 import { takeShip } from './shipLoad';
+import { swapFlare } from './shipSwap';
 import { HERO_ENGINES, capPlume, createEngines } from './engines';
 import { paintById } from './paint';
 import { FASTEST, PARTS, PARTS_SLOTS, STOCK, STOCK_LOADOUT, readLoadout, statsOf } from './outfit';
@@ -1177,7 +1178,7 @@ export async function create(canvas, ctx) {
     // landing's way, lib/three/gpuWork; and come in where the map's been
     // seen, it grows into its place rather than popping in, planets.js)
     return prepareLanding([model], () => true).then(() => {
-      if (disposed || !planetOf[id]?.mount(model, spot, { grow: warmed })) disposeTree(model);
+      if (disposed || !planetOf[id]?.mount(model, spot, { grow: growsIn({ shown: warmed, reduced }) })) disposeTree(model);
       ctx.invalidate();
     });
   };
@@ -2192,7 +2193,7 @@ export async function create(canvas, ctx) {
       heroEngine = null;
       map.remove(state.model.group);
       state.model.dispose();
-      disposeTree(state.model.group);
+      disposeTree(state.model.group, { keepShared: true }); // (not what it shares with the kept cast: the cruiser's next return would send it all again)
       state.model = null;
     }
     const was = state.kind;
@@ -2229,6 +2230,7 @@ export async function create(canvas, ctx) {
     state.model = buildShip(kind, T, { build: state.build });
     map.add(state.model.group);
     performance.mark?.('universe:ship-stand-in', { detail: kind }); // (scripts/ship-load-check.mjs: how long the stand-in was seen)
+    const standInAt = performance.now();
     // its engines' glow (a garage build's where its own exhausts are)
     heroEngine = engines.add(kind, state.model.pivot, { list: state.build ? state.model.engines.map((at) => ({ at, r: 0.03, colour: '#ffc080' })) : (HERO_ENGINES[kind] ?? HERO_ENGINES.cruiser) });
     if (state.build) setPlumes(kind, state.model.engines); // (its own engines)
@@ -2251,7 +2253,7 @@ export async function create(canvas, ctx) {
       const cruiser = kind === 'cruiser';
       const gone = (made) => {
         made.dispose?.();
-        disposeTree(made.group ?? made);
+        disposeTree(made.group ?? made, { keepShared: true });
       };
       shipIn = takeShip(kind)
         .then((made) => {
@@ -2267,9 +2269,16 @@ export async function create(canvas, ctx) {
           if (disposed || state.model !== model || !model.mount(cruiser ? made.group : made, extra)) return void gone(made);
           performance.mark?.('universe:ship-full', { detail: kind });
           shipMounted(kind);
-          // (come in after the map was shown, the stand-in's seen: the swap under a flare of the bloom, not a bare pop;
-          // not under the cockpit, whose white waits for this, lib/shipReady)
-          if (warmed && !reduced && !foreground()) state.flare = Math.max(state.flare, 1.4);
+          // (come in where the stand-in was seen a while: the swap under a soft flare of the bloom, not a bare
+          // pop; none under the cockpit, whose white waits for this, lib/shipReady, nor behind the Hangar: ./shipSwap.js)
+          const flare = swapFlare({
+            shown: !document.hidden && (ctx.rt.host ?? ctx.el)?.closest?.('[data-gl]')?.dataset.gl === 'on',
+            seenMs: performance.now() - standInAt,
+            reduced,
+            covered: Boolean(foreground()) || 'covered' in document.documentElement.dataset,
+            frozen: Boolean(props.frozen),
+          });
+          if (flare) state.flare = Math.max(state.flare, flare);
           if (cruiser) {
             seatCrew = made.seated;
             // its exhaust leaves from its own exhaust cans
@@ -5803,12 +5812,10 @@ export async function create(canvas, ctx) {
   // put on at the first frame instead, it changed every lit shader after
   // they were compiled, and they were all compiled again in that frame
   house.follow({ adopt: true });
-  // (and the ship's own model, mounted, its shaders made: the first frame
-  // has the cruiser and its crew, not the stand-in that pops into them; a
-  // while at most, from here, so a slow network shows the stand-in rather
-  // than hold the map, and the model comes in over it when it can)
-  const SHIP_WAIT = 10000;
-  const ready = Promise.all([warm(scene, camera, scene, steps.shaders), post.composer ? precompilePasses(renderer, post.composer, camera) : null, post.precompileFinish(camera), settleWithin(shipIn, SHIP_WAIT)]).then(() => {
+  // (the ship's own model is prepare's to wait for, a while from here at
+  // most: shipBy, below; nothing in ready waits on the network)
+  const shipBy = performance.now() + 10000;
+  const ready = Promise.all([warm(scene, camera, scene, steps.shaders), post.composer ? precompilePasses(renderer, post.composer, camera) : null, post.precompileFinish(camera)]).then(() => {
     // made: out of the scene (so nothing walks them each frame), and the
     // ships on to the fleet, ready to fly (the first of each kind isn't
     // built in the middle of a frame)
@@ -6008,6 +6015,16 @@ export async function create(canvas, ctx) {
     ready.then(madeAll, () => {});
     await settleWithin(Promise.all([ready, near]), 20000);
     if (!alive() || disposed) return;
+    // the ship you fly's own model mounted, its shaders made (setShip's
+    // shipIn), so the first frame has the cruiser and its crew rather than
+    // the stand-in that turned into them; ten seconds from the map's making
+    // at most (shipBy), so a slow network shows the stand-in rather than
+    // hold the map, and the model comes in over it when it can. In the
+    // scene by the steps below: its pictures and its first draw with the rest
+    steps.ship(0);
+    await settleWithin(shipIn, Math.max(0, shipBy - performance.now()));
+    if (!alive() || disposed) return;
+    steps.ship(1);
     await prepareScene({
       renderer,
       roots: [scene],
