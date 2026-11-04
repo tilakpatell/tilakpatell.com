@@ -60,3 +60,24 @@ describe('the pilots online, as bodies for ship contact', () => {
     pilots.dispose();
   });
 });
+
+describe('the pilots online, with nobody here', () => {
+  it('reads nothing of the page a frame (a read of the tags’ box makes the page lay itself out mid-frame)', () => {
+    const pilots = createPilots(new THREE.Group(), { fleet: fakeFleet(), kinds: HUNTER_KINDS });
+    let reads = 0;
+    const tags = {
+      get clientWidth() {
+        reads += 1;
+        return 1280;
+      },
+      get clientHeight() {
+        reads += 1;
+        return 800;
+      },
+    };
+    const view = { tags, from: { x: 0, y: 0, z: 0 }, me: null, locked: null, footOn: null, project: (x, y, z, out) => Object.assign(out, { x: 0, y: 0, z: 1 }) };
+    for (let i = 0; i < 10; i++) pilots.update(1 / 60, 150 + i * 16, client(), view);
+    expect(reads).toBe(0);
+    pilots.dispose();
+  });
+});
