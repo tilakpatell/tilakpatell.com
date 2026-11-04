@@ -37,7 +37,9 @@ function mineGeometry() {
     spike.applyQuaternion(new THREE.Quaternion().setFromUnitVectors(up, d));
     parts.push(spike);
   }
-  const merged = mergeGeometries(parts.map((g) => g.toNonIndexed()));
+  // (the ball, an icosahedron with detail, comes without an index: only the
+  // spikes are un-indexed, so they merge with it)
+  const merged = mergeGeometries(parts.map((g) => (g.index ? g.toNonIndexed() : g)));
   for (const g of parts) g.dispose();
   merged.computeVertexNormals();
   return merged;
