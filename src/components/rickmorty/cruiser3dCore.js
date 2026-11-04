@@ -291,6 +291,10 @@ async function buildCruiser({ ink = 1, crewInk = 0.026, looks = readLooks(local.
         undress();
         inkMat.dispose();
         c.release?.(); // (what the cast made for him alone: the cast lasts the page, so it isn't freed with it)
+        // his skeleton, its bone texture (he's out of the tree before any disposeTree of it reaches him)
+        const bones = new Set();
+        c.group.traverse((o) => o.isSkinnedMesh && o.skeleton && bones.add(o.skeleton));
+        for (const k of bones) k.dispose();
         c.group.removeFromParent();
       },
     };

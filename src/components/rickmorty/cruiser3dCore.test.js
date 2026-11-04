@@ -9,6 +9,7 @@ const fakeCast = () => {
   const owned = [];
   const cast = {
     owned,
+    skeletons: [],
     made: 0,
     load: async () => {},
     prop: () => {
@@ -21,6 +22,14 @@ const fakeCast = () => {
       const mine = [{ kind, line: true }];
       owned.push(...mine);
       const group = new THREE.Group();
+      // (skinned, as Rick and Morty are: a skeleton with a bone texture of its own)
+      const bone = new THREE.Bone();
+      const skin = new THREE.SkinnedMesh(new THREE.BoxGeometry(), new THREE.MeshBasicMaterial());
+      skin.add(bone);
+      skin.bind(new THREE.Skeleton([bone]));
+      skin.skeleton.computeBoneTexture();
+      group.add(skin);
+      cast.skeletons.push(skin.skeleton);
       return {
         group,
         height: 1.7,
@@ -87,6 +96,20 @@ describe('the cruiser’s cast, kept for the page’s life', () => {
     expect(cast.owned).toHaveLength(2);
     c.dispose();
     expect(cast.owned).toHaveLength(0);
+  });
+
+  it('frees its crew’s skeletons (their bone textures) when it goes, and a crew member’s when a new look takes his place', async () => {
+    const cast = fakeCast();
+    const build = buildCruiserWith(paintWith(cast));
+    const c = await build({ looks: LOOKS, keep: true });
+    const freed = new Set();
+    const watch = () => cast.skeletons.forEach((k) => k.boneTexture?.addEventListener('dispose', () => freed.add(k)));
+    watch();
+    await c.setLooks({ ...LOOKS, morty: { body: 'morty', hat: 'cap' } });
+    expect(freed.size).toBe(1);
+    watch();
+    c.dispose();
+    expect(freed.size).toBe(3);
   });
 
   it('frees the crew member a new look takes the place of', async () => {
