@@ -2153,7 +2153,7 @@ export async function create(canvas, ctx) {
       heroEngine = null;
       map.remove(state.model.group);
       state.model.dispose();
-      disposeTree(state.model.group);
+      disposeTree(state.model.group, { keepShared: true }); // (not what it shares with the kept cast: the cruiser's next return would send it all again)
       state.model = null;
     }
     const was = state.kind;
@@ -2212,7 +2212,7 @@ export async function create(canvas, ctx) {
       const cruiser = kind === 'cruiser';
       const gone = (made) => {
         made.dispose?.();
-        disposeTree(made.group ?? made);
+        disposeTree(made.group ?? made, { keepShared: true });
       };
       shipIn = takeShip(kind)
         .then((made) => {

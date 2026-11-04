@@ -199,8 +199,12 @@ export function watchdog({ ratio, set, onSlow, floor = 0.75, slow = 22 }) {
   return { watch, rebase };
 }
 
-// Free every geometry, material and texture under `root`.
-export function disposeTree(root) {
+// Free every geometry, material and texture under `root`, and every skinned
+// mesh's skeleton (its bone texture: three makes it again if it's drawn
+// again). `keepShared`: a mesh marked userData.shared (a kept cast's copy,
+// meshyCastCore's) keeps what it holds, which its cast owns: freed, every
+// return of it sent them to the chip again.
+export function disposeTree(root, { keepShared = false } = {}) {
   const seen = new Set();
   const free = (thing) => {
     if (!thing || seen.has(thing)) return;
@@ -208,6 +212,8 @@ export function disposeTree(root) {
     thing.dispose?.();
   };
   root.traverse((o) => {
+    if (o.isSkinnedMesh) free(o.skeleton);
+    if (keepShared && o.userData?.shared) return;
     free(o.geometry);
     const mats = Array.isArray(o.material) ? o.material : o.material ? [o.material] : [];
     for (const m of mats) {

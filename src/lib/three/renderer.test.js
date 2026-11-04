@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
-import { fitRatio, precompile, precompilePasses, watchdog } from './renderer';
+import { disposeTree, fitRatio, precompile, precompilePasses, watchdog } from './renderer';
 import { fakeGl, fakeRenderer } from './gpuFake.fixture';
 
 // Runs `seconds` of frames through a watchdog, each frame taking
@@ -137,5 +137,54 @@ describe('precompile', () => {
     expect(told.length).toBeGreaterThan(1);
     expect(told.at(-1)).toBe(1);
     for (let i = 1; i < told.length; i++) expect(told[i]).toBeGreaterThanOrEqual(told[i - 1]);
+  });
+});
+
+describe('disposeTree', () => {
+  // a mesh whose geometry, material and map count their dispose calls
+  const counted = () => {
+    const freed = { geometry: 0, material: 0, map: 0 };
+    const map = new THREE.Texture();
+    map.addEventListener('dispose', () => freed.map++);
+    const material = new THREE.MeshBasicMaterial({ map });
+    material.addEventListener('dispose', () => freed.material++);
+    const geometry = new THREE.BoxGeometry();
+    geometry.addEventListener('dispose', () => freed.geometry++);
+    return { mesh: new THREE.Mesh(geometry, material), freed };
+  };
+
+  it('frees every geometry, material and texture under the root, each once', () => {
+    const a = counted();
+    const root = new THREE.Group();
+    root.add(a.mesh, new THREE.Mesh(a.mesh.geometry, a.mesh.material));
+    disposeTree(root);
+    expect(a.freed).toEqual({ geometry: 1, material: 1, map: 1 });
+  });
+
+  it('with keepShared, leaves what a mesh marked shared holds (a kept cast’s), and frees the rest', () => {
+    const own = counted();
+    const theirs = counted();
+    theirs.mesh.userData.shared = true;
+    const root = new THREE.Group();
+    root.add(own.mesh, theirs.mesh);
+    disposeTree(root, { keepShared: true });
+    expect(own.freed).toEqual({ geometry: 1, material: 1, map: 1 });
+    expect(theirs.freed).toEqual({ geometry: 0, material: 0, map: 0 });
+  });
+
+  it('frees a skinned mesh’s skeleton (its bone texture), shared or not', () => {
+    for (const shared of [false, true]) {
+      const bone = new THREE.Bone();
+      const skeleton = new THREE.Skeleton([bone]);
+      skeleton.computeBoneTexture();
+      let gone = 0;
+      skeleton.boneTexture.addEventListener('dispose', () => gone++);
+      const mesh = new THREE.SkinnedMesh(new THREE.BoxGeometry(), new THREE.MeshBasicMaterial());
+      mesh.add(bone);
+      mesh.bind(skeleton);
+      mesh.userData.shared = shared;
+      disposeTree(mesh, { keepShared: true });
+      expect(gone, `shared: ${shared}`).toBe(1);
+    }
   });
 });
