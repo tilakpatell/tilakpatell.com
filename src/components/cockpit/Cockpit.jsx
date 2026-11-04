@@ -9,6 +9,7 @@ import { preloadVoiced, voicedSrc } from '../../lib/voiced';
 import { SHIP_KEY, parseShip } from '../universe/crews';
 import { audioContext } from '../../lib/audio';
 import { noteArrival } from '../../lib/arrival';
+import { whenShipReady } from '../../lib/shipReady';
 import { isMapPath } from '../../lib/view';
 import Hyperspace from '../Hyperspace';
 import Face from '../universe/Faces';
@@ -46,6 +47,11 @@ const reveal = () => {
 //
 // Where WebGL can't draw it (or it fails), the plain jump to lightspeed
 // plays instead, with the same callbacks.
+// how long past the peak the white may hold for the ship to be whole on the
+// map (lib/shipReady): its model a moment late is better than a stand-in
+// seen turning into it, but a slow network never keeps you in the flash
+const OUT_WAIT = 2000;
+
 export default function Cockpit({ start, onPeak, onDone }) {
   const [id, setId] = useState(() => start ?? firstVehicle(local.get(KEY, null)));
   const [scene, setScene] = useState(() => cockpitScene());
@@ -139,6 +145,11 @@ export default function Cockpit({ start, onPeak, onDone }) {
         onLine: say,
         onReveal: () => onMap.current && reveal(),
         onPeak: peak,
+        // (the white at the peak held until the ship it comes out in is whole on the map, a while at most)
+        waitOut: () => {
+          const ship = parseShip(vehicleById(idNow.current)?.ship);
+          return ship && onMap.current ? whenShipReady(ship, OUT_WAIT) : null;
+        },
         onDone: () => cbs.current.onDone?.(),
         onFail: () => setFallback(true),
       });

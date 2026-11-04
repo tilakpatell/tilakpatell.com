@@ -171,6 +171,15 @@ export default function UniverseMap({ selected, onSelect, onOpen, handle, frozen
   useEffect(() => {
     if (meant && ship && !build) import('./shipLoad').then((m) => m.shipAhead(ship), () => {});
   }, [meant, ship, build]);
+  // and the one the cockpit seats you in, while you sit there: a replay keeps
+  // flying its ship until the flash (pages/Universe's tp:board), and the
+  // model it comes out in is ready by then rather than fetched from it
+  useEffect(() => {
+    if (!meant) return undefined;
+    const board = (e) => typeof e.detail?.ship === 'string' && import('./shipLoad').then((m) => m.shipAhead(e.detail.ship), () => {});
+    window.addEventListener('tp:board', board);
+    return () => window.removeEventListener('tp:board', board);
+  }, [meant]);
   // the first flight's basics (components/tour), as the ship's under you
   useEffect(() => {
     if (ship && on) askBrief('/universe/fly');

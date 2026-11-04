@@ -1,10 +1,14 @@
-/* global window, document, MutationObserver, requestAnimationFrame, location */
+/* global window, document, MutationObserver, requestAnimationFrame, location, Element */
 // How the ship you fly comes onto the universe map: whether the first frame
 // the visitor sees already has its full model or a stand-in that pops into
 // it later, under a throttled network, and what a second visit fetches.
 //
 //   node scripts/ship-load-check.mjs [--url http://127.0.0.1:4173] [--ship cruiser]
 //     [--net cable,fast3g,none] [--quality high] [--out lab/ship-load.json] [--timeout 300] [--dist dist]
+//     [--launch cruiser] (instead: the map up flying the Falcon, then the cockpit
+//       opened as ⌘K's replay does and launched in `--launch`'s vehicle: how
+//       long the white held past the flash, and whether the stand-in was
+//       on the map as it cleared)
 //
 // Without --url it serves the last build (`npm run build` first) with vite
 // preview. Each network profile gets a fresh browser (an empty cache): the
@@ -183,11 +187,69 @@ async function run(base, net) {
 // (the Chromium the container has, as universe-check.mjs finds it)
 const exe = args.chromium ?? process.env.CHROMIUM ?? (await readdir('/opt/pw-browsers').catch(() => [])).filter((n) => /^chromium-\d+$/.test(n)).map((n) => [`/opt/pw-browsers/${n}/chrome-linux/chrome`, `/opt/pw-browsers/${n}/chrome-linux64/chrome`]).flat().find(existsSync);
 if (!exe) throw new Error('no Chromium (set CHROMIUM=/path/to/chrome)');
+// The cockpit's replay: the map up in the Falcon, the cockpit opened over it
+// in another vehicle and launched; times from the flash (tp:arrive) to the
+// white starting to clear (the veil's fade, cockpit/scene.js's clearOut) and
+// to the launched ship's model mounted.
+async function runLaunch(base, net, vehicle) {
+  const browser = await chromium.launch({ executablePath: exe, args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', '--enable-webgl', '--js-flags=--max-old-space-size=4096'] });
+  const ctx = await browser.newContext({ viewport: { width: 1280, height: 720 } });
+  await ctx.addInitScript((q) => {
+    window.localStorage.setItem('tp-intro', '1');
+    window.localStorage.setItem('tp-start', '"universe"');
+    window.localStorage.setItem('tp-quality', q);
+    window.localStorage.setItem('tp-universe-ship', '"falcon"');
+    window.localStorage.setItem('tp-sound', 'off');
+    window.localStorage.setItem('tp-tour', 'skipped');
+  }, QUALITY);
+  await ctx.addInitScript(pageProbe);
+  await ctx.addInitScript(() => {
+    window.addEventListener('tp:arrive', () => (window.__ship.arrive ??= performance.now()));
+    const animate = Element.prototype.animate;
+    Element.prototype.animate = function (...a) {
+      if (this.classList?.contains('cockpit-veil') && window.__ship.launched) window.__ship.clear ??= performance.now(); // (cleared as planned, before the flash's event, or held after it)
+      return animate.apply(this, a);
+    };
+  });
+  const page = await ctx.newPage();
+  const cdp = await ctx.newCDPSession(page);
+  await cdp.send('Network.enable');
+  if (NETS[net]) await cdp.send('Network.emulateNetworkConditions', { offline: false, ...NETS[net] });
+  const errors = [];
+  page.on('pageerror', (e) => errors.push(String(e)));
+  await page.goto(`${base}/?quality=${QUALITY}#/universe`, { waitUntil: 'domcontentloaded', timeout: TIMEOUT });
+  await waitFor(page, () => window.__ship.first != null);
+  console.error(`map drawn; opening the cockpit in the ${vehicle}`);
+  await page.evaluate((v) => window.dispatchEvent(new CustomEvent('tp:cockpit', { detail: { vehicle: v } })), vehicle);
+  await waitFor(page, () => document.querySelector('.cockpit[data-ready]'));
+  const boardAt = await page.evaluate(() => performance.now());
+  console.error('sat down; launching');
+  await page.waitForTimeout(1500);
+  await page.evaluate(() => (window.__ship.launched = true));
+  await page.keyboard.press('Space');
+  await waitFor(page, () => window.__ship.arrive != null, null, 120000).catch(() => console.error('no flash after Space'));
+  console.error('flash');
+  await waitFor(page, () => window.__ship.clear != null && !document.querySelector('.cockpit'));
+  await page.waitForFunction((v) => performance.getEntriesByName('universe:ship-full', 'mark').some((m) => m.detail === v), vehicle, { timeout: 60000, polling: 250 }).catch(() => {});
+  const got = await page.evaluate((v) => ({ arrive: window.__ship.arrive, clear: window.__ship.clear, full: performance.getEntriesByName('universe:ship-full', 'mark').find((m) => m.detail === v)?.startTime ?? null }), vehicle);
+  await browser.close();
+  const r = (x) => (x == null ? null : Math.round(x));
+  return {
+    net,
+    launch: vehicle,
+    boardToFlashMs: r(got.arrive - boardAt),
+    whiteHeldMs: Math.max(0, r(got.clear - got.arrive)), // (the plan's own clear starts at the flash: 0 before)
+    fullAfterFlashMs: got.full == null ? null : r(got.full - got.arrive),
+    standInSeenAfterClearMs: got.full == null ? null : Math.max(0, r(got.full - got.clear)),
+    errors: errors.slice(0, 5),
+  };
+}
+
 const { base, stop } = await serve();
 const results = [];
 try {
   for (const net of nets) {
-    const r = await run(base, net);
+    const r = args.launch ? await runLaunch(base, net, String(args.launch)) : await run(base, net);
     console.log(JSON.stringify(r));
     results.push(r);
   }
