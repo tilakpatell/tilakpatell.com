@@ -176,6 +176,7 @@ import { createBelt, createDust } from './belt';
 import { createTrail } from './trail';
 import { ENGINES, LENGTH, SHIP_MODELS, buildShip } from './shipModels';
 import { takeShip } from './shipLoad';
+import { swapFlare } from './shipSwap';
 import { HERO_ENGINES, capPlume, createEngines } from './engines';
 import { paintById } from './paint';
 import { FASTEST, PARTS, PARTS_SLOTS, STOCK, STOCK_LOADOUT, readLoadout, statsOf } from './outfit';
@@ -2190,6 +2191,7 @@ export async function create(canvas, ctx) {
     state.model = buildShip(kind, T, { build: state.build });
     map.add(state.model.group);
     performance.mark?.('universe:ship-stand-in', { detail: kind }); // (scripts/ship-load-check.mjs: how long the stand-in was seen)
+    const standInAt = performance.now();
     // its engines' glow (a garage build's where its own exhausts are)
     heroEngine = engines.add(kind, state.model.pivot, { list: state.build ? state.model.engines.map((at) => ({ at, r: 0.03, colour: '#ffc080' })) : (HERO_ENGINES[kind] ?? HERO_ENGINES.cruiser) });
     if (state.build) setPlumes(kind, state.model.engines); // (its own engines)
@@ -2228,9 +2230,16 @@ export async function create(canvas, ctx) {
           if (disposed || state.model !== model || !model.mount(cruiser ? made.group : made, extra)) return void gone(made);
           performance.mark?.('universe:ship-full', { detail: kind });
           shipMounted(kind);
-          // (come in after the map was shown, the stand-in's seen: the swap under a flare of the bloom, not a bare pop;
-          // not under the cockpit, whose white waits for this, lib/shipReady)
-          if (warmed && !reduced && !foreground()) state.flare = Math.max(state.flare, 1.4);
+          // (come in where the stand-in was seen a while: the swap under a soft flare of the bloom, not a bare
+          // pop; none under the cockpit, whose white waits for this, lib/shipReady, nor behind the Hangar: ./shipSwap.js)
+          const flare = swapFlare({
+            shown: !document.hidden && (ctx.rt.host ?? ctx.el)?.closest?.('[data-gl]')?.dataset.gl === 'on',
+            seenMs: performance.now() - standInAt,
+            reduced,
+            covered: Boolean(foreground()) || 'covered' in document.documentElement.dataset,
+            frozen: Boolean(props.frozen),
+          });
+          if (flare) state.flare = Math.max(state.flare, flare);
           if (cruiser) {
             seatCrew = made.seated;
             // its exhaust leaves from its own exhaust cans
