@@ -56,20 +56,33 @@ const paintWith = (cast) => ({
 const LOOKS = { rick: { body: 'rick' }, morty: { body: 'morty' } };
 
 describe('the cruiser’s cast, kept for the page’s life', () => {
+  it('is a cast of its own, freed with it, for a cruiser not made to keep (the C-137 page’s own canvas)', async () => {
+    let casts = 0;
+    let freed = 0;
+    const make = () => {
+      casts += 1;
+      return { ...fakeCast(), dispose: () => (freed += 1) };
+    };
+    const build = buildCruiserWith({ ...paintWith(null), createMeshyCast: make });
+    (await build({ looks: LOOKS })).dispose();
+    (await build({ looks: LOOKS })).dispose();
+    expect([casts, freed]).toEqual([2, 2]);
+  });
+
   it('is made once for every cruiser built with one paint', async () => {
     const cast = fakeCast();
     let casts = 0;
     const paint = { ...paintWith(cast), createMeshyCast: () => (casts++, cast) };
     const build = buildCruiserWith(paint);
-    (await build({ looks: LOOKS })).dispose();
-    (await build({ looks: LOOKS })).dispose();
+    (await build({ looks: LOOKS, keep: true })).dispose();
+    (await build({ looks: LOOKS, keep: true })).dispose();
     expect(casts).toBe(1);
   });
 
   it('is left as it was found by a cruiser built and disposed: its crew’s own things freed', async () => {
     const cast = fakeCast();
     const build = buildCruiserWith(paintWith(cast));
-    const c = await build({ looks: LOOKS });
+    const c = await build({ looks: LOOKS, keep: true });
     expect(cast.made).toBe(2);
     expect(cast.owned).toHaveLength(2);
     c.dispose();
@@ -79,7 +92,7 @@ describe('the cruiser’s cast, kept for the page’s life', () => {
   it('frees the crew member a new look takes the place of', async () => {
     const cast = fakeCast();
     const build = buildCruiserWith(paintWith(cast));
-    const c = await build({ looks: LOOKS });
+    const c = await build({ looks: LOOKS, keep: true });
     await c.setLooks({ ...LOOKS, morty: { body: 'morty', hat: 'cap' } });
     expect(cast.made).toBe(3);
     expect(cast.owned).toHaveLength(2);

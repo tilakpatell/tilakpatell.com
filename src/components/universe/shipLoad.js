@@ -27,7 +27,7 @@ const spares = createSpares({
   build(kind) {
     // the C-137 page's cruiser, crew aboard; its ink drawn to the map's
     // scale (it's 2.7 across there, LENGTH here), theirs finer (they're drawn big)
-    if (kind === 'cruiser') return import('../rickmorty/cruiser3d').then((m) => atPriority(SHIP_PRIORITY, () => m.buildCruiser({ ink: LENGTH / 2.7, crewInk: CREW_INK })));
+    if (kind === 'cruiser') return import('../rickmorty/cruiser3d').then((m) => atPriority(SHIP_PRIORITY, () => m.buildCruiser({ ink: LENGTH / 2.7, crewInk: CREW_INK, keep: true })));
     if (SHIP_MODELS[kind]) return loadGLTF(SHIP_MODELS[kind]).then((g) => g && cloneScene(g));
     return null;
   },
