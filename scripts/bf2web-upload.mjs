@@ -43,6 +43,44 @@ const bytesOf = (p) => manifest.entries.find((e) => e.path === p.path)?.bytes ??
 console.log(`${id}: ${count('put')} to send (${Math.round(plan.filter((p) => p.action === 'put').reduce((n, p) => n + bytesOf(p), 0) / 1e6)} MB), ${count('copy')} copied from ${previousId ?? 'none'}, ${count('skip')} already there`);
 if (dry) process.exit(0);
 
+// A large file goes up as an S3 multipart upload in 16 MB parts, each part with attemptUpload's tries: one 188 MB PUT
+// (r1057's cooked-programs.json) had its connection reset on every attempt, sent alone or among the pool's streams.
+const PART = 16 * 1024 * 1024;
+async function sendMultipart(p) {
+  const url = objectUrl(BUCKET, p.key);
+  const body = readFileSync(p.file ?? join(dir, p.path));
+  const created = await attemptUpload(`create ${p.key}`, async () => {
+    const r = await r2.fetch(`${url}?uploads`, { method: 'POST', headers: { 'content-type': 'application/octet-stream' } });
+    const text = await r.text();
+    if (!r.ok) throw new Error(`HTTP ${r.status} ${text.slice(0, 200)}`);
+    const uploadId = /<UploadId>([^<]+)<\/UploadId>/.exec(text)?.[1];
+    if (!uploadId) throw new Error('CreateMultipartUpload returned no UploadId');
+    return uploadId;
+  });
+  const parts = [];
+  for (let n = 1, at = 0; at < body.length; n++, at += PART) {
+    const chunk = body.subarray(at, Math.min(at + PART, body.length));
+    const etag = await attemptUpload(`part ${n} of ${p.key}`, async () => {
+      const r = await r2.fetch(`${url}?partNumber=${n}&uploadId=${encodeURIComponent(created)}`, {
+        method: 'PUT', body: chunk, headers: { 'content-md5': createHash('md5').update(chunk).digest('base64') },
+      });
+      const text = await r.text();
+      if (!r.ok) throw new Error(`HTTP ${r.status} ${text.slice(0, 200)}`);
+      const e = r.headers.get('etag');
+      if (!e) throw new Error('UploadPart returned no ETag');
+      return e;
+    });
+    parts.push(`<Part><PartNumber>${n}</PartNumber><ETag>${etag}</ETag></Part>`);
+  }
+  await attemptUpload(`complete ${p.key}`, async () => {
+    const r = await r2.fetch(`${url}?uploadId=${encodeURIComponent(created)}`, {
+      method: 'POST', body: `<CompleteMultipartUpload>${parts.join('')}</CompleteMultipartUpload>`, headers: { 'content-type': 'application/xml' },
+    });
+    const text = await r.text();
+    if (!r.ok || /<Error>/.test(text)) throw new Error(`HTTP ${r.status} ${text.slice(0, 200)}`);
+  });
+}
+
 async function send(p) {
   if (p.action === 'skip') return;
   const url = objectUrl(BUCKET, p.key);
@@ -68,7 +106,7 @@ const LARGE = 32e6;
 const sizeOf = (p) => (p.action === 'put' ? (p.path ? bytesOf(p) : 0) : 0);
 for (const p of plan.filter((q) => sizeOf(q) > LARGE)) {
   for (let round = 1; ; round++) {
-    try { await send(p); break; } catch (error) { if (round === 3) throw error; console.log(`  ${p.key}: ${error.message}, again`); }
+    try { await sendMultipart(p); break; } catch (error) { if (round === 3) throw error; console.log(`  ${p.key}: ${error.message}, again`); }
   }
   done++;
   console.log(`  large ${p.key} (${Math.round(sizeOf(p) / 1e6)} MB) sent`);
