@@ -971,10 +971,12 @@ export async function create(canvas, ctx) {
     if (target === scene) house.adopt(root);
     return precompile(renderer, singlePass(root), cam, target, post.on ? post.composer.readBuffer : undefined, { onStep });
   };
-  fleet.prepare = (o) => {
-    uploadTextures(renderer, o); // (their pictures sent as they come, not on the frame one's first seen)
+  // (a model that comes after the first frame: its pictures sent as it comes, not on the frame it's first seen)
+  const sendAndWarm = (o) => {
+    uploadTextures(renderer, o);
     return warm(o);
-  }; // (the fleet's models too: none is made before the first frame)
+  };
+  fleet.prepare = sendAndWarm; // (the fleet's models too: none is made before the first frame)
   // a landing (footScene's), readied before it's shown: the look on, its
   // pictures sent and its shaders made, a slice at a time behind the frames
   // (lib/three/gpuWork), all at once rather than a thing at a time
@@ -1080,14 +1082,14 @@ export async function create(canvas, ctx) {
   let battleModels = null;
   // the Rick and Morty sector's standing ships: the Federation's fleet and
   // the Council's patrol, in the war's own models (sectorFleet.js)
-  const sectorFleet = createSectorFleet(map, () => (battleModels ??= createBattleModels({ prepare: (o) => warm(o) })));
+  const sectorFleet = createSectorFleet(map, () => (battleModels ??= createBattleModels({ prepare: sendAndWarm })));
   const frontFor = () => {
     if (reduced) return null;
     const side = sideFor(state.kind);
     if ((side?.id ?? null) === frontSide) return front;
     front?.dispose();
     frontSide = side?.id ?? null;
-    battleModels ??= createBattleModels({ prepare: (o) => warm(o) });
+    battleModels ??= createBattleModels({ prepare: sendAndWarm });
     let store = null;
     try {
       store = window.localStorage;
