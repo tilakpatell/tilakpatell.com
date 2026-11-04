@@ -207,7 +207,7 @@ async function runLaunch(base, net, vehicle) {
     window.addEventListener('tp:arrive', () => (window.__ship.arrive ??= performance.now()));
     const animate = Element.prototype.animate;
     Element.prototype.animate = function (...a) {
-      if (this.classList?.contains('cockpit-veil') && window.__ship.arrive != null) window.__ship.clear ??= performance.now();
+      if (this.classList?.contains('cockpit-veil') && window.__ship.launched) window.__ship.clear ??= performance.now(); // (cleared as planned, before the flash's event, or held after it)
       return animate.apply(this, a);
     };
   });
@@ -225,6 +225,7 @@ async function runLaunch(base, net, vehicle) {
   const boardAt = await page.evaluate(() => performance.now());
   console.error('sat down; launching');
   await page.waitForTimeout(1500);
+  await page.evaluate(() => (window.__ship.launched = true));
   await page.keyboard.press('Space');
   await waitFor(page, () => window.__ship.arrive != null, null, 120000).catch(() => console.error('no flash after Space'));
   console.error('flash');
@@ -237,7 +238,7 @@ async function runLaunch(base, net, vehicle) {
     net,
     launch: vehicle,
     boardToFlashMs: r(got.arrive - boardAt),
-    whiteHeldMs: r(got.clear - got.arrive), // (the plan's own clear starts at the flash: 0 before)
+    whiteHeldMs: Math.max(0, r(got.clear - got.arrive)), // (the plan's own clear starts at the flash: 0 before)
     fullAfterFlashMs: got.full == null ? null : r(got.full - got.arrive),
     standInSeenAfterClearMs: got.full == null ? null : Math.max(0, r(got.full - got.clear)),
     errors: errors.slice(0, 5),
