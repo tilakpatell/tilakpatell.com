@@ -107,7 +107,7 @@ const LARGE = 6e6;
 const sizeOf = (p) => (p.action === 'put' ? (p.path ? bytesOf(p) : 0) : 0);
 for (const p of plan.filter((q) => sizeOf(q) > LARGE)) {
   for (let round = 1; ; round++) {
-    try { await sendMultipart(p); break; } catch (error) { if (round === 3) throw error; console.log(`  ${p.key}: ${error.message}, again`); }
+    try { await sendMultipart(p); break; } catch (error) { if (round === 10) throw error; await new Promise((r) => setTimeout(r, 5000 * round)); console.log(`  ${p.key}: ${error.message}, again`); }
   }
   done++;
   console.log(`  large ${p.key} (${Math.round(sizeOf(p) / 1e6)} MB) sent`);
@@ -119,7 +119,7 @@ await Promise.all(
   Array.from({ length: 4 }, async () => {
     for (let p = queue.shift(); p; p = queue.shift()) {
       for (let round = 1; ; round++) {
-        try { await send(p); break; } catch (error) { if (round === 3) throw error; console.log(`  ${p.key}: ${error.message}, again`); }
+        try { await send(p); break; } catch (error) { if (round === 6) throw error; await new Promise((r) => setTimeout(r, 3000 * round)); console.log(`  ${p.key}: ${error.message}, again`); }
       }
       if (++done % 250 === 0) console.log(`  ${done} of ${plan.length}`);
     }
