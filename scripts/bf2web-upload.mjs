@@ -31,7 +31,8 @@ const problems = contractProblems(manifest);
 if (problems.length) throw new Error(`the site at ${dir} breaks the contract:\n  - ${problems.join('\n  - ')}`);
 
 const r2 = open();
-const previousId = option('--previous') ?? JSON.parse(readFileSync(join(ROOT, 'src/data/bf2web/play.json'), 'utf8')).build;
+// (BF2WEB_PREVIOUS: the workflow's publish input previous, for a re-publish of a build whose files are mostly up already)
+const previousId = option('--previous') || process.env.BF2WEB_PREVIOUS || JSON.parse(readFileSync(join(ROOT, 'src/data/bf2web/play.json'), 'utf8')).build;
 const previous = previousId && previousId !== id ? await r2.json(`sites/${previousId}/manifest.json`) : null;
 const prefix = `sites/${id}/`;
 const plan = uploadPlan(manifest, { prefix, previous, previousPrefix: previous ? `sites/${previousId}/` : null, existing: await r2.files(prefix) });
