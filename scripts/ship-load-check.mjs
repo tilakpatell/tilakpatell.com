@@ -71,6 +71,7 @@ const serve = async () => {
 // in the page, from its first script: the frames' times and the first frame drawn
 const pageProbe = () => {
   window.__ship = { frames: [], first: null };
+  performance.setResourceTimingBufferSize(10000); // (the map asks for hundreds of files: the default keeps 250)
   const tick = (t) => {
     window.__ship.frames.push(t);
     requestAnimationFrame(tick);
