@@ -219,11 +219,15 @@ async function runLaunch(base, net, vehicle) {
   page.on('pageerror', (e) => errors.push(String(e)));
   await page.goto(`${base}/?quality=${QUALITY}#/universe`, { waitUntil: 'domcontentloaded', timeout: TIMEOUT });
   await waitFor(page, () => window.__ship.first != null);
+  console.error(`map drawn; opening the cockpit in the ${vehicle}`);
   await page.evaluate((v) => window.dispatchEvent(new CustomEvent('tp:cockpit', { detail: { vehicle: v } })), vehicle);
   await waitFor(page, () => document.querySelector('.cockpit[data-ready]'));
   const boardAt = await page.evaluate(() => performance.now());
+  console.error('sat down; launching');
   await page.waitForTimeout(1500);
   await page.keyboard.press('Space');
+  await waitFor(page, () => window.__ship.arrive != null, null, 120000).catch(() => console.error('no flash after Space'));
+  console.error('flash');
   await waitFor(page, () => window.__ship.clear != null && !document.querySelector('.cockpit'));
   await page.waitForFunction((v) => performance.getEntriesByName('universe:ship-full', 'mark').some((m) => m.detail === v), vehicle, { timeout: 60000, polling: 250 }).catch(() => {});
   const got = await page.evaluate((v) => ({ arrive: window.__ship.arrive, clear: window.__ship.clear, full: performance.getEntriesByName('universe:ship-full', 'mark').find((m) => m.detail === v)?.startTime ?? null }), vehicle);
