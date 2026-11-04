@@ -108,6 +108,7 @@ import { device, pixelRatio, quality as qualityNow } from '../../lib/device';
 import { stepAt } from './qualityStep';
 import { borrow } from './borrow';
 import { CHASE, DIVE_MS, FOV, chaseDist, cover, cameraFrom, focusPose, overviewPose, poseAt, startFlight, worldPos } from './flight';
+import { easeOpen, sameOpen } from './openPart';
 import { BELT, BODIES, ORDER, POSITIONS, REACH, RIM, RING, SECTORS, SECTOR_OF, SUN, inExpanse, mapSectorOf, sectorOf } from './layout';
 import { HOME_SPREAD } from './scale';
 import { MODEL_PLANETS, buildPlanet, loadModel, loadModels, loadTextures } from './planets';
@@ -1309,7 +1310,7 @@ export async function create(canvas, ctx) {
   // bar), the nav the top.
   // (the box it’s in now: the runtime’s host, which a page adopting the map moves)
   const panelEl = () => (ctx.rt.host ?? ctx.el).closest('.universe-page')?.querySelector('.universe-panel');
-  const measure = () => {
+  const measure = (jump = false) => {
     const box = (ctx.rt.host ?? ctx.el).getBoundingClientRect();
     const panel = panelEl()?.getBoundingClientRect();
     // (0 is a real answer: a phone on its side, flying, has no bar: thumbs.css)
@@ -1329,11 +1330,39 @@ export async function create(canvas, ctx) {
       const thumbs = (ctx.rt.host ?? ctx.el).closest('.universe-page')?.querySelector('.universe-thumbs')?.getBoundingClientRect();
       if (thumbs?.height > 0) sheet = Math.max(sheet, box.bottom - thumbs.top + 12);
     }
-    state.rect = cover({ w: size.w, h: size.h, panel: side, sheet, top: Math.max(0, nav - box.top) });
-    state.overview = overviewPose(size, state.rect);
+    const aim = cover({ w: size.w, h: size.h, panel: side, sheet, top: Math.max(0, nav - box.top) });
+    const was = state.rectTo;
+    // the canvas itself resized (its picture already stretched), the first
+    // measure, or reduced motion: straight there. Otherwise the open part
+    // eases over in the frames (easeOpenPart), and a panel that changed
+    // without moving it (a card's words, a desktop panel's height) costs nothing
+    if (jump || reduced || !was) {
+      state.rectTo = aim;
+      openVel = null;
+      frameOpen(aim);
+    } else if (!sameOpen(aim, was)) {
+      state.rectTo = aim;
+      ctx.invalidate();
+    }
+  };
+  // the camera framed on a part of the canvas: its lens shifted to its
+  // centre, and the overview fitted inside it
+  const frameOpen = (rect) => {
+    state.rect = rect;
+    state.overview = overviewPose(size, rect);
     camera.aspect = size.w / size.h;
-    camera.setViewOffset(size.w, size.h, -state.rect.sx, -state.rect.sy, size.w, size.h);
+    camera.setViewOffset(size.w, size.h, -rect.sx, -rect.sy, size.w, size.h);
     camera.updateProjectionMatrix();
+  };
+  let openVel = null; // the ease's speed (openPart.js), while it's moving
+  // one step of the ease, at the start of a frame; frames asked for until it's there
+  const easeOpenPart = (dt) => {
+    const to = state.rectTo;
+    if (!to || state.rect === to) return;
+    const at = easeOpen(state.rect, openVel, to, dt);
+    openVel = at.vel;
+    frameOpen(at.done ? to : at.rect);
+    if (!at.done) ctx.invalidate();
   };
   // the panel changes height on a phone (the sheet) without the canvas resizing
   const panelRO = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(() => size.w > 1 && (measure(), ctx.invalidate())) : null;
@@ -6005,11 +6034,12 @@ export async function create(canvas, ctx) {
       size.w = Math.max(1, w);
       size.h = Math.max(1, h);
       followDrawn();
-      measure();
+      measure(true);
       watchPanel();
     },
     // (the map's settings on the shared renderer only while it draws: ./borrow.js)
     render: (ms, now) => {
+      easeOpenPart(ms / 1000);
       // (made at a handover, the runtime starts the map's quality afresh
       // after its prepare: the calibrated ceiling put back at its first frame)
       if (calibrated !== null) {
