@@ -45,7 +45,7 @@ if (dry) process.exit(0);
 
 // A large file goes up as an S3 multipart upload in 16 MB parts, each part with attemptUpload's tries: one 188 MB PUT
 // (r1057's cooked-programs.json) had its connection reset on every attempt, sent alone or among the pool's streams.
-const PART = 16 * 1024 * 1024;
+const PART = 5 * 1024 * 1024;
 async function sendMultipart(p) {
   const url = objectUrl(BUCKET, p.key);
   const body = readFileSync(p.file ?? join(dir, p.path));
@@ -71,6 +71,7 @@ async function sendMultipart(p) {
       return e;
     });
     parts.push(`<Part><PartNumber>${n}</PartNumber><ETag>${etag}</ETag></Part>`);
+    if (n % 8 === 0) console.log(`  ${p.key}: part ${n} of ${Math.ceil(body.length / PART)} sent`);
   }
   await attemptUpload(`complete ${p.key}`, async () => {
     const r = await r2.fetch(`${url}?uploadId=${encodeURIComponent(created)}`, {
