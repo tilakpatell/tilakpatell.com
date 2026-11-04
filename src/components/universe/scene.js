@@ -205,7 +205,7 @@ import { isMate } from './online/mates';
 import { createLook } from '../../runtime/look';
 import { reticleState } from '../../runtime/hud/reticle';
 import { createAbilitiesWriter } from '../../runtime/hud/cluster.js';
-import { createRadar } from '../../lib/combat/flight/radar';
+import { createRadar, radarHz } from '../../lib/combat/flight/radar';
 import { createFrame, distText, fillFlight } from '../../runtime/hud/flight/frame.js';
 import { createFlightHud } from '../../runtime/hud/flight/flightHud.js';
 import { clusterView } from './clusterView';
@@ -3593,7 +3593,7 @@ export async function create(canvas, ctx) {
   const fillRadar = () => {
     frame.radar = null; // (between ticks: the picture drawn last stays)
     if (!flying() || onFoot() || state.crash || state.dive || props.frozen || state.view === 'map') return;
-    if (!radar.due(state.clock)) return;
+    if (!radar.due(state.clock, radarHz(tier))) return; // (half as often on a low tier: radar.js)
     radarLock = state.lockTarget?.id ?? null;
     radar.start(state.ship);
     for (const c of sight.foes) addHostile(c);
