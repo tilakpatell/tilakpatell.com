@@ -60,6 +60,17 @@
   background: #03040a;
 }
 .universe-page[data-card] { --sheet-h: 46svh; }
+/* The panel's room, as lengths the browser can ease: the phone's sheet and
+   everything stood on it (the thumbs, the prompt, the hints) glide to a
+   card's height or the tucked bar's instead of leaping there in one frame,
+   as the scene's framing does (scene.js's easeOpenPart). The width eases
+   only on the way to tucked, where the panel is already the bar: easing it
+   out again would reflow the whole panel's words every frame, and the HUD
+   it pushes aside must clear the panel the moment it's back */
+@property --sheet-h { syntax: '<length>'; inherits: true; initial-value: 0px; }
+@property --panel-w { syntax: '<length>'; inherits: true; initial-value: 0px; }
+.universe-page:not(.galaxy-page) { transition: --sheet-h var(--t-base) var(--ease-smooth); }
+.universe-page:not(.galaxy-page)[data-tucked] { transition: --sheet-h var(--t-base) var(--ease-smooth), --panel-w var(--t-base) var(--ease-smooth); }
 /* the panel put away: the map has the whole width (the bar left of it sits
    up in the corner) or, on a phone, all but a slim bar at the bottom. The
    bar's width is what it holds: "The universe" whole (112px), the words to
