@@ -61,7 +61,19 @@ async function send(p) {
 
 const last = plan.pop();
 let done = 0;
-const queue = [...plan];
+// Large files go first, one at a time with the rest of the link to themselves: sent among 7 other streams, a 100+ MB
+// PUT has its connection reset (r1057's 188 MB cooked-programs.json, UND_ERR_SOCKET on every try), and one file that
+// fails its attempts ends the run. Each gets up to three rounds of attemptUpload's tries.
+const LARGE = 32e6;
+const sizeOf = (p) => (p.action === 'put' ? (p.path ? bytesOf(p) : 0) : 0);
+for (const p of plan.filter((q) => sizeOf(q) > LARGE)) {
+  for (let round = 1; ; round++) {
+    try { await send(p); break; } catch (error) { if (round === 3) throw error; console.log(`  ${p.key}: ${error.message}, again`); }
+  }
+  done++;
+  console.log(`  large ${p.key} (${Math.round(sizeOf(p) / 1e6)} MB) sent`);
+}
+const queue = plan.filter((q) => !(sizeOf(q) > LARGE));
 await Promise.all(
   Array.from({ length: 8 }, async () => {
     for (let p = queue.shift(); p; p = queue.shift()) {
