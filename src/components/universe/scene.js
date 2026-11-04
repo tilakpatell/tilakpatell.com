@@ -118,6 +118,7 @@ import { buildSun } from './sun';
 import { MAP_LENS, aberrationFor, createPost, createSpaceEnvironment } from './post';
 import { fromVideo } from '../../lib/videoLook';
 import { grainFor } from '../../lib/three/noise';
+import { reworldMoved } from '../../lib/three/reworld';
 import { createFlare, flareWeight, occluded } from '../../lib/three/flare';
 import { exposureFor, sunShareOf } from '../../lib/three/exposure';
 import { houseOn } from '../../lib/three/house';
@@ -1552,7 +1553,10 @@ export async function create(canvas, ctx) {
     } finally {
       map.position.add(drawAt);
       camera.position.add(drawAt);
-      scene.updateMatrixWorld();
+      // (only the map's place changed: its world matrices are moved back
+      // after it, not composed again, which was a second whole update a frame)
+      reworldMoved(map);
+      camera.updateMatrixWorld();
     }
   };
   const lens = (near) => {
