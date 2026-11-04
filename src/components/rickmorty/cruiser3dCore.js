@@ -218,16 +218,25 @@ function glowTexture() {
 // GLSL or ./cruiser3dNodes.js's nodes)
 export const buildCruiserWith = (paint) => (opts) => buildCruiser(opts, paint);
 
+// The cast every cruiser is made from, one for each paint (GLSL's, nodes'),
+// kept for the page's life: the saucer and the crew fetched and parsed
+// once, and every cruiser after (the universe map's next, after a change of
+// ship and back or a second visit; this page's) only copies of them. What a
+// cruiser sent to a graphics chip goes with it (its scene's disposeTree, or
+// its canvas's context); a model that didn't load is asked for again.
+const casts = new Map(); // createMeshyCast → cast
+const castFor = (createMeshyCast) => {
+  if (!casts.has(createMeshyCast)) casts.set(createMeshyCast, createMeshyCast(withWardrobe()));
+  return casts.get(createMeshyCast);
+};
+
 async function buildCruiser({ ink = 1, crewInk = 0.026, looks = readLooks(local.get(LOOK_KEY)) } = {}, { createMeshyCast, inkHull, glassDome, dress }) {
-  const cast = createMeshyCast(withWardrobe());
+  const cast = castFor(createMeshyCast);
   // the walk only to turn the seated clip to face ahead (see meshyCast)
   const have = new Set(['saucer', 'rick', 'morty', bodyAsset(looks.rick), bodyAsset(looks.morty)]); // (the models loaded: a cast loads one again if asked)
   await cast.load(null, [...have], { clips: ['sit', 'walk'] });
   const body = cast.prop('saucer', TALL);
-  if (!body) {
-    cast.dispose();
-    return null;
-  }
+  if (!body) return null; // (the cast kept: the next cruiser asks for the saucer again)
   // the nose (its headlights) is +z; centred on the hull
   const hull = new THREE.Group();
   hull.position.y = -TALL / 2;
@@ -364,7 +373,6 @@ async function buildCruiser({ ink = 1, crewInk = 0.026, looks = readLooks(local.
     dispose() {
       gone = true;
       for (const s of Object.values(seats)) s?.off();
-      cast.dispose();
       hullInk.dispose();
       body.traverse((o) => o.userData.glass?.dispose());
       glowTex.dispose();

@@ -110,7 +110,7 @@ import { borrow } from './borrow';
 import { CHASE, DIVE_MS, FOV, chaseDist, cover, cameraFrom, focusPose, overviewPose, poseAt, startFlight, worldPos } from './flight';
 import { BELT, BODIES, ORDER, POSITIONS, REACH, RIM, RING, SECTORS, SECTOR_OF, SUN, inExpanse, mapSectorOf, sectorOf } from './layout';
 import { HOME_SPREAD } from './scale';
-import { MODEL_PLANETS, buildPlanet, loadModel, loadModels, loadTextures } from './planets';
+import { MODEL_PLANETS, buildPlanet, loadModels, loadTextures } from './planets';
 import { createLazy, standIn, wanted as nearEnough } from './nearby';
 import { loadSteps } from './loadSteps';
 import { buildSun } from './sun';
@@ -173,7 +173,8 @@ import { createWingmen } from './wingmen';
 import { createSkirmishes } from './skirmishes';
 import { createBelt, createDust } from './belt';
 import { createTrail } from './trail';
-import { CREW_INK, ENGINES, LENGTH, SHIP_MODELS, buildShip } from './shipModels';
+import { ENGINES, LENGTH, SHIP_MODELS, buildShip } from './shipModels';
+import { takeShip } from './shipLoad';
 import { HERO_ENGINES, capPlume, createEngines } from './engines';
 import { paintById } from './paint';
 import { FASTEST, PARTS, PARTS_SLOTS, STOCK, STOCK_LOADOUT, readLoadout, statsOf } from './outfit';
@@ -2120,6 +2121,9 @@ export async function create(canvas, ctx) {
     powers.setCrew(state.kind, crewSkills(state.kind));
   };
 
+  // the ship's own model on its way, mounted once it's in (what the first
+  // frame waits on, a while: ready, below)
+  let shipIn = null;
   // (force: the same crew, built again: its garage build changed)
   const setShip = (kind, force = false) => {
     if (kind === state.kind && !force) return;
@@ -2175,6 +2179,7 @@ export async function create(canvas, ctx) {
     }
     state.model = buildShip(kind, T, { build: state.build });
     map.add(state.model.group);
+    performance.mark?.('universe:ship-stand-in', { detail: kind }); // (scripts/ship-load-check.mjs: how long the stand-in was seen)
     // its engines' glow (a garage build's where its own exhausts are)
     heroEngine = engines.add(kind, state.model.pivot, { list: state.build ? state.model.engines.map((at) => ({ at, r: 0.03, colour: '#ffc080' })) : (HERO_ENGINES[kind] ?? HERO_ENGINES.cruiser) });
     if (state.build) setPlumes(kind, state.model.engines); // (its own engines)
@@ -2186,36 +2191,40 @@ export async function create(canvas, ctx) {
     for (const root of [state.model.group, ...plumes.map((pl) => pl.trail.mesh)]) precompile(renderer, root, camera, scene, post.on ? post.composer.readBuffer : undefined);
     if (state.build) {
       // a garage build is whole as it is: no model to load over it
-    } else if (SHIP_MODELS[kind]) {
+    } else if (SHIP_MODELS[kind] || kind === 'cruiser') {
+      // its model, made ahead (./shipLoad.js: the page asked for it as soon
+      // as it knew the ship), or made now: in its paint, its pictures sent
+      // and its shaders made before it's mounted, never on the frame it's
+      // first seen; the X-wing's, the Falcon's or the RV's a copy of the
+      // file, the cruiser the C-137 page's, crew aboard
       const model = state.model;
-      loadModel(SHIP_MODELS[kind])
-        .then((m) => m && warm(model.dress(m)).then(() => m)) // (in its paint before its shaders are made)
-        .then((m) => {
-          if (!m) return;
-          if (disposed || state.model !== model || !model.mount(m)) disposeTree(m); // (the ship it was dressed for)
-          else uploadTextures(renderer, m); // (its pictures on the graphics chip now, not as it first comes into view)
-          ctx.invalidate();
-        });
-    } else if (kind === 'cruiser') {
-      // the C-137 page's cruiser, crew aboard; its ink drawn to our scale (it's
-      // 2.7 across there, LENGTH here), theirs finer (they're drawn big)
-      const model = state.model;
-      import('../rickmorty/cruiser3d')
-        .then((m) => m.buildCruiser({ ink: LENGTH / 2.7, crewInk: CREW_INK }))
-        .then((c) => {
-          if (!c) return;
-          if (disposed || state.model !== model || !model.mount(c.group, { update: c.update, dispose: c.dispose, ownGlow: true, tint: c.tint, setLooks: c.setLooks })) {
-            c.dispose();
-            disposeTree(c.group);
-            return;
-          }
-          uploadTextures(renderer, c.group);
-          precompile(renderer, c.group, camera, scene, post.on ? post.composer.readBuffer : undefined);
-          seatCrew = c.seated;
-          // its exhaust leaves from its own exhaust cans
-          if (c.engines?.length) {
-            model.group.updateMatrixWorld(true);
-            setPlumes('cruiser', c.engines.map((g) => model.pivot.worldToLocal(g.getWorldPosition(new THREE.Vector3())).toArray()));
+      const cruiser = kind === 'cruiser';
+      const gone = (made) => {
+        made.dispose?.();
+        disposeTree(made.group ?? made);
+      };
+      shipIn = takeShip(kind)
+        .then((made) => {
+          if (!made) return null;
+          if (disposed || state.model !== model) return void gone(made); // (the ship it was made for)
+          const root = model.dress(cruiser ? made.group : made);
+          uploadTextures(renderer, root);
+          return warm(root).then(() => made);
+        })
+        .then((made) => {
+          if (!made) return;
+          const extra = cruiser ? { update: made.update, dispose: made.dispose, ownGlow: true, tint: made.tint, setLooks: made.setLooks } : undefined;
+          if (disposed || state.model !== model || !model.mount(cruiser ? made.group : made, extra)) return void gone(made);
+          performance.mark?.('universe:ship-full', { detail: kind });
+          // (come in after the map was shown, the stand-in's seen: the swap under a flare of the bloom, not a bare pop)
+          if (warmed && !reduced) state.flare = Math.max(state.flare, 1.4);
+          if (cruiser) {
+            seatCrew = made.seated;
+            // its exhaust leaves from its own exhaust cans
+            if (made.engines?.length) {
+              model.group.updateMatrixWorld(true);
+              setPlumes('cruiser', made.engines.map((g) => model.pivot.worldToLocal(g.getWorldPosition(new THREE.Vector3())).toArray()));
+            }
           }
           ctx.invalidate();
         })
@@ -5730,7 +5739,12 @@ export async function create(canvas, ctx) {
   // put on at the first frame instead, it changed every lit shader after
   // they were compiled, and they were all compiled again in that frame
   house.follow({ adopt: true });
-  const ready = Promise.all([warm(scene, camera, scene, steps.shaders), post.composer ? precompilePasses(renderer, post.composer, camera) : null, post.precompileFinish(camera)]).then(() => {
+  // (and the ship's own model, mounted, its shaders made: the first frame
+  // has the cruiser and its crew, not the stand-in that pops into them; a
+  // while at most, from here, so a slow network shows the stand-in rather
+  // than hold the map, and the model comes in over it when it can)
+  const SHIP_WAIT = 10000;
+  const ready = Promise.all([warm(scene, camera, scene, steps.shaders), post.composer ? precompilePasses(renderer, post.composer, camera) : null, post.precompileFinish(camera), settleWithin(shipIn, SHIP_WAIT)]).then(() => {
     // made: out of the scene (so nothing walks them each frame), and the
     // ships on to the fleet, ready to fly (the first of each kind isn't
     // built in the middle of a frame)
