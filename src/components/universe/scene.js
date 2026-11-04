@@ -112,7 +112,7 @@ import { CHASE, DIVE_MS, FOV, chaseDist, cover, cameraFrom, focusPose, overviewP
 import { easeOpen, sameOpen } from './openPart';
 import { BELT, BODIES, ORDER, POSITIONS, REACH, RIM, RING, SECTORS, SECTOR_OF, SUN, inExpanse, mapSectorOf, sectorOf } from './layout';
 import { HOME_SPREAD } from './scale';
-import { MODEL_PLANETS, buildPlanet, loadModels, loadTextures } from './planets';
+import { MODEL_PLANETS, buildPlanet, growsIn, loadModels, loadTextures } from './planets';
 import { createLazy, standIn, wanted as nearEnough } from './nearby';
 import { loadSteps } from './loadSteps';
 import { buildSun } from './sun';
@@ -1178,7 +1178,7 @@ export async function create(canvas, ctx) {
     // landing's way, lib/three/gpuWork; and come in where the map's been
     // seen, it grows into its place rather than popping in, planets.js)
     return prepareLanding([model], () => true).then(() => {
-      if (disposed || !planetOf[id]?.mount(model, spot, { grow: warmed })) disposeTree(model);
+      if (disposed || !planetOf[id]?.mount(model, spot, { grow: growsIn({ shown: warmed, reduced }) })) disposeTree(model);
       ctx.invalidate();
     });
   };

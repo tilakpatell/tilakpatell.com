@@ -522,6 +522,13 @@ describe('a planet’s own model coming in', () => {
     vi.unstubAllGlobals();
   });
 
+  it('grows only where the map’s been seen, and never with motion turned down', async () => {
+    const { growsIn } = await import('./planets');
+    expect(growsIn({ shown: true, reduced: false })).toBe(true);
+    expect(growsIn({ shown: true, reduced: true })).toBe(false);
+    expect(growsIn({ shown: false, reduced: false })).toBe(false);
+  });
+
   it('is there whole at once otherwise (mounted before the first frame)', async () => {
     stub();
     const { buildPlanet } = await import('./planets');

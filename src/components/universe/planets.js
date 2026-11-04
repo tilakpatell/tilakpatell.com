@@ -1198,6 +1198,10 @@ export const nearSegments = (level) => NEAR_SEG[level] ?? null;
 
 // (how long a model that comes in after the map's seen takes to grow into its slot, s)
 const GROW = 0.7;
+// whether a planet's model grows into its slot (mount's `grow`): only where
+// the map's been seen, and never with motion turned down, where it comes in
+// as it did
+export const growsIn = ({ shown, reduced }) => Boolean(shown && !reduced);
 
 export function buildPlanet(u, T = {}, { sun = null, tier = 'high', key = null } = {}) {
   const core = u.kind === 'core';
