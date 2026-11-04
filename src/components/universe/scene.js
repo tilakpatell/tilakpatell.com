@@ -970,7 +970,10 @@ export async function create(canvas, ctx) {
     if (target === scene) house.adopt(root);
     return precompile(renderer, singlePass(root), cam, target, post.on ? post.composer.readBuffer : undefined, { onStep });
   };
-  fleet.prepare = (o) => warm(o); // (the fleet's models too: none is made before the first frame)
+  fleet.prepare = (o) => {
+    uploadTextures(renderer, o); // (their pictures sent as they come, not on the frame one's first seen)
+    return warm(o);
+  }; // (the fleet's models too: none is made before the first frame)
   // a landing (footScene's), readied before it's shown: the look on, its
   // pictures sent and its shaders made, a slice at a time behind the frames
   // (lib/three/gpuWork), all at once rather than a thing at a time
