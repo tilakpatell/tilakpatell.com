@@ -31,7 +31,8 @@ const problems = contractProblems(manifest);
 if (problems.length) throw new Error(`the site at ${dir} breaks the contract:\n  - ${problems.join('\n  - ')}`);
 
 const r2 = open();
-const previousId = option('--previous') ?? JSON.parse(readFileSync(join(ROOT, 'src/data/bf2web/play.json'), 'utf8')).build;
+// (BF2WEB_PREVIOUS: the workflow's publish input previous, for a re-publish of a build whose files are mostly up already)
+const previousId = option('--previous') || process.env.BF2WEB_PREVIOUS || JSON.parse(readFileSync(join(ROOT, 'src/data/bf2web/play.json'), 'utf8')).build;
 const previous = previousId && previousId !== id ? await r2.json(`sites/${previousId}/manifest.json`) : null;
 const prefix = `sites/${id}/`;
 const plan = uploadPlan(manifest, { prefix, previous, previousPrefix: previous ? `sites/${previousId}/` : null, existing: await r2.files(prefix) });
@@ -42,6 +43,45 @@ const count = (a) => plan.filter((p) => p.action === a).length;
 const bytesOf = (p) => manifest.entries.find((e) => e.path === p.path)?.bytes ?? 0;
 console.log(`${id}: ${count('put')} to send (${Math.round(plan.filter((p) => p.action === 'put').reduce((n, p) => n + bytesOf(p), 0) / 1e6)} MB), ${count('copy')} copied from ${previousId ?? 'none'}, ${count('skip')} already there`);
 if (dry) process.exit(0);
+
+// A large file goes up as an S3 multipart upload in 16 MB parts, each part with attemptUpload's tries: one 188 MB PUT
+// (r1057's cooked-programs.json) had its connection reset on every attempt, sent alone or among the pool's streams.
+const PART = 5 * 1024 * 1024;
+async function sendMultipart(p) {
+  const url = objectUrl(BUCKET, p.key);
+  const body = readFileSync(p.file ?? join(dir, p.path));
+  const created = await attemptUpload(`create ${p.key}`, async () => {
+    const r = await r2.fetch(`${url}?uploads`, { method: 'POST', headers: { 'content-type': 'application/octet-stream' } });
+    const text = await r.text();
+    if (!r.ok) throw new Error(`HTTP ${r.status} ${text.slice(0, 200)}`);
+    const uploadId = /<UploadId>([^<]+)<\/UploadId>/.exec(text)?.[1];
+    if (!uploadId) throw new Error('CreateMultipartUpload returned no UploadId');
+    return uploadId;
+  });
+  const parts = [];
+  for (let n = 1, at = 0; at < body.length; n++, at += PART) {
+    const chunk = body.subarray(at, Math.min(at + PART, body.length));
+    const etag = await attemptUpload(`part ${n} of ${p.key}`, async () => {
+      const r = await r2.fetch(`${url}?partNumber=${n}&uploadId=${encodeURIComponent(created)}`, {
+        method: 'PUT', body: chunk, headers: { 'content-md5': createHash('md5').update(chunk).digest('base64') },
+      });
+      const text = await r.text();
+      if (!r.ok) throw new Error(`HTTP ${r.status} ${text.slice(0, 200)}`);
+      const e = r.headers.get('etag');
+      if (!e) throw new Error('UploadPart returned no ETag');
+      return e;
+    });
+    parts.push(`<Part><PartNumber>${n}</PartNumber><ETag>${etag}</ETag></Part>`);
+    if (n % 8 === 0) console.log(`  ${p.key}: part ${n} of ${Math.ceil(body.length / PART)} sent`);
+  }
+  await attemptUpload(`complete ${p.key}`, async () => {
+    const r = await r2.fetch(`${url}?uploadId=${encodeURIComponent(created)}`, {
+      method: 'POST', body: `<CompleteMultipartUpload>${parts.join('')}</CompleteMultipartUpload>`, headers: { 'content-type': 'application/xml' },
+    });
+    const text = await r.text();
+    if (!r.ok || /<Error>/.test(text)) throw new Error(`HTTP ${r.status} ${text.slice(0, 200)}`);
+  });
+}
 
 async function send(p) {
   if (p.action === 'skip') return;
@@ -61,11 +101,27 @@ async function send(p) {
 
 const last = plan.pop();
 let done = 0;
-const queue = [...plan];
+// Large files go first, one at a time with the rest of the link to themselves: sent among 7 other streams, a 100+ MB
+// PUT has its connection reset (r1057's 188 MB cooked-programs.json, UND_ERR_SOCKET on every try), and one file that
+// fails its attempts ends the run. Each gets up to three rounds of attemptUpload's tries.
+const LARGE = 6e6;
+const sizeOf = (p) => (p.action === 'put' ? (p.path ? bytesOf(p) : 0) : 0);
+for (const p of plan.filter((q) => sizeOf(q) > LARGE)) {
+  for (let round = 1; ; round++) {
+    try { await sendMultipart(p); break; } catch (error) { if (round === 10) throw error; await new Promise((r) => setTimeout(r, 5000 * round)); console.log(`  ${p.key}: ${error.message}, again`); }
+  }
+  done++;
+  console.log(`  large ${p.key} (${Math.round(sizeOf(p) / 1e6)} MB) sent`);
+}
+const queue = plan.filter((q) => !(sizeOf(q) > LARGE));
 await Promise.all(
-  Array.from({ length: 8 }, async () => {
+  // Four streams, each file with up to three rounds of attemptUpload's tries: r1057's run lost a 1 MB file to
+  // three resets in a row once the large ones were up.
+  Array.from({ length: 4 }, async () => {
     for (let p = queue.shift(); p; p = queue.shift()) {
-      await send(p);
+      for (let round = 1; ; round++) {
+        try { await send(p); break; } catch (error) { if (round === 6) throw error; await new Promise((r) => setTimeout(r, 3000 * round)); console.log(`  ${p.key}: ${error.message}, again`); }
+      }
       if (++done % 250 === 0) console.log(`  ${done} of ${plan.length}`);
     }
   }),

@@ -49,6 +49,10 @@ on:
         description: 'compress: brotli quality; above 9 makes every copy again (a release: about 1.6 CPU hours)'
         required: false
         type: string
+      previous:
+        description: 'publish: the build whose bucket files a re-publish copies from by sha256 (default: the one play.json names)'
+        required: false
+        type: string
 permissions:
   contents: write
   actions: write
@@ -95,6 +99,7 @@ jobs:
           BUILD: ${{ inputs.build }}
           UI_DATA: ${{ inputs.ui_data }}
           UI_SHA256: ${{ inputs.ui_sha256 }}
+          BF2WEB_PREVIOUS: ${{ inputs.previous }}
           R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
           R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
           GCM_INTERACTIVE: never
