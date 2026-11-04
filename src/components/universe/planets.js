@@ -19,7 +19,7 @@
 // loadTextures({ small }) → the textures (any that fail are just missing)
 // mapFile(name, level) → the file for a planet map at lib/detail's level
 // mapsOf(id), nearSet(id, level) → a planet's maps, and the finer ones it wears near (nearMaps.js)
-// buildPlanet(u, T, { sun, tier, key }) → { id, radius, group, sun, air, setAir, update(t, camera), setState, mount, swapMaps(T2 | null), nearSet(level), nearGeometry(on, level) }
+// buildPlanet(u, T, { sun, tier, key }) → { id, radius, group, sun, air, setAir, update(t, camera), setState, mount, swapMaps(T2 | null), nearSet(level), nearGeometry(on, level), nearShapes(level) }
 
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
@@ -1240,10 +1240,13 @@ export function buildPlanet(u, T = {}, { sun = null, tier = 'high', key = null }
   // chords (at ultra, 320 × 200: a limb as smooth as the 8192 maps on it; a builder that made its own shape keeps it; each finer one
   // made once, the first time it's near)
   const fine = new Map();
-  const finer = (mesh, far, on, level) => {
-    const s = on && nearSegments(level);
+  const make = (mesh, far, level) => {
+    const s = nearSegments(level);
     if (s && !fine.has(mesh)) fine.set(mesh, new THREE.SphereGeometry(far.parameters.radius, s[0], s[1]));
-    mesh.geometry = s ? fine.get(mesh) : far;
+  };
+  const finer = (mesh, far, on, level) => {
+    if (on) make(mesh, far, level); // (made ahead, nearShapes, where nearMaps asks: only worn here)
+    mesh.geometry = on && nearSegments(level) && fine.has(mesh) ? fine.get(mesh) : far; // (none on low: the sphere it has)
   };
   const cloudSphere = cloudMesh?.geometry?.type === 'SphereGeometry' ? cloudMesh.geometry : null;
   const nearGeometry =
@@ -1253,6 +1256,9 @@ export function buildPlanet(u, T = {}, { sun = null, tier = 'high', key = null }
           finer(body, sphere, on, level);
           if (cloudSphere) finer(cloudMesh, cloudSphere, on, level);
         };
+  // each finer sphere as a call of its own, for nearMaps to make one a moment
+  // before it swaps (none where the planet keeps its shape)
+  const nearShapes = (level) => (nearGeometry ? [() => make(body, sphere, level), ...(cloudSphere ? [() => make(cloudMesh, cloudSphere, level)] : [])] : []);
   const ground = !core && p.body.material?.isMeshStandardMaterial ? groundHooks(p.body.material, { ...style, clouds: cloudMesh ? style.clouds : null }) : null;
   if (key && !core && p.body.material?.isMeshStandardMaterial) keyHook(p.body.material, key, sunW);
   // (with real air round it, the air draws the limb: the rim in its ground goes)
@@ -1285,6 +1291,7 @@ export function buildPlanet(u, T = {}, { sun = null, tier = 'high', key = null }
     swapMaps,
     nearSet: (level) => (core ? [] : nearSet(u.id, level)),
     nearGeometry,
+    nearShapes,
     get air() {
       return air;
     },

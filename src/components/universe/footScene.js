@@ -1390,8 +1390,17 @@ export function createFoot({ map, emit, reduced = false, small = false, planetOf
     got = { c, b, own, body: c ?? own ?? b, anim: c?.anim ?? own?.anim ?? null, k: c ? c.group.scale.x : 1, group, gp, prevF: null, death: null, blow: 1 };
     troopFigs.set(t.id, got);
     // (one on the game's body stands in its built look until that body has
-    // come, from the page's cache once the first has: warmParty's)
-    if (look.rig) loadParty(troopSpec(t.kind), cast).then((fig) => wearGameBody(t, got, fig), () => {});
+    // come, from the page's cache once the first has: warmParty's; its
+    // pictures sent and its shaders made before it's worn, the map's way of
+    // readying a landing, not on the frame it first stands there)
+    if (look.rig)
+      loadParty(troopSpec(t.kind), cast).then((fig) => {
+        if (!fig || !prepare) return wearGameBody(t, got, fig);
+        const wanted = () => troopFigs.get(t.id) === got && !got.death && !got.swallow;
+        return Promise.resolve(prepare([fig.model], wanted))
+          .catch(() => {})
+          .then(() => wearGameBody(t, got, fig));
+      }, () => {});
     return got;
   };
   // A troop's built stand-in taken off for the game's body, and its gun put

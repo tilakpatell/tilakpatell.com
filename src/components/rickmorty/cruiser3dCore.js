@@ -282,6 +282,7 @@ async function buildCruiser({ ink = 1, crewInk = 0.026, looks = readLooks(local.
       off() {
         undress();
         inkMat.dispose();
+        c.release?.(); // (what the cast made for him alone: the cast lasts the page, so it isn't freed with it)
         c.group.removeFromParent();
       },
     };
