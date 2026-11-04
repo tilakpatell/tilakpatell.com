@@ -1,4 +1,4 @@
-import { Powers } from '../../runtime/hud';
+import Powers from '../../runtime/hud/Powers.jsx'; // (by its file, as UniverseMap.jsx takes the kit's parts)
 import { POWERS, POWER_KEYS, picksFor } from './shipPowers';
 import { POWER_ICONS as ICONS } from './powerIcons';
 import './powers.css';

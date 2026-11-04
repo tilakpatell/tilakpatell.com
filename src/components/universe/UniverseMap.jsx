@@ -14,7 +14,16 @@ import { askBrief } from '../tour/brief';
 import LoadingVeil from '../worlds/LoadingVeil';
 import { RiShieldLine } from 'react-icons/ri';
 import PowerBar from './PowerBar';
-import { Abilities, FlightHud, Prompt, Reticle } from '../../runtime/hud';
+// (the kit's parts by their files, not its index: the index brings the
+// Battlefront screens and their records, 260 KB of JSON parsed before the
+// map's first frame and never used on it; the kit's two sheets the index
+// would have brought, brought here)
+import '../../runtime/hud/hud.css';
+import '../../runtime/hud/cluster.css';
+import Abilities from '../../runtime/hud/Abilities.jsx';
+import FlightHud from '../../runtime/hud/flight/FlightHud.jsx';
+import Prompt from '../../runtime/hud/Prompt.jsx';
+import Reticle from '../../runtime/hud/Reticle.jsx';
 import { PROMPT as LOOK_PROMPT } from '../../runtime/look';
 
 // The map: the 3D scene (scene.js and planets.js, a world module on the
