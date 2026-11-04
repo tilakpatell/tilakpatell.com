@@ -178,20 +178,23 @@ describe('the flight core, frame after frame', () => {
       for (let i = 0; i < FRAMES; i++) f.hud.place(f.root, f.frame);
     };
     expect(await made(placeSame)).toBeLessThan(4096);
-    // the sight: no more than targeting.js's track alone, as sight.update calls it, and a kilobyte a frame (the other rules it
+    // the sight: no more than targeting.js's track alone, as sight.update calls it, and half a kilobyte a frame (the other rules it
     // runs make their own small records: the lead's, the assist's angles, the way to the lead)
     f.ship.x = 0;
     const ring = [];
     const lock = { id: 'h0', out: 0, manual: true };
+    const opts = { cycle: 0, ring }; // (kept, as the sight keeps its own)
     const trackAlone = () => {
-      for (let i = 0; i < FRAMES; i++) track(f.ship, f.cands, lock, DT, { cycle: 0, ring });
+      for (let i = 0; i < FRAMES; i++) track(f.ship, f.cands, lock, DT, opts);
     };
     const sightUpdate = () => {
       for (let i = 0; i < FRAMES; i++) f.sight.update(f.ship, f.cands, DT, f.sightIn);
     };
+    // (track itself makes nothing a frame now: its candidates' records are kept from frame to frame, and a lock that
+    // hasn't changed comes back as it went in; it made 25 KB a frame at 60 candidates)
     const alone = await made(trackAlone);
-    expect(alone).toBeGreaterThan(0);
-    expect(await made(sightUpdate)).toBeLessThanOrEqual(alone + 1024 * FRAMES);
+    expect(alone).toBeLessThan(4096);
+    expect(await made(sightUpdate)).toBeLessThanOrEqual(alone + 512 * FRAMES);
     expect(f.state.lockTarget?.id).toBe('h0');
     session.disconnect();
   });

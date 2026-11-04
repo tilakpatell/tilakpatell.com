@@ -104,9 +104,14 @@ if (only !== 'phone') {
   // the URL picks Marvel first, so the panel has a world's card to lose
   await page.evaluate(() => (window.location.hash = '#/universe/marvel'));
   await page.waitForTimeout(3000);
-  // a jump to the Citadel (or Ember, if the ship started out by the Citadel), timed on the wall clock
+  // a jump to Ember (or Glacia, if the ship started out by Ember), timed on the wall clock: main-sector wonders, their
+  // places read from the scene (the Citadel moved to the Rick and Morty sector, and a hard-coded place went stale with it)
   const start = (await state(page)).ship;
-  const [goal, gx, gz] = Math.hypot(start.x - 1755, start.z + 4660) < 600 ? ['Ember', 1080, 4320] : ['The Citadel', 1755, -4660];
+  const wonder = (name) => page.evaluate((n) => window.__universeDebug.wonders.find((w) => w.name === n)?.at ?? null, name);
+  const ember = await wonder('Ember');
+  const glacia = await wonder('Glacia');
+  check(Boolean(ember && glacia), 'Ember and Glacia are among the wonders');
+  const [goal, gx, gz] = ember && Math.hypot(start.x - ember[0], start.z - ember[2]) >= 600 ? ['Ember', ember[0], ember[2]] : ['Glacia', glacia[0], glacia[2]];
   await click(page, '.navmap-close');
   await page.waitForTimeout(500);
   await page.keyboard.press('m');
@@ -118,7 +123,7 @@ if (only !== 'phone') {
   await page.waitForTimeout(300);
   check((await page.textContent('.navmap-go')).includes(`Jump to ${goal}`), `the go button reads “Jump to ${goal}”`);
   // (every frame, in the page: when the jump was due and how far the ship is
-  // from the Citadel. Software GL is slow, so what's checked is that it's out
+  // from the wonder. Software GL is slow, so what's checked is that it's out
   // on the first frame past the flash, not how many seconds that took here)
   await page.evaluate(
     ([x, z]) => {
