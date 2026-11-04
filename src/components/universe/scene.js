@@ -118,6 +118,7 @@ import { buildSun } from './sun';
 import { MAP_LENS, aberrationFor, createPost, createSpaceEnvironment } from './post';
 import { fromVideo } from '../../lib/videoLook';
 import { grainFor } from '../../lib/three/noise';
+import { reworldMoved } from '../../lib/three/reworld';
 import { createFlare, flareWeight, occluded } from '../../lib/three/flare';
 import { exposureFor, sunShareOf } from '../../lib/three/exposure';
 import { houseOn } from '../../lib/three/house';
@@ -217,6 +218,7 @@ import { createBolts, createFlashes } from '../galaxy/shared/fx';
 import { coneFor } from '../../lib/combat/aim';
 import { flownInto, wayIn, worldName } from './landings/wayin';
 import { figureVoice } from './landings/voicelines';
+import { reserveLights } from './landings/lamps';
 import { sayVoiced, stopVoiced } from '../../lib/voiced';
 import { ENTRY, LANDABLE, airTop, entering, entryGuess } from './entry';
 import { createNearMaps } from './nearMaps';
@@ -857,8 +859,11 @@ export async function create(canvas, ctx) {
   // until it's here nobody's on foot
   // (a shot's assist cone, aim.js's: the look's mode says a mouse, a drag or a finger)
   const footCone = () => coneFor({ coarse, mode: looker.mode });
+  // (the landing's lights, dark, in the map from now: the warm-up makes the
+  // lit shaders for them, so the landing code coming doesn't change the count)
+  const footLights = reserveLights(map, { small, reduced });
   const footCode = createLazy(
-    () => import('./footScene').then(({ createFoot }) => createFoot({ map, emit: (e) => emit(e), reduced, small, planetOf, renderer, prepare: (roots, alive) => prepareLanding(roots, alive), cone: () => footCone(), skills: () => state.fx })),
+    () => import('./footScene').then(({ createFoot }) => createFoot({ map, emit: (e) => emit(e), reduced, small, planetOf, renderer, prepare: (roots, alive) => prepareLanding(roots, alive), cone: () => footCone(), skills: () => state.fx, lights: footLights })),
     (f) => f.dispose(),
   );
   const foot = standIn(footCode, { props: { phase: null, id: null, debug: null, spots: null }, methods: { begin: () => (footCode.want(), false) } });
@@ -1552,7 +1557,10 @@ export async function create(canvas, ctx) {
     } finally {
       map.position.add(drawAt);
       camera.position.add(drawAt);
-      scene.updateMatrixWorld();
+      // (only the map's place changed: its world matrices are moved back
+      // after it, not composed again, which was a second whole update a frame)
+      reworldMoved(map);
+      camera.updateMatrixWorld();
     }
   };
   const lens = (near) => {

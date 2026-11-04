@@ -9,11 +9,20 @@
 // strength to one of the map's own (drive), which are dark otherwise, as
 // footScene's muzzle flare is between shots.
 //
-// createLamps(parent, { n }) → { slots, drive(lights, at), clear(), dispose() }
+// createLamps(parent, { n, slots }) → { slots, drive(lights, at), clear(), dispose() }
 //   slots  the n PointLights in `parent` (the map), there for good
 //   drive  each shown light of `lights` onto a slot, nearest `at` (a point
 //          in the world) first; the rest of the slots dark
 // keepDark(object) → the lights under `object`, each now out of the count
+// reserveLights(parent, { small, reduced }) → { flare, slots }: the landing's
+//   lights (footScene's muzzle flare, none on a phone or with motion turned
+//   down, and the slots, one on a phone), dark, put in `parent` (the map)
+//   before the landing code comes. The map makes them as it's made, so its
+//   warm-up makes every lit shader for them: made with the landing code,
+//   as a landable planet first came near, they changed the count then and
+//   every lit thing in view had its shader made again in that frame (ten,
+//   in a 980 ms frame in software GL). createLamps takes the slots
+//   (`slots`), and footScene the flare, rather than making their own.
 
 import * as THREE from 'three';
 
@@ -43,13 +52,24 @@ const shown = (light, top) => {
   return o === top && o.visible;
 };
 
-export function createLamps(parent, { n = LAMPS } = {}) {
-  const slots = Array.from({ length: n }, () => {
-    const l = new THREE.PointLight('#ffffff', 0, 0, 2);
-    l.name = 'landing-lamp';
-    parent.add(l);
-    return l;
-  });
+const slot = (parent) => {
+  const l = new THREE.PointLight('#ffffff', 0, 0, 2);
+  l.name = 'landing-lamp';
+  parent.add(l);
+  return l;
+};
+
+export function reserveLights(parent, { small = false, reduced = false } = {}) {
+  const flare = small || reduced ? null : new THREE.PointLight('#ffd36b', 0, 0, 2);
+  if (flare) {
+    flare.name = 'landing-flare';
+    parent.add(flare);
+  }
+  return { flare, slots: Array.from({ length: small ? 1 : LAMPS }, () => slot(parent)) };
+}
+
+export function createLamps(parent, { n = LAMPS, slots: given = null } = {}) {
+  const slots = given ?? Array.from({ length: n }, () => slot(parent));
   const at = new THREE.Vector3();
   const near = []; // [distance², light]
   const W = new THREE.Vector3();
