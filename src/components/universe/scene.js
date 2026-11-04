@@ -1295,7 +1295,9 @@ export async function create(canvas, ctx) {
     landableFor: 0, // (how long it's been that: seconds)
     aheadAt: 0, // (the wall's seconds) when next to look ahead for the air you're about to fly into
   };
-  const t0 = performance.now();
+  // (let: a hidden tab's time is taken off it, so the belt, the spins and
+  // the Twins' suns come back where they were left, not a leap further on)
+  let t0 = performance.now();
   let engine = null;
   let well = null; // the Maw's hum, while it has you
   let roar = null; // the air roaring past, on the way in (sounds.js's entrySound)
@@ -5556,7 +5558,15 @@ export async function create(canvas, ctx) {
     state.climbBtn = 0;
     state.fireBtn = false;
   };
-  const onHidden = () => engine?.set({ speed: 0, on: !document.hidden && state.shown });
+  let awayAt = 0; // when the tab was hidden (the scene's clock, t0, stops while nobody's looking)
+  const onHidden = () => {
+    if (document.hidden) awayAt ||= performance.now();
+    else if (awayAt) {
+      t0 += performance.now() - awayAt;
+      awayAt = 0;
+    }
+    engine?.set({ speed: 0, on: !document.hidden && state.shown });
+  };
   window.addEventListener('keydown', onKeyDown);
   window.addEventListener('tp:arrive', takeArrive);
   takeArrive();
