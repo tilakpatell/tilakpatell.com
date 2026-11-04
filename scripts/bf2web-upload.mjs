@@ -114,9 +114,13 @@ for (const p of plan.filter((q) => sizeOf(q) > LARGE)) {
 }
 const queue = plan.filter((q) => !(sizeOf(q) > LARGE));
 await Promise.all(
-  Array.from({ length: 8 }, async () => {
+  // Four streams, each file with up to three rounds of attemptUpload's tries: r1057's run lost a 1 MB file to
+  // three resets in a row once the large ones were up.
+  Array.from({ length: 4 }, async () => {
     for (let p = queue.shift(); p; p = queue.shift()) {
-      await send(p);
+      for (let round = 1; ; round++) {
+        try { await send(p); break; } catch (error) { if (round === 3) throw error; console.log(`  ${p.key}: ${error.message}, again`); }
+      }
       if (++done % 250 === 0) console.log(`  ${done} of ${plan.length}`);
     }
   }),
