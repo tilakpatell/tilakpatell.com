@@ -4,7 +4,7 @@
 // it later, under a throttled network, and what a second visit fetches.
 //
 //   node scripts/ship-load-check.mjs [--url http://127.0.0.1:4173] [--ship cruiser]
-//     [--net cable,fast3g,none] [--quality high] [--out lab/ship-load.json] [--timeout 300]
+//     [--net cable,fast3g,none] [--quality high] [--out lab/ship-load.json] [--timeout 300] [--dist dist]
 //
 // Without --url it serves the last build (`npm run build` first) with vite
 // preview. Each network profile gets a fresh browser (an empty cache): the
@@ -54,7 +54,7 @@ const serve = async () => {
   if (args.url) return { base: String(args.url).replace(/\/$/, ''), stop: () => {} };
   const vite = join(dirname(createRequire(import.meta.url).resolve('vite/package.json')), 'bin/vite.js');
   const port = 4300 + Math.floor(Math.random() * 500);
-  const server = spawn(process.execPath, [vite, 'preview', '--port', String(port), '--strictPort', '--host', '127.0.0.1'], { cwd: ROOT, stdio: 'ignore' });
+  const server = spawn(process.execPath, [vite, 'preview', '--port', String(port), '--strictPort', '--host', '127.0.0.1', '--outDir', String(args.dist ?? 'dist')], { cwd: ROOT, stdio: 'ignore' });
   const base = `http://127.0.0.1:${port}`;
   for (let i = 0; i < 100; i++) {
     try {
@@ -82,10 +82,12 @@ const pageProbe = () => {
 };
 
 const read = (page) =>
-  page.evaluate(() => {
+  page.evaluate((files) => {
+    const re = new RegExp(files);
+    const got = performance.getEntriesByType('resource').filter((r) => re.test(r.name));
     const at = (name) => performance.getEntriesByName(name, 'mark').map((m) => ({ t: m.startTime, kind: m.detail }));
-    return { first: window.__ship.first, standIn: at('universe:ship-stand-in'), full: at('universe:ship-full'), frames: window.__ship.frames.slice() };
-  });
+    return { first: window.__ship.first, standIn: at('universe:ship-stand-in'), full: at('universe:ship-full'), frames: window.__ship.frames.slice(), asked: got.length ? Math.min(...got.map((r) => r.startTime)) : null, landed: got.length ? Math.max(...got.map((r) => r.responseEnd)) : null };
+  }, SHIP_FILES.source);
 
 const waitFor = async (page, fn, arg, ms = TIMEOUT) => {
   await page.waitForFunction(fn, arg, { timeout: ms, polling: 250 });
@@ -136,6 +138,10 @@ async function run(base, net) {
     fullAtMs: full == null ? null : Math.round(full),
     fullOnFirstFrame: full != null && full <= one.first,
     standInSeenMs: full == null ? null : Math.max(0, Math.round(full - one.first)),
+    // (in the scene, seen or not: from the stand-in going in to the model mounted over it)
+    standInInSceneMs: full == null ? null : Math.round(full - (one.standIn[0]?.t ?? full)),
+    shipFirstAskedMs: one.asked == null ? null : Math.round(one.asked),
+    shipLastByteMs: one.landed == null ? null : Math.round(one.landed),
     // (the frames on either side of the swap; in software every frame is long, so compare runs, not budgets)
     longestFrameAroundSwapMs: full == null ? null : gaps(full - 1000, full + 3000),
     medianFrameMs: (() => {
