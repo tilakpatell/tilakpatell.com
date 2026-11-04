@@ -23,8 +23,14 @@ const fakeCast = () => {
       owned.push(...mine);
       const group = new THREE.Group();
       // (skinned, as Rick and Morty are: a skeleton with a bone texture of its own)
+      // (its every vertex on the one bone, as a skinned body's are: the seat's
+      // fit poses him through his skeleton a moment after he's made)
       const bone = new THREE.Bone();
-      const skin = new THREE.SkinnedMesh(new THREE.BoxGeometry(), new THREE.MeshBasicMaterial());
+      const body = new THREE.BoxGeometry();
+      const n = body.attributes.position.count;
+      body.setAttribute('skinIndex', new THREE.Uint16BufferAttribute(new Uint16Array(n * 4), 4));
+      body.setAttribute('skinWeight', new THREE.Float32BufferAttribute(Float32Array.from({ length: n * 4 }, (_, i) => (i % 4 === 0 ? 1 : 0)), 4));
+      const skin = new THREE.SkinnedMesh(body, new THREE.MeshBasicMaterial());
       skin.add(bone);
       skin.bind(new THREE.Skeleton([bone]));
       skin.skeleton.computeBoneTexture();
