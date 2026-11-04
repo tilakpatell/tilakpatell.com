@@ -75,6 +75,18 @@ describe('the ships made ahead (shipSpares)', () => {
     expect(empty.has('rv')).toBe(false);
   });
 
+  it('tries once more when the one made ahead and taken comes to nothing', async () => {
+    const { made, build } = builds();
+    const spares = createSpares({ build });
+    spares.want('cruiser');
+    const taken = spares.take('cruiser');
+    made[0].land(null); // (the network dropped it)
+    await tick();
+    expect(made).toHaveLength(2);
+    made[1].land('ship');
+    expect(await taken).toBe('ship');
+  });
+
   it('makes nothing for a kind it has no model for', async () => {
     const spares = createSpares({ build: () => null });
     spares.want('tie');

@@ -8,8 +8,8 @@
 //   build(kind) → Promise<model | null>, or null for a kind with no model
 //   want: one made ahead for `kind`, unless one is held already or one
 //     taken is still on its way (the page asking after the map took it)
-//   take: the one made ahead, handed over once, or one made there and then;
-//     a failure is null, never a rejection
+//   take: the one made ahead, handed over once (tried once more if it came
+//     to nothing), or one made there and then; a failure is null, never a rejection
 // One that fails or comes to nothing is forgotten, so the next ask tries again.
 
 export function createSpares({ build }) {
@@ -32,8 +32,10 @@ export function createSpares({ build }) {
       });
     },
     take(kind) {
-      const p = held.get(kind) ?? make(kind);
+      // (one made ahead that came to nothing, a visit ago or just now: tried once more)
+      const ahead = held.get(kind);
       held.delete(kind);
+      const p = ahead ? ahead.then((model) => model ?? make(kind)) : make(kind);
       if (!p) return Promise.resolve(null);
       going.set(kind, (going.get(kind) ?? 0) + 1);
       p.then(() => going.set(kind, going.get(kind) - 1));
