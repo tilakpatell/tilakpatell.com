@@ -105,15 +105,8 @@ export function bearing(s, p) {
 // the nose first), and the rest keep their order, so the nose following the
 // lock between presses doesn't turn the next press back.
 export function track(s, candidates, lock, dt, { cycle = false, ring = null } = {}) {
-  const seen = [];
-  for (const c of candidates) {
-    const b = bearing(s, c.at);
-    if (b.dist > AIM.range * 1.3 && !(lock?.manual && c.id === lock.id)) continue; // (one picked by hand is looked for however far it's gone)
-    seen.push({ c, ...b });
-  }
-  seen.sort((a, b) => a.off - b.off);
-  const held = (e) => e.off < AIM.hold && e.dist <= AIM.range * 1.3;
-  const current = lock ? seen.find((e) => e.c.id === lock.id) : null;
+  const seen = look(s, candidates, lock);
+  const current = lock ? find(seen, lock.id) : null;
   if (cycle && seen.length && ring) {
     let w = 0;
     for (let r = 0; r < ring.length; r++) if (seen.some((e) => e.c.id === ring[r] && held(e))) ring[w++] = ring[r];
@@ -134,41 +127,100 @@ export function track(s, candidates, lock, dt, { cycle = false, ring = null } = 
       return { id: next.c.id, out: 0, manual: true };
     }
   }
-  // the best to pick up inside `cone`: nearest the nose, nearer counting
-  // for a little and one coming at you for more
-  const pick = (cone, not = null) => {
-    let best = null;
-    let score = Infinity;
-    for (const e of seen) {
-      if (e === not || e.off > cone || e.dist > AIM.range) continue;
-      const k = e.off / AIM.cone + 0.35 * (e.dist / AIM.range) - AIM.threat * clamp(e.c.threat || 0, 0, 1);
-      if (k < score) {
-        score = k;
-        best = e;
-      }
-    }
-    return best;
-  };
   if (current) {
-    const keep = (out) => (lock.manual ? { id: lock.id, out, manual: true } : { id: lock.id, out });
     if (held(current)) {
-      if (lock.manual) return keep(0);
+      if (lock.manual) return keep(lock, 0);
       // held, but wide of the nose or out of reach: after a moment of that,
       // the guns take one that's squarely ahead, if there is one
       const astray = current.off > AIM.cone || current.dist > AIM.range;
-      if (!astray) return keep(0);
+      if (!astray) return keep(lock, 0);
       const wide = (lock.wide || 0) + dt;
-      const next = wide >= AIM.swap ? pick(AIM.cone, current) : null;
+      const next = wide >= AIM.swap ? pick(seen, AIM.cone, current) : null;
       return next ? { id: next.c.id, out: 0 } : { id: lock.id, out: 0, wide };
     }
     // slipping away: a moment's grace before it lets go
     const out = lock.out + dt;
-    if (out < (lock.manual ? AIM.loseManual : AIM.lose)) return keep(out);
+    if (out < (lock.manual ? AIM.loseManual : AIM.lose)) return keep(lock, out);
   }
   // a fresh one. Its target just gone (shot down), the guns look as wide as
   // the hold for the next, so the fight goes on
-  const best = pick(lock && !current ? AIM.hold : AIM.cone);
+  const best = pick(seen, lock && !current ? AIM.hold : AIM.cone);
   return best ? { id: best.c.id, out: 0 } : null;
+}
+
+// What track reads of each candidate, a frame: { c, dist, off }, in order
+// nearest the nose first. Its records and its list are kept from call to
+// call and written over (track runs every frame, over sixty candidates in a
+// big fight, and making them fresh was 25 KB a frame); nothing it hands back
+// holds one.
+const seenList = [];
+const seenPool = [];
+const aim = [0, 0, 0];
+function look(s, candidates, lock) {
+  nose(s, aim);
+  const far = AIM.range * 1.3;
+  const sought = lock?.manual ? lock.id : undefined; // (one picked by hand is looked for however far it's gone)
+  let n = 0;
+  for (let i = 0; i < candidates.length; i++) {
+    const c = candidates[i];
+    const p = c.at;
+    const dx = X(p) - s.x;
+    const dy = Y(p) - s.y;
+    const dz = Z(p) - s.z;
+    const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+    if (dist > far && c.id !== sought) continue;
+    // (bearing's sums, in its order, so the angle is the same to the last bit)
+    const off = dist < 1e-6 ? 0 : Math.acos(clamp(aim[0] * (dx / dist) + aim[1] * (dy / dist) + aim[2] * (dz / dist), -1, 1));
+    let e = seenPool[n];
+    if (!e) e = seenPool[n] = { c: null, dist: 0, off: 0 };
+    e.c = c;
+    e.dist = dist;
+    e.off = off;
+    // in order as it goes (an insertion sort, stable as the sort it stands
+    // for: Array's sort copies the list to sort it, and the order barely
+    // moves from one frame to the next)
+    let j = n++;
+    while (j > 0 && seenList[j - 1].off > off) {
+      seenList[j] = seenList[j - 1];
+      j--;
+    }
+    seenList[j] = e;
+  }
+  seenList.length = n;
+  for (let i = n; i < seenPool.length; i++) seenPool[i].c = null; // (no candidate kept alive by a record not in use)
+  return seenList;
+}
+
+const held = (e) => e.off < AIM.hold && e.dist <= AIM.range * 1.3;
+
+function find(seen, id) {
+  for (let i = 0; i < seen.length; i++) if (seen[i].c.id === id) return seen[i];
+  return null;
+}
+
+// the best to pick up inside `cone`: nearest the nose, nearer counting
+// for a little and one coming at you for more
+function pick(seen, cone, not = null) {
+  let best = null;
+  let score = Infinity;
+  for (let i = 0; i < seen.length; i++) {
+    const e = seen[i];
+    if (e === not || e.off > cone || e.dist > AIM.range) continue;
+    const k = e.off / AIM.cone + 0.35 * (e.dist / AIM.range) - AIM.threat * clamp(e.c.threat || 0, 0, 1);
+    if (k < score) {
+      score = k;
+      best = e;
+    }
+  }
+  return best;
+}
+
+// the lock held on with `out` seconds of grace used: the same lock back when
+// nothing about it has changed (so a steady lock makes nothing a frame), or
+// a new one
+function keep(lock, out) {
+  if (out === lock.out && lock.wide === undefined && (lock.manual ? lock.manual === true : !('manual' in lock))) return lock;
+  return lock.manual ? { id: lock.id, out, manual: true } : { id: lock.id, out };
 }
 
 // Where a bolt fired now from `from` at `speed` meets a target at `at`

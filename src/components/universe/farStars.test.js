@@ -122,3 +122,48 @@ describe('on foot', () => {
     stars.dispose();
   });
 });
+
+describe('a star’s size in the frame’s pixels', () => {
+  it('reads the canvas’s height once and again only when it is resized, not on every draw (a read forces the page’s layout)', () => {
+    const was = globalThis.ResizeObserver;
+    const seen = [];
+    globalThis.ResizeObserver = class {
+      constructor(fn) {
+        this.fn = fn;
+        seen.push(this);
+      }
+      observe() {}
+      disconnect() {}
+    };
+    try {
+      let reads = 0;
+      let height = 800;
+      const domElement = {
+        get clientHeight() {
+          reads += 1;
+          return height;
+        },
+      };
+      let buffer = 1600;
+      const renderer = { domElement, getRenderTarget: () => null, getDrawingBufferSize: (v) => v.set(2560, buffer), getPixelRatio: () => 2 };
+      const stars = createFarStars(new THREE.Group(), { places: [], skyFar: 24000 });
+      const dpr = () => stars.points.material.uniforms.uDpr.value;
+      for (let i = 0; i < 10; i++) stars.points.onBeforeRender(renderer);
+      expect(dpr()).toBe(2);
+      expect(reads).toBe(1);
+      // resized: the canvas half as tall on the page, the buffer as it was
+      height = 400;
+      for (const o of seen) o.fn([]);
+      for (let i = 0; i < 10; i++) stars.points.onBeforeRender(renderer);
+      expect(dpr()).toBe(4);
+      expect(reads).toBe(2);
+      // the buffer drawn at another ratio is read from the renderer, as before
+      buffer = 800;
+      stars.points.onBeforeRender(renderer);
+      expect(dpr()).toBe(2);
+      stars.dispose();
+    } finally {
+      globalThis.ResizeObserver = was;
+    }
+  });
+});

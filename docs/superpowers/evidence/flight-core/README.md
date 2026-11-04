@@ -149,7 +149,7 @@ Every new file is under 400 lines; the largest are `lib/combat/flight/targeting.
 | writes, the map’s view | none | 0 |
 | made by the record and the guns over a moving fight (600 frames) | under 4096 bytes | 0 |
 | made by the writer over an unchanged frame, every part shown (600 frames) | under 4096 bytes | 0 |
-| made by the sight, a frame | `track` alone plus 1024 bytes | 25.9 KB against `track`’s 25.4 KB |
+| made by the sight, a frame | `track` alone plus 512 bytes | 0.4 KB, `track` alone none (it made 25.4 KB, the sight 25.9 KB, before `perf/universe-frame-hitches`) |
 | a radar draw | 0.5 ms at the 95th | 0.021 to 0.025 ms |
 
 Allocation is counted by V8’s sampling heap profiler, only what is made under the measured loop, so neither a collection nor the harness moves it. The scenario found the frame loop making a few hundred bytes a frame (the threat arrows’ lists, the nose taken apart as an array, numbers handed to calls the engine didn’t inline, a distance kept among the writer’s `last` values, the card’s words and its hull share, two closures a frame, the kit’s per-call record, and the altitude’s element and number read through one load), and `368c7af4` takes each out. `track` itself makes about 25 KB a frame at 60 candidates (a record a candidate, the sort’s copies, a new lock each frame): that is today’s targeting rule, the most the frame loop makes, and a later lane’s to slim.

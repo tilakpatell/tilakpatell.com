@@ -81,11 +81,14 @@ const popped = await dbg(() => {
 });
 check(popped, 'a bolt through a rock pops it');
 await page.screenshot({ path: `${out}/meteors.png`, timeout: 120000 });
+await dbg(() => window.__universeDebug.meteors.clear()); // (rocks still flying hold the director busy, scene.js's `busy`: off with them before the next)
 
 await dbg(() => window.__universeDebug.director.soon('bounty'));
 await page.waitForFunction(() => window.__universeDebug.hunters.targets.length > 0, null, { timeout: 30000 }).catch(() => {});
 const hunter = await dbg(() => window.__universeDebug.hunters.targets.map((t) => t.kind));
-check(hunter.length === 1 && ['slave1', 'phoenixperson', 'tieadvanced'].includes(hunter[0]), `a bounty hunter alone: ${JSON.stringify(hunter)}`);
+// (every side's bounty hunters, sides.js's role 'bounty', and Vader's TIE Advanced: the rift leaves the ship in any sector)
+const BOUNTY = ['slave1', 'ig2000', 'houndstooth', 'punishingone', 'phoenixperson', 'krombopulos', 'cousins', 'tieadvanced'];
+check(hunter.length === 1 && BOUNTY.includes(hunter[0]), `a bounty hunter alone: ${JSON.stringify(hunter)}`);
 await dbg(() => window.__universeDebug.hunters.clear()); // (the hunters hold the director busy: off with them before the last one)
 
 // (last: a pass holds the director busy for a good while)

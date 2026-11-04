@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { forward } from '../../flight/orient';
-import { RANGE, createRadar, radarPoints, rangeFor, rangeFrom } from './radar';
+import { RANGE, createRadar, radarHz, radarPoints, rangeFor, rangeFrom } from './radar';
 
 const ship = { x: 0, y: 0, z: 0, heading: 0 };
 // forward(h) is the ship's nose as [x, z]: ahead is where it points, whatever the convention
@@ -82,5 +82,10 @@ describe('radar', () => {
     const slow = createRadar();
     expect([0.03, 0.05, 0.09, 0.1].map((t) => radar.due(t))).toEqual([false, true, false, true]);
     expect([0.05, 0.1, 0.15].map((t) => slow.due(t, 10))).toEqual([false, true, false]);
+  });
+
+  it('is drawn half as often on a low tier (a phone’s software canvas), as often as ever on the others', () => {
+    expect(radarHz('low')).toBe(10);
+    for (const t of ['mid', 'high', undefined]) expect(radarHz(t)).toBe(20);
   });
 });

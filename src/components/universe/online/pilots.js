@@ -280,8 +280,11 @@ export function createPilots(parent, { T = {}, colors = {}, here = UNIVERSE, fle
       const peers = client?.peers ?? new Map();
       const at = place();
       // (every read before any write: a read after one makes the browser lay the page out again)
-      const boxW = view?.tags?.clientWidth ?? 0;
-      const boxH = view?.tags?.clientHeight ?? 0;
+      // (and only with someone here to tag: read with nobody online, as most
+      // frames are, it laid the page out again for nothing)
+      const anyone = peers.size > 0;
+      const boxW = anyone ? (view?.tags?.clientWidth ?? 0) : 0;
+      const boxH = anyone ? (view?.tags?.clientHeight ?? 0) : 0;
       for (const sh of ships.values()) {
         if (!sh.measure || !sh.tagOn) continue;
         sh.measure = false;

@@ -109,6 +109,7 @@ import { device, pixelRatio, quality as qualityNow } from '../../lib/device';
 import { stepAt } from './qualityStep';
 import { borrow } from './borrow';
 import { CHASE, DIVE_MS, FOV, chaseDist, cover, cameraFrom, focusPose, overviewPose, poseAt, startFlight, worldPos } from './flight';
+import { easeOpen, sameOpen } from './openPart';
 import { BELT, BODIES, ORDER, POSITIONS, REACH, RIM, RING, SECTORS, SECTOR_OF, SUN, inExpanse, mapSectorOf, sectorOf } from './layout';
 import { HOME_SPREAD } from './scale';
 import { MODEL_PLANETS, buildPlanet, loadModels, loadTextures } from './planets';
@@ -118,6 +119,7 @@ import { buildSun } from './sun';
 import { MAP_LENS, aberrationFor, createPost, createSpaceEnvironment } from './post';
 import { fromVideo } from '../../lib/videoLook';
 import { grainFor } from '../../lib/three/noise';
+import { reworldMoved } from '../../lib/three/reworld';
 import { createFlare, flareWeight, occluded } from '../../lib/three/flare';
 import { exposureFor, sunShareOf } from '../../lib/three/exposure';
 import { houseOn } from '../../lib/three/house';
@@ -205,7 +207,7 @@ import { isMate } from './online/mates';
 import { createLook } from '../../runtime/look';
 import { reticleState } from '../../runtime/hud/reticle';
 import { createAbilitiesWriter } from '../../runtime/hud/cluster.js';
-import { createRadar } from '../../lib/combat/flight/radar';
+import { createRadar, radarHz } from '../../lib/combat/flight/radar';
 import { createFrame, distText, fillFlight } from '../../runtime/hud/flight/frame.js';
 import { createFlightHud } from '../../runtime/hud/flight/flightHud.js';
 import { clusterView } from './clusterView';
@@ -218,6 +220,7 @@ import { createBolts, createFlashes } from '../galaxy/shared/fx';
 import { coneFor } from '../../lib/combat/aim';
 import { flownInto, wayIn, worldName } from './landings/wayin';
 import { figureVoice } from './landings/voicelines';
+import { reserveLights } from './landings/lamps';
 import { sayVoiced, stopVoiced } from '../../lib/voiced';
 import { ENTRY, LANDABLE, airTop, entering, entryGuess } from './entry';
 import { createNearMaps } from './nearMaps';
@@ -858,8 +861,11 @@ export async function create(canvas, ctx) {
   // until it's here nobody's on foot
   // (a shot's assist cone, aim.js's: the look's mode says a mouse, a drag or a finger)
   const footCone = () => coneFor({ coarse, mode: looker.mode });
+  // (the landing's lights, dark, in the map from now: the warm-up makes the
+  // lit shaders for them, so the landing code coming doesn't change the count)
+  const footLights = reserveLights(map, { small, reduced });
   const footCode = createLazy(
-    () => import('./footScene').then(({ createFoot }) => createFoot({ map, emit: (e) => emit(e), reduced, small, planetOf, renderer, prepare: (roots, alive) => prepareLanding(roots, alive), cone: () => footCone(), skills: () => state.fx })),
+    () => import('./footScene').then(({ createFoot }) => createFoot({ map, emit: (e) => emit(e), reduced, small, planetOf, renderer, prepare: (roots, alive) => prepareLanding(roots, alive), cone: () => footCone(), skills: () => state.fx, lights: footLights })),
     (f) => f.dispose(),
   );
   const foot = standIn(footCode, { props: { phase: null, id: null, debug: null, spots: null }, methods: { begin: () => (footCode.want(), false) } });
@@ -1305,7 +1311,9 @@ export async function create(canvas, ctx) {
     landableFor: 0, // (how long it's been that: seconds)
     aheadAt: 0, // (the wall's seconds) when next to look ahead for the air you're about to fly into
   };
-  const t0 = performance.now();
+  // (let: a hidden tab's time is taken off it, so the belt, the spins and
+  // the Twins' suns come back where they were left, not a leap further on)
+  let t0 = performance.now();
   let engine = null;
   let well = null; // the Maw's hum, while it has you
   let roar = null; // the air roaring past, on the way in (sounds.js's entrySound)
@@ -1320,7 +1328,7 @@ export async function create(canvas, ctx) {
   // bar), the nav the top.
   // (the box it’s in now: the runtime’s host, which a page adopting the map moves)
   const panelEl = () => (ctx.rt.host ?? ctx.el).closest('.universe-page')?.querySelector('.universe-panel');
-  const measure = () => {
+  const measure = (jump = false) => {
     const box = (ctx.rt.host ?? ctx.el).getBoundingClientRect();
     const panel = panelEl()?.getBoundingClientRect();
     // (0 is a real answer: a phone on its side, flying, has no bar: thumbs.css)
@@ -1340,11 +1348,39 @@ export async function create(canvas, ctx) {
       const thumbs = (ctx.rt.host ?? ctx.el).closest('.universe-page')?.querySelector('.universe-thumbs')?.getBoundingClientRect();
       if (thumbs?.height > 0) sheet = Math.max(sheet, box.bottom - thumbs.top + 12);
     }
-    state.rect = cover({ w: size.w, h: size.h, panel: side, sheet, top: Math.max(0, nav - box.top) });
-    state.overview = overviewPose(size, state.rect);
+    const aim = cover({ w: size.w, h: size.h, panel: side, sheet, top: Math.max(0, nav - box.top) });
+    const was = state.rectTo;
+    // the canvas itself resized (its picture already stretched), the first
+    // measure, or reduced motion: straight there. Otherwise the open part
+    // eases over in the frames (easeOpenPart), and a panel that changed
+    // without moving it (a card's words, a desktop panel's height) costs nothing
+    if (jump || reduced || !was) {
+      state.rectTo = aim;
+      openVel = null;
+      frameOpen(aim);
+    } else if (!sameOpen(aim, was)) {
+      state.rectTo = aim;
+      ctx.invalidate();
+    }
+  };
+  // the camera framed on a part of the canvas: its lens shifted to its
+  // centre, and the overview fitted inside it
+  const frameOpen = (rect) => {
+    state.rect = rect;
+    state.overview = overviewPose(size, rect);
     camera.aspect = size.w / size.h;
-    camera.setViewOffset(size.w, size.h, -state.rect.sx, -state.rect.sy, size.w, size.h);
+    camera.setViewOffset(size.w, size.h, -rect.sx, -rect.sy, size.w, size.h);
     camera.updateProjectionMatrix();
+  };
+  let openVel = null; // the ease's speed (openPart.js), while it's moving
+  // one step of the ease, at the start of a frame; frames asked for until it's there
+  const easeOpenPart = (dt) => {
+    const to = state.rectTo;
+    if (!to || state.rect === to) return;
+    const at = easeOpen(state.rect, openVel, to, dt);
+    openVel = at.vel;
+    frameOpen(at.done ? to : at.rect);
+    if (!at.done) ctx.invalidate();
   };
   // the panel changes height on a phone (the sheet) without the canvas resizing
   const panelRO = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(() => size.w > 1 && (measure(), ctx.invalidate())) : null;
@@ -1528,7 +1564,10 @@ export async function create(canvas, ctx) {
     } finally {
       map.position.add(drawAt);
       camera.position.add(drawAt);
-      scene.updateMatrixWorld();
+      // (only the map's place changed: its world matrices are moved back
+      // after it, not composed again, which was a second whole update a frame)
+      reworldMoved(map);
+      camera.updateMatrixWorld();
     }
   };
   const lens = (near) => {
@@ -3573,7 +3612,7 @@ export async function create(canvas, ctx) {
   const fillRadar = () => {
     frame.radar = null; // (between ticks: the picture drawn last stays)
     if (!flying() || onFoot() || state.crash || state.dive || props.frozen || state.view === 'map') return;
-    if (!radar.due(state.clock)) return;
+    if (!radar.due(state.clock, radarHz(tier))) return; // (half as often on a low tier: radar.js)
     radarLock = state.lockTarget?.id ?? null;
     radar.start(state.ship);
     for (const c of sight.foes) addHostile(c);
@@ -5558,7 +5597,19 @@ export async function create(canvas, ctx) {
     state.climbBtn = 0;
     state.fireBtn = false;
   };
-  const onHidden = () => engine?.set({ speed: 0, on: !document.hidden && state.shown });
+  let awayAt = 0; // when the tab was hidden (the scene's clock, t0, stops while nobody's looking)
+  const onHidden = () => {
+    if (document.hidden) awayAt ||= performance.now();
+    else if (awayAt) {
+      const away = performance.now() - awayAt;
+      t0 += away;
+      // and the camera's eases pick up where they were left, not finished
+      // in the dark (not a dive: the page's own timer takes over from it)
+      for (const e of [state.flight, state.blend, state.camFrom]) if (e) e.start += away;
+      awayAt = 0;
+    }
+    engine?.set({ speed: 0, on: !document.hidden && state.shown });
+  };
   window.addEventListener('keydown', onKeyDown);
   window.addEventListener('tp:arrive', takeArrive);
   takeArrive();
@@ -6049,11 +6100,12 @@ export async function create(canvas, ctx) {
       size.w = Math.max(1, w);
       size.h = Math.max(1, h);
       followDrawn();
-      measure();
+      measure(true);
       watchPanel();
     },
     // (the map's settings on the shared renderer only while it draws: ./borrow.js)
     render: (ms, now) => {
+      easeOpenPart(ms / 1000);
       // (made at a handover, the runtime starts the map's quality afresh
       // after its prepare: the calibrated ceiling put back at its first frame)
       if (calibrated !== null) {
