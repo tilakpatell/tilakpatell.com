@@ -13,11 +13,13 @@
 //   wanted(shipAt, planets, { near, hold, resident }) → ids within `near`
 //       radii (or `hold` for one already resident), nearest first
 //   evict(resident, wanted, max) → { keep, drop }
-//   createNearMaps({ level, small, load, forget, resident, near, upload })
+//   createNearMaps({ level, small, load, forget, resident, near, upload, wait })
 //   (`upload(textures) → Promise`: a set sent to the graphics chip a slice at a
-//   time before it's put on, rather than all in the frame it's swapped in)
+//   time before it's put on, rather than all in the frame it's swapped in;
+//   `wait() → Promise`: a moment to make one finer shape in, an idle one)
 //       → { update(shipAt, planets), resident(), dispose() }
-//   (each planet: { id, at | group, r | radius, nearSet(level), swapMaps(T2 | null), nearGeometry(on) })
+//   (each planet: { id, at | group, r | radius, nearSet(level), swapMaps(T2 | null), nearGeometry(on),
+//   nearShapes(level) → [make]: its finer spheres, each made by one call, before nearGeometry wears them })
 
 import * as THREE from 'three';
 import { forgetTexture, loadTexture } from '../../lib/three/textures';
@@ -48,7 +50,11 @@ export function evict(resident, want, max) {
 
 const NONE = { update() {}, resident: () => [], dispose() {} };
 
-export function createNearMaps({ level = detailLevel(), small = false, load = loadTexture, forget = forgetTexture, resident: max = 2, near = NEAR, upload = null } = {}) {
+// (an idle moment, or the next task where the browser has none to offer;
+// a finer sphere at ultra takes 15 to 26 ms to make)
+const idle = () => new Promise((r) => (globalThis.requestIdleCallback ? globalThis.requestIdleCallback(() => r(), { timeout: 300 }) : setTimeout(r, 0)));
+
+export function createNearMaps({ level = detailLevel(), small = false, load = loadTexture, forget = forgetTexture, resident: max = 2, near = NEAR, upload = null, wait = idle } = {}) {
   if (level === 'low' || small) return NONE;
   // (DEV: off, to measure what they cost: scripts/universe-check.mjs --near off)
   if (import.meta.env?.DEV && globalThis.localStorage?.getItem('tp-near') === 'off') return NONE;
@@ -104,6 +110,15 @@ export function createNearMaps({ level = detailLevel(), small = false, load = lo
         } catch {
           // (they go up as they're drawn instead)
         }
+      }
+      // its finer spheres made now, each in a moment of its own, so the swap
+      // below is only the putting on (made in it, they were 15 to 52 ms of
+      // one frame, as the planet sharpened in front of you)
+      for (const make of p.nearShapes?.(level) ?? []) {
+        if (gone || sets.get(p.id) !== s) break;
+        await wait();
+        if (gone || sets.get(p.id) !== s) break;
+        make();
       }
       // (gone on, dropped for a nearer one, or the scene's gone: never installed)
       if (gone || sets.get(p.id) !== s) return free(s);

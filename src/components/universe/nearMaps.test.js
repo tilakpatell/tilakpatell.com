@@ -209,3 +209,51 @@ describe('a planet that comes back before its old set arrived', () => {
     expect(a.swapMaps).toHaveBeenCalledWith({ a: shared });
   });
 });
+
+describe('a planet’s finer sphere, made before it’s put on', () => {
+  // waits the test lets go of one at a time
+  const waits = () => {
+    const held = [];
+    return { held, wait: () => new Promise((r) => held.push(r)) };
+  };
+
+  it('makes each finer shape in a moment of its own after the maps are sent, and only then swaps', async () => {
+    const { load, calls } = loader();
+    const { held, wait } = waits();
+    const near = createNearMaps({ level: 'ultra', load, wait });
+    const made = [];
+    const a = { ...planet('a', 3), nearShapes: vi.fn(() => [() => made.push('body'), () => made.push('clouds')]) };
+    near.update([0, 0, 0], [a]);
+    calls[0].resolve();
+    await flush();
+    expect(a.nearShapes).toHaveBeenCalledWith('ultra');
+    expect(made).toEqual([]);
+    expect(a.swapMaps).not.toHaveBeenCalled();
+    held.shift()();
+    await flush();
+    expect(made).toEqual(['body']); // (one a moment: never two in one task)
+    expect(a.swapMaps).not.toHaveBeenCalled();
+    held.shift()();
+    await flush();
+    expect(made).toEqual(['body', 'clouds']);
+    expect(a.swapMaps).toHaveBeenCalledTimes(1);
+    expect(a.nearGeometry).toHaveBeenCalledWith(true, 'ultra');
+  });
+
+  it('makes nothing more for a planet left behind while it was being shaped, and frees its maps', async () => {
+    const { load, calls } = loader();
+    const { held, wait } = waits();
+    const near = createNearMaps({ level: 'ultra', load, wait });
+    const made = [];
+    const a = { ...planet('a', 3), nearShapes: () => [() => made.push('body'), () => made.push('clouds')] };
+    near.update([0, 0, 0], [a]);
+    calls[0].resolve();
+    await flush();
+    near.update([100, 0, 0], [a]); // (flown on)
+    held.shift()();
+    await flush();
+    expect(made).toEqual([]);
+    expect(a.swapMaps).not.toHaveBeenCalled();
+    expect(a.swapMaps.mock.calls).toEqual([]);
+  });
+});
