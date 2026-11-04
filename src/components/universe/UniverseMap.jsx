@@ -165,6 +165,12 @@ export default function UniverseMap({ selected, onSelect, onOpen, handle, frozen
     setFlown(false);
     setOnFoot(false);
   }, [ship]);
+  // the ship's own model on its way as soon as the ship's known, beside the
+  // map's code rather than after it, so the first frame has it (./shipLoad.js;
+  // the scene takes it; a garage build has none)
+  useEffect(() => {
+    if (meant && ship && !build) import('./shipLoad').then((m) => m.shipAhead(ship), () => {});
+  }, [meant, ship, build]);
   // the first flight's basics (components/tour), as the ship's under you
   useEffect(() => {
     if (ship && on) askBrief('/universe/fly');
