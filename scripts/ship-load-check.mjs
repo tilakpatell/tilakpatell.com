@@ -14,7 +14,7 @@
 // against the first frame drawn (the world's box turning data-gl="on", which
 // the runtime does after its first draw), the frames' times round the swap,
 // and the bytes of the ship's files (the C-137 page's saucer, Rick and
-// Morty, their clips, the cruiser's code). Then it flies to the C-137 page
+// Morty, their clips, the cruiser's code). Then it flies to the C-137 page (/c-137)
 // and back, the same visit, and counts what the map fetches again for the
 // ship (a second visit's fetches). Headless Chromium draws in software, so
 // a frame takes a second or so; it waits on conditions, never on time.
@@ -156,8 +156,8 @@ async function run(base, net) {
 
   // a second visit: to the C-137 page and back, the same tab
   phase = 'again';
-  await page.evaluate(() => (location.hash = '#/rickmorty'));
-  await page.waitForFunction(() => !document.querySelector('[data-gl]') || location.hash === '#/rickmorty', null, { timeout: 60000 });
+  await page.evaluate(() => (location.hash = '#/c-137'));
+  await page.waitForFunction(() => !document.querySelector('[data-gl]') || location.hash === '#/c-137', null, { timeout: 60000 });
   await page.waitForTimeout(3000);
   await page.evaluate(() => {
     performance.clearMarks('universe:ship-full');
