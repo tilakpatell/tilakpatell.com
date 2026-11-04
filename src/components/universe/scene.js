@@ -5752,12 +5752,10 @@ export async function create(canvas, ctx) {
   // put on at the first frame instead, it changed every lit shader after
   // they were compiled, and they were all compiled again in that frame
   house.follow({ adopt: true });
-  // (and the ship's own model, mounted, its shaders made: the first frame
-  // has the cruiser and its crew, not the stand-in that pops into them; a
-  // while at most, from here, so a slow network shows the stand-in rather
-  // than hold the map, and the model comes in over it when it can)
-  const SHIP_WAIT = 10000;
-  const ready = Promise.all([warm(scene, camera, scene, steps.shaders), post.composer ? precompilePasses(renderer, post.composer, camera) : null, post.precompileFinish(camera), settleWithin(shipIn, SHIP_WAIT)]).then(() => {
+  // (the ship's own model is prepare's to wait for, a while from here at
+  // most: shipBy, below; nothing in ready waits on the network)
+  const shipBy = performance.now() + 10000;
+  const ready = Promise.all([warm(scene, camera, scene, steps.shaders), post.composer ? precompilePasses(renderer, post.composer, camera) : null, post.precompileFinish(camera)]).then(() => {
     // made: out of the scene (so nothing walks them each frame), and the
     // ships on to the fleet, ready to fly (the first of each kind isn't
     // built in the middle of a frame)
@@ -5957,6 +5955,16 @@ export async function create(canvas, ctx) {
     ready.then(madeAll, () => {});
     await settleWithin(Promise.all([ready, near]), 20000);
     if (!alive() || disposed) return;
+    // the ship you fly's own model mounted, its shaders made (setShip's
+    // shipIn), so the first frame has the cruiser and its crew rather than
+    // the stand-in that turned into them; ten seconds from the map's making
+    // at most (shipBy), so a slow network shows the stand-in rather than
+    // hold the map, and the model comes in over it when it can. In the
+    // scene by the steps below: its pictures and its first draw with the rest
+    steps.ship(0);
+    await settleWithin(shipIn, Math.max(0, shipBy - performance.now()));
+    if (!alive() || disposed) return;
+    steps.ship(1);
     await prepareScene({
       renderer,
       roots: [scene],
