@@ -58,6 +58,12 @@ export function radarPoints(ship, contacts, range, out = [], n = contacts.length
   return out;
 }
 
+// How often a map draws its radar, a second, by the device's tier: half as
+// often on a low one, where the canvas is often drawn in software and a
+// draw of every contact's dot took over a millisecond (the dots move a
+// pixel or two in a tenth of a second at the radar's scale).
+export const radarHz = (tier) => (tier === 'low' ? 10 : 20);
+
 // The scene's radar for one flight: `start(ship)`, then `add` each contact (a hostile or threat counts toward the range), then
 // `points(range)`. The records, the list and the points are kept between ticks.
 export function createRadar() {
