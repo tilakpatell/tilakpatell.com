@@ -103,7 +103,7 @@ let done = 0;
 // Large files go first, one at a time with the rest of the link to themselves: sent among 7 other streams, a 100+ MB
 // PUT has its connection reset (r1057's 188 MB cooked-programs.json, UND_ERR_SOCKET on every try), and one file that
 // fails its attempts ends the run. Each gets up to three rounds of attemptUpload's tries.
-const LARGE = 32e6;
+const LARGE = 6e6;
 const sizeOf = (p) => (p.action === 'put' ? (p.path ? bytesOf(p) : 0) : 0);
 for (const p of plan.filter((q) => sizeOf(q) > LARGE)) {
   for (let round = 1; ; round++) {
