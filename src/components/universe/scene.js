@@ -103,6 +103,7 @@ import { prepareScene, uploadSlices } from '../../lib/three/gpuWork';
 import { calibrate, calibrationKey, recall, remember } from '../../lib/three/calibrate';
 import { prepFrame } from './prepFrame';
 import { foreground } from '../../lib/foreground';
+import { forgetShip, shipMounted, shipPending } from '../../lib/shipReady';
 import { settle as settleWithin } from '../../lib/settle';
 import { device, pixelRatio, quality as qualityNow } from '../../lib/device';
 import { stepAt } from './qualityStep';
@@ -2152,6 +2153,7 @@ export async function create(canvas, ctx) {
     }
     const was = state.kind;
     state.kind = kind;
+    shipPending(kind); // (the cockpit's flash holds its white on it: lib/shipReady)
     powers.setCrew(kind, crewSkills(kind));
     setPlumes(kind, ENGINES[kind] ?? []);
     if (!same) {
@@ -2192,9 +2194,10 @@ export async function create(canvas, ctx) {
     // its first frame: it may be set under the intro's cockpit, before the
     // flash (pages/Universe's tp:board)
     for (const root of [state.model.group, ...plumes.map((pl) => pl.trail.mesh)]) precompile(renderer, root, camera, scene, post.on ? post.composer.readBuffer : undefined);
-    if (state.build) {
+    if (state.build || !(SHIP_MODELS[kind] || kind === 'cruiser')) {
       // a garage build is whole as it is: no model to load over it
-    } else if (SHIP_MODELS[kind] || kind === 'cruiser') {
+      shipMounted(kind);
+    } else {
       // its model, made ahead (./shipLoad.js: the page asked for it as soon
       // as it knew the ship), or made now: in its paint, its pictures sent
       // and its shaders made before it's mounted, never on the frame it's
@@ -2208,7 +2211,7 @@ export async function create(canvas, ctx) {
       };
       shipIn = takeShip(kind)
         .then((made) => {
-          if (!made) return null;
+          if (!made) return void (state.model === model && shipMounted(kind)); // (none to come: the stand-in is the ship)
           if (disposed || state.model !== model) return void gone(made); // (the ship it was made for)
           const root = model.dress(cruiser ? made.group : made);
           uploadTextures(renderer, root);
@@ -2219,8 +2222,10 @@ export async function create(canvas, ctx) {
           const extra = cruiser ? { update: made.update, dispose: made.dispose, ownGlow: true, tint: made.tint, setLooks: made.setLooks } : undefined;
           if (disposed || state.model !== model || !model.mount(cruiser ? made.group : made, extra)) return void gone(made);
           performance.mark?.('universe:ship-full', { detail: kind });
-          // (come in after the map was shown, the stand-in's seen: the swap under a flare of the bloom, not a bare pop)
-          if (warmed && !reduced) state.flare = Math.max(state.flare, 1.4);
+          shipMounted(kind);
+          // (come in after the map was shown, the stand-in's seen: the swap under a flare of the bloom, not a bare pop;
+          // not under the cockpit, whose white waits for this, lib/shipReady)
+          if (warmed && !reduced && !foreground()) state.flare = Math.max(state.flare, 1.4);
           if (cruiser) {
             seatCrew = made.seated;
             // its exhaust leaves from its own exhaust cans
@@ -6264,6 +6269,7 @@ export async function create(canvas, ctx) {
       panelRO?.disconnect();
       window.removeEventListener('keydown', onKeyDown);
       window.removeEventListener('tp:arrive', takeArrive);
+      forgetShip(); // (no map: a launch waits for no ship)
       window.removeEventListener('keyup', onKeyUp);
       window.removeEventListener('blur', onBlur);
       document.removeEventListener('visibilitychange', onHidden);
