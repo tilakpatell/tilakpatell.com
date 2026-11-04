@@ -1165,8 +1165,11 @@ export async function create(canvas, ctx) {
       disposeTree(model);
       return null;
     }
-    return warm(model).then(() => {
-      if (disposed || !planetOf[id]?.mount(model, spot)) disposeTree(model);
+    // (its pictures sent too, a slice at a time, not as it's first drawn: the
+    // landing's way, lib/three/gpuWork; and come in where the map's been
+    // seen, it grows into its place rather than popping in, planets.js)
+    return prepareLanding([model], () => true).then(() => {
+      if (disposed || !planetOf[id]?.mount(model, spot, { grow: warmed })) disposeTree(model);
       ctx.invalidate();
     });
   };

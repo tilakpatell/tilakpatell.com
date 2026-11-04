@@ -1196,6 +1196,9 @@ const BUILDERS = {
 export const NEAR_SEG = { high: [160, 100], ultra: [320, 200], mid: [96, 60] };
 export const nearSegments = (level) => NEAR_SEG[level] ?? null;
 
+// (how long a model that comes in after the map's seen takes to grow into its slot, s)
+const GROW = 0.7;
+
 export function buildPlanet(u, T = {}, { sun = null, tier = 'high', key = null } = {}) {
   const core = u.kind === 'core';
   // the way to the star that lights it, in the world's axes (lighting.js's
@@ -1373,13 +1376,31 @@ export function buildPlanet(u, T = {}, { sun = null, tier = 'high', key = null }
     // a loaded model, parked on its orbit or its spot: the planet's own, or
     // the one named (most planets have just their own; a few have more:
     // Cybertron's 'rival', the Game Boy world's 'mario' and 'plant', the Death
-    // Star's 'cruiser'). True when this planet takes it
-    mount(model, name) {
+    // Star's 'cruiser'). True when this planet takes it. `grow`: it comes in
+    // where the map's already seen, so it grows into its slot over GROW
+    // seconds rather than popping in (not one that's the planet itself,
+    // which takes the sphere's place as it is)
+    mount(model, name, { grow = false } = {}) {
       const s = name ? p.slots?.[name] : p.slot;
       if (!s || !model) return false;
       const holder = fit(model, s.size);
       holder.rotation.set(...s.turn);
-      s.holder.add(holder);
+      const growing = grow && !s.skin ? new THREE.Group() : null;
+      if (growing) {
+        growing.scale.setScalar(1e-3);
+        growing.add(holder);
+        s.holder.add(growing);
+        let from = null;
+        let grown = false;
+        // (from its first frame in view: the ticks run only while the planet's live)
+        p.tick.push((t) => {
+          if (grown) return;
+          from ??= t;
+          const k = Math.min(1, (t - from) / GROW);
+          growing.scale.setScalar(Math.max(1e-3, 1 - (1 - k) ** 3));
+          grown = k >= 1;
+        });
+      } else s.holder.add(holder);
       // a model that's the planet itself: the painted sphere stops drawing
       // (it stays, for what's laid over it: a crash's shockwave)
       if (s.skin) {
