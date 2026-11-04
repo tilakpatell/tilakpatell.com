@@ -5574,7 +5574,11 @@ export async function create(canvas, ctx) {
   const onHidden = () => {
     if (document.hidden) awayAt ||= performance.now();
     else if (awayAt) {
-      t0 += performance.now() - awayAt;
+      const away = performance.now() - awayAt;
+      t0 += away;
+      // and the camera's eases pick up where they were left, not finished
+      // in the dark (not a dive: the page's own timer takes over from it)
+      for (const e of [state.flight, state.blend, state.camFrom]) if (e) e.start += away;
       awayAt = 0;
     }
     engine?.set({ speed: 0, on: !document.hidden && state.shown });
