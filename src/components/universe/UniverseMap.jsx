@@ -246,7 +246,10 @@ export default function UniverseMap({ selected, onSelect, onOpen, handle, frozen
       {meant ? (
         <>
           {/* (until the map is drawing: everything sent to the graphics chip first, so it flies smoothly from its first frame) */}
-          <LoadingVeil className="universe-loading" shown={!on} progress={progress.value} step={progress.step} title="Charting the universe" />
+          {/* (drawn, the bar runs on to the end as the veil fades, by its own
+              transition: the map comes in a step or two before the last of the
+              prepare's, and the bar stood at 32 or 45% as it went) */}
+          <LoadingVeil className="universe-loading" shown={!on} progress={on ? 1 : progress.value} step={progress.step} title="Charting the universe" />
           <ul className="universe-labels" aria-label="Universes" onKeyDown={onKeyDown}>
             {UNIVERSES.map((u) => (
               <li key={u.id}>

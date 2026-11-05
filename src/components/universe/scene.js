@@ -1330,7 +1330,14 @@ export async function create(canvas, ctx) {
   const panelEl = () => (ctx.rt.host ?? ctx.el).closest('.universe-page')?.querySelector('.universe-panel');
   const measure = (jump = false) => {
     const box = (ctx.rt.host ?? ctx.el).getBoundingClientRect();
-    const panel = panelEl()?.getBoundingClientRect();
+    const panelAt = panelEl();
+    const panel = panelAt?.getBoundingClientRect();
+    // (sliding in from the edge, universe.css's [data-opening]: where it
+    // lands, not where it is, so the view eases there once, not after it)
+    // (its layout box, offsetLeft, has no transform in it; the computed
+    // translate is a calc() of its own width)
+    const parent = panelAt?.hasAttribute('data-opening') ? panelAt.offsetParent?.getBoundingClientRect() : null;
+    const slid = parent ? panel.left - (parent.left + panelAt.offsetLeft) : 0;
     // (0 is a real answer: a phone on its side, flying, has no bar: thumbs.css)
     const navRead = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--nav-h'));
     const nav = Number.isFinite(navRead) ? navRead : 68;
@@ -1339,7 +1346,7 @@ export async function create(canvas, ctx) {
     if (panel && panel.width > 0) {
       // put away on a desktop, it's a bar up in the corner: the map has the width
       if (panel.width >= box.width * 0.75) sheet = Math.max(0, box.bottom - panel.top);
-      else if (!panelEl().hasAttribute('data-tucked')) side = Math.max(0, box.right - panel.left);
+      else if (!panelEl().hasAttribute('data-tucked')) side = Math.max(0, box.right - (panel.left - slid));
     }
     // a touch screen held upright: the thumbs' grid fills the foot of the
     // map (UniverseMap.jsx, thumbs.css), so the open part stops over it and
