@@ -585,6 +585,7 @@ export function createPost(renderer, scene, camera, { small = false, bloom: look
 
   let on = true;
   let glow = true; // bloom, until lite() takes it off
+  let folding = true; // the finish brings a softer scene up to the canvas (upscale), until lite({ fold: false })
   let sharp = 1; // a share of the renderer's pixel ratio the passes are drawn at
   const at = { w: 0, h: 0, ratio: 0, full: 0 };
   return {
@@ -643,7 +644,7 @@ export function createPost(renderer, scene, camera, { small = false, bloom: look
         grade.uniforms.uTexel.value.set(1 / Math.max(1, w * ratio), 1 / Math.max(1, h * ratio));
         // brought up to the canvas (FSR 1) when it's sharper than the scene:
         // the grade's picture at the scene's size, EASU's at the canvas's
-        if (upscale && upscaling(ratio, full)) {
+        if (upscale && folding && upscaling(ratio, full)) {
           up ??= { graded: picture(), wide: picture() };
           const read = composer.readBuffer;
           up.graded.setSize(Math.max(1, Math.round(read.width)), Math.max(1, Math.round(read.height)));
@@ -797,9 +798,17 @@ export function createPost(renderer, scene, camera, { small = false, bloom: look
     // a lighter post, short of none: the bloom goes (its blur is most of the
     // post's cost) and the grade stays, so the picture keeps its tone map and
     // colour; flare() then does nothing. Harmless to call again.
-    lite() {
+    lite({ fold = true } = {}) {
       glow = false;
       bloom.enabled = false;
+      // (fold: false, and the finish's bring-up goes too, its two passes:
+      // the grade draws the scene up to the canvas as it is, softer; the
+      // universe map's floor, where only the grade is kept)
+      if (!fold && folding) {
+        folding = false;
+        dropUp();
+        at.w = -1; // (sized again at the next frame, and the bring-up left off)
+      }
     },
     // the bloom off and back on (the visitor's video settings); lite() is
     // this, off
