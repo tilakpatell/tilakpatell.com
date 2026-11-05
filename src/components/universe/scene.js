@@ -6146,7 +6146,7 @@ export async function create(canvas, ctx) {
     calibrated = level;
   };
 
-  return {
+  const handle = {
     // every shader made (the page waits for it before the first frame)
     ready,
     // (the canvas is sized already: the runtime's, before it tells the map)
@@ -6473,4 +6473,8 @@ export async function create(canvas, ctx) {
       }, 0);
     },
   };
+  // (development: the world's own lowerQuality, for a probe to put the map
+  // at the quality's floor and measure it there, as the runtime would)
+  if (import.meta.env.DEV && window.__universeDebug) window.__universeDebug.lowerQuality = (level) => handle.lowerQuality(level);
+  return handle;
 }
