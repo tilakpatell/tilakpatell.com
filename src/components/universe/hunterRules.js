@@ -428,6 +428,11 @@ export function createHunt({ rand = Math.random, factions = FACTIONS, kinds: KIN
   const you = { x: 0, y: 0, z: 0 };
   const youPrev = { x: 0, y: 0, z: 0 };
   const yourVel = [0, 0, 0];
+  // what each hunter's senses are handed each frame (you, as `you` and
+  // yourVelObj say, and the cover between): kept, not made for every
+  // hunter every frame (perception.js copies what it keeps of them)
+  const senseWorld = { targets: [{ id: 'you', at: you, vel: yourVelObj, hostile: true }] };
+  const senseOpts = { seesThrough: (a, b) => !blocked(a, b, cover) };
   let yourNose = [0, 0, -1];
   let known = false; // (whether `you` has ever been set)
   // scratch
@@ -878,7 +883,7 @@ export function createHunt({ rand = Math.random, factions = FACTIONS, kinds: KIN
         // what it knows of you this frame: the truth while it sees you (or
         // for a moment after), its guess while it doesn't
         if (ship) {
-          sense(HUNTER_SENSES, h.me, { targets: [{ id: 'you', at: you, vel: yourVelObj, hostile: true }] }, dt, { seesThrough: (a, b) => !blocked(a, b, cover) });
+          sense(HUNTER_SENSES, h.me, senseWorld, dt, senseOpts);
           h.belief = belief(h.me, 'you');
           h.seesYou = Boolean(h.belief?.visible);
         }

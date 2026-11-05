@@ -21,7 +21,7 @@
 //   share(from, to, id, { fade }) → a sighting handed on at lower confidence
 //   forget(me, id)
 
-import { add, apart, dot, sub, unit } from './vec';
+import { add, apart, dot } from './vec';
 
 export function createSenses({ sight = {}, hearing = {}, smell = {}, memory = 6, intuition = 2.5 } = {}) {
   return {
@@ -35,18 +35,30 @@ export function createSenses({ sight = {}, hearing = {}, smell = {}, memory = 6,
 
 const fresh = (t, kind) => ({ id: t.id, at: { ...t.at }, vel: { x: 0, y: 0, z: 0 }, seenAt: -Infinity, heardAt: -Infinity, confidence: 0, visible: false, timer: 0, kind: kind ?? t.kind ?? null, faction: t.faction ?? null, hostile: t.hostile ?? true });
 
-export function sense(senses, me, world, dt, { seesThrough = null } = {}) {
+// (kept from call to call and cleared: sense runs for every hunter every
+// frame, and a set made for each call was a frame's garbage)
+const seen = new Set();
+const NO_OPTS = {};
+
+export function sense(senses, me, world, dt, { seesThrough = null } = NO_OPTS) {
   me.beliefs ??= {};
   me.now = (me.now ?? 0) + dt; // (its own clock: a brain keeps `clock` for itself)
   const now = me.now;
-  const seen = new Set();
+  seen.clear();
   for (const t of world.targets ?? []) {
     if (!t?.at) continue;
     const d = apart(t.at, me.pos);
     let sees = false;
     if (d <= senses.sight.range) {
-      const to = d > 1e-6 ? unit(sub(t.at, me.pos)) : me.dir;
-      const facing = me.dir ? dot(me.dir, to) : 1;
+      // (the way to it worked out in place, as unit(sub(...)) has it, not as two records)
+      let facing = 1;
+      if (me.dir && d > 1e-6) {
+        const dx = t.at.x - me.pos.x;
+        const dy = t.at.y - me.pos.y;
+        const dz = t.at.z - me.pos.z;
+        const l = Math.hypot(dx, dy, dz) || 1;
+        facing = me.dir.x * (dx / l) + me.dir.y * (dy / l) + me.dir.z * (dz / l);
+      } else if (me.dir) facing = dot(me.dir, me.dir);
       sees = facing >= senses.sight.cone && (!seesThrough || seesThrough(me.pos, t.at));
     }
     if (!sees && senses.smell.range > 0 && d <= senses.smell.range) sees = true;
@@ -80,8 +92,9 @@ export function sense(senses, me, world, dt, { seesThrough = null } = {}) {
     }
     b.heardAt = now;
   }
-  // the rest: intuition, then a coast and a fade
-  for (const id of Object.keys(me.beliefs)) {
+  // the rest: intuition, then a coast and a fade (a for…in, not a list of
+  // the keys made each call: deleting the one it's on is safe)
+  for (const id in me.beliefs) {
     const b = me.beliefs[id];
     if (seen.has(id)) continue;
     b.visible = false;

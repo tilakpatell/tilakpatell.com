@@ -103,3 +103,23 @@ describe('whose name shows', () => {
     expect(nameShows({ ...base, onFoot: true, k: 0 })).toBe(true);
   });
 });
+
+describe('aiming, frame after frame', () => {
+  it('hands back the same list of places for the same sector and the same place you are at (it is asked every frame)', () => {
+    const a = aimTargets('main', null);
+    expect(aimTargets('main', null)).toBe(a);
+    expect(aimTargets('main', a[0].id)).not.toBe(a);
+    expect(aimTargets('main', a[0].id)).toBe(aimTargets('main', a[0].id));
+    expect(aimTargets('main', a[0].id).some((t) => t.id === a[0].id)).toBe(false);
+  });
+
+  it('finds the same star ahead whether asked once or many times over (its records kept between calls)', () => {
+    const targets = aimTargets('main', null);
+    const t = targets.find((x) => x.reach != null) ?? targets[0];
+    const from = [t.at[0] + 50000, t.at[1], t.at[2]];
+    const nose = [-1, 0, 0];
+    const once = aimFrom(from, nose, targets)?.id ?? null;
+    for (let i = 0; i < 5; i++) aimFrom([0, 0, 0], [0, 0, -1], targets);
+    expect(aimFrom(from, nose, targets)?.id ?? null).toBe(once);
+  });
+});
