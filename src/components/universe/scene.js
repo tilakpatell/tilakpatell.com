@@ -2171,8 +2171,80 @@ export async function create(canvas, ctx) {
   };
 
   // the ship's own model on its way, mounted once it's in (what the first
-  // frame waits on, a while: ready, below)
+  // frame waits on, a while: prepare, below)
   let shipIn = null;
+  const hasModel = (kind) => Boolean(SHIP_MODELS[kind] || kind === 'cruiser');
+  // (the X-wing's, the Falcon's or the RV's a copy of the file, the cruiser the C-137 page's, crew aboard)
+  const shipRoot = (kind, made) => (kind === 'cruiser' ? made.group : made);
+  const goneShip = (made) => {
+    made.dispose?.();
+    disposeTree(made.group ?? made, { keepShared: true });
+  };
+  // a ship's model taken from ./shipLoad.js, dressed in `model`'s paint (the
+  // stand-in it's for), its pictures sent and its shaders made, while
+  // `wanted()`: { made }, { none } (no model to come), or null (gone)
+  const readyModel = (kind, model, wanted) =>
+    takeShip(kind)
+      .then((made) => {
+        if (!made) return { none: true };
+        if (disposed || !wanted()) return void goneShip(made);
+        const root = model.dress(shipRoot(kind, made));
+        uploadTextures(renderer, root);
+        return warm(root).then(() => ({ made }));
+      })
+      .catch(() => null);
+  // a readied model mounted over its stand-in, if that's still the ship
+  const putOn = (kind, model, made, standInAt) => {
+    const cruiser = kind === 'cruiser';
+    const extra = cruiser ? { update: made.update, dispose: made.dispose, ownGlow: true, tint: made.tint, setLooks: made.setLooks } : undefined;
+    if (disposed || state.model !== model || !model.mount(shipRoot(kind, made), extra)) return void goneShip(made);
+    performance.mark?.('universe:ship-full', { detail: kind });
+    shipMounted(kind);
+    // (come in where the stand-in was seen a while: the swap under a soft flare of the bloom, not a bare
+    // pop; none under the cockpit, whose white waits for this, lib/shipReady, nor behind the Hangar: ./shipSwap.js)
+    const flare = swapFlare({
+      shown: !document.hidden && (ctx.rt.host ?? ctx.el)?.closest?.('[data-gl]')?.dataset.gl === 'on',
+      seenMs: performance.now() - standInAt,
+      reduced,
+      covered: Boolean(foreground()) || 'covered' in document.documentElement.dataset,
+      frozen: Boolean(props.frozen),
+    });
+    if (flare) state.flare = Math.max(state.flare, flare);
+    if (cruiser) {
+      seatCrew = made.seated;
+      // its exhaust leaves from its own exhaust cans
+      if (made.engines?.length) {
+        model.group.updateMatrixWorld(true);
+        setPlumes('cruiser', made.engines.map((g) => model.pivot.worldToLocal(g.getWorldPosition(new THREE.Vector3())).toArray()));
+      }
+    }
+    ctx.invalidate();
+  };
+  // The ship the cockpit seats you in on a replay (tp:board; the map flies
+  // the one it was until the flash, pages/Universe): its stand-in built and
+  // its model readied behind the cockpit, in that stand-in's paint, so at the
+  // flash setShip takes the two and only the mount is left, which the
+  // cockpit's white waits on (lib/shipReady). One a seat: a new seat drops it.
+  let ahead = null; // { kind, model, made }
+  const dropAhead = () => {
+    const a = ahead;
+    ahead = null;
+    if (!a) return;
+    a.made.then((r) => r?.made && goneShip(r.made));
+    a.model.dispose();
+    disposeTree(a.model.group, { keepShared: true });
+  };
+  const onBoard = (e) => {
+    const kind = e.detail?.ship;
+    if (disposed || typeof kind !== 'string' || !state.kind || kind === state.kind || ahead?.kind === kind || !hasModel(kind)) return;
+    dropAhead();
+    const model = buildShip(kind, T, { build: null });
+    precompile(renderer, model.group, camera, scene, post.on ? post.composer.readBuffer : undefined);
+    const a = { kind, model, made: null };
+    ahead = a;
+    a.made = readyModel(kind, model, () => ahead === a || state.model === model);
+  };
+  window.addEventListener('tp:board', onBoard);
   // (force: the same crew, built again: its garage build changed)
   const setShip = (kind, force = false) => {
     if (kind === state.kind && !force) return;
@@ -2227,7 +2299,12 @@ export async function create(canvas, ctx) {
       retarget();
       return;
     }
-    state.model = buildShip(kind, T, { build: state.build });
+    // (the one the cockpit seated you in, readied behind it at tp:board: its
+    // stand-in and its model, dressed and warmed already, so only the mount's left)
+    const readied = !state.build && ahead?.kind === kind ? ahead : null;
+    if (!readied) dropAhead();
+    ahead = null;
+    state.model = readied?.model ?? buildShip(kind, T, { build: state.build });
     map.add(state.model.group);
     performance.mark?.('universe:ship-stand-in', { detail: kind }); // (scripts/ship-load-check.mjs: how long the stand-in was seen)
     const standInAt = performance.now();
@@ -2240,56 +2317,19 @@ export async function create(canvas, ctx) {
     // its first frame: it may be set under the intro's cockpit, before the
     // flash (pages/Universe's tp:board)
     for (const root of [state.model.group, ...plumes.map((pl) => pl.trail.mesh)]) precompile(renderer, root, camera, scene, post.on ? post.composer.readBuffer : undefined);
-    if (state.build || !(SHIP_MODELS[kind] || kind === 'cruiser')) {
+    if (state.build || !hasModel(kind)) {
       // a garage build is whole as it is: no model to load over it
       shipMounted(kind);
     } else {
       // its model, made ahead (./shipLoad.js: the page asked for it as soon
       // as it knew the ship), or made now: in its paint, its pictures sent
       // and its shaders made before it's mounted, never on the frame it's
-      // first seen; the X-wing's, the Falcon's or the RV's a copy of the
-      // file, the cruiser the C-137 page's, crew aboard
+      // first seen (readyModel); then put on (putOn)
       const model = state.model;
-      const cruiser = kind === 'cruiser';
-      const gone = (made) => {
-        made.dispose?.();
-        disposeTree(made.group ?? made, { keepShared: true });
-      };
-      shipIn = takeShip(kind)
-        .then((made) => {
-          if (!made) return void (state.model === model && shipMounted(kind)); // (none to come: the stand-in is the ship)
-          if (disposed || state.model !== model) return void gone(made); // (the ship it was made for)
-          const root = model.dress(cruiser ? made.group : made);
-          uploadTextures(renderer, root);
-          return warm(root).then(() => made);
-        })
-        .then((made) => {
-          if (!made) return;
-          const extra = cruiser ? { update: made.update, dispose: made.dispose, ownGlow: true, tint: made.tint, setLooks: made.setLooks } : undefined;
-          if (disposed || state.model !== model || !model.mount(cruiser ? made.group : made, extra)) return void gone(made);
-          performance.mark?.('universe:ship-full', { detail: kind });
-          shipMounted(kind);
-          // (come in where the stand-in was seen a while: the swap under a soft flare of the bloom, not a bare
-          // pop; none under the cockpit, whose white waits for this, lib/shipReady, nor behind the Hangar: ./shipSwap.js)
-          const flare = swapFlare({
-            shown: !document.hidden && (ctx.rt.host ?? ctx.el)?.closest?.('[data-gl]')?.dataset.gl === 'on',
-            seenMs: performance.now() - standInAt,
-            reduced,
-            covered: Boolean(foreground()) || 'covered' in document.documentElement.dataset,
-            frozen: Boolean(props.frozen),
-          });
-          if (flare) state.flare = Math.max(state.flare, flare);
-          if (cruiser) {
-            seatCrew = made.seated;
-            // its exhaust leaves from its own exhaust cans
-            if (made.engines?.length) {
-              model.group.updateMatrixWorld(true);
-              setPlumes('cruiser', made.engines.map((g) => model.pivot.worldToLocal(g.getWorldPosition(new THREE.Vector3())).toArray()));
-            }
-          }
-          ctx.invalidate();
-        })
-        .catch(() => {});
+      shipIn = (readied?.made ?? readyModel(kind, model, () => state.model === model)).then((r) => {
+        if (r?.none) return void (state.model === model && shipMounted(kind)); // (none to come: the stand-in is the ship)
+        if (r?.made) putOn(kind, model, r.made, standInAt);
+      });
     }
     if (!state.ship) {
       // a new pilot: at the universe picked, or anywhere (ship.js's STARTS),
@@ -6343,6 +6383,8 @@ export async function create(canvas, ctx) {
       panelRO?.disconnect();
       window.removeEventListener('keydown', onKeyDown);
       window.removeEventListener('tp:arrive', takeArrive);
+      window.removeEventListener('tp:board', onBoard);
+      dropAhead();
       forgetShip(); // (no map: a launch waits for no ship)
       window.removeEventListener('keyup', onKeyUp);
       window.removeEventListener('blur', onBlur);
