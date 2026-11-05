@@ -835,24 +835,39 @@ export async function create(canvas, ctx) {
   // where you look (within NAME_CONE of the nose), where it's real, picked
   // or where you're going; on foot, only near or picked; with no ship (or
   // the whole map in view), all
+  // (it's asked for every name, every frame: the ship's nose worked out once
+  // for the way it's pointing, and one record handed to nameShows, not a
+  // nose and a record made for each name)
+  const nameIn = { k: 1, station: false, picked: false, viewAll: false, onFoot: false, noseDot: -1 };
+  const nameNose = { h: NaN, p: NaN, b: NaN, at: null };
+  const namedNose = (s) => {
+    const p = s.pitch || 0;
+    const b = s.bank || 0;
+    if (nameNose.h !== s.heading || nameNose.p !== p || nameNose.b !== b) {
+      nameNose.h = s.heading;
+      nameNose.p = p;
+      nameNose.b = b;
+      nameNose.at = noseOf(s);
+    }
+    return nameNose.at;
+  };
   const named = (id, at) => {
     let noseDot = -1;
     const s = state.ship;
     if (s && at && flying() && !onFoot()) {
-      const [nx, ny, nz] = noseOf(s);
+      const n = namedNose(s);
       const dx = at[0] - s.x;
       const dy = at[1] - s.y;
       const dz = at[2] - s.z;
-      noseDot = (nx * dx + ny * dy + nz * dz) / (Math.hypot(dx, dy, dz) || 1);
+      noseDot = (n[0] * dx + n[1] * dy + n[2] * dz) / (Math.sqrt(dx * dx + dy * dy + dz * dz) || 1);
     }
-    return nameShows({
-      k: farStars.kOf(id) ?? landmarks.kOf(id) ?? 1,
-      station: byId(id)?.kind === 'core',
-      picked: id === state.sel || id === state.aim || id === state.auto?.id || id === state.jump?.id,
-      viewAll: (!flying() && !onFoot()) || state.view === 'map',
-      onFoot: onFoot(),
-      noseDot,
-    });
+    nameIn.k = farStars.kOf(id) ?? landmarks.kOf(id) ?? 1;
+    nameIn.station = byId(id)?.kind === 'core';
+    nameIn.picked = id === state.sel || id === state.aim || id === state.auto?.id || id === state.jump?.id;
+    nameIn.viewAll = (!flying() && !onFoot()) || state.view === 'map';
+    nameIn.onFoot = onFoot();
+    nameIn.noseDot = noseDot;
+    return nameShows(nameIn);
   };
   const near = createNearMaps({ small, upload: (ts) => uploadSlices(renderer, ts, { sliceMB: 8 }) }); // (the finer maps for the two planets nearest, nearMaps.js)
   const crashFx = createCrash(map);
@@ -1699,7 +1714,11 @@ export async function create(canvas, ctx) {
       const was = shown.get(el);
       const flag = `${off ? 'off' : ''}${behind ? 'behind' : ''}`;
       if (was && was.tf === tf && was.flag === flag) continue;
-      shown.set(el, { tf, flag });
+      if (was) {
+        // (its record kept and written over: one made a name a frame while they move)
+        was.tf = tf;
+        was.flag = flag;
+      } else shown.set(el, { tf, flag });
       if (tf) el.style.transform = tf;
       el.toggleAttribute('data-off', off);
       el.toggleAttribute('data-behind', behind && !off);
@@ -4976,6 +4995,8 @@ export async function create(canvas, ctx) {
     c.b += Math.max(-k, Math.min(k, to.b - c.b));
   };
   const nearest = planets.map((p) => ({ p, d: 0 }));
+  const byNear = (a, b) => a.d - b.d;
+  const camAt = [0, 0, 0];
   const lights = (dt) => {
     for (const p of planets) {
       const s = sunInMap[p.id];
@@ -4987,11 +5008,12 @@ export async function create(canvas, ctx) {
       const at = POSITIONS[n.p.id];
       n.d = Math.hypot(camLocal.x - at[0], camLocal.y - at[1], camLocal.z - at[2]) / n.p.radius;
     }
-    nearest.sort((a, b) => a.d - b.d);
-    nearest.forEach((n, i) => n.p.near(i < 2 ? n.d : 1e9));
+    // (a comparator, a loop and the camera's place kept: this runs every frame)
+    nearest.sort(byNear);
+    for (let i = 0; i < nearest.length; i++) nearest[i].p.near(i < 2 ? nearest[i].d : 1e9);
     const nv = novae.nova();
     const nova = nv && nv.k > 0.05 ? { at: nv.at.toArray ? nv.at.toArray() : nv.at, colour: '#ffffff', strength: 3 * nv.k } : null;
-    const l = lightAt(camLocal.toArray(), { nova });
+    const l = lightAt(camLocal.toArray(camAt), { nova });
     litBy = l;
     // what metal reflects made again round the new key when the star that
     // lights you changes (a few ms, and only crossing from one star's
