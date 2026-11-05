@@ -53,7 +53,10 @@ describe('the rest', () => {
     for (const f of ['gen3d.yml', 'voices.yml', 'motion.yml']) for (const name of ['queue', 'check']) expect(FLOWS[f].jobs[name]?.['runs-on'], `${f} ${name}`).toBe('ubuntu-latest');
   });
   it('and every job of CI, which runs on pull requests', () => {
-    for (const [name, job] of Object.entries(FLOWS['ci.yml'].jobs)) expect(job['runs-on'], name).toBe('ubuntu-latest');
+    // (one of GitHub's own Ubuntu images: the latest, or one pinned by its
+    // version where a tool has none for the latest yet, as the browser jobs
+    // are to 24.04 for Playwright; never a label list, never the desktop's)
+    for (const [name, job] of Object.entries(FLOWS['ci.yml'].jobs)) expect(job['runs-on'], name).toMatch(/^ubuntu-(latest|\d\d\.\d\d)$/);
   });
   it('never run a pull request’s code on the desktop', () => {
     for (const [f, w] of Object.entries(FLOWS)) {
