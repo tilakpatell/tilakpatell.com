@@ -53,6 +53,7 @@
    part that's left open */
 .universe-page {
   --panel-w: min(400px, calc(100vw - 24px));
+  --panel-width: min(400px, calc(100vw - 24px)); /* (the panel's own: --panel-w's value, never eased, below) */
   --sheet-h: 38svh; /* taller once a universe's card is in it */
   position: relative;
   height: 100svh;
@@ -64,13 +65,13 @@
    everything stood on it (the thumbs, the prompt, the hints) glide to a
    card's height or the tucked bar's instead of leaping there in one frame,
    as the scene's framing does (scene.js's easeOpenPart). The width eases
-   only on the way to tucked, where the panel is already the bar: easing it
-   out again would reflow the whole panel's words every frame, and the HUD
-   it pushes aside must clear the panel the moment it's back */
+   both ways, but the panel's own width is --panel-width, which never does
+   (easing the panel's box would reflow its words every frame): coming
+   back, the panel slides in whole over the same time (.universe-panel
+   [data-opening], below), so what it pushes aside clears it as it comes */
 @property --sheet-h { syntax: '<length>'; inherits: true; initial-value: 0px; }
 @property --panel-w { syntax: '<length>'; inherits: true; initial-value: 0px; }
-.universe-page:not(.galaxy-page) { transition: --sheet-h var(--t-base) var(--ease-smooth); }
-.universe-page:not(.galaxy-page)[data-tucked] { transition: --sheet-h var(--t-base) var(--ease-smooth), --panel-w var(--t-base) var(--ease-smooth); }
+.universe-page:not(.galaxy-page) { transition: --sheet-h var(--t-base) var(--ease-smooth), --panel-w var(--t-base) var(--ease-smooth); }
 /* the panel put away: the map has the whole width (the bar left of it sits
    up in the corner) or, on a phone, all but a slim bar at the bottom. The
    bar's width is what it holds: "The universe" whole (112px), the words to
@@ -177,7 +178,7 @@
   /* as tall as what it holds (a short card left half the panel empty), the
      page's height at most, and it scrolls */
   max-height: calc(100% - var(--nav-h) - 24px);
-  width: var(--panel-w);
+  width: var(--panel-width);
   overflow-y: auto;
   overscroll-behavior: contain;
   padding: 1.25rem;
@@ -208,6 +209,14 @@
 .universe-tuck:focus-visible,
 .universe-untuck:focus-visible { outline: 2px solid var(--accent-text); outline-offset: 2px; }
 .universe-panel[data-tucked] { display: flex; overflow: hidden; padding: 0; }
+/* put back beside the map (not the phone's sheet, whose height eases): in
+   from the edge whole, over the time what it pushes aside takes to make
+   room (--panel-w's ease, above); UniversePanel.jsx marks it for the one
+   slide and scene.js's measure reads where it lands, not where it is */
+@media (min-width: 768px), (pointer: coarse) and (max-height: 500px) {
+  .universe-page:not(.galaxy-page) .universe-panel[data-opening] { animation: universe-panel-in var(--t-base) var(--ease-smooth); }
+}
+@keyframes universe-panel-in { from { translate: calc(100% + 12px) 0; } }
 /* the guide's "?", beside the hide button (the corner one would sit over the panel) */
 .universe-guide { right: calc(0.7rem + 34px + 0.25rem); }
 /* the panel's first row (the eyebrow, or the back links) stops short of the buttons */
