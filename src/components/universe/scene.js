@@ -500,6 +500,28 @@ export async function create(canvas, ctx) {
   const { reduced } = ctx;
   let props = ctx;
   let disposed = false;
+  let goingLow = false; // (the passes are going: lowerQuality, once the canvas's shaders are made; 'want', then 'making')
+  const goLow = () => {
+    if (disposed || state.low) return;
+    state.tLow = (performance.now() - t0) / 1000;
+    state.low = true;
+    post.off();
+    ctx.invalidate();
+  };
+  // the canvas's own shaders made behind the frame, as it will draw them
+  // (no render target: the canvas's colour and tone map), before the passes go
+  const readyLow = () => {
+    goingLow = 'making';
+    const was = renderer.getRenderTarget();
+    renderer.setRenderTarget(null);
+    let made = null;
+    try {
+      made = renderer.compileAsync(scene, camera);
+    } finally {
+      renderer.setRenderTarget(was);
+    }
+    Promise.resolve(made).then(goLow, goLow);
+  };
 
   // the runtime’s renderer, its canvas at the screen’s own pixels, 2 at most
   // (module.js; how sharp the scene is drawn inside that is the post’s,
@@ -835,24 +857,39 @@ export async function create(canvas, ctx) {
   // where you look (within NAME_CONE of the nose), where it's real, picked
   // or where you're going; on foot, only near or picked; with no ship (or
   // the whole map in view), all
+  // (it's asked for every name, every frame: the ship's nose worked out once
+  // for the way it's pointing, and one record handed to nameShows, not a
+  // nose and a record made for each name)
+  const nameIn = { k: 1, station: false, picked: false, viewAll: false, onFoot: false, noseDot: -1 };
+  const nameNose = { h: NaN, p: NaN, b: NaN, at: null };
+  const namedNose = (s) => {
+    const p = s.pitch || 0;
+    const b = s.bank || 0;
+    if (nameNose.h !== s.heading || nameNose.p !== p || nameNose.b !== b) {
+      nameNose.h = s.heading;
+      nameNose.p = p;
+      nameNose.b = b;
+      nameNose.at = noseOf(s);
+    }
+    return nameNose.at;
+  };
   const named = (id, at) => {
     let noseDot = -1;
     const s = state.ship;
     if (s && at && flying() && !onFoot()) {
-      const [nx, ny, nz] = noseOf(s);
+      const n = namedNose(s);
       const dx = at[0] - s.x;
       const dy = at[1] - s.y;
       const dz = at[2] - s.z;
-      noseDot = (nx * dx + ny * dy + nz * dz) / (Math.hypot(dx, dy, dz) || 1);
+      noseDot = (n[0] * dx + n[1] * dy + n[2] * dz) / (Math.sqrt(dx * dx + dy * dy + dz * dz) || 1);
     }
-    return nameShows({
-      k: farStars.kOf(id) ?? landmarks.kOf(id) ?? 1,
-      station: byId(id)?.kind === 'core',
-      picked: id === state.sel || id === state.aim || id === state.auto?.id || id === state.jump?.id,
-      viewAll: (!flying() && !onFoot()) || state.view === 'map',
-      onFoot: onFoot(),
-      noseDot,
-    });
+    nameIn.k = farStars.kOf(id) ?? landmarks.kOf(id) ?? 1;
+    nameIn.station = byId(id)?.kind === 'core';
+    nameIn.picked = id === state.sel || id === state.aim || id === state.auto?.id || id === state.jump?.id;
+    nameIn.viewAll = (!flying() && !onFoot()) || state.view === 'map';
+    nameIn.onFoot = onFoot();
+    nameIn.noseDot = noseDot;
+    return nameShows(nameIn);
   };
   const near = createNearMaps({ small, upload: (ts) => uploadSlices(renderer, ts, { sliceMB: 8 }) }); // (the finer maps for the two planets nearest, nearMaps.js)
   const crashFx = createCrash(map);
@@ -1330,7 +1367,15 @@ export async function create(canvas, ctx) {
   const panelEl = () => (ctx.rt.host ?? ctx.el).closest('.universe-page')?.querySelector('.universe-panel');
   const measure = (jump = false) => {
     const box = (ctx.rt.host ?? ctx.el).getBoundingClientRect();
-    const panel = panelEl()?.getBoundingClientRect();
+    const panelAt = panelEl();
+    if ((panelAt ?? null) !== watched) watchPanel(); // (a panel React made afresh: watched from now, not the one let go)
+    const panel = panelAt?.getBoundingClientRect();
+    // (sliding in from the edge, universe.css's [data-opening]: where it
+    // lands, not where it is, so the view eases there once, not after it)
+    // (its layout box, offsetLeft, has no transform in it; the computed
+    // translate is a calc() of its own width)
+    const parent = panelAt?.hasAttribute('data-opening') ? panelAt.offsetParent?.getBoundingClientRect() : null;
+    const slid = parent ? panel.left - (parent.left + panelAt.offsetLeft) : 0;
     // (0 is a real answer: a phone on its side, flying, has no bar: thumbs.css)
     const navRead = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--nav-h'));
     const nav = Number.isFinite(navRead) ? navRead : 68;
@@ -1339,7 +1384,7 @@ export async function create(canvas, ctx) {
     if (panel && panel.width > 0) {
       // put away on a desktop, it's a bar up in the corner: the map has the width
       if (panel.width >= box.width * 0.75) sheet = Math.max(0, box.bottom - panel.top);
-      else if (!panelEl().hasAttribute('data-tucked')) side = Math.max(0, box.right - panel.left);
+      else if (!panelEl().hasAttribute('data-tucked')) side = Math.max(0, box.right - (panel.left - slid));
     }
     // a touch screen held upright: the thumbs' grid fills the foot of the
     // map (UniverseMap.jsx, thumbs.css), so the open part stops over it and
@@ -1384,10 +1429,11 @@ export async function create(canvas, ctx) {
   };
   // the panel changes height on a phone (the sheet) without the canvas resizing
   const panelRO = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(() => size.w > 1 && (measure(), ctx.invalidate())) : null;
+  let watched = null; // (the panel being watched)
   const watchPanel = () => {
     panelRO?.disconnect();
-    const el = panelEl();
-    if (el) panelRO?.observe(el);
+    watched = panelEl() ?? null;
+    if (watched) panelRO?.observe(watched);
   };
   watchPanel();
 
@@ -1699,7 +1745,11 @@ export async function create(canvas, ctx) {
       const was = shown.get(el);
       const flag = `${off ? 'off' : ''}${behind ? 'behind' : ''}`;
       if (was && was.tf === tf && was.flag === flag) continue;
-      shown.set(el, { tf, flag });
+      if (was) {
+        // (its record kept and written over: one made a name a frame while they move)
+        was.tf = tf;
+        was.flag = flag;
+      } else shown.set(el, { tf, flag });
       if (tf) el.style.transform = tf;
       el.toggleAttribute('data-off', off);
       el.toggleAttribute('data-behind', behind && !off);
@@ -2171,8 +2221,80 @@ export async function create(canvas, ctx) {
   };
 
   // the ship's own model on its way, mounted once it's in (what the first
-  // frame waits on, a while: ready, below)
+  // frame waits on, a while: prepare, below)
   let shipIn = null;
+  const hasModel = (kind) => Boolean(SHIP_MODELS[kind] || kind === 'cruiser');
+  // (the X-wing's, the Falcon's or the RV's a copy of the file, the cruiser the C-137 page's, crew aboard)
+  const shipRoot = (kind, made) => (kind === 'cruiser' ? made.group : made);
+  const goneShip = (made) => {
+    made.dispose?.();
+    disposeTree(made.group ?? made, { keepShared: true });
+  };
+  // a ship's model taken from ./shipLoad.js, dressed in `model`'s paint (the
+  // stand-in it's for), its pictures sent and its shaders made, while
+  // `wanted()`: { made }, { none } (no model to come), or null (gone)
+  const readyModel = (kind, model, wanted) =>
+    takeShip(kind)
+      .then((made) => {
+        if (!made) return { none: true };
+        if (disposed || !wanted()) return void goneShip(made);
+        const root = model.dress(shipRoot(kind, made));
+        uploadTextures(renderer, root);
+        return warm(root).then(() => ({ made }));
+      })
+      .catch(() => null);
+  // a readied model mounted over its stand-in, if that's still the ship
+  const putOn = (kind, model, made, standInAt) => {
+    const cruiser = kind === 'cruiser';
+    const extra = cruiser ? { update: made.update, dispose: made.dispose, ownGlow: true, tint: made.tint, setLooks: made.setLooks } : undefined;
+    if (disposed || state.model !== model || !model.mount(shipRoot(kind, made), extra)) return void goneShip(made);
+    performance.mark?.('universe:ship-full', { detail: kind });
+    shipMounted(kind);
+    // (come in where the stand-in was seen a while: the swap under a soft flare of the bloom, not a bare
+    // pop; none under the cockpit, whose white waits for this, lib/shipReady, nor behind the Hangar: ./shipSwap.js)
+    const flare = swapFlare({
+      shown: !document.hidden && (ctx.rt.host ?? ctx.el)?.closest?.('[data-gl]')?.dataset.gl === 'on',
+      seenMs: performance.now() - standInAt,
+      reduced,
+      covered: Boolean(foreground()) || 'covered' in document.documentElement.dataset,
+      frozen: Boolean(props.frozen),
+    });
+    if (flare) state.flare = Math.max(state.flare, flare);
+    if (cruiser) {
+      seatCrew = made.seated;
+      // its exhaust leaves from its own exhaust cans
+      if (made.engines?.length) {
+        model.group.updateMatrixWorld(true);
+        setPlumes('cruiser', made.engines.map((g) => model.pivot.worldToLocal(g.getWorldPosition(new THREE.Vector3())).toArray()));
+      }
+    }
+    ctx.invalidate();
+  };
+  // The ship the cockpit seats you in on a replay (tp:board; the map flies
+  // the one it was until the flash, pages/Universe): its stand-in built and
+  // its model readied behind the cockpit, in that stand-in's paint, so at the
+  // flash setShip takes the two and only the mount is left, which the
+  // cockpit's white waits on (lib/shipReady). One a seat: a new seat drops it.
+  let ahead = null; // { kind, model, made }
+  const dropAhead = () => {
+    const a = ahead;
+    ahead = null;
+    if (!a) return;
+    a.made.then((r) => r?.made && goneShip(r.made));
+    a.model.dispose();
+    disposeTree(a.model.group, { keepShared: true });
+  };
+  const onBoard = (e) => {
+    const kind = e.detail?.ship;
+    if (disposed || typeof kind !== 'string' || !state.kind || kind === state.kind || ahead?.kind === kind || !hasModel(kind)) return;
+    dropAhead();
+    const model = buildShip(kind, T, { build: null });
+    precompile(renderer, model.group, camera, scene, post.on ? post.composer.readBuffer : undefined);
+    const a = { kind, model, made: null };
+    ahead = a;
+    a.made = readyModel(kind, model, () => ahead === a || state.model === model);
+  };
+  window.addEventListener('tp:board', onBoard);
   // (force: the same crew, built again: its garage build changed)
   const setShip = (kind, force = false) => {
     if (kind === state.kind && !force) return;
@@ -2227,7 +2349,12 @@ export async function create(canvas, ctx) {
       retarget();
       return;
     }
-    state.model = buildShip(kind, T, { build: state.build });
+    // (the one the cockpit seated you in, readied behind it at tp:board: its
+    // stand-in and its model, dressed and warmed already, so only the mount's left)
+    const readied = !state.build && ahead?.kind === kind ? ahead : null;
+    if (!readied) dropAhead();
+    ahead = null;
+    state.model = readied?.model ?? buildShip(kind, T, { build: state.build });
     map.add(state.model.group);
     performance.mark?.('universe:ship-stand-in', { detail: kind }); // (scripts/ship-load-check.mjs: how long the stand-in was seen)
     const standInAt = performance.now();
@@ -2240,56 +2367,19 @@ export async function create(canvas, ctx) {
     // its first frame: it may be set under the intro's cockpit, before the
     // flash (pages/Universe's tp:board)
     for (const root of [state.model.group, ...plumes.map((pl) => pl.trail.mesh)]) precompile(renderer, root, camera, scene, post.on ? post.composer.readBuffer : undefined);
-    if (state.build || !(SHIP_MODELS[kind] || kind === 'cruiser')) {
+    if (state.build || !hasModel(kind)) {
       // a garage build is whole as it is: no model to load over it
       shipMounted(kind);
     } else {
       // its model, made ahead (./shipLoad.js: the page asked for it as soon
       // as it knew the ship), or made now: in its paint, its pictures sent
       // and its shaders made before it's mounted, never on the frame it's
-      // first seen; the X-wing's, the Falcon's or the RV's a copy of the
-      // file, the cruiser the C-137 page's, crew aboard
+      // first seen (readyModel); then put on (putOn)
       const model = state.model;
-      const cruiser = kind === 'cruiser';
-      const gone = (made) => {
-        made.dispose?.();
-        disposeTree(made.group ?? made, { keepShared: true });
-      };
-      shipIn = takeShip(kind)
-        .then((made) => {
-          if (!made) return void (state.model === model && shipMounted(kind)); // (none to come: the stand-in is the ship)
-          if (disposed || state.model !== model) return void gone(made); // (the ship it was made for)
-          const root = model.dress(cruiser ? made.group : made);
-          uploadTextures(renderer, root);
-          return warm(root).then(() => made);
-        })
-        .then((made) => {
-          if (!made) return;
-          const extra = cruiser ? { update: made.update, dispose: made.dispose, ownGlow: true, tint: made.tint, setLooks: made.setLooks } : undefined;
-          if (disposed || state.model !== model || !model.mount(cruiser ? made.group : made, extra)) return void gone(made);
-          performance.mark?.('universe:ship-full', { detail: kind });
-          shipMounted(kind);
-          // (come in where the stand-in was seen a while: the swap under a soft flare of the bloom, not a bare
-          // pop; none under the cockpit, whose white waits for this, lib/shipReady, nor behind the Hangar: ./shipSwap.js)
-          const flare = swapFlare({
-            shown: !document.hidden && (ctx.rt.host ?? ctx.el)?.closest?.('[data-gl]')?.dataset.gl === 'on',
-            seenMs: performance.now() - standInAt,
-            reduced,
-            covered: Boolean(foreground()) || 'covered' in document.documentElement.dataset,
-            frozen: Boolean(props.frozen),
-          });
-          if (flare) state.flare = Math.max(state.flare, flare);
-          if (cruiser) {
-            seatCrew = made.seated;
-            // its exhaust leaves from its own exhaust cans
-            if (made.engines?.length) {
-              model.group.updateMatrixWorld(true);
-              setPlumes('cruiser', made.engines.map((g) => model.pivot.worldToLocal(g.getWorldPosition(new THREE.Vector3())).toArray()));
-            }
-          }
-          ctx.invalidate();
-        })
-        .catch(() => {});
+      shipIn = (readied?.made ?? readyModel(kind, model, () => state.model === model)).then((r) => {
+        if (r?.none) return void (state.model === model && shipMounted(kind)); // (none to come: the stand-in is the ship)
+        if (r?.made) putOn(kind, model, r.made, standInAt);
+      });
     }
     if (!state.ship) {
       // a new pilot: at the universe picked, or anywhere (ship.js's STARTS),
@@ -4976,6 +5066,8 @@ export async function create(canvas, ctx) {
     c.b += Math.max(-k, Math.min(k, to.b - c.b));
   };
   const nearest = planets.map((p) => ({ p, d: 0 }));
+  const byNear = (a, b) => a.d - b.d;
+  const camAt = [0, 0, 0];
   const lights = (dt) => {
     for (const p of planets) {
       const s = sunInMap[p.id];
@@ -4987,11 +5079,12 @@ export async function create(canvas, ctx) {
       const at = POSITIONS[n.p.id];
       n.d = Math.hypot(camLocal.x - at[0], camLocal.y - at[1], camLocal.z - at[2]) / n.p.radius;
     }
-    nearest.sort((a, b) => a.d - b.d);
-    nearest.forEach((n, i) => n.p.near(i < 2 ? n.d : 1e9));
+    // (a comparator, a loop and the camera's place kept: this runs every frame)
+    nearest.sort(byNear);
+    for (let i = 0; i < nearest.length; i++) nearest[i].p.near(i < 2 ? nearest[i].d : 1e9);
     const nv = novae.nova();
     const nova = nv && nv.k > 0.05 ? { at: nv.at.toArray ? nv.at.toArray() : nv.at, colour: '#ffffff', strength: 3 * nv.k } : null;
-    const l = lightAt(camLocal.toArray(), { nova });
+    const l = lightAt(camLocal.toArray(camAt), { nova });
     litBy = l;
     // what metal reflects made again round the new key when the star that
     // lights you changes (a few ms, and only crossing from one star's
@@ -5040,6 +5133,7 @@ export async function create(canvas, ctx) {
     return at;
   };
   function render(ms, now) {
+    if (goingLow === 'want') readyLow();
     const dt = ms / 1000;
     const t = reduced ? 0 : state.low ? state.tLow : (now - t0) / 1000;
     // (the Twins' suns going round each other: their solids where they're drawn, deep.js)
@@ -6160,10 +6254,16 @@ export async function create(canvas, ctx) {
     lowerQuality(level) {
       const at = paceTo(level);
       followDrawn();
-      if (at.floor && !state.low) {
-        state.tLow = (performance.now() - t0) / 1000;
-        state.low = true;
-        post.off();
+      if (at.floor && !state.low && !goingLow) {
+        // (with the passes gone the scene draws straight to the canvas, in
+        // its colour and tone map, a shader of every material's of its own:
+        // made there in the frame, it was the longest stall of a session,
+        // 0.5 to 2.7 s in software GL, just as the device was found slow.
+        // So they're made first, behind the frame, by the next frame's
+        // render, which draws in the world's own renderer state, the
+        // runtime's views.js's, as the canvas will be drawn; then the passes go)
+        if (typeof renderer.compileAsync === 'function') goingLow = 'want';
+        else goLow();
       }
       ctx.invalidate();
     },
@@ -6343,6 +6443,8 @@ export async function create(canvas, ctx) {
       panelRO?.disconnect();
       window.removeEventListener('keydown', onKeyDown);
       window.removeEventListener('tp:arrive', takeArrive);
+      window.removeEventListener('tp:board', onBoard);
+      dropAhead();
       forgetShip(); // (no map: a launch waits for no ship)
       window.removeEventListener('keyup', onKeyUp);
       window.removeEventListener('blur', onBlur);

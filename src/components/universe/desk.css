@@ -12,7 +12,7 @@
    is one class stronger than the one it quietens (and leaves the panel put
    away, `[data-tucked]`, to its own). */
 @media (pointer: fine) and (min-width: 768px) {
-  .universe-page:not(.galaxy-page) { --panel-w: clamp(332px, 23vw, 352px); }
+  .universe-page:not(.galaxy-page) { --panel-w: clamp(332px, 23vw, 352px); --panel-width: clamp(332px, 23vw, 352px); }
 
   /* the panel: less padding and a finer edge; the ways out at its foot
      take the same padding back */

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { RiArrowGoBackLine, RiArrowLeftLine, RiArrowRightLine, RiCompass3Line, RiLayoutGridLine, RiQuestionLine, RiRestartLine, RiSideBarFill, RiSideBarLine } from 'react-icons/ri';
 import { openGuide } from '../../lib/palette';
 import { restartSite } from '../../lib/restart';
@@ -156,10 +156,30 @@ export default function UniversePanel({ universe, wonder = null, onFly = null, o
     refocus.current = true;
     onTuck(on);
   };
+  // shown again by a press: it slides in from the edge (universe.css's
+  // [data-opening]), marked before it's painted, so no frame has it whole
+  // and in place before the slide begins; let go of once it's in (or at
+  // once, where the sheet or the reduced motion has no slide to end)
+  useLayoutEffect(() => {
+    const el = panel.current;
+    if (!refocus.current || tucked || !el) return undefined;
+    el.setAttribute('data-opening', '');
+    const done = () => el.removeAttribute('data-opening');
+    const ended = (e) => e.target === el && done(); // (not a card's own animation, inside it)
+    const t = setTimeout(done, 600);
+    el.addEventListener('animationend', ended);
+    return () => {
+      clearTimeout(t);
+      el.removeEventListener('animationend', ended);
+      done();
+    };
+  }, [tucked]);
   useEffect(() => {
     if (!refocus.current) return;
     refocus.current = false;
-    panel.current?.querySelector('.universe-tuck, .universe-untuck')?.focus();
+    // (not scrolled to: sliding in, it's still past the edge, and the
+    // page's box, overflow hidden or not, would scroll the map aside for it)
+    panel.current?.querySelector('.universe-tuck, .universe-untuck')?.focus({ preventScroll: true });
   }, [tucked]);
 
   if (tucked) {

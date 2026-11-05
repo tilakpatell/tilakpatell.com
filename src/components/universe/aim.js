@@ -44,19 +44,42 @@ const ALL = [
   ),
 ].filter((t) => t.at && isGoal(t.id));
 
-export const aimTargets = (sector, at) => ALL.filter((t) => t.sector === sector && t.id !== at).map(({ id, at: where, reach }) => ({ id, at: where, reach }));
+// (the map asks every frame: each sector's list, without the place you're
+// at, made once and kept; read, never written)
+const targetLists = new Map(); // sector → (the place you're at → list)
+export const aimTargets = (sector, at) => {
+  let bySector = targetLists.get(sector);
+  if (!bySector) targetLists.set(sector, (bySector = new Map()));
+  let list = bySector.get(at);
+  if (!list) bySector.set(at, (list = ALL.filter((t) => t.sector === sector && t.id !== at).map(({ id, at: where, reach }) => ({ id, at: where, reach }))));
+  return list;
+};
 
+// (the ways to each, written over from call to call: starAhead reads them
+// and keeps none, and they were a record and a list a place every frame)
+const dirs = [];
+const pool = [];
+const realArg = { reach: 0 }; // (realAt's question, kept)
 export function aimFrom(from, nose, targets, keep = null) {
-  const dirs = [];
+  let n = 0;
   for (const t of targets) {
     const dx = t.at[0] - from[0];
     const dy = t.at[1] - from[1];
     const dz = t.at[2] - from[2];
     const l = Math.hypot(dx, dy, dz) || 1;
     // (only a star: a place near enough to be itself is somewhere to fly to)
-    if (t.reach != null && l < realAt({ reach: t.reach })) continue;
-    dirs.push({ id: t.id, dir: [dx / l, dy / l, dz / l] });
+    if (t.reach != null) {
+      realArg.reach = t.reach;
+      if (l < realAt(realArg)) continue;
+    }
+    const d = pool[n] ?? (pool[n] = { id: null, dir: [0, 0, 0] });
+    d.id = t.id;
+    d.dir[0] = dx / l;
+    d.dir[1] = dy / l;
+    d.dir[2] = dz / l;
+    dirs[n++] = d;
   }
+  dirs.length = n;
   return starAhead(null, nose, { within: AIM_CONE, keep, stick: STICK, dirs });
 }
 
