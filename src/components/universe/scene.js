@@ -500,6 +500,28 @@ export async function create(canvas, ctx) {
   const { reduced } = ctx;
   let props = ctx;
   let disposed = false;
+  let goingLow = false; // (the passes are going: lowerQuality, once the canvas's shaders are made; 'want', then 'making')
+  const goLow = () => {
+    if (disposed || state.low) return;
+    state.tLow = (performance.now() - t0) / 1000;
+    state.low = true;
+    post.off();
+    ctx.invalidate();
+  };
+  // the canvas's own shaders made behind the frame, as it will draw them
+  // (no render target: the canvas's colour and tone map), before the passes go
+  const readyLow = () => {
+    goingLow = 'making';
+    const was = renderer.getRenderTarget();
+    renderer.setRenderTarget(null);
+    let made = null;
+    try {
+      made = renderer.compileAsync(scene, camera);
+    } finally {
+      renderer.setRenderTarget(was);
+    }
+    Promise.resolve(made).then(goLow, goLow);
+  };
 
   // the runtime’s renderer, its canvas at the screen’s own pixels, 2 at most
   // (module.js; how sharp the scene is drawn inside that is the post’s,
@@ -5062,6 +5084,7 @@ export async function create(canvas, ctx) {
     return at;
   };
   function render(ms, now) {
+    if (goingLow === 'want') readyLow();
     const dt = ms / 1000;
     const t = reduced ? 0 : state.low ? state.tLow : (now - t0) / 1000;
     // (the Twins' suns going round each other: their solids where they're drawn, deep.js)
@@ -6182,10 +6205,16 @@ export async function create(canvas, ctx) {
     lowerQuality(level) {
       const at = paceTo(level);
       followDrawn();
-      if (at.floor && !state.low) {
-        state.tLow = (performance.now() - t0) / 1000;
-        state.low = true;
-        post.off();
+      if (at.floor && !state.low && !goingLow) {
+        // (with the passes gone the scene draws straight to the canvas, in
+        // its colour and tone map, a shader of every material's of its own:
+        // made there in the frame, it was the longest stall of a session,
+        // 0.5 to 2.7 s in software GL, just as the device was found slow.
+        // So they're made first, behind the frame, by the next frame's
+        // render, which draws in the world's own renderer state, the
+        // runtime's views.js's, as the canvas will be drawn; then the passes go)
+        if (typeof renderer.compileAsync === 'function') goingLow = 'want';
+        else goLow();
       }
       ctx.invalidate();
     },
