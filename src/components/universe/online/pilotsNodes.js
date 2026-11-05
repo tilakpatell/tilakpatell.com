@@ -73,7 +73,7 @@ import { PARKED } from '../foot';
 import { WEAPONS, arsenalOf, byCode, fan } from '../weapons';
 import { POSITIONS } from '../layout';
 import { byId } from '../universes';
-import { STALE_MS, sample } from './protocol';
+import { STALE_MS, TRIP_HOLD_MS, sample } from './protocol';
 import { UNIVERSE } from './where';
 import { howToDraw } from './pilotsRules';
 import { distText, fontPx, keepIn, tagMode } from './tagRules';
@@ -341,6 +341,13 @@ export function createPilots(parent, { T = {}, colors = {}, here = UNIVERSE, fle
         sh.shown = on;
         // (for flying to them: where they are now, while they're flying here, near or far)
         sh.pose = flying ? { x: s.x, y: s.y, z: s.z, heading: s.heading, name: p.name } : null;
+        // (and for a trip to them through a gap in what's heard: where they
+        // were last seen, TRIP_HOLD_MS; never once they've come down or hidden)
+        if (flying) {
+          sh.held = sh.pose;
+          sh.heldAt = now;
+        } else if (down || s?.hidden) sh.held = null;
+        sh.trip = sh.pose ?? (sh.held && now - sh.heldAt <= TRIP_HOLD_MS ? sh.held : null);
         if (flying) {
           sh.seen.x = s.x;
           sh.seen.z = s.z;
@@ -601,7 +608,7 @@ export function createPilots(parent, { T = {}, colors = {}, here = UNIVERSE, fle
     // (pilotGoal.js). Only ever a pilot already in the room
     pose(id) {
       const sh = ships.get(id);
-      return sh?.pose ?? null;
+      return sh?.trip ?? null;
     },
 
     dispose() {
