@@ -500,28 +500,6 @@ export async function create(canvas, ctx) {
   const { reduced } = ctx;
   let props = ctx;
   let disposed = false;
-  let goingLow = false; // (the passes are going: lowerQuality, once the canvas's shaders are made; 'want', then 'making')
-  const goLow = () => {
-    if (disposed || state.low) return;
-    state.tLow = (performance.now() - t0) / 1000;
-    state.low = true;
-    post.off();
-    ctx.invalidate();
-  };
-  // the canvas's own shaders made behind the frame, as it will draw them
-  // (no render target: the canvas's colour and tone map), before the passes go
-  const readyLow = () => {
-    goingLow = 'making';
-    const was = renderer.getRenderTarget();
-    renderer.setRenderTarget(null);
-    let made = null;
-    try {
-      made = renderer.compileAsync(scene, camera);
-    } finally {
-      renderer.setRenderTarget(was);
-    }
-    Promise.resolve(made).then(goLow, goLow);
-  };
 
   // the runtime’s renderer, its canvas at the screen’s own pixels, 2 at most
   // (module.js; how sharp the scene is drawn inside that is the post’s,
@@ -713,7 +691,9 @@ export async function create(canvas, ctx) {
   // the grain, the aberration, the bloom and the multisampling, at the start
   // and live from the settings (onVideo, below)
   let video = fromVideo(ctx.rt?.video, qualityNow().level);
+  let floorLite = false; // (at the quality's floor: lowerQuality's, the post kept to its grade)
   const applyVideo = () => {
+    if (floorLite) return; // (the floor's post stays as lowerQuality left it)
     post.glowing(video.bloom);
     post.maxSamples(video.samples);
   };
@@ -5133,7 +5113,6 @@ export async function create(canvas, ctx) {
     return at;
   };
   function render(ms, now) {
-    if (goingLow === 'want') readyLow();
     const dt = ms / 1000;
     const t = reduced ? 0 : state.low ? state.tLow : (now - t0) / 1000;
     // (the Twins' suns going round each other: their solids where they're drawn, deep.js)
@@ -6186,7 +6165,7 @@ export async function create(canvas, ctx) {
     calibrated = level;
   };
 
-  return {
+  const handle = {
     // every shader made (the page waits for it before the first frame)
     ready,
     // (the canvas is sized already: the runtime's, before it tells the map)
@@ -6254,16 +6233,19 @@ export async function create(canvas, ctx) {
     lowerQuality(level) {
       const at = paceTo(level);
       followDrawn();
-      if (at.floor && !state.low && !goingLow) {
-        // (with the passes gone the scene draws straight to the canvas, in
-        // its colour and tone map, a shader of every material's of its own:
-        // made there in the frame, it was the longest stall of a session,
-        // 0.5 to 2.7 s in software GL, just as the device was found slow.
-        // So they're made first, behind the frame, by the next frame's
-        // render, which draws in the world's own renderer state, the
-        // runtime's views.js's, as the canvas will be drawn; then the passes go)
-        if (typeof renderer.compileAsync === 'function') goingLow = 'want';
-        else goLow();
+      if (at.floor && !state.low) {
+        state.tLow = (performance.now() - t0) / 1000;
+        state.low = true;
+        // (the passes but the grade go: the bloom, the bring-up to the
+        // canvas, the multisampling. Not all of them, as it was: drawn
+        // straight to the canvas, in its own colour and tone map, every
+        // material wanted a shader of its own, made in the frame, the floor's
+        // and every place's met after it, 0.5 to 2.5 s in software GL; and
+        // the picture's grade changed in the frame the floor came. Through
+        // the grade nothing changes shader, and the picture keeps its look)
+        floorLite = true;
+        post.lite({ fold: false });
+        post.maxSamples(0);
       }
       ctx.invalidate();
     },
@@ -6515,4 +6497,8 @@ export async function create(canvas, ctx) {
       }, 0);
     },
   };
+  // (development: the world's own lowerQuality, for a probe to put the map
+  // at the quality's floor and measure it there, as the runtime would)
+  if (import.meta.env.DEV && window.__universeDebug) window.__universeDebug.lowerQuality = (level) => handle.lowerQuality(level);
+  return handle;
 }
