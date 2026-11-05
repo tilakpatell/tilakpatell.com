@@ -4,6 +4,8 @@ import { speakerFor } from './speakers';
 import { playClip, playFile } from '../../lib/clips';
 import { useMouth } from '../../lib/mouth';
 import { preloadVoiced, voiceOf, voicedSrc } from '../../lib/voiced';
+import { afterFirstFrame } from '../../lib/afterFirstFrame';
+import { soundOn, voicesOn } from '../../lib/audio';
 import { retold } from './callers';
 import { shipSound } from './uniqueSounds';
 import { abilitySound, alarmSound, arrivalSound, boomSound, boostSound, bumpSound, crashSound, drySound, enemyFireSound, fallSound, fireSound, flareSound, flybySound, gadgetSound, gunSound, hitSound, impactSound, interdictSound, jumpSound, launchSound, popSound, portalSound, powerSound, respawnSound, riftSound, shieldSound, speak, switchSound } from './sounds';
@@ -51,10 +53,15 @@ export default function Comms({ crew, reduced, control }) {
 
   useEffect(() => {
     alive.current = true;
-    preloadVoiced();
+    // the recordings' index fetched ahead of the first line, but in an idle
+    // moment after the map's first frame, not on its way (lib/afterFirstFrame);
+    // the first line said fetches it itself if it comes sooner; not at all
+    // with sound or voices off, when no line is heard
+    const cancel = soundOn() && voicesOn() ? afterFirstFrame(preloadVoiced) : null;
     return () => {
       alive.current = false;
       clearTimeout(timer.current);
+      cancel?.();
     };
   }, []);
 
@@ -90,9 +97,11 @@ export default function Comms({ crew, reduced, control }) {
       // caller on the radio's: speakers.js), when nobody else is talking
       // (lib/speech.js: it waits its turn, and isn't said if it waits too long)
       const aloud = { voice: true, mode: 'queue', tag: 'comms' };
-      let h = clip ? await playClip(clip, aloud) : null;
+      // (with sound or voices off, nothing's heard: no recording fetched, the line read for its time)
+      const heard = soundOn() && voicesOn();
+      let h = clip && heard ? await playClip(clip, aloud) : null;
       const voice = voiceOf(speaker.voiced ?? who);
-      if (!h && voice) {
+      if (!h && voice && heard) {
         const src = await voicedSrc(voice, text);
         if (src && alive.current) h = await playFile(src, aloud);
       }
