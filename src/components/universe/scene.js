@@ -1331,6 +1331,7 @@ export async function create(canvas, ctx) {
   const measure = (jump = false) => {
     const box = (ctx.rt.host ?? ctx.el).getBoundingClientRect();
     const panelAt = panelEl();
+    if ((panelAt ?? null) !== watched) watchPanel(); // (a panel React made afresh: watched from now, not the one let go)
     const panel = panelAt?.getBoundingClientRect();
     // (sliding in from the edge, universe.css's [data-opening]: where it
     // lands, not where it is, so the view eases there once, not after it)
@@ -1391,10 +1392,11 @@ export async function create(canvas, ctx) {
   };
   // the panel changes height on a phone (the sheet) without the canvas resizing
   const panelRO = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(() => size.w > 1 && (measure(), ctx.invalidate())) : null;
+  let watched = null; // (the panel being watched)
   const watchPanel = () => {
     panelRO?.disconnect();
-    const el = panelEl();
-    if (el) panelRO?.observe(el);
+    watched = panelEl() ?? null;
+    if (watched) panelRO?.observe(watched);
   };
   watchPanel();
 
