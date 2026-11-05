@@ -34,7 +34,7 @@ permissions:
 jobs:
   worlds:
     name: Worlds on the node renderer (${{ matrix.world }})
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04  # Playwright has no chromium for ubuntu-latest (26.04) yet: run 41052884531, as bf2web.yml
     timeout-minutes: 150
     strategy:
       fail-fast: false
