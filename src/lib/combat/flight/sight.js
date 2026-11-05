@@ -41,6 +41,12 @@ export function shotReach(w, ship, out = {}) {
 
 const NONE = Object.freeze([]);
 
+// the candidate with this id, or null (a loop, not find: no closure a frame)
+function byId(cands, id) {
+  for (let i = 0; i < cands.length; i++) if (cands[i].id === id) return cands[i];
+  return null;
+}
+
 export function createSight(state) {
   let life = 0;
   let foes = NONE;
@@ -50,6 +56,9 @@ export function createSight(state) {
   // from outside (a tap, a pose, a check)
   const ring = [];
   let mine = null;
+  // (track's options and the nose, kept: update runs every frame)
+  const opts = { cycle: 0, ring };
+  const aim = [0, 0, 0];
   const sight = {
     cands: NONE,
     foes: NONE,
@@ -59,17 +68,18 @@ export function createSight(state) {
       life = o.life;
       const was = state.lock?.id ?? null;
       if (state.lock !== mine) ring.length = 0;
-      state.lock = cands.length || state.lock ? track(ship, cands, state.lock, dt, { cycle: state.cycle, ring }) : null;
+      opts.cycle = state.cycle;
+      state.lock = cands.length || state.lock ? track(ship, cands, state.lock, dt, opts) : null;
       mine = state.lock;
       if (!state.lock) ring.length = 0;
       state.cycle = 0;
-      const tgt = state.lock ? (cands.find((c) => c.id === state.lock.id) ?? null) : null;
+      const tgt = state.lock ? byId(cands, state.lock.id) : null;
       state.lockTarget = tgt;
       // (the nose follows only what the scene says it should, or one picked by hand)
       state.trackable = Boolean(tgt && (o.tracks(tgt) || state.lock.manual));
       state.lead = tgt ? intercept(ship, o.speed, tgt.at, tgt.vel) : null;
       // (hot: a shot now would bend all the way onto it; help is read once the lock is set, as powers.aim reads it)
-      state.hot = Boolean(state.lead && state.lead.t <= life && assistAmount(nose(ship), dirTo(ship, state.lead), o.help().assist) >= 1);
+      state.hot = Boolean(state.lead && state.lead.t <= life && assistAmount(nose(ship, aim), dirTo(ship, state.lead), o.help().assist) >= 1);
       return !o.quiet && Boolean(tgt && tgt.id !== was);
     },
     inReach() {

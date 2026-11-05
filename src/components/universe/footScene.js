@@ -62,7 +62,7 @@
 // you where one's between you and the camera. None of it moves with
 // motion turned down.
 //
-// createFoot({ map, emit, reduced, small, planetOf, renderer, prepare }) → { phase, prefetch(id, kind),
+// createFoot({ map, emit, reduced, small, planetOf, renderer, prepare, lights }) → { phase, prefetch(id, kind),
 //   prefetchAt(id, { light, near, entry }), begin(...),
 //   update(dt, t, input), view(dt) → camera, fire(), trigger(down), vent(), ability(slot, down), cycle(), swap(),
 //   board(), look(dx, dy) (px), turn(dx, dy) (radians), first(), aimPoint(), info(), crew(),
@@ -944,7 +944,7 @@ const blobMat = () => new THREE.MeshBasicMaterial({ map: blobTexture(), transpar
 // (`prepare(roots, alive)`: the map's way of readying a landing before it's
 // shown, its look put on, its pictures sent and its shaders made, a slice at
 // a time; a promise)
-export function createFoot({ map, emit, reduced = false, small = false, planetOf, renderer = null, prepare = null, cone = () => ASSIST.mouse, skills = () => null }) {
+export function createFoot({ map, emit, reduced = false, small = false, planetOf, renderer = null, prepare = null, cone = () => ASSIST.mouse, skills = () => null, lights = null }) {
   // the skill tree's ground branch (foot.js's footSkills, of the scene's fx),
   // worked out again only when the skills change
   let skillsOf;
@@ -1050,17 +1050,20 @@ export function createFoot({ map, emit, reduced = false, small = false, planetOf
   // the map from the start and dark between shots, so the scene's count of
   // lights never changes and nothing recompiles when it fires (not on a
   // phone, nor with motion turned down)
-  const flare = small || reduced ? null : new THREE.PointLight('#ffd36b', 0, 7 * METRE, 2);
+  // (the map's own, `lights`, when it made them before this code came:
+  // landings/lamps.js's reserveLights)
+  const flare = lights ? lights.flare : small || reduced ? null : new THREE.PointLight('#ffd36b', 0, 7 * METRE, 2);
   if (flare) {
+    flare.distance = 7 * METRE;
     flare.userData.peak = 2.5 * METRE * METRE; // (about the key light's brightness, a metre off)
-    map.add(flare);
+    if (!lights) map.add(flare);
   }
   // and, for the same reason, the lights of a landing's things (a portal's
   // glow, music's lamps, Mordor's fires) shown through a few kept in the
   // map from the start, dark but for the ones nearest you (landings/lamps.js).
   // Every lit shader on the map pays for them, all the time: a phone keeps
   // one, the nearest
-  const lamps = createLamps(map, { n: small ? 1 : LAMPS });
+  const lamps = createLamps(map, { n: small ? 1 : LAMPS, slots: lights?.slots ?? null });
   const lampAt = new V();
   const groundN = new V();
   const fx = createGunFx({
@@ -1390,8 +1393,17 @@ export function createFoot({ map, emit, reduced = false, small = false, planetOf
     got = { c, b, own, body: c ?? own ?? b, anim: c?.anim ?? own?.anim ?? null, k: c ? c.group.scale.x : 1, group, gp, prevF: null, death: null, blow: 1 };
     troopFigs.set(t.id, got);
     // (one on the game's body stands in its built look until that body has
-    // come, from the page's cache once the first has: warmParty's)
-    if (look.rig) loadParty(troopSpec(t.kind), cast).then((fig) => wearGameBody(t, got, fig), () => {});
+    // come, from the page's cache once the first has: warmParty's; its
+    // pictures sent and its shaders made before it's worn, the map's way of
+    // readying a landing, not on the frame it first stands there)
+    if (look.rig)
+      loadParty(troopSpec(t.kind), cast).then((fig) => {
+        if (!fig || !prepare) return wearGameBody(t, got, fig);
+        const wanted = () => troopFigs.get(t.id) === got && !got.death && !got.swallow;
+        return Promise.resolve(prepare([fig.model], wanted))
+          .catch(() => {})
+          .then(() => wearGameBody(t, got, fig));
+      }, () => {});
     return got;
   };
   // A troop's built stand-in taken off for the game's body, and its gun put

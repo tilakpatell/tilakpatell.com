@@ -218,14 +218,31 @@ function glowTexture() {
 // GLSL or ./cruiser3dNodes.js's nodes)
 export const buildCruiserWith = (paint) => (opts) => buildCruiser(opts, paint);
 
-async function buildCruiser({ ink = 1, crewInk = 0.026, looks = readLooks(local.get(LOOK_KEY)) } = {}, { createMeshyCast, inkHull, glassDome, dress }) {
-  const cast = createMeshyCast(withWardrobe());
+// The cast the universe map's cruisers are made from (buildCruiser's
+// `keep`), one for each paint (GLSL's, nodes'), kept for the page's life:
+// the saucer and the crew fetched and parsed once, and every cruiser after
+// (after a change of ship and back, or a second visit) only copies of them,
+// on the one renderer that lasts the page. What a cruiser alone owns goes
+// with it; what it shares with the cast stays (scene.js's ship's free); a
+// model that didn't load is asked for again.
+const casts = new Map(); // createMeshyCast → cast
+const castFor = (createMeshyCast) => {
+  if (!casts.has(createMeshyCast)) casts.set(createMeshyCast, createMeshyCast(withWardrobe()));
+  return casts.get(createMeshyCast);
+};
+
+// `keep`: made from the kept cast (the universe map's, whose renderer lasts
+// the page); without it, a cast of its own that goes with it (this page's
+// own canvas, whose renderer is thrown away: one sharing the kept cast left
+// its dead renderer held by the cast's things' dispose listeners for good)
+async function buildCruiser({ ink = 1, crewInk = 0.026, looks = readLooks(local.get(LOOK_KEY)), keep = false } = {}, { createMeshyCast, inkHull, glassDome, dress }) {
+  const cast = keep ? castFor(createMeshyCast) : createMeshyCast(withWardrobe());
   // the walk only to turn the seated clip to face ahead (see meshyCast)
   const have = new Set(['saucer', 'rick', 'morty', bodyAsset(looks.rick), bodyAsset(looks.morty)]); // (the models loaded: a cast loads one again if asked)
   await cast.load(null, [...have], { clips: ['sit', 'walk'] });
   const body = cast.prop('saucer', TALL);
   if (!body) {
-    cast.dispose();
+    if (!keep) cast.dispose(); // (a kept one stays: the next cruiser asks for the saucer again)
     return null;
   }
   // the nose (its headlights) is +z; centred on the hull
@@ -273,6 +290,11 @@ async function buildCruiser({ ink = 1, crewInk = 0.026, looks = readLooks(local.
       off() {
         undress();
         inkMat.dispose();
+        c.release?.(); // (what the cast made for him alone: the cast lasts the page, so it isn't freed with it)
+        // his skeleton, its bone texture (he's out of the tree before any disposeTree of it reaches him)
+        const bones = new Set();
+        c.group.traverse((o) => o.isSkinnedMesh && o.skeleton && bones.add(o.skeleton));
+        for (const k of bones) k.dispose();
         c.group.removeFromParent();
       },
     };
@@ -364,7 +386,7 @@ async function buildCruiser({ ink = 1, crewInk = 0.026, looks = readLooks(local.
     dispose() {
       gone = true;
       for (const s of Object.values(seats)) s?.off();
-      cast.dispose();
+      if (!keep) cast.dispose();
       hullInk.dispose();
       body.traverse((o) => o.userData.glass?.dispose());
       glowTex.dispose();

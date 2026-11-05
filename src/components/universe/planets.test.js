@@ -484,3 +484,61 @@ describe('the planets’ models, loaded per planet', () => {
     for (const id of MODEL_PLANETS) expect(ORDER).toContain(id);
   });
 });
+
+describe('a planet’s own model coming in', () => {
+  const stub = () => {
+    const gradient = { addColorStop() {} };
+    const canvas = { width: 0, height: 0, getContext: () => new Proxy({}, { get: (_, k) => (k === 'canvas' ? canvas : () => gradient), set: () => true }) };
+    vi.stubGlobal('document', { createElement: () => canvas });
+  };
+  const box = async () => {
+    const THREE = await import('three');
+    return new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshBasicMaterial());
+  };
+  // how big it's drawn: its world scale over what it was fitted to
+  const drawn = (model) => {
+    model.updateWorldMatrix(true, false);
+    return model.matrixWorld.getMaxScaleOnAxis();
+  };
+
+  it('grows into its place where the map’s been seen, from its first frame in view, over a moment', async () => {
+    stub();
+    const { buildPlanet } = await import('./planets');
+    const { byId } = await import('./universes');
+    const p = buildPlanet(byId('music'), {});
+    const still = await box();
+    const grown = await box();
+    expect(p.mount(still, undefined)).toBe(true);
+    const whole = drawn(still);
+    const q = buildPlanet(byId('music'), {});
+    expect(q.mount(grown, undefined, { grow: true })).toBe(true);
+    q.update(10, null);
+    expect(drawn(grown)).toBeLessThan(whole * 0.01);
+    q.update(10.35, null);
+    expect(drawn(grown)).toBeGreaterThan(whole * 0.5);
+    expect(drawn(grown)).toBeLessThan(whole);
+    q.update(10.8, null);
+    expect(drawn(grown)).toBeCloseTo(whole, 5);
+    vi.unstubAllGlobals();
+  });
+
+  it('grows only where the map’s been seen, and never with motion turned down', async () => {
+    const { growsIn } = await import('./planets');
+    expect(growsIn({ shown: true, reduced: false })).toBe(true);
+    expect(growsIn({ shown: true, reduced: true })).toBe(false);
+    expect(growsIn({ shown: false, reduced: false })).toBe(false);
+  });
+
+  it('is there whole at once otherwise (mounted before the first frame)', async () => {
+    stub();
+    const { buildPlanet } = await import('./planets');
+    const { byId } = await import('./universes');
+    const p = buildPlanet(byId('music'), {});
+    const m = await box();
+    p.mount(m, undefined);
+    const at = drawn(m);
+    p.update(10, null);
+    expect(drawn(m)).toBeCloseTo(at, 5);
+    vi.unstubAllGlobals();
+  });
+});

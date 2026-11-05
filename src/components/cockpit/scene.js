@@ -15,9 +15,11 @@
 //
 // run(canvas, opts) → { pick(id), go(), skip(), look…, stop() }
 //   opts: { vehicle, veil, reduced, onBoarded(id), onReveal, onPeak, onDone,
-//           onFail, onLine(line), onPhase(name) }
+//           onFail, onLine(line), onPhase(name), waitOut }
 //   (onReveal: as the flash starts to rise, for the page underneath to come
-//   on under the white)
+//   on under the white; waitOut() → Promise: what the white holds on at the
+//   peak before it clears, the ship it comes out in whole on the map, a while
+//   at most: Cockpit.jsx's, lib/shipReady)
 // Throws if WebGL can't start; onFail if it's lost or a vehicle won't build.
 
 import * as THREE from 'three';
@@ -393,7 +395,25 @@ export function run(canvas, opts) {
         L.peaked = true;
         launchHold?.();
         launchHold = null;
-        clearOut();
+        // the white held at its height until the ship it comes out in is
+        // whole on the map (its model mounted, not the stand-in that turned
+        // into it a moment after the white had gone), then cleared as planned
+        const waiting = cb.waitOut?.();
+        if (waiting) {
+          L.hold = true;
+          L.t = L.plan.peak;
+          if (veil && onCompositor) {
+            flashColor.set(v?.flash ?? '#eaf3ff');
+            setVeil(`#${flashColor.getHexString()}`, '1');
+          }
+          Promise.resolve(waiting)
+            .catch(() => {})
+            .then(() => {
+              L.hold = false;
+              clearOut();
+              kick();
+            });
+        } else clearOut();
         cb.onPeak?.();
       }
     }

@@ -148,12 +148,18 @@ export function mapSwapper(group, T, names) {
       const old = holder?.[key];
       const t = old && by.get(old);
       if (!t) return;
+      // (the wrapping, the colour space and the sharpness are read as a
+      // texture's sent to the chip, which nearMaps did before this: one that
+      // differs is sent again, or it never reaches the picture. Loaded as the
+      // planet's own were, none differs, and nothing is sent twice)
+      const stale = t.wrapS !== old.wrapS || t.wrapT !== old.wrapT || t.colorSpace !== old.colorSpace || t.anisotropy !== old.anisotropy;
       t.wrapS = old.wrapS;
       t.wrapT = old.wrapT;
       t.repeat.copy(old.repeat);
       t.offset.copy(old.offset);
       t.colorSpace = old.colorSpace;
       t.anisotropy = old.anisotropy;
+      if (stale) t.needsUpdate = true;
       holder[key] = t;
       swapped.push([holder, key, old]);
     };

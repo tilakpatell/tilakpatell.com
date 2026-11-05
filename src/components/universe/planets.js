@@ -19,7 +19,7 @@
 // loadTextures({ small }) → the textures (any that fail are just missing)
 // mapFile(name, level) → the file for a planet map at lib/detail's level
 // mapsOf(id), nearSet(id, level) → a planet's maps, and the finer ones it wears near (nearMaps.js)
-// buildPlanet(u, T, { sun, tier, key }) → { id, radius, group, sun, air, setAir, update(t, camera), setState, mount, swapMaps(T2 | null), nearSet(level), nearGeometry(on, level) }
+// buildPlanet(u, T, { sun, tier, key }) → { id, radius, group, sun, air, setAir, update(t, camera), setState, mount, swapMaps(T2 | null), nearSet(level), nearGeometry(on, level), nearShapes(level) }
 
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
@@ -1196,6 +1196,13 @@ const BUILDERS = {
 export const NEAR_SEG = { high: [160, 100], ultra: [320, 200], mid: [96, 60] };
 export const nearSegments = (level) => NEAR_SEG[level] ?? null;
 
+// (how long a model that comes in after the map's seen takes to grow into its slot, s)
+const GROW = 0.7;
+// whether a planet's model grows into its slot (mount's `grow`): only where
+// the map's been seen, and never with motion turned down, where it comes in
+// as it did
+export const growsIn = ({ shown, reduced }) => Boolean(shown && !reduced);
+
 export function buildPlanet(u, T = {}, { sun = null, tier = 'high', key = null } = {}) {
   const core = u.kind === 'core';
   // the way to the star that lights it, in the world's axes (lighting.js's
@@ -1240,10 +1247,13 @@ export function buildPlanet(u, T = {}, { sun = null, tier = 'high', key = null }
   // chords (at ultra, 320 × 200: a limb as smooth as the 8192 maps on it; a builder that made its own shape keeps it; each finer one
   // made once, the first time it's near)
   const fine = new Map();
-  const finer = (mesh, far, on, level) => {
-    const s = on && nearSegments(level);
+  const make = (mesh, far, level) => {
+    const s = nearSegments(level);
     if (s && !fine.has(mesh)) fine.set(mesh, new THREE.SphereGeometry(far.parameters.radius, s[0], s[1]));
-    mesh.geometry = s ? fine.get(mesh) : far;
+  };
+  const finer = (mesh, far, on, level) => {
+    if (on) make(mesh, far, level); // (made ahead, nearShapes, where nearMaps asks: only worn here)
+    mesh.geometry = on && nearSegments(level) && fine.has(mesh) ? fine.get(mesh) : far; // (none on low: the sphere it has)
   };
   const cloudSphere = cloudMesh?.geometry?.type === 'SphereGeometry' ? cloudMesh.geometry : null;
   const nearGeometry =
@@ -1253,6 +1263,9 @@ export function buildPlanet(u, T = {}, { sun = null, tier = 'high', key = null }
           finer(body, sphere, on, level);
           if (cloudSphere) finer(cloudMesh, cloudSphere, on, level);
         };
+  // each finer sphere as a call of its own, for nearMaps to make one a moment
+  // before it swaps (none where the planet keeps its shape)
+  const nearShapes = (level) => (nearGeometry ? [() => make(body, sphere, level), ...(cloudSphere ? [() => make(cloudMesh, cloudSphere, level)] : [])] : []);
   const ground = !core && p.body.material?.isMeshStandardMaterial ? groundHooks(p.body.material, { ...style, clouds: cloudMesh ? style.clouds : null }) : null;
   if (key && !core && p.body.material?.isMeshStandardMaterial) keyHook(p.body.material, key, sunW);
   // (with real air round it, the air draws the limb: the rim in its ground goes)
@@ -1285,6 +1298,7 @@ export function buildPlanet(u, T = {}, { sun = null, tier = 'high', key = null }
     swapMaps,
     nearSet: (level) => (core ? [] : nearSet(u.id, level)),
     nearGeometry,
+    nearShapes,
     get air() {
       return air;
     },
@@ -1366,13 +1380,31 @@ export function buildPlanet(u, T = {}, { sun = null, tier = 'high', key = null }
     // a loaded model, parked on its orbit or its spot: the planet's own, or
     // the one named (most planets have just their own; a few have more:
     // Cybertron's 'rival', the Game Boy world's 'mario' and 'plant', the Death
-    // Star's 'cruiser'). True when this planet takes it
-    mount(model, name) {
+    // Star's 'cruiser'). True when this planet takes it. `grow`: it comes in
+    // where the map's already seen, so it grows into its slot over GROW
+    // seconds rather than popping in (not one that's the planet itself,
+    // which takes the sphere's place as it is)
+    mount(model, name, { grow = false } = {}) {
       const s = name ? p.slots?.[name] : p.slot;
       if (!s || !model) return false;
       const holder = fit(model, s.size);
       holder.rotation.set(...s.turn);
-      s.holder.add(holder);
+      const growing = grow && !s.skin ? new THREE.Group() : null;
+      if (growing) {
+        growing.scale.setScalar(1e-3);
+        growing.add(holder);
+        s.holder.add(growing);
+        let from = null;
+        let grown = false;
+        // (from its first frame in view: the ticks run only while the planet's live)
+        p.tick.push((t) => {
+          if (grown) return;
+          from ??= t;
+          const k = Math.min(1, (t - from) / GROW);
+          growing.scale.setScalar(Math.max(1e-3, 1 - (1 - k) ** 3));
+          grown = k >= 1;
+        });
+      } else s.holder.add(holder);
       // a model that's the planet itself: the painted sphere stops drawing
       // (it stays, for what's laid over it: a crash's shockwave)
       if (s.skin) {

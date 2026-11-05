@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
-import { LAMPS, createLamps, keepDark } from './lamps';
+import { LAMPS, createLamps, keepDark, reserveLights } from './lamps';
 
 // a landing's thing with a light of its own at `at` (in the thing's space)
 const thingWith = (at, { color = '#ff8800', intensity = 2, distance = 9, decay = 2 } = {}) => {
@@ -105,5 +105,29 @@ describe('lamps', () => {
     lamps.clear();
     expect(lit(lamps)).toEqual([]);
     expect(map.children.filter((o) => o.isLight && o.visible)).toHaveLength(LAMPS);
+  });
+});
+
+describe('the landing lights, kept in the map before the landing code comes', () => {
+  it('puts the muzzle flare and the slots in the map at once, all dark (none with motion turned down or on a phone but one slot)', () => {
+    const map = new THREE.Group();
+    const got = reserveLights(map);
+    expect(got.flare.isPointLight).toBe(true);
+    expect(got.flare.intensity).toBe(0);
+    expect(got.slots).toHaveLength(LAMPS);
+    expect(map.children.filter((o) => o.isPointLight)).toHaveLength(LAMPS + 1);
+    const phone = reserveLights(new THREE.Group(), { small: true });
+    expect(phone.flare).toBeNull();
+    expect(phone.slots).toHaveLength(1);
+    expect(reserveLights(new THREE.Group(), { reduced: true }).flare).toBeNull();
+  });
+
+  it('drives the slots it is given, adding none (the map’s count of lights never changes as the landing code arrives)', () => {
+    const map = new THREE.Group();
+    const { slots } = reserveLights(map);
+    const before = map.children.length;
+    const lamps = createLamps(map, { slots });
+    expect(lamps.slots).toEqual(slots);
+    expect(map.children.length).toBe(before);
   });
 });

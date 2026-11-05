@@ -136,9 +136,11 @@ export function createFleet({ prepare = null, build = buildTraffic, glb = GLB, l
         made = { group, size: t.size.clone(), model: true, update() {}, dispose() {} }; // shares its template's geometry and textures
       } else if (stocked[kind]?.length) return fitted(kind, stocked[kind].pop()); // (made ahead, its shaders with it)
       else made = build(kind);
-      // out of sight until its shaders are made
+      // out of sight until its shaders are made (not a copy of a model that's
+      // here: it shares its template's materials, made as it came, and hidden
+      // it was a frame or more of nothing where a hunter's stand-in had been)
       const inner = made.group.children[0];
-      if (prepare && inner) {
+      if (prepare && inner && !t) {
         inner.visible = false;
         prepare(made.group).then(() => {
           inner.visible = true;
