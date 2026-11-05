@@ -304,6 +304,15 @@ try {
   await park(a, 'resume');
   await a.waitForTimeout(8000);
   await Promise.all([landed(a, 'Alpha'), landed(b, 'Bravo')]);
+  // (and still: a park with the hyperdrive charging goes at super speed, a
+  // trip of its own that the jump's wait doesn't cover, and Bravo flying on
+  // to Home, or Alpha back to Résumé after it's moved, had Alpha's trip
+  // chasing them tens of thousands of units off)
+  await b.evaluate((d) => {
+    const g = window[d];
+    g.state.auto = null;
+    Object.assign(g.state.ship, { speed: 0, vy: 0 });
+  }, DEBUG);
   const seen = await waitFor(async () => {
     const r = await trip(a, bravoId);
     return r.dist !== null ? r : null;
@@ -316,6 +325,7 @@ try {
       const g = window[d];
       const p = g.pilots.pose(id);
       if (!p) return false;
+      g.state.auto = null;
       g.state.ship = { ...g.state.ship, x: p.x + Math.sin(p.heading) * 40, y: p.y, z: p.z + Math.cos(p.heading) * 40, heading: p.heading + Math.PI / 2, speed: 0, vy: 0 };
       return true;
     },
