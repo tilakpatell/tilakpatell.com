@@ -62,7 +62,7 @@ jobs:
   # steps are worlds.yml's: keep the two alike.
   worlds:
     name: Worlds on the node renderer (${{ matrix.world }})
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04  # Playwright has no chromium for ubuntu-latest (26.04) yet: run 41052884531, as bf2web.yml
     timeout-minutes: 150
     strategy:
       fail-fast: false
@@ -115,7 +115,7 @@ jobs:
   # of its own so a slow contract test never holds up the first one's answer.
   ai:
     name: AI
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04  # Playwright has no chromium for ubuntu-latest (26.04) yet: run 41052884531, as bf2web.yml
     timeout-minutes: 30
     steps:
       # two deep: the render step diffs the merge commit against main
@@ -174,7 +174,7 @@ jobs:
   # fails fails its step through the tee that keeps its lines.)
   online:
     name: Multiplayer
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04  # Playwright has no chromium for ubuntu-latest (26.04) yet: run 41052884531, as bf2web.yml
     timeout-minutes: 30 # (four checks in two browsers drawing in software)
     continue-on-error: true
     steps:
