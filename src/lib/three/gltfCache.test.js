@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import * as THREE from 'three';
 import { clearGLTFCache, cloneScene, gltfStats, loadGLTF } from './gltfCache';
+import { disposeTree } from './renderer';
 
 // a parsed model: one textured mesh (and, for the skinned case, one with bones)
 const model = () => {
@@ -28,6 +29,26 @@ const skinned = () => {
 beforeEach(() => clearGLTFCache());
 
 describe('loadGLTF', () => {
+  it('marks what its copies share (geometry, textures) so a copy freed with keepShared keeps them, and frees its own materials', async () => {
+    const gltf = model();
+    const loader = { loadAsync: vi.fn(async () => gltf) };
+    const g = await loadGLTF('/s.glb', { loader });
+    expect(g.mesh.geometry.userData.shared).toBe(true);
+    expect(g.map.userData.shared).toBe(true);
+    const copy = cloneScene(g);
+    const mesh = copy.children[0];
+    const freed = [];
+    for (const [name, thing] of [['geometry', mesh.geometry], ['map', mesh.material.map], ['material', mesh.material]]) thing.addEventListener('dispose', () => freed.push(name));
+    disposeTree(copy, { keepShared: true });
+    expect(freed).toEqual(['material']);
+    // (without it, everything, as other worlds have it)
+    const again = cloneScene(g);
+    const all = [];
+    again.children[0].geometry.addEventListener('dispose', () => all.push('geometry'));
+    disposeTree(again);
+    expect(all).toEqual(['geometry']);
+  });
+
   it('fetches and parses each url once', async () => {
     const gltf = model();
     const loader = { loadAsync: vi.fn(async () => gltf) };

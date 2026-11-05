@@ -28,6 +28,19 @@ import { gltfLoader } from './gltf';
 import { sharpenTree } from './textures';
 
 const cache = new Map(); // url → Promise<GLTF | null>
+
+// What every copy shares with the cached original, its geometry and its
+// textures, marked (userData.shared) so a copy freed with lib/three/
+// renderer's disposeTree(…, { keepShared }) frees its own materials and
+// leaves these to the cache (the universe map's ship: freed whole, each
+// return sent them to the chip again). Freed without it, as every other
+// world frees its copies, they go as they always did.
+function markShared(root) {
+  root.traverse((o) => {
+    if (o.geometry) o.geometry.userData.shared = true;
+    for (const m of Array.isArray(o.material) ? o.material : o.material ? [o.material] : []) for (const v of Object.values(m)) if (v?.isTexture) v.userData.shared = true;
+  });
+}
 const stats = { requests: 0, parses: 0 };
 
 export function loadGLTF(url, { loader } = {}) {
@@ -37,7 +50,10 @@ export function loadGLTF(url, { loader } = {}) {
   const p = Promise.resolve()
     .then(() => (loader ?? gltfLoader()).loadAsync(url))
     .then((gltf) => {
-      if (gltf?.scene) sharpenTree(gltf.scene);
+      if (gltf?.scene) {
+        sharpenTree(gltf.scene);
+        markShared(gltf.scene);
+      }
       return gltf ?? null;
     })
     .catch(() => null)
