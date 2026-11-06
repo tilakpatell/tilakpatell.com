@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { createHash } from 'node:crypto';
 import { CONTRACT, ENCODINGS, SHARED_UI, adopted, compressible, encodingsOf, floorNeeds, programNeeds, contractProblems, hookProblems, levelProblems, missingFiles, newest, rulebookProblems, uiDataFor, uploadPlan } from './bf2web-site.mjs';
 import BOOK from '../../src/data/bf2017/modes.json' with { type: 'json' };
 
@@ -150,6 +151,50 @@ describe('the brotli copies', () => {
 });
 
 describe('uploading a build', () => {
+  const prefix = 'sites/n/', previousPrefix = 'sites/o/';
+  const movedPlan = (next, old, listed = []) => uploadPlan({entries: next}, {prefix, previous: {entries: old}, previousPrefix, previousExisting: listed});
+
+  it('copies moved exact bytes only after the previous remote object size is confirmed', () => {
+    const bytes = Buffer.from([0, 17, 34, 128, 255]), digest = createHash('sha256').update(bytes).digest('hex');
+    const next = entry('scene-cloudy/scene-t-591.pixels', bytes.length, digest), old = entry('scene-t-581.pixels', bytes.length, digest);
+    expect(movedPlan([next], [old], [{key: previousPrefix + old.path, size: bytes.length}])).toEqual([
+      {action: 'copy', key: prefix + next.path, from: previousPrefix + old.path, replaceMetadata: true},
+      {action: 'put', key: prefix + 'manifest.json', path: 'manifest.json'},
+    ]);
+  });
+
+  it('refuses moved copies with a different hash, manifest size, extension, or remote size', () => {
+    const next = entry('new.pixels', 5, sha('b'));
+    for (const [old, remoteSize] of [
+      [entry('old.pixels', 5, sha('c')), 5], [entry('old.pixels', 6, sha('b')), 6],
+      [entry('old.res', 5, sha('b')), 5], [entry('old.pixels', 5, sha('b')), 4],
+    ]) expect(movedPlan([next], [old], [{key: previousPrefix + old.path, size: remoteSize}])[0])
+      .toEqual({action: 'put', key: prefix + next.path, path: next.path});
+  });
+
+  it('does not trust an absent remote source, another build prefix, or an unsafe manifest path', () => {
+    const next = entry('new.pixels', 5, sha('b')), old = entry('old.pixels', 5, sha('b'));
+    for (const listed of [[], [{key: 'sites/other/old.pixels', size: 5}]])
+      expect(movedPlan([next], [old], listed)[0].action).toBe('put');
+    const unsafe = entry('../old.pixels', 5, sha('b'));
+    expect(movedPlan([next], [unsafe], [{key: previousPrefix + unsafe.path, size: 5}])[0].action).toBe('put');
+  });
+
+  it('chooses the lexically first eligible source regardless of manifest or inventory order', () => {
+    const next = entry('new.pixels', 5, sha('b')), old = ['z.pixels', 'a.pixels', '0-missing.pixels'].map(p => entry(p, 5, sha('b')));
+    const listed = old.slice(0, 2).map(e => ({key: previousPrefix + e.path, size: e.bytes}));
+    expect(movedPlan([next], old, listed)[0].from).toBe(previousPrefix + 'a.pixels');
+    expect(movedPlan([next], [...old].reverse(), [...listed].reverse())).toEqual(movedPlan([next], old, listed));
+  });
+
+  it('keeps target skips and same-path copies ahead of moved copies without changing their metadata', () => {
+    const next = entry('new.pixels', 5, sha('b')), old = [entry('a.pixels', 5, sha('b')), next];
+    const options = {prefix, previousPrefix, previous: {entries: old}, previousExisting: old.map(e => ({key: previousPrefix + e.path, size: e.bytes}))};
+    expect(uploadPlan({entries: [next]}, {...options, existing: [{key: prefix + next.path, size: 5}]})[0]).toEqual({action: 'skip', key: prefix + next.path});
+    expect(uploadPlan({entries: [next]}, {...options, existing: [{key: prefix + next.path, size: 4}]})[0]).toEqual({action: 'copy', key: prefix + next.path, from: previousPrefix + next.path});
+    expect(uploadPlan({entries: [next]}, {prefix, previousPrefix, previous: {entries: [next]}})[0]).toEqual({action: 'copy', key: prefix + next.path, from: previousPrefix + next.path});
+  });
+
   it('copies what the last build has byte for byte, skips what is up already, puts the rest and the manifest last', () => {
     const m = manifest([entry('scene.res', 5, sha('b')), entry('new.res', 6, sha('c'))]);
     const previous = manifest([entry('scene.res', 5, sha('b')), entry('new.res', 6, sha('d'))]);

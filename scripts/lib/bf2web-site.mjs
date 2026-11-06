@@ -35,9 +35,9 @@
 //   compressible(manifest, typeOf) → the entries worth a brotli copy: the binary files Cloudflare sends as they are
 //     (typeOf: cloudflare/play.js's contentType, application/octet-stream), 1 KB or more
 //   ENCODINGS: encodings.json's schema   encodingsOf(sizes, quality) → encodings.json for those copies
-//   uploadPlan(manifest, { prefix, previous, previousPrefix, existing }) → [{ action, key, path?, from? }]
+//   uploadPlan(manifest, { prefix, previous, previousPrefix, existing, previousExisting }) → [{ action, key, path?, from? }]
 //     copy a file the previous build has byte for byte (by its sha256), skip one already there, put the rest;
-//     the manifest always last
+//     moved files additionally require equal size/extension and a matching prior remote inventory entry; the manifest always last
 
 import { worldsOf } from '../../src/lib/bf2web/levels.js';
 
@@ -187,13 +187,26 @@ export function encodingsOf(sizes, quality) {
   return { schema: ENCODINGS, quality, br: Object.fromEntries([...sizes].sort(([a], [b]) => (a < b ? -1 : 1))) };
 }
 
-export function uploadPlan(manifest, { prefix, previous = null, previousPrefix = null, existing = [] }) {
+export function uploadPlan(manifest, { prefix, previous = null, previousPrefix = null, existing = [], previousExisting = [] }) {
   const was = new Map((previous?.entries ?? []).map((e) => [e.path, e.sha256]));
   const there = new Map(existing.map((f) => [f.key, f.size]));
+  const previousSizes = new Map(previousExisting.map((f) => [f.key, f.size]));
+  const extension = (file) => { const name = file.slice(file.lastIndexOf('/') + 1), dot = name.lastIndexOf('.'); return dot <= 0 ? '' : name.slice(dot); };
+  const contentKey = (e) => JSON.stringify([e.sha256, e.bytes, extension(e.path)]);
+  const moved = new Map();
+  if (previousPrefix) for (const e of [...(previous?.entries ?? [])].filter((e) =>
+    safe(e?.path) && !e.path.includes('\\') && /^[0-9a-f]{64}$/.test(e.sha256 ?? '') &&
+    Number.isSafeInteger(e.bytes) && e.bytes >= 0 && previousSizes.get(previousPrefix + e.path) === e.bytes
+  ).sort((a, b) => a.path < b.path ? -1 : a.path > b.path ? 1 : 0)) {
+    const key = contentKey(e);
+    if (!moved.has(key)) moved.set(key, previousPrefix + e.path);
+  }
   const plan = manifest.entries.map((e) => {
     const key = prefix + e.path;
     if (there.get(key) === e.bytes) return { action: 'skip', key };
     if (previousPrefix && was.get(e.path) === e.sha256) return { action: 'copy', key, from: previousPrefix + e.path };
+    const from = moved.get(contentKey(e));
+    if (from) return { action: 'copy', key, from, replaceMetadata: true };
     return { action: 'put', key, path: e.path };
   });
   // (always put again, and last: its presence says the upload finished)

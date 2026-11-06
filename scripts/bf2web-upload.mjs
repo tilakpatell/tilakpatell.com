@@ -16,7 +16,7 @@ import { fileURLToPath } from 'node:url';
 import { encodePath, objectUrl } from './lib/bucket.mjs';
 import { BUCKET, open } from './lib/bf2web-r2.mjs';
 import { contractProblems, uploadPlan } from './lib/bf2web-site.mjs';
-import { attemptUpload, completeUploadResponse } from './lib/bf2web-upload-response.mjs';
+import { attemptUpload, completeUploadResponse, copyUploadHeaders } from './lib/bf2web-upload-response.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const args = process.argv.slice(2);
@@ -35,7 +35,9 @@ const r2 = open();
 const previousId = option('--previous') || process.env.BF2WEB_PREVIOUS || JSON.parse(readFileSync(join(ROOT, 'src/data/bf2web/play.json'), 'utf8')).build;
 const previous = previousId && previousId !== id ? await r2.json(`sites/${previousId}/manifest.json`) : null;
 const prefix = `sites/${id}/`;
-const plan = uploadPlan(manifest, { prefix, previous, previousPrefix: previous ? `sites/${previousId}/` : null, existing: await r2.files(prefix) });
+const previousPrefix = previous ? `sites/${previousId}/` : null;
+const [existing, previousExisting] = await Promise.all([r2.files(prefix), previousPrefix ? r2.files(previousPrefix) : []]);
+const plan = uploadPlan(manifest, { prefix, previous, previousPrefix, existing, previousExisting });
 const uiDir = option('--ui-data');
 if (uiDir && existsSync(uiDir)) for (const f of uiDataFiles(uiDir)) plan.splice(-1, 0, { action: 'put', key: `${prefix}ui-data/${f}`, file: join(uiDir, f) });
 
@@ -88,7 +90,7 @@ async function send(p) {
   const url = objectUrl(BUCKET, p.key);
   const init =
     p.action === 'copy'
-      ? { method: 'PUT', headers: { 'x-amz-copy-source': `/${BUCKET}/${encodePath(p.from)}` } }
+      ? { method: 'PUT', headers: copyUploadHeaders(`/${BUCKET}/${encodePath(p.from)}`, p.replaceMetadata) }
       : (() => {
           const body = readFileSync(p.file ?? join(dir, p.path));
           return { method: 'PUT', body, headers: { 'content-md5': createHash('md5').update(body).digest('base64'), 'content-type': 'application/octet-stream' } };
