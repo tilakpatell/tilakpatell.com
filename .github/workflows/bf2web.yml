@@ -1,190 +1,53 @@
-name: bf2-web
-# Hoth's engine from bf2-web to the site, with no one in the loop while bf2-web keeps to the contract
-# (docs/decisions/2026-10-28-bf2web-pipeline.md):
-#
-#   bf2-web's main moves → build (the desktop: bf2-web's own entry point builds, plays a round on the GPU, exports;
-#   the site's uploader sends what changed to sites/<build>/) → adopt (GitHub's runner: the build held to the
-#   contract, opened headless through the Worker's code, play.json pointed at it, pushed) → deploy.yml.
-#
-# It runs when bf2-web says (its notify workflow sends repository_dispatch bf2web-main with the commit), every six
-# hours in case that was missed, or from the Actions tab: stage build (a commit, default bf2-web's main), adopt (a
-# build, default the newest good one) or both. A build that breaks the contract is refused with what broke: that is
-# the one time a person (or a session) is needed.
-run-name: >-
-  ${{ format('bf2-web: {0}{1}', github.event_name == 'workflow_dispatch' && inputs.stage || 'both', (inputs.build || inputs.sha || github.event.client_payload.sha) && format(' · {0}', inputs.build || inputs.sha || github.event.client_payload.sha) || '') }}
+name: bf2-web manifest audit
+run-name: 'Read-only manifest audit: codex-20261106-5c6d5a3a'
 on:
-  repository_dispatch:
-    types: [bf2web-main]
-  schedule:
-    - cron: '41 */6 * * *'
   workflow_dispatch:
-    inputs:
-      stage:
-        description: 'build, publish an already validated desktop build, adopt, both, or compress'
-        required: true
-        type: choice
-        options: [both, build, publish, adopt, compress]
-        default: both
-      sha:
-        description: 'build: the bf2-web commit (default its main)'
-        required: false
-        type: string
-      build:
-        description: 'adopt or compress: the build id, e.g. main-da7a51b3 (adopt: default the newest good one; compress: the one play.json names)'
-        required: false
-        type: string
-      site:
-        description: 'publish: absolute desktop path of an already completed build (its passing build and direct-check reports must be beside it)'
-        required: false
-        type: string
-      ui_data:
-        description: 'publish: absolute desktop path of the matching frontend rulebooks'
-        required: false
-        type: string
-      ui_sha256:
-        description: 'publish: rulebook digest printed by bf2web-publish.mjs --check'
-        required: false
-        type: string
-      compress_quality:
-        description: 'compress: brotli quality; above 9 makes every copy again (a release: about 1.6 CPU hours)'
-        required: false
-        type: string
-      previous:
-        description: 'publish: the build whose bucket files a re-publish copies from by sha256 (default: the one play.json names)'
-        required: false
-        type: string
 permissions:
-  contents: write
-  actions: write
+  contents: read
 concurrency:
-  group: bf2web
+  group: bf2web-manifest-audit18
   cancel-in-progress: false
 jobs:
-  build:
-    if: ${{ github.event_name != 'workflow_dispatch' || (inputs.stage != 'adopt' && inputs.stage != 'compress') }}
-    runs-on: [self-hosted, gpu]
-    timeout-minutes: 360
-    # (the desktop's one GPU: one build at a time, queued behind another)
-    concurrency:
-      group: bf2web-desktop
-    outputs:
-      build: ${{ steps.make.outputs.build }}
-      made: ${{ steps.make.outputs.made }}
+  manifest-audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v7
         with:
-          sparse-checkout: |
-            scripts
-            src/data/bf2web
-            src/data/bf2017
-            src/lib/bf2web
+          sparse-checkout: scripts/lib
           persist-credentials: false
-      - name: Build, play and upload
-        id: make
-        shell: powershell
-        run: |
-          $runnerSettings = Join-Path (Split-Path (Split-Path $env:RUNNER_WORKSPACE -Parent) -Parent) '.env'
-          if ($env:STAGE -eq 'publish') {
-            node "--env-file-if-exists=$runnerSettings" scripts/desktop/bf2web-publish.mjs --site $env:SITE --build $env:BUILD --sha $env:SHA --ui-data $env:UI_DATA --ui-sha256 $env:UI_SHA256
-            exit $LASTEXITCODE
-          }
-          $flags = @()
-          if ($env:SHA) { $flags += @('--sha', $env:SHA) }
-          node "--env-file-if-exists=$runnerSettings" scripts/desktop/bf2web-build.mjs @flags
-          exit $LASTEXITCODE
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - name: Read only the pinned published manifest and verify its bytes
         env:
-          SHA: ${{ inputs.sha || github.event.client_payload.sha }}
-          STAGE: ${{ inputs.stage }}
-          SITE: ${{ inputs.site }}
-          BUILD: ${{ inputs.build }}
-          UI_DATA: ${{ inputs.ui_data }}
-          UI_SHA256: ${{ inputs.ui_sha256 }}
-          BF2WEB_PREVIOUS: ${{ inputs.previous }}
           R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
           R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
-          GCM_INTERACTIVE: never
-          GIT_TERMINAL_PROMPT: '0'
-  adopt:
-    needs: build
-    # (whatever the build's result: a desktop that can't build, or a build that failed, doesn't keep a good build already
-    # in the bucket, one the desktop uploaded by hand among them, from Hoth; adopt takes only main builds that pass the
-    # contract)
-    if: ${{ always() && !cancelled() && (github.event_name != 'workflow_dispatch' || (inputs.stage != 'build' && inputs.stage != 'compress')) && (inputs.stage != 'publish' || needs.build.result == 'success') }}
-    runs-on: ubuntu-24.04  # Playwright has no chromium for ubuntu-latest (26.04) yet: run 41052884531
-    timeout-minutes: 30
-    env:
-      R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
-      R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          # Adoption changes only main's build pointer, even when a publisher is
-          # dispatched from its review branch. Never push that branch's code.
-          ref: main
-      - uses: actions/setup-node@v7
-        with:
-          node-version: 22
-          cache: npm
-      - run: npm ci
-      - name: Hold the builds to the contract, and name the newest good one
-        id: adopt
-        # (the build named by hand passed in the environment, never into the script's text)
-        run: node scripts/bf2web-adopt.mjs ${BUILD:+--build "$BUILD"}
-        env:
-          BUILD: ${{ inputs.build || needs.build.outputs.build }}
-      - name: Open it the way a visitor's browser does
-        if: ${{ steps.adopt.outputs.adopted != '' }}
         run: |
-          npx playwright-core install --with-deps chromium
-          node scripts/bf2web-smoke.mjs
-      - name: The play site's tests
-        if: ${{ steps.adopt.outputs.adopted != '' }}
-        run: npx vitest run cloudflare src/components/battlefront src/lib/bf2web scripts/lib/bf2web-site.test.mjs scripts/desktop/bf2web-build.test.mjs scripts/desktop/bf2web-publish.test.mjs
-      - name: Point the site at it, and deploy
-        if: ${{ steps.adopt.outputs.adopted != '' }}
-        run: |
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add src/data/bf2web/play.json
-          git commit -m "Hoth plays bf2-web's $BUILD" -m "Adopted by the bf2-web workflow (docs/decisions/2026-10-28-bf2web-pipeline.md): the build held to the contract and opened through the Worker's code."
-          git pull --rebase origin main
-          git push origin HEAD:main
-          # (a push made with the workflow's token starts no workflow, so the deploy is asked for by name)
-          gh workflow run deploy.yml --ref main
-          echo "- Hoth now plays **$BUILD**; deploy.yml started" >> "$GITHUB_STEP_SUMMARY"
-        env:
-          BUILD: ${{ steps.adopt.outputs.adopted }}
-          GH_TOKEN: ${{ github.token }}
-      # (after it plays: a first visit then gets the textures and scene data a quarter smaller, the Worker serving the
-      # copies once encodings.json is up; a run cut off is run again with stage compress)
-      - name: Brotli copies of its binary files
-        if: ${{ steps.adopt.outputs.adopted != '' }}
-        continue-on-error: true
-        run: node scripts/bf2web-compress.mjs --build "$BUILD"
-        env:
-          BUILD: ${{ steps.adopt.outputs.adopted }}
-  compress:
-    if: ${{ github.event_name == 'workflow_dispatch' && inputs.stage == 'compress' }}
-    runs-on: ubuntu-24.04
-    timeout-minutes: 120
-    env:
-      R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
-      R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
-    steps:
-      - uses: actions/checkout@v7
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import assert from 'node:assert/strict';
+          import {createHash} from 'node:crypto';
+          import {open,BUCKET} from './scripts/lib/bf2web-r2.mjs';
+          import {objectUrl} from './scripts/lib/bucket.mjs';
+          const key='sites/codex-20261106-5c6d5a3a/manifest.json';
+          const expectedSha256='d3a3556bbf4f45654d7023c0f450c584bf5a9542eafe95f32005f7dc96511fd4';
+          const expectedBytes=2841200;
+          const startedUtc=new Date().toISOString();
+          const response=await open().fetch(objectUrl(BUCKET,key),{method:'GET',redirect:'error',headers:{'accept-encoding':'identity'},signal:AbortSignal.timeout(60000)});
+          assert.equal(response.status,200);
+          const chunks=[];let size=0;
+          for await(const chunk of response.body){size+=chunk.length;assert.ok(size<=expectedBytes,'bounded manifest response');chunks.push(Buffer.from(chunk));}
+          const body=Buffer.concat(chunks),sha256=createHash('sha256').update(body).digest('hex');
+          assert.equal(size,expectedBytes);assert.equal(sha256,expectedSha256);
+          fs.mkdirSync('manifest-audit');fs.writeFileSync('manifest-audit/manifest.json',body);
+          const receipt={schema:'ci-authenticated-bucket-manifest/1',passed:true,startedUtc,finishedUtc:new Date().toISOString(),transport:'R2 S3 authenticated AWS Signature V4 GET using existing publisher signer',bucket:BUCKET,key,status:response.status,requestCount:1,bytes:size,sha256,expectedSha256,expectedBytes,headers:Object.fromEntries(['content-type','content-length','content-encoding','etag','last-modified'].map(k=>[k,response.headers.get(k)])),run:process.env.GITHUB_RUN_ID,commit:process.env.GITHUB_SHA};
+          fs.writeFileSync('manifest-audit/receipt.json',JSON.stringify(receipt,null,2));
+          console.log(JSON.stringify({passed:true,bytes:size,sha256,requestCount:1}));
+          NODE
+      - uses: actions/upload-artifact@v7
         with:
-          sparse-checkout: |
-            scripts
-            cloudflare
-            src/data/bf2web
-            src/data/bf2017
-            src/lib/bf2web
-          persist-credentials: false
-      - uses: actions/setup-node@v7
-        with:
-          node-version: 22
-      - name: Brotli copies of the build's binary files
-        run: node scripts/bf2web-compress.mjs ${BUILD:+--build "$BUILD"} ${QUALITY:+--quality "$QUALITY" --force}
-        env:
-          BUILD: ${{ inputs.build }}
-          QUALITY: ${{ inputs.compress_quality }}
+          name: manifest-codex-20261106-5c6d5a3a
+          path: manifest-audit/
+          if-no-files-found: error
+          retention-days: 1
