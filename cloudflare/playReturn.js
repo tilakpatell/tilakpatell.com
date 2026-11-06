@@ -6,7 +6,8 @@
 // site's home and Quit stays the game's (back to its front end). The site's Battlefront route would reopen the engine.
 // A round that fails (the session's passed
 // false: a download dropped, frame 0 never drawn, the GPU lost) leaves its reason in the corner, which the play page
-// shows for 15 s only, with a button that copies it and the GPU the browser gave, for the visitor to send on.
+// shows for 15 s only, with a button that copies it, the round's diagnostic (the WebGPU and renderer errors' text) and
+// the GPU the browser gave with its limits and features, for the visitor to send on.
 //
 //   returnFrom(search) → { to, label, onQuit }   to: the site's address (the site routes by its hash)
 //   watchReturn(win, back)   the page's side: the link, the Quit and a failed round watched on the body's play-<state> class
@@ -55,7 +56,18 @@ export function watchReturn(win, back) {
     copy.onclick = async () => {
       const adapter = await win.navigator.gpu?.requestAdapter({ powerPreference: 'high-performance' }).catch(() => null);
       const info = adapter?.info ? { vendor: adapter.info.vendor, architecture: adapter.info.architecture, device: adapter.info.device, description: adapter.info.description } : null;
-      const text = JSON.stringify({ error: String(s.error ?? ''), endReason: s.endReason ?? null, level: s.level ?? null, mode: s.mode ?? null, adapter: info, userAgent: win.navigator.userAgent, at: new Date().toISOString() }, null, 2);
+      // (the adapter's limits and features as this browser reports them: a GPU we cannot test on, a Mac's Metal, differs here)
+      const limits = {};
+      for (const k in adapter?.limits ?? {}) if (typeof adapter.limits[k] === 'number') limits[k] = adapter.limits[k];
+      const features = adapter?.features ? [...adapter.features].sort() : null;
+      // The play page's record of the failed round (world-play.mjs): its diagnostic holds the WebGPU errors' text, the
+      // renderer's own errors, a lost device, the refused pipelines and where the load was; the error alone names only
+      // the check that failed (world-startup-render-error)
+      const record = { diagnostic: s.diagnostic ?? null, gpuErrorCounts: s.gpuErrorCounts ?? null, registerFailures: s.registerFailures ?? null,
+        missingPrograms: s.missingPrograms ?? null, missingComputePrograms: s.missingComputePrograms ?? null, quality: s.quality ?? null,
+        ms: s.ms ?? null, warmFrames: s.warmFrames ?? null, presentedFrames: s.presentedFrames ?? null, heapHighMiB: s.heapHighMiB ?? null };
+      const text = JSON.stringify({ error: String(s.error ?? ''), endReason: s.endReason ?? null, level: s.level ?? null, mode: s.mode ?? null, adapter: info, ...record,
+        adapterLimits: adapter ? limits : null, adapterFeatures: features, userAgent: win.navigator.userAgent, at: new Date().toISOString() }, null, 2);
       await win.navigator.clipboard?.writeText(text).catch(() => null);
       copy.textContent = 'Copied';
     };

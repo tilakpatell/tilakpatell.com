@@ -129,7 +129,7 @@ describe('the way back from the engine’s page', () => {
     expect(box.textContent).toBe('The round stopped: Error: world-startup-presentation-timeout: frame 0');
     expect(box.attributes.role).toBe('alert');
     await box.children[0].onclick();
-    expect(JSON.parse(p.copied[0])).toMatchObject({ endReason: 'failed', level: 'Hoth_01', adapter: { description: 'RTX 3050 Laptop' } });
+    expect(JSON.parse(p.copied[0])).toMatchObject({ endReason: 'failed', level: 'Hoth_01', adapter: { description: 'RTX 3050 Laptop' }, diagnostic: null, adapterLimits: {}, adapterFeatures: null });
     expect(box.children[0].textContent).toBe('Copied');
     expect(p.assigned).toEqual([]);
     // (one box: the next failure takes its place)
@@ -137,6 +137,27 @@ describe('the way back from the engine’s page', () => {
     p.win.__playFlow.sessions.push({ endReason: 'failed', passed: false, error: 'TypeError: Failed to fetch' });
     p.state('menu');
     expect(p.body.children.filter((c) => c.className === 'tp-failed').map((c) => c.textContent)).toEqual(['The round stopped: TypeError: Failed to fetch']);
+  });
+
+  it('copies the round’s diagnostic and the adapter’s limits and features, so a GPU we cannot test on reports its errors', async () => {
+    const p = page();
+    const limits = Object.create({ maxStorageBuffersPerShaderStage: 10, maxColorAttachmentBytesPerSample: 64 });
+    p.win.navigator.gpu.requestAdapter = async () => ({ info: { vendor: 'apple', architecture: 'metal-3', device: '', description: '' }, limits, features: new Set(['texture-compression-bc', 'dual-source-blending']) });
+    watchReturn(p.win, returnFrom(''));
+    p.state('loading');
+    const diagnostic = { gpuErrorMessages: ['Error while parsing WGSL: x'], rendererErrors: [{ code: 'pipeline', message: 'y' }], deviceLost: null, progress: 'warm' };
+    p.win.__playFlow.sessions.push({ endReason: 'failed', passed: false, error: 'Error: world-startup-render-error\n    at check', diagnostic, gpuErrorCounts: { 'Error while parsing WGSL: x': 3 }, quality: { level: 'medium' } });
+    p.state('menu');
+    await p.body.children.find((c) => c.className === 'tp-failed').children[0].onclick();
+    expect(JSON.parse(p.copied[0])).toMatchObject({
+      error: 'Error: world-startup-render-error\n    at check',
+      diagnostic,
+      gpuErrorCounts: { 'Error while parsing WGSL: x': 3 },
+      quality: { level: 'medium' },
+      adapter: { vendor: 'apple', architecture: 'metal-3' },
+      adapterLimits: { maxStorageBuffersPerShaderStage: 10, maxColorAttachmentBytesPerSample: 64 },
+      adapterFeatures: ['dual-source-blending', 'texture-compression-bc'],
+    });
   });
 
   it('adds itself to the exported page, which has no </body>, or before one', () => {
