@@ -113,6 +113,12 @@ const waitFor = async (fn, ms, what) => {
 };
 // the scene's handle, once its ship is flying
 const ready = (page) => page.waitForFunction((d) => window[d]?.state?.ship && window[d].net?.(), DEBUG, { timeout: 240000, polling: 500 });
+// a jump under way landed (park's, below): in software a jump's coming round,
+// its spool and its flash take longer than a fixed wait, and one that lands
+// after the check has moved the ship puts it back at the place jumped to
+// (Alpha 300 units off at Résumé, not 40 behind Bravo), or holds a press of
+// "Fly to" back past the time a check gives it
+const landed = (page, what) => page.waitForFunction((d) => !window[d]?.state?.jump, DEBUG, { timeout: 120000, polling: 500 }).catch(() => console.log(`note ${what}: still jumping after 120 s`));
 const selfId = (page) => page.evaluate((d) => window[d].net()?.selfId ?? null, DEBUG);
 // what Alpha has of the trip: its ship, Bravo's pose, the autopilot's goal, the HUD's line
 const trip = (page, id) =>
@@ -297,6 +303,16 @@ try {
   await park(b, 'home');
   await park(a, 'resume');
   await a.waitForTimeout(8000);
+  await Promise.all([landed(a, 'Alpha'), landed(b, 'Bravo')]);
+  // (and still: a park with the hyperdrive charging goes at super speed, a
+  // trip of its own that the jump's wait doesn't cover, and Bravo flying on
+  // to Home, or Alpha back to Résumé after it's moved, had Alpha's trip
+  // chasing them tens of thousands of units off)
+  await b.evaluate((d) => {
+    const g = window[d];
+    g.state.auto = null;
+    Object.assign(g.state.ship, { speed: 0, vy: 0 });
+  }, DEBUG);
   const seen = await waitFor(async () => {
     const r = await trip(a, bravoId);
     return r.dist !== null ? r : null;
@@ -309,6 +325,7 @@ try {
       const g = window[d];
       const p = g.pilots.pose(id);
       if (!p) return false;
+      g.state.auto = null;
       g.state.ship = { ...g.state.ship, x: p.x + Math.sin(p.heading) * 40, y: p.y, z: p.z + Math.cos(p.heading) * 40, heading: p.heading + Math.PI / 2, speed: 0, vy: 0 };
       return true;
     },
@@ -347,8 +364,10 @@ try {
   if (out) await a.screenshot({ path: `${out}/flyto-there.png` });
 
   // 2. Bravo goes offline mid-trip
-  if (!galaxy) await waitFor(async () => park(a, 'projects'), 30000, 'Alpha jumps away');
-  else
+  if (!galaxy) {
+    await waitFor(async () => park(a, 'projects'), 30000, 'Alpha jumps away');
+    await landed(a, 'Alpha, jumping away');
+  } else
     await a.evaluate((d) => {
       const g = window[d];
       g.state.ship = { ...g.state.ship, x: g.state.ship.x + 160, speed: 0 };

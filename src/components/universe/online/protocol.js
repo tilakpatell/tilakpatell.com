@@ -107,6 +107,11 @@ export const ROOM = 'universe-v2';
 export const POSE_MS = 100; // how often a pose goes out
 export const CURSOR_MS = 80; // and a pointer, off the map
 export const STALE_MS = 2500; // a ship with no pose this long is hidden
+// and a trip to them (Fly to) goes on that long more, to where they were
+// last seen: a frame of yours or theirs a few seconds long (a slow device, a
+// jump's arrival, a busy network) hid them and ended the trip at once, "has
+// gone", while they flew on. Gone for good, they're dropped from the room
+export const TRIP_HOLD_MS = 10000;
 export const PACK_MS = 200; // how often the hunters after you go out
 export const PACK_MAX = 8; // hunters in one of those, at most
 export const PUNCH_MAX = 24; // hits one shot is worth on a hunter, at most (a heavy round, weapons.js, from a fusion-fitted ship)
