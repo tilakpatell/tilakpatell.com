@@ -1,6 +1,14 @@
 // S3 CopyObject may report an error inside HTTP 200. Read the complete body
 // before accepting a copy, also releasing Node fetch's connection for reuse.
 // https://docs.aws.amazon.com/AmazonS3/latest/API/API_CopyObject.html
+// A moved object gets the same metadata as this uploader's ordinary PUT,
+// rather than inheriting arbitrary metadata from its old key. Same-path copies stay unchanged.
+export function copyUploadHeaders(source, replaceMetadata = false) {
+  return { 'x-amz-copy-source': source, ...(replaceMetadata ? {
+    'x-amz-metadata-directive': 'REPLACE', 'content-type': 'application/octet-stream',
+  } : {}) };
+}
+
 export async function completeUploadResponse(response, { copy = false } = {}) {
   const body = await response.text();
   if (!response.ok) throw new Error(`HTTP ${response.status} ${body.slice(0, 200)}`);

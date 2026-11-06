@@ -1,6 +1,12 @@
 import { createServer } from 'node:http';
 import { expect, it } from 'vitest';
-import { attemptUpload, completeUploadResponse } from './bf2web-upload-response.mjs';
+import { attemptUpload, completeUploadResponse, copyUploadHeaders } from './bf2web-upload-response.mjs';
+
+it('replaces moved-copy metadata with ordinary upload metadata and preserves same-path copy headers', () => {
+  const source = '/bf2017-assets/sites/old/scene-t-1.pixels';
+  expect(copyUploadHeaders(source)).toEqual({'x-amz-copy-source': source});
+  expect(copyUploadHeaders(source, true)).toEqual({'x-amz-copy-source': source, 'x-amz-metadata-directive': 'REPLACE', 'content-type': 'application/octet-stream'});
+});
 
 const copied = '<?xml version="1.0"?><CopyObjectResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/"><LastModified>2026-10-29T00:00:00Z</LastModified><ETag>&quot;original-content&quot;</ETag></CopyObjectResult>';
 const failed = '<Error><Code>SlowDown</Code><Message>Please retry</Message></Error>';
