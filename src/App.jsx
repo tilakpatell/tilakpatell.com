@@ -1,5 +1,5 @@
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
-import { HashRouter, Route, Routes, useLocation, useNavigate, useNavigationType } from 'react-router-dom';
+import { HashRouter, Route, Routes, useLocation, useNavigationType } from 'react-router-dom';
 import { ThemeProvider } from './theme/ThemeProvider';
 import { AchievementProvider, useAchievements } from './components/Achievements';
 import { FunProvider } from './fun/FunProvider';
@@ -13,6 +13,8 @@ import Footer from './components/Footer';
 import ScrollSaber from './components/ScrollSaber';
 import Guide from './components/Guide';
 import TourHost from './components/tour/TourHost';
+// the front door's welcome, quick tour, crawl and cockpit, the universe made behind them
+import Launch from './components/launch/Launch';
 // fetches the 3D jump ahead of time (the intro's, and three.js once a page has it)
 import './components/hyperspace3d/load';
 import { audioContext } from './lib/audio';
@@ -20,8 +22,6 @@ import { local, prefersReducedMotion } from './lib/hooks';
 import { VISITED_KEY, addVisited } from './lib/visited';
 import { isPaletteKey } from './lib/palette';
 import { guideKeyFor } from './components/guide/routes';
-import { introPlaying } from './lib/stale';
-import { isMapPath, saveStart } from './lib/view';
 import { jumpFrom, jumpStyle } from './components/jumps/styles';
 import WorldGate from './components/worlds/WorldGate';
 import Ambience from './components/ambience/Ambience';
@@ -190,129 +190,6 @@ function Lightspeed() {
       />
     </Suspense>
   );
-}
-
-// A first visit to the site opens on a welcome (what the site is, what the
-// intro does, and whose worlds these are), the visit's one question: start
-// the intro, skip to the universe or go to the classic site. The answer is
-// the front door's choice too, kept (lib/view's saveStart), so the universe
-// doesn't ask it again over the map. Start plays the crawl, then puts you in
-// a cockpit
-// (the Falcon first; the X-wing, Rick's cruiser and the RV a click away),
-// and the launch comes out at the front door's choice over the universe
-// map, where everything is laid out as places to fly to. The inline script
-// in index.html decides (and covers the page until it starts). The map and
-// the cockpit load during the crawl; the map stays still under the crawl
-// and the cockpit (html[data-covered], see lib/three/useScene) and comes on
-// at the launch's flash. ⌘K's "Back to the cockpit" plays it again.
-const OpeningCrawl = lazy(() => import('./components/experience/OpeningCrawl'));
-const Cockpit = lazy(() => import('./components/cockpit/Cockpit'));
-const Welcome = lazy(() => import('./components/cockpit/Welcome'));
-const cover = (on) => {
-  const el = document.documentElement;
-  if (on) el.dataset.covered = '';
-  else if ('covered' in el.dataset) {
-    delete el.dataset.covered;
-    window.dispatchEvent(new Event('tp:uncover'));
-  }
-};
-function IntroJump() {
-  const navigate = useNavigate();
-  const { pathname } = useLocation();
-  const [stage, setStage] = useState(() => (document.documentElement.dataset.intro === '1' ? 'welcome' : null));
-  const [ride, setRide] = useState(null); // a replay: { vehicle }, or null for the first visit
-  useEffect(() => {
-    if (!stage) return;
-    try {
-      window.localStorage.setItem('tp-intro', '1');
-    } catch {
-      /* storage unavailable */
-    }
-    if (stage === 'welcome' || stage === 'crawl') {
-      ahead(import('./components/experience/OpeningCrawl'));
-      ahead(import('./pages/Front'));
-      ahead(import('./components/universe/scene'));
-      // (the crew, the biggest part, once the crawl's begun: the welcome may yet be skipped)
-      ahead(import('./components/cockpit/load').then((m) => m.preloadCockpit('falcon', { crew: stage === 'crawl' })));
-    }
-  }, [stage]);
-  useEffect(() => {
-    cover(stage === 'welcome' || stage === 'crawl' || stage === 'cockpit');
-    return () => cover(false);
-  }, [stage]);
-  // (a reload for the new build in the middle of a first visit's intro plays it again: lib/stale)
-  useEffect(() => introPlaying(Boolean(stage) && !ride), [stage, ride]);
-  // ⌘K: back to the cockpit, from anywhere
-  useEffect(() => {
-    const again = (e) => {
-      if (stage) return;
-      ahead(import('./components/cockpit/load').then((m) => m.preloadCockpit(e.detail?.vehicle)));
-      setRide({ vehicle: e.detail?.vehicle ?? null });
-      setStage('cockpit');
-    };
-    window.addEventListener('tp:cockpit', again);
-    return () => window.removeEventListener('tp:cockpit', again);
-  }, [stage]);
-  const closeCrawl = useCallback(() => {
-    // keep the page covered until the cockpit's first frame
-    document.documentElement.dataset.intro = '1';
-    setStage('cockpit');
-  }, []);
-  if (!stage) return null;
-  if (stage === 'welcome')
-    return (
-      <Suspense fallback={null}>
-        <Welcome
-          onStart={() => {
-            saveStart('universe');
-            setStage('crawl');
-          }}
-          onSkip={(where) => {
-            saveStart(where);
-            setStage(null);
-            // (the front door may have sent a kept pick on to /home under the welcome)
-            if (where === 'home') navigate('/home', { replace: true });
-            else if (!isMapPath(pathname)) navigate('/', { replace: true });
-            // (the page under it has the focus next, as the launch would give it)
-            requestAnimationFrame(() => document.getElementById('main')?.focus({ preventScroll: true }));
-          }}
-        />
-      </Suspense>
-    );
-  if (stage === 'crawl')
-    return (
-      <Suspense fallback={null}>
-        <OpeningCrawl variant="intro" onClose={closeCrawl} />
-      </Suspense>
-    );
-  return (
-    <Suspense fallback={null}>
-      <Cockpit
-        start={ride?.vehicle ?? undefined}
-        onPeak={() => {
-          // out into the universe (the front door is it, unless a visitor
-          // asked for the home page), flying the ship you launched in
-          if (!/^\/(universe(\/|$)|$)/.test(pathname)) navigate('/universe');
-          cover(false);
-        }}
-        onDone={() => {
-          setStage(null);
-          setRide(null);
-        }}
-      />
-    </Suspense>
-  );
-}
-
-// The intro has a boundary of its own: a file of it gone after a deploy (the
-// cockpit's, asked for as the crawl ends) reloads for the new build
-// (ErrorBoundary), and anything else in it puts you in the site, uncovered,
-// instead of blanking the page.
-function IntroGone() {
-  useEffect(() => {
-    delete document.documentElement.dataset.intro;
-  }, []);
-  return null;
 }
 
 // ⌘K / Ctrl+K anywhere, or the search button in the nav. Its file is
@@ -504,9 +381,7 @@ function Shell() {
       <Lightspeed />
       <PaletteHost />
       <SettingsHost />
-      <ErrorBoundary fallback={<IntroGone />}>
-        <IntroJump />
-      </ErrorBoundary>
+      <Launch />
     </OnlineProvider>
     </SkillsProvider>
     </EconomyProvider>

@@ -38,9 +38,13 @@
         if (calm) document.documentElement.dataset.motion = 'reduced';
         var p = sessionStorage.getItem('tp-theme-pin');
         if (p && p !== 'custom' && /^[a-z0-9]+$/.test(p)) document.documentElement.dataset.theme = p;
-        // First visit to the home page: cover it until the hyperspace intro starts.
+        // The front door: every visit opens on the welcome (components/launch),
+        // '1' a first visit, 'back' a return, the page covered until it shows.
+        // (A return driven by a script, which says so by setting tp-intro,
+        // goes straight in, as the shot and check scripts always have.)
         var h = location.hash;
-        if (!localStorage.getItem('tp-intro') && (h === '' || h === '#' || h === '#/') && !calm && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) document.documentElement.dataset.intro = '1';
+        var seen = localStorage.getItem('tp-intro');
+        if ((h === '' || h === '#' || h === '#/') && !(seen && navigator.webdriver)) document.documentElement.dataset.intro = seen ? 'back' : '1';
       } catch (e) {}
     </script>
     <style>

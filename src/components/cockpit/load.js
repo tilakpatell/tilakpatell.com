@@ -1,6 +1,6 @@
 // Fetches the cockpit ahead of time (three.js, the scene, the first
 // vehicle's code and its crew), so the cockpit is ready when the opening
-// crawl ends (App starts the code at the welcome, and the crew as the
+// crawl ends (the launch, components/launch, starts the code at the welcome, and the crew as the
 // crawl begins). No three.js import
 // here, so this costs nothing until it's asked for.
 
