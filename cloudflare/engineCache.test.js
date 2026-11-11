@@ -144,9 +144,9 @@ describe('the engine’s build kept on the visitor’s disk', () => {
   it('reads the build’s numbered series, each file followed by the next few of its own', () => {
     const next = following(['scene.json', 'scene-t-0.dbx', 'scene-t-0.pixels', 'scene-t-1.dbx', 'scene-t-1.stored.pixels', 'scene-t-2.dbx', 'scene-t-2.pixels', 'scene-t-10.pixels', 'scene-terrain-tile-3_4.bfsw'], 2);
     expect(next.get('scene-t-0.dbx')).toEqual(['scene-t-1.dbx', 'scene-t-2.dbx']);
-    // (a stored texture is a series of its own; a number's order, not its text's)
-    expect(next.get('scene-t-0.pixels')).toEqual(['scene-t-2.pixels', 'scene-t-10.pixels']);
-    expect(next.get('scene-t-1.stored.pixels')).toEqual([]);
+    // Texture bytes are selected by the engine's mip plan, never read ahead as whole files.
+    expect(next.has('scene-t-0.pixels')).toBe(false);
+    expect(next.has('scene-t-1.stored.pixels')).toBe(false);
     expect(next.has('scene.json')).toBe(false);
     expect(next.has('scene-terrain-tile-3_4.bfsw')).toBe(false);
   });
@@ -263,7 +263,20 @@ describe('the engine’s build kept on the visitor’s disk', () => {
 
   it('orders a round’s files as the loader asks for them, the page’s own left out', () => {
     const paths = ['runtime/world-play.mjs', 'ui/main.js', 'index.html', 'scene-m-1.res', 'scene-collision.bfsw', 'scene-t-1.pixels', 'scene-t-10.dbx', 'scene-t-1.dbx', 'scene.json', 'system-0.xml', 'scene-tc-0.bin', 'scene-terrain-tiles.json', 'scene-terrain-tile-3_4.bfsw', 'scene-m-0.res', 'world-solutions.bin', 'programs.json'];
-    expect(warmOrder(paths)).toEqual(['system-0.xml', 'scene.json', 'world-solutions.bin', 'scene-t-1.dbx', 'scene-t-1.pixels', 'scene-t-10.dbx', 'scene-m-0.res', 'scene-m-1.res', 'scene-tc-0.bin', 'scene-collision.bfsw', 'scene-terrain-tile-3_4.bfsw', 'scene-terrain-tiles.json']);
+    expect(warmOrder(paths)).toEqual(['system-0.xml', 'scene.json', 'world-solutions.bin', 'scene-t-1.dbx', 'scene-t-10.dbx', 'scene-m-0.res', 'scene-m-1.res', 'scene-tc-0.bin', 'scene-collision.bfsw', 'scene-terrain-tile-3_4.bfsw', 'scene-terrain-tiles.json']);
+  });
+
+  it('leaves normal, stored and variant texture payloads to the engine mip requests', async () => {
+    const files = ['scene-t-0.pixels', 'scene-t-1.pixels', 'scene-t-1.stored.pixels', 'scene-cloudy/scene-t-2.pixels', 'scene-t-0.dbx', 'scene-t-1.dbx'];
+    expect(warmOrder(files)).toEqual(['scene-t-0.dbx', 'scene-t-1.dbx']);
+    expect([...following(files).keys()]).toEqual(['scene-t-0.dbx', 'scene-t-1.dbx']);
+    const dir = '/battlefront/engine/main-da7a51b3/';
+    const w = worker(undefined, files);
+    // An older tab can still send whole-payload warm requests: acknowledge without a download.
+    for (const path of files.slice(0, 4)) expect((await w.get(dir + path, { headers: { 'x-tp-warm': '1' } })).status).toBe(204);
+    expect(w.asked).toEqual([]);
+    expect((await w.get(dir + files[0])).body).toBe(`bytes of ${ORIGIN}${dir}${files[0]}`);
+    expect(w.asked).toEqual([ORIGIN + dir + files[0]]);
   });
 
   it('warms the round’s files once the front end shows and the worker answers, four at a time', async () => {
