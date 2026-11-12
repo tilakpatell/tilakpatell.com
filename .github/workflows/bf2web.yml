@@ -135,7 +135,13 @@ jobs:
       - name: Open it the way a visitor's browser does
         if: ${{ steps.adopt.outputs.adopted != '' }}
         run: |
-          npx playwright-core install --with-deps chromium
+          # (the runner's apt mirror can fail to resolve: r1069's publish stopped here three times on 11 Nov 2026,
+          # run 43024632490; the browser itself still downloads, and ubuntu-24.04's image carries the system
+          # libraries for its own Chrome, so a failed package install falls back to the browser alone)
+          if ! timeout 240 npx playwright-core install --with-deps chromium; then
+            echo "::warning::apt could not install the browser's system packages; using the runner image's own"
+            npx playwright-core install chromium
+          fi
           node scripts/bf2web-smoke.mjs
       - name: The play site's tests
         if: ${{ steps.adopt.outputs.adopted != '' }}
