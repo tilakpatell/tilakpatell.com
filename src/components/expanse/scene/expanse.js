@@ -45,6 +45,15 @@ const NEAR_SLOTS = 54; // (the far layer's first 54 slots: the 27 shown and the 
 const BEYOND_SLOTS = 5; // (and two sets of 5 for the beyond, the one shown and the one staged)
 const FADE_IN = 0.5;
 const HALF = SECTOR / 2;
+const MOST_REACH = 4000; // (no generated system reaches further from its star: systems.js's ORBIT_MAX and a ring or moon past it)
+const FAR = 45000; // (the far plane: levels.js's)
+// how far the camera is from a sector's cube (nought inside it)
+const boxDist = (o, c) => {
+  const dx = Math.max(0, Math.abs(c[0] - o[0]) - HALF);
+  const dy = Math.max(0, Math.abs(c[1] - o[1]) - HALF);
+  const dz = Math.max(0, Math.abs(c[2] - o[2]) - HALF);
+  return Math.sqrt(dx * dx + dy * dy + dz * dz);
+};
 
 const keyOf = (x, y, z) => `${x},${y},${z}`;
 const parse = (key) => key.split(',').map(Number);
@@ -221,8 +230,10 @@ export function createExpanse(parent, { universe = UNIVERSE, tier = 'mid', worke
               continue;
             }
             giveSlot(rec);
-            nearSectors.push(rec.sector);
-            for (const s of rec.sector.systems) nearSystems.push(s);
+            // (only a sector the far plane reaches has a disc in it, and only one a system's reach does, a body built)
+            const d = boxDist(rec.sector.origin, cam);
+            if (d <= FAR + MOST_REACH) nearSectors.push(rec.sector);
+            if (d <= MOST_REACH) for (const s of rec.sector.systems) nearSystems.push(s);
           }
       // a jump: what's drawn is far behind, and goes at once
       if (shownCentre && cheb(centre, shownCentre) > 1) {
