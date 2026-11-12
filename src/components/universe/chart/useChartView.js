@@ -61,11 +61,13 @@ export function useChartView(boxRef, { open, ship = null, frame, orbit = true, h
   useEffect(() => stopGlide, []);
 
   // the ship, wherever it's gone since the last look (and a glide's end with it)
+  const shipKey = ship ? `${ship.x},${ship.y},${ship.z}` : '';
   useEffect(() => {
-    if (!ship) return;
-    if (glide.current) glide.current.to = track(glide.current.to, ship);
-    setViewState((v) => track(v, ship));
-  }, [ship?.x, ship?.y, ship?.z]); // eslint-disable-line react-hooks/exhaustive-deps
+    const s = shipRef.current;
+    if (!s) return;
+    if (glide.current) glide.current.to = track(glide.current.to, s);
+    setViewState((v) => track(v, s));
+  }, [shipKey]);
 
   const zoomIn = useCallback(() => glideTo(zoomBy(glide.current?.to ?? viewRef.current, ZOOM_STEP)), [glideTo]);
   const zoomOut = useCallback(() => glideTo(zoomBy(glide.current?.to ?? viewRef.current, 1 / ZOOM_STEP)), [glideTo]);

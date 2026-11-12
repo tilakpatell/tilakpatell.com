@@ -13,7 +13,7 @@
 // Pure: sector maths through lib/space/address.js.
 //
 // labelSize(name, fontPx) → [w, h]
-// placeMarks(view, marks, frame, { level, keep, fontPx, scale, sides, avoid, levels, measure, height, obstacles }) → [{ id, mark, x, y, footX, footY, size, side, dx, dy, edge, depth }]
+// placeMarks(view, marks, frame, { level, keep, fontPx, scale, sides, avoid, levels, measure, height, obstacles, dot, gap }) → [{ id, mark, x, y, footX, footY, size, side, dx, dy, edge, depth }]
 // placeShip(view, ship, frame) → { x, y, angle, edge }
 // sectorGrid(view, n) → [{ key, at: [sx, sy, sz], ring, points: [[u, v], …], corner: [u, v] }]
 // ringOn(view, centre, radius, n) → [[u, v], …]
@@ -34,7 +34,7 @@ const byPriority = (keep) => (a, b) => {
 };
 
 export function placeMarks(view, marks, frame, opts = {}) {
-  const { level = levelOf(view.range), fontPx = 11, scale = 1, sides, avoid = [], levels = true, measure = null, height = null, obstacles = [] } = opts;
+  const { level = levelOf(view.range), fontPx = 11, scale = 1, sides, avoid = [], levels = true, measure = null, height = null, obstacles = [], dot, gap } = opts;
   const keep = new Set((opts.keep ?? []).filter(Boolean));
   const out = [];
   for (const mark of marks) {
@@ -61,6 +61,8 @@ export function placeMarks(view, marks, frame, opts = {}) {
       measure: measure ?? ((t) => labelSize(t, fontPx)[0]),
       height: h,
       obstacles: [...ships, ...obstacles],
+      ...(dot === undefined ? {} : { dot }),
+      ...(gap === undefined ? {} : { gap }),
       ...(frame.shape === 'box' ? { box: { x0: 0, y0: 0, x1: frame.w * scale, y1: frame.h * scale } } : {}),
       ...(sides ? { sides } : {}),
     },

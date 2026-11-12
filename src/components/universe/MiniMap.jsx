@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { byId } from './universes';
 import { FRAMES } from './chart/projection';
@@ -25,7 +25,12 @@ const pts = (list) => list.map(([u, v]) => `${(F.cx + u * F.r).toFixed(1)},${(F.
 const dot = (mark) => (mark.kind === 'wonder' ? 5 : 5 + Math.min(7, (byId(mark.id)?.size ?? 0) * 0.2));
 const SUN = HAND_MARKS.find((m) => m.id === 'chart:sun');
 const BELT = REGIONS.find((r) => r.id === 'belt');
-const marksFor = (kind) => [...HAND_MARKS.filter((m) => m.pickable && (!kind || byId(m.id)?.kind === kind)), SUN];
+// a name's box under its dot, in the page's pixels (universe.css's .minimap-hit:
+// 0.68rem of mono type, about 0.6 of it a letter, starting 8 px under the dot's middle)
+const NAME = { letter: 6.6, height: 13, dot: 5, gap: 3 };
+const marksFor = (kind) => [...HAND_MARKS.filter((m) => m.pickable && (!kind || byId(m.id)?.kind === kind)), SUN].map((m) => (m.name ? { ...m, name: labelOf(m) } : m));
+// (a world goes by its fandom's name here, as it always has: Marvel, not Avengers HQ)
+const labelOf = (mark) => byId(mark.id)?.label ?? mark.name;
 
 export default function MiniMap({ selected = null, onSelect, linkTo, kind = null, className = '', interactive = false, ship = null }) {
   const shown = useMemo(() => marksFor(kind), [kind]);
@@ -33,8 +38,18 @@ export default function MiniMap({ selected = null, onSelect, linkTo, kind = null
   const list = useRef(null);
   const [open] = useState(() => miniView(shown));
   const chart = useChartView(box, { open, frame: F, orbit: false, hands: interactive });
+  const [px, setPx] = useState(0); // (its width on the page: the names are laid out in pixels)
+  useLayoutEffect(() => {
+    const el = box.current;
+    if (!el) return undefined;
+    const size = () => setPx(el.clientWidth);
+    size();
+    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(size) : null;
+    ro?.observe(el);
+    return () => ro?.disconnect();
+  }, []);
   const view = interactive ? chart.view : open;
-  const placed = placeMarks(view, shown, F, { levels: false, sides: ['down'], keep: [selected], fontPx: 11 });
+  const placed = placeMarks(view, shown, F, { levels: false, sides: ['down'], keep: [selected], scale: px ? px / W : 1, measure: (t) => t.length * NAME.letter, height: NAME.height, dot: NAME.dot, gap: NAME.gap });
   const items = placed.filter((p) => p.mark.pickable);
   const ids = items.map((p) => p.id);
   const focusable = selected && ids.includes(selected) ? selected : ids[0];
@@ -80,7 +95,7 @@ export default function MiniMap({ selected = null, onSelect, linkTo, kind = null
         <ul ref={list} className="minimap-labels" aria-label="Universes" onKeyDown={interactive ? undefined : onKeyDown}>
           {items.map((p) => {
             const style = { left: `${(p.x / W) * 100}%`, top: `${(p.y / H) * 100}%`, '--swatch': p.mark.color };
-            const label = byId(p.id)?.label ?? p.mark.name;
+            const label = labelOf(p.mark);
             const inner = (
               <span className="minimap-name" data-off={(p.side === null && selected !== p.id) || undefined}>
                 {label}

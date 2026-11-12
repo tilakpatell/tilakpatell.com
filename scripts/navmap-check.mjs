@@ -2,6 +2,9 @@
 // A browser check of the universe nav map (NavMap.jsx). With the dev server
 // up (npx vite --port 5173) and Chrome at $CHROME (or /opt/google/chrome):
 //   OUT=/tmp/shots node scripts/navmap-check.mjs [desktop|phone|minimap|far]
+// The chart (universe/chart/): it opens on the ship, the wheel and − zoom
+// it, typing in the search doesn't, a drag from a place's name moves it and
+// picks nothing, a Shift-drag tilts it; far out the ship is still on it.
 // (BASE says which server, http://localhost:5173 by default; CHROME or
 // CHROMIUM which browser)
 // It opens the map, checks the labels and the go button, jumps to a wonder
@@ -12,6 +15,7 @@
 // clear of each other. Screenshots go to $OUT. Headless Chrome draws in
 // software, slowly: clicks go through the DOM, and the waits are long.
 import { chromium } from 'playwright-core';
+import { shipFromMiddle, shipOnChart, sectorWords } from './lib/navmap.mjs';
 
 const out = process.env.OUT ?? '.';
 const only = process.argv[2];
@@ -96,6 +100,82 @@ if (run('desktop')) {
     return Boolean(keys && keys.height && rows.some((r) => r.bottom > keys.top + 1 && r.top < keys.bottom - 1));
   });
   check(!squashed, 'the place list doesn’t run under the key hints');
+
+  // the chart: on the ship, at the neighbourhood's zoom (a system's in the Curve), its sector and height under it
+  const level = () => page.$eval('.navmap-chart', (e) => e.dataset.level);
+  const pitched = () => page.$eval('.navmap-chart', (e) => e.hasAttribute('data-pitched'));
+  const near = async (dx, dy, px) => {
+    const m = await shipFromMiddle(page);
+    return Boolean(m) && Math.hypot(m[0] - dx, m[1] - dy) <= px;
+  };
+  const until = async (ok, tries = 40) => {
+    for (let i = 0; i < tries; i++) {
+      if (await ok()) return true;
+      await page.waitForTimeout(250);
+    }
+    return false;
+  };
+  const opened = (await state(page)).ship;
+  const inCurve = Math.hypot(opened.x, opened.z + 66000) <= 6000;
+  check(await until(() => near(0, 0, 3)), 'the chart opens on the ship, in its middle');
+  check((await level()) === (inCurve ? 'system' : 'neighbourhood'), `it opens at the ${inCurve ? 'system' : 'neighbourhood'}’s zoom (${await level()})`);
+  const readoutNow = await page.textContent('.navmap-readout');
+  check(readoutNow.startsWith(sectorWords(opened)), `the readout says the ship’s sector and height (${readoutNow})`);
+  const c = await page.$eval('.navmap-chart', (e) => {
+    const r = e.getBoundingClientRect();
+    return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+  });
+  await page.mouse.move(c.x, c.y);
+  let turns = 0;
+  while ((await level()) !== 'system' && turns++ < 12) {
+    await page.mouse.wheel(0, -400);
+    await page.waitForTimeout(200);
+  }
+  check((await level()) === 'system', `the wheel zooms in to a system (${turns} turns)`);
+  for (let i = 0; i < 12 && (await level()) === 'system'; i++) {
+    await page.keyboard.press('-');
+    await page.waitForTimeout(450);
+  }
+  check((await level()) === 'neighbourhood', '− zooms back out');
+  const was = await level();
+  await page.focus('.navmap-search input');
+  await page.keyboard.type('-');
+  await page.waitForTimeout(500);
+  check((await level()) === was && (await page.inputValue('.navmap-search input')) === '-', 'a minus typed in the search goes in the search, not the zoom');
+  await page.fill('.navmap-search input', '');
+  await page.waitForTimeout(400);
+  // a drag begun on a place's name moves the chart with the hand, and picks nothing
+  const from = await page.evaluate(() => {
+    const c = document.querySelector('.navmap-chart').getBoundingClientRect();
+    const b = [...document.querySelectorAll('.navmap-place[aria-label]')].map((e) => [e, e.getBoundingClientRect()]).find(([, r]) => r.width && Math.hypot(r.left - c.left - c.width / 2, r.top - c.top - c.height / 2) < c.width * 0.3);
+    return b && { x: b[1].left + b[1].width / 2, y: b[1].top + b[1].height / 2, label: b[0].getAttribute('aria-label'), pressed: b[0].getAttribute('aria-pressed') };
+  });
+  const autoBefore = (await state(page)).auto;
+  await page.mouse.move(from.x, from.y);
+  await page.mouse.down();
+  for (let i = 1; i <= 8; i++) await page.mouse.move(from.x + i * 15, from.y);
+  await page.mouse.up();
+  await page.waitForTimeout(600);
+  check(await near(120, 0, 6), `a drag of 120 px moves the ship’s marker 120 px with it (${JSON.stringify(await shipFromMiddle(page))})`);
+  const pressedAfter = await page.evaluate((l) => document.querySelector(`.navmap-place[aria-label="${l}"]`)?.getAttribute('aria-pressed'), from.label);
+  check(pressedAfter === from.pressed && (await state(page)).auto === autoBefore, `the drag from ${from.label.split(',')[0]} picked nothing and sent the ship nowhere`);
+  const toShip = '.navmap-tools button[aria-label="Back to the ship"]';
+  check((await page.getAttribute(toShip, 'aria-disabled')) === null, '“Back to the ship” wakes up');
+  await page.click(toShip);
+  check(await until(() => near(0, 0, 3)), 'and takes the chart back to the ship');
+  // a Shift-drag tilts it, and Look straight down puts it back
+  await page.keyboard.down('Shift');
+  await page.mouse.move(c.x, c.y + 100);
+  await page.mouse.down();
+  for (let i = 1; i <= 8; i++) await page.mouse.move(c.x, c.y + 100 - i * 15);
+  await page.mouse.up();
+  await page.keyboard.up('Shift');
+  await page.waitForTimeout(600);
+  const flatBtn = '.navmap-tools button[aria-label="Look straight down"]';
+  check((await pitched()) && (await page.getAttribute(flatBtn, 'aria-disabled')) === null, 'a Shift-drag tilts the chart');
+  await shot(page, '15-tilted');
+  await page.click(flatBtn);
+  check(await until(async () => !(await pitched())), 'Look straight down flattens it again');
 
   // a world: the go button says how
   await pickByName(page, 'Avengers HQ');
@@ -239,6 +319,64 @@ if (run('phone')) {
   check(!phoneClash, `on a phone too, no two names meet${phoneClash ? ` (${phoneClash})` : ''}`);
   check(await inView(), 'with the chart up, the go button’s still on the screen');
   await shot(page, '11-phone-chart');
+  // the chart's tools to a finger (Chromium won't emulate a coarse pointer: its rules, with the query off)
+  await page.evaluate(() => {
+    const css = [];
+    for (const sheet of document.styleSheets) {
+      let rules = [];
+      try {
+        rules = [...sheet.cssRules];
+      } catch {
+        continue;
+      }
+      for (const r of rules) if (r.cssText.includes('pointer: coarse') && r.cssText.includes('navmap-tool')) css.push(r.cssText.replaceAll('(pointer: coarse)', '(min-width: 0px)'));
+    }
+    const el = document.createElement('style');
+    el.textContent = css.join('\n');
+    document.head.append(el);
+  });
+  await page.waitForTimeout(300);
+  const fit = await page.evaluate(() => {
+    const f = document.querySelector('.navmap-frame').getBoundingClientRect();
+    const r = document.querySelector('.navmap-readout').getBoundingClientRect();
+    const tools = [...document.querySelectorAll('.navmap-tools button')].map((b) => b.getBoundingClientRect());
+    const meet = (a, b) => a.left < b.right - 0.5 && b.left < a.right - 0.5 && a.top < b.bottom - 0.5 && b.top < a.bottom - 0.5;
+    return {
+      big: tools.every((t) => t.width >= 44 && t.height >= 44),
+      inside: tools.every((t) => t.left >= f.left && t.right <= f.right && t.bottom <= f.bottom),
+      apart: tools.every((t, i) => tools.every((u, j) => i === j || !meet(t, u))) && tools.every((t) => !meet(t, r)),
+      readout: r.width > 0 && r.height > 0,
+    };
+  });
+  check(fit.big && fit.inside && fit.apart && fit.readout, `on a phone, the chart’s tools are 44 px, on the frame, clear of each other and of the readout (${JSON.stringify(fit)})`);
+  const scrolls = await page.evaluate(() => {
+    const s = document.querySelector('.navmap-side');
+    if (s.scrollHeight <= s.clientHeight) return true;
+    s.scrollTop = 200;
+    return s.scrollTop > 0;
+  });
+  check(scrolls, 'the side panel scrolls');
+  const before = await page.$eval('.navmap-chart', (e) => e.dataset.level);
+  let taps = 0;
+  while ((await page.$eval('.navmap-chart', (e) => e.dataset.level)) === before && taps++ < 10) {
+    await page.tap('.navmap-tools button[aria-label="Zoom in"]');
+    await page.waitForTimeout(500);
+  }
+  check((await page.$eval('.navmap-chart', (e) => e.dataset.level)) !== before, `tapping Zoom in zooms the chart in to a system (${taps} taps)`);
+  await shot(page, '17-phone-zoomed');
+  // turned on its side, the frame, the chart, its bar and the side panel's top stay on the screen
+  await page.setViewportSize({ width: 844, height: 390 });
+  await page.waitForTimeout(1200);
+  const side = await page.evaluate(() => {
+    const on = (s) => {
+      const b = document.querySelector(s)?.getBoundingClientRect();
+      return Boolean(b) && b.left >= -1 && b.top >= -1 && b.right <= window.innerWidth + 1 && b.bottom <= window.innerHeight + 1;
+    };
+    const top = document.querySelector('.navmap-side').getBoundingClientRect();
+    return { frame: on('.navmap-frame'), chart: on('.navmap-chart'), bar: on('.navmap-bar'), side: top.top >= 0 && top.top < window.innerHeight };
+  });
+  check(Object.values(side).every(Boolean), `turned on its side, all of the chart is on the screen (${JSON.stringify(side)})`);
+  await shot(page, '18-phone-sideways');
   await page.context().close();
 }
 
@@ -254,6 +392,19 @@ if (run('minimap')) {
   await page.goto(`${BASE}/#/universe`, { waitUntil: 'domcontentloaded' });
   const flat = await page.waitForSelector('.universe-flat .minimap', { timeout: 120000 });
   await flat.screenshot({ path: `${out}/12-minimap-flat.png` });
+  const has = await page.evaluate(() => ['aurelia', 'veil', 'squanch'].map((id) => Boolean(document.querySelector(`.universe-flat li[data-id="${id}"]`))));
+  if (has.length) {
+    check(has.every(Boolean), `the flat map has the wonders and the Curve’s worlds (${has})`);
+    check(!(await page.$('.minimap-orbit')), 'and no orbit rings that match nothing');
+    const lv = () => page.$eval('.universe-flat .minimap', (e) => e.dataset.level);
+    const was = await lv();
+    await page.focus('.universe-flat .minimap-hit[tabindex="0"]');
+    for (let i = 0; i < 6 && (await lv()) === was; i++) {
+      await page.keyboard.press('+');
+      await page.waitForTimeout(400);
+    }
+    check((await lv()) !== was, `+ zooms the flat map (${was} → ${await lv()})`);
+  }
   await page.goto(`${BASE}/#/home`, { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('main', { timeout: 60000 });
   let teaser = null;
@@ -265,6 +416,8 @@ if (run('minimap')) {
   if (teaser) {
     await teaser.scrollIntoViewIfNeeded();
     await teaser.screenshot({ path: `${out}/13-minimap-teaser.png` });
+    const others = await page.evaluate(() => [...document.querySelectorAll('.minimap-teaser li[data-id]')].map((li) => li.dataset.id).filter((id) => ['aurelia', 'veil', 'home', 'squanch'].includes(id)));
+    check(!others.length, `the teaser keeps to the worlds (${others})`);
   }
   await ctx.close();
 }
@@ -281,7 +434,25 @@ if (run('far')) {
   await navOpen(page);
   await page.waitForTimeout(800);
   await shot(page, '14-far-ship');
-  check(Boolean(await page.$('.navmap-ship')), 'the ship is on the chart, far out');
+  const far = await shipOnChart(page);
+  const at = (await state(page)).ship;
+  check(far.drawn && far.inside, `the ship is on the chart, far out (${JSON.stringify(far)})`);
+  check(far.readout?.startsWith(sectorWords(at)) && Math.round(at.x / 120000) >= 2, `its sector, two and more out (${far.readout})`);
+  // dragged off it, it stays on the chart, pinned to the rim
+  const c = await page.$eval('.navmap-chart', (e) => {
+    const r = e.getBoundingClientRect();
+    return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+  });
+  for (let i = 0; i < 3 && !(await page.$('.navmap-ship[data-edge]')); i++) {
+    await page.mouse.move(c.x + 200, c.y);
+    await page.mouse.down();
+    for (let k = 1; k <= 8; k++) await page.mouse.move(c.x + 200 - k * 50, c.y);
+    await page.mouse.up();
+    await page.waitForTimeout(600);
+  }
+  const pinned = await shipOnChart(page);
+  check(pinned.edge && pinned.inside, `dragged away, the ship is pinned to the chart’s rim (${JSON.stringify(pinned)})`);
+  await shot(page, '16-far-ship-pinned');
   await page.context().close();
 }
 

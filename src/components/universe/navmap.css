@@ -138,8 +138,9 @@
 }
 .navmap-chart:active { cursor: grabbing; }
 /* under the circle: where the ship is, on glass, and the chart's tools */
-.navmap-bar { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; min-width: 0; }
+.navmap-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.5rem; min-width: 0; } /* (the readout takes a row of its own when the tools leave it under 12rem) */
 .navmap-readout {
+  flex: 1 1 12rem;
   min-width: 0;
   margin: 0;
   padding: 0.3rem 0.6rem;
@@ -150,8 +151,7 @@
   color: #cfe9ff;
   font-family: var(--font-mono);
   font-size: var(--fs-xs);
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  line-height: 1.35;
 }
 .navmap-tools { display: flex; flex: none; gap: 0.3rem; }
 .navmap-tools .navmap-tool { width: 36px; height: 36px; padding: 0; justify-content: center; font-size: 1rem; }
@@ -416,7 +416,6 @@
   .navmap[data-mode='list'] .navmap-body { grid-template-rows: minmax(0, 1fr); }
   .navmap[data-mode='list'] .navmap-stage { display: none; }
   .navmap-stage { width: min(100%, 50svh - 3.25rem); }
-  .navmap-readout { white-space: normal; line-height: 1.35; } /* (two lines rather than cut short) */
   .navmap-side { padding: 0.75rem; gap: 0.6rem; }
   /* the ship in two lines: where, then how it's going and the jump */
   .navmap-status[data-flying] { display: flex; flex-wrap: wrap; column-gap: 0.75rem; padding-bottom: 0.6rem; }
@@ -458,3 +457,13 @@
 .navmap-fight-ring { stroke-width: 1.5; stroke-dasharray: 3 3; opacity: 0.7; }
 .navmap-places > li[data-kind='fight'] { pointer-events: none; }
 .navmap-places > li[data-kind='fight'] .navmap-place { color: #ff8a5c; }
+
+/* a phone on its side: no height for a bar under the circle, so it stands beside it (12rem: the readout's
+   least width, and the four tools in two rows if they must) */
+@media (max-height: 520px) {
+  .navmap-stage { flex-direction: row; align-items: flex-end; width: 100%; }
+  .navmap-chart { flex: none; width: min(100cqh, 100% - 12rem); }
+  .navmap-bar { flex: 1 1 auto; flex-direction: column; align-items: flex-start; }
+  .navmap-readout { flex: none; max-width: 100%; }
+  .navmap-tools { flex-wrap: wrap; }
+}

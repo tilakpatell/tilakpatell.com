@@ -119,7 +119,7 @@ export default function NavChart({ view, marks, ship = null, course = null, fron
   const shipAt = ship ? placeShip(view, ship, FRAMES.nav) : null;
   const grid = level === 'system' ? [] : sectorGrid(view, level === 'universe' ? 2 : 1);
   // the sectors' names, in their corners, at the neighbourhood's zoom (further out they'd pile up in the middle)
-  const sectorNames = level === 'neighbourhood' ? grid.filter((g) => g.ring <= 1 && Math.hypot(...g.corner) < 0.92).map((g) => ({ ...g, x: V / 2 + g.corner[0] * FRAMES.nav.r + 6, y: V / 2 + g.corner[1] * FRAMES.nav.r + 16, text: CHART_WORDS.sector(g.at) })) : [];
+  const sectorNames = level === 'neighbourhood' ? grid.filter((g) => g.ring <= 1 && Math.hypot(...g.corner) < 0.8).map((g) => ({ ...g, x: V / 2 + g.corner[0] * FRAMES.nav.r + 6, y: V / 2 + g.corner[1] * FRAMES.nav.r + 16, text: CHART_WORDS.sector(g.at) })) : [];
   const placed = placeMarks(view, marks, FRAMES.nav, {
     level,
     keep: [pick, hover, 'chart:home'], // (home is always on the chart: at the rim, the way back, when it's far)
