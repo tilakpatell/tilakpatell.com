@@ -1,6 +1,10 @@
 // Fixtures for the generated planets' tests: directions spread evenly over
-// the sphere, drawn from a seed.
+// the sphere, drawn from a seed; a round spec made by hand.
 import { seeded } from '../../../seeded.js';
+import { TERRAIN } from '../characters.js';
+import { CLIMATE_SPHERE } from '../sphereField.js';
+import { roundBiomes } from '../planetTables.js';
+import { dirOfLatLon } from '../sphere.js';
 
 // uniform on the sphere: z = 2r − 1 and an angle round it (in y-up terms, y)
 export function randomDirs(n, seed) {
@@ -11,4 +15,20 @@ export function randomDirs(n, seed) {
     const s = Math.sqrt(1 - y * y);
     return [Math.cos(a) * s, y, Math.sin(a) * s];
   });
+}
+
+// a round spec by hand, as generated.js would make one: one POI, its chart at (0, 0)
+export function roundSpec({ type = 'rock', kind = 'craters', seed = 7, radius = 20000, sea, peaks } = {}) {
+  const t = TERRAIN[kind];
+  return {
+    id: `test:${type}:${kind}`,
+    seed,
+    type,
+    climate: CLIMATE_SPHERE,
+    biomes: roundBiomes(type),
+    character: { kind, sea: sea ?? (t.sea[0] + t.sea[1]) / 2, peaks: peaks ?? (t.peaks[0] + t.peaks[1]) / 2 },
+    round: { radius, at: dirOfLatLon(0, 0) },
+    water: type === 'ocean' || type === 'forest' ? { kind: 'sea', level: 0 } : null,
+    pois: [{ id: 'poi-0', name: 'Ruins', kind: 'ruins', dir: dirOfLatLon(5, 10), at: [0, 0], r: 120, edge: 100 }],
+  };
 }

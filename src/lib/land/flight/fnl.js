@@ -50,15 +50,22 @@ export function noiseFor(seed, { type = 'simplex', frequency = 0.01, octaves = 4
   return (x, z) => n.GetNoise(x + wx.GetNoise(x, z) * warp, z + wz.GetNoise(x, z) * warp);
 }
 
+// OpenSimplex2's 3D noise in 1.1.1 steps where its rotated lattice lines up
+// exactly: along x = −y, z = 0, which a map's seam samples (u 0, v 0.25 is
+// exactly such a point). Every point is moved by a fixed odd offset first,
+// so symmetric inputs never land on it (see the stack page's Gotchas).
+const OFF = [0.3183, 0.1729, 0.5381];
+const off = (n) => (x, y, z) => n.GetNoise(x + OFF[0], y + OFF[1], z + OFF[2]);
+
 export function noise3For(seed, { type = 'simplex', frequency = 0.01, octaves = 4, lacunarity = 2, gain = 0.5, fractal = 'fbm', warp = 0 } = {}) {
   const s = fold(seed);
-  const n = make(s, type, frequency, fractal, octaves, lacunarity, gain);
-  if (!warp) return (x, y, z) => n.GetNoise(x, y, z);
+  const n = off(make(s, type, frequency, fractal, octaves, lacunarity, gain));
+  if (!warp) return n;
   // the 2D warp's rule, a noise more: three at half the frequency push (x, y, z) by up to `warp`
-  const wx = make(s ^ 0x5bd1e995, 'simplex', frequency * 0.5, 'fbm', 3, 2, 0.5);
-  const wy = make(s ^ 0x1b873593, 'simplex', frequency * 0.5, 'fbm', 3, 2, 0.5);
-  const wz = make(s ^ 0x27d4eb2f, 'simplex', frequency * 0.5, 'fbm', 3, 2, 0.5);
-  return (x, y, z) => n.GetNoise(x + wx.GetNoise(x, y, z) * warp, y + wy.GetNoise(x, y, z) * warp, z + wz.GetNoise(x, y, z) * warp);
+  const wx = off(make(s ^ 0x5bd1e995, 'simplex', frequency * 0.5, 'fbm', 3, 2, 0.5));
+  const wy = off(make(s ^ 0x1b873593, 'simplex', frequency * 0.5, 'fbm', 3, 2, 0.5));
+  const wz = off(make(s ^ 0x27d4eb2f, 'simplex', frequency * 0.5, 'fbm', 3, 2, 0.5));
+  return (x, y, z) => n(x + wx(x, y, z) * warp, y + wy(x, y, z) * warp, z + wz(x, y, z) * warp);
 }
 
 export function cells3For(seed, { frequency = 0.01, jitter = 1 } = {}) {
