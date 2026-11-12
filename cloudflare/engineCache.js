@@ -233,11 +233,14 @@ export function registerEngineCache(win) {
   nav.storage?.persist?.().catch(() => {});
 }
 
-// The order bf2-web's loader asks for a round's files in (tests/original-game-frame.mjs: the system textures, the scene,
-// its textures, partitions, mesh sets, terrain, Enlighten, collision, tiles, atlases, IES), each series by its number:
-// the files a round reads, as it reads them, the page's own files (runtime/, ui/) left out.
-export function warmOrder(paths) {
-  const ranks = ['system-', 'scene.json', 'world-solutions', 'scene-t-', 'scene-p-', 'scene-m-', 'scene-tc-', 'scene-r-', 'scene-e-', 'scene-collision', 'scene-terrain-tile', 'scene-atlas-', 'scene-ies-'];
+// The order bf2-web's loader asks for a round's files in (tests/original-game-frame.mjs: the engine's module and its
+// program lists, the scene pack, the system textures, the scene, its textures, partitions, mesh sets, terrain, Enlighten,
+// collision, tiles, atlases, IES), each series by its number: the files a round reads, as it reads them, the page's own
+// files (runtime/, ui/) left out. skip: names the round will not read from the root (warmEngineBuild: the ones inside the
+// scene pack, which the loader reads from scene-pack.bin, and the ones a lighting variant swaps, which the round reads from
+// the variant's directory when that variant is rolled at PLAY).
+export function warmOrder(paths, skip = new Set()) {
+  const ranks = ['original-frame-graph.wasm', 'programs.json', 'compute-programs.json', 'cooked-programs.json', 'pipelines.json', 'compute-pipelines.json', 'scene-pack.json', 'scene-pack.bin', 'system-', 'scene.json', 'world-solutions', 'scene-t-', 'scene-p-', 'scene-m-', 'scene-tc-', 'scene-r-', 'scene-e-', 'scene-collision', 'scene-terrain-tile', 'scene-atlas-', 'scene-ies-'];
   const rankOf = (path) => {
     let best = -1;
     ranks.forEach((r, i) => {
@@ -248,6 +251,7 @@ export function warmOrder(paths) {
   return paths
     .filter((p) => !p.includes('/'))
     .filter((p) => !/^scene-t-\d+(?:\.stored)?\.pixels$/.test(p))
+    .filter((p) => !skip.has(p))
     .map((path) => ({ path, rank: rankOf(path), n: Number(/-(\d+)[.]/.exec(path)?.[1] ?? 0) }))
     .filter((f) => f.rank >= 0)
     .sort((a, b) => a.rank - b.rank || a.n - b.n || (a.path < b.path ? -1 : 1))
@@ -257,6 +261,9 @@ export function warmOrder(paths) {
 // The page's side of the warming: once the front end shows (the body's play-menu) and the worker answers for the page,
 // the round's files are asked for in the loader's order, four at a time, for the worker to put on the disk; the menu's
 // time is the download's, and the round's own load then finds them there. Not on a connection that asks to save data.
+// Only what every roll of the round reads: not the files packed in scene-pack.bin (the loader never asks for them one by
+// one) and not the root's copy of a file a lighting variant swaps (scene-<name>/variant.json lists them; the variant is
+// rolled at PLAY, so before it the root's copy is as likely wasted as read). A list that cannot be read skips nothing.
 export function warmEngineBuild(win, order) {
   const nav = win.navigator;
   if (!nav?.serviceWorker || nav.connection?.saveData || typeof win.fetch !== 'function') return;
@@ -268,7 +275,16 @@ export function warmEngineBuild(win, order) {
     started = true;
     if (!nav.serviceWorker.controller) await new Promise((r) => nav.serviceWorker.addEventListener('controllerchange', r, { once: true }));
     const list = await win.fetch(dir + 'tp-files.json').then((r) => (r.status === 200 ? r.json() : { files: [] }));
-    const files = order(list.files ?? []);
+    const all = list.files ?? [];
+    const json = (path) => win.fetch(dir + path).then((r) => (r.status === 200 ? r.json() : null)).catch(() => null);
+    const skip = new Set();
+    const pack = all.includes('scene-pack.json') ? await json('scene-pack.json') : null;
+    if (pack && typeof pack === 'object' && !Array.isArray(pack)) for (const name of Object.keys(pack)) skip.add(name);
+    for (const path of all.filter((p) => /^scene-[A-Za-z0-9_-]+\/variant\.json$/.test(p))) {
+      const variant = await json(path);
+      if (Array.isArray(variant?.files)) for (const name of variant.files) if (typeof name === 'string') skip.add(name);
+    }
+    const files = order(all, skip);
     let next = 0, stopped = false;
     const lane = async () => {
       while (!stopped && next < files.length) {
