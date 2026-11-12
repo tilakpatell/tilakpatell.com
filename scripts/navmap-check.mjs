@@ -1,7 +1,9 @@
 /* global window, document */
 // A browser check of the universe nav map (NavMap.jsx). With the dev server
 // up (npx vite --port 5173) and Chrome at $CHROME (or /opt/google/chrome):
-//   OUT=/tmp/shots node scripts/navmap-check.mjs [desktop|phone]
+//   OUT=/tmp/shots node scripts/navmap-check.mjs [desktop|phone|minimap|far]
+// (BASE says which server, http://localhost:5173 by default; CHROME or
+// CHROMIUM which browser)
 // It opens the map, checks the labels and the go button, jumps to a wonder
 // (the ship has to be out under the site's jump, which clears the world's
 // card from the panel), tries a second jump while the hyperdrive charges,
@@ -13,8 +15,10 @@ import { chromium } from 'playwright-core';
 
 const out = process.env.OUT ?? '.';
 const only = process.argv[2];
-const URL = 'http://localhost:5173/?quality=low#/universe';
-const browser = await chromium.launch({ executablePath: process.env.CHROME ?? '/opt/google/chrome/chrome', args: ['--use-gl=swiftshader', '--enable-webgl', '--ignore-gpu-blocklist'] });
+const BASE = (process.env.BASE ?? 'http://localhost:5173').replace(/\/$/, '');
+const URL = `${BASE}/?quality=low#/universe`;
+const run = (m) => !only || only === m;
+const browser = await chromium.launch({ executablePath: process.env.CHROME ?? process.env.CHROMIUM ?? '/opt/google/chrome/chrome', args: ['--use-gl=swiftshader', '--enable-webgl', '--ignore-gpu-blocklist', '--enable-unsafe-swiftshader'] });
 const errors = [];
 const problems = [];
 const check = (ok, what) => {
@@ -68,7 +72,7 @@ const namesClash = () => {
 };
 const pickByName = (page, name) => page.evaluate((n) => [...document.querySelectorAll('.navmap-list button')].find((b) => b.textContent.includes(n))?.click(), name);
 
-if (only !== 'phone') {
+if (run('desktop')) {
   const page = await open({ width: 1440, height: 900 }, 'falcon');
   await click(page, '.universe-navmap-btn');
   await navOpen(page);
@@ -191,7 +195,7 @@ if (only !== 'phone') {
   await page.context().close();
 }
 
-if (only !== 'desktop') {
+if (run('phone')) {
   const page = await open({ width: 390, height: 844 }, 'xwing');
   await shot(page, '8-phone-map');
   const btn = await page.evaluate(() => {
@@ -235,6 +239,49 @@ if (only !== 'desktop') {
   check(!phoneClash, `on a phone too, no two names meet${phoneClash ? ` (${phoneClash})` : ''}`);
   check(await inView(), 'with the chart up, the go button’s still on the screen');
   await shot(page, '11-phone-chart');
+  await page.context().close();
+}
+
+// with 3D off: the flat map is the whole map; and Home's teaser
+if (run('minimap')) {
+  const ctx = await browser.newContext({ viewport: { width: 1280, height: 800 } });
+  await ctx.addInitScript(() => {
+    window.localStorage.setItem('tp-intro', '1');
+    window.localStorage.setItem('tp-3d', 'off'); // (raw, not JSON: lib/gpu.js)
+  });
+  const page = await ctx.newPage();
+  page.on('pageerror', (e) => errors.push(String(e)));
+  await page.goto(`${BASE}/#/universe`, { waitUntil: 'domcontentloaded' });
+  const flat = await page.waitForSelector('.universe-flat .minimap', { timeout: 120000 });
+  await flat.screenshot({ path: `${out}/12-minimap-flat.png` });
+  await page.goto(`${BASE}/#/home`, { waitUntil: 'domcontentloaded' });
+  await page.waitForSelector('main', { timeout: 60000 });
+  let teaser = null;
+  for (let i = 0; i < 40 && !teaser; i++) {
+    await page.mouse.wheel(0, 900);
+    teaser = await page.waitForSelector('.minimap-teaser', { timeout: 500 }).catch(() => null);
+  }
+  check(Boolean(teaser), 'Home’s teaser map is there');
+  if (teaser) {
+    await teaser.scrollIntoViewIfNeeded();
+    await teaser.screenshot({ path: `${out}/13-minimap-teaser.png` });
+  }
+  await ctx.close();
+}
+
+// the ship far out in the Expanse, two sectors and more from home
+if (run('far')) {
+  const page = await open({ width: 1440, height: 900 }, 'falcon');
+  await page.evaluate(() => {
+    const s = window.__universeDebug.state;
+    s.ship = { ...s.ship, x: 250000, y: 1000, z: 0, speed: 0 };
+  });
+  await page.waitForFunction(() => window.__universe().ship?.x > 200000, null, { timeout: 60000 });
+  await page.keyboard.press('m');
+  await navOpen(page);
+  await page.waitForTimeout(800);
+  await shot(page, '14-far-ship');
+  check(Boolean(await page.$('.navmap-ship')), 'the ship is on the chart, far out');
   await page.context().close();
 }
 
