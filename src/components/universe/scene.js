@@ -120,6 +120,7 @@ import { MAP_LENS, aberrationFor, createPost, createSpaceEnvironment } from './p
 import { fromVideo } from '../../lib/videoLook';
 import { grainFor } from '../../lib/three/noise';
 import { createRelativeDraw } from './relative';
+import { orbits } from './stationOrbits';
 import { createFlare, flareWeight, occluded } from '../../lib/three/flare';
 import { exposureFor, sunShareOf } from '../../lib/three/exposure';
 import { houseOn } from '../../lib/three/house';
@@ -146,7 +147,8 @@ import { createMeteors } from './meteors';
 import { createMines } from './mines';
 import { ESCORT, escortHull, escortPlan, escortTo } from './escort';
 import { DEBRIS_DRIFT, SKY_FAR, buildDeepSpace } from './deepspace';
-import { FAR_STARS, createFarStars } from './farStars';
+import { FAR_SLOTS, FAR_STARS, createFarStars } from './farStars';
+import { universeBudget } from './budget';
 import { createLandmarks } from './landmarks';
 import { aimFrom, aimTargets, jumpPhase, nameShows } from './aim';
 import { aligned, steerToward } from '../galaxy/space';
@@ -229,7 +231,7 @@ import { REMOVER, hitRemover, hpLeft, landingOpen, newRemover, stepRemover } fro
 import { NX5_LEN, createRemoverView } from './removerView';
 import { createSky } from '../galaxy/sky';
 import { SYSTEMS } from '../galaxy/systems';
-import { createExpanse } from '../expanse/scene/expanse';
+import { createExpanse, sectorPools } from '../expanse/scene/expanse';
 import { UNIVERSE } from '../expanse/gen/seed';
 import { runtime } from '../../runtime';
 import { deedToEarn } from './economy';
@@ -303,26 +305,6 @@ const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 // of its arguments, and these run every frame)
 const apart = (ax, ay, az, bx, by, bz) => Math.sqrt((ax - bx) * (ax - bx) + (ay - by) * (ay - by) + (az - bz) * (az - bz));
 const wrap = (a) => Math.atan2(Math.sin(a), Math.cos(a));
-
-// one faint circle per station round the sun, all in one draw (the far
-// planets don't orbit it: they're worlds of their own out in deep space)
-function orbits() {
-  const SEG = 160;
-  const pts = [];
-  for (const id of ORDER) {
-    if (byId(id).kind !== 'core') continue;
-    const [x, y, z] = POSITIONS[id];
-    const R = Math.hypot(x, z);
-    for (let i = 0; i < SEG; i++) {
-      const a = (i / SEG) * Math.PI * 2;
-      const b = ((i + 1) / SEG) * Math.PI * 2;
-      pts.push(Math.cos(a) * R, y, Math.sin(a) * R, Math.cos(b) * R, y, Math.sin(b) * R);
-    }
-  }
-  const g = new THREE.BufferGeometry();
-  g.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
-  return new THREE.LineSegments(g, new THREE.LineBasicMaterial({ color: '#9fb0d0', transparent: true, opacity: 0.05, depthWrite: false }));
-}
 
 // Stars streaming past when the ship boosts: thin streaks of light round
 // the camera's line of sight (none down the middle, where the ship is),
@@ -791,22 +773,25 @@ export async function create(canvas, ctx) {
     return p;
   });
   const planetOf = Object.fromEntries(planets.map((p) => [p.id, p]));
-  // the Expanse past the rim (expanse/scene/expanse.js): asleep inside it;
-  // its floating origin is the runtime's (re-anchored here as it moves)
-  const origin = runtime().origin;
-  origin.reset();
+  // every place past where it's real drawn as a star instead, the galaxy's
+  // way (farStars.js): from anywhere, the other worlds are stars; and the
+  // endless space's stars and discs in the same draw (its slots and discs)
+  const spaceBudget = universeBudget(device(), 0);
+  const farStars = createFarStars(map, { places: FAR_STARS.map((p) => ({ ...p, group: planetOf[p.id]?.group ?? deep.groupOf(p.id) ?? null })), skyFar: SKY_FAR, slots: FAR_SLOTS, slotSize: spaceBudget.slotSize, discs: spaceBudget.discs });
+  // the endless space (expanse/scene/expanse.js): generated sectors round the
+  // camera in every direction, made in the worker pool, the site's own places kept clear
   const expanse = createExpanse(map, {
     universe: typeof ctx.universe === 'bigint' ? ctx.universe : UNIVERSE,
-    origin,
     tier,
-    reduced,
+    workers: sectorPools(ctx.rt?.workers, spaceBudget),
+    far: farStars,
+    budget: spaceBudget,
+    prepare: (o) => sendAndWarm(o), // (declared further down)
+    keyed: import.meta.env.DEV,
     onSector: (id) => {
-      if (inExpanse(id)) state.note = { text: `The Expanse · ${id}`, until: wall() + 3 };
+      if (inExpanse(id) && id !== 'E:0,0') state.note = { text: `The Expanse · ${id}`, until: wall() + 3 };
     },
   });
-  // and every place past where it's real drawn as a star instead, the
-  // galaxy's way (farStars.js): from anywhere, the other worlds are stars
-  const farStars = createFarStars(map, { places: FAR_STARS.map((p) => ({ ...p, group: planetOf[p.id]?.group ?? deep.groupOf(p.id) ?? null })), skyFar: SKY_FAR });
   // and the big things, the Maw, the nebulae and the big stars, as landmarks
   // on the sky, at least so big across from anywhere (landmarks.js)
   const landmarks = createLandmarks(map, { renderer, small, level: device().detail, skyFar: SKY_FAR });
@@ -4386,7 +4371,7 @@ export async function create(canvas, ctx) {
     if (!state.jump && pieces.riftAt && pieces.riftInside(state.ship)) riftThrough();
     if (!state.jump) chasePilot();
     // the big ships moving through (the capital, the sector fleet, the big traffic): solids for the step, and for the autopilot to steer round
-    const moving = solidsWith(NO_SHIPS, pieces.solids, sectorFleet.solids, traffic?.solids(state.ship, 12));
+    const moving = solidsWith(NO_SHIPS, pieces.solids, sectorFleet.solids, traffic?.solids(state.ship, 12), expanse.solids());
     if (state.jump?.phase === 'align') input = { throttle: state.ship.speed > SHIP.cruise ? 0 : 0.35, ...steerToward(state.ship, state.jump.dir) }; // (coming round onto it, easing off to cruise)
     else if (state.jump) input = { throttle: 1, boost: true }; // (spooling up: straight on, flat out)
     else if (state.auto) {
@@ -5026,7 +5011,7 @@ export async function create(canvas, ctx) {
     for (let i = 0; i < nearest.length; i++) nearest[i].p.near(i < 2 ? nearest[i].d : 1e9);
     const nv = novae.nova();
     const nova = nv && nv.k > 0.05 ? { at: nv.at.toArray ? nv.at.toArray() : nv.at, colour: '#ffffff', strength: 3 * nv.k } : null;
-    const l = lightAt(camLocal.toArray(camAt), { nova });
+    const l = lightAt(camLocal.toArray(camAt), { nova, stars: expanse.stars() });
     litBy = l;
     // what metal reflects made again round the new key when the star that
     // lights you changes (a few ms, and only crossing from one star's
@@ -5072,6 +5057,7 @@ export async function create(canvas, ctx) {
     // (the planets' ground detail goes at the pace's step 2, their real air for
     // the old halo and their clouds' shadows at 3, and they come back)
     for (const p of planets) p.setLevel(at.step);
+    expanse.setStep(at.step, at.floor);
     return at;
   };
   function render(ms, now) {
@@ -5350,7 +5336,7 @@ export async function create(canvas, ctx) {
     farStars.update(camera, dt, { focus: state.jump?.id ?? state.aim ?? state.auto?.id ?? null, sector: skySector });
     landmarks.update(camera, t, { sector: skySector, groups: landmarkGroup });
     aimAt();
-    expanse.update({ ship: flying() && !state.dive ? state.ship : null, camera, t, dt });
+    expanse.update({ camera, ship: state.ship, t, dt, now: state.held || reduced ? 0 : Date.now(), hidden: onFoot() || Boolean(state.dive) || skySector === 'rickmorty' });
     sectorPortals.update(t, camera);
     curve.update(t, sectorOf(camLocal.x, camLocal.y, camLocal.z) === 'rickmorty');
     sectorFleet.update(t, Boolean(state.ship) && sectorOf(state.ship.x, state.ship.y, state.ship.z) === 'rickmorty');
@@ -5938,7 +5924,7 @@ export async function create(canvas, ctx) {
 
   // in development, renderer counts and the ship, for checking from a browser
   if (import.meta.env.DEV) {
-    window.__universeDebug = { powers, power: (slot) => power(slot), charge: () => powers.fill(), THREE, post, scene, expanse, renderer, camera, traffic, hunters, wingmen, skirmishes, npcs, NPCS, meetNpc: (id) => state.ship && npcs?.add(NPCS[id], skirmishSpot(state.ship) ?? { x: state.ship.x, y: state.ship.y + 5, z: state.ship.z - 40 }), director, pieces, leviathans, meteors, fleet, novae, pilots, standing, deed, wanted, law, wonders: WONDERS.map((w) => ({ id: w.id, name: w.name, at: w.at, reach: reachOf(w) })), state, foot, planets, startFoot: async (o) => (await footCode.want(), startFoot(o)), travel: (id, drive) => travel(id, drive), diveAt, net: () => net, siege, citadelGeo, arms, readSiegeState, rockFields, smashed, front: () => front, happen: (id) => happen(id, state.ship), mines, escort: () => escort, eclipse: () => eclipse && { ...eclipse, k: eclipseK, key: key.intensity }, remover: () => remover, removerView, ram: (gap = 6, kind = 'tie') => {
+    window.__universeDebug = { powers, power: (slot) => power(slot), charge: () => powers.fill(), THREE, post, scene, expanse, farStars, teleport: (x, y, z, heading = state.ship?.heading ?? 0, pitch = 0) => state.ship && (state.ship = { ...state.ship, x, y, z, heading, pitch, speed: 0 }), renderer, camera, traffic, hunters, wingmen, skirmishes, npcs, NPCS, meetNpc: (id) => state.ship && npcs?.add(NPCS[id], skirmishSpot(state.ship) ?? { x: state.ship.x, y: state.ship.y + 5, z: state.ship.z - 40 }), director, pieces, leviathans, meteors, fleet, novae, pilots, standing, deed, wanted, law, wonders: WONDERS.map((w) => ({ id: w.id, name: w.name, at: w.at, reach: reachOf(w) })), state, foot, planets, startFoot: async (o) => (await footCode.want(), startFoot(o)), travel: (id, drive) => travel(id, drive), diveAt, net: () => net, siege, citadelGeo, arms, readSiegeState, rockFields, smashed, front: () => front, happen: (id) => happen(id, state.ship), mines, escort: () => escort, eclipse: () => eclipse && { ...eclipse, k: eclipseK, key: key.intensity }, remover: () => remover, removerView, ram: (gap = 6, kind = 'tie') => {
       // a TIE (or `kind`) put `gap` dead ahead at your height, coming at you, for checking a ram from a browser
       const s = state.ship;
       if (!s || !hunters) return null;

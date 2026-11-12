@@ -21,6 +21,9 @@
 // createExpanse(parent, { universe, tier, reduced, workers, far, budget, prepare, onSector, keyed, drawNebula })
 //   → { root, update({ camera, ship, t, dt, now, hidden }), loaded(), sector(), sectors(),
 //       nearestSystem(at), stars(), solids(), setStep(step, floor), pops(), workMs(), reload(key), dispose() }
+// sectorPools(workers, budget) → the runtime's pool with the two sector pools defined
+//   (the 3 × 3 × 3's, a worker a thread the budget allows; the beyond's, one, so its
+//   cache is one cache), or null where no worker can be made
 // localPool() → a worker pool's request/cancel, run here a job a turn (for Node, or where workers can't be made)
 
 import * as THREE from 'three';
@@ -45,6 +48,14 @@ const HALF = SECTOR / 2;
 const keyOf = (x, y, z) => `${x},${y},${z}`;
 const parse = (key) => key.split(',').map(Number);
 const cheb = (a, b) => Math.max(Math.abs(a[0] - b[0]), Math.abs(a[1] - b[1]), Math.abs(a[2] - b[2]));
+
+export function sectorPools(workers, budget) {
+  if (!workers?.define || typeof Worker !== 'function') return null;
+  const make = () => new Worker(new URL('./sector.worker.js', import.meta.url), { type: 'module' });
+  workers.define(POOL, make, { size: Math.max(1, budget.workers) });
+  workers.define(BEYOND_POOL, make, { size: 1 });
+  return workers;
+}
 
 export function localPool() {
   const live = new Map(); // name:key → { cancelled }
