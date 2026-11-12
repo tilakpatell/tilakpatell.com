@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { PLANETS, lifeFor, planetSpecOf } from './fixtures/expanse.js';
-import { DENSITY, KINDS, LIFE, expanseLife, isDead, kindAt } from './lifeTables';
+import { DENSITY, KINDS, LIFE, expanseLife, isDead, kindAt, lifeFor as lifeWith, systemOf } from './lifeTables';
+import { planetSpecOf as specWith } from './planetSpec';
+import { MOONS } from './fixtures/generated';
 
 const BODIES = ['beast', 'person', 'flyer', 'walker', 'speeder', 'drone', 'craft'];
 // the roster's named worlds (docs/research/2026-10-09-planet-geographies.md, “The roster”)
@@ -102,5 +104,13 @@ describe('lifeTables', () => {
   it('halves on low', () => {
     expect(DENSITY.low).toBe(0.5);
     expect(DENSITY.mid).toBe(1);
+  });
+});
+
+describe('moons', () => {
+  it('finds a moon’s system on its row', () => {
+    expect(systemOf(MOONS[0].id, { expanse: MOONS })).toEqual(MOONS[0].system);
+    const life = lifeWith(specWith(MOONS[0].id, { expanse: MOONS }), { expanse: MOONS });
+    expect(Array.isArray(life.air) && Array.isArray(life.ground)).toBe(true);
   });
 });

@@ -18,6 +18,8 @@
 //
 //   WORLDS → worlds, in the roster's order (galaxy, sector, fandom)
 //   TYPE_BIOMES[type] → an Expanse planet's biomes; TYPE_LOOK[type] → { palette, clutter, soft }
+//   SEEDED_EXPANSE → the roster's thirteen [id, type]; familyOf(type) → a moon's type as a family
+//   PLANE_CLIMATE → the plane planets' climate noise
 //   ROUND_ROUGH[family][biome] → a round biome's roughness; roundBiomes(family) → its biomes on a sphere
 //   expand(biomes, seed) → biomes with each scatter made island layers
 
@@ -616,6 +618,21 @@ export const TYPE_LOOK = {
   ringed: look('bespin'),
   rock: look('geonosis', { clutter: clutter(['rock', 60], ['debris', 15]) }),
 };
+
+// the thirteen Expanse planets the roster flies (fixtures/expanse.json's, in order): their
+// ground is a plane of their type's template, held as it was (the endless universe's spec, E)
+export const SEEDED_EXPANSE = [
+  ['e:1,0:0:0', 'gas'], ['e:1,0:0:1', 'forest'], ['e:1,0:0:2', 'lava'], ['e:1,0:0:3', 'ice'], ['e:1,0:0:4', 'rock'], ['e:1,0:0:5', 'ice'], ['e:1,0:0:6', 'desert'],
+  ['e:1,0:1:0', 'desert'], ['e:1,0:1:1', 'ocean'], ['e:1,0:1:2', 'rock'],
+  ['e:1,0:2:0', 'gas'], ['e:1,0:2:1', 'ocean'], ['e:1,0:2:2', 'rock'],
+];
+
+// a moon's type (the generator's) as the family its ground is made from
+export const MOON_FAMILY = { rocky: 'rock', icy: 'ice' };
+export const familyOf = (type) => MOON_FAMILY[type] ?? type;
+
+// the plane planets' climate: two low, warped noises over (x, z)
+export const PLANE_CLIMATE = { frequency: 0.00025, warp: 400 };
 
 // ── a generated planet's round ground (sphereField.js): each template biome's roughness, how
 // much of the shared hills it wears, keyed by the ids TYPE_BIOMES gives ──

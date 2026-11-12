@@ -32,3 +32,10 @@ export function roundSpec({ type = 'rock', kind = 'craters', seed = 7, radius = 
     pois: [{ id: 'poi-0', name: 'Ruins', kind: 'ruins', dir: dirOfLatLon(5, 10), at: [0, 0], r: 120, edge: 100 }],
   };
 }
+
+// two moons of one planet, as expanse/flight/planets.js's moonRowOf makes their rows
+const MOON_SYSTEM = { faction: null, traffic: 0.2, hazard: null };
+export const MOONS = [
+  { id: 'e:3,-2:1:0:0', name: 'Zurktar I', type: 'rocky', seed: '9081726354', radius: 6, system: MOON_SYSTEM, parent: 'e:3,-2:1:0' },
+  { id: 'e:3,-2:1:0:1', name: 'Zurktar II', type: 'icy', seed: '1928374655', radius: 4, system: MOON_SYSTEM, parent: 'e:3,-2:1:0' },
+];
