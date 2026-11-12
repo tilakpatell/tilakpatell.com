@@ -20,10 +20,10 @@ on:
   workflow_dispatch:
     inputs:
       stage:
-        description: 'build, publish an already validated desktop build, adopt, both, or compress'
+        description: 'build, publish an already validated desktop build, upload (publish''s upload only: no adopt, pointer or deploy), adopt, both, or compress'
         required: true
         type: choice
-        options: [both, build, publish, adopt, compress]
+        options: [both, build, publish, upload, adopt, compress]
         default: both
       sha:
         description: 'build: the bf2-web commit (default its main)'
@@ -84,7 +84,7 @@ jobs:
         shell: powershell
         run: |
           $runnerSettings = Join-Path (Split-Path (Split-Path $env:RUNNER_WORKSPACE -Parent) -Parent) '.env'
-          if ($env:STAGE -eq 'publish') {
+          if ($env:STAGE -eq 'publish' -or $env:STAGE -eq 'upload') {
             node "--env-file-if-exists=$runnerSettings" scripts/desktop/bf2web-publish.mjs --site $env:SITE --build $env:BUILD --sha $env:SHA --ui-data $env:UI_DATA --ui-sha256 $env:UI_SHA256
             exit $LASTEXITCODE
           }
@@ -109,7 +109,7 @@ jobs:
     # (whatever the build's result: a desktop that can't build, or a build that failed, doesn't keep a good build already
     # in the bucket, one the desktop uploaded by hand among them, from Hoth; adopt takes only main builds that pass the
     # contract)
-    if: ${{ always() && !cancelled() && (github.event_name != 'workflow_dispatch' || (inputs.stage != 'build' && inputs.stage != 'compress')) && (inputs.stage != 'publish' || needs.build.result == 'success') }}
+    if: ${{ always() && !cancelled() && (github.event_name != 'workflow_dispatch' || (inputs.stage != 'build' && inputs.stage != 'compress' && inputs.stage != 'upload')) && (inputs.stage != 'publish' || needs.build.result == 'success') }}
     runs-on: ubuntu-24.04  # Playwright has no chromium for ubuntu-latest (26.04) yet: run 41052884531
     timeout-minutes: 30
     env:
