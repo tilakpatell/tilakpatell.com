@@ -19,6 +19,7 @@
 //   WORLDS → worlds, in the roster's order (galaxy, sector, fandom)
 //   TYPE_BIOMES[type] → an Expanse planet's biomes; TYPE_LOOK[type] → { palette, clutter, soft }
 //   SEEDED_EXPANSE → the roster's thirteen [id, type]; familyOf(type) → a moon's type as a family
+//   WATER_LOOKS[kind] → { color, roughness, opacity, glow? }
 //   PLANE_CLIMATE → the plane planets' climate noise
 //   ROUND_ROUGH[family][biome] → a round biome's roughness; roundBiomes(family) → its biomes on a sphere
 //   expand(biomes, seed) → biomes with each scatter made island layers
@@ -633,6 +634,14 @@ export const familyOf = (type) => MOON_FAMILY[type] ?? type;
 
 // the plane planets' climate: two low, warped noises over (x, z)
 export const PLANE_CLIMATE = { frequency: 0.00025, warp: 400 };
+
+// a planet's water as the flight draws it (expanse/flight/water.js) and its orbit map bakes it
+export const WATER_LOOKS = {
+  sea: { color: '#1f5a6e', roughness: 0.12, opacity: 0.86 },
+  lake: { color: '#2a4f5a', roughness: 0.16, opacity: 0.9 },
+  swamp: { color: '#2e3322', roughness: 0.35, opacity: 0.95 },
+  lava: { color: '#3a0c02', roughness: 0.6, opacity: 1, glow: '#ff4a0a' },
+};
 
 // ── a generated planet's round ground (sphereField.js): each template biome's roughness, how
 // much of the shared hills it wears, keyed by the ids TYPE_BIOMES gives ──

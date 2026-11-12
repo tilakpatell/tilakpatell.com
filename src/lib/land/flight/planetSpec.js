@@ -31,6 +31,7 @@
 import { fold } from './fnl.js';
 import { canonicalId, expanseLookup } from './expanse.js';
 import { hash64 } from './hash.js';
+import { generatedSpecOf } from './generated.js';
 import { PLANE_CLIMATE, SEEDED_EXPANSE, TYPE_BIOMES, TYPE_LOOK, WORLDS, expand, familyOf } from './planetTables.js';
 
 // The ground's version, for what's built on it (the shared world's
@@ -100,5 +101,5 @@ export function planetSpecOf(planetId, { expanse = null } = {}) {
   const family = familyOf(p.type);
   if (!TYPE_BIOMES[family]) return null;
   const moon = id.split(':').length === 5;
-  return { ...templateSpec(id, p, family), ...ROSTER_EXTRA, kind: moon ? 'moon' : 'planet', parent: moon ? (p.parent ?? id.slice(0, id.lastIndexOf(':'))) : null, buildable: false };
+  return generatedSpecOf({ ...p, id, parent: moon ? (p.parent ?? id.slice(0, id.lastIndexOf(':'))) : null }, family);
 }
