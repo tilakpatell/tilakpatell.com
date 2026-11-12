@@ -114,3 +114,22 @@ describe('moons', () => {
     expect(Array.isArray(life.air) && Array.isArray(life.ground)).toBe(true);
   });
 });
+
+describe('a generated planet’s fauna', () => {
+  const biomes = [{ id: 'a' }, { id: 'b' }];
+  const quiet = { faction: null, traffic: 0, hazard: null };
+  const plans = [{ body: 'beast', role: 'herd', tint: '#806040', group: [4, 8] }, { body: 'flyer', role: 'flock', tint: '#c0c0c0', group: [4, 8] }];
+
+  it('lets a generated planet’s fauna walk it, scaled by its density', () => {
+    const { ground } = expanseLife('forest', biomes, quiet, { density: 1, plans });
+    expect(ground).toHaveLength(2);
+    expect(ground.map((r) => [r.model, r.perKm2, r.body])).toEqual([['figure', 0.3, 'beast'], ['figure', 0.3, 'flyer']]);
+    expect(ground[1].alt).toEqual([6, 50]);
+    expect(ground[0].alt).toBeUndefined();
+  });
+
+  it('has no wild rows with no fauna', () => {
+    const life = expanseLife('forest', biomes, quiet, { density: 0, plans });
+    expect(life.ground.filter((r) => r.kind === 'wild')).toEqual([]);
+  });
+});

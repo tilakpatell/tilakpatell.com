@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
-import { CLUTTER_KIT, CLUTTER_KIT_OF, LANDMARKS, SITE_PLACES, clutterKitOf } from './landmarkTables.js';
+import { CLUTTER_KIT, CLUTTER_KIT_OF, EXOTIC_KIT, FLORA_TRUNKS, LANDMARKS, LANDMARK_MIN, POI_KITS, SITE_PLACES, clutterKitOf, landmarkRowsOf } from './landmarkTables.js';
 import { PLANETS, planetSpecOf } from './fixtures/expanse.js';
 import { CLUTTER_KINDS } from './leafMesh.js';
 
@@ -40,6 +40,9 @@ describe('the landmark tables', () => {
       ...Object.values(LANDMARKS).flatMap((byPoi) => Object.values(byPoi).flat()).filter((t) => t.kit).map((t) => t.kit),
       ...Object.values(CLUTTER_KIT).flatMap(Object.values),
       ...Object.values(CLUTTER_KIT_OF).flatMap(Object.values),
+      ...Object.values(POI_KITS).flat().filter((t) => t.kit).map((t) => t.kit),
+      ...FLORA_TRUNKS,
+      ...Object.values(EXOTIC_KIT).flatMap(Object.values),
     ];
     expect(named.length).toBeGreaterThan(5);
     for (const k of named) expect(kitHas(k), `${k.kit}/${k.name}`).toBe(true);
@@ -67,5 +70,25 @@ describe('the landmark tables', () => {
     expect(clutterKitOf({ id: 'e:1,0:0:0', type: 'forest' }).trunk.name).toBe('GiantPine_2');
     expect(clutterKitOf({ id: 'x', type: 'gas' })).toEqual({});
     expect(clutterKitOf(null)).toEqual({});
+  });
+});
+
+describe('a generated planet’s places and growth', () => {
+  it('stands every generated POI kind on at least LANDMARK_MIN things', () => {
+    for (const kind of ['ruins', 'wreck', 'outpost', 'monolith', 'signal']) expect(POI_KITS[kind].length, kind).toBeGreaterThanOrEqual(LANDMARK_MIN);
+  });
+
+  it('gives a generated planet a tree from its flora, and an exotic one its own', () => {
+    const spec = { id: 'e:3,-2:0:1', type: 'forest', flora: { family: 'forest', pick: 0.6 } };
+    expect(clutterKitOf(spec).trunk.name).toBe('GiantPine_5');
+    expect(clutterKitOf({ ...spec, exotic: 'glowing' }).trunk.name).toBe('Tree_Light_1');
+  });
+
+  it('reads a generated POI’s rows by its kind, a named one by its id', () => {
+    expect(landmarkRowsOf({ id: 'e:3,-2:1:0' }, { id: 'poi-0', kind: 'wreck' })).toBe(POI_KITS.wreck);
+    const [planet, byPoi] = Object.entries(LANDMARKS)[0];
+    const poi = Object.keys(byPoi)[0];
+    expect(landmarkRowsOf({ id: planet }, { id: poi, kind: 'wreck' })).toBe(byPoi[poi]);
+    expect(landmarkRowsOf(null, null)).toBeUndefined();
   });
 });
