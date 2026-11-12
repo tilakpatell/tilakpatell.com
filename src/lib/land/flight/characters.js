@@ -52,15 +52,16 @@ const unitNoise = (seed, opts) => {
 // rising to a rim at 0.6, the rim falling away outside; continuous at 0.6
 const bowl = (d) => (d < 0.6 ? 1.3 * (d / 0.6) ** 2 - 1 : 0.3 * Math.exp(-(((d - 0.6) / 0.12) ** 2)));
 
-// each kind's layer: (x, y, z in metres, land 0…1, shape, s0) → metres
+// each kind's layer, given where the ranges gather (0…1) (the ridged ones at gain 0.4, so their slope falls off with the octave and
+// the rock lies along whole flanks, not in a speckle of creases): (x, y, z in metres, land 0…1, shape, s0) → metres
 const LAYERS = {
   continents(seed, peaks) {
-    const r = unitNoise(seed, { frequency: 1 / 2600, octaves: 5, fractal: 'ridged' });
-    return (x, y, z, land) => r(x, y, z) * peaks * land * land;
+    const r = unitNoise(seed, { frequency: 1 / 2600, octaves: 5, gain: 0.4, fractal: 'ridged' });
+    return (x, y, z, land, shape, s0, range) => r(x, y, z) * peaks * land * land * (0.2 + 0.8 * range);
   },
   archipelago(seed, peaks) {
-    const r = unitNoise(seed, { frequency: 1 / 1400, octaves: 4, fractal: 'ridged' });
-    return (x, y, z, land) => r(x, y, z) * peaks * land * land;
+    const r = unitNoise(seed, { frequency: 1 / 1400, octaves: 4, gain: 0.4, fractal: 'ridged' });
+    return (x, y, z, land, shape, s0, range) => r(x, y, z) * peaks * land * land * (0.3 + 0.7 * range);
   },
   canyons(seed, peaks) {
     const f = unitNoise(seed, { frequency: 1 / 3200, octaves: 3 });
@@ -68,7 +69,7 @@ const LAYERS = {
   },
   mesas(seed, peaks) {
     const f = unitNoise(seed, { frequency: 1 / 1800, octaves: 4 });
-    return (x, y, z, land) => land * peaks * smoothstep(0.55, 0.6, f(x, y, z));
+    return (x, y, z, land, shape, s0, range) => land * peaks * smoothstep(0.55, 0.6, f(x, y, z) + 0.12 * (range - 0.5));
   },
   dunes(seed, peaks) {
     const crest = unitNoise(seed, { frequency: 1 / 300, octaves: 3, gain: 0.45, fractal: 'ridged' });
@@ -81,8 +82,8 @@ const LAYERS = {
     return (x, y, z, land) => land * peaks * (bowl(big(x, y, z)) + 0.3 * bowl(small(x, y, z)));
   },
   ridges(seed, peaks) {
-    const r = unitNoise(seed, { frequency: 1 / 1600, octaves: 5, fractal: 'ridged' });
-    return (x, y, z, land) => land * r(x, y, z) * peaks;
+    const r = unitNoise(seed, { frequency: 1 / 1600, octaves: 5, gain: 0.4, fractal: 'ridged' });
+    return (x, y, z, land, shape, s0, range) => land * r(x, y, z) * peaks * (0.15 + 0.85 * range);
   },
   plateaus(seed, peaks) {
     return (x, y, z, land, shape, s0) => {
@@ -105,11 +106,14 @@ export function groundOf({ kind, sea, peaks, wet = false }, seed, radius) {
   const shape = noise3For(seed, { frequency: t.shape, octaves: 5 });
   const s0 = thresholdOf(shape, sea);
   const layer = LAYERS[kind](seed + 17, peaks);
+  // where the mountains gather: a few ranges a planet, so they read as regions from orbit
+  const ranges = noise3For(seed + 29, { frequency: 2.6, octaves: 3 });
   const under = wet ? 420 : t.lift;
   return ([x, y, z]) => {
     const s = shape(x, y, z);
     const land = smoothstep(s0, s0 + 0.12, s);
     const lift = (s - s0) * (s >= s0 ? t.lift : under);
-    return { h: lift + layer(x * radius, y * radius, z * radius, land, s, s0), land };
+    const range = smoothstep(0.38, 0.62, ranges(x, y, z) * 0.5 + 0.5);
+    return { h: lift + layer(x * radius, y * radius, z * radius, land, s, s0, range), land };
   };
 }

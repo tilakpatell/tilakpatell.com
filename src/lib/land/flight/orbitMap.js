@@ -2,7 +2,8 @@
 // ground the flight flies over, so what you see from space is what you walk
 // on. Each texel is the ground at the chart's middle there, coloured by the
 // flight's ground rule (lib/three/groundLook.js, at the mean of its noises:
-// height between the palette's low and high, the accent's patches, rock
+// height between the palette's low and high, the accent's patches as much as
+// they cover, rock
 // where it is steep, wet by the water's edge), with the water over it.
 //
 // Three kinds of spec: a round one (a generated planet's: its sphere, ./sphereField.js);
@@ -55,9 +56,6 @@ const smoothstep = (a, b, x) => {
   return t * t * (3 - 2 * t);
 };
 
-// groundLook's noises at their mean: nBig = nMid = 0.5
-const MEAN_PATCH = 0.5 * 0.7 + 0.5 * 0.45;
-
 // a spec with no colours of its own (a hand-made one) bakes grey rather than throwing
 const GREY = { low: '#6f6a64', high: '#a39383', rock: '#5c544c', accent: '#8a7f73' };
 
@@ -87,7 +85,8 @@ function looksOf(spec) {
 
 function colourWith(L, h, slope) {
   let c = mix(L.low, L.high, smoothstep(L.hLow, L.hHigh, h));
-  if (L.accent && L.cover > 0.001) c = mix(c, L.accent, smoothstep(1 - L.cover, 1 - L.cover + 0.12, MEAN_PATCH));
+  // (the accent's patches, as much of the texel as they cover on the whole)
+  if (L.accent && L.cover > 0.001) c = mix(c, L.accent, L.cover * 0.5);
   c = mix(c, L.rock, smoothstep(L.rockAt, L.rockAt + 0.14, slope));
   if (L.wet) c = mix(c, L.wet.colour, (1 - smoothstep(L.wet.level, L.wet.level + L.wet.band, h)) * 0.75);
   const w = L.water;

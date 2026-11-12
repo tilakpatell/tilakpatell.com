@@ -21,7 +21,7 @@
 //   colourDistance([h, l], [h, l]) → hypot(Δh/15, Δl/0.08), Δh round the circle
 //   dominantOf(palette, water = null) → [h, l] of the mix of low and high (or the water's colour)
 //   varietyOf(row) → { family, dominant, palette, water, character, sky, weather, flora,
-//     fauna, exotic, poiKinds }
+//     fauna, exotic, poiKinds } (character: { kind, sea, peaks, rough: its hills' scale })
 
 import { fold } from './fnl.js';
 import { hash64 } from './hash.js';
@@ -83,7 +83,7 @@ export const FAMILIES = {
   desert: { slots: grid([20, 42, 64], [0.58, 0.7, 0.82]), sat: [0.35, 0.6] },
   forest: { slots: grid([85, 108, 131, 154], [0.26, 0.38]), sat: [0.3, 0.55] },
   ocean: { slots: grid([178, 200, 222, 244], [0.28, 0.4]), sat: [0.4, 0.7] },
-  ice: { slots: grid([178, 200, 222, 244], [0.8, 0.92]), sat: [0.15, 0.45] },
+  ice: { slots: grid([178, 200, 222, 244], [0.72, 0.86]), sat: [0.25, 0.6] },
   gas: GAS,
   ringed: GAS,
 };
@@ -175,24 +175,40 @@ export const EXOTICS = ['crystal', 'glowing', 'floating', 'spires'];
 const POI_COUNT = { 0: 1, 1: 3, 2: 3, 3: 2 };
 const POI_KINDS = { ruins: 3, wreck: 2, outpost: 2, monolith: 1, signal: 2 };
 
+// the palette round the slot: low and high either side of it (so their mix is the slot's
+// colour), a per-planet spread of hue and light between them, a rock and an accent
 function paletteOf(family, [h, l], rnd) {
   const s = between(rnd, FAMILIES[family].sat);
+  const spread = between(rnd, [12, 40]) * (rnd() < 0.5 ? -1 : 1);
+  const dl = between(rnd, [0.06, 0.13]);
+  const rockHue = between(rnd, [-35, 35]);
+  const accentHue = between(rnd, [-40, 40]);
   if (family === 'ocean') {
     // its land is sand, drawn from the desert's range; its accent is its water
     const sh = between(rnd, [20, 64]);
     const ss = between(rnd, FAMILIES.desert.sat);
     const sl = between(rnd, [0.58, 0.82]);
     const water = hexOf(h, s, l);
-    return { low: hexOf(sh, ss, sl - 0.05), high: hexOf(sh + 6, 0.9 * ss, sl + 0.05), rock: hexOf(sh + 10, 0.6 * ss, 0.6 * sl), accent: water, deep: hexOf(sh, ss, 0.7 * sl) };
+    return { low: hexOf(sh - spread / 2, ss, sl - dl), high: hexOf(sh + spread / 2, 0.9 * ss, sl + dl), rock: hexOf(sh + rockHue, 0.5 * ss, 0.55 * sl), accent: water, deep: hexOf(sh, ss, 0.7 * sl) };
   }
   const accent = {
-    lava: () => hexOf(between(rnd, [15, 35]), 1, 0.55),
-    forest: () => hexOf(h + 25, s + 0.1, l + 0.12),
-    desert: () => hexOf(h - 12, s, l - 0.1),
-    rock: () => hexOf(h + 15, s, l + 0.15),
-    ice: () => hexOf(h, s, l - 0.08),
-  }[family] ?? (() => hexOf(h + 40, s, l));
-  return { low: hexOf(h, s, l - 0.05), high: hexOf(h + 6, 0.9 * s, l + 0.05), rock: hexOf(h + 10, 0.6 * s, 0.6 * l), accent: accent(), deep: hexOf(h, s, 0.7 * l) };
+    lava: () => hexOf(between(rnd, [10, 45]), 1, 0.55),
+    forest: () => hexOf(h + 25 + accentHue / 2, s + 0.1, l + 0.12),
+    desert: () => hexOf(h - 12 + accentHue, s, l - 0.1),
+    rock: () => hexOf(h + 15 + accentHue, s + 0.1, l + 0.15),
+    ice: () => hexOf(h + accentHue, s + 0.1, l - 0.1),
+  }[family] ?? (() => hexOf(h + 40 + accentHue, s, l));
+  return { low: hexOf(h - spread / 2, s, l - dl), high: hexOf(h + spread / 2, 0.9 * s, l + dl), rock: hexOf(h + rockHue, 0.5 * s, 0.6 * l), accent: accent(), deep: hexOf(h, s, 0.7 * l) };
+}
+
+// an exotic world wears it: crystal's facets, a glow, a lift, spires of another colour
+function exoticPalette(palette, exotic, [h, l], rnd) {
+  const off = between(rnd, [140, 220]);
+  if (exotic === 'crystal') return { ...palette, accent: hexOf(h + off, 0.85, 0.66), rock: hexOf(h + off + 20, 0.55, 0.45) };
+  if (exotic === 'glowing') return { ...palette, accent: hexOf(h + off, 1, 0.58) };
+  if (exotic === 'floating') return { ...palette, high: hexOf(h + off / 3, 0.5, Math.min(0.9, l + 0.2)) };
+  if (exotic === 'spires') return { ...palette, rock: hexOf(h + off, 0.45, 0.3) };
+  return palette;
 }
 
 function waterOf(family, palette, row) {
@@ -205,12 +221,18 @@ function waterOf(family, palette, row) {
   return null;
 }
 
+const ALIEN_SKY = 0.35;
+
 function skyOf(family, row, palette, dominant) {
   const t = SKIES[family === 'ringed' ? 'gas' : family];
   const rnd = streamOf(row, 'sky');
-  const hue = t.hue === 'ground' ? dominant[0] + between(rnd, [-15, 15]) : t.hue === 'dominant' ? dominant[0] + 20 : between(rnd, t.hue);
-  const low = hexOf(hue, t.low[1], t.low[0]);
-  const high = hexOf(hue, t.high[1], t.high[0]);
+  const native = t.hue === 'ground' ? dominant[0] + between(rnd, [-15, 15]) : t.hue === 'dominant' ? dominant[0] + 20 : between(rnd, t.hue);
+  // about one sky in three is another world's colour altogether: green, rose, amber, violet
+  const alien = family !== 'gas' && family !== 'ringed' && rnd() < ALIEN_SKY;
+  const hue = alien ? between(rnd, [0, 360]) : native;
+  const sat = alien ? 1.5 : 1;
+  const low = hexOf(hue, t.low[1] * sat, t.low[0]);
+  const high = hexOf(hue + (alien ? between(rnd, [-30, 30]) : 0), t.high[1] * sat, t.high[0]);
   return {
     low,
     high,
@@ -265,12 +287,13 @@ export function varietyOf(row) {
   const water = waterOf(family, palette, row);
   const charRnd = streamOf(row, 'character');
   const kind = CHARACTER_WEIGHTS[family] ? weighted(charRnd, CHARACTER_WEIGHTS[family]) : null;
-  const character = kind && { kind, sea: between(charRnd, TERRAIN[kind].sea), peaks: between(charRnd, TERRAIN[kind].peaks) };
+  const character = kind && { kind, sea: between(charRnd, TERRAIN[kind].sea), peaks: between(charRnd, TERRAIN[kind].peaks), rough: Math.round(between(charRnd, [0.5, 1.8]) * 100) / 100 };
   const sky = skyOf(family, row, palette, dominant);
   palette.skyLow = sky.low;
   palette.skyHigh = sky.high;
   const exRnd = streamOf(row, 'exotic');
   const exotic = exRnd() < 0.05 ? EXOTICS[Math.floor(exRnd() * EXOTICS.length)] : null;
+  Object.assign(palette, exoticPalette(palette, exotic, dominant, exRnd));
   const wRnd = streamOf(row, 'weather');
   const weather = exotic === 'glowing' ? { kind: 'spores', amount: between(wRnd, [0.2, 1]) } : { kind: weighted(wRnd, WEATHER[family === 'ringed' ? 'gas' : family]), amount: between(wRnd, [0.2, 1]) };
   if (weather.kind === 'none') weather.amount = 0;

@@ -49,7 +49,7 @@ describe('sphereField', () => {
       expect(s.slope).toBeLessThan(1);
       expect(s.biome).toBe(f.biomeAt(d));
     }
-    expect(SLOPE_STEP).toBe(8);
+    expect(SLOPE_STEP).toBe(32);
     expect(CLIMATE_SPHERE.frequency).toBe(1.6);
   });
 

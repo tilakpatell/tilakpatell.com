@@ -7,7 +7,7 @@
 // ./field.js); the orbit map bakes it (./orbitMap.js). One field, both.
 //
 // A round spec: { id, seed: int32, type: family, biomes (roundBiomes),
-//   character: { kind, sea, peaks }, round: { radius: metres, at: dir },
+//   character: { kind, sea, peaks, rough? (the hills' scale, 1 when left out) }, round: { radius: metres, at: dir },
 //   water: { kind, level, colour? } | null, pois: [{ id, name, kind, dir, at, r, edge }] }
 //
 // Pure: runs in Node and in a worker.
@@ -22,7 +22,11 @@ import { weightsAt } from './biomes.js';
 import { angleBetween, chartOf } from './sphere.js';
 
 export const CLIMATE_SPHERE = { frequency: 1.6, octaves: 3, stretch: 1.5 };
-export const SLOPE_STEP = 8;
+// (32 m: the slope a landing pad and an orbit texel see; at 8 m the ridges' finest creases
+// alias into rock-coloured speckle across the map)
+export const SLOPE_STEP = 32;
+// metres of rolling hills a biome of roughness 1 wears
+const HILLS = 60;
 
 const clamp01 = (v) => Math.min(1, Math.max(0, v));
 const smoothstep = (a, b, x) => {
@@ -45,6 +49,7 @@ const heaviest = (w) => {
 
 function build(spec) {
   const { seed, biomes, character } = spec;
+  const rough = character.rough ?? 1;
   const R = spec.round.radius;
   const climate = { ...CLIMATE_SPHERE, ...(spec.climate?.stretch ? spec.climate : {}) };
   const nt = noise3For(seed, { frequency: climate.frequency, octaves: climate.octaves });
@@ -53,12 +58,12 @@ function build(spec) {
   const climateAt = ([x, y, z]) => [clamp01(0.55 * (1 - Math.abs(y)) + 0.45 * stretch(nt(x, y, z))), stretch(nm(x, y, z))];
 
   const ground = groundOf({ ...character, wet: Boolean(spec.water) }, seed + 3, R);
-  const hills = noise3For(seed + 5, { frequency: 1 / 520, octaves: 4 });
+  const hills = noise3For(seed + 5, { frequency: 1 / 700, octaves: 5 });
   const detail = noise3For(seed + 6, { frequency: 1 / 70, octaves: 3 });
   const raw = (dir) => {
     const w = weightsAt(biomes, ...climateAt(dir));
     const [x, y, z] = [dir[0] * R, dir[1] * R, dir[2] * R];
-    const hl = (hills(x, y, z) * 0.5 + 0.5) * 26;
+    const hl = (hills(x, y, z) * 0.5 + 0.5) * HILLS * rough;
     let h = ground(dir).h + detail(x, y, z) * 3;
     for (let i = 0; i < w.length; i++) if (w[i] > 0) h += w[i] * (biomes[i].base + biomes[i].rough * hl);
     return h;

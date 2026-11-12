@@ -84,12 +84,17 @@ function clutterOf(family, v) {
   return rows;
 }
 
-function groundLookOf(family, v, water) {
+// the colour band over the land's own heights (its tenth to its ninetieth part), so lowland and
+// highland read apart from orbit; rock where it is steep, from a per-planet threshold
+function groundLookOf(family, v, water, field = null, seed = 0) {
   const g = TYPE_LOOK[family].ground;
   const palette = { ...g.palette, low: v.palette.low, high: v.palette.high, rock: v.palette.rock, accent: v.palette.accent, deep: v.palette.deep };
-  if (v.character) {
-    palette.hLow = (water?.level ?? 0) + 2;
-    palette.hHigh = clamp(v.character.peaks * 0.5, 60, 500);
+  if (v.character && field) {
+    const hs = FIB_512.map((d) => field.heightAt(d)).filter((h) => !water || h >= water.level).sort((a, b) => a - b);
+    const q = (t) => (hs.length ? hs[Math.min(hs.length - 1, Math.floor(t * hs.length))] : 0);
+    palette.hLow = Math.round(Math.max(q(0.1), (water?.level ?? -Infinity) + 2));
+    palette.hHigh = Math.round(Math.max(palette.hLow + 40, q(0.9)));
+    palette.rockAt = Math.round(between(seeded(seed ^ 0x2545f491), [0.42, 0.6]) * 100) / 100;
   }
   if (palette.wet) palette.wet = { ...palette.wet, level: water?.level ?? palette.wet.level };
   return { ...g, palette };
@@ -129,6 +134,7 @@ export function generatedSpecOf(row, family) {
   const radius = groundRadius(row);
   const spec0 = { ...common, climate: CLIMATE_SPHERE, biomes: roundBiomes(family), pois: [], character: v.character, round: { radius, at: [0, 1, 0] }, water };
   const { pois, at } = placesOf(spec0, v.poiKinds);
+  const ground = groundLookOf(family, v, water, sphereField(spec0), seed);
   return {
     ...common,
     climate: CLIMATE_SPHERE,
@@ -139,7 +145,7 @@ export function generatedSpecOf(row, family) {
     clutter: clutterOf(family, v),
     step: 0,
     soft: false,
-    ground: groundLookOf(family, v, water),
+    ground,
     water,
     fog,
     landmarks: [],
