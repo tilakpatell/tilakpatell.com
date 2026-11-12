@@ -427,6 +427,8 @@ export function createFarStars(parent, { places, skyFar, slots = 0, slotSize = 4
       const i = index.get(id);
       return i === undefined ? null : farK[i];
     },
+    slots: nSlots,
+    slotSize,
     setSlot,
     showSlots: (list) => flip(list, 1),
     hideSlots: (list) => flip(list, 0),

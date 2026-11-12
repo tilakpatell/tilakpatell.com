@@ -2,7 +2,9 @@ import * as THREE from 'three';
 import { describe, expect, it, vi } from 'vitest';
 import { addBodies } from '../gen/systems';
 import { moonAt, orbitAt } from '../gen/orbits';
-import { STAR_STRENGTH, createNear } from './near';
+import { LOOKS } from '../../galaxy/bodies';
+import { PLANET_TYPES } from '../gen/tables';
+import { STAR_STRENGTH, TYPE_LOOK, createNear } from './near';
 
 const planet = (id, type, at, extra = {}) => ({ id, name: id, type, radius: 30, color: '#888888', at, orbit: 400, moons: 0, rings: false, seed: 7n, ...extra });
 const SECTOR = addBodies({
@@ -31,6 +33,11 @@ const named = (g, prefix) => {
 };
 
 describe('the nearest systems, built whole', () => {
+  it('has a look for every planet type, and every look is real', () => {
+    for (const { type } of PLANET_TYPES) expect(LOOKS[TYPE_LOOK[type]], type).toBeTruthy();
+    for (const id of Object.values(TYPE_LOOK)) expect(LOOKS[id], id).toBeTruthy();
+  });
+
   it('builds nothing with the camera outside every reach', () => {
     const group = new THREE.Group();
     const { build, made } = fakeBuild();
