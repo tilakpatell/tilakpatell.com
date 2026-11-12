@@ -1,0 +1,85 @@
+import { describe, expect, it } from 'vitest';
+import { addBodies } from '../gen/systems';
+import { orbitAt } from '../gen/orbits';
+import { createDiscs, pickDiscs } from './discs';
+
+const planet = (id, type, at) => ({ id, name: id, type, radius: 30, color: '#888888', at, orbit: 400, moons: 0, rings: false, seed: 1n });
+// two systems by hand, 35,000 apart, and a wonder of each kind
+const HAND = addBodies({
+  id: 'E:5,0',
+  origin: [400000, 0, 0],
+  systems: [
+    { id: 'E:5,0:0', at: [390000, 0, 0], star: { class: 'G', color: '#fff4ea', size: 150 }, planets: [planet('E:5,0:0:0', 'rock', [390400, 0, 0])] },
+    { id: 'E:5,0:1', at: [390000, 0, 50000], star: { class: 'M', color: '#ffb56c', size: 90 }, planets: [planet('E:5,0:1:0', 'ocean', [390000, 0, 50400])] },
+  ],
+  wonders: ['nebula', 'pulsar', 'derelict'].map((kind, k) => ({ id: `E:5,0:w${k}`, kind, at: [392000 + k * 1000, 0, -8000], size: 400 })),
+});
+
+// the far layer's writer, recording
+const writer = () => {
+  const got = [];
+  return {
+    got,
+    begin: () => (got.length = 0),
+    push: (x, y, z, r, cr, cg, cb, lx, ly, lz, alpha, key) => got.push({ at: [x, y, z], r, c: [cr, cg, cb], l: [lx, ly, lz], alpha, key }),
+    end() {},
+  };
+};
+
+describe('pickDiscs', () => {
+  const xyzr = Float64Array.from([0, 0, -100, 1, 0, 0, -5000, 1, 0, 0, -60000, 100, 0, 0, -2000, 1, 0, 0, -2000, 1]);
+  it('keeps what is within the far plane and its own size, the nearest, far to near, ties by index', () => {
+    expect([...pickDiscs(xyzr, 5, [0, 0, 0], { far: 45000, max: 10 })]).toEqual([1, 3, 4, 0]);
+    expect([...pickDiscs(xyzr, 5, [0, 0, 0], { far: 45000, max: 2 })]).toEqual([3, 0]);
+    expect([...pickDiscs(xyzr, 5, [0, 0, 0], { far: 59950, max: 9 })]).toEqual([2, 1, 3, 4, 0]); // (60,000 off, 100 across: in reach of 59,950)
+  });
+});
+
+describe('the discs fed', () => {
+  it('pushes a near system’s star and planets whole, a far one fading, and the wonders but the nebula', () => {
+    const w = writer();
+    const discs = createDiscs(w, { budget: { discs: 100 } });
+    const cam = [390000, 0, -10000]; // (10,000 from A, 60,000 from B: past the far plane)
+    discs.feed([HAND], cam, 1000);
+    const byAt = (at) => w.got.find((d) => d.at.every((v, i) => Math.abs(v - at[i]) < 1e-6));
+    const starA = byAt([390000, 0, 0]);
+    expect(starA).toMatchObject({ r: 150, l: [0, 0, 0], alpha: 1 });
+    const pA = byAt(orbitAt(HAND.systems[0].planets[0], 1000));
+    expect(pA.alpha).toBe(1);
+    expect(pA.r).toBe(30);
+    // (lit from its star)
+    const toStar = [390000 - pA.at[0], 0 - pA.at[1], 0 - pA.at[2]];
+    pA.l.forEach((v, i) => expect(v).toBeCloseTo(toStar[i], 6));
+    expect(byAt([390000, 0, 50000])).toBeUndefined();
+    expect(w.got.filter((d) => d.r === 400 * 0.15 || d.r === 400 * 0.12)).toHaveLength(2); // (the pulsar and the derelict; no nebula)
+    expect(discs.count()).toBe(w.got.length);
+  });
+
+  it('fades a system out over the far plane’s last fifth', () => {
+    const w = writer();
+    const discs = createDiscs(w, { budget: { discs: 100 } });
+    discs.feed([HAND], [390000, 0, 50000 - 40000], 0); // (B 40,000 off: in the fade)
+    const starB = w.got.find((d) => d.r === 90);
+    expect(starB.alpha).toBeGreaterThan(0);
+    expect(starB.alpha).toBeLessThan(1);
+  });
+
+  it('leaves out a system drawn whole, and keeps no more than the budget', () => {
+    const w = writer();
+    const discs = createDiscs(w, { budget: { discs: 1 } });
+    discs.feed([HAND], [390000, 0, -10000], 0, new Set(['E:5,0:0']));
+    expect(w.got).toHaveLength(1);
+    expect(w.got[0].r).not.toBe(150);
+  });
+
+  it('keys each disc by its id when asked, the same every frame', () => {
+    const w = writer();
+    const discs = createDiscs(w, { budget: { discs: 100 }, keyed: true });
+    discs.feed([HAND], [390000, 0, -10000], 0);
+    const keys = w.got.map((d) => d.key);
+    discs.feed([HAND], [390000, 0, -10000], 5);
+    expect(w.got.map((d) => d.key)).toEqual(keys);
+    expect(new Set(keys).size).toBe(keys.length);
+    expect(keys.every((k) => k >= 0)).toBe(true);
+  });
+});
