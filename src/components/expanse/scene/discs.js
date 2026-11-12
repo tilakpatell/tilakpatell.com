@@ -7,14 +7,18 @@
 // pickDiscs(xyzr: Float64Array, n, cam: [x, y, z], { far, max }) → Int32Array:
 //   the indices of the n bodies (x, y, z, r each) within far + r of the camera,
 //   the nearest `max` kept, ordered far to near (ties by index)
-// createDiscs(writer, { budget, far = FAR, keyed = false }) → { feed(sectors, cam, t, built), count }
+// createDiscs(writer, { budget, far = FAR, keyed = false }) → { feed(sectors, cam, t, built, sectorAt), count }
 //   sectors: [Sector] (fullSector's, absolute places), cam: the camera in the map's
-//   space, t: the shared clock (orbits.js), built: a Set of system ids drawn whole.
+//   space, t: the shared clock (orbits.js), built: a Set of system ids drawn whole,
+//   sectorAt(sx, sy, sz): a loaded sector, for the lattice's things (nearThings.js): a disc
+//   each past where it's a mesh and within THING_DISC, fading over the last fifth.
 //   A star shines by itself; a planet is lit from its star; a wonder from the way home.
 //   `keyed`: each disc is pushed with a hash of its id, so the far layer can count pops (dev).
 
+import { THING_KINDS } from '../gen/things';
 import { orbitAt } from '../gen/orbits';
 import { FAR, levelWeights } from './levels';
+import { MESH_NEAR, THING_DISC, thingsAround } from './nearThings';
 
 // how a middle-layer wonder looks as a disc (sectors.js's WONDER: a pulsar a
 // small bright ball, a derelict or a rogue world a dark one); a nebula is
@@ -96,8 +100,15 @@ export function createDiscs(writer, { budget, far = FAR, keyed = false } = {}) {
   };
 
   return {
-    feed(sectors, cam, t, built = null) {
+    feed(sectors, cam, t, built = null, sectorAt = null) {
       n = 0;
+      if (sectorAt)
+        thingsAround(sectorAt, cam, THING_DISC, (sector, i, d) => {
+          const th = sector.things;
+          if (d <= th.size[i] * MESH_NEAR) return;
+          const o = sector.origin;
+          add(o[0] + th.at[i * 3], o[1] + th.at[i * 3 + 1], o[2] + th.at[i * 3 + 2], th.size[i], 'thing', sector, i);
+        });
       for (const sector of sectors) {
         for (const s of sector.systems) {
           if (built?.has(s.id)) continue;
@@ -111,6 +122,7 @@ export function createDiscs(writer, { budget, far = FAR, keyed = false } = {}) {
         for (const w of sector.wonders) {
           const look = WONDER[w.kind];
           if (!look) continue;
+          if (near(w.at, cam, w.size * look.r * MESH_NEAR)) continue; // (a mesh there: nearThings.js)
           add(w.at[0], w.at[1], w.at[2], w.size * look.r, 'wonder', w, null);
         }
       }
@@ -129,14 +141,20 @@ export function createDiscs(writer, { budget, far = FAR, keyed = false } = {}) {
         if (dist > far + r) continue;
         // (whole within the far plane, a speck's past it: levels.js, with no reach of its own, since
         // what's built whole is skipped above)
-        const alpha = levelWeights(dist, { reach: 0, far }).disc;
         const w = what[i];
+        const alpha = levelWeights(dist, { reach: 0, far: w.kind === 'thing' ? THING_DISC : far }).disc;
         let c;
         let lx = 0;
         let ly = 0;
         let lz = 0;
         let lift = 1;
-        if (w.kind === 'star') {
+        if (w.kind === 'thing') {
+          const k = THING_KINDS[w.row.things.kind[w.star]];
+          c = rgb(k.look.color);
+          lx = -x;
+          ly = -y;
+          lz = -z;
+        } else if (w.kind === 'star') {
           c = rgb(w.row.star.color);
           lift = STAR_LIFT;
         } else if (w.kind === 'planet') {
@@ -154,7 +172,7 @@ export function createDiscs(writer, { budget, far = FAR, keyed = false } = {}) {
             lz = -z;
           }
         }
-        writer.push(x, y, z, r, c[0] * lift, c[1] * lift, c[2] * lift, lx, ly, lz, alpha, keyed ? keyOf(w.row.id) : -1);
+        writer.push(x, y, z, r, c[0] * lift, c[1] * lift, c[2] * lift, lx, ly, lz, alpha, keyed ? (w.kind === 'thing' ? (keyOf(w.row.id) ^ Math.imul(w.row.things.slot[w.star] + 1, 0x9e3779b1)) >>> 0 : keyOf(w.row.id)) : -1);
       }
       writer.end();
       count = writer.count?.() ?? m;

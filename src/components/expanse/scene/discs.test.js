@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { addBodies } from '../gen/systems';
+import { fullSector } from '../gen/space';
+import { UNIVERSE } from '../gen/seed';
 import { orbitAt } from '../gen/orbits';
 import { createDiscs, pickDiscs } from './discs';
 
@@ -12,7 +14,7 @@ const HAND = addBodies({
     { id: 'E:5,0:0', at: [390000, 0, 0], star: { class: 'G', color: '#fff4ea', size: 150 }, planets: [planet('E:5,0:0:0', 'rock', [390400, 0, 0])] },
     { id: 'E:5,0:1', at: [390000, 0, 50000], star: { class: 'M', color: '#ffb56c', size: 90 }, planets: [planet('E:5,0:1:0', 'ocean', [390000, 0, 50400])] },
   ],
-  wonders: ['nebula', 'pulsar', 'derelict'].map((kind, k) => ({ id: `E:5,0:w${k}`, kind, at: [392000 + k * 1000, 0, -8000], size: 400 })),
+  wonders: ['nebula', 'pulsar', 'derelict'].map((kind, k) => ({ id: `E:5,0:w${k}`, kind, at: [392000 + k * 1000, 0, -22000], size: 400 })),
 });
 
 // the far layer's writer, recording
@@ -70,6 +72,33 @@ describe('the discs fed', () => {
     discs.feed([HAND], [390000, 0, -10000], 0, new Set(['E:5,0:0']));
     expect(w.got).toHaveLength(1);
     expect(w.got[0].r).not.toBe(150);
+  });
+
+  it('leaves a wonder near enough to be a mesh to nearThings.js', () => {
+    const w = writer();
+    createDiscs(w, { budget: { discs: 100 } }).feed([HAND], [389000, 0, -22000], 0);
+    expect(w.got.filter((d) => d.r === 400 * 0.15)).toHaveLength(0); // (the pulsar, 60 across, 4,000 off: a mesh within 6,000)
+    expect(w.got.filter((d) => d.r === 400 * 0.12)).toHaveLength(1); // (the derelict, 48 across, 5,000 off: past its 4,800, a disc)
+  });
+
+  it('draws the lattice’s things past where they are meshes, to THING_DISC, fading', () => {
+    const sector = fullSector(UNIVERSE, 3, 0, 0);
+    const sectorAt = (sx, sy, sz) => (sx === 3 && sy === 0 && sz === 0 ? sector : null);
+    const t = sector.things;
+    const i = [...t.size].findIndex((s) => s < 140);
+    const at = [sector.origin[0] + t.at[i * 3], sector.origin[1] + t.at[i * 3 + 1], sector.origin[2] + t.at[i * 3 + 2]];
+    const discAt = (w) => w.got.find((d) => d.at.every((v, k) => Math.abs(v - at[k]) < 0.5));
+    const look = (dy) => {
+      const w = writer();
+      createDiscs(w, { budget: { discs: 4000 } }).feed([], [at[0], at[1] + dy, at[2]], 0, null, sectorAt);
+      return discAt(w);
+    };
+    expect(look(15000)).toMatchObject({ r: t.size[i], alpha: 1 });
+    const fading = look(18000);
+    expect(fading.alpha).toBeGreaterThan(0);
+    expect(fading.alpha).toBeLessThan(1);
+    expect(look(21000)).toBeUndefined(); // (past THING_DISC)
+    expect(look(t.size[i] * 50)).toBeUndefined(); // (a mesh there)
   });
 
   it('keys each disc by its id when asked, the same every frame', () => {

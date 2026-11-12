@@ -36,6 +36,7 @@ import { spaceTime } from '../gen/orbits';
 import { UNIVERSE } from '../gen/seed';
 import { createDiscs } from './discs';
 import { createNear } from './near';
+import { createNearThings, pickNear } from './nearThings';
 import { nebula } from './sectors';
 
 export const POOL = 'expanse';
@@ -81,7 +82,7 @@ export function localPool() {
   };
 }
 
-export function createExpanse(parent, { universe = UNIVERSE, tier = 'mid', workers = null, far = null, budget = universeBudget({ tier }), prepare = null, onSector = null, keyed = false, drawNebula = nebula } = {}) {
+export function createExpanse(parent, { universe = UNIVERSE, tier = 'mid', workers = null, far = null, budget = universeBudget({ tier }), prepare = null, onSector = null, keyed = false, drawNebula = nebula, drawers = {} } = {}) {
   const root = new THREE.Group();
   root.name = 'expanse';
   parent.add(root);
@@ -89,6 +90,7 @@ export function createExpanse(parent, { universe = UNIVERSE, tier = 'mid', worke
   const grid = createChunkGrid3({ size: SECTOR, radius: 1, inFlight: Math.max(1, budget.workers) });
   const discs = far ? createDiscs(far.discs, { budget, keyed }) : null;
   const near = createNear(root, { budget, tier, prepare });
+  const things = createNearThings(root, { drawers, prepare, tier, max: Math.max(1, budget.thingsNear) });
 
   const loaded = new Map(); // grid key → { key, id, sector, stars, slot, staged, nebulae }
   const inbox = []; // answers waiting to be taken in
@@ -108,6 +110,8 @@ export function createExpanse(parent, { universe = UNIVERSE, tier = 'mid', worke
   const cam = [0, 0, 0];
   const nearSectors = [];
   const nearSystems = [];
+  const sectorAt = (sx, sy, sz) => loaded.get(keyOf(sx, sy, sz))?.sector ?? null;
+  const solidList = [];
   const starList = [...STARS]; // (the hand-made stars from the first: the lights are worked out before the first update)
 
   const freeSlot = (rec) => {
@@ -254,12 +258,16 @@ export function createExpanse(parent, { universe = UNIVERSE, tier = 'mid', worke
       // ── the bodies: built whole within a system's reach, discs to the far plane ──
       const orbitT = spaceTime(now);
       near.update(hidden ? [] : nearSystems, cam, orbitT, camera);
+      things.update(hidden ? [] : pickNear(sectorAt, nearSectors, cam, { max: Math.max(1, budget.thingsNear) }), camera, orbitT);
       if (discs) {
         if (hidden) {
           far.discs.begin();
           far.discs.end();
-        } else discs.feed(nearSectors, cam, orbitT, near.built());
+        } else discs.feed(nearSectors, cam, orbitT, near.built(), sectorAt);
       }
+      solidList.length = 0;
+      for (const so of near.solids()) solidList.push(so);
+      for (const so of things.solids()) solidList.push(so);
       starList.length = 0;
       for (const s of STARS) starList.push(s);
       for (const s of near.stars()) starList.push(s);
@@ -280,7 +288,7 @@ export function createExpanse(parent, { universe = UNIVERSE, tier = 'mid', worke
       return best;
     },
     stars: () => starList,
-    solids: () => near.solids(),
+    solids: () => solidList,
     built: () => near.built(),
     setStep(s, floor = false) {
       step = s;
@@ -301,6 +309,7 @@ export function createExpanse(parent, { universe = UNIVERSE, tier = 'mid', worke
       if (beyondShown >= 0) far?.hideSlots(beyondSets[beyondShown]);
       beyondShown = -1;
       near.dispose();
+      things.dispose();
       if (far) {
         far.discs.begin();
         far.discs.end();
