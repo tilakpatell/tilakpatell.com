@@ -49,3 +49,19 @@ export const moonWay = (moon) =>
   moon.big
     ? 'It’s a whole world: the cruiser sets down and you climb out as Rick, Morty beside you; take off again and you’re back out in space.'
     : 'Land on it and you’re straight into it, on foot as Morty, with something to do there; its own portal brings you back out to space.';
+
+// The nav map's chart: its tools, its readout of where the ship is (its
+// sector, lib/space/address.js, and how far above or below the disc the
+// hand-made places sit in), and its keys. ("3D view" is retired: the chart
+// tilts and turns, and looks straight down again.)
+export const CHART_WORDS = {
+  tools: 'Chart',
+  zoomIn: 'Zoom in',
+  zoomOut: 'Zoom out',
+  toShip: 'Back to the ship',
+  flat: 'Look straight down',
+  fit: 'Show everything',
+  sector: ([sx, sy, sz]) => `Sector ${[sx, sy, sz].map((n) => String(n).replace('-', '−')).join(', ')}`,
+  height: (far, side) => (side === 0 ? 'Level with the disc' : `${far} ${side > 0 ? 'above' : 'below'} the disc`),
+  keys: 'zoom in and out, 0 back to the ship',
+};
