@@ -200,7 +200,7 @@ export default function Universe({ ask = false }) {
     if (!followId) followRef.current = null;
   }, [followId]);
 
-  // out of the cockpit's launch (App's intro, or ⌘K's replay): flying the
+  // out of the cockpit's launch (components/launch, or ⌘K's replay): flying the
   // ship it was, with no question first. Sat down in the cockpit with no
   // ship yet (a first visit), that one's made under it as you sit there
   // (tp:board, again if you change seats), so the flash comes out on a
