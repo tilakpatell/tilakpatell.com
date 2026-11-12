@@ -20,7 +20,6 @@
 //   chartOf(at, radius) → { at, radius, frame, toDir(x, z) → dir, toChart(dir) → [x, z] }
 //     (chart +x is east, −z north; toChart inverts toDir inside the first turn, the antipode [πR, 0])
 
-const DEG = Math.PI / 180;
 const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 const cross = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
 const len = (a) => Math.sqrt(dot(a, a));
