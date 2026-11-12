@@ -3,7 +3,7 @@
 import { seeded } from '../../../seeded.js';
 import { TERRAIN } from '../characters.js';
 import { CLIMATE_SPHERE } from '../sphereField.js';
-import { roundBiomes } from '../planetTables.js';
+import { TYPE_LOOK, roundBiomes } from '../planetTables.js';
 import { dirOfLatLon } from '../sphere.js';
 
 // uniform on the sphere: z = 2r − 1 and an angle round it (in y-up terms, y)
@@ -25,6 +25,7 @@ export function roundSpec({ type = 'rock', kind = 'craters', seed = 7, radius = 
     seed,
     type,
     climate: CLIMATE_SPHERE,
+    palette: TYPE_LOOK[type].palette,
     biomes: roundBiomes(type),
     character: { kind, sea: sea ?? (t.sea[0] + t.sea[1]) / 2, peaks: peaks ?? (t.peaks[0] + t.peaks[1]) / 2 },
     round: { radius, at: dirOfLatLon(0, 0) },

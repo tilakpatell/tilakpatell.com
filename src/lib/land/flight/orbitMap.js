@@ -58,8 +58,12 @@ const smoothstep = (a, b, x) => {
 // groundLook's noises at their mean: nBig = nMid = 0.5
 const MEAN_PATCH = 0.5 * 0.7 + 0.5 * 0.45;
 
+// a spec with no colours of its own (a hand-made one) bakes grey rather than throwing
+const GREY = { low: '#6f6a64', high: '#a39383', rock: '#5c544c', accent: '#8a7f73' };
+
 function looksOf(spec) {
-  const p = spec.ground?.palette ?? { ...spec.palette, hLow: 0, hHigh: 120 };
+  const palette = { ...GREY, ...(spec.palette ?? {}) };
+  const p = { ...palette, ...(spec.ground?.palette ?? { hLow: 0, hHigh: 120 }) };
   const w = spec.water && WATER_LOOKS[spec.water.kind];
   return {
     low: lin(p.low),
@@ -75,7 +79,7 @@ function looksOf(spec) {
       level: spec.water.level,
       lava: Boolean(w.glow),
       opacity: w.opacity,
-      colour: mix(lin(spec.water.colour ?? w.color), lin(spec.palette.accent), 0.15),
+      colour: mix(lin(spec.water.colour ?? w.color), lin(palette.accent), 0.15),
       glow: w.glow ? lin(w.glow) : null,
     },
   };
@@ -103,9 +107,10 @@ export const groundColour = (spec, { h, slope }) => colourWith(looksFor(spec), h
 function bands(spec) {
   const n = noise3For(spec.seed, { frequency: 2.2, octaves: 4, warp: 0.25 });
   const B = 6 + seeded(spec.seed ^ 0x6a09e667)() * 5;
-  const low = lin(spec.palette.low);
-  const high = lin(spec.palette.high);
-  const accent = lin(spec.palette.accent ?? spec.palette.high);
+  const p = { ...GREY, ...(spec.palette ?? {}) };
+  const low = lin(p.low);
+  const high = lin(p.high);
+  const accent = lin(p.accent);
   return (dir) => {
     const v = n(dir[0], dir[1], dir[2]);
     const t = Math.sin((dir[1] * B + 0.6 * v) * Math.PI);
