@@ -12,9 +12,10 @@
 // sectorJob({ type: 'sector', key, universe: bigint, sx, sy, sz }) → { answer: { key, sector, stars }, transfer }
 // beyondKeys(centre: [sx, sy, sz], ring) → [[sx, sy, sz]…]: the sectors at Chebyshev ring + 1
 //   (98 for ring 1, 218 for ring 2), the core sector included
-// beyondJob({ type: 'beyond', key, universe, centre, ring }, cache = new Map(), make)
-//   → { answer: { key, centre, stars }, transfer }: every system of beyondKeys(centre, ring),
-//   from centre's middle; sectors made once and kept in `cache` (the 400 last used)
+// beyondJob({ type: 'beyond', key, universe, centre, ring, cap = Infinity }, cache = new Map(), make)
+//   → { answer: { key, centre, stars }, transfer }: the systems of beyondKeys(centre, ring),
+//   from centre's middle, each sector's biggest stars first, as many as `cap` shares out
+//   between them; sectors made once and kept in `cache` (the 400 last used)
 // withMoons(sector) → the same sector, each planet's moonList back (made when first read)
 
 import { sectorCentre } from '../../../lib/space/address.js';
@@ -106,17 +107,19 @@ export function beyondKeys([cx, cy, cz], ring) {
 
 const makeSystems = (universe, sx, sy, sz) => fullSector(universe, sx, sy, sz, { things: false });
 
-export function beyondJob({ key, universe, centre, ring }, cache = new Map(), make = makeSystems) {
+export function beyondJob({ key, universe, centre, ring, cap = Infinity }, cache = new Map(), make = makeSystems) {
   const mid = sectorCentre(...centre);
   const rows = [];
-  for (const [sx, sy, sz] of beyondKeys(centre, ring)) {
+  const keys = beyondKeys(centre, ring);
+  const each = Math.max(1, Math.floor(cap / keys.length));
+  for (const [sx, sy, sz] of keys) {
     const id = `${universe}:${sx},${sy},${sz}`;
     let systems = cache.get(id);
     if (systems) cache.delete(id); // (to the back: the most recently used)
-    else systems = make(universe, sx, sy, sz).systems.map((s) => [s.at, s.star.size, s.star.color]);
+    else systems = make(universe, sx, sy, sz).systems.map((s, i) => [s.at, s.star.size, s.star.color, i]).sort((a, b) => b[1] - a[1] || a[3] - b[3]); // (biggest first)
     cache.set(id, systems);
     if (cache.size > KEPT) cache.delete(cache.keys().next().value);
-    for (const row of systems) rows.push(row);
+    for (let i = 0; i < systems.length && i < each; i++) rows.push(systems[i]);
   }
   const stars = specks(rows, mid);
   return { answer: { key, centre, stars }, transfer: buffersOf(stars) };

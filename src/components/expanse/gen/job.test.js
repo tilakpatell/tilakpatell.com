@@ -62,6 +62,13 @@ describe('the sectors beyond', () => {
     expect(made).toBeGreaterThan(0);
   });
 
+  it('shares a cap out between the sectors, the biggest stars of each first', () => {
+    const make = (u, sx) => ({ systems: [10, 300, 90].map((size, i) => ({ at: [sx * 120000 + i, 0, 0], star: { size, color: '#ffffff' } })) });
+    const { answer } = beyondJob({ type: 'beyond', key: 'b', universe: UNIVERSE, centre: [0, 0, 0], ring: 1, cap: 98 * 2 }, new Map(), make);
+    expect(answer.stars.count).toBe(98 * 2);
+    expect([...answer.stars.r.slice(0, 2)]).toEqual([300, 90]);
+  });
+
   it('puts its specks from the centre’s middle, and hands them over', () => {
     const make = () => ({ systems: [{ at: [240000 + 5, 7, -3], star: { size: 90, color: '#ff8000' } }] });
     const { answer, transfer } = beyondJob({ type: 'beyond', key: 'b', universe: UNIVERSE, centre: [2, 0, 0], ring: 1 }, new Map(), make);
