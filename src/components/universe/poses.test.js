@@ -4,6 +4,8 @@ import { MAW } from './maw';
 import { SHIP } from './ship';
 import { POSE_NAMES, poseFor } from './poses';
 import { HOME_RADIUS } from './layout';
+import { WONDERS } from './deep';
+import { insideOf } from './nebula/rules';
 
 const sub = (a, b) => a.map((v, i) => v - b[i]);
 const len = (a) => Math.hypot(...a);
@@ -12,7 +14,7 @@ const dot = (a, b) => a.reduce((s, v, i) => s + v * b[i], 0);
 
 describe('the fixed poses', () => {
   it('knows every pose the spec names', () => {
-    expect(POSE_NAMES).toEqual(['overview', 'falcon-sun', 'middleearth-limb', 'rickmorty', 'gaming', 'caribbean', 'middleearth', 'breakingbad', 'office', 'belt', 'maw', 'landing-middleearth', 'station', 'far-rim']);
+    expect(POSE_NAMES).toEqual(['overview', 'falcon-sun', 'middleearth-limb', 'rickmorty', 'gaming', 'caribbean', 'middleearth', 'breakingbad', 'office', 'belt', 'maw', 'landing-middleearth', 'station', 'far-rim', 'in-nebula', 'veil-side']);
     for (const name of POSE_NAMES) expect(poseFor(name)).toBeTruthy();
     expect(poseFor('nowhere')).toBeNull();
   });
@@ -94,5 +96,29 @@ describe('the fixed poses', () => {
     const to = norm(sub(POSITIONS[rim.toward], rim.at));
     expect(Math.hypot(...POSITIONS[rim.toward])).toBeGreaterThan(20000);
     expect(-Math.sin(rim.heading) * to[0] - Math.cos(rim.heading) * to[2]).toBeGreaterThan(0.99);
+  });
+});
+
+describe('the nebula poses', () => {
+  it('puts in-nebula inside the Cradle’s gas, the eye too', () => {
+    const p = poseFor('in-nebula');
+    const w = WONDERS.find((x) => x.id === 'cradle');
+    const cradle = { id: 'cradle', at: w.at, r: w.r, form: 'nursery' };
+    expect(insideOf([cradle], p.at).depth).toBeGreaterThan(0.5);
+    expect(insideOf([cradle], p.eye)).not.toBeNull();
+    expect(p.look).toEqual(w.at);
+  });
+  it('puts veil-side 20,000 off, the Veil right of the middle, still in view 5,000 to the right', () => {
+    const p = poseFor('veil-side');
+    const veil = WONDERS.find((w) => w.id === 'veil').at;
+    const view = norm(sub(p.look, p.eye));
+    const off = Math.acos(dot(view, norm(sub(veil, p.eye))));
+    expect(off).toBeGreaterThan(0.08);
+    expect(off).toBeLessThan(0.13);
+    // (right of the middle: the Veil on the view's right-hand side)
+    const right = norm([-view[2], 0, view[0]]);
+    expect(dot(right, norm(sub(veil, p.eye)))).toBeGreaterThan(0);
+    const moved = p.eye.map((v, i) => v + right[i] * 5000);
+    expect(Math.acos(dot(view, norm(sub(veil, moved))))).toBeLessThan(0.45); // (inside the lens's half-width at 16:9)
   });
 });

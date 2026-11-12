@@ -14,6 +14,7 @@
 // side toward the camera, which is how a visitor should arrive.
 import { BELT, HOME_RADIUS, ORDER, POSITIONS, REACH, SUN } from './layout';
 import { MAW } from './maw';
+import { WONDERS } from './deep';
 import { SHIP, parkAt } from './ship';
 import { byId } from './universes';
 
@@ -43,6 +44,13 @@ export const POSES = {
   // out at the furthest world, every world past where it's real a star
   // (farStars.js)
   'far-rim': { rim: 60, back: 1.6, rise: 0.3 },
+  // in the Cradle's gas, `inside` of its radius in from its middle on the
+  // home side, facing its heart: the fog round the ship (nebula/fog.js)
+  'in-nebula': { nebula: 'cradle', inside: 0.45, back: 1.6, rise: 0.3 },
+  // the Veil `out` off, on the home side, looking `aside` of it as the
+  // Maw's pose does: the cloud a little right of the middle, for the
+  // parallax and roll the nebula check measures (scripts/nebula-check.mjs)
+  'veil-side': { nebula: 'veil', out: 20000, aside: 0.105, back: 1.6, rise: 0.3 },
 };
 export const POSE_NAMES = Object.keys(POSES);
 
@@ -103,6 +111,19 @@ export function poseFor(name, { positions = POSITIONS, sun = SUN.at, reach = REA
     // along the ring, the way the rocks go round
     const heading = headingOf([-Math.sin(p.angle), 0, Math.cos(p.angle)]);
     return { name, at, heading, ...chase(at, heading, p) };
+  }
+  if (p.nebula) {
+    const w = WONDERS.find((x) => x.id === p.nebula);
+    const home = unit([sun[0] - w.at[0], 0, sun[2] - w.at[2]]);
+    if (p.inside) {
+      const at = add(w.at, home, p.inside * w.r);
+      const heading = headingOf(unit([w.at[0] - at[0], 0, w.at[2] - at[2]]));
+      return { name, nebula: w.id, at, heading, ...chase(at, heading, { back: p.back, rise: p.rise, look: w.at }) };
+    }
+    const at = add(w.at, home, p.out);
+    const look = add(w.at, turnY(home, -Math.PI / 2), p.out * p.aside);
+    const heading = headingOf(unit(sub(look, at)));
+    return { name, nebula: w.id, at, heading, ...chase(at, heading, { back: p.back, rise: p.rise, look }) };
   }
   // the Maw: out on the home side of it, level, facing a point to its left
   const home = unit([sun[0] - MAW.at[0], 0, sun[2] - MAW.at[2]]);
