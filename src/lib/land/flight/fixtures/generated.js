@@ -39,3 +39,40 @@ export const MOONS = [
   { id: 'e:3,-2:1:0:0', name: 'Zurktar I', type: 'rocky', seed: '9081726354', radius: 6, system: MOON_SYSTEM, parent: 'e:3,-2:1:0' },
   { id: 'e:3,-2:1:0:1', name: 'Zurktar II', type: 'icy', seed: '1928374655', radius: 4, system: MOON_SYSTEM, parent: 'e:3,-2:1:0' },
 ];
+
+// systems of generated planets as the generator would make their rows (its type weights and
+// radii, expanse/gen/tables.js), never in the seeded sectors, until there are `planets` rows
+const TYPES = { rock: [5, [18, 50]], ice: [3, [20, 60]], gas: [3, [80, 140]], lava: [1.5, [18, 45]], ocean: [1.5, [30, 70]], desert: [2, [24, 60]], forest: [1, [28, 65]], ringed: [1, [70, 130]] };
+export function randomSystems(planets, seed) {
+  const rnd = seeded(seed);
+  const int = (a, b) => a + Math.floor(rnd() * (b - a + 1));
+  const typeOf = () => {
+    let r = rnd() * Object.values(TYPES).reduce((a, [w]) => a + w, 0);
+    for (const [t, [w]] of Object.entries(TYPES)) if ((r -= w) < 0) return t;
+    return 'rock';
+  };
+  const systems = [];
+  const seen = new Set();
+  let count = 0;
+  while (count < planets) {
+    const [sx, sz] = [int(-40, 40), int(-40, 40)];
+    if ((sx === 0 || sx === 1) && sz === 0) continue;
+    const key = `e:${sx},${sz}:${int(0, 23)}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    const system = { faction: rnd() < 0.5 ? null : { id: 'empire' }, traffic: rnd(), hazard: rnd() < 0.2 ? 'pirates' : null };
+    const rows = Array.from({ length: int(1, 7) }, (_, j) => {
+      const type = typeOf();
+      const [a, b] = TYPES[type][1];
+      return { id: `${key}:${j}`, name: `P${count + j}`, type, seed: String(BigInt(Math.floor(rnd() * 2 ** 52)) * 4099n + BigInt(j)), radius: Math.round(a + rnd() * (b - a)), moons: int(0, 3), rings: rnd() < 0.05, system };
+    });
+    count += rows.length;
+    systems.push(rows);
+  }
+  return systems;
+}
+
+export const lookupOf = (rows) => {
+  const byId = new Map(rows.map((r) => [r.id, r]));
+  return (id) => byId.get(id) ?? null;
+};
