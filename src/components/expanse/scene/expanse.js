@@ -108,7 +108,7 @@ export function createExpanse(parent, { universe = UNIVERSE, tier = 'mid', worke
   const cam = [0, 0, 0];
   const nearSectors = [];
   const nearSystems = [];
-  const starList = [];
+  const starList = [...STARS]; // (the hand-made stars from the first: the lights are worked out before the first update)
 
   const freeSlot = (rec) => {
     if (rec.slot < 0) return;

@@ -4,6 +4,7 @@ import { SECTOR, sectorKey } from '../../../lib/space/address.js';
 import { RIM } from '../../universe/layout';
 import { createFarStars } from '../../universe/farStars';
 import { universeBudget } from '../../universe/budget';
+import { STARS } from '../../universe/lighting';
 import { createExpanse } from './expanse';
 
 // a pool that answers with a small made-up sector, when let go (all at once, or one key)
@@ -182,6 +183,12 @@ describe('the endless space round the camera', () => {
     expect(shown()).toEqual([]);
     expect(ex.root.children).toHaveLength(0);
     expect(map.children.includes(ex.root)).toBe(false);
+  });
+
+  it('lights with the hand-made stars before its first update, and its built stars after', async () => {
+    const { ex } = setup();
+    expect(ex.stars().length).toBe(STARS.length);
+    expect(ex.stars()).toEqual(STARS);
   });
 
   it('hides all of it when asked (on foot, in the pocket), and brings it back', async () => {
