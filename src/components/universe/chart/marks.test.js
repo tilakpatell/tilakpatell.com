@@ -17,7 +17,8 @@ describe('the chart’s marks', () => {
     expect(markById('experience')).toMatchObject({ kind: 'station', levels: ['system'] });
     expect(['veil', 'maw', 'ember', 'rmportal', 'aurelia'].map((id) => markById(id).shape)).toEqual(['cloud', 'hole', 'star', 'portal', 'dot']);
     expect(markById('chart:home')).toMatchObject({ name: CHART_VIEWS.home.name, pickable: false, levels: ['neighbourhood', 'universe'] });
-    expect(markById('chart:curve')).toMatchObject({ name: CHART_VIEWS.rickmorty.name, at: SECTORS.rickmorty.origin, levels: ['universe'] });
+    expect(markById('chart:curve')).toMatchObject({ name: CHART_VIEWS.rickmorty.name, at: SECTORS.rickmorty.origin, levels: ['neighbourhood', 'universe'] });
+    for (const m of MOONS) expect(markById(m.id).levels).toEqual(['system']);
     expect(markById('home').kind).toBe('station');
   });
   it('makes the live marks from where(): pilots and far fights, level with the ship', () => {

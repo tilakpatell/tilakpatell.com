@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CHART, FRAMES, createView, levelOf, project } from './projection';
+import { CHART, FRAMES, createView, levelOf } from './projection';
 import { fitRange, miniView, placeMarks, placeShip, reveal, ringOn, sectorGrid } from './place';
 
 const ALL = ['system', 'neighbourhood', 'universe'];

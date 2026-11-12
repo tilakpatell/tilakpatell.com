@@ -15,7 +15,7 @@
 // labelSize(name, fontPx) → [w, h]
 // placeMarks(view, marks, frame, { level, keep, fontPx, scale, sides, avoid, levels, measure, height, obstacles }) → [{ id, mark, x, y, footX, footY, size, side, dx, dy, edge, depth }]
 // placeShip(view, ship, frame) → { x, y, angle, edge }
-// sectorGrid(view, n) → [{ key, ring, points: [[u, v], …] }]
+// sectorGrid(view, n) → [{ key, at: [sx, sy, sz], ring, points: [[u, v], …], corner: [u, v] }]
 // ringOn(view, centre, radius, n) → [[u, v], …]
 // fitRange(focus, marks, pad) → range; miniView(marks) → view
 // reveal(view, mark) → a view that shows it
@@ -118,7 +118,8 @@ export function sectorGrid(view, n) {
         }
       }
       points.push(points[0]);
-      out.push({ key: sectorKey(sx + i, sy, sz + j), ring: Math.max(Math.abs(i), Math.abs(j)), points });
+      const corner = project(view, [cx - half * 0.94, y, cz - half * 0.94]);
+      out.push({ key: sectorKey(sx + i, sy, sz + j), at: [sx + i, sy, sz + j], ring: Math.max(Math.abs(i), Math.abs(j)), points, corner: [corner.u, corner.v] });
     }
   return out;
 }

@@ -13,8 +13,8 @@ export default function ChartTools({ className = 'navmap-tools', buttonClass = '
   );
   return (
     <div className={className} role="group" aria-label={W.tools}>
-      {tool(W.zoomIn, '+', onZoomIn, false, <span aria-hidden="true">+</span>)}
-      {tool(W.zoomOut, '−', onZoomOut, false, <span aria-hidden="true">−</span>)}
+      {tool(W.zoomIn, '+', onZoomIn, false, '+')}
+      {tool(W.zoomOut, '−', onZoomOut, false, '−')}
       {onShip && tool(W.toShip, '0', onShip, atShip, <RiFocus3Line aria-hidden="true" />)}
       {onFlat && tool(W.flat, null, onFlat, flat, <RiArrowDownCircleLine aria-hidden="true" />)}
       {onFit && tool(W.fit, '0', onFit, fitted, <RiFullscreenExitLine aria-hidden="true" />)}

@@ -4,6 +4,7 @@ import { FRAMES, levelOf, project, ringsFor, toFrame } from './projection';
 import { placeMarks, placeShip, ringOn, sectorGrid } from './place';
 import { REGIONS } from './marks';
 import ChartTools from './ChartTools';
+import { CHART_WORDS } from '../words';
 
 // The nav map's chart (NavMap.jsx keeps the header, the filters and the side
 // panel): a canvas of stars under an SVG of the range rings round the
@@ -116,18 +117,24 @@ export default function NavChart({ view, marks, ship = null, course = null, fron
     return (t) => Math.ceil(g.measureText(t).width) + NAME_PAD;
   })();
   const shipAt = ship ? placeShip(view, ship, FRAMES.nav) : null;
+  const grid = level === 'system' ? [] : sectorGrid(view, level === 'universe' ? 2 : 1);
+  // the sectors' names, in their corners, at the neighbourhood's zoom (further out they'd pile up in the middle)
+  const sectorNames = level === 'neighbourhood' ? grid.filter((g) => g.ring <= 1 && Math.hypot(...g.corner) < 0.92).map((g) => ({ ...g, x: V / 2 + g.corner[0] * FRAMES.nav.r + 6, y: V / 2 + g.corner[1] * FRAMES.nav.r + 16, text: CHART_WORDS.sector(g.at) })) : [];
   const placed = placeMarks(view, marks, FRAMES.nav, {
     level,
-    keep: [pick, hover],
+    keep: [pick, hover, 'chart:home'], // (home is always on the chart: at the rim, the way back, when it's far)
     scale,
     measure,
     height: NAME_H,
     avoid: shipAt ? [shipAt] : [],
-    obstacles: out ? [{ x0: px / 2 - 95, y0: px * 0.91 - 32, x1: px / 2 + 95, y1: px * 0.91 }] : [],
+    obstacles: [
+      ...(out ? [{ x0: px / 2 - 95, y0: px * 0.91 - 32, x1: px / 2 + 95, y1: px * 0.91 }] : []),
+      // (13 units of mono type: 7.8 a letter, 16 high, in the SVG's units)
+      ...sectorNames.map((n) => ({ x0: n.x * scale, y0: (n.y - 13) * scale, x1: (n.x + n.text.length * 7.8) * scale, y1: (n.y + 3) * scale })),
+    ],
   });
   const glyphs = placed.filter((p) => ['sun', 'cloud', 'hole', 'star', 'portal'].includes(p.mark.shape)).sort((a, b) => a.depth - b.depth);
   const listed = placed.filter((p) => p.mark.pickable || REGION_OF[p.id] || p.mark.kind === 'fight');
-  const grid = level === 'system' ? [] : sectorGrid(view, level === 'universe' ? 2 : 1);
   const regions = REGIONS.filter((r) => r.levels.includes(level));
   const courseAt = course && shipAt ? toFrame(FRAMES.nav, (({ u, v }) => [u, v])(project(view, course.to)), { pin: true }) : null;
   const frontAt = front ? at(view, front.at) : null;
@@ -156,7 +163,12 @@ export default function NavChart({ view, marks, ship = null, course = null, fron
           })}
           {/* the sectors round the middle's, fading out: space goes on past them */}
           {grid.map((g) => (
-            <polyline key={g.key} points={pts(g.points)} className="navmap-sector" data-ring={g.ring} />
+            <polyline key={g.key} points={pts(g.points)} className="navmap-sector" data-ring={g.ring} data-here={g.ring === 0 || undefined} />
+          ))}
+          {sectorNames.map((n) => (
+            <text key={`name:${n.key}`} x={n.x} y={n.y} className="navmap-sector-name" data-ring={n.ring}>
+              {n.text}
+            </text>
           ))}
           {regions.map((r) => (
             <polyline key={r.id} points={pts(ringOn(view, r.centre, r.radius))} className="navmap-region" data-region={r.id} />

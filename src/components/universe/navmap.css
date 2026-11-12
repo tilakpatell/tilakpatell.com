@@ -111,18 +111,54 @@
 .navmap-search:focus-within { border-color: #9fd8ff; }
 
 .navmap-body { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 1rem; min-height: 0; container-type: size; }
-.navmap-chart {
-  position: relative;
+/* the chart and the bar under it: the circle's room, less the bar's
+   (3.25rem: its 36 px tools and the gap over them) */
+.navmap-stage {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
   align-self: center;
   justify-self: center;
-  width: min(100%, 100cqh);
+  width: min(100%, calc(100cqh - 3.25rem));
+  min-width: 0;
+}
+@supports not (width: 1cqh) {
+  .navmap-stage { width: min(100%, 60vh); }
+}
+.navmap-chart {
+  position: relative;
+  width: 100%;
   aspect-ratio: 1;
   border-radius: 50%;
   overflow: hidden;
   box-shadow: 0 0 0 1px rgb(159 216 255 / 0.18), 0 0 40px rgb(80 150 255 / 0.1);
+  touch-action: none; /* (the chart's own: a drag moves it, two fingers pinch, turn and tilt it) */
+  cursor: grab;
+  user-select: none;
 }
-@supports not (width: 1cqh) {
-  .navmap-chart { width: min(100%, 64vh); }
+.navmap-chart:active { cursor: grabbing; }
+/* under the circle: where the ship is, on glass, and the chart's tools */
+.navmap-bar { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; min-width: 0; }
+.navmap-readout {
+  min-width: 0;
+  margin: 0;
+  padding: 0.3rem 0.6rem;
+  overflow: hidden;
+  border: 1px solid rgb(159 216 255 / 0.18);
+  border-radius: min(var(--r-btn), 10px);
+  background: rgb(3 6 16 / 0.8);
+  color: #cfe9ff;
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.navmap-tools { display: flex; flex: none; gap: 0.3rem; }
+.navmap-tools .navmap-tool { width: 36px; height: 36px; padding: 0; justify-content: center; font-size: 1rem; }
+.navmap-tools .navmap-tool[aria-disabled='true'] { color: var(--muted); cursor: default; }
+.navmap-tools .navmap-tool[aria-disabled='true']:hover { background: none; }
+@media (pointer: coarse) {
+  .navmap-tools .navmap-tool { width: 44px; height: 44px; }
 }
 .navmap-canvas,
 .navmap-svg { position: absolute; inset: 0; width: 100%; height: 100%; }
@@ -151,6 +187,23 @@
 .navmap-ship-halo { fill: rgb(159 216 255 / 0.12); stroke: rgb(159 216 255 / 0.5); stroke-width: 1; animation: navmap-ping 1.8s ease-out infinite; transform-box: fill-box; transform-origin: center; }
 @keyframes navmap-ping { from { transform: scale(0.6); opacity: 1; } to { transform: scale(1.6); opacity: 0; } }
 .navmap-pilot { fill: #7dff9a; stroke: #04120a; stroke-width: 1; }
+/* each mark's stem from the ship's level, and its foot on it: solid up, dashed down */
+.navmap-stem { stroke: rgb(159 216 255 / 0.45); stroke-width: 1.2; }
+.navmap-stem[data-dir='down'] { stroke-dasharray: 2 3; }
+.navmap-foot { fill: none; stroke: rgb(159 216 255 / 0.35); stroke-width: 1; }
+/* the sectors round the middle's, fading out the further they are: space goes on */
+.navmap-sector { fill: none; stroke: rgb(159 216 255 / 0.2); stroke-width: 1; stroke-dasharray: 6 6; }
+.navmap-sector[data-ring='1'] { stroke: rgb(159 216 255 / 0.11); }
+.navmap-sector[data-ring='2'] { stroke: rgb(159 216 255 / 0.055); }
+.navmap-sector[data-here] { stroke-dasharray: none; }
+/* a sector's name in its corner: the ship's, then its neighbours' fainter (dim by colour, never below 0.55) */
+.navmap-sector-name { fill: rgb(159 216 255 / 0.75); font-family: var(--font-mono); font-size: 13px; letter-spacing: 0.06em; }
+.navmap-sector-name[data-ring='1'] { fill: rgb(159 216 255 / 0.55); }
+/* the rings round the home system, the belt and the Curve (their old looks) */
+.navmap-region { fill: none; }
+.navmap-region[data-region='home'] { fill: rgb(255 200 120 / 0.06); stroke: rgb(255 210 140 / 0.45); stroke-width: 1; }
+.navmap-region[data-region='belt'] { stroke: rgb(170 160 140 / 0.22); stroke-width: 6; stroke-dasharray: 1 4; }
+.navmap-region[data-region='curve'] { stroke: rgb(159 216 255 / 0.35); stroke-width: 1.5; stroke-dasharray: 3 6; }
 
 /* The places: a dot each, a button round it, and its name on whichever
    side chartLabels.js found clear (--lx and --ly, the name's top-left from
@@ -218,6 +271,9 @@
   text-shadow: 0 0 6px #000, 0 0 2px #000;
 }
 .navmap-homebtn:hover { background: rgb(255 200 120 / 0.12); }
+/* the home system's and the Curve's names: a press opens them (their dot is the ring round them) */
+.navmap-region-btn { color: #ffd9a0; font-family: var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; }
+.navmap-region-btn .navmap-name { font-size: 0.6rem; }
 .navmap-out {
   position: absolute;
   left: 50%;
@@ -358,8 +414,9 @@
   .navmap-search input { font-size: 16px; } /* (under 16px, iOS zooms the page in on focus) */
   .navmap-body { grid-template-columns: 1fr; grid-template-rows: auto minmax(0, 1fr); container-type: normal; gap: 0.6rem; }
   .navmap[data-mode='list'] .navmap-body { grid-template-rows: minmax(0, 1fr); }
-  .navmap[data-mode='list'] .navmap-chart { display: none; }
-  .navmap-chart { width: min(100%, 50svh); }
+  .navmap[data-mode='list'] .navmap-stage { display: none; }
+  .navmap-stage { width: min(100%, 50svh - 3.25rem); }
+  .navmap-readout { white-space: normal; line-height: 1.35; } /* (two lines rather than cut short) */
   .navmap-side { padding: 0.75rem; gap: 0.6rem; }
   /* the ship in two lines: where, then how it's going and the jump */
   .navmap-status[data-flying] { display: flex; flex-wrap: wrap; column-gap: 0.75rem; padding-bottom: 0.6rem; }

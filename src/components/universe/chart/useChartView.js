@@ -13,13 +13,14 @@ import { reveal } from './place';
 // lib/shownLoop's frames, at once under reduced motion); the hands move it
 // straight. It follows the ship until it's dragged away. The DOM wiring
 // only: the rules are input.js's and projection.js's, tested in Node.
+// `hands: false` leaves the hands off (the view still moves by the calls).
 const GLIDE = 280;
 // (the chart's own buttons over it: a press on one is its own, not a drag's)
 const OVERLAYS = '.navmap-out';
 const over = (e) => e.target instanceof Element && e.target.closest(OVERLAYS) !== null;
 const ease = (t) => 1 - (1 - t) ** 3;
 
-export function useChartView(boxRef, { open, ship = null, frame, orbit = true }) {
+export function useChartView(boxRef, { open, ship = null, frame, orbit = true, hands = true }) {
   const [view, setViewState] = useState(open);
   const viewRef = useRef(view);
   viewRef.current = view;
@@ -75,7 +76,7 @@ export function useChartView(boxRef, { open, ship = null, frame, orbit = true })
 
   useEffect(() => {
     const el = boxRef.current;
-    if (!el) return undefined;
+    if (!el || !hands) return undefined; // (a chart that only shows, like Home's teaser, leaves the page's scroll alone)
     const onWheel = (e) => {
       if (over(e)) return;
       e.preventDefault();
@@ -86,7 +87,7 @@ export function useChartView(boxRef, { open, ship = null, frame, orbit = true })
     };
     el.addEventListener('wheel', onWheel, { passive: false });
     return () => el.removeEventListener('wheel', onWheel);
-  }, [boxRef]);
+  }, [boxRef, hands]);
 
   const rect = () => boxRef.current?.getBoundingClientRect() ?? { left: 0, top: 0, width: 1, height: 1 };
   const apply = (m) => {
@@ -139,5 +140,5 @@ export function useChartView(boxRef, { open, ship = null, frame, orbit = true })
     onContextMenu: (e) => orbit && e.preventDefault(), // (a right-drag turns the chart)
   };
 
-  return { view, setView, goTo, level: levelOf(view.range), zoomIn, zoomOut, back, flatten, show, handlers };
+  return { view, setView, goTo, level: levelOf(view.range), zoomIn, zoomOut, back, flatten, show, handlers: hands ? handlers : {} };
 }

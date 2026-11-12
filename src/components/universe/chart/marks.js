@@ -17,7 +17,8 @@ import { byId } from '../universes';
 import { CHART, createView, levelOf } from './projection';
 
 const ALL = ['system', 'neighbourhood', 'universe'];
-const LEVELS = { station: ['system'], moon: ['system', 'neighbourhood'], world: ALL, wonder: ALL };
+// (the Curve's moons are its own chart's: from outside it, its name stands for them)
+const LEVELS = { station: ['system'], moon: ['system'], world: ALL, wonder: ALL };
 const PRIORITY = { world: 60, wonder: 50, moon: 45, station: 40 };
 const SHAPES = { Nebula: 'cloud', 'Black hole': 'hole', Star: 'star', Portal: 'portal' };
 const NEAR = ['system', 'neighbourhood'];
@@ -44,7 +45,7 @@ export const HAND_MARKS = Object.freeze([
   // (prefixed: 'home' is already a station's id)
   Object.freeze({ id: 'chart:sun', kind: 'sun', name: '', at: SUN.at, priority: 95, color: '#ffbf5e', levels: ALL, shape: 'sun', reach: SUN.r, pickable: false }),
   Object.freeze({ id: 'chart:home', kind: 'region', name: CHART_VIEWS.home.name, at: [0, 0, 0], priority: 90, color: '#9fd8ff', levels: ['neighbourhood', 'universe'], shape: 'dot', pickable: false }),
-  Object.freeze({ id: 'chart:curve', kind: 'region', name: CHART_VIEWS.rickmorty.name, at: SECTORS.rickmorty.origin, priority: 85, color: '#9fd8ff', levels: ['universe'], shape: 'dot', pickable: false }),
+  Object.freeze({ id: 'chart:curve', kind: 'region', name: CHART_VIEWS.rickmorty.name, at: SECTORS.rickmorty.origin, priority: 85, color: '#9fd8ff', levels: ['neighbourhood', 'universe'], shape: 'dot', pickable: false }),
 ]);
 const BY_ID = new Map(HAND_MARKS.map((m) => [m.id, m]));
 export const markById = (id) => BY_ID.get(id) ?? null;
