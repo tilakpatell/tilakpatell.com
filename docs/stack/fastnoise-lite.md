@@ -12,16 +12,18 @@ The census row is in [README.md](README.md): one file imports it, `src/lib/land/
 
 - `biomes.js` beside it: the two climate fields the biome weights come from.
 - `field.js` beside it: a planet's height.
+- `characters.js` beside it: a generated planet's land by its character, 3D noise of a direction on its sphere (`noise3For`, `cells3For`).
+- `sphereField.js` beside it: a generated planet's climate, hills and detail on its sphere.
 
 ## How the site uses it
 
 - **One function a use.** `noiseFor(seed, opts)` builds a configured instance and returns `(x, z) → −1…1`; nothing else names the class.
 - **Seeds are 32-bit.** `fold(seed)` folds a planet's bigint (the Expanse's `seed.js`) to an int32: its low 32 bits xor its high 32.
 - **The warp is the wrapper's own**: two more noises at half the frequency push `(x, z)` by up to `warp` metres (below, Gotchas).
+- **3D noise for round planets.** `noise3For(seed, opts)` takes `noiseFor`'s options and returns `(x, y, z) → −1…1`; `cells3For(seed, { frequency, jitter })` is the cellular distance (Euclidean, from 0 up). A generated planet's ground is a function of a direction on its sphere, so it has no seam and wraps (`docs/superpowers/specs/2026-10-18-endless-universe-design.md`, section E); the 50 roster planets keep their 2D plane.
 
 ## What the site does not use, and why
 
-- **3D noise**: a planet is a plane (the spec's decision 1).
 - **`DomainWrap`** and the domain-warp fractal types: see Gotchas.
 - **The galaxy's surfaces and the planets' land** keep `src/components/galaxy/surface/noise.js`'s value noise; moving them would change their pixels.
 
@@ -38,3 +40,4 @@ The census row is in [README.md](README.md): one file imports it, `src/lib/land/
 
 - In 1.1.1, `DomainWrap(coord)` warps only when `coord` is an instance of the package's `Vector2` class, which it does not export; a plain `{ x, y }` comes back unchanged with no error (found while writing `src/lib/land/flight/fnl.js`; its test “warps the domain” would fail with the class's warp).
 - `GetNoise(x, y)` scales by the frequency itself; pass metres, not metres times the frequency.
+- The 3D warp is three noises, as the 2D one is two: the wrapper's, not `DomainWrap`, for the reason above. Pass a direction times the radius in metres when the frequency is per metre, the bare unit direction when it is per planet.
