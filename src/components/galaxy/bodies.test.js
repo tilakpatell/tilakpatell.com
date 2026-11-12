@@ -108,6 +108,24 @@ describe('buildBody', () => {
     }
   });
 
+  it('sets its middle where it is drawn, not where update() last saw it (a map drawn round the camera)', () => {
+    const renderer = { getDrawingBufferSize: (v) => v.set(1920, 1080) };
+    const camera = new THREE.PerspectiveCamera(60, 16 / 9, 0.05, 9000);
+    for (const small of [false, true]) {
+      const map = new THREE.Group();
+      const b = buildBody('hoth', { r: 40, small });
+      b.group.position.set(1e6 + 120, 30, -50);
+      map.add(b.group);
+      b.update(0, camera);
+      expect(b.surface.material.uniforms.uCenter.value.toArray()).toEqual([1e6 + 120, 30, -50]);
+      map.position.set(-1e6, 0, 0); // (the draw's step: the camera at nought)
+      map.updateMatrixWorld(true); // (as the renderer does)
+      b.surface.onBeforeRender(renderer, null, camera);
+      expect(b.surface.material.uniforms.uCenter.value.toArray()).toEqual([120, 30, -50]);
+      b.dispose();
+    }
+  });
+
   it('works its ground two octaves finer from orbit on high (four on ultra), eased in, and not small', () => {
     const near = (b) => b.surface.material.uniforms.uNearOct.value;
     const camera = new THREE.PerspectiveCamera(60, 16 / 9, 0.05, 9000);
