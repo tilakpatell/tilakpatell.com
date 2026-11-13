@@ -3,7 +3,7 @@
 // picture riding the camera (the endless universe's design, section D and
 // "What done looks like" 5):
 //
-//   node scripts/nebula-check.mjs [--url http://127.0.0.1:5173] [--quality high] [--out lab/universe/nebula-check.json] [--chromium /path]
+//   node scripts/nebula-check.mjs [--url http://127.0.0.1:5173] [--quality high] [--out lab/universe/nebula-check.json] [--shots <dir>] [--chromium /path]
 //
 // 1. Parallax: at the veil-side pose, the Veil shot with the nebulae on
 //    and off (the difference is the cloud), then again with the camera
@@ -95,8 +95,15 @@ const verdict = (name, ok, detail) => {
 };
 
 // the map's canvas alone, as raw RGBA
+const shotsDir = typeof args.shots === 'string' ? resolve(ROOT, args.shots) : null;
+let shotN = 0;
 const shot = async () => {
   const png = await page.screenshot({ type: 'png', timeout: 180000 });
+  // (--shots <dir>: each shot kept, numbered, to look at)
+  if (shotsDir) {
+    await mkdir(shotsDir, { recursive: true });
+    await writeFile(join(shotsDir, `${String(++shotN).padStart(2, '0')}.png`), png);
+  }
   const { data, info } = await sharp(png).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
   if (info.width !== W || info.height !== H) throw new Error(`a shot of ${info.width} × ${info.height}`);
   return data;
