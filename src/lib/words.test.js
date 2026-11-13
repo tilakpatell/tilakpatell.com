@@ -22,7 +22,7 @@ const FILES = [
   ...['Home', 'Experience', 'Projects', 'Resume', 'Contact', 'Travel', 'Changes', 'Terminal'].map((p) => `pages/${p}.jsx`),
   ...['UniversePanel', 'UniverseMap', 'NavMap', 'Hangar', 'FlightSettings', 'StartChoice'].map((f) => `components/universe/${f}.jsx`),
   ...list('components/universe/online/', /\.jsx$/),
-  'components/cockpit/Welcome.jsx', // a first visit's one question
+  ...list('components/launch/', /\.jsx?$/), // the front door's welcome, quick tour and arrival
   'components/universe/nav.js',
   'components/universe/scene.js',
 ];
