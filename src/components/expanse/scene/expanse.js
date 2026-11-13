@@ -310,6 +310,23 @@ export function createExpanse(parent, { universe = UNIVERSE, tier = 'mid', worke
         }
       return best;
     },
+    // (dev, for the endless check: how many generated places, systems and things, are within
+    // `r` of a point, and the nearest; from the sectors loaded)
+    around(at, r = 9000) {
+      let count = 0;
+      let nearest = Infinity;
+      const see = (x, y, z) => {
+        const d = Math.hypot(x - at[0], y - at[1], z - at[2]);
+        if (d <= r) count++;
+        if (d < nearest) nearest = d;
+      };
+      for (const rec of loaded.values()) {
+        const { systems, things, origin } = rec.sector;
+        for (const s of systems) see(s.at[0], s.at[1], s.at[2]);
+        for (let i = 0; i < things.count; i++) see(origin[0] + things.at[i * 3], origin[1] + things.at[i * 3 + 1], origin[2] + things.at[i * 3 + 2]);
+      }
+      return { count, nearest };
+    },
     stars: () => starList,
     solids: () => solidList,
     built: () => near.built(),
