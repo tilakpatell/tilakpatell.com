@@ -1,10 +1,14 @@
 // A planet's map as seen from orbit: an equirectangular image of the very
 // ground the flight flies over, so what you see from space is what you walk
-// on. Each texel is the ground at the chart's middle there, coloured by the
-// flight's ground rule (lib/three/groundLook.js, at the mean of its noises:
-// height between the palette's low and high, the accent's patches as much as
-// they cover, rock
-// where it is steep, wet by the water's edge), with the water over it.
+// on. Each texel is the ground at the chart's middle there (its height, its
+// slope read over 32 m, its biome: exactly the flight's), coloured by the
+// flight's ground rule (lib/three/groundLook.js) as seen from far off:
+// height between the palette's low and high, rock where it is steep, wet by
+// the water's edge, and the water over it, as the shader draws them with its
+// noises at their mean. The one part averaged rather than matched is the
+// accent: the shader lays it in patches by its noise, a texel takes it at
+// half its cover, the share of the land those patches take on the whole.
+// The shader's fine grain and scans, close-up texture, aren't in a texel.
 //
 // Three kinds of spec: a round one (a generated planet's: its sphere, ./sphereField.js);
 // a gas giant (bands, as a cloud deck's plane is one colour); any other plane

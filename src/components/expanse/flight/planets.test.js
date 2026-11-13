@@ -53,6 +53,11 @@ describe('the flight’s planets, composed', () => {
     expect(moonRowOf({ id: 'E:3,-2:1:0', moonList: [] }, null, 0)).toBeNull();
   });
 
+  // (the roster's lock reads the fixture; the flight reads the live universe through placeOf)
+  it('gives the seeded thirteen, read live, exactly the fixture’s rows', () => {
+    for (const row of FIXTURE) expect(expanseRow(row.id), row.id).toEqual(row);
+  });
+
   it('reads a planet id with its height written', () => {
     expect(expanseRow('E:1,0,0:0:1')).toEqual(expanseRow('e:1,0:0:1'));
   });

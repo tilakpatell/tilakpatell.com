@@ -63,6 +63,25 @@ describe('createOrbitMaps', () => {
     expect(maps.stats().cached).toBe(0);
   });
 
+  it('answers null for no spec, and never throws', async () => {
+    const maps = createOrbitMaps({ workers: pool });
+    expect(await maps.get(null, 'mid')).toBeNull();
+    expect(maps.peek(undefined, 'mid')).toBeNull();
+    expect(pool.request).not.toHaveBeenCalled();
+  });
+
+  it('keeps nothing a bake brings back after dispose', async () => {
+    let finish;
+    pool.request.mockImplementationOnce((name, msg) => new Promise((r) => (finish = () => r(map(msg)))));
+    const maps = createOrbitMaps({ workers: pool });
+    const asked = maps.get(spec, 'mid');
+    await Promise.resolve();
+    maps.dispose();
+    finish();
+    expect(await asked).toBeNull();
+    expect(maps.stats()).toEqual({ cached: 0, flying: 0 });
+  });
+
   it('stores nothing', () => {
     for (const f of ['./orbitMaps.js', './orbitMap.js']) expect(readFileSync(new URL(f, import.meta.url), 'utf8')).not.toMatch(/localStorage|indexedDB|rt\.store|rt\.saves/);
   });

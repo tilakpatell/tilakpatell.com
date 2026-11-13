@@ -70,7 +70,7 @@ const hoth = { id: 'hoth', pois: [{ id: 'echo-base', name: 'Echo Base', at: [120
 const low = (extra = {}) => ({ x: 0, y: 20, z: 0, pitch: 0, yaw: 0, roll: 0, speed: 60, ...extra });
 const snap = (pressed = [], held = []) => ({ pressed: new Set(pressed), action: (name) => held.includes(name) });
 
-function world({ durable = true, loader = fakeLoader(), online = fakeOnline(), groundAt = () => 0, spec = hoth } = {}) {
+function world({ durable = true, loader = fakeLoader(), online = fakeOnline(), groundAt = () => 0, spec = hoth, signIn = async () => 'me' } = {}) {
   const draw = fakeDraw();
   const told = [];
   let respawned = 0;
@@ -84,7 +84,7 @@ function world({ durable = true, loader = fakeLoader(), online = fakeOnline(), g
     durable: durable ? {} : null,
     makeLoader: () => loader,
     makeOnline: () => online,
-    signIn: async () => 'me',
+    signIn,
     ...draw,
   });
   shared.join('Alpha');
@@ -324,13 +324,29 @@ describe('a world nothing may be built on', () => {
     expect(w.draw.structures.size).toBe(0);
   });
 
-  it('never reaches the durable world: no loader, nothing held', async () => {
-    const w = world({ spec: generated });
+  it('writes nothing to the durable world: no sign-in, nothing to take down, nothing held of its own', async () => {
+    let asked = 0;
+    const w = world({ spec: generated, signIn: async () => (asked++, 'me') });
     await flush();
-    w.shared.step(0.016, low(), snap());
-    expect(w.loader.updates).toBe(0);
+    w.shared.step(0.016, low(), snap(['KeyX']));
+    await flush();
+    expect(asked).toBe(0);
+    expect(w.loader.placed).toHaveLength(0);
+    expect(w.loader.removed).toHaveLength(0);
     expect(w.shared.prompt(low())).toMatchObject({ build: false, unbuild: false, kept: false });
     expect(w.shared.built()).toEqual([]);
+  });
+
+  // (the owner's rule: nothing a visitor did is lost; a turret stored on such a world before it
+  // became read-only is still drawn there, and still stands)
+  it('still shows what was built there before, and a hit on it writes nothing', async () => {
+    const w = world({ spec: generated });
+    await flush();
+    w.loader.emit({ type: 'add', entity: { id: ID, type: 'turret', owner: 'someone', x: 0, y: 0, z: 0, hp: 100, metadata: {} } });
+    expect(w.draw.structures.has(ID)).toBe(true);
+    w.shared.step(0.016, low(), snap());
+    expect(w.loader.updates).toBeGreaterThan(0);
+    expect(w.loader.damaged).toEqual([]);
   });
 
   it('keeps the room: shots still go out', async () => {

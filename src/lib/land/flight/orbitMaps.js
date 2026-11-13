@@ -3,7 +3,7 @@
 // the least recently used dropped first. Never stored anywhere else; a map
 // is made again when it is wanted again. Two asks for one map make one bake;
 // a bake that comes back null (cancelled, failed) is not kept, so the next
-// ask bakes again.
+// ask bakes again. No spec, or a page gone (dispose), answers null.
 //
 //   ORBIT_WORKER → the pool's name for it; makeOrbitWorker() → the worker
 //   createOrbitMaps({ workers, make, cap = 16 }) → { get(spec, tier) → Promise<map | null>,
@@ -19,6 +19,7 @@ export function createOrbitMaps({ workers, make = makeOrbitWorker, cap = 16 } = 
   workers.define(ORBIT_WORKER, make, { size: 1 });
   const cached = new Map(); // key → map, the most recent last
   const flying = new Map(); // key → Promise<map | null>
+  let disposed = false;
 
   const keyOf = (spec, tier) => {
     const { width, height } = orbitMapSize(tier);
@@ -26,6 +27,7 @@ export function createOrbitMaps({ workers, make = makeOrbitWorker, cap = 16 } = 
   };
 
   const peek = (spec, tier) => {
+    if (!spec?.id) return null;
     const { key } = keyOf(spec, tier);
     const map = cached.get(key);
     if (!map) return null;
@@ -35,6 +37,7 @@ export function createOrbitMaps({ workers, make = makeOrbitWorker, cap = 16 } = 
   };
 
   function get(spec, tier) {
+    if (!spec?.id || disposed) return Promise.resolve(null);
     const { key, width, height } = keyOf(spec, tier);
     const map = peek(spec, tier);
     if (map) return Promise.resolve(map);
@@ -44,7 +47,8 @@ export function createOrbitMaps({ workers, make = makeOrbitWorker, cap = 16 } = 
       .catch(() => null)
       .then((answer) => {
         flying.delete(key);
-        if (!answer?.rgba) return null;
+        // (a bake that comes back after dispose is kept by no one)
+        if (!answer?.rgba || disposed) return null;
         const out = { width: answer.width, height: answer.height, rgba: answer.rgba, biome: answer.biome };
         cached.set(key, out);
         while (cached.size > cap) cached.delete(cached.keys().next().value);
@@ -59,6 +63,7 @@ export function createOrbitMaps({ workers, make = makeOrbitWorker, cap = 16 } = 
     peek,
     stats: () => ({ cached: cached.size, flying: flying.size }),
     dispose() {
+      disposed = true;
       workers.close(ORBIT_WORKER);
       cached.clear();
       flying.clear();
