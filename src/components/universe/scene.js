@@ -976,7 +976,10 @@ export async function create(canvas, ctx) {
   // after, it made each of these shaders again)
   const warm = (root, cam = camera, target = scene, onStep = null) => {
     if (target === scene) house.adopt(root);
-    return precompile(renderer, singlePass(root), cam, target, post.on ? post.composer.readBuffer : undefined, { onStep });
+    // (paced by ./prepFrame.js: under the launch's cover, in the page's idle
+    // moments and not just after a press, so the welcome and the tour stay
+    // quick while the map is made behind them)
+    return precompile(renderer, singlePass(root), cam, target, post.on ? post.composer.readBuffer : undefined, { onStep, frame: () => prepFrame() });
   };
   // (a model that comes after the first frame: its pictures sent as it comes, not on the frame it's first seen)
   const sendAndWarm = (o) => {

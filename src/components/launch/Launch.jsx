@@ -1,4 +1,4 @@
-import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
+import { lazy, startTransition, Suspense, useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ErrorBoundary from '../ErrorBoundary';
 import { local, prefersReducedMotion } from '../../lib/hooks';
@@ -32,8 +32,8 @@ import { useMapState } from './useLaunch';
 
 const OpeningCrawl = lazy(() => import('../experience/OpeningCrawl'));
 const Cockpit = lazy(() => import('../cockpit/Cockpit'));
-const Welcome = lazy(() => import('./Welcome'));
-const QuickTour = lazy(() => import('./QuickTour'));
+// (the welcome and the tour in one frame, one file: Opening.jsx)
+const Opening = lazy(() => import('./Opening'));
 const Arrive = lazy(() => import('./Arrive'));
 
 // (a chunk fetched ahead of need whose failure is nobody's: App.jsx's `ahead`)
@@ -86,7 +86,6 @@ function Run() {
     // (the arrival, small, behind every part: whichever is left early needs it)
     if (stage) ahead(import('./Arrive'));
     const intro = stage === 'tour' || stage === 'crawl' || (stage === 'welcome' && ways.main === 'intro');
-    if (intro) ahead(import('./QuickTour'));
     if (intro && !reduced) {
       ahead(import('../experience/OpeningCrawl'));
       // (the crew, the biggest part, once the crawl's begun: the tour may yet be skipped)
@@ -133,7 +132,13 @@ function Run() {
     const check = () => {
       if (done) return;
       const now = performance.now();
-      const step = arrival({ map: mapState(), since, now, uncoveredAt, onMap: isMapPath(pathNow()) });
+      const step = arrival({
+        map: mapState(),
+        since,
+        now,
+        uncoveredAt,
+        onMap: isMapPath(pathNow()),
+      });
       if (step === 'uncover' && uncoveredAt == null) {
         uncoveredAt = now;
         // (a moment after the card's first paint: the map's first frame can
@@ -175,69 +180,63 @@ function Run() {
   const toured = () => local.set(TOUR_KEY, writeProgress(local.get(TOUR_KEY, null), {}));
   // its flying card stands in for the map's first-flight basics
   const onCard = (card) => card.id === 'fly' && local.set(BRIEF_KEY, sawBrief(local.get(BRIEF_KEY, []), FLY_BRIEF));
-  const closeCrawl = useCallback(() => {
-    // keep the page covered until the cockpit's first frame (index.html's cover)
-    document.documentElement.dataset.intro = '1';
-    setStage('cockpit');
-  }, []);
+  // On to a part that loads (the crawl, the cockpit) in a transition: the
+  // part on screen stays up until the next can draw, rather than a gap of
+  // the cover between them while its file comes
+  const onTo = useCallback((next) => startTransition(() => setStage(next)), []);
+  const closeCrawl = useCallback(() => onTo('cockpit'), [onTo]);
 
   const arriving = stage === 'arrive' || (stage === 'cockpit' && peaked && !made());
   useEffect(() => {
     if (arriving) setArriveUp(true);
   }, [arriving]);
+  // (one boundary for every part, already up from the welcome on: a part
+  // that's still loading, asked for in a transition (onTo), leaves the one
+  // on screen up until it can draw)
   return (
-    <>
-      {stage === 'welcome' && (
-        <Suspense fallback={null}>
-          <Welcome visit={visit} ways={ways} reduced={reduced} map={map} onPick={pick} />
-        </Suspense>
-      )}
-      {stage === 'tour' && (
-        <Suspense fallback={null}>
-          <QuickTour
-            next={after('tour', { reduced })}
-            map={map}
-            onCard={onCard}
-            onDone={() => {
+    <Suspense fallback={null}>
+      {/* (one element for both, so the frame stays up from the welcome into the tour) */}
+      {(stage === 'welcome' || stage === 'tour') && (
+        <Opening
+          stage={stage}
+          visit={visit}
+          ways={ways}
+          reduced={reduced}
+          map={map}
+          onPick={pick}
+          tour={{
+            next: after('tour', { reduced }),
+            onCard,
+            onDone: () => {
               toured();
-              setStage(after('tour', { reduced }));
-            }}
-            onSkipIntro={() => {
+              onTo(after('tour', { reduced }));
+            },
+            onSkipIntro: () => {
               toured();
               setStage('arrive');
-            }}
-          />
-        </Suspense>
+            },
+          }}
+        />
       )}
-      {stage === 'crawl' && (
-        <Suspense fallback={null}>
-          <OpeningCrawl variant="intro" onClose={closeCrawl} />
-        </Suspense>
-      )}
+      {stage === 'crawl' && <OpeningCrawl variant="intro" onClose={closeCrawl} />}
       {stage === 'cockpit' && (
-        <Suspense fallback={null}>
-          <Cockpit
-            start={ride?.vehicle ?? undefined}
-            // (uncovered under the flash only with the map made: else the arrival takes it)
-            onReveal={() => made() && cover(false)}
-            onPeak={() => {
-              // out into the universe (the front door is it, unless a visitor
-              // asked for the home page), flying the ship you launched in
-              if (!/^\/(universe(\/|$)|$)/.test(pathNow())) navigate('/universe');
-              setPeaked(true);
-              if (made()) cover(false);
-            }}
-            onDone={() => (made() ? finish() : setStage('arrive'))}
-          />
-        </Suspense>
+        <Cockpit
+          start={ride?.vehicle ?? undefined}
+          // (uncovered under the flash only with the map made: else the arrival takes it)
+          onReveal={() => made() && cover(false)}
+          onPeak={() => {
+            // out into the universe (the front door is it, unless a visitor
+            // asked for the home page), flying the ship you launched in
+            if (!/^\/(universe(\/|$)|$)/.test(pathNow())) navigate('/universe');
+            setPeaked(true);
+            if (made()) cover(false);
+          }}
+          onDone={() => (made() ? finish() : setStage('arrive'))}
+        />
       )}
       {/* (mounted with the launch, drawing nothing till it's wanted, so it's there the moment it is) */}
-      {(stage || arriveUp) && (
-        <Suspense fallback={null}>
-          <Arrive shown={arriving} map={map} onSkip={finish} />
-        </Suspense>
-      )}
-    </>
+      {(stage || arriveUp) && <Arrive shown={arriving} map={map} onSkip={finish} />}
+    </Suspense>
   );
 }
 
