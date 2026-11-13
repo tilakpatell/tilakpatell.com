@@ -3,8 +3,7 @@ import { PLACE } from '../words';
 import { PARK_GAP, clearOf } from '../ship';
 import { THING_KINDS, WONDER_KINDS, fullSector, placeIn, thingRow, UNIVERSE } from '../../expanse/shared/gen';
 import { parseSpaceId } from '../../../lib/space/address';
-import { FAR } from '../../expanse/shared/levels';
-import { THING_CARDS, placeCard, placeLook, placeReach } from './cards';
+import { FAR, THING_CARDS, placeCard, placeLook, placeReach } from './cards';
 
 const s = fullSector(UNIVERSE, 1, 0, 0);
 const found = (id) => {

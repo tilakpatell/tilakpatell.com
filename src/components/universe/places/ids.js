@@ -45,9 +45,16 @@ export const isPlaceId = (id) => canonicalPlace(id) !== null;
 
 export function atTime(place, t, out = [0, 0, 0]) {
   const row = place?.src?.row;
-  if (place?.place === 'planet') return orbitAt(row, t, out);
-  if (place?.place === 'moon') return moonAt(row, place.src.planet, t, out);
-  const at = typeof place?.move === 'function' ? place.move(row, t) : (row?.at ?? place?.at);
+  // (main's orbitAt and moonAt make their own array; lane 2's PR 2.4 lets
+  // them write into ours, and then these two hand `out` straight on)
+  const at =
+    place?.place === 'planet'
+      ? orbitAt(row, t)
+      : place?.place === 'moon'
+        ? moonAt(row, place.src.planet, t)
+        : typeof place?.move === 'function'
+          ? place.move(row, t)
+          : (row?.at ?? place?.at);
   if (!at) return null;
   out[0] = at[0];
   out[1] = at[1];

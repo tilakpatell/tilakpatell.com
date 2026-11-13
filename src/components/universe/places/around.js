@@ -56,9 +56,8 @@
 
 import { SECTOR } from '../../../lib/space/address.js';
 import { SECTOR_EXTRAS, THING_KINDS, moonAt, orbitAt, thingRow } from '../../expanse/shared/gen';
-import { FAR } from '../../expanse/shared/levels';
 import { PARK_GAP } from '../ship';
-import { placeLook, placeReach, thingCardOf } from './cards';
+import { FAR, placeLook, placeReach, thingCardOf } from './cards';
 import { atTime } from './ids';
 import { parkDistance } from './park';
 
@@ -89,6 +88,13 @@ let mid = new Float64Array(0);
 let order = new Int32Array(0);
 const list = []; // (the sectors of a call)
 const P = [0, 0, 0]; // (a planet where it is, and a moon of it)
+// (main's orbitAt and moonAt make an array each; lane 2's PR 2.4 lets them
+// write into P and M, and then this copy goes)
+const set = (out, v) => {
+  out[0] = v[0];
+  out[1] = v[1];
+  out[2] = v[2];
+};
 const M = [0, 0, 0];
 
 function grow() {
@@ -286,13 +292,13 @@ export function placesAround(sectors, cam, t, { far = AROUND.far, inside = AROUN
       const { planets } = sys;
       for (let k = 0; k < planets.length; k++) {
         const p = planets[k];
-        orbitAt(p, t, P);
+        set(P, orbitAt(p, t));
         const rp = placeReach('planet', p);
         const d = Math.sqrt((P[0] - cam[0]) ** 2 + (P[1] - cam[1]) ** 2 + (P[2] - cam[2]) ** 2);
         if (d - rp <= far) add(PLANET, si, j, k, 0, P[0], P[1], P[2], d);
         const moons = p.moonList ?? [];
         for (let q = 0; q < moons.length; q++) {
-          moonAt(moons[q], p, t, M, P);
+          set(M, moonAt(moons[q], p, t));
           const rm = placeReach('moon', moons[q]);
           const dm = Math.sqrt((M[0] - cam[0]) ** 2 + (M[1] - cam[1]) ** 2 + (M[2] - cam[2]) ** 2);
           if (dm - rm <= far) add(MOON, si, j, k, q, M[0], M[1], M[2], dm);

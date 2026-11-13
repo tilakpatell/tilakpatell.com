@@ -31,8 +31,11 @@
 
 import { parseSpaceId } from '../../../lib/space/address.js';
 import { THING_KINDS } from '../../expanse/shared/gen';
-import { FAR } from '../../expanse/shared/levels'; // (the far plane, lane 2's: around.js lists by it too)
 import { PLACE } from '../words';
+
+// The universe camera's far plane (scene.js's 45,000). Lane 2's levels.js
+// exports the same FAR once it's on main; around.js lists by it too.
+export const FAR = 45000;
 
 const GIANTS = new Set(['gas', 'ringed']); // no ground to land on
 const MOON_COLOR = { rocky: '#8a8178', icy: '#cfe3ee' };
