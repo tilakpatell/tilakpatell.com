@@ -14,12 +14,27 @@
 //
 // Pure: runs in Node and in the flight's terrain worker.
 //
+// A round spec (a generated planet's, `spec.round`) is its sphere's field
+// (./sphereField.js) read through the chart round its landing spot
+// (./sphere.js chartOf): the plane the flight flies is that chart.
+//
 //   planetField(spec) → { heightAt(x, z) → metres, biomeAt(x, z) → index of the heaviest }
+//   fieldKey(spec) → what a field is cached by: the id, and a round planet's spot
 
 import { fieldAt } from '../layers.js';
 import { flatten } from '../flats.js';
 import { biomeWeights } from './biomes.js';
 import { noiseFor } from './fnl.js';
+import { chartOf } from './sphere.js';
+import { sphereField } from './sphereField.js';
+
+export const fieldKey = (spec) => (spec.round ? `${spec.id}@${spec.round.at.join(',')}` : spec.id);
+
+function roundField(spec) {
+  const chart = chartOf(spec.round.at, spec.round.radius);
+  const f = sphereField(spec);
+  return { heightAt: (x, z) => f.heightAt(chart.toDir(x, z)), biomeAt: (x, z) => f.biomeAt(chart.toDir(x, z)) };
+}
 
 function stackOf(spec, b, i) {
   const seed = spec.seed + i * 101;
@@ -33,6 +48,7 @@ function stackOf(spec, b, i) {
 }
 
 export function planetField(spec) {
+  if (spec.round) return roundField(spec);
   const stacks = spec.biomes.map((b, i) => stackOf(spec, b, i));
   const raw = (x, z) => {
     const w = biomeWeights(spec, x, z);
