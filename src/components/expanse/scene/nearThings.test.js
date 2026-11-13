@@ -24,7 +24,7 @@ describe('the things round the camera', () => {
     expect(want.length).toBeGreaterThan(5);
   });
 
-  it('picks those within a hundred of their sizes, nearest first, as many as asked', () => {
+  it('picks those within thirty of their sizes, nearest first, as many as asked', () => {
     const i = [...t.size].findIndex((s) => s > 60);
     const at = placeOf(i);
     const cam = [at[0] + t.size[i] * 20, at[1], at[2]];

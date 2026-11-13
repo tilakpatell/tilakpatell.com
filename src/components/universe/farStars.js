@@ -36,8 +36,9 @@
 //   are where they are however far out (a speck's own numbers are within a sector).
 //   A speck is drawn past the far plane only (expanse/scene/levels.js): nearer, it's a disc.
 // - `discs` bodies drawn as discs of their true size within the far plane:
-//   discs.begin(), push(x, y, z, r, cr, cg, cb, lx, ly, lz, alpha, key?) in the map's
-//   space (l: the way to its light, or nought for a star's own light), end(); sorted
+//   discs.begin(), push(x, y, z, r, cr, cg, cb, lx, ly, lz, alpha, key?, rough?) in the map's
+//   space (l: the way to its light, or nought for a star's own light; rough, 0 … 1: a rock's
+//   own lumps, from its seed, or 0 for a smooth ball), end(); sorted
 //   far to near, the nearest kept past capacity, written from the camera as last updated
 //   (so after update() in the frame). Nothing is made a frame.
 // - pops() → { count, px }: the discs that came from nothing to over half in one frame
@@ -134,6 +135,7 @@ const VERT = /* glsl */ `
       float d = max(length(position), 1e-3);
       size = aR / d * projectionMatrix[1][1] * uHeight / uDpr;
       vDisc = 1.0;
+      bright = aBright; // (a disc's: how rough it is, its seed, or nought)
       vLight = length(aLight) > 0.0 ? normalize((viewMatrix * modelMatrix * vec4(aLight, 0.0)).xyz) : vec3(0.0);
     }
     gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0);
@@ -154,6 +156,13 @@ const VERT = /* glsl */ `
 // spikes, brighter for the brighter stars and the one in focus; a disc a
 // ball lit from one side, or all over for a star's own)
 const FRAG = /* glsl */ `
+  float hsh(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+  float vn(vec2 p) {
+    vec2 i = floor(p);
+    vec2 f = fract(p);
+    f = f * f * (3.0 - 2.0 * f);
+    return mix(mix(hsh(i), hsh(i + vec2(1.0, 0.0)), f.x), mix(hsh(i + vec2(0.0, 1.0)), hsh(i + vec2(1.0)), f.x), f.y);
+  }
   varying vec3 vColor;
   varying float vK;
   varying float vBright;
@@ -167,8 +176,18 @@ const FRAG = /* glsl */ `
     float r = length(q);
     if (r > 1.0) discard;
     if (vDisc > 0.5) {
-      float cover = clamp((1.0 - r) * vPx * 0.5, 0.0, 1.0) * vK;
-      vec3 n = vec3(q.x, -q.y, sqrt(max(0.0, 1.0 - r * r)));
+      // (a rock's lumps: its edge and its face pushed about by value noise, seeded by it)
+      float edge = 1.0;
+      vec3 bend = vec3(0.0);
+      if (vBright > 0.0) {
+        vec2 s = q * 2.5 + vBright * 37.0;
+        edge = 0.82 + 0.18 * vn(vec2(atan(q.y, q.x) * 1.3, vBright * 11.0) * 2.0);
+        bend = vec3(vn(s) - 0.5, vn(s + 5.2) - 0.5, 0.0) * 1.1;
+      }
+      if (r > edge) discard;
+      float cover = clamp((edge - r) * vPx * 0.5, 0.0, 1.0) * vK;
+      float rr = r / edge;
+      vec3 n = normalize(vec3(q.x / edge, -q.y / edge, sqrt(max(0.0, 1.0 - rr * rr))) + bend);
       float lit = dot(vLight, vLight) > 0.0 ? 0.04 + 0.96 * max(dot(n, vLight), 0.0) : 1.0;
       gl_FragColor = vec4(vColor * lit * cover, cover);
       return;
@@ -298,7 +317,7 @@ export function createFarStars(parent, { places, skyFar, slots = 0, slotSize = 4
   };
 
   // ── the discs: pushed each frame in the map's space, written from the camera ──
-  const D = 12; // x y z r cr cg cb lx ly lz alpha key
+  const D = 13; // x y z r cr cg cb lx ly lz alpha key rough
   const pushed = new Float64Array(Math.max(1, discCap * 2) * D);
   const order = new Int32Array(Math.max(1, discCap * 2));
   const dist2 = new Float64Array(Math.max(1, discCap * 2));
@@ -310,7 +329,7 @@ export function createFarStars(parent, { places, skyFar, slots = 0, slotSize = 4
     begin() {
       nPushed = 0;
     },
-    push(x, y, z, r, cr, cg, cb, lx, ly, lz, alpha, key = -1) {
+    push(x, y, z, r, cr, cg, cb, lx, ly, lz, alpha, key = -1, rough = 0) {
       if (nPushed >= order.length || !(alpha > 0)) return;
       const o = nPushed * D;
       pushed[o] = x;
@@ -325,6 +344,7 @@ export function createFarStars(parent, { places, skyFar, slots = 0, slotSize = 4
       pushed[o + 9] = lz;
       pushed[o + 10] = alpha;
       pushed[o + 11] = key;
+      pushed[o + 12] = rough;
       const dx = x - camAt.x;
       const dy = y - camAt.y;
       const dz = z - camAt.z;
@@ -354,6 +374,7 @@ export function createFarStars(parent, { places, skyFar, slots = 0, slotSize = 4
         A.aColor.setXYZ(v, pushed[o + 4], pushed[o + 5], pushed[o + 6]);
         A.aLight.setXYZ(v, pushed[o + 7], pushed[o + 8], pushed[o + 9]);
         A.aK.setX(v, pushed[o + 10]);
+        A.aBright.setX(v, pushed[o + 12]);
         const key = pushed[o + 11];
         if (key >= 0) {
           seenNow.set(key, pushed[o + 10]);
@@ -362,7 +383,7 @@ export function createFarStars(parent, { places, skyFar, slots = 0, slotSize = 4
       }
       seen.clear();
       for (const [k, a] of seenNow) seen.set(k, a);
-      if (nDiscs) for (const a of [A.position, A.aR, A.aColor, A.aLight, A.aK]) range(a, discBase, nDiscs);
+      if (nDiscs) for (const a of [A.position, A.aR, A.aColor, A.aLight, A.aK, A.aBright]) range(a, discBase, nDiscs);
     },
     count: () => nDiscs,
   };

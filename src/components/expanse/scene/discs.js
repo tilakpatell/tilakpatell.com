@@ -191,7 +191,10 @@ export function createDiscs(writer, { budget, far = FAR, keyed = false } = {}) {
             lz = -z;
           }
         }
-        writer.push(x, y, z, r, c[0] * lift, c[1] * lift, c[2] * lift, lx, ly, lz, alpha, keyed ? (w.kind === 'thing' ? (keyOf(w.row.id) ^ Math.imul(w.row.things.slot[w.star] + 1, 0x9e3779b1)) >>> 0 : keyOf(w.row.id)) : -1);
+        // (a rock, ice or a derelict lumpy, seeded by where it is; a rogue world, a star or a planet a smooth ball)
+        const lumpy = (w.kind === 'thing' && THING_KINDS[w.row.things.kind[w.star]].kind !== 'rogue') || (w.kind === 'wonder' && w.row.kind === 'derelict');
+        const rough = lumpy ? 0.05 + 0.95 * (((Math.abs(x * 0.0137 + z * 0.0291 + y * 0.0071) % 1) + 1) % 1) : 0;
+        writer.push(x, y, z, r, c[0] * lift, c[1] * lift, c[2] * lift, lx, ly, lz, alpha, keyed ? (w.kind === 'thing' ? (keyOf(w.row.id) ^ Math.imul(w.row.things.slot[w.star] + 1, 0x9e3779b1)) >>> 0 : keyOf(w.row.id)) : -1, rough);
       }
       writer.end();
       count = writer.count?.() ?? m;

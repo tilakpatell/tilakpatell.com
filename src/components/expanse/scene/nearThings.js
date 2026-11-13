@@ -3,9 +3,11 @@
 // middle layer's wonders but its nebulae: found round the camera by their
 // cells, not by looking at every one, then drawn. Within MESH_NEAR of its
 // size a thing is a mesh, one instanced draw a kind (none when there are
-// none); further out, to THING_DISC, the far layer's disc (discs.js). (The
-// generator's THING_NEAR, 8 sizes, would have a thing a flat disc 400 px
-// across before its mesh came; at 100 sizes the hand-over is at 16 px.)
+// none); further out, to THING_DISC, the far layer's disc (discs.js), a
+// rocky one lumpy. (The generator's THING_NEAR, 8 sizes, would have a thing
+// a disc 440 px across before its mesh came; at 30 the hand-over is at about
+// 120 px, and no baseline pose has a thing that near, so none gains a draw
+// call: at 100 they had 2 to 17 each.)
 // A kind with a drawer of its own (lane 4a's, `drawers`) is handed its rows
 // instead and draws them its own way.
 //
@@ -23,7 +25,7 @@ import { SECTOR } from '../../../lib/space/address.js';
 import { rock, rockMaterial } from '../../../lib/three/rock';
 import { THING_BASE, THING_CELLS, THING_KINDS } from '../gen/things';
 
-export const MESH_NEAR = 100;
+export const MESH_NEAR = 30;
 export const THING_DISC = 20000;
 const CELL = SECTOR / THING_CELLS;
 const HALF = SECTOR / 2;

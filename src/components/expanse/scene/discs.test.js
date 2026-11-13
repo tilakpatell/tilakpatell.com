@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { addBodies } from '../gen/systems';
 import { fullSector } from '../gen/space';
 import { UNIVERSE } from '../gen/seed';
+import { THING_KINDS } from '../gen/things';
 import { orbitAt } from '../gen/orbits';
 import { createDiscs, pickDiscs } from './discs';
 
@@ -23,7 +24,7 @@ const writer = () => {
   return {
     got,
     begin: () => (got.length = 0),
-    push: (x, y, z, r, cr, cg, cb, lx, ly, lz, alpha, key) => got.push({ at: [x, y, z], r, c: [cr, cg, cb], l: [lx, ly, lz], alpha, key }),
+    push: (x, y, z, r, cr, cg, cb, lx, ly, lz, alpha, key, rough) => got.push({ at: [x, y, z], r, c: [cr, cg, cb], l: [lx, ly, lz], alpha, key, rough }),
     end() {},
   };
 };
@@ -45,7 +46,7 @@ describe('the discs fed', () => {
     discs.feed([HAND], cam, 1000);
     const byAt = (at) => w.got.find((d) => d.at.every((v, i) => Math.abs(v - at[i]) < 1e-6));
     const starA = byAt([390000, 0, 0]);
-    expect(starA).toMatchObject({ r: 150, l: [0, 0, 0], alpha: 1 });
+    expect(starA).toMatchObject({ r: 150, l: [0, 0, 0], alpha: 1, rough: 0 });
     const pA = byAt(orbitAt(HAND.systems[0].planets[0], 1000));
     expect(pA.alpha).toBe(1);
     expect(pA.r).toBe(30);
@@ -76,9 +77,9 @@ describe('the discs fed', () => {
 
   it('leaves a wonder near enough to be a mesh to nearThings.js', () => {
     const w = writer();
-    createDiscs(w, { budget: { discs: 100 } }).feed([HAND], [389000, 0, -22000], 0);
-    expect(w.got.filter((d) => d.r === 400 * 0.15)).toHaveLength(0); // (the pulsar, 60 across, 4,000 off: a mesh within 6,000)
-    expect(w.got.filter((d) => d.r === 400 * 0.12)).toHaveLength(1); // (the derelict, 48 across, 5,000 off: past its 4,800, a disc)
+    createDiscs(w, { budget: { discs: 100 } }).feed([HAND], [391800, 0, -22000], 0);
+    expect(w.got.filter((d) => d.r === 400 * 0.15)).toHaveLength(0); // (the pulsar, 60 across, 1,200 off: a mesh within 1,800)
+    expect(w.got.filter((d) => d.r === 400 * 0.12)).toHaveLength(1); // (the derelict, 48 across, 2,200 off: past its 1,440, a disc)
   });
 
   it('draws the lattice’s things past where they are meshes, to THING_DISC, fading', () => {
@@ -94,11 +95,13 @@ describe('the discs fed', () => {
       return discAt(w);
     };
     expect(look(15000)).toMatchObject({ r: t.size[i], alpha: 1 });
+    // (a rock, ice or a derelict lumpy; a rogue world smooth)
+    expect(look(15000).rough > 0).toBe(['rock', 'ice', 'derelict'].includes(THING_KINDS[t.kind[i]].kind));
     const fading = look(18000);
     expect(fading.alpha).toBeGreaterThan(0);
     expect(fading.alpha).toBeLessThan(1);
     expect(look(21000)).toBeUndefined(); // (past THING_DISC)
-    expect(look(t.size[i] * 50)).toBeUndefined(); // (a mesh there)
+    expect(look(t.size[i] * 20)).toBeUndefined(); // (a mesh there)
   });
 
   it('fades a sector’s discs with its specks, and draws none of one not shown', () => {
