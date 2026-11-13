@@ -10,9 +10,10 @@
 //    moved 5,000 to its right. The cloud's centroid must move as its
 //    projection says it does (at least 100 px predicted, measured within
 //    max(8 px, 10 %)).
-// 2. Roll: the same pose with the view turned 30° about its own axis. The
-//    stars (the shot without the nebulae) turn 30 ± 3°, and the cloud
-//    within 3° of them.
+// 2. Roll: the Veil 3,500 off, centred, the view turned 30° about its own
+//    axis. The picture's turn is read from two of the map's points
+//    projected before and after; the cloud must turn within 3° of it (on
+//    main the landmark's picture didn't turn at all).
 // 3. Inside: at the in-nebula pose, the fog covers at least 60 % of the frame.
 //
 // It starts the dev server (the poses are a DEV hook) unless --url names
@@ -173,27 +174,72 @@ try {
   const measured = Math.hypot(cb.x - ca.x, cb.y - ca.y);
   verdict('parallax', ca.n > 50 && cb.n > 50 && predicted >= 100 && Math.abs(measured - predicted) <= Math.max(8, 0.1 * predicted), { predicted: +predicted.toFixed(1), measured: +measured.toFixed(1), pixels: [ca.n, cb.n] });
 
-  // 2. roll
+  // 2. roll: the Veil brought to 3,500 off and centred, so it fills the
+  // frame's middle; the view turned 30° about its own axis. What the turn
+  // should do to the picture is read from two of the map's points (the
+  // Veil's middle and a point above it) projected before and after; the
+  // cloud must turn by that, within 3°.
   await pose('veil-side');
+  await page.evaluate(() => {
+    const { state, scene, THREE } = window.__universeDebug;
+    const veil = scene.getObjectByName('deep-veil').position.clone();
+    const v = state.held.view;
+    const fwd = new THREE.Vector3(0, 0, -1).applyQuaternion(v.quat);
+    const eye = v.target.clone().addScaledVector(fwd, -v.dist);
+    const at = veil.clone().add(eye.sub(veil).setLength(3500));
+    v.quat.setFromRotationMatrix(new THREE.Matrix4().lookAt(at, veil, new THREE.Vector3(0, 1, 0)));
+    const dir = veil.clone().sub(at).normalize();
+    v.target.copy(at).addScaledVector(dir, v.dist);
+  });
+  await frames();
+  // where the Veil's middle and a point above it are on screen
+  const marks = () =>
+    page.evaluate(() => {
+      const { scene, camera, THREE } = window.__universeDebug;
+      const g = scene.getObjectByName('deep-veil');
+      const px = (v) => {
+        v.project(camera);
+        return [((v.x + 1) / 2) * window.innerWidth, ((1 - v.y) / 2) * window.innerHeight];
+      };
+      const mid = g.getWorldPosition(new THREE.Vector3());
+      const above = g.localToWorld(new THREE.Vector3(0, 300, 0));
+      return [px(mid), px(above)];
+    });
   const r0 = await both();
+  const m0 = await marks();
   await page.evaluate(() => {
     const { state, THREE } = window.__universeDebug;
-    const v = state.held.view;
-    v.quat.multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), (30 * Math.PI) / 180));
+    state.held.view.quat.multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), (30 * Math.PI) / 180));
   });
   await frames();
   const r1 = await both();
-  const cloud0 = centroid(diffMask({ ...r0, width: W, height: H }), W);
-  const cloudOnly = (s) => {
-    const m = diffMask({ ...s, width: W, height: H });
+  const m1 = await marks();
+  const angleOf = ([a, b]) => Math.atan2(b[1] - a[1], b[0] - a[0]);
+  let turn = ((angleOf(m1) - angleOf(m0)) * 180) / Math.PI;
+  turn = ((turn + 540) % 360) - 180;
+  const cloudOnly = (sh) => {
+    const m = diffMask({ ...sh, width: W, height: H });
     const d = Buffer.alloc(W * H * 4);
-    for (let p = 0; p < W * H; p++) if (m[p]) for (let c = 0; c < 3; c++) d[p * 4 + c] = Math.max(0, s.on[p * 4 + c] - s.off[p * 4 + c]);
+    for (let q = 0; q < W * H; q++) if (m[q]) for (let c = 0; c < 3; c++) d[q * 4 + c] = Math.max(0, sh.on[q * 4 + c] - sh.off[q * 4 + c]);
     return d;
   };
-  // the stars turn about the view's middle; the cloud with them, so about the middle too
-  const stars = bestRotation(r0.off, r1.off, { width: W, height: H, about: [W / 2, H / 2], radius: 300, range: 45, step: 1 });
-  const cloud = bestRotation(cloudOnly(r0), cloudOnly(r1), { width: W, height: H, about: [W / 2, H / 2], radius: Math.min(340, Math.hypot(cloud0.x - W / 2, cloud0.y - H / 2) + 120), range: 45, step: 1 });
-  verdict('roll', Math.abs(Math.abs(stars) - 30) <= 3 && Math.abs(cloud - stars) <= 3, { stars, cloud });
+  // (the picture's turn about the Veil's middle: its centre on screen moves too, so
+  // the image before is moved onto it first, by turning about the middle of the two)
+  const before = cloudOnly(r0), after = cloudOnly(r1);
+  const shiftTo = (img, dx, dy) => {
+    const d = Buffer.alloc(W * H * 4);
+    for (let y = 0; y < H; y++)
+      for (let x = 0; x < W; x++) {
+        const sx = Math.round(x - dx), sy = Math.round(y - dy);
+        if (sx < 0 || sy < 0 || sx >= W || sy >= H) continue;
+        img.copy(d, (y * W + x) * 4, (sy * W + sx) * 4, (sy * W + sx) * 4 + 4);
+      }
+    return d;
+  };
+  const moved = shiftTo(before, m1[0][0] - m0[0][0], m1[0][1] - m0[0][1]);
+  const cloud = bestRotation(moved, after, { width: W, height: H, about: m1[0], radius: 260, range: 45, step: 1 });
+  const seen = centroid(diffMask({ ...r0, width: W, height: H }), W).n / (W * H);
+  verdict('roll', Math.abs(Math.abs(turn) - 30) <= 1 && Math.abs(cloud - turn) <= 3 && seen > 0.02, { turn: +turn.toFixed(1), cloud, cloudShare: +seen.toFixed(3) });
 
   // 3. inside
   await pose('in-nebula');
