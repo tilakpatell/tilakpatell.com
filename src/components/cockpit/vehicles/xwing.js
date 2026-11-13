@@ -18,12 +18,14 @@ import { clamp01, smooth } from '../timeline';
 import { shadowRadius } from '../levels';
 import { dimmer } from '../dim';
 import { loadTexture } from '../../../lib/three/textures';
+import { gasGiantMap } from '../gasGiant';
 
 const EYE = [0, 1.02, 0.18];
 const SNAP = 1950; // ms into the launch: the stars stretched, the tunnel
 
 export function prefetch() {
-  for (const f of ['music', 'starwars', 'starwars-glow']) fetch(`/textures/universe/${f}.webp`).catch(() => {});
+  // (Yavin is painted, ../gasGiant.js: only the Death Star's maps to fetch)
+  for (const f of ['starwars', 'starwars-glow']) fetch(`/textures/universe/${f}.webp`).catch(() => {});
 }
 
 // A quad from four corners (a, b, c, d round the edge), as a geometry.
@@ -108,11 +110,14 @@ export async function build({ rich, level, coarse, renderer }) {
   const greyMaps = platingMaps({ base: '#5a5c60', cols: 3, rows: 3, seed: 8, grime: 0.3, rivets: false });
   const hullWhite = plated(whiteMaps, { rx: 1, ry: 3, metalness: 0.15 });
   const hullGrey = plated(greyMaps, { rx: 2, ry: 2, metalness: 0.4, color: 0xd0d0d0 });
-  const frameMat = new THREE.MeshStandardMaterial({ color: 0x3b3d42, roughness: 0.45, metalness: 0.65 });
+  // (painted gunmetal: at 0.65 metalness the frame was a mirror of Yavin's
+  // warm light and read as bronze)
+  const frameMat = new THREE.MeshStandardMaterial({ color: 0x30343b, roughness: 0.62, metalness: 0.28 });
   const black = new THREE.MeshStandardMaterial({ color: 0x151518, roughness: 0.7, metalness: 0.3 });
   const red = new THREE.MeshStandardMaterial({ color: 0xa62a1f, roughness: 0.55, metalness: 0.1 });
   const chrome = new THREE.MeshStandardMaterial({ color: 0xc9ccd1, roughness: 0.25, metalness: 1 });
-  const panelMats = [0, 1, 2].map((k) => consoleMat(consoleMaps({ w: 512, h: 320, seed: 60 + k, base: '#2a2b2e', lit: 0.28 }), { glow: 1.4 }));
+  // (their lit buttons a glow, not white squares the bloom spreads over the panel)
+  const panelMats = [0, 1, 2].map((k) => consoleMat(consoleMaps({ w: 512, h: 320, seed: 60 + k, base: '#2a2b2e', lit: 0.28 }), { glow: 1.05 }));
 
   // ── the canopy: flat panes in a dark frame ──
   const S = { y: 0.82, zb: 0.6, zf: -0.42, xb: 0.37, xf: 0.32 }; // the sill
@@ -413,8 +418,11 @@ export async function build({ rich, level, coarse, renderer }) {
   const small = coarse || Math.min(window.innerWidth, window.innerHeight) < 600;
   // (decoded off the main thread, and shared with the universe map's planets)
   const load = (n) => loadTexture(`/textures/universe/${n}${small && n !== 'starwars-glow' ? '-sm' : ''}.webp`, { color: true }).catch(() => null);
-  const [yavinTex, dsTex, dsGlow] = await Promise.all([load('music'), load('starwars'), load('starwars-glow')]);
-  const yavin = planet({ map: yavinTex, radius: 1100, sun: [0.8, 0.5, 0.3], atmosphere: '#ffb070', strength: 0.9, tint: 0xffe2c4 });
+  // Yavin Prime, the gas giant: painted here (it borrowed the music planet's
+  // map, which since 2026-10-23 is that world's own, purple with a flower)
+  const yavinTex = gasGiantMap(small ? { w: 512, h: 256 } : { w: 1024, h: 512 });
+  const [dsTex, dsGlow] = await Promise.all([load('starwars'), load('starwars-glow')]);
+  const yavin = planet({ map: yavinTex, radius: 1100, sun: [0.8, 0.5, 0.3], atmosphere: '#ffb070', strength: 0.9, tint: 0xfff1e2 });
   yavin.group.position.set(-700, -1150, -2100);
   yavin.body.rotation.set(0.25, 0.4, -0.18);
   outside.add(yavin.group);
@@ -473,7 +481,9 @@ export async function build({ rich, level, coarse, renderer }) {
     vmax: 98,
     exposure: 1.0,
     envIntensity: 0.55,
-    bloom: [0.6, 0.45, 0.8],
+    // (strength, radius, threshold: over 1, so it's the lights, the sun and
+    // the jump that bloom, not the sunlit white of the nose)
+    bloom: [0.5, 0.38, 1.0],
     flash: '#eef5ff',
     rumble: 0.9,
     glare,
