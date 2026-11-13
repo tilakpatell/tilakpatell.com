@@ -165,7 +165,7 @@ import { createModels as createBattleModels } from '../galaxy/models';
 import { createTrench } from './trench';
 import { PHONE, createPhone } from './phone';
 import { SUPERNOVA_SITES, createSupernovae } from './supernova';
-import { DEEP, PLACES, WONDERS, moveBinaries, nearestStar, openness, reachOf, wonderById } from './deep';
+import { DEEP, PLACES, WONDERS, moveBinaries, movePlanets, nearestStar, openness, reachOf, wonderById } from './deep';
 import { KEY as KEY_FULL, STARS as LIT_STARS, dayYaw, lightAt, sunFor } from './lighting';
 import { createCrash } from './crash';
 import { createExplosions } from '../../lib/three/explosions';
@@ -686,7 +686,7 @@ export async function create(canvas, ctx) {
   // runtime: made at a handover, the renderer is still at the last world's
   // ratio)
   const mostRatio = () => ctx.rt?.quality?.ratioUnder?.(2, { unscaled: true }) ?? pixelRatio(2);
-  const post = createPost(renderer, scene, camera, { small, ratio: mostRatio(), upscale: true, top: mostRatio });
+  const post = createPost(renderer, scene, camera, { small, ratio: mostRatio(), upscale: true, top: mostRatio, chain: true });
   // the visitor's video settings, what they turned of them (lib/videoLook.js):
   // the grain, the aberration, the bloom and the multisampling, at the start
   // and live from the settings (onVideo, below)
@@ -711,6 +711,10 @@ export async function create(canvas, ctx) {
   // with the camera, baked once into a cube
   const sky = createSky({ small, level: device().detail, renderer, beacons: false });
   sky.setSystem({ ...SYSTEMS.find((s) => s.id === 'kashyyyk'), suns: [] });
+  // (and deep: the galaxy's faint glow between taken toward black, its star
+  // clouds and nebulae kept, so it reads as space, not a lit grey; measured
+  // at the far rim, the sky's middle grey 67 of 255 before)
+  sky.setDeep(1);
   // (its stars sized in the pixels the post draws at, which the quality
   // softens over a canvas that keeps its size; told again when that moves:
   // the galaxy's drawnAt.js does the same, kept here rather than reached
@@ -5049,6 +5053,10 @@ export async function create(canvas, ctx) {
   const byNear = (a, b) => a.d - b.d;
   const camAt = [0, 0, 0];
   const lights = (dt) => {
+    // what metal reflects turns with the map, as the sky and the lights do:
+    // made once in world axes, the star's glint and the Milky Way slid
+    // round the hull against the light whenever the map turned under it
+    scene.environmentRotation.y = state.yaw;
     for (const p of planets) {
       const s = sunInMap[p.id];
       p.sun.set(s[0], s[1], s[2]).applyAxisAngle(Y_AXIS, state.yaw);
@@ -5071,7 +5079,8 @@ export async function create(canvas, ctx) {
     // neighbourhood to another's): its glow where the star is, in its colour
     if (l.key.id !== envStar && !lightNow.first) {
       envStar = l.key.id;
-      const next = envMaker.make({ light: lightTo.set(...l.key.dir).negate().applyAxisAngle(Y_AXIS, state.yaw), colour: l.key.colour });
+      // (made in the map's axes, and turned with the map below)
+      const next = envMaker.make({ light: lightTo.set(...l.key.dir).negate(), colour: l.key.colour });
       scene.environment = next.texture;
       env.dispose();
       env = next;
@@ -5117,6 +5126,7 @@ export async function create(canvas, ctx) {
     const t = reduced ? 0 : state.low ? state.tLow : (now - t0) / 1000;
     // (the Twins' suns going round each other: their solids where they're drawn, deep.js)
     moveBinaries(t);
+    movePlanets(t);
     if (!state.pose && !flying()) {
       // first frame: straight onto a universe from a link; the overview
       // drifts in from a little further out (flying, it's below)

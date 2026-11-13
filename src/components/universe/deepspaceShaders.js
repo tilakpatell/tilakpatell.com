@@ -4,6 +4,7 @@
 
 import { SWIRL_GLSL } from '../rickmorty/swirl';
 import { NOISE_GLSL } from './sun';
+import { UPRIGHT_GLSL } from '../../lib/three/upright';
 
 // ── GLSL shared by the shaders ──
 
@@ -40,20 +41,22 @@ vec4 globe(sampler2D map, vec3 p) {
 // a quad that always faces the camera, `position` its offset in world units
 // (the mesh's turn is ignored); vC is that offset in its radii, vSil how much
 // wider than its radius a sphere of that radius looks on the quad's plane
-// (from close in you see less than half of it), vDist how far off it is
+// (from close in you see less than half of it), vDist how far off it is.
+// Turned toward the eye's place and kept upright to the world
+// (lib/three/upright.js), so a corona's streamers don't spin as the ship banks
 export const BILLBOARD_VERT = `
 uniform float uR;
 varying vec2 vC;
 varying float vSil;
 varying float vDist;
+${UPRIGHT_GLSL}
 void main() {
-  vec4 mv = modelViewMatrix * vec4(0.0, 0.0, 0.0, 1.0);
-  float d = length(mv.xyz);
+  vec3 c = (modelMatrix * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
+  float d = distance(c, cameraPosition);
   vDist = d;
   vSil = d > uR * 1.02 ? d / sqrt(d * d - uR * uR) : 5.0;
   vC = position.xy / uR;
-  mv.xy += position.xy;
-  gl_Position = projectionMatrix * mv;
+  gl_Position = projectionMatrix * viewMatrix * vec4(upright(c, position.xy), 1.0);
 }`;
 
 // ── Planets: one shader, a look per kind ──
@@ -554,16 +557,29 @@ attribute vec3 aTangent;
 attribute vec4 aShape;
 attribute vec4 aTint;
 attribute vec4 aMask;
-uniform float uTime;
 varying vec2 vUv;
 varying vec4 vTint;
 varying vec4 vMask;
 varying float vFade;
 varying vec2 vShift;
+varying float vSeed;
+uniform float uTime;
 void main() {
   vec4 c = modelMatrix * vec4(aCentre, 1.0);
-  float size = aShape.x;
-  float dist = length(c.xyz - cameraPosition);
+  // alive: each puff swells and settles on a slow beat of its own (a minute
+  // or so), a few per cent, and drifts on a small loop round its place
+  // along its tangent and an axis of its own, so the cloud breathes and
+  // churns as gas does, never all at once and never round the eye
+  float seed = aShape.w;
+  float beat = sin(uTime * (0.06 + 0.07 * seed) + seed * 40.0);
+  float size = aShape.x * (1.0 + 0.07 * beat);
+  float s = seed * 6.2832;
+  vec3 own = normalize(vec3(cos(s), sin(s * 1.7) * 0.6, sin(s)));
+  float a = uTime * (0.018 + 0.02 * fract(seed * 7.3)) + seed * 31.0;
+  c.xyz += (mat3(modelMatrix) * aTangent * sin(a) + own * cos(a * 0.8)) * aShape.x * 0.12;
+  vSeed = seed;
+  vec3 toEye = cameraPosition - c.xyz;
+  float dist = length(toEye);
   // gone as you come close to it, so flying through is never a wall
   float fade = smoothstep(size * 0.5, size * 1.6, dist);
   vFade = fade;
@@ -575,29 +591,54 @@ void main() {
     gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
     return;
   }
-  vec4 mv = viewMatrix * c;
-  // drawn out along its tangent as it lies on the screen
-  vec3 tv = mat3(viewMatrix) * mat3(modelMatrix) * aTangent;
-  float tl = length(tv.xy);
-  float ang = (tl > 1e-4 ? atan(tv.y, tv.x) : 0.0) + aShape.w * 6.2832 + uTime * aShape.z;
+  // turned toward the eye's place, its long side along its tangent as that
+  // lies across the line of sight, in the world's axes: never the screen's,
+  // so a puff doesn't roll as the camera banks or swing as the ship flies
+  // past (lib/three/upright.js has why). A puff with no tangent, or one
+  // seen end on, leans on an axis of its own, fixed by its seed.
+  vec3 f = dist > 1e-4 ? toEye / dist : vec3(0.0, 0.0, 1.0);
+  vec3 tw = mat3(modelMatrix) * aTangent;
+  vec3 across = tw - f * dot(tw, f);
+  float tl = length(across);
+  vec3 ownAcross = own - f * dot(own, f);
+  vec3 r = across + ownAcross * 0.12;
+  r = dot(r, r) > 1e-10 ? normalize(r) : normalize(cross(vec3(0.0, 1.0, 0.0), f) + vec3(1e-4, 0.0, 0.0));
+  vec3 u = cross(f, r);
+  // (one with no tangent turned by its seed in that plane, for variety; one
+  // with a tangent lies along it, its wisps along the shell or the ring)
+  float turn = dot(aTangent, aTangent) > 1e-4 ? 0.0 : s;
+  float cs = cos(turn);
+  float sn = sin(turn);
+  vec3 rr = r * cs + u * sn;
+  vec3 uu = u * cs - r * sn;
   float stretch = mix(1.0, aShape.y, clamp(tl, 0.0, 1.0));
   vec2 q = position.xy * vec2(stretch, 1.0 / sqrt(stretch)) * size * 2.0;
-  float cs = cos(ang);
-  float sn = sin(ang);
-  mv.xy += vec2(cs * q.x - sn * q.y, sn * q.x + cs * q.y);
-  gl_Position = projectionMatrix * mv;
+  gl_Position = projectionMatrix * viewMatrix * vec4(c.xyz + rr * q.x + uu * q.y, 1.0);
 }`;
 export const PUFF_FRAG = `
 uniform sampler2D uPuff;
+uniform float uTime;
 varying vec2 vUv;
 varying vec4 vTint;
 varying vec4 vMask;
 varying float vFade;
 varying vec2 vShift;
+varying float vSeed;
 void main() {
-  float d = dot(texture2D(uPuff, vUv), vMask);
-  float fine = texture2D(uPuff, vUv * 1.8 + vShift).a;
-  d *= (0.5 + 0.95 * fine) * vFade;
+  // the gas billowing: its shape pushed about by a slow flow (a few per
+  // cent of the puff, never a turn), the grain over it drifting through
+  vec2 c = vUv - 0.5;
+  float t = uTime * (0.05 + 0.04 * vSeed) + vSeed * 17.0;
+  vec2 flow = vec2(sin(c.y * 7.0 + t) + sin(c.y * 3.1 - t * 0.7), cos(c.x * 6.3 - t * 0.9) + cos(c.x * 2.7 + t * 0.6)) * 0.012;
+  vec2 uv = vUv + flow * smoothstep(0.5, 0.25, length(c));
+  float d = dot(texture2D(uPuff, uv), vMask);
+  vec2 drift = vec2(uTime * 0.0035, -uTime * 0.0027) * (0.6 + vSeed);
+  float fine = texture2D(uPuff, uv * 1.8 + vShift + drift).a;
+  // and a finer grain over that, so a puff close in is wisps, not a smear
+  float finer = texture2D(uPuff, uv * 4.7 - vShift * 1.3 - drift * 1.7).a;
+  // (and its glow breathing with it, a little)
+  float breath = 0.92 + 0.08 * sin(uTime * (0.07 + 0.05 * vSeed) + vSeed * 23.0);
+  d *= (0.5 + 0.95 * fine) * (0.78 + 0.45 * finer) * vFade * breath;
   // glowing gas adds its light; dust (alpha) dims what's behind it
   gl_FragColor = vec4(vTint.rgb * d, vTint.a * d);
   #include <colorspace_fragment>
@@ -809,19 +850,32 @@ void main() {
 
 export const SKY_VERT = `
 attribute vec3 color;
+attribute vec3 aSpin;
 varying vec2 vUv;
 varying vec3 vColor;
+varying vec3 vSpin;
 void main() {
   vUv = uv;
   vColor = color;
+  vSpin = aSpin;
   gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
 }`;
+// each galaxy turning in its own plane: its picture turned about its
+// cell's middle (vSpin.xy) at its own rate (vSpin.z, radians a second),
+// nothing read from past the cell's round edge
 export const SKY_FRAG = `
 uniform sampler2D uMap;
+uniform float uTime;
 varying vec2 vUv;
 varying vec3 vColor;
+varying vec3 vSpin;
 void main() {
-  vec4 c = texture2D(uMap, vUv);
+  vec2 o = vUv - vSpin.xy;
+  float a = uTime * vSpin.z;
+  float cs = cos(a);
+  float sn = sin(a);
+  o = vec2(cs * o.x - sn * o.y, sn * o.x + cs * o.y);
+  vec4 c = texture2D(uMap, vSpin.xy + o) * smoothstep(0.25, 0.235, length(o));
   gl_FragColor = vec4(c.rgb * c.a * vColor, 1.0);
   #include <colorspace_fragment>
 }`;

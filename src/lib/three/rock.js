@@ -7,6 +7,11 @@
 // slope on the screen, faded out where a pit is under a pixel, so a far
 // rock doesn't sparkle). `low` keeps the flat-shaded material it always had.
 //
+// Close in, finer scales come in over the pits as each grows past a couple
+// of pixels: cracks (thin dark lines where a finer noise crosses nought,
+// their edges catching the light) and a grit over everything, so a rock
+// the ship flies past reads as broken stone, not a blotched lump.
+//
 // rockMaterial({ tier, scale }) → a MeshStandardMaterial in two tones (the
 //   instance's colour and its pits')
 //   (`scale`: how many pits across a rock a unit wide, times four)
@@ -142,17 +147,32 @@ export function rockHook(mat, { tier = 'high', scale = 1 } = {}) {
         '#include <color_fragment>',
         `#include <color_fragment>
         float rockH = rockPits(vRockObj);
+        float rockPx = length(fwidth(vRockObj)) * uRockScale;
         float rockPit = smoothstep(0.05, -0.45, rockH);
-        float rockShow = smoothstep(0.6, 0.2, length(fwidth(vRockObj)) * uRockScale) * uRockRelief;
-        diffuseColor.rgb *= 1.0 - 0.45 * rockPit * (0.4 + 0.6 * rockShow);`,
+        float rockShow = smoothstep(0.6, 0.2, rockPx) * uRockRelief;
+        diffuseColor.rgb *= 1.0 - 0.45 * rockPit * (0.4 + 0.6 * rockShow);
+        // finer still, each only once it's a couple of pixels on the screen:
+        // cracks (where a finer noise crosses nought: thin dark lines) and grit
+        float rockFine = smoothstep(0.6, 0.2, rockPx * 3.1) * uRockRelief;
+        float rockGrain = smoothstep(0.6, 0.2, rockPx * 8.3) * uRockRelief;
+        float rockN1 = rockFine > 0.0 ? noise(vRockObj * uRockScale * 3.1 + 23.0) : 0.5;
+        // (a crack only in patches, never a net over the whole rock; drawn at
+        // least a pixel wide by its own slope on the screen, and fainter as
+        // it's thinner than that, so it never breaks up into dots)
+        float rockLine = max(0.06, fwidth(rockN1) * 1.5);
+        float rockPatch = rockFine > 0.0 ? smoothstep(0.15, 0.55, noise(vRockObj * uRockScale * 1.3 + 71.0)) : 0.0;
+        float rockCrack = (1.0 - smoothstep(0.0, rockLine, abs(rockN1))) * (0.06 / rockLine) * rockPatch * rockFine;
+        float rockGrit = rockGrain > 0.0 ? noise(vRockObj * uRockScale * 8.3 + 47.0) * rockGrain : 0.0;
+        diffuseColor.rgb *= (1.0 - 0.3 * rockCrack) * (1.0 + 0.08 * rockN1 * rockFine) * (1.0 + 0.16 * rockGrit);`,
       )
-      .replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\nroughnessFactor = min(1.0, roughnessFactor + 0.05 * rockPit);')
+      .replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\nroughnessFactor = min(1.0, roughnessFactor + 0.05 * rockPit + 0.04 * rockCrack);')
       // the light catching the pits' edges: a bump from the noise's slope
       .replace(
         '#include <normal_fragment_maps>',
         `#include <normal_fragment_maps>
         {
-          float h = rockH * 0.6 * rockShow * vRockSize / uRockScale;
+          // (each scale's height by its size, so its slope is the same at any)
+          float h = (rockH * 0.6 * rockShow + (rockN1 * 0.22 * rockFine - rockCrack * 0.3) / 3.1 + rockGrit * 0.14 / 8.3) * vRockSize / uRockScale;
           vec3 sx = dFdx(-vViewPosition);
           vec3 sy = dFdy(-vViewPosition);
           vec3 r1 = cross(sy, normal);
