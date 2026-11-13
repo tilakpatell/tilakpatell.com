@@ -3,8 +3,12 @@ import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { TERRAIN_VERSION, TYPE_BIOMES, planetSpecOf as specWith } from './planetSpec';
-import { WORLDS } from './planetTables';
-import { EXPANSE, PLANETS, planetSpecOf } from './fixtures/expanse.js';
+import { SEEDED_EXPANSE, WORLDS } from './planetTables';
+import { ROSTER_EXTRA } from './planetSpec';
+import { MOONS } from './fixtures/generated';
+import { EXPANSE, PLANETS, lifeFor, planetSpecOf } from './fixtures/expanse.js';
+import { planetField } from './field';
+import { clutterKitOf } from './landmarkTables';
 
 const ROOT = fileURLToPath(new URL('../../../..', import.meta.url));
 const GALAXY = 'tatooine hoth endor yavin bespin dagobah mustafar coruscant naboo kashyyyk kamino geonosis scarif nevarro mandalore lothal sorgan'.split(' ');
@@ -156,5 +160,55 @@ describe('TERRAIN_VERSION', () => {
   it('is bumped whenever a planet’s ground changes', () => {
     expect(Number.isInteger(TERRAIN_VERSION) && TERRAIN_VERSION >= 1).toBe(true);
     expect(groundHash(), `the ground changed: bump TERRAIN_VERSION and add GROUND[${TERRAIN_VERSION + 1}]`).toBe(GROUND[TERRAIN_VERSION]);
+  });
+});
+
+// The fifty as the endless universe found them (its spec, section E: “The 50
+// roster planets keep their plane ground exactly as it is”): every field the
+// flight read then, the ground under five points, their life and clutter kits.
+const ROSTER_LOCK = '707fb49f';
+const ROSTER_KEYS = ['id', 'name', 'seed', 'type', 'climate', 'biomes', 'pois', 'pits', 'palette', 'clutter', 'step', 'soft', 'ground', 'water', 'fog', 'landmarks', 'hero'];
+const ROSTER_POINTS = [[0, 0], [1234.5, -987.25], [-15000, 8000], [30000, 30000], [-4321, -27000]];
+function rosterHash() {
+  const text = JSON.stringify(PLANETS.map(({ id }) => {
+    const s = planetSpecOf(id);
+    const f = planetField(s);
+    return [ROSTER_KEYS.map((k) => s[k] ?? null), ROSTER_POINTS.map(([x, z]) => f.heightAt(x, z).toFixed(4)), lifeFor(s), clutterKitOf(s)];
+  }));
+  let h = 0x811c9dc5;
+  for (let i = 0; i < text.length; i++) h = Math.imul(h ^ text.charCodeAt(i), 0x01000193);
+  return (h >>> 0).toString(16).padStart(8, '0');
+}
+
+describe('the roster', () => {
+  it('is as it was: the fifty’s fields, ground, life and kits', () => {
+    expect(rosterHash()).toBe(ROSTER_LOCK);
+  });
+});
+
+describe('ids, moons and the build flag', () => {
+  it('reads an Expanse id in either case and with its height written, to one canonical id', () => {
+    const s = planetSpecOf('e:1,0:0:1');
+    expect(planetSpecOf('E:1,0:0:1')).toEqual(s);
+    expect(planetSpecOf('e:1,0,0:0:1')).toEqual(s);
+    expect(s.id).toBe('e:1,0:0:1');
+  });
+
+  it('refuses what isn’t a planet or a moon, and never throws', () => {
+    for (const id of ['e:1,0', 'e:1,0:0', 'e:1,0:w1', 'e:1,0:0:1:', 'e:1,0:0:1x', ' e:1,0:0:1', 'e:1,0:0:-1', 'e:1,0:0:1:9', null, 42]) expect(planetSpecOf(id), String(id)).toBeNull();
+  });
+
+  it('lists the thirteen seeded Expanse planets as the roster’s last thirteen', () => {
+    expect(SEEDED_EXPANSE).toEqual(EXPANSE.map((r) => [r.id, r.type]));
+  });
+
+  it('lets the fifty be built on, and gives them nothing new', () => {
+    for (const p of PLANETS) expect(Object.fromEntries(Object.keys(ROSTER_EXTRA).map((k) => [k, planetSpecOf(p.id)[k]])), p.id).toEqual(ROSTER_EXTRA);
+  });
+
+  it('lands a moon from its row: rocky as rock, icy as ice, its planet named, not to be built on', () => {
+    const [rocky, icy] = MOONS;
+    expect(specWith(rocky.id, { expanse: MOONS })).toMatchObject({ id: rocky.id, kind: 'moon', parent: rocky.parent, type: 'rock', buildable: false });
+    expect(specWith(icy.id.toUpperCase(), { expanse: MOONS })).toMatchObject({ id: icy.id, type: 'ice' });
   });
 });

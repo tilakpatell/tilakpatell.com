@@ -4,6 +4,9 @@
     "name": "Lithialsur",
     "type": "gas",
     "seed": "9214131500749537690",
+    "radius": 87,
+    "moons": 3,
+    "rings": false,
     "system": {
       "faction": {
         "id": "dea"
@@ -17,6 +20,9 @@
     "name": "Selimo",
     "type": "forest",
     "seed": "9214132600261165901",
+    "radius": 33,
+    "moons": 0,
+    "rings": false,
     "system": {
       "faction": {
         "id": "dea"
@@ -30,6 +36,9 @@
     "name": "Ramsaex",
     "type": "lava",
     "seed": "9214129301726281268",
+    "radius": 33,
+    "moons": 0,
+    "rings": false,
     "system": {
       "faction": {
         "id": "dea"
@@ -43,6 +52,9 @@
     "name": "Taecle",
     "type": "ice",
     "seed": "9214130401237909479",
+    "radius": 29,
+    "moons": 1,
+    "rings": false,
     "system": {
       "faction": {
         "id": "dea"
@@ -56,6 +68,9 @@
     "name": "Taedixa",
     "type": "rock",
     "seed": "9214127102703024846",
+    "radius": 21,
+    "moons": 2,
+    "rings": false,
     "system": {
       "faction": {
         "id": "dea"
@@ -69,6 +84,9 @@
     "name": "Deapho",
     "type": "ice",
     "seed": "9214128202214653057",
+    "radius": 24,
+    "moons": 0,
+    "rings": false,
     "system": {
       "faction": {
         "id": "dea"
@@ -82,6 +100,9 @@
     "name": "Vaemalo",
     "type": "desert",
     "seed": "9214124903679768424",
+    "radius": 50,
+    "moons": 1,
+    "rings": false,
     "system": {
       "faction": {
         "id": "dea"
@@ -95,6 +116,9 @@
     "name": "Miace",
     "type": "desert",
     "seed": "5034333057882641216",
+    "radius": 37,
+    "moons": 1,
+    "rings": false,
     "system": {
       "faction": {
         "id": "dea"
@@ -108,6 +132,9 @@
     "name": "Seritiai",
     "type": "ocean",
     "seed": "5034334157394269427",
+    "radius": 65,
+    "moons": 3,
+    "rings": false,
     "system": {
       "faction": {
         "id": "dea"
@@ -121,6 +148,9 @@
     "name": "Tephaemom",
     "type": "rock",
     "seed": "5034335256905897638",
+    "radius": 40,
+    "moons": 1,
+    "rings": true,
     "system": {
       "faction": {
         "id": "dea"
@@ -134,6 +164,9 @@
     "name": "Cunano",
     "type": "gas",
     "seed": "9427996514885272807",
+    "radius": 83,
+    "moons": 6,
+    "rings": false,
     "system": {
       "faction": {
         "id": "empire"
@@ -147,6 +180,9 @@
     "name": "Nole",
     "type": "ocean",
     "seed": "9427995415373644596",
+    "radius": 67,
+    "moons": 0,
+    "rings": false,
     "system": {
       "faction": {
         "id": "empire"
@@ -160,6 +196,9 @@
     "name": "Niathia",
     "type": "rock",
     "seed": "9427998713908529229",
+    "radius": 45,
+    "moons": 1,
+    "rings": false,
     "system": {
       "faction": {
         "id": "empire"
