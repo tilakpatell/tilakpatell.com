@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { NEBULA_BUDGET, nebulaBudget } from './budget';
+import { NEBULA_BUDGET, nebulaAtStep, nebulaBudget } from './budget';
 
 describe('the nebula’s rows', () => {
   const KEYS = ['volume', 'farSteps', 'nearSteps', 'nearMax', 'fog', 'stars', 'drawn'];
@@ -20,5 +20,17 @@ describe('the nebula’s rows', () => {
     expect(nebulaBudget('?')).toBe(NEBULA_BUDGET.mid);
     expect(nebulaBudget(undefined)).toBe(NEBULA_BUDGET.mid);
     expect(nebulaBudget('low')).toBe(NEBULA_BUDGET.low);
+  });
+});
+
+describe('at the pace’s steps', () => {
+  it('marches an eighth fewer near a step down, half at the softest, never fewer than far', () => {
+    const r = NEBULA_BUDGET.high;
+    expect(nebulaAtStep(r, 0)).toBe(r);
+    expect(nebulaAtStep(r, NaN)).toBe(r);
+    expect(nebulaAtStep(r, 1).nearSteps).toBe(28);
+    expect(nebulaAtStep(r, 4).nearSteps).toBe(16);
+    expect(nebulaAtStep(NEBULA_BUDGET.low, 8).nearSteps).toBe(NEBULA_BUDGET.low.farSteps);
+    expect(nebulaAtStep(r, 2)).toMatchObject({ farSteps: r.farSteps, drawn: r.drawn, stars: r.stars });
   });
 });

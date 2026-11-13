@@ -1251,7 +1251,7 @@ mat3 tumble(float id) {
       homeW.value.setFromMatrixPosition(group.matrixWorld);
       for (const [id, light] of lightOf) light.value.copy(wonderGroups[id].position).applyMatrix4(group.matrixWorld);
       for (const tick of ticks) tick(t, dt, cam);
-      nebulae.update(camera);
+      nebulae.update(camera, t);
       if (cam) {
         sky.position.copy(cam);
         // names: out of the home system, and well clear of the wonder

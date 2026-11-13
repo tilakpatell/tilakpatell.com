@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { expect, it } from 'vitest';
 import { reservedIn } from '../__fixtures__/glsl';
-import { nebulaBudget } from './budget';
+import { nebulaAtStep, nebulaBudget } from './budget';
 import { createNebulae } from './index';
 import { FORMS, fogLayers } from './rules';
 
@@ -128,4 +128,16 @@ it('inside two at once: the deeper one’s fog, both drawn far to near', () => {
   const both = all.filter((i) => attr(n, 'aKind', i)[0] === 0);
   expect(both.map((i) => attr(n, 'aDist', i)[0])).toEqual([600, 300]);
   for (const i of both) expect(attr(n, 'aStart', i)[0]).toBeGreaterThan(0);
+});
+
+it('marches fewer steps near at the pace’s softer steps, and breathes on the clock it is given', () => {
+  const { n } = made('high');
+  n.add({ ...VEIL, at: [0, 0, -1500] });
+  n.update(cam([0, 0, 0], [0, 0, -1]), 12.5);
+  expect(attr(n, 'aSteps', 0)[0]).toBe(nebulaBudget('high').nearSteps);
+  expect(clouds(n).material.uniforms.uTime.value).toBe(12.5);
+  expect(n.group.getObjectByName('nebula-fog').material.uniforms.uTime.value).toBe(12.5);
+  n.setLevel(4);
+  n.update(cam([0, 0, 0], [0, 0, -1]));
+  expect(attr(n, 'aSteps', 0)[0]).toBe(nebulaAtStep(nebulaBudget('high'), 4).nearSteps);
 });

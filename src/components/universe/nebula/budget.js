@@ -15,4 +15,16 @@ export const NEBULA_BUDGET = Object.freeze({
   high: Object.freeze({ volume: 64, farSteps: 6, nearSteps: 32, nearMax: 2, fog: 4, stars: 64, drawn: 16 }),
 });
 
-export const nebulaBudget = (tier) => (tier === 'ultra' ? NEBULA_BUDGET.high : NEBULA_BUDGET[tier] ?? NEBULA_BUDGET.mid);
+export const nebulaBudget = (tier) => (tier === 'ultra' ? NEBULA_BUDGET.high : typeof tier === 'string' && Object.hasOwn(NEBULA_BUDGET, tier) ? NEBULA_BUDGET[tier] : NEBULA_BUDGET.mid);
+
+// The row at lib/three/pace's quality step (the scene's paceTo, through
+// setLevel): each step down takes an eighth of the near steps off, so the
+// softest (4) marches half as many, never fewer than the far. The rest of
+// the row stays, made once at the tier's. (From the earlier lane 1 branch,
+// claude/trusting-sagan-tda0fm.)
+const STEP_CUT = 1 / 8;
+export function nebulaAtStep(row, step) {
+  const s = Number.isFinite(step) ? Math.floor(step) : 0;
+  if (!(s > 0)) return row;
+  return Object.freeze({ ...row, nearSteps: Math.max(row.farSteps, Math.round(row.nearSteps * (1 - STEP_CUT * s))) });
+}

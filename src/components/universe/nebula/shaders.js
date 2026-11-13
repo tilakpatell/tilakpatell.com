@@ -15,6 +15,14 @@ precision highp sampler3D;
 uniform sampler3D uVolume;
 uniform vec4 uForms[3];
 uniform float uCore[3];
+uniform float uTime;
+
+// Living, never spinning (the owner's ask): the gas drifts through the
+// cloud (its noise carried along a slow line, never turned) and the cloud
+// swells and settles by a few per cent, each on its own beat, on the
+// scene's clock, which stands still under reduced motion.
+vec3 nebFlow(vec3 seed) { return vec3(0.011, 0.004, -0.008) * uTime + 0.02 * sin(uTime * vec3(0.05, 0.037, 0.043) + seed * 6.2832); }
+float nebBreath(vec3 seed) { return 1.0 + 0.035 * sin(uTime * 0.21 + seed.x * 6.2832); }
 
 float nebEnvelope(int form, vec3 p) {
   vec4 f = uForms[form];
@@ -27,16 +35,18 @@ float nebEnvelope(int form, vec3 p) {
 // the gas at p (radii, map axes): x its density, y the colour's mix,
 // z its dust; fine adds a smaller tap where the cloud is near
 vec3 nebField(int form, vec3 p, vec3 seed, float fine) {
-  if (dot(p, p) >= 1.44) return vec3(0.0);
-  vec2 n = texture(uVolume, p * 0.55 + seed).rg;
-  // the edge broken by the gas itself, so no cloud is a ball
-  float env = nebEnvelope(form, p * (1.0 + 0.45 * (n.g - 0.5)));
+  if (dot(p, p) >= 1.5) return vec3(0.0);
+  vec3 flow = nebFlow(seed);
+  vec2 n = texture(uVolume, p * 0.55 + seed + flow).rg;
+  // the edge broken by the gas itself, so no cloud is a ball; breathing
+  // (only ever drawn in, never out past the sphere that's marched: no hard rim)
+  float env = nebEnvelope(form, p * (1.04 + 0.4 * n.g) / nebBreath(seed));
   if (env <= 0.0) return vec3(0.0);
   float gas = smoothstep(0.35, 0.85, n.r);
   // filaments: the gas's ridges, sharper in a shell
-  float ridge = 1.0 - abs(2.0 * texture(uVolume, p * 1.1 + seed.yzx).r - 1.0);
+  float ridge = 1.0 - abs(2.0 * texture(uVolume, p * 1.1 + seed.yzx + flow * 1.6).r - 1.0);
   gas *= mix(0.45, 1.25, ridge * ridge);
-  if (fine > 0.0) gas *= mix(1.0, 0.55 + 0.9 * texture(uVolume, p * 2.6 + seed.zxy).r, fine);
+  if (fine > 0.0) gas *= mix(1.0, 0.55 + 0.9 * texture(uVolume, p * 2.6 + seed.zxy + flow * 2.4).r, fine);
   float dust = smoothstep(0.7, 0.85, n.g) * 0.8;
   return vec3(env * gas, n.g, dust * env);
 }

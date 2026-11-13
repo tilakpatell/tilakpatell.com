@@ -12,7 +12,7 @@
 // modelViewMatrix, made in doubles, carries them camera-relative). One past
 // the far plane is pulled in along its own direction and shrunk with it.
 //
-// createNebulae({ renderer, tier }) → { group, add(desc) → handle, remove(handle), update(camera), inside(position) → { id, depth } | null, dispose() }
+// createNebulae({ renderer, tier }) → { group, add(desc) → handle, remove(handle), update(camera, t), setLevel(step), inside(position) → { id, depth } | null, dispose() }
 //   desc: { id, at: [x, y, z], r, colors: string[], seed, form?: 'cloud' | 'shell' | 'nursery' }
 //   The same id added twice draws once, until each handle is removed; a
 //   stale handle, or anything after dispose(), does nothing. The group goes
@@ -20,7 +20,7 @@
 //   prepare compiles them before the first frame.
 
 import * as THREE from 'three';
-import { nebulaBudget } from './budget';
+import { nebulaAtStep, nebulaBudget } from './budget';
 import { FORM_INDEX, LIMIT, checkDesc, detailAt, fogLayers, insideOf, placement, seedOf, stepsAt, youngStars } from './rules';
 import { CLOUD_FRAG, CLOUD_VERT } from './shaders';
 import { createFog } from './fog';
@@ -61,7 +61,7 @@ export function createNebulae({ renderer = null, tier = 'mid' } = {}) {
     vertexShader: CLOUD_VERT,
     fragmentShader: CLOUD_FRAG,
     defines: { NEB_MAX_STEPS: row.nearSteps },
-    uniforms: { uVolume: { value: volume }, ...formUniforms(), uEmit: { value: EMIT }, uAbsorb: { value: ABSORB }, uViewport: { value: new THREE.Vector2(1, 1) }, uScale: { value: 500 } },
+    uniforms: { uVolume: { value: volume }, ...formUniforms(), uEmit: { value: EMIT }, uAbsorb: { value: ABSORB }, uViewport: { value: new THREE.Vector2(1, 1) }, uScale: { value: 500 }, uTime: { value: 0 } },
     transparent: true,
     side: THREE.DoubleSide, // (the square facing the view is wound either way round)
     depthTest: true,
@@ -97,6 +97,7 @@ export function createNebulae({ renderer = null, tier = 'mid' } = {}) {
   const handles = new Map(); // handle → id
   let nextHandle = 1;
   let disposed = false;
+  let paced = row; // (the row at the quality step: its near steps alone)
 
   function add(desc) {
     const d = checkDesc(desc);
@@ -136,8 +137,11 @@ export function createNebulae({ renderer = null, tier = 'mid' } = {}) {
   const seen = [];
   let lastInside = null;
 
-  function update(camera) {
+  function update(camera, t = 0) {
     if (disposed || !camera) return;
+    // the scene's clock (still under reduced motion): the gas breathes and drifts on it
+    mat.uniforms.uTime.value = t;
+    fog.setTime(t);
     camera.getWorldPosition(camWorld);
     group.updateWorldMatrix(true, false);
     camMap.copy(camWorld);
@@ -195,7 +199,7 @@ export function createNebulae({ renderer = null, tier = 'mid' } = {}) {
       put('aC1', n, c1.r, c1.g, c1.b);
       put('aC2', n, c2.r, c2.g, c2.b);
       put('aSeed', n, ...e.seed, e.form);
-      put('aSteps', n, stepsAt(detail, row), p.scale);
+      put('aSteps', n, stepsAt(detail, paced), p.scale);
       n++;
       if (detail <= 0) continue;
       for (const s of starsOf(e)) {
@@ -224,6 +228,10 @@ export function createNebulae({ renderer = null, tier = 'mid' } = {}) {
     add,
     remove,
     update,
+    // lib/three/pace's quality step: fewer steps near (budget.js's nebulaAtStep)
+    setLevel(step) {
+      paced = nebulaAtStep(row, step);
+    },
     inside: (position) => (disposed ? null : position ? insideOf([...entries.values()].map((e) => ({ id: e.desc.id, at: e.desc.at, r: e.desc.r, form: e.desc.form })), position) : lastInside),
     dispose() {
       if (disposed) return;

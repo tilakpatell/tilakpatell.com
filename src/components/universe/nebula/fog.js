@@ -6,7 +6,7 @@
 // clearer than far ones. The ship's lights scatter in the gas just ahead
 // of the eye. One draw, the layers far to near.
 //
-// createFog({ volume, row }) → { mesh, show(cloud, layers), hide(), dispose() }
+// createFog({ volume, row }) → { mesh, show(cloud, layers), setTime(t), hide(), dispose() }
 //   cloud: { centre: [x, y, z] (its middle less the camera, the map's axes, true units), r, colours: THREE.Color[3], seed: [a, b, c], form, depth }
 
 import * as THREE from 'three';
@@ -45,6 +45,7 @@ export function createFog({ volume, row }) {
       uAbsorb: { value: ABSORB_FOG },
       uEmit: { value: EMIT },
       uGlow: { value: GLOW.clone() },
+      uTime: { value: 0 },
     },
     transparent: true,
     depthTest: true,
@@ -79,6 +80,9 @@ export function createFog({ volume, row }) {
       u.uSeed.value.set(...cloud.seed, cloud.form);
       u.uDepth.value = cloud.depth;
       mesh.visible = n > 0;
+    },
+    setTime(t) {
+      u.uTime.value = t;
     },
     hide() {
       mesh.visible = false;
