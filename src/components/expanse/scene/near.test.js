@@ -4,7 +4,7 @@ import { addBodies } from '../gen/systems';
 import { moonAt, orbitAt } from '../gen/orbits';
 import { LOOKS } from '../../galaxy/bodies';
 import { PLANET_TYPES } from '../gen/tables';
-import { STAR_STRENGTH, TYPE_LOOK, createNear } from './near';
+import { AHEAD, STAR_STRENGTH, TYPE_LOOK, buildReach, createNear } from './near';
 
 const planet = (id, type, at, extra = {}) => ({ id, name: id, type, radius: 30, color: '#888888', at, orbit: 400, moons: 0, rings: false, seed: 7n, ...extra });
 const SECTOR = addBodies({
@@ -36,6 +36,13 @@ describe('the nearest systems, built whole', () => {
   it('has a look for every planet type, and every look is real', () => {
     for (const { type } of PLANET_TYPES) expect(LOOKS[TYPE_LOOK[type]], type).toBeTruthy();
     for (const id of Object.values(TYPE_LOOK)) expect(LOOKS[id], id).toBeTruthy();
+  });
+
+  it('builds a system before any of its bodies would be a disc past 512 px', () => {
+    expect(buildReach(A)).toBe(A.reach + AHEAD * 150);
+    // a body r across, AHEAD radii off, on a 1,080 px screen at flight.js's 34°
+    const px = (2 * 150) / (2 * AHEAD * 150 * Math.tan((34 * Math.PI) / 360)) * 1080;
+    expect(px).toBeLessThan(530);
   });
 
   it('builds nothing with the camera outside every reach', () => {
@@ -94,9 +101,9 @@ describe('the nearest systems, built whole', () => {
     const { build, made } = fakeBuild();
     const near = createNear(group, { budget: { systemsBuilt: 1 }, build });
     near.update(SECTOR.systems, [A.at[0] - 200, 0, 0], 0, null);
-    near.update(SECTOR.systems, [A.at[0] - A.reach * 1.2, 0, 0], 0, null);
+    near.update(SECTOR.systems, [A.at[0] - buildReach(A) * 1.2, 0, 0], 0, null);
     expect(near.built().has('A')).toBe(true);
-    near.update(SECTOR.systems, [A.at[0] - A.reach * 1.4, 0, 0], 0, null);
+    near.update(SECTOR.systems, [A.at[0] - buildReach(A) * 1.4, 0, 0], 0, null);
     expect(near.built().has('A')).toBe(false);
     expect(made.every((b) => b.dispose.mock.calls.length === 1)).toBe(true);
     expect(named(group, 'star:')).toHaveLength(0);

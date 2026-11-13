@@ -1,7 +1,9 @@
 // The nearest generated systems, built whole: the star, a ball of its own
 // light that lights what's near it; its planets on their orbits on the
 // shared clock (orbits.js), each lit from it; their moons; a ring for each
-// ring band. Built when the camera comes inside a system's reach, the
+// ring band. Built when the camera comes inside a system's build reach (its
+// reach and AHEAD of its biggest body's radius more, so no planet of a system
+// not built is a disc past 512 px, where a chip's point size can cap it), the
 // budget's `systemsBuilt` nearest at most, and let go past 1.3 × its
 // reach; between, its bodies are the far layer's discs (discs.js), the
 // same size in the same place. Every new mesh is readied (`prepare`: its
@@ -34,6 +36,13 @@ export const TYPE_LOOK = {
 };
 export const STAR_STRENGTH = { O: 0.9, B: 0.9, A: 0.9, F: 0.9, G: 0.9, K: 0.7, M: 0.7, 'white dwarf': 0.4, neutron: 0.4 };
 const LET_GO = 1.3;
+export const AHEAD = 7; // (radii: a ball r across is 512 px at 7 r on a 1,080 px screen at flight.js's field of view)
+// how near the camera comes before a system's built whole
+export const buildReach = (s) => {
+  let most = s.star.size;
+  for (const p of s.planets) most = Math.max(most, p.radius);
+  return s.reach + AHEAD * most;
+};
 const STAR_GLOW = 3; // (over the bloom's threshold: a star is the brightest thing near it)
 
 const BALL = new THREE.SphereGeometry(1, 32, 20); // (shared, never disposed)
@@ -167,12 +176,13 @@ export function createNear(group, { budget, tier = 'mid', build = buildBody, pre
   return {
     update(systems, cam, t, camera) {
       // let go what's left behind; then the nearest whose reach holds the camera, up to the budget
-      for (const [id, sys] of built) if (d2(sys.system.at, cam) > (sys.system.reach * LET_GO) ** 2) letGo(id);
+      for (const [id, sys] of built) if (d2(sys.system.at, cam) > (buildReach(sys.system) * LET_GO) ** 2) letGo(id);
       want.length = 0;
       for (const s of systems) {
         if (built.has(s.id)) continue;
         const d = d2(s.at, cam);
-        if (d <= s.reach * s.reach) want.push(s);
+        const r = buildReach(s);
+        if (d <= r * r) want.push(s);
       }
       if (want.length && built.size < most) {
         want.sort((a, b) => d2(a.at, cam) - d2(b.at, cam));

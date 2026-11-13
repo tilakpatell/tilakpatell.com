@@ -54,7 +54,7 @@ const NEAR_SLOTS = 54; // (the far layer's first 54 slots: the 27 shown and the 
 const BEYOND_SLOTS = 5; // (and two sets of 5 for the beyond, the one shown and the one staged)
 const FADE_IN = 0.5;
 const HALF = SECTOR / 2;
-const MOST_REACH = 4000; // (no generated system reaches further from its star: systems.js's ORBIT_MAX and a ring or moon past it)
+const MOST_REACH = 8000; // (no generated system is built further from its star: systems.js's ORBIT_MAX, a ring or moon past it, and near.js's AHEAD)
 const FAR = 45000; // (the far plane: levels.js's)
 // how far the camera is from a sector's cube (nought inside it)
 const boxDist = (o, c) => {
