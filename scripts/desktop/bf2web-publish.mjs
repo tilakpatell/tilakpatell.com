@@ -9,6 +9,7 @@ import { isAbsolute, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { contractProblems, rulebookProblems } from '../lib/bf2web-site.mjs';
 import { uiDataFiles } from '../lib/bf2web-ui-files.mjs';
+import { deviationLines, finishedReceipt } from '../lib/bf2web-deviations.mjs';
 import { REPO } from './lib.mjs';
 
 const need = (ok, reason) => { if (!ok) throw new Error(`bf2web-publish: ${reason}`); };
@@ -17,9 +18,12 @@ const samePath = (a, b) => typeof a === 'string' && typeof b === 'string' &&
   (process.platform === 'win32' ? resolve(a).toLowerCase() === resolve(b).toLowerCase() : resolve(a) === resolve(b));
 const REQUIRED_STEPS = ['prepare', 'physics', 'world', 'export', 'verify', 'direct-check'];
 
-export function validateEvidence({ site, sha, manifest, build, direct }) {
+// receipt: finishedReceipt's verdict (../lib/bf2web-deviations.mjs, shared with bf2-web's gate-all): a build with passed:false
+// counts only when the orchestrator's deviations file lists every failed step and, for solutions-gate, its exact log lines.
+export function validateEvidence({ site, sha, manifest, build, direct, receipt }) {
   need(/^[0-9a-f]{40}$/.test(sha ?? ''), 'a full engine commit is required');
-  need(build?.schema === 'bf2-play-site-build/1' && build.passed === true, 'the build did not pass');
+  need(build?.schema === 'bf2-play-site-build/1' && (build.passed === true || (build.passed === false && receipt?.finished === true)),
+    receipt?.reason ? `the build did not pass: ${receipt.reason}` : 'the build did not pass');
   need(build.commit === sha && manifest?.run?.commit === sha, 'the requested commit differs from the build or export');
   need(samePath(site, build.out) && samePath(site, direct?.site), 'the reports belong to another export directory');
   need(!manifest.validationOverlay, 'a diagnostic overlay is not a completed build');
@@ -71,7 +75,9 @@ export async function publish(argv, env = process.env) {
   const read = (file) => JSON.parse(readFileSync(file, 'utf8'));
   const manifestFile = join(site, 'manifest.json'), manifest = read(manifestFile);
   const build = read(`${site}.build.json`), direct = read(join(`${site}.direct-check`, 'play-site-direct-report.json'));
-  validateEvidence({ site, sha, manifest, build, direct });
+  const receipt = finishedReceipt({ build, site });
+  validateEvidence({ site, sha, manifest, build, direct, receipt });
+  for (const line of deviationLines(receipt)) console.log(line);
   const files = verifyExportFiles(site, manifest);
   const rulebooks = readRulebooks(ui), expectedUi = option('--ui-sha256');
   if (expectedUi || !argv.includes('--check')) validateRulebookDigest(rulebooks, expectedUi);
