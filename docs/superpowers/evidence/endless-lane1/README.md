@@ -29,3 +29,13 @@ Mid's `landing-middleearth` read 0 calls (the landing wasn't drawn when the fram
 - `glsl-sites` 611 (budget 613), `big-files` 22.
 
 `/galaxy` has no before shot: in software GL it stops at its “needs a graphics chip” card (twice, `scripts/autopilot-check.mjs --routes /galaxy`), so the 3D never starts. Its picture is pinned instead by `galaxy/sky.test.js`: with the new `clouds` option left at its default, every system's bake gets the same nebula colours as before, and the bake's shader is not touched.
+
+## The browser check (`scripts/nebula-check.mjs`, high, at 9a081a787)
+
+Before `scene.js` is wired (the sky still bakes its clouds; lane 2's PR 2.4 lands first), with the grown clouds (the Veil's gas 5,500, the Cradle's 6,000). `nebula-check.json`:
+
+- **Parallax:** the Veil's centroid moved 288.5 px for 5,000 sideways, its projection 296 (within 10 %).
+- **Roll:** the view turned 30° about its axis; two of the map's points projected say the picture turned 30°, the cloud turned 30°. (On `main` the landmark's picture didn't turn.)
+- **Inside:** in the Cradle the fog covers 96 % of the frame.
+
+The shots: `check-veil-side` (20,000 off), `check-veil-near` and `check-veil-rolled` (16,500 off, centred, before and after the roll), `check-in-cradle` and `check-in-cradle-off` (the same frame with the nebulae hidden).
