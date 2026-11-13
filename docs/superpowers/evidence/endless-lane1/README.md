@@ -27,3 +27,5 @@ Mid's `landing-middleearth` read 0 calls (the landing wasn't drawn when the fram
 
 - `scene.js`: 6,505 lines.
 - `glsl-sites` 611 (budget 613), `big-files` 22.
+
+`/galaxy` has no before shot: in software GL it stops at its “needs a graphics chip” card (twice, `scripts/autopilot-check.mjs --routes /galaxy`), so the 3D never starts. Its picture is pinned instead by `galaxy/sky.test.js`: with the new `clouds` option left at its default, every system's bake gets the same nebula colours as before, and the bake's shader is not touched.
