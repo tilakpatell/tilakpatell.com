@@ -18,7 +18,9 @@
 //   ones drawing till then; a place with nothing before it (the first, or
 //   after a jump) fades in over half a second.
 //
-// createExpanse(parent, { universe, tier, reduced, workers, far, budget, prepare, onSector, keyed, drawNebula })
+// createExpanse(parent, { universe, tier, reduced, workers, far, budget, prepare, onSector, keyed, drawNebula, drawers })
+//   drawNebula(w) → { object?, dispose() }: a middle-layer nebula drawn while its sector holds a
+//   slot, dispose()d when it gives it back; drawers: nearThings.js's, a kind's own drawing
 //   → { root, update({ camera, ship, t, dt, now, hidden }), loaded(), sector(), sectors(),
 //       nearestSystem(at), stars(), solids(), setStep(step, floor), pops(), workMs(), reload(key), dispose() }
 // sectorPools(workers, budget) → the runtime's pool with the two sector pools defined
@@ -38,6 +40,13 @@ import { createDiscs } from './discs';
 import { createNear } from './near';
 import { createNearThings, pickNear } from './nearThings';
 import { nebula } from './sectors';
+
+// today's nebula, drawn as the release shape asks: lane 1's renderer takes its place
+const puffs = (w) => {
+  const made = [];
+  const object = nebula(w, made);
+  return { object, dispose: () => made.forEach((m) => m.dispose()) };
+};
 
 export const POOL = 'expanse';
 export const BEYOND_POOL = 'expanse-beyond';
@@ -91,7 +100,7 @@ export function localPool() {
   };
 }
 
-export function createExpanse(parent, { universe = UNIVERSE, tier = 'mid', workers = null, far = null, budget = universeBudget({ tier }), prepare = null, onSector = null, keyed = false, drawNebula = nebula, drawers = {} } = {}) {
+export function createExpanse(parent, { universe = UNIVERSE, tier = 'mid', workers = null, far = null, budget = universeBudget({ tier }), prepare = null, onSector = null, keyed = false, drawNebula = puffs, drawers = {} } = {}) {
   const root = new THREE.Group();
   root.name = 'expanse';
   parent.add(root);
@@ -130,9 +139,8 @@ export function createExpanse(parent, { universe = UNIVERSE, tier = 'mid', worke
     rec.slot = -1;
     rec.staged = false;
     for (const n of rec.nebulae) {
-      n.removeFromParent();
-      n.geometry.dispose();
-      n.material.dispose();
+      n.object?.removeFromParent();
+      n.dispose();
     }
     rec.nebulae.length = 0;
   };
@@ -151,11 +159,15 @@ export function createExpanse(parent, { universe = UNIVERSE, tier = 'mid', worke
     if (drawNebula) {
       for (const w of rec.sector.wonders) {
         if (w.kind !== 'nebula') continue;
-        const pts = drawNebula(w, []);
-        pts.position.set(...w.at);
-        pts.name = `wonder:${w.id}`;
-        root.add(pts);
-        rec.nebulae.push(pts);
+        // (a nebula's drawing, given back with the sector's slot: { object?, dispose() };
+        // `object`, if any, is put at the wonder's place, for its name and picks)
+        const n = drawNebula(w);
+        if (n.object) {
+          n.object.position.set(...w.at);
+          n.object.name = `wonder:${w.id}`;
+          root.add(n.object);
+        }
+        rec.nebulae.push(n);
       }
     }
   };

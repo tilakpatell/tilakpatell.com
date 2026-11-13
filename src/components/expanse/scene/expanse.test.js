@@ -206,3 +206,43 @@ describe('the endless space round the camera', () => {
     expect(shown()).toHaveLength(n);
   });
 });
+
+describe('a nebula of a sector, drawn and given back', () => {
+  it('asks for each nebula when its sector takes a slot, and disposes it when the slot goes', async () => {
+    const map = new THREE.Group();
+    const camera = new THREE.PerspectiveCamera(34, 1, 0.1, 45000);
+    const far = createFarStars(map, { places: [], skyFar: 24000, slots: 64, slotSize: 400, discs: 50 });
+    const made = [];
+    const drawNebula = (w) => {
+      const n = { w, object: new THREE.Group(), dispose: () => (n.gone = true), gone: false };
+      made.push(n);
+      return n;
+    };
+    // a pool whose every sector has one nebula
+    const pool = {
+      request(name, msg) {
+        if (msg.type === 'beyond') return Promise.resolve({ key: msg.key, centre: msg.centre, stars: { at: new Float32Array(0), color: new Uint8Array(0), r: new Float32Array(0), count: 0 } });
+        const origin = [msg.sx * SECTOR, msg.sy * SECTOR, msg.sz * SECTOR];
+        const things = { count: 0, slot: new Uint16Array(0), kind: new Uint8Array(0), at: new Float32Array(0), size: new Float32Array(0) };
+        const sector = { id: sectorKey(msg.sx, msg.sy, msg.sz), origin, systems: [], wonders: [{ id: `${msg.key}:w0`, kind: 'nebula', at: [origin[0] + 10, origin[1], origin[2]], size: 400 }], things, extras: {}, beacons: {} };
+        return Promise.resolve({ key: msg.key, sector, stars: { at: new Float32Array(0), color: new Uint8Array(0), r: new Float32Array(0), count: 0 } });
+      },
+      cancel() {},
+    };
+    const ex = createExpanse(map, { workers: pool, far, budget: { ...universeBudget({ detail: 'high' }), expanseMs: 1e9 }, drawNebula });
+    const frame = async (x) => {
+      camera.position.set(x, 0, 0);
+      camera.updateMatrixWorld();
+      far.update(camera, 1 / 60);
+      ex.update({ camera, now: 0 });
+      await new Promise((r) => setTimeout(r, 0));
+    };
+    for (let i = 0; i < 30; i++) await frame(0);
+    expect(made.length).toBe(27);
+    expect(made.every((n) => n.object.parent === ex.root && !n.gone)).toBe(true);
+    expect(made[0].object.position.toArray()).toEqual(made[0].w.at);
+    for (let i = 0; i < 30; i++) await frame(1.2e8); // (a jump: everything behind given back)
+    expect(made.filter((n) => n.w.id.startsWith('0,') && n.gone).length).toBeGreaterThan(0);
+    expect(made.filter((n) => n.gone).every((n) => n.object.parent === null)).toBe(true);
+  });
+});
