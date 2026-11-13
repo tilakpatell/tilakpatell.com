@@ -137,7 +137,7 @@ describe('the nebulae, handed on', () => {
     expect(NEBULAE.map((d) => d.id)).toEqual(WONDERS.filter((w) => w.kind === 'nebula').map((w) => w.id));
     for (const d of NEBULAE) {
       const w = WONDERS.find((x) => x.id === d.id);
-      expect(checkDesc(d)).toMatchObject({ at: w.at, r: w.r, colors: w.colors });
+      expect(checkDesc(d)).toMatchObject({ at: w.at, r: w.cloud, colors: w.colors });
     }
     expect(NEBULAE.map((d) => d.form)).toEqual(['shell', 'nursery']);
   });

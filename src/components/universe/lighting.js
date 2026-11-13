@@ -110,7 +110,7 @@ export function lightAt(point, { stars = STARS, nova = null } = {}) {
         { id: null, dir: unit([-key.dir[0], 0.6 - key.dir[1] * 0.5, -key.dir[2]]), colour: linear(FILL.colour), strength: FILL.strength };
   // the ambient, a quarter of the way toward the colour of a nebula you're in
   let ambient = linear(AMBIENT.colour).map((c) => c * AMBIENT.strength);
-  const neb = NEBULAE.find((w) => len(sub(point, w.at)) < w.r);
+  const neb = NEBULAE.find((w) => len(sub(point, w.at)) < (w.cloud ?? w.r)); // (in its gas: deep.js's cloud)
   if (neb) {
     const tint = linear(neb.colors[0]);
     ambient = ambient.map((c, i) => c * 0.75 + tint[i] * AMBIENT.strength * 0.25);

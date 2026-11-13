@@ -81,7 +81,7 @@ const DRAWN = LANDMARKS.filter((l) => l.kind !== 'nebula').length;
 const FORM = { veil: 'shell', cradle: 'nursery' };
 export const NEBULAE = ['veil', 'cradle'].map((id) => {
   const w = wonder(id);
-  return { id, at: [...w.at], r: w.r, colors: w.colors, seed: id, form: FORM[id] };
+  return { id, at: [...w.at], r: w.cloud ?? w.r, colors: w.colors, seed: id, form: FORM[id] }; // (its gas: deep.js's cloud)
 });
 export const LANDMARK_IDS = new Set(LANDMARKS.map((l) => l.id));
 

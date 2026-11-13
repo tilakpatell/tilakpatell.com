@@ -116,7 +116,7 @@ export function poseFor(name, { positions = POSITIONS, sun = SUN.at, reach = REA
     const w = WONDERS.find((x) => x.id === p.nebula);
     const home = unit([sun[0] - w.at[0], 0, sun[2] - w.at[2]]);
     if (p.inside) {
-      const at = add(w.at, home, p.inside * w.r);
+      const at = add(w.at, home, p.inside * (w.cloud ?? w.r)); // (in its gas)
       const heading = headingOf(unit([w.at[0] - at[0], 0, w.at[2] - at[2]]));
       return { name, nebula: w.id, at, heading, ...chase(at, heading, { back: p.back, rise: p.rise, look: w.at }) };
     }

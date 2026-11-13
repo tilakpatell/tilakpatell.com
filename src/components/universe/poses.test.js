@@ -103,7 +103,7 @@ describe('the nebula poses', () => {
   it('puts in-nebula inside the Cradle’s gas, the eye too', () => {
     const p = poseFor('in-nebula');
     const w = WONDERS.find((x) => x.id === 'cradle');
-    const cradle = { id: 'cradle', at: w.at, r: w.r, form: 'nursery' };
+    const cradle = { id: 'cradle', at: w.at, r: w.cloud, form: 'nursery' };
     expect(insideOf([cradle], p.at).depth).toBeGreaterThan(0.5);
     expect(insideOf([cradle], p.eye)).not.toBeNull();
     expect(p.look).toEqual(w.at);
