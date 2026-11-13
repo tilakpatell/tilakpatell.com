@@ -51,7 +51,7 @@ export function cleanHref(href) {
   return url.pathname + url.search + url.hash;
 }
 
-// A first visit's intro is playing (App's IntroJump says): a reload in the
+// The front door's launch is playing (components/launch says): a reload in the
 // middle of it plays it again, rather than coming back to a visit that has
 // "seen" it.
 let replayIntro = false;
