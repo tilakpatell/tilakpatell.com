@@ -119,7 +119,7 @@ import { buildSun } from './sun';
 import { MAP_LENS, aberrationFor, createPost, createSpaceEnvironment } from './post';
 import { fromVideo } from '../../lib/videoLook';
 import { grainFor } from '../../lib/three/noise';
-import { reworldMoved } from '../../lib/three/reworld';
+import { createRelativeDraw } from './relative';
 import { createFlare, flareWeight, occluded } from '../../lib/three/flare';
 import { exposureFor, sunShareOf } from '../../lib/three/exposure';
 import { houseOn } from '../../lib/three/house';
@@ -555,8 +555,6 @@ export async function create(canvas, ctx) {
   const dust = createDust({ small: Math.min(window.innerWidth, window.innerHeight) < 600 });
   map.add(dust.points);
   const camLocal = new THREE.Vector3();
-  // (the drawing's own origin, far out: drawn())
-  const drawAt = new THREE.Vector3();
   let dustAmount = 0;
   // the ship's exhaust, a plume from each engine (trail.js), and a ring of
   // light that runs out round a place as you arrive
@@ -1575,45 +1573,9 @@ export async function create(canvas, ctx) {
     // the further off the view is (so the depth holds up across the map)
     lens(flying() && state.view !== 'map' ? 0.06 : clamp(pose.dist * 0.02, 0.08, 6));
   };
-  // Drawn round the camera, far out: what goes to the graphics chip goes in
-  // 32-bit floats, a few thousandths of a unit apart at the Rick and Morty
-  // sector, 40000 off (layout.js's SECTORS), and the figures' bones and the
-  // shaders' world positions shake and tear there. So for the drawing only,
-  // past a few thousand out, the camera's put at the middle and the map
-  // moved round it; both are put back after, for the names, the picks and
-  // the next frame, which all go by the map as it is.
-  const DRAW_FAR = 3000;
-  const drawn = (draw) => {
-    if (camera.position.lengthSq() < DRAW_FAR * DRAW_FAR) return draw();
-    drawAt.copy(camera.position);
-    map.position.sub(drawAt);
-    camera.position.sub(drawAt);
-    try {
-      draw();
-    } finally {
-      map.position.add(drawAt);
-      camera.position.add(drawAt);
-      // (only the map's place changed: its world matrices are moved back
-      // after it, not composed again, which was a second whole update a frame)
-      reworldMoved(map);
-      camera.updateMatrixWorld();
-    }
-  };
-  const lens = (near) => {
-    if (Math.abs(camera.near - near) < near * 0.02) return;
-    camera.near = near;
-    camera.updateProjectionMatrix();
-  };
-  // how far the camera draws: out to deep space's far side, but on foot
-  // under a full day's sky only as far as the sky (footScene's far(): it
-  // hides the rest of the universe), so nothing past it is drawn, nor any
-  // place's own motion worked out there (it's out of view)
-  const FAR = camera.far;
-  const reach = (far) => {
-    if (camera.far === far) return;
-    camera.far = far;
-    camera.updateProjectionMatrix();
-  };
+  // drawn round the camera, every frame, and the near and far planes (relative.js)
+  const { drawn, atDraw, lens, reach, FAR } = createRelativeDraw({ camera, map });
+  atDraw(deep.atDraw); // (deep space's suns, where they are in the draw)
 
   // ── Where each planet is on screen: for the names and for picking ──
   const screen = planets.map((p) => ({ id: p.id, x: 0, y: 0, r: 0, z: -1 }));
