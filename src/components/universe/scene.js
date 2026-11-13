@@ -1361,10 +1361,14 @@ export async function create(canvas, ctx) {
     const nav = Number.isFinite(navRead) ? navRead : 68;
     let side = 0;
     let sheet = 0;
+    // (flying with a mouse and keys the panel lies over the map, as the HUD
+    // does: the ship stays in the middle of the screen whether it's open or
+    // put away, not pushed aside each time: universe.css's --panel-over)
+    const over = panelAt ? getComputedStyle(panelAt.closest('.universe-page') ?? panelAt).getPropertyValue('--panel-over').trim() === '1' : false;
     if (panel && panel.width > 0) {
       // put away on a desktop, it's a bar up in the corner: the map has the width
       if (panel.width >= box.width * 0.75) sheet = Math.max(0, box.bottom - panel.top);
-      else if (!panelEl().hasAttribute('data-tucked')) side = Math.max(0, box.right - (panel.left - slid));
+      else if (!over && !panelEl().hasAttribute('data-tucked')) side = Math.max(0, box.right - (panel.left - slid));
     }
     // a touch screen held upright: the thumbs' grid fills the foot of the
     // map (UniverseMap.jsx, thumbs.css), so the open part stops over it and

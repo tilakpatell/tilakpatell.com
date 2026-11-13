@@ -14,6 +14,19 @@
   --hud-flight-face: var(--font-bf-hud, var(--font-mono));
   --hud-key-face: var(--font-bf-hud, var(--font-mono));
 }
+/* flying with a mouse and keys, the space is the whole width, panel open or
+   not, so nothing along the foot moves when it opens: the panel stops above
+   the cluster instead (universe.css) */
+@media (pointer: fine) and (min-width: 768px) {
+  .galaxy-page:has(.galaxy-map[data-ship]) { --fc-right: 24px; --galaxy-mid: calc(-50% - 12px); }
+  .galaxy-page:has(.galaxy-map[data-ship]) .galaxy-note { translate: var(--galaxy-mid) 0; }
+  /* (what's along the top and in the middle, beside the panel rather than under it, keeps clear of the panel's room whether it's
+     open or not: --panel-width, which never goes to nothing, so the war's line doesn't slide 200px when the panel's put away, nor
+     run under its bar; the battle's end card and a pickup's note the same) */
+  .galaxy-page:has(.galaxy-map[data-ship]) .galaxy-warhud { left: calc((136px + 100% - var(--panel-width) - 24px) / 2); max-width: calc(100% - var(--panel-width) - 160px - 1rem); }
+  .galaxy-page:has(.galaxy-map[data-ship]) .galaxy-battleend { width: min(22rem, calc(100% - var(--panel-width) - 2rem)); margin-left: calc(var(--panel-width) / -2); }
+  .galaxy-page:has(.galaxy-map[data-ship]) .galaxy-pickup-note { left: calc(var(--fc-left) + (100% - var(--fc-left) - var(--panel-width) - 24px) / 2); max-width: calc(100% - var(--fc-left) - var(--panel-width) - 24px); }
+}
 /* the pickups' effects, a chip each over the row (cluster.js's buffs): the bar along its foot is the time left, or the bubble's points */
 .fc-buffs { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
 .fc-buffs:empty { display: none; }
@@ -95,17 +108,19 @@
   :root .galaxy-page .galaxy-jumpbtn { left: auto; right: var(--thumbs-r); bottom: calc(var(--thumbs-b) + var(--thumbs-h, 0px) + 6px); max-width: calc(100% - var(--thumbs-r) - var(--hud-edge, 12px)); translate: none; }
 }
 
-/* The flying keys (KeysCard.jsx): over the cluster, in the middle of the open
-   part of the map, for the first flight and from the Keys chip. A desktop's:
-   a touch screen has its buttons (and the touch line in the hint). */
+/* The flying keys (KeysCard.jsx): for the first flight on this device and
+   from the Keys chip, opening up out of the chip in the corner, over the
+   cluster's height and short of the ship in the middle (half the width less
+   its wings). It sat in the middle over the ship, and with the cluster on
+   the whole width it would run under the open panel. A desktop's: a touch
+   screen has its buttons (and the touch line in the hint). */
 .galaxy-keys {
   position: absolute;
   z-index: 3;
-  left: calc(var(--fc-left) + (100% - var(--fc-left) - var(--fc-right)) / 2);
-  bottom: calc(var(--hud-pad-b, 12px) + 10px + var(--hud-cluster-h, 132px) + 66px);
-  translate: -50% 0;
+  left: var(--hud-edge, 16px);
+  bottom: max(163px, calc(var(--hud-pad-b, 12px) + 10px + var(--hud-cluster-h, 132px) + 10px)); /* (the chip's top, 120 + 35, and a gap) */
   width: max-content;
-  max-width: calc(100% - var(--fc-left) - var(--fc-right));
+  max-width: min(calc(100% - 2 * var(--hud-edge, 16px)), max(28rem, calc(50% - 200px)));
   display: grid;
   grid-template-columns: repeat(3, auto);
   gap: 6px 18px;
@@ -117,9 +132,9 @@
   pointer-events: auto;
 }
 .galaxy-keys h3 { margin: 0 0 6px; color: #7fd6ff; font-family: var(--font-mono); font-size: 0.7rem; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; }
-.galaxy-keys dl { display: grid; gap: 4px; margin: 0; }
-.galaxy-keys dl > div { display: flex; align-items: center; gap: 8px; }
-.galaxy-keys dt { display: flex; flex: none; gap: 3px; min-width: 64px; }
+.galaxy-keys dl { display: grid; grid-template-columns: auto auto; align-items: center; gap: 4px 8px; margin: 0; } /* (each group's keys as wide as its widest) */
+.galaxy-keys dl > div { display: contents; }
+.galaxy-keys dt { display: flex; gap: 3px; }
 .galaxy-keys dd { margin: 0; font-size: 0.78rem; }
 .galaxy-keys-more { grid-column: 1 / -1; margin: 0; color: rgb(217 243 255 / 0.85); font-size: 0.78rem; }
 .galaxy-keys-close { position: absolute; top: 8px; right: 8px; display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; color: #bfeaff; }
@@ -151,4 +166,6 @@
   .galaxy-page:not([data-tucked]) .galaxy-keys { display: none; }
   .galaxy-page:not([data-tucked]) .galaxy-hint { display: block; }
   .galaxy-page .galaxy-jumpbtn ~ .galaxy-hint { display: none; }
+  /* (over the cluster, by its measured height, as the universe map's line is: hud.css; at the foot it lay over the radar) */
+  .galaxy-page .galaxy-hint { bottom: max(24px, calc(var(--hud-pad-b, 12px) + 20px + var(--hud-cluster-h, 0px))); }
 }

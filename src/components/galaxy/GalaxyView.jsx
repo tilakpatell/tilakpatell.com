@@ -19,6 +19,7 @@ import StarfighterHud from './StarfighterHud';
 import LoadingVeil from '../worlds/LoadingVeil';
 import BattleEnd from './BattleEnd';
 import KeysCard from './KeysCard';
+import { FLOWN_KEY, hasFlown, keysUp } from './keyRows';
 import { FlightHud, GameIcon } from '../../runtime/hud';
 import { PowerBar } from '../universe/shared/powerBar';
 
@@ -47,7 +48,12 @@ export default function GalaxyView({ system, here, handle, holo = null, ship, lo
   const buffs = useRef(null); // (the row of effects over it)
   const powers = useRef(null); // (the crew's ship powers' bar, inside it: the scene writes that too)
   const hud = useRef(null);
-  const [flown, setFlown] = useState(false);
+  // (flown here before, on this device: the keys card and the line on how to fly wait to be asked for)
+  const [flown, setFlownState] = useState(() => hasFlown(local.get(FLOWN_KEY)));
+  const setFlown = useCallback(() => {
+    setFlownState(true);
+    local.set(FLOWN_KEY, true);
+  }, []);
   const [keysOpen, setKeysOpen] = useState(false); // (the keys card, over the first flight and again from its chip)
   const [controls, setControlsState] = useState(() => readControls(local.get(CONTROLS_KEY)));
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -100,7 +106,7 @@ export default function GalaxyView({ system, here, handle, holo = null, ship, lo
       onCrash,
     },
     onEvent: (e) => {
-      if (e.type === 'launch') setFlown(true);
+      if (e.type === 'launch') setFlown();
       if (e.type === 'aim') {
         setAim(e.id);
         return;
@@ -112,7 +118,6 @@ export default function GalaxyView({ system, here, handle, holo = null, ship, lo
   const view = { get current() { return rt?.current?.module === galaxyModule ? rt.current.world.scene : null; } };
   // (the war's battle here as the scene has it, for the line over the galaxy and its end card)
   const warInfo = useCallback(() => (rt?.current?.module === galaxyModule ? (rt.current.world.scene?.warInfo?.() ?? null) : null), [rt]);
-  useEffect(() => setFlown(false), [ship]);
 
   // The universe map's jump in holds its tunnel for the galaxy
   // (hyperspace3d/timeline.js's handJump): let go once the galaxy has drawn,
@@ -160,9 +165,9 @@ export default function GalaxyView({ system, here, handle, holo = null, ship, lo
   const courseSys = course && course !== hereSys.id ? systemById(course) : null;
   const jump = (id) => view.current?.jump?.(id);
   const onPower = (slot) => view.current?.power?.(slot);
-  // (the card is open over the first flight, and from its chip after; the chip shuts it either way)
-  const showKeys = !flown || keysOpen;
-  const closeKeys = useCallback(() => (setFlown(true), setKeysOpen(false)), []);
+  // (the card is open over the first flight on this device, and from its chip after; the chip shuts it either way)
+  const showKeys = keysUp({ flown, asked: keysOpen });
+  const closeKeys = useCallback(() => (setFlown(), setKeysOpen(false)), [setFlown]);
   const toggleKeys = () => (showKeys ? closeKeys() : setKeysOpen(true));
 
   // the touch buttons (FlightHud's grid, as the universe map's: the held ones keep the finger till it lifts)

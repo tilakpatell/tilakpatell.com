@@ -125,7 +125,8 @@ function HankFace({ className }) {
 
 const FACES = { rick: RickFace, morty: MortyFace, meeseeks: MeeseeksFace, luke: LukeFace, r2: R2Face, han: HanFace, chewie: ChewieFace, walt: WaltFace, jesse: JesseFace, hank: HankFace };
 
-export default function Face({ who, className }) {
-  const F = FACES[who];
-  return F ? <F className={className} /> : null;
+// (a voice with no head drawn, the radio's callers and the war's commanders, gets the `fallback`: the comms' mark)
+export default function Face({ who, className, fallback = null }) {
+  const F = Object.hasOwn(FACES, who) ? FACES[who] : null;
+  return F ? <F className={className} /> : fallback;
 }

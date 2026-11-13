@@ -238,17 +238,11 @@
   .fc-target { min-width: 150px; }
   .fc-radar { width: 104px; height: 104px; }
 }
-/* a laptop with the panel open (the band left of it is 680 to 770px): the radar and the power tiles in their compact sizes and
-   the target narrower, so the row keeps to one row with the arms block in it */
-@media (pointer: fine) and (min-width: 768px) and (max-width: 1400px) {
-  .galaxy-page:not([data-tucked]) .fc-radar { width: 96px; height: 96px; }
-  .galaxy-page:not([data-tucked]) .fc-target { min-width: 150px; }
-  .galaxy-page:not([data-tucked]) .hud-powers[data-place='cluster'] .hud-power { width: 64px; height: 52px; }
-  .galaxy-page:not([data-tucked]) .hud-powers[data-place='cluster'] .hud-power-name { display: none; }
-}
-/* (a narrow window with the panel open, up to a small laptop's 1280: no room for the target as well as the arms; the lock's own
-   mark over the 3D says it) */
-@media (min-width: 768px) and (max-width: 1300px) {
+/* (a laptop's cluster had a compact size for the band left of the open panel: flying with a mouse it has the whole width, the
+   panel open or not, so its blocks keep their size when the panel opens: galaxy/flight.css, universe.css) */
+/* (a touch screen's window with the panel open, up to a small laptop's 1280: no room for the target as well as the arms; the
+   lock's own mark over the 3D says it) */
+@media (pointer: coarse) and (min-width: 768px) and (max-width: 1300px) {
   .galaxy-page:not([data-tucked]) .fc-target { display: none; }
 }
 

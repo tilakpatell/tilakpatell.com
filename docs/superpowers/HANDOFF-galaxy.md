@@ -93,6 +93,7 @@ The Star Wars galaxy at `/galaxy`: a map of systems joined by hyperlanes, flown 
 - Voices: the powers’ new lines ship with the clip-backed ones and sound blips for the rest; no voices job was asked for. Voicing what lacks a clip is the desktop’s job.
 - The Death Star’s game-made second station is a district of Endor of its own; the inside’s rooms, kit and stories stay as they were.
 - Removing the planet flight is the owner’s call, not a lane’s.
+- Fewer popups on arrival (2026-11-13): one teacher, the keys card, and only until the first flight on the device (`keyRows.js`’s `FLOWN_KEY`), opening up out of its chip in the corner; the galaxy’s basics wait for the guide’s button (`tour/brief.js`’s `ON_ASK`). The HUD keeps its place when the panel opens or goes, as the universe map’s does (`HANDOFF-universe.md`).
 
 ## Recent
 

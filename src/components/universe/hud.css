@@ -75,6 +75,11 @@
   .universe-page:not(.galaxy-page) .universe-jump { bottom: max(150px, calc(var(--hud-pad-b, 12px) + 98px + var(--hud-cluster-h, 0px))); }
   /* (the first-flight line and the keys on foot share its band: over it too) */
   .universe-page:not(.galaxy-page) .universe-hint { bottom: max(24px, calc(var(--hud-pad-b, 12px) + 20px + var(--hud-cluster-h, 0px))); }
+  /* flying, all of it where it is with the panel put away, the panel open
+     or not: the panel stops above it instead (universe.css) */
+  .universe-page:not(.galaxy-page):has(.universe-map[data-ship]) { --hud-cluster-right: 24px; }
+  .universe-page:not(.galaxy-page):has(.universe-map[data-ship]) :is(.universe-prompt, .universe-wayin, .universe-jump, .universe-earn) { translate: calc(-50% - 12px) 0; }
+  .universe-page:not(.galaxy-page):has(.universe-map[data-ship]) .universe-hint { right: 36px; }
 }
 
 /* A sentence over the map: the first-flight hint. (A multiplayer note wears

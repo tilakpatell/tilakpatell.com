@@ -28,7 +28,7 @@
 //     (.universe-thumbs, after the world's own `thumbs`): each the scene's, a held one called with
 //     its value pressed and let go (HeldButton); null draws none
 //   onThumbsFit(): the grid's size has changed (the scene measures the open map again)
-// It writes the cluster's height (--hud-cluster-h: thumbs.js's clusterHeight) on the map, and the
+// It writes the cluster's height (--hud-cluster-h: thumbs.js's clusterHeight) on the map and its page, and the
 // thumbs' size (--thumbs-h, --thumbs-w) on the page, for what sits over them.
 
 import { useEffect, useRef } from 'react';
@@ -95,14 +95,20 @@ export default function FlightHud({ hudRef = null, crosshair = null, flying = tr
   fitted.current = onThumbsFit;
   const touchy = Boolean(controls);
   // the cluster's height on the map (--hud-cluster-h), for what sits over it (the jump button, the prompt, the keys card): it grows
-  // when the row wraps in a narrow window, or the strip over it fills. (On a touch screen the row has no box of its own: 0.)
+  // when the row wraps in a narrow window, or the strip over it fills. (On a touch screen the row has no box of its own: 0.) And on
+  // the page round the map, for what's beside it rather than in it: the side panel stops short of the cluster (universe.css)
   useEffect(() => {
     const root = clusterEl.current;
     const map = root?.parentElement;
+    const page = map?.closest('.universe-page') ?? null;
     const row = root?.querySelector('.hud-cluster-row');
     const strip = root?.querySelector('.hud-cluster-over')?.firstElementChild ?? null;
     if (!row || !map || typeof ResizeObserver !== 'function') return undefined;
-    const fit = () => map.style.setProperty('--hud-cluster-h', `${clusterHeight(row, strip)}px`);
+    const fit = () => {
+      const h = `${clusterHeight(row, strip)}px`;
+      map.style.setProperty('--hud-cluster-h', h);
+      page?.style.setProperty('--hud-cluster-h', h);
+    };
     const watch = new ResizeObserver(fit);
     watch.observe(row);
     if (strip) watch.observe(strip);
@@ -110,6 +116,7 @@ export default function FlightHud({ hudRef = null, crosshair = null, flying = tr
     return () => {
       watch.disconnect();
       map.style.removeProperty('--hud-cluster-h');
+      page?.style.removeProperty('--hud-cluster-h');
     };
   }, [flying, foot]);
   // the thumbs' size (--thumbs-h, --thumbs-w) on the page, for what sits over them on a touch screen (the prompt, the jump, the

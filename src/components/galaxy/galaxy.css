@@ -86,7 +86,7 @@
   z-index: 1;
   left: 50%;
   bottom: 76px;
-  translate: calc(-50% - (var(--panel-w) + 24px) / 2) 0;
+  translate: var(--galaxy-mid, calc(-50% - (var(--panel-w) + 24px) / 2)) 0;
   display: inline-flex;
   align-items: center;
   gap: 0.6rem;
@@ -608,7 +608,7 @@
   z-index: 1;
   left: 50%;
   bottom: 128px;
-  translate: calc(-50% - (var(--panel-w) + 24px) / 2) 0;
+  translate: var(--galaxy-mid, calc(-50% - (var(--panel-w) + 24px) / 2)) 0; /* (flying, the middle of the whole width: flight.css) */
   display: inline-flex;
   align-items: center;
   gap: 0.55rem;
@@ -634,7 +634,7 @@
   font: 700 0.76rem var(--font-mono);
 }
 .galaxy-land:hover { background: rgb(14 30 60 / 0.85); }
-@keyframes galaxy-land-in { from { opacity: 0; translate: calc(-50% - (var(--panel-w) + 24px) / 2) 8px; } }
+@keyframes galaxy-land-in { from { opacity: 0; translate: var(--galaxy-mid, calc(-50% - (var(--panel-w) + 24px) / 2)) 8px; } }
 @media (max-width: 760px) { .galaxy-land { translate: -50% 0; bottom: calc(var(--sheet-h) + 70px); } }
 
 /* going down: the air glowing round the ship, white-hot, then the ground's */
@@ -704,7 +704,7 @@
 /* the war's line over the galaxy (WarHud.jsx): the battle here in a pill, and
    under it while you're in it the stage it's at, with a short bar for each of
    its objectives; two rows, clear of the crew's line below (.galaxy-page
-   .universe-comms, nav-h + 56px, which slides in from 6px higher); centred in
+   .universe-comms, nav-h + 56px, at the left now, sliding in from the side); centred in
    the band between the galaxy map button (136px in) and the side panel (24px
    off it), so its stage and bars never run under either: on a narrow screen
    the stage's words are cut short instead */
@@ -719,7 +719,7 @@
    (rgb 252 252 255); the mark the bar's 48 px shape, here the words' height; each objective's bar the game's 176 × 40 (4.4 : 1),
    its track the About To Lose bar's white at alpha 0.25, its fill the Tickets Lost fill's at 0.85. The words stop at 0.85 rem, the
    line at 1.2 and the mark at the line's height: any taller and the row's foot runs into the crew's line (.galaxy-page
-   .universe-comms, nav-h + 56 px, sliding in from 6 px higher). Measured in Chromium (lab's shot script, the page's 76 px nav):
+   .universe-comms, nav-h + 56 px; it slid in from 6 px higher when this was measured, and slides in from the side now). Measured in Chromium (lab's shot script, the page's 76 px nav):
    the foot at 125 px against the slide-in's 126 and the line's 132, at 1,600 × 900, 1,920 × 1,080 and 2,560 × 1,440 alike (the
    words reach their stop above 850 px high). Glass at 0.78, RULES.md's floor */
 .galaxy-warhud-stage { display: flex; align-items: center; gap: 0.5rem; padding: 0.1rem 0.65rem; border-radius: 999px; background: rgb(2 6 16 / 0.78); color: rgb(252 252 255); font-family: var(--font-bf-hud, var(--font-mono)); font-weight: 500; font-size: clamp(0.7rem, 1.67vmin, 0.85rem); line-height: 1.2; letter-spacing: 0.05em; text-transform: uppercase; }
