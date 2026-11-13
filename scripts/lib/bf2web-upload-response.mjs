@@ -3,11 +3,18 @@
 // https://docs.aws.amazon.com/AmazonS3/latest/API/API_CopyObject.html
 // A moved object gets the same metadata as this uploader's ordinary PUT,
 // rather than inheriting arbitrary metadata from its old key. Same-path copies stay unchanged.
-export function copyUploadHeaders(source, replaceMetadata = false) {
+// sha256 (the manifest's): stored as x-amz-meta-sha256 on a moved object, as the PUT does; a same-path copy keeps its source's.
+export function copyUploadHeaders(source, replaceMetadata = false, sha256 = null) {
   return { 'x-amz-copy-source': source, ...(replaceMetadata ? {
-    'x-amz-metadata-directive': 'REPLACE', 'content-type': 'application/octet-stream',
+    'x-amz-metadata-directive': 'REPLACE', 'content-type': 'application/octet-stream', ...shaHeader(sha256),
   } : {}) };
 }
+
+// The object's content sha256 as metadata, written on every PUT so a later run can skip a key only when it holds these bytes.
+export const SHA_HEADER = 'x-amz-meta-sha256';
+export const shaHeader = (sha256) => (/^[0-9a-f]{64}$/.test(sha256 ?? '') ? { [SHA_HEADER]: sha256 } : {});
+// HEAD responses -> the recorded sha256, or null.
+export const recordedSha = (headers) => { const v = headers?.get?.(SHA_HEADER); return /^[0-9a-f]{64}$/.test(v ?? '') ? v : null; };
 
 export async function completeUploadResponse(response, { copy = false } = {}) {
   const body = await response.text();

@@ -1,11 +1,24 @@
 import { createServer } from 'node:http';
 import { expect, it } from 'vitest';
-import { attemptUpload, completeUploadResponse, copyUploadHeaders } from './bf2web-upload-response.mjs';
+import { SHA_HEADER, attemptUpload, completeUploadResponse, copyUploadHeaders, recordedSha, shaHeader } from './bf2web-upload-response.mjs';
 
 it('replaces moved-copy metadata with ordinary upload metadata and preserves same-path copy headers', () => {
   const source = '/bf2017-assets/sites/old/scene-t-1.pixels';
   expect(copyUploadHeaders(source)).toEqual({'x-amz-copy-source': source});
   expect(copyUploadHeaders(source, true)).toEqual({'x-amz-copy-source': source, 'x-amz-metadata-directive': 'REPLACE', 'content-type': 'application/octet-stream'});
+});
+
+it('records the manifest sha256 as object metadata and reads it back', () => {
+  const source = '/bf2017-assets/sites/old/scene-t-1.pixels', digest = 'ab'.repeat(32);
+  expect(SHA_HEADER).toBe('x-amz-meta-sha256');
+  expect(shaHeader(digest)).toEqual({'x-amz-meta-sha256': digest});
+  expect(shaHeader(null)).toEqual({});
+  expect(shaHeader('not-a-digest')).toEqual({});
+  expect(copyUploadHeaders(source, true, digest)).toEqual({'x-amz-copy-source': source, 'x-amz-metadata-directive': 'REPLACE', 'content-type': 'application/octet-stream', 'x-amz-meta-sha256': digest});
+  expect(copyUploadHeaders(source, false, digest)).toEqual({'x-amz-copy-source': source});
+  expect(recordedSha(new Headers({'x-amz-meta-sha256': digest}))).toBe(digest);
+  expect(recordedSha(new Headers({}))).toBe(null);
+  expect(recordedSha(new Headers({'x-amz-meta-sha256': 'zz'}))).toBe(null);
 });
 
 const copied = '<?xml version="1.0"?><CopyObjectResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/"><LastModified>2026-10-29T00:00:00Z</LastModified><ETag>&quot;original-content&quot;</ETag></CopyObjectResult>';

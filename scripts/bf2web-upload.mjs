@@ -1,7 +1,8 @@
 // Uploads an exported bf2-web play site to the private bucket as sites/<build>/ (docs/decisions/2026-10-28-bf2web-
 // pipeline.md). A file the previous build has byte for byte (the manifests' sha256) is copied inside R2, not sent
-// again: a new build of the engine is some 100 MB to send, not the whole 2.2 GB. A file already there at its size is
-// skipped, so an upload cut off is run again from where it stopped. The manifest goes last: its presence is what says
+// again: a new build of the engine is some 100 MB to send, not the whole 2.2 GB. A file already there with the manifest's
+// size and sha256 (its x-amz-meta-sha256, written by every PUT here and read back by HEAD) is skipped, so an upload cut off
+// is run again from where it stopped; one at that size with other or unrecorded bytes is sent again. The manifest goes last: its presence is what says
 // the build is whole (scripts/bf2web-adopt.mjs). The site's rulebooks, when the export has them beside it, go to
 // sites/<build>/ui-data/.
 //
@@ -16,7 +17,7 @@ import { fileURLToPath } from 'node:url';
 import { encodePath, objectUrl } from './lib/bucket.mjs';
 import { BUCKET, open } from './lib/bf2web-r2.mjs';
 import { contractProblems, uploadPlan } from './lib/bf2web-site.mjs';
-import { attemptUpload, completeUploadResponse, copyUploadHeaders } from './lib/bf2web-upload-response.mjs';
+import { attemptUpload, completeUploadResponse, copyUploadHeaders, recordedSha, shaHeader } from './lib/bf2web-upload-response.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const args = process.argv.slice(2);
@@ -36,13 +37,25 @@ const previousId = option('--previous') || process.env.BF2WEB_PREVIOUS || JSON.p
 const previous = previousId && previousId !== id ? await r2.json(`sites/${previousId}/manifest.json`) : null;
 const prefix = `sites/${id}/`;
 const previousPrefix = previous ? `sites/${previousId}/` : null;
-const [existing, previousExisting] = await Promise.all([r2.files(prefix), previousPrefix ? r2.files(previousPrefix) : []]);
+const [listed, previousExisting] = await Promise.all([r2.files(prefix), previousPrefix ? r2.files(previousPrefix) : []]);
+// A key already there at the manifest's size: its recorded sha256 (HEAD), so the plan skips it only when the bytes are the same.
+const bytesByKey = new Map(manifest.entries.map((e) => [prefix + e.path, e.bytes]));
+const existing = await Promise.all(listed.map(async (f) => {
+  if (bytesByKey.get(f.key) !== f.size) return f;
+  const r = await attemptUpload(`head ${f.key}`, async () => {
+    const res = await r2.fetch(objectUrl(BUCKET, f.key), { method: 'HEAD' });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res;
+  });
+  return { ...f, sha256: recordedSha(r.headers) };
+}));
 const plan = uploadPlan(manifest, { prefix, previous, previousPrefix, existing, previousExisting });
 const uiDir = option('--ui-data');
 if (uiDir && existsSync(uiDir)) for (const f of uiDataFiles(uiDir)) plan.splice(-1, 0, { action: 'put', key: `${prefix}ui-data/${f}`, file: join(uiDir, f) });
 
 const count = (a) => plan.filter((p) => p.action === a).length;
 const bytesOf = (p) => manifest.entries.find((e) => e.path === p.path)?.bytes ?? 0;
+const shaOf = (p) => manifest.entries.find((e) => e.path === p.path)?.sha256 ?? null;
 console.log(`${id}: ${count('put')} to send (${Math.round(plan.filter((p) => p.action === 'put').reduce((n, p) => n + bytesOf(p), 0) / 1e6)} MB), ${count('copy')} copied from ${previousId ?? 'none'}, ${count('skip')} already there`);
 if (dry) process.exit(0);
 
@@ -53,7 +66,7 @@ async function sendMultipart(p) {
   const url = objectUrl(BUCKET, p.key);
   const body = readFileSync(p.file ?? join(dir, p.path));
   const created = await attemptUpload(`create ${p.key}`, async () => {
-    const r = await r2.fetch(`${url}?uploads`, { method: 'POST', headers: { 'content-type': 'application/octet-stream' } });
+    const r = await r2.fetch(`${url}?uploads`, { method: 'POST', headers: { 'content-type': 'application/octet-stream', ...shaHeader(shaOf(p)) } });
     const text = await r.text();
     if (!r.ok) throw new Error(`HTTP ${r.status} ${text.slice(0, 200)}`);
     const uploadId = /<UploadId>([^<]+)<\/UploadId>/.exec(text)?.[1];
@@ -90,10 +103,10 @@ async function send(p) {
   const url = objectUrl(BUCKET, p.key);
   const init =
     p.action === 'copy'
-      ? { method: 'PUT', headers: copyUploadHeaders(`/${BUCKET}/${encodePath(p.from)}`, p.replaceMetadata) }
+      ? { method: 'PUT', headers: copyUploadHeaders(`/${BUCKET}/${encodePath(p.from)}`, p.replaceMetadata, shaOf(p)) }
       : (() => {
           const body = readFileSync(p.file ?? join(dir, p.path));
-          return { method: 'PUT', body, headers: { 'content-md5': createHash('md5').update(body).digest('base64'), 'content-type': 'application/octet-stream' } };
+          return { method: 'PUT', body, headers: { 'content-md5': createHash('md5').update(body).digest('base64'), 'content-type': 'application/octet-stream', ...shaHeader(shaOf(p)) } };
         })();
   await attemptUpload(`${p.action} ${p.key}`, async () => {
     const r = await r2.fetch(url, init);
