@@ -212,11 +212,13 @@ export const FLORA_TRUNKS = [
   { ...k('CommonTree_3', 'naturemega'), size: 5 },
 ];
 
-// an exotic world's own growth, from the space kit (not green, on purpose); crystal is code-built
+// an exotic world's own growth, from the space kit (not green, on purpose); crystal is code-built.
+// Sized to the code shape it stands in for (a trunk and crown 79 m, a spire 26 m) by the
+// model's own height: 3.76, 4.60 and 4.48 m (public/kit/space/index.json)
 export const EXOTIC_KIT = {
-  glowing: { trunk: { ...k('Tree_Light_1'), size: 3 } },
-  floating: { trunk: { ...k('Tree_Floating_1'), size: 3 } },
-  spires: { spire: { ...k('Tree_Spikes_2'), size: 1.4 } },
+  glowing: { trunk: { ...k('Tree_Light_1'), size: 21 } },
+  floating: { trunk: { ...k('Tree_Floating_1'), size: 17 } },
+  spires: { spire: { ...k('Tree_Spikes_2'), size: 5.8 } },
   crystal: {},
 };
 
@@ -249,6 +251,7 @@ export const CLUTTER_KIT_OF = {
 };
 
 export function clutterKitOf(spec) {
+  if (spec?.type === 'gas' || spec?.type === 'ringed') return { ...(CLUTTER_KIT[spec.type] ?? {}), ...(CLUTTER_KIT_OF[spec.id] ?? {}) };
   const tree = spec?.flora && (spec.flora.family === 'forest' || spec.flora.family === 'temperate') ? { trunk: FLORA_TRUNKS[Math.min(3, Math.floor(spec.flora.pick * 4))] } : {};
   return { ...(CLUTTER_KIT[spec?.type] ?? {}), ...(CLUTTER_KIT_OF[spec?.id] ?? {}), ...tree, ...(EXOTIC_KIT[spec?.exotic] ?? {}) };
 }

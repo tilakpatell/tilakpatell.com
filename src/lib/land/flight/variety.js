@@ -178,7 +178,9 @@ const POI_KINDS = { ruins: 3, wreck: 2, outpost: 2, monolith: 1, signal: 2 };
 // the palette round the slot: low and high either side of it (so their mix is the slot's
 // colour), a per-planet spread of hue and light between them, a rock and an accent
 function paletteOf(family, [h, l], rnd) {
-  const s = between(rnd, FAMILIES[family].sat);
+  // (a pale colour keeps its hue through #rrggbb only with chroma enough: at lightness 0.95 a
+  // saturation of 0.3 leaves a dozen levels, and the hue drifts several degrees)
+  const s = Math.max(between(rnd, FAMILIES[family].sat), l > 0.85 ? 0.75 : 0);
   const spread = between(rnd, [12, 40]) * (rnd() < 0.5 ? -1 : 1);
   const dl = between(rnd, [0.06, 0.13]);
   const rockHue = between(rnd, [-35, 35]);
@@ -198,15 +200,32 @@ function paletteOf(family, [h, l], rnd) {
     rock: () => hexOf(h + 15 + accentHue, s + 0.1, l + 0.15),
     ice: () => hexOf(h + accentHue, s + 0.1, l - 0.1),
   }[family] ?? (() => hexOf(h + 40 + accentHue, s, l));
-  return { low: hexOf(h - spread / 2, s, l - dl), high: hexOf(h + spread / 2, 0.9 * s, l + dl), rock: hexOf(h + rockHue, 0.5 * s, 0.6 * l), accent: accent(), deep: hexOf(h, s, 0.7 * l) };
+  // low and high round an aim, the aim moved until their mix is the planet's colour: a mix of two
+  // #rrggbb's of different chroma leans toward the stronger, and a pale or dark end clamps, so
+  // drawn round the slot itself the mix drifted up to 1.5 off it and siblings met (found on
+  // claude/trusting-sagan-tda0fm, the endless universe's first branch)
+  const d = Math.min(dl, Math.max(0.01, l - 0.02), Math.max(0.01, 0.98 - l));
+  const pair = (ah, al) => ({ low: hexOf(ah - spread / 2, s, al - d), high: hexOf(ah + spread / 2, 0.9 * s, al + d) });
+  let [ah, al] = [h, l];
+  let ends = pair(ah, al);
+  for (let i = 0; i < 6; i++) {
+    const [mh, ml] = dominantOf(ends);
+    const dh = ((h - mh + 540) % 360) - 180;
+    if (Math.abs(dh) < 0.05 && Math.abs(l - ml) < 0.0005) break;
+    ah += dh;
+    al += l - ml;
+    ends = pair(ah, al);
+  }
+  return { ...ends, rock: hexOf(h + rockHue, 0.5 * s, 0.6 * l), accent: accent(), deep: hexOf(h, s, 0.7 * l) };
 }
 
-// an exotic world wears it: crystal's facets, a glow, a lift, spires of another colour
+// an exotic world wears it in its accent and rock (never its low and high, which the sibling
+// distance holds): crystal's facets, a glow, a lift's pale stone, spires of another colour
 function exoticPalette(palette, exotic, [h, l], rnd) {
   const off = between(rnd, [140, 220]);
   if (exotic === 'crystal') return { ...palette, accent: hexOf(h + off, 0.85, 0.66), rock: hexOf(h + off + 20, 0.55, 0.45) };
   if (exotic === 'glowing') return { ...palette, accent: hexOf(h + off, 1, 0.58) };
-  if (exotic === 'floating') return { ...palette, high: hexOf(h + off / 3, 0.5, Math.min(0.9, l + 0.2)) };
+  if (exotic === 'floating') return { ...palette, accent: hexOf(h + off / 3, 0.5, Math.min(0.9, l + 0.2)) };
   if (exotic === 'spires') return { ...palette, rock: hexOf(h + off, 0.45, 0.3) };
   return palette;
 }
@@ -292,7 +311,11 @@ export function varietyOf(row) {
   palette.skyLow = sky.low;
   palette.skyHigh = sky.high;
   const exRnd = streamOf(row, 'exotic');
-  const exotic = exRnd() < 0.05 ? EXOTICS[Math.floor(exRnd() * EXOTICS.length)] : null;
+  // (a giant has no ground for crystals, islands or spires: its one exotic is a glow, as rare)
+  const giant = family === 'gas' || family === 'ringed';
+  const rare = exRnd() < 0.05;
+  const pick = EXOTICS[Math.floor(exRnd() * EXOTICS.length)];
+  const exotic = rare ? (giant ? 'glowing' : pick) : null;
   Object.assign(palette, exoticPalette(palette, exotic, dominant, exRnd));
   const wRnd = streamOf(row, 'weather');
   const weather = exotic === 'glowing' ? { kind: 'spores', amount: between(wRnd, [0.2, 1]) } : { kind: weighted(wRnd, WEATHER[family === 'ringed' ? 'gas' : family]), amount: between(wRnd, [0.2, 1]) };

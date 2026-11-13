@@ -75,12 +75,21 @@ function placesOf(spec0, kinds) {
 
 const charted = (pois, chart) => pois.map((p) => ({ ...p, at: chart.toChart(p.dir).map(cm) }));
 
+// an exotic's growth takes the place of the template's row of its kind and depth: the ground
+// seeds a row's places by kind and depth, so a second row beside it would stand on the first's
+// (found on claude/trusting-sagan-tda0fm). A giant's cloud deck stands nothing new.
 function clutterOf(family, v) {
   const d = v.flora?.density ?? 1;
   const rows = TYPE_LOOK[family].clutter.map((c) => (c.kind === 'trunk' || c.kind === 'spire' ? { ...c, perKm2: Math.round(c.perKm2 * d * 10) / 10 } : { ...c }));
-  if (v.exotic === 'crystal') rows.push({ kind: 'crystal', perKm2: 25, depth: 5 });
-  if ((v.exotic === 'glowing' || v.exotic === 'floating') && !rows.some((c) => c.kind === 'trunk')) rows.push({ kind: 'trunk', perKm2: 14, depth: 5 });
-  if (v.exotic === 'spires') rows.push({ kind: 'spire', perKm2: 30, depth: 5, size: 1.4 });
+  if (family === 'gas' || family === 'ringed') return rows;
+  const put = (row) => {
+    const i = rows.findIndex((c) => c.kind === row.kind && (c.depth ?? 0) === (row.depth ?? 0));
+    if (i >= 0) rows[i] = { ...rows[i], ...row };
+    else rows.push(row);
+  };
+  if (v.exotic === 'crystal') put({ kind: 'crystal', perKm2: 25, depth: 5 });
+  if ((v.exotic === 'glowing' || v.exotic === 'floating') && !rows.some((c) => c.kind === 'trunk')) put({ kind: 'trunk', perKm2: 14, depth: 5 });
+  if (v.exotic === 'spires') put({ kind: 'spire', perKm2: 30, depth: 5, size: 1.4 });
   return rows;
 }
 
@@ -88,7 +97,11 @@ function clutterOf(family, v) {
 // highland read apart from orbit; rock where it is steep, from a per-planet threshold
 function groundLookOf(family, v, water, field = null, seed = 0) {
   const g = TYPE_LOOK[family].ground;
-  const palette = { ...g.palette, low: v.palette.low, high: v.palette.high, rock: v.palette.rock, accent: v.palette.accent, deep: v.palette.deep };
+  // (an ocean's accent is its sea, a lava world's its glow: painted as the ground's accent
+  // patches they'd be puddles on the beach and embers on the rock, so those keep the template's;
+  // found on claude/trusting-sagan-tda0fm)
+  const keepAccent = family === 'ocean' || family === 'lava';
+  const palette = { ...g.palette, low: v.palette.low, high: v.palette.high, rock: v.palette.rock, accent: keepAccent ? g.palette.accent : v.palette.accent, deep: v.palette.deep };
   if (v.character && field) {
     const hs = FIB_512.map((d) => field.heightAt(d)).filter((h) => !water || h >= water.level).sort((a, b) => a - b);
     const q = (t) => (hs.length ? hs[Math.min(hs.length - 1, Math.floor(t * hs.length))] : 0);

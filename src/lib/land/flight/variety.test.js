@@ -67,6 +67,31 @@ describe('varietyOf', () => {
     expect(colourDistance(moon(0, 'rocky').dominant, moon(1, 'rocky').dominant)).toBeGreaterThanOrEqual(1);
   });
 
+  // (found on claude/trusting-sagan-tda0fm, the endless universe's first branch: a slot apart is not
+  // a colour apart once low and high are drawn round it and rounded to #rrggbb)
+  it('keeps siblings at least 1 apart in the colours they draw (30,000 planets)', () => {
+    let nearest = Infinity;
+    let at = '';
+    for (const rows of randomSystems(30000, 11)) {
+      const drawn = rows.map((r) => {
+        const v = varietyOf(r);
+        return dominantOf(v.palette, v.family === 'ocean' ? v.water : null);
+      });
+      for (let i = 0; i < drawn.length; i++) for (let j = i + 1; j < drawn.length; j++) {
+        const d = colourDistance(drawn[i], drawn[j]);
+        if (d < nearest) [nearest, at] = [d, `${rows[i].id} ${rows[j].id}`];
+      }
+    }
+    expect(nearest, at).toBeGreaterThanOrEqual(1);
+  });
+
+  it('gives a giant no exotic that needs ground: only a glow', () => {
+    const giants = randomSystems(4000, 2).flat().filter((r) => r.type === 'gas' || r.type === 'ringed').map(varietyOf);
+    expect(giants.length).toBeGreaterThan(500);
+    for (const v of giants) expect([null, 'glowing']).toContain(v.exotic);
+    expect(giants.some((v) => v.exotic === 'glowing')).toBe(true);
+  });
+
   it('is plain data, to cross to a worker', () => {
     const v = varietyOf(systems[0][0]);
     expect(JSON.parse(JSON.stringify(v))).toEqual(v);

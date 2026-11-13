@@ -5,6 +5,8 @@ import { angleBetween, dirOfUv } from './sphere';
 import { planetSpecOf as specWith } from './planetSpec';
 import { MOONS, lookupOf, randomSystems } from './fixtures/generated';
 import { PLANETS, planetSpecOf } from './fixtures/expanse.js';
+import { TYPE_LOOK } from './planetTables';
+import { generatedSpecOf } from './generated';
 
 // every key a roster spec has (its 17 and ROSTER_EXTRA's)
 const KEYS = Object.keys(planetSpecOf('hoth'));
@@ -70,6 +72,41 @@ describe('generatedSpecOf', () => {
     const g = rows.find((r) => r.type === 'gas');
     const s = specWith(g.id, { expanse: lookup });
     expect(s).toMatchObject({ round: null, soft: true, pois: [], water: null, buildable: false });
+  });
+
+  // (both found on claude/trusting-sagan-tda0fm: an ocean's sea painted as puddles on its beaches,
+  // an exotic's spires seeded onto the template's own)
+  it('leaves an ocean’s sea and a lava planet’s glow off its ground', () => {
+    for (const type of ['ocean', 'lava']) {
+      const r = rows.find((x) => x.type === type) ?? { id: `e:9,9:0:0`, name: 'X', type, seed: '12345', radius: 40, system: { faction: null, traffic: 0, hazard: null } };
+      expect(generatedSpecOf(r, type).ground.palette.accent, type).toBe(TYPE_LOOK[type].ground.palette.accent);
+    }
+  });
+
+  it('puts an exotic’s growth in place of the template’s own row, never a second one beside it', () => {
+    const base = { name: 'X', radius: 40, system: { faction: null, traffic: 0, hazard: null } };
+    let n = 0;
+    for (let i = 0; i < 4000 && n < 60; i++) {
+      const row = { ...base, id: `e:7,7:${i % 20}:${i % 7}`, type: ['ice', 'lava', 'rock', 'forest'][i % 4], seed: String(1000003n * BigInt(i + 1)) };
+      const s = specWith(row.id, { expanse: [row] });
+      if (!s.exotic) continue;
+      n++;
+      const keys = s.clutter.map((c) => `${c.kind}@${c.depth ?? 0}`);
+      expect(new Set(keys).size, `${row.id} ${keys}`).toBe(keys.length);
+    }
+    expect(n).toBeGreaterThan(20);
+  });
+
+  it('stands nothing on a gas giant’s cloud deck, glowing or not', () => {
+    const kinds = new Set(TYPE_LOOK.gas.clutter.map((c) => c.kind));
+    let exotic = 0;
+    for (let i = 0; i < 3000 && exotic < 5; i++) {
+      const row = { id: `e:8,8:${i % 20}:${i % 7}`, name: 'G', type: 'gas', seed: String(7000003n * BigInt(i + 1)), radius: 100, system: { faction: null, traffic: 0, hazard: null } };
+      const s = specWith(row.id, { expanse: [row] });
+      if (s.exotic) exotic++;
+      expect(s.clutter.every((c) => kinds.has(c.kind)), `${row.id} ${s.exotic}`).toBe(true);
+    }
+    expect(exotic).toBeGreaterThan(0);
   });
 
   it('shows several biomes on its sphere', () => {

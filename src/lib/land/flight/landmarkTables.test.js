@@ -74,6 +74,20 @@ describe('the landmark tables', () => {
 });
 
 describe('a generated planet’s places and growth', () => {
+  // (found on claude/trusting-sagan-tda0fm: the plan's sizes stood these trees 6 to 14 m tall)
+  it('stands an exotic world’s growth as tall as the code-built shape it replaces', () => {
+    const CODE = { trunk: 79, spire: 26 };
+    for (const [exotic, kit] of Object.entries(EXOTIC_KIT))
+      for (const [kind, { kit: pack, name, size }] of Object.entries(kit)) {
+        const tall = manifest(pack).models[name].height * size;
+        expect(Math.abs(tall - CODE[kind]) / CODE[kind], `${exotic} ${name}: ${tall.toFixed(1)} m`).toBeLessThanOrEqual(0.1);
+      }
+  });
+
+  it('gives a giant no growth of its own', () => {
+    expect(clutterKitOf({ id: 'e:3,-2:0:0', type: 'gas', exotic: 'glowing' })).toEqual({});
+  });
+
   it('stands every generated POI kind on at least LANDMARK_MIN things', () => {
     for (const kind of ['ruins', 'wreck', 'outpost', 'monolith', 'signal']) expect(POI_KITS[kind].length, kind).toBeGreaterThanOrEqual(LANDMARK_MIN);
   });
