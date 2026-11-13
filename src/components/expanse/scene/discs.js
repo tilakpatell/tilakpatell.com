@@ -7,7 +7,8 @@
 // pickDiscs(xyzr: Float64Array, n, cam: [x, y, z], { far, max }) → Int32Array:
 //   the indices of the n bodies (x, y, z, r each) within far + r of the camera,
 //   the nearest `max` kept, ordered far to near (ties by index)
-// createDiscs(writer, { budget, far = FAR, keyed = false }) → { feed(sectors, cam, t, built, sectorAt), count }
+// createDiscs(writer, { budget, far = FAR, keyed = false }) → { feed(sectors, cam, t, built, sectorAt, shownOf), count }
+//   shownOf(sector) → 0 … 1: how much of a sector shows (its far-layer slot's), each of its discs times that
 //   sectors: [Sector] (fullSector's, absolute places), cam: the camera in the map's
 //   space, t: the shared clock (orbits.js), built: a Set of system ids drawn whole,
 //   sectorAt(sx, sy, sz): a loaded sector, for the lattice's things (nearThings.js): a disc
@@ -73,6 +74,7 @@ export function createDiscs(writer, { budget, far = FAR, keyed = false } = {}) {
   let what = new Array(room); // { kind, row, star? }
   let n = 0;
   let count = 0;
+  let shownNow = 1; // (the sector being looked through: how much of it shows)
   const add = (x, y, z, r, kind, row, star) => {
     if (n === room) {
       room *= 2;
@@ -86,10 +88,11 @@ export function createDiscs(writer, { budget, far = FAR, keyed = false } = {}) {
     xyzr[n * 4 + 2] = z;
     xyzr[n * 4 + 3] = r;
     let w = what[n];
-    if (!w) w = what[n] = { kind: '', row: null, star: null };
+    if (!w) w = what[n] = { kind: '', row: null, star: null, shown: 1 };
     w.kind = kind;
     w.row = row;
     w.star = star;
+    w.shown = shownNow;
     n++;
   };
   const near = (p, cam, reach) => {
@@ -100,16 +103,20 @@ export function createDiscs(writer, { budget, far = FAR, keyed = false } = {}) {
   };
 
   return {
-    feed(sectors, cam, t, built = null, sectorAt = null) {
+    feed(sectors, cam, t, built = null, sectorAt = null, shownOf = null) {
       n = 0;
       if (sectorAt)
         thingsAround(sectorAt, cam, THING_DISC, (sector, i, d) => {
           const th = sector.things;
           if (d <= th.size[i] * MESH_NEAR) return;
+          shownNow = shownOf ? shownOf(sector) : 1;
+          if (!(shownNow > 0)) return;
           const o = sector.origin;
           add(o[0] + th.at[i * 3], o[1] + th.at[i * 3 + 1], o[2] + th.at[i * 3 + 2], th.size[i], 'thing', sector, i);
         });
       for (const sector of sectors) {
+        shownNow = shownOf ? shownOf(sector) : 1;
+        if (!(shownNow > 0)) continue;
         for (const s of sector.systems) {
           if (built?.has(s.id)) continue;
           if (!near(s.at, cam, far + (s.reach ?? s.star.size))) continue;
@@ -142,7 +149,8 @@ export function createDiscs(writer, { budget, far = FAR, keyed = false } = {}) {
         // (whole within the far plane, a speck's past it: levels.js, with no reach of its own, since
         // what's built whole is skipped above)
         const w = what[i];
-        const alpha = levelWeights(dist, { reach: 0, far: w.kind === 'thing' ? THING_DISC : far }).disc;
+        // (and as much as its sector's specks show: a sector coming in fades its discs in with them)
+        const alpha = levelWeights(dist, { reach: 0, far: w.kind === 'thing' ? THING_DISC : far }).disc * w.shown;
         let c;
         let lx = 0;
         let ly = 0;

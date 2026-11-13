@@ -101,6 +101,16 @@ describe('the discs fed', () => {
     expect(look(t.size[i] * 50)).toBeUndefined(); // (a mesh there)
   });
 
+  it('fades a sector’s discs with its specks, and draws none of one not shown', () => {
+    const half = writer();
+    createDiscs(half, { budget: { discs: 100 } }).feed([HAND], [390000, 0, -10000], 0, null, null, () => 0.5);
+    const starA = half.got.find((d) => d.r === 150);
+    expect(starA.alpha).toBe(0.5);
+    const none = writer();
+    createDiscs(none, { budget: { discs: 100 } }).feed([HAND], [390000, 0, -10000], 0, null, null, () => 0);
+    expect(none.got).toHaveLength(0);
+  });
+
   it('keys each disc by its id when asked, the same every frame', () => {
     const w = writer();
     const discs = createDiscs(w, { budget: { discs: 100 }, keyed: true });

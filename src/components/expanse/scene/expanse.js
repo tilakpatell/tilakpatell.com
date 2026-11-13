@@ -129,6 +129,12 @@ export function createExpanse(parent, { universe = UNIVERSE, tier = 'mid', worke
   const nearSectors = [];
   const nearSystems = [];
   const sectorAt = (sx, sy, sz) => loaded.get(keyOf(sx, sy, sz))?.sector ?? null;
+  // (how much of a sector shows: its slot's, so its discs come and go with its specks)
+  const recOf = new WeakMap(); // sector → its record
+  const shownOf = (sector) => {
+    const rec = recOf.get(sector);
+    return rec && rec.slot >= 0 && far ? far.slotShown(rec.slot) : 0;
+  };
   const solidList = [];
   const starList = [...STARS]; // (the hand-made stars from the first: the lights are worked out before the first update)
 
@@ -206,7 +212,9 @@ export function createExpanse(parent, { universe = UNIVERSE, tier = 'mid', worke
         const { k, gen, answer } = inbox.shift();
         if (!grid.done(k, gen)) continue;
         const [sx, sy, sz] = parse(k);
-        loaded.set(k, { key: k, id: sectorKey(sx, sy, sz), sector: withMoons(answer.sector), stars: answer.stars, slot: -1, staged: false, nebulae: [] });
+        const rec = { key: k, id: sectorKey(sx, sy, sz), sector: withMoons(answer.sector), stars: answer.stars, slot: -1, staged: false, nebulae: [] };
+        recOf.set(rec.sector, rec);
+        loaded.set(k, rec);
       }
       // ── what to load: the 3 × 3 × 3 round the camera, ahead first ──
       const nose = ship && Number.isFinite(ship.heading) ? [-Math.sin(ship.heading) * Math.cos(ship.pitch || 0), Math.sin(ship.pitch || 0), -Math.cos(ship.heading) * Math.cos(ship.pitch || 0)] : null;
@@ -286,7 +294,7 @@ export function createExpanse(parent, { universe = UNIVERSE, tier = 'mid', worke
         if (hidden) {
           far.discs.begin();
           far.discs.end();
-        } else discs.feed(nearSectors, cam, orbitT, near.built(), sectorAt);
+        } else discs.feed(nearSectors, cam, orbitT, near.built(), sectorAt, shownOf);
       }
       solidList.length = 0;
       for (const so of near.solids()) solidList.push(so);

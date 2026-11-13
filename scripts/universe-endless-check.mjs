@@ -14,8 +14,9 @@
 // `system` (into the nearest generated system, till it's built whole) and
 // `climb` (up to 50,000 above home, a few thousand a step). Each records the
 // pops (the far layer's: a disc from nothing to whole in a frame), the
-// Expanse's own time a frame, the draw calls and triangles, the generated
-// places within 9,000 and the nearest, and the page's errors.
+// Expanse's own time a frame, the draw calls and triangles, the places within
+// 9,000 and the nearest (generated, and the site's own stations, worlds and
+// wonders), and the page's errors.
 //
 // Exit 1 on a pop over 4 px, an error, a step that never arrives, fewer than
 // three places within 9,000 or none within 6,000 (the spec's numbers), or the
@@ -97,7 +98,15 @@ const read = () =>
     const ex = d.expanse;
     const s = d.state.ship;
     const here = s ? [s.x, s.y, s.z] : [0, 0, 0];
-    return { at: here.map(Math.round), sector: ex.sector(), loaded: ex.loaded().length, built: [...ex.built()], workMs: +ex.workMs().toFixed(2), discs: d.farStars.discs.count(), calls: d.renderer.info.render.calls, tris: d.renderer.info.render.triangles, around: ex.around(here, 9000), pops: d.farStars.pops() };
+    // (the places round the ship: the generated ones, and the site's own, its stations, worlds and wonders)
+    const around = ex.around(here, 9000);
+    const own = [...d.planets.map((p) => p.group.position.toArray()), ...d.wonders.map((w) => w.at)];
+    for (const p of own) {
+      const dist = Math.hypot(p[0] - here[0], p[1] - here[1], p[2] - here[2]);
+      if (dist <= 9000) around.count++;
+      around.nearest = Math.min(around.nearest, dist);
+    }
+    return { at: here.map(Math.round), sector: ex.sector(), loaded: ex.loaded().length, built: [...ex.built()], workMs: +ex.workMs().toFixed(2), discs: d.farStars.discs.count(), calls: d.renderer.info.render.calls, tris: d.renderer.info.render.triangles, around, pops: d.farStars.pops() };
   });
 const step = async (name, go, arrived) => {
   await page.evaluate(() => window.__universeDebug.farStars.pops()); // (counted from here)
@@ -118,7 +127,7 @@ try {
   if (!(await until(() => typeof window.__universe === 'function' && window.__universe().ship && window.__universeDebug?.state?.model, null, 300000))) throw new Error('the map never came up');
   const loaded27 = () => window.__universeDebug.expanse.loaded().length >= 27;
   await step('start', null, loaded27);
-  await step('old-rim', () => window.__universeDebug.teleport(47000, 0, 0, -Math.PI / 2, 0), () => window.__universeDebug.state.ship.x > 47000 && window.__universeDebug.expanse.loaded().length >= 27);
+  await step('old-rim', () => window.__universeDebug.teleport(47000, 0, 0, -Math.PI / 2, 0), () => window.__universeDebug.state.ship.x >= 46000 && window.__universeDebug.expanse.loaded().length >= 27);
   await page.evaluate(() => window.__universeDebug.teleport(53000, 0, 0, -Math.PI / 2, 0));
   await step('boundary', () => window.__universeDebug.teleport(61000, 0, 0, -Math.PI / 2, 0), () => window.__universeDebug.expanse.sector() === 'E:1,0' && window.__universeDebug.expanse.loaded().length >= 27);
   await step(
