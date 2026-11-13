@@ -22,10 +22,17 @@ const fakeRenderer = () => {
     setRenderTarget: vi.fn(function (t) {
       this.target = t;
     }),
-    render: vi.fn(function () {
+    render: vi.fn(function (scene) {
+      this.scene = scene;
       this.drew = { autoClear: this.autoClear, toneMapping: this.toneMapping };
     }),
   };
+};
+// the bake's material (nodes/sky.test.js's helper): the scene is the last drawn
+const bakeOf = (sky) => {
+  const r = fakeRenderer();
+  sky.bake(r);
+  return r.scene.children[0].material;
 };
 
 describe('the nebulae', () => {
@@ -188,5 +195,31 @@ describe('its fidelity', () => {
     };
     expect(mean(4200, 12000)).toBeLessThan(mean(0, 4200) * 0.8);
     sky.dispose();
+  });
+});
+
+describe('its clouds', () => {
+  const kashyyyk = systemById('kashyyyk');
+  it('bakes without them when asked, every star where it was', () => {
+    const a = createSky({ clouds: false }), b = createSky();
+    a.setSystem(kashyyyk);
+    b.setSystem(kashyyyk);
+    const ma = bakeOf(a), mb = bakeOf(b);
+    for (const c of ma.uniforms.uNebCol.value) expect(c.toArray()).toEqual([0, 0, 0]);
+    expect(mb.uniforms.uNebCol.value.map((c) => c.getHex())).toEqual(nebulaeOf(kashyyyk).map((n) => new THREE.Color(n.color).getHex()));
+    expect(ma.uniforms.uSeed.value).toBe(mb.uniforms.uSeed.value);
+    expect(ma.fragmentShader).toBe(mb.fragmentShader);
+    const stars = (sky) => sky.group.children.filter((o) => o.geometry?.attributes?.position).map((o) => Array.from(o.geometry.attributes.position.array));
+    expect(stars(a)).toEqual(stars(b));
+    a.dispose();
+    b.dispose();
+  });
+  it('leaves the galaxy’s sky as it was, for every system', () => {
+    for (const s of SYSTEMS) {
+      const sky = createSky();
+      sky.setSystem(s);
+      expect(bakeOf(sky).uniforms.uNebCol.value.map((c) => c.getHex())).toEqual(nebulaeOf(s).map((n) => new THREE.Color(n.color).getHex()));
+      sky.dispose();
+    }
   });
 });

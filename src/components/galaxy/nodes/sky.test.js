@@ -80,6 +80,17 @@ describe('galaxy/nodes/sky, the twin of galaxy/sky', () => {
       a.dispose();
       n.dispose();
     }
+    // and without the clouds (the universe map's sky), the same again
+    const a = glsl.createSky({ level: 'high', clouds: false });
+    const n = nodes.createSky({ level: 'high', clouds: false });
+    a.setSystem(systemById('kashyyyk'));
+    n.setSystem(systemById('kashyyyk'));
+    const ma = bakeOf(a);
+    const mn = bakeOf(n);
+    for (const k of Object.keys(ma.uniforms)) expect(plain(mn.uniforms[k].value), `clouds off ${k}`).toEqual(plain(ma.uniforms[k].value));
+    expect(plain(ma.uniforms.uNebCol.value)).toEqual([[0, 0, 0], [0, 0, 0], [0, 0, 0]]);
+    a.dispose();
+    n.dispose();
   });
 
   it('places the same stars, suns and beacons for a system, and writes the frame’s uniforms by name', () => {
