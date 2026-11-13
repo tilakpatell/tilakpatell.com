@@ -17,7 +17,7 @@ import { fileURLToPath } from 'node:url';
 import { encodePath, objectUrl } from './lib/bucket.mjs';
 import { BUCKET, open } from './lib/bf2web-r2.mjs';
 import { contractProblems, uploadPlan } from './lib/bf2web-site.mjs';
-import { attemptUpload, completeUploadResponse, copyUploadHeaders, recordedSha, shaHeader } from './lib/bf2web-upload-response.mjs';
+import { attemptUpload, completeUploadResponse, copyUploadHeaders, shaHeader, withRecordedShas } from './lib/bf2web-upload-response.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const args = process.argv.slice(2);
@@ -38,17 +38,11 @@ const previous = previousId && previousId !== id ? await r2.json(`sites/${previo
 const prefix = `sites/${id}/`;
 const previousPrefix = previous ? `sites/${previousId}/` : null;
 const [listed, previousExisting] = await Promise.all([r2.files(prefix), previousPrefix ? r2.files(previousPrefix) : []]);
-// A key already there at the manifest's size: its recorded sha256 (HEAD), so the plan skips it only when the bytes are the same.
+// A key already there at the manifest's size: its recorded sha256 (HEAD, eight at a time), so the plan skips it only when the bytes
+// are the same; a HEAD that fails leaves it unrecorded, and it is sent again.
 const bytesByKey = new Map(manifest.entries.map((e) => [prefix + e.path, e.bytes]));
-const existing = await Promise.all(listed.map(async (f) => {
-  if (bytesByKey.get(f.key) !== f.size) return f;
-  const r = await attemptUpload(`head ${f.key}`, async () => {
-    const res = await r2.fetch(objectUrl(BUCKET, f.key), { method: 'HEAD' });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return res;
-  });
-  return { ...f, sha256: recordedSha(r.headers) };
-}));
+const existing = await withRecordedShas(listed, bytesByKey, (key) => r2.fetch(objectUrl(BUCKET, key), { method: 'HEAD' }));
+if (existing.asked) console.log(`${id}: ${existing.asked} keys already there at their size, ${existing.failed} unread (sent again)`);
 const plan = uploadPlan(manifest, { prefix, previous, previousPrefix, existing, previousExisting });
 const uiDir = option('--ui-data');
 if (uiDir && existsSync(uiDir)) for (const f of uiDataFiles(uiDir)) plan.splice(-1, 0, { action: 'put', key: `${prefix}ui-data/${f}`, file: join(uiDir, f) });

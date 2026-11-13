@@ -45,3 +45,30 @@ export async function attemptUpload(what, fn, { sleep = (ms) => new Promise((res
     }
   }
 }
+
+// The listed keys with their recorded sha256 (HEAD), for uploadPlan's skip: only a key at the manifest's size is asked, by at most
+// `workers` requests at a time (a resumed upload lists ~27k keys). A HEAD that fails its tries, or answers without the header, gives
+// sha256 null, so that key is put again: a failed HEAD never ends the run.
+//   withRecordedShas(listed, bytesByKey, head, { workers, attempt }) → [{ key, size, sha256? }] in listed's order
+//   head(key) → a Response (ok or not); attempt: attemptUpload (its tries and delays)
+export async function withRecordedShas(listed, bytesByKey, head, { workers = 8, attempt = attemptUpload } = {}) {
+  const out = listed.map((f) => f), asked = listed.map((f, i) => [f, i]).filter(([f]) => bytesByKey.get(f.key) === f.size);
+  let next = 0, failed = 0;
+  await Promise.all(Array.from({ length: Math.max(1, Math.min(workers, asked.length)) }, async () => {
+    for (let n = next++; n < asked.length; n = next++) {
+      const [f, i] = asked[n];
+      try {
+        const r = await attempt(`head ${f.key}`, async () => {
+          const res = await head(f.key);
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          return res;
+        });
+        out[i] = { ...f, sha256: recordedSha(r.headers) };
+      } catch {
+        failed++;
+        out[i] = { ...f, sha256: null };
+      }
+    }
+  }));
+  return Object.assign(out, { asked: asked.length, failed });
+}
