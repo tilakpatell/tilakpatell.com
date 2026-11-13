@@ -21,6 +21,8 @@ const V = FRAMES.nav.w;
 const NAME_REM = 0.7; // (navmap.css's .navmap-place: the names are measured at it)
 const NAME_H = 18; // (.navmap-name's height, and NAME_PAD its padding either side)
 const NAME_PAD = 10;
+const REGION_REM = 0.6; // (.navmap-region-btn .navmap-name's size, and its 0.08em letter spacing)
+const REGION_SPACING = 0.08;
 
 function paintStars(canvas) {
   const dpr = Math.min(2, window.devicePixelRatio || 1);
@@ -112,9 +114,20 @@ export default function NavChart({ view, marks, ship = null, course = null, fron
   const measure = (() => {
     const el = box.current;
     const g = px && el ? (ruler.current ??= document.createElement('canvas').getContext('2d')) : null;
-    if (!g) return (t) => t.length * 6.3 + NAME_PAD;
-    g.font = `${NAME_REM * (parseFloat(getComputedStyle(document.documentElement).fontSize) || 16)}px ${getComputedStyle(el).fontFamily}`;
-    return (t) => Math.ceil(g.measureText(t).width) + NAME_PAD;
+    // (the home system's and the Curve's names are mono capitals, letter-spaced: navmap.css's .navmap-region-btn)
+    const regions = new Set(marks.filter((m) => REGION_OF[m.id]).map((m) => m.name));
+    if (!g) return (t) => (regions.has(t) ? t.length * 7.2 : t.length * 6.3) + NAME_PAD;
+    const root = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+    const body = `${NAME_REM * root}px ${getComputedStyle(el).fontFamily}`;
+    const mono = `${REGION_REM * root}px ${getComputedStyle(document.documentElement).getPropertyValue('--font-mono') || 'monospace'}`;
+    return (t) => {
+      if (!regions.has(t)) {
+        g.font = body;
+        return Math.ceil(g.measureText(t).width) + NAME_PAD;
+      }
+      g.font = mono;
+      return Math.ceil(g.measureText(t.toUpperCase()).width + t.length * REGION_SPACING * REGION_REM * root) + NAME_PAD;
+    };
   })();
   const shipAt = ship ? placeShip(view, ship, FRAMES.nav) : null;
   const grid = level === 'system' ? [] : sectorGrid(view, level === 'universe' ? 2 : 1);
