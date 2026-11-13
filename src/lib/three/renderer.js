@@ -317,7 +317,10 @@ export function quiet(renderer) {
 // each shader); `target` is where it will be drawn when that isn't the canvas
 // (a composer's buffer: no tone mapping or sRGB there, so different shaders).
 // `onStep(k)`, if given, hears how far it's got, 0 to 1 (gpuWork's
-// compileSlices), for a loading screen that says so.
+// compileSlices), for a loading screen that says so; `frame`, if given, is
+// how it waits between slices (the next frame by default; the universe map
+// passes its prepFrame, so a warm under the launch's cover goes in the
+// page's idle moments and holds off just after a press).
 //
 // (three's own compileAsync does the same, but polls forever if the context
 // goes in the meantime, and throws if the renderer is disposed first: a scene
@@ -325,11 +328,11 @@ export function quiet(renderer) {
 const CAP = 4000;
 let compiling = 0; // precompiles in flight, on any renderer (see releaseContext)
 
-export function precompile(renderer, root, camera, scene = null, target, { onStep = null } = {}) {
+export function precompile(renderer, root, camera, scene = null, target, { onStep = null, frame } = {}) {
   // a slice at a time, a fence between (lib/three/gpuWork), for the target
   // it's drawn into
   compiling += 1;
-  return compileSlices(renderer, [root], camera, scene ?? root, { cap: CAP, target, onStep })
+  return compileSlices(renderer, [root], camera, scene ?? root, { cap: CAP, target, onStep, ...(frame ? { frame } : {}) })
     .catch(() => {})
     .then(() => {
       compiling -= 1;

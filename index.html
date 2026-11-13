@@ -53,6 +53,10 @@
       /* The intro's cover. It removes itself after 4s even if the script never runs. */
       html[data-intro] body::before { content: ''; position: fixed; inset: 0; z-index: 94; background: #03070f; animation: intro-cover 0.4s ease 4s forwards; }
       @keyframes intro-cover { to { opacity: 0; visibility: hidden; } }
+      /* While the launch covers the page (html[data-covered], components/launch), the page under it
+         is dark: a part of the launch still loading (the crawl, the cockpit) shows this, never the
+         page or the map's loading screen. Under every part of the launch (the crawl is 90). */
+      html[data-covered] body::after { content: ''; position: fixed; inset: 0; z-index: 89; background: #04050a; pointer-events: none; }
     </style>
     <script type="application/ld+json">
       {

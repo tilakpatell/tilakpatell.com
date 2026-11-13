@@ -11,7 +11,13 @@
 // in case a launch began while it waited: a texture or a shader link on the
 // chip then is a held frame in the jump.
 //
-// prepFrame({ doc, idle, frame, clear, held }) → Promise (the parts passed in for a test)
+// Under the cover, a step also waits for a quiet moment after a press (a
+// key, a click, a tap: QUIET_MS): what the visitor did there (the launch's
+// Next, its Start) is drawn first, not held behind a slice of the map's on
+// the chip (in software GL a click on the tour's Next waited a second for
+// its paint, behind the map's calibration draws).
+//
+// prepFrame({ doc, idle, frame, clear, held, quiet }) → Promise (the parts passed in for a test)
 
 import { nextFrame } from '../../lib/three/gpuWork';
 import { foreground, whenClear } from '../../lib/foreground';
@@ -21,10 +27,27 @@ export const coveredIn = (doc) => Boolean(doc) && ('covered' in doc.documentElem
 // (half a second at most for an idle moment: a page that never rests still gets there)
 const whenIdle = (fn) => (typeof requestIdleCallback === 'function' ? requestIdleCallback(fn, { timeout: 500 }) : setTimeout(fn, 50));
 
-export function prepFrame({ doc = typeof document !== 'undefined' ? document : null, idle = whenIdle, frame = nextFrame, clear = whenClear, held = foreground } = {}) {
+// the last press, and the quiet after it
+export const QUIET_MS = 300;
+let pressed = -Infinity;
+if (typeof window !== 'undefined')
+  for (const type of ['pointerdown', 'keydown'])
+    window.addEventListener(
+      type,
+      () => {
+        pressed = performance.now();
+      },
+      { capture: true, passive: true },
+    );
+export const afterPress = ({ last = pressed, now = typeof performance !== 'undefined' ? performance.now() : 0, wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms)) } = {}) => {
+  const left = last + QUIET_MS - now;
+  return left > 0 ? wait(left) : Promise.resolve();
+};
+
+export function prepFrame({ doc = typeof document !== 'undefined' ? document : null, idle = whenIdle, frame = nextFrame, clear = whenClear, held = foreground, quiet = () => afterPress() } = {}) {
   const step = () =>
     clear('launch')
-      .then(() => (coveredIn(doc) ? new Promise((resolve) => idle(() => resolve())) : frame()))
+      .then(() => (coveredIn(doc) ? quiet().then(() => new Promise((resolve) => idle(() => resolve()))) : frame()))
       .then((v) => (held() === 'launch' ? step() : v));
   return step();
 }
