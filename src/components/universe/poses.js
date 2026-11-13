@@ -13,8 +13,7 @@
 // its terminator), facing the planet, the camera just behind it: the day
 // side toward the camera, which is how a visitor should arrive.
 import { BELT, HOME_RADIUS, ORDER, POSITIONS, REACH, RIM, SUN } from './layout';
-import { fullSector } from '../expanse/gen/space';
-import { UNIVERSE } from '../expanse/gen/seed';
+import { UNIVERSE, fullSector } from '../expanse/shared/gen';
 import { MAW } from './maw';
 import { SHIP, parkAt } from './ship';
 import { byId } from './universes';

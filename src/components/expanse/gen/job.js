@@ -70,7 +70,8 @@ export function sectorJob({ key, universe, sx, sy, sz }) {
     systems: whole.systems.map((s) => ({
       ...s,
       planets: s.planets.map((p) => {
-        const { moonList, ...rest } = p; // eslint-disable-line no-unused-vars
+        const rest = { ...p };
+        delete rest.moonList;
         return rest;
       }),
     })),

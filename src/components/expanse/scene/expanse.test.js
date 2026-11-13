@@ -3,9 +3,12 @@ import { describe, expect, it } from 'vitest';
 import { SECTOR, sectorKey } from '../../../lib/space/address.js';
 import { RIM } from '../../universe/layout';
 import { createFarStars } from '../../universe/farStars';
-import { universeBudget } from '../../universe/budget';
-import { STARS } from '../../universe/lighting';
 import { createExpanse } from './expanse';
+
+// (universe/budget.js's high row, as the scene hands it in)
+const HIGH = { systemsBuilt: 2, discs: 2500, slotSize: 400, nearSlots: 64, beyondRings: 2, thingsNear: 64, thingKinds: {}, workers: 3, expanseMs: 2, traffic: 6, events: 3, nebula: { res: 0.5, steps: 48 }, gargantuan: 'high', planetMap: [512, 256] };
+const universeBudget = () => HIGH;
+const STARS = [{ id: 'sun', at: [0, 0, 0], r: 320, colour: '#ffd27a', strength: 1, reach: 30000 }];
 
 // a pool that answers with a small made-up sector, when let go (all at once, or one key)
 const fakePool = () => {
@@ -61,7 +64,7 @@ const setup = (budget = { ...universeBudget({ detail: 'high' }), expanseMs: 1e9 
   const camera = new THREE.PerspectiveCamera(34, 1, 0.1, 45000);
   const far = createFarStars(map, { places: [], skyFar: 24000, slots: 64, slotSize: 400, discs: 500 });
   const pool = fakePool();
-  const ex = createExpanse(map, { workers: pool, far, budget, drawNebula: null });
+  const ex = createExpanse(map, { workers: pool, far, budget, drawNebula: null, stars: STARS });
   const frame = (x, y = 0, z = 0) => {
     camera.position.set(x, y, z);
     camera.updateMatrixWorld();
@@ -187,6 +190,7 @@ describe('the endless space round the camera', () => {
 
   it('lights with the hand-made stars before its first update, and its built stars after', async () => {
     const { ex } = setup();
+    expect(ex.stars()).not.toBe(STARS); // (its own list, the hand-made ones copied in)
     expect(ex.stars().length).toBe(STARS.length);
     expect(ex.stars()).toEqual(STARS);
   });

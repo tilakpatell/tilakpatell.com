@@ -18,7 +18,8 @@
 //   ones drawing till then; a place with nothing before it (the first, or
 //   after a jump) fades in over half a second.
 //
-// createExpanse(parent, { universe, tier, reduced, workers, far, budget, prepare, onSector, keyed, drawNebula, drawers })
+// createExpanse(parent, { universe, tier, workers, far, budget, prepare, onSector, keyed, drawNebula, drawers, stars })
+//   budget: universe/budget.js's row; stars: the hand-made stars (lighting.js's), lit beside the built ones
 //   drawNebula(w) → { object?, dispose() }: a middle-layer nebula drawn while its sector holds a
 //   slot, dispose()d when it gives it back; drawers: nearThings.js's, a kind's own drawing
 //   → { root, update({ camera, ship, t, dt, now, hidden }), loaded(), sector(), sectors(),
@@ -31,8 +32,6 @@
 import * as THREE from 'three';
 import { SECTOR, sectorKey } from '../../../lib/space/address.js';
 import { createChunkGrid3 } from '../../../runtime/chunkGrid3';
-import { universeBudget } from '../../universe/budget';
-import { STARS } from '../../universe/lighting';
 import { beyondJob, sectorJob, withMoons } from '../gen/job';
 import { spaceTime } from '../gen/orbits';
 import { UNIVERSE } from '../gen/seed';
@@ -100,7 +99,7 @@ export function localPool() {
   };
 }
 
-export function createExpanse(parent, { universe = UNIVERSE, tier = 'mid', workers = null, far = null, budget = universeBudget({ tier }), prepare = null, onSector = null, keyed = false, drawNebula = puffs, drawers = {} } = {}) {
+export function createExpanse(parent, { universe = UNIVERSE, tier = 'mid', workers = null, far = null, budget, prepare = null, onSector = null, keyed = false, drawNebula = puffs, drawers = {}, stars: baseStars = [] } = {}) {
   const root = new THREE.Group();
   root.name = 'expanse';
   parent.add(root);
@@ -121,8 +120,6 @@ export function createExpanse(parent, { universe = UNIVERSE, tier = 'mid', worke
   let shownCentre = null; // the centre whose slots are drawn
   let hiddenNow = false;
   let lastMs = 0;
-  let step = 0;
-  let floored = false;
 
   const camAt = new THREE.Vector3();
   const cam = [0, 0, 0];
@@ -136,7 +133,7 @@ export function createExpanse(parent, { universe = UNIVERSE, tier = 'mid', worke
     return rec && rec.slot >= 0 && far ? far.slotShown(rec.slot) : 0;
   };
   const solidList = [];
-  const starList = [...STARS]; // (the hand-made stars from the first: the lights are worked out before the first update)
+  const starList = [...baseStars]; // (the hand-made stars from the first: the lights are worked out before the first update)
 
   const freeSlot = (rec) => {
     if (rec.slot < 0) return;
@@ -300,7 +297,7 @@ export function createExpanse(parent, { universe = UNIVERSE, tier = 'mid', worke
       for (const so of near.solids()) solidList.push(so);
       for (const so of things.solids()) solidList.push(so);
       starList.length = 0;
-      for (const s of STARS) starList.push(s);
+      for (const s of baseStars) starList.push(s);
       for (const s of near.stars()) starList.push(s);
       lastMs = performance.now() - t0;
       void t;
@@ -337,12 +334,10 @@ export function createExpanse(parent, { universe = UNIVERSE, tier = 'mid', worke
     stars: () => starList,
     solids: () => solidList,
     built: () => near.built(),
-    setStep(s, floor = false) {
-      step = s;
-      floored = floor;
+    // (the pace's quality step: the built bodies' ground; the floor is the scene's to apply)
+    setStep(s) {
       near.setStep(s);
     },
-    budgetNow: () => universeBudget({ tier }, step, floored),
     pops: () => far?.pops() ?? { count: 0, px: 0 },
     workMs: () => lastMs,
     reload(key) {

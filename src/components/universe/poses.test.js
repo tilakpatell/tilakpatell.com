@@ -4,8 +4,7 @@ import { MAW } from './maw';
 import { SHIP } from './ship';
 import { ENDLESS_POSE_NAMES, POSE_NAMES, poseFor } from './poses';
 import { RIM } from './layout';
-import { fullSector } from '../expanse/gen/space';
-import { UNIVERSE } from '../expanse/gen/seed';
+import { UNIVERSE, fullSector } from '../expanse/shared/gen';
 import { HOME_RADIUS } from './layout';
 
 const sub = (a, b) => a.map((v, i) => v - b[i]);

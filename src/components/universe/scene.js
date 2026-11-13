@@ -231,8 +231,7 @@ import { REMOVER, hitRemover, hpLeft, landingOpen, newRemover, stepRemover } fro
 import { NX5_LEN, createRemoverView } from './removerView';
 import { createSky } from '../galaxy/sky';
 import { SYSTEMS } from '../galaxy/systems';
-import { createExpanse, sectorPools } from '../expanse/scene/expanse';
-import { UNIVERSE } from '../expanse/gen/seed';
+import { UNIVERSE, createExpanse, sectorPools } from '../expanse/shared/space';
 import { runtime } from '../../runtime';
 import { deedToEarn } from './economy';
 import { createPayLedger, hunterEarn } from './earnRules';
@@ -786,6 +785,7 @@ export async function create(canvas, ctx) {
     workers: sectorPools(ctx.rt?.workers, spaceBudget),
     far: farStars,
     budget: spaceBudget,
+    stars: LIT_STARS, // (the hand-made stars, lighting.js's: the generated ones lit beside them)
     prepare: (o) => sendAndWarm(o), // (declared further down)
     keyed: import.meta.env.DEV,
     onSector: (id) => {

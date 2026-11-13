@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import { FADE, FAR, beyondFade, discPx, levelWeights, realAt, speckBright } from './levels';
-import { realAt as placesRealAt } from '../../universe/farStars';
 
 const SCREEN = { fov: 34, height: 1080 }; // (flight.js's field of view, a tall screen)
 
@@ -49,8 +48,8 @@ describe('the levels', () => {
   });
 
   it('lights a speck by how far off it is, as the places do', () => {
-    expect(realAt(120)).toBe(placesRealAt({ r: 120 }));
-    expect(realAt(10)).toBe(placesRealAt({ r: 10 }));
+    expect(realAt(120)).toBe(2400); // (farStars.js's realAt: twenty reaches, never under 1,500)
+    expect(realAt(10)).toBe(1500);
     expect(speckBright(100, 120)).toBe(1);
     expect(speckBright(1e9, 120)).toBe(0.06);
     expect(speckBright(4 * realAt(120) * 2, 120)).toBeCloseTo(0.25, 9);
