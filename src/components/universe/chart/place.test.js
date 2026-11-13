@@ -57,4 +57,11 @@ describe('placing marks', () => {
     expect(corner).toBeCloseTo(((60000 * Math.SQRT2) / 400000) ** 0.375, 9);
     for (const [u, v] of ringOn(createView({ range: 100000 }), [0, 0, 0], 5000)) expect(Math.hypot(u, v)).toBeCloseTo(0.05 ** 0.375, 9);
   });
+  it('never takes a place off for its height: a station far below the ship stays on the home system’s chart, on its stem', () => {
+    const v = createView({ focus: [0, 2000, 0], range: 600 });
+    const st = placeMarks(v, [M('station', [300, 0, 0], { kind: 'station', levels: ['system'] })], FRAMES.nav)[0];
+    expect(st).toBeDefined();
+    expect(Math.hypot(st.x - 500, st.y - 500)).toBeLessThanOrEqual(470);
+    expect(st.y).toBeGreaterThan(st.footY);
+  });
 });

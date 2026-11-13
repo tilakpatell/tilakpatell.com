@@ -86,7 +86,7 @@ export function project(view, at) {
     v: v + 0,
     foot: [a + 0, vFoot + 0],
     depth: b * Math.sin(view.pitch) + wy * Math.cos(view.pitch) + 0,
-    inside: Math.hypot(...d) <= view.range,
+    inside: Math.hypot(d[0], d[2]) <= view.range, // (by how far across: a height never takes a place off, its stem says it)
   };
 }
 

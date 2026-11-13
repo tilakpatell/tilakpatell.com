@@ -102,7 +102,7 @@ export default function MiniMap({ selected = null, onSelect, linkTo, kind = null
               </span>
             );
             return (
-              <li key={p.id} style={style} className="minimap-item" data-id={p.id}>
+              <li key={p.id} style={style} className="minimap-item" data-id={p.id} data-kind={p.mark.kind}>
                 {linkTo ? (
                   <Link to={linkTo(p.id)} className="minimap-hit" data-id={p.id} aria-label={label}>
                     {inner}

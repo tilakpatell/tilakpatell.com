@@ -42,11 +42,11 @@ export function placeMarks(view, marks, frame, opts = {}) {
     if (!kept && levels && !mark.levels.includes(level)) continue;
     const p = project(view, mark.at);
     if (!kept && !p.inside) continue;
-    const at = toFrame(frame, [p.u, p.v], { pin: kept });
-    if (!kept && at.edge) continue;
-    const foot = toFrame(frame, p.foot, { pin: kept });
-    // (a pinned mark stands on no stem: its foot is somewhere off the chart)
-    const footAt = at.edge ? at : foot;
+    // (in range across but drawn past the rim, far above or below: held at the rim, on its stem)
+    const at = toFrame(frame, [p.u, p.v], { pin: kept || p.inside });
+    const foot = toFrame(frame, p.foot, { pin: kept || p.inside });
+    // (a mark pinned from off the chart stands on no stem: its foot is off the chart too)
+    const footAt = at.edge && foot.edge ? at : foot;
     out.push({ id: mark.id, mark, x: at.x, y: at.y, footX: footAt.x, footY: footAt.y, size: reachOn(view, mark.at, mark.reach ?? 0) * frame.r, side: null, dx: 0, dy: 0, edge: at.edge, depth: p.depth });
   }
   // the names, highest priority first, clear of one another, of every dot and of the ship

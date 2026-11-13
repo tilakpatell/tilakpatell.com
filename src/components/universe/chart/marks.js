@@ -22,6 +22,8 @@ const LEVELS = { station: ['system'], moon: ['system'], world: ALL, wonder: ALL 
 const PRIORITY = { world: 60, wonder: 50, moon: 45, station: 40 };
 const SHAPES = { Nebula: 'cloud', 'Black hole': 'hole', Star: 'star', Portal: 'portal' };
 const NEAR = ['system', 'neighbourhood'];
+// (everything in the Curve is its own chart's: from outside, it folds into the Curve's one mark, which opens it)
+const CURVE_LEVELS = ['system'];
 
 const placeMark = (d) => {
   const kind = d.kind === 'world' && byId(d.id)?.kind === 'moon' ? 'moon' : d.kind;
@@ -33,7 +35,7 @@ const placeMark = (d) => {
     at: d.at,
     priority: shape === 'portal' ? 30 : PRIORITY[kind],
     color: d.color,
-    levels: LEVELS[kind],
+    levels: d.sector === 'rickmorty' ? CURVE_LEVELS : LEVELS[kind],
     shape,
     reach: d.reach,
     pickable: true,

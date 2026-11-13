@@ -15,6 +15,10 @@
 .minimap-hit:is(:hover, :focus-visible) .minimap-name[data-off] { display: inline; }
 .minimap-labels { position: absolute; inset: 0; margin: 0; padding: 0; list-style: none; }
 .minimap-item { position: absolute; width: 0; height: 0; }
+/* a world's button over a wonder's or a moon's beside it, a station's over a wonder's: their 44 px hit areas overlap, and the dot drawn biggest is the one a click means */
+.minimap-item[data-kind='world'] { z-index: 2; }
+.minimap-item[data-kind='station'],
+.minimap-item[data-kind='moon'] { z-index: 1; }
 .minimap-hit {
   position: absolute;
   left: 0;
