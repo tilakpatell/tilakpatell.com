@@ -108,8 +108,12 @@ export const WONDERS = [
     // on its far side: Shrey Pathak's portfolio, the Matrix (where Rick and Morty come out)
     beyond: { name: 'Shrey Pathak', what: 'the Matrix', url: 'https://shreyaanpathak.github.io/portfolio' },
   },
-  { id: 'veil', kind: 'nebula', name: 'The Veil', at: [-2230, 505, 4725], r: 700, colors: ['#5b3fd1', '#d14f9a', '#3fb7d1'], solid: false },
-  { id: 'cradle', kind: 'nebula', name: 'The Cradle', at: [4995, -505, 2230], r: 600, colors: ['#2f9e6b', '#c9d14f', '#2f6e9e'], solid: false },
+  // (a nebula's `r` is its reach, as every place's: where its name, its ramp
+  // and the generator's keep-out are reckoned from; `cloud` is how far its gas
+  // spreads, a place to fly through for a while, the owner's "vast and big":
+  // nebula/ draws it, and its edge stays clear of every other place's reach)
+  { id: 'veil', kind: 'nebula', name: 'The Veil', at: [-2230, 505, 4725], r: 700, cloud: 5500, colors: ['#5b3fd1', '#d14f9a', '#3fb7d1'], solid: false },
+  { id: 'cradle', kind: 'nebula', name: 'The Cradle', at: [4995, -505, 2230], r: 600, cloud: 6000, colors: ['#2f9e6b', '#c9d14f', '#2f6e9e'], solid: false },
   // the Rick and Morty sector (layout.js's SECTORS): the Citadel at its middle, and its own sun off to one side, past its worlds
   { id: 'citadel', kind: 'citadel', name: 'The Citadel', sector: 'rickmorty', at: inSector('rickmorty', [0, 0, 0]), r: 60, crew: 'rickmorty', world: 'rickmorty', page: '/c-137/citadel' }, // (as big as the biggest world: scale.js)
   { id: 'curvesun', kind: 'star', name: 'The Curve’s Sun', sector: 'rickmorty', at: inSector('rickmorty', [-2200, 450, 2000]), r: 80, color: '#e4ffb0', planets: [], light: { strength: 1.6, reach: 9000 } }, // (it lights the whole sector, out to its furthest world: lighting.js)

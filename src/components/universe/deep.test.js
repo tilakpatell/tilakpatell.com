@@ -252,3 +252,19 @@ describe('deep space, spread (scale.js’s SPREAD)', () => {
     }
   });
 });
+
+describe('the nebulae’s gas', () => {
+  // (the owner's "vast and big": a cloud far wider than its reach, to fly
+  // through for a while, but never over another place)
+  it('spreads far past each nebula’s reach, its edge clear of every other place by that place’s reach', () => {
+    for (const w of WONDERS.filter((x) => x.kind === 'nebula')) {
+      expect(w.cloud, w.id).toBeGreaterThan(5 * w.r);
+      for (const p of PLACES) {
+        if (p.id === w.id) continue;
+        const d = Math.hypot(...w.at.map((v, i) => v - p.at[i]));
+        expect(d - w.cloud, `${w.id} and ${p.id}`).toBeGreaterThan(p.reach);
+      }
+      expect(Math.hypot(...w.at) - w.cloud, `${w.id} and the home system`).toBeGreaterThan(HOME_RADIUS);
+    }
+  });
+});
