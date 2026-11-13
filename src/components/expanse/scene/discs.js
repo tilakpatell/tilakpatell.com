@@ -8,7 +8,8 @@
 //   the indices of the n bodies (x, y, z, r each) within far + r of the camera,
 //   the nearest `max` kept, ordered far to near (ties by index)
 // createDiscs(writer, { budget, far = FAR, keyed = false }) → { feed(sectors, cam, t, built, sectorAt, shownOf), count }
-//   shownOf(sector) → 0 … 1: how much of a sector shows (its far-layer slot's), each of its discs times that
+//   shownOf(sector) → 0 … 1: how much of a sector shows (its far-layer slot's), each of its discs times that;
+//   dt: the frame's seconds, for the ease after a jump
 //   sectors: [Sector] (fullSector's, absolute places), cam: the camera in the map's
 //   space, t: the shared clock (orbits.js), built: a Set of system ids drawn whole,
 //   sectorAt(sx, sy, sz): a loaded sector, for the lattice's things (nearThings.js): a disc
@@ -30,6 +31,8 @@ const WONDER = {
   rogue: { color: '#1e1a18', r: 0.5 },
 };
 const STAR_LIFT = 2.2; // (a star's disc as bright as its speck's core)
+const JUMP = 3000; // (further than this in a frame is a jump, not flight: the pulse drive is 300 a second)
+const EASE_IN = 0.5;
 
 export function pickDiscs(xyzr, n, cam, { far, max }) {
   const keep = [];
@@ -75,6 +78,11 @@ export function createDiscs(writer, { budget, far = FAR, keyed = false } = {}) {
   let n = 0;
   let count = 0;
   let shownNow = 1; // (the sector being looked through: how much of it shows)
+  // after a jump (the camera further in a frame than JUMP), every disc eases in again: a place
+  // arrived at fades in, as its sectors' specks do; over EASE_IN seconds, and never fewer than
+  // ten frames (a slow frame's time counted as a twentieth of a second at most)
+  let jumpK = 1;
+  let was = null;
   const add = (x, y, z, r, kind, row, star) => {
     if (n === room) {
       room *= 2;
@@ -103,8 +111,11 @@ export function createDiscs(writer, { budget, far = FAR, keyed = false } = {}) {
   };
 
   return {
-    feed(sectors, cam, t, built = null, sectorAt = null, shownOf = null) {
+    feed(sectors, cam, t, built = null, sectorAt = null, shownOf = null, dt = 1 / 60) {
       n = 0;
+      if (was && Math.hypot(cam[0] - was[0], cam[1] - was[1], cam[2] - was[2]) > JUMP) jumpK = 0;
+      else jumpK = Math.min(1, jumpK + Math.min(dt, 1 / 20) / EASE_IN);
+      was = [cam[0], cam[1], cam[2]];
       if (sectorAt)
         thingsAround(sectorAt, cam, THING_DISC, (sector, i, d) => {
           const th = sector.things;
@@ -150,7 +161,7 @@ export function createDiscs(writer, { budget, far = FAR, keyed = false } = {}) {
         // what's built whole is skipped above)
         const w = what[i];
         // (and as much as its sector's specks show: a sector coming in fades its discs in with them)
-        const alpha = levelWeights(dist, { reach: 0, far: w.kind === 'thing' ? THING_DISC : far }).disc * w.shown;
+        const alpha = levelWeights(dist, { reach: 0, far: w.kind === 'thing' ? THING_DISC : far }).disc * w.shown * jumpK;
         let c;
         let lx = 0;
         let ly = 0;

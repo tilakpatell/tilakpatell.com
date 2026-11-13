@@ -294,7 +294,7 @@ export function createExpanse(parent, { universe = UNIVERSE, tier = 'mid', worke
         if (hidden) {
           far.discs.begin();
           far.discs.end();
-        } else discs.feed(nearSectors, cam, orbitT, near.built(), sectorAt, shownOf);
+        } else discs.feed(nearSectors, cam, orbitT, near.built(), sectorAt, shownOf, dt);
       }
       solidList.length = 0;
       for (const so of near.solids()) solidList.push(so);
@@ -304,7 +304,6 @@ export function createExpanse(parent, { universe = UNIVERSE, tier = 'mid', worke
       for (const s of near.stars()) starList.push(s);
       lastMs = performance.now() - t0;
       void t;
-      void dt;
     },
     loaded: () => [...loaded.values()].map((r) => r.id),
     sector: () => (centre ? sectorKey(...centre) : null),

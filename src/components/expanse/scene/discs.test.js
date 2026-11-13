@@ -111,6 +111,23 @@ describe('the discs fed', () => {
     expect(none.got).toHaveLength(0);
   });
 
+  it('eases every disc in again after a jump, over ten frames at least', () => {
+    const w = writer();
+    const discs = createDiscs(w, { budget: { discs: 100 } });
+    const starA = () => w.got.find((d) => d.r === 150)?.alpha ?? 0;
+    discs.feed([HAND], [390000, 0, -10000], 0);
+    expect(starA()).toBe(1);
+    discs.feed([HAND], [390000, 0, -5000], 0, null, null, null, 1 / 60); // (a jump of 5,000)
+    expect(starA()).toBe(0);
+    const seen = [];
+    for (let i = 0; i < 12; i++) {
+      discs.feed([HAND], [390000, 0, -5000], 0, null, null, null, 2); // (slow frames, two seconds each)
+      seen.push(starA());
+    }
+    for (let i = 1; i < seen.length; i++) expect(seen[i] - seen[i - 1]).toBeLessThanOrEqual(0.1 + 1e-9);
+    expect(seen.at(-1)).toBe(1);
+  });
+
   it('keys each disc by its id when asked, the same every frame', () => {
     const w = writer();
     const discs = createDiscs(w, { budget: { discs: 100 }, keyed: true });

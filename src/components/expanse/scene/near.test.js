@@ -48,19 +48,22 @@ describe('the nearest systems, built whole', () => {
   it('builds nothing with the camera outside every reach', () => {
     const group = new THREE.Group();
     const { build, made } = fakeBuild();
-    const near = createNear(group, { budget: { systemsBuilt: 1 }, build });
+    const near = createNear(group, { budget: { systemsBuilt: 1 }, build, perFrame: Infinity });
     near.update(SECTOR.systems, [0, 0, 0], 0, null);
     expect(made).toHaveLength(0);
     expect(near.built().size).toBe(0);
     expect(near.stars()).toEqual([]);
   });
 
-  it('builds a system whose reach holds the camera: its star, planets, moons and rings, on their orbits', () => {
+  it('builds a system whose reach holds the camera: its star, planets, moons and rings, on their orbits', async () => {
     const group = new THREE.Group();
     const { build, made } = fakeBuild();
     const prepare = vi.fn(() => Promise.resolve());
-    const near = createNear(group, { budget: { systemsBuilt: 1 }, build, prepare });
+    const near = createNear(group, { budget: { systemsBuilt: 1 }, build, prepare, perFrame: Infinity });
     const cam = [A.at[0] - 200, 0, 0];
+    near.update(SECTOR.systems, cam, 0, null);
+    expect([...near.built()]).toEqual([]); // (made, but not yet readied)
+    await Promise.resolve();
     near.update(SECTOR.systems, cam, 0, null);
     expect([...near.built()]).toEqual(['A']);
     expect(named(group, 'star:')).toHaveLength(1);
@@ -86,9 +89,22 @@ describe('the nearest systems, built whole', () => {
     expect(row.at).toEqual(orbitAt(A.planets[0], 2000));
   });
 
+  it('makes a system’s bodies a few a frame, and calls it built only when all are made', () => {
+    const { build, made } = fakeBuild();
+    const near = createNear(new THREE.Group(), { budget: { systemsBuilt: 1 }, build, perFrame: 1 });
+    const bodies = A.planets.length + A.planets.reduce((n, p) => n + p.moonList.length, 0);
+    const cam = [A.at[0] - 200, 0, 0];
+    for (let i = 1; i <= bodies; i++) {
+      near.update(SECTOR.systems, cam, 0, null);
+      expect(made).toHaveLength(i);
+      expect(near.built().has('A')).toBe(i === bodies);
+    }
+    expect(near.stars().map((s) => s.id)).toEqual(['A']); // (its light from the first frame)
+  });
+
   it('lights each body from its star', () => {
     const { build, made } = fakeBuild();
-    const near = createNear(new THREE.Group(), { budget: { systemsBuilt: 1 }, build });
+    const near = createNear(new THREE.Group(), { budget: { systemsBuilt: 1 }, build, perFrame: Infinity });
     near.update(SECTOR.systems, [A.at[0] - 200, 0, 0], 0, null);
     const [{ dir }] = made[0].suns;
     const at = orbitAt(A.planets[0], 0);
@@ -99,7 +115,7 @@ describe('the nearest systems, built whole', () => {
   it('keeps a system to 1.3 × its reach, then lets it go and frees it', () => {
     const group = new THREE.Group();
     const { build, made } = fakeBuild();
-    const near = createNear(group, { budget: { systemsBuilt: 1 }, build });
+    const near = createNear(group, { budget: { systemsBuilt: 1 }, build, perFrame: Infinity });
     near.update(SECTOR.systems, [A.at[0] - 200, 0, 0], 0, null);
     near.update(SECTOR.systems, [A.at[0] - buildReach(A) * 1.2, 0, 0], 0, null);
     expect(near.built().has('A')).toBe(true);
@@ -114,17 +130,17 @@ describe('the nearest systems, built whole', () => {
     const cam = [(A.at[0] + B.at[0]) / 2, 0, 0];
     expect(Math.hypot(cam[0] - A.at[0])).toBeLessThan(A.reach);
     expect(Math.hypot(cam[0] - B.at[0])).toBeLessThan(B.reach);
-    const one = createNear(new THREE.Group(), { budget: { systemsBuilt: 1 }, build: fakeBuild().build });
+    const one = createNear(new THREE.Group(), { budget: { systemsBuilt: 1 }, build: fakeBuild().build, perFrame: Infinity });
     one.update(SECTOR.systems, cam, 0, null);
     expect(one.built().size).toBe(1);
-    const two = createNear(new THREE.Group(), { budget: { systemsBuilt: 2 }, build: fakeBuild().build });
+    const two = createNear(new THREE.Group(), { budget: { systemsBuilt: 2 }, build: fakeBuild().build, perFrame: Infinity });
     two.update(SECTOR.systems, cam, 0, null);
     expect([...two.built()].sort()).toEqual(['A', 'B']);
   });
 
   it('takes the ground’s octaves down with the quality step', () => {
     const { build, made } = fakeBuild();
-    const near = createNear(new THREE.Group(), { budget: { systemsBuilt: 1 }, build });
+    const near = createNear(new THREE.Group(), { budget: { systemsBuilt: 1 }, build, perFrame: Infinity });
     near.update(SECTOR.systems, [A.at[0] - 200, 0, 0], 0, null);
     near.setStep(2);
     expect(made[0].setDetail).toHaveBeenLastCalledWith(0.5);

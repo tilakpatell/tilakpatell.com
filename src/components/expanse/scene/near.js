@@ -11,9 +11,9 @@
 //
 // TYPE_LOOK: a planet type → a look (galaxy/bodies.js's LOOKS)
 // STAR_STRENGTH: how strongly a star of a class lights what's near it
-// createNear(group, { budget, tier, build = buildBody, prepare = null }) → {
+// createNear(group, { budget, tier, build = buildBody, prepare = null, perFrame = 1 }) → {
 //   update(systems, cam, t, camera): systems are addBodies'd rows in the map's space,
-//   built() → Set of system ids drawn whole,
+//   built() → Set of system ids drawn whole (every body made and readied; till then its discs show),
 //   stars() → [{ id, at, r, colour, strength, reach }] (one array, reused),
 //   solids() → [{ id, at, r, reach }] (one array, its rows' `at` moved in place),
 //   setStep(step): the pace's quality step, 0 to 3: fewer octaves on the ground,
@@ -82,22 +82,31 @@ const axisOf = (p) => {
 };
 const Z = new THREE.Vector3(0, 0, 1);
 
-export function createNear(group, { budget, tier = 'mid', build = buildBody, prepare = null } = {}) {
+export function createNear(group, { budget, tier = 'mid', build = buildBody, prepare = null, perFrame = 1 } = {}) {
   const most = Math.max(1, budget?.systemsBuilt ?? 1);
-  const built = new Map(); // system id → { system, star, bodies: [{ row, body, kind, planet? }], rings, solids }
-  const ids = new Set();
+  const built = new Map(); // system id → { system, star, bodies: [{ row, body, kind, planet? }], rings, solids, queue, pending }
+  const ids = new Set(); // (the systems whole and shown: their discs give way)
   const starList = [];
   const solidList = [];
   let step = 0;
 
-  const show = (o) => {
+  // a mesh shown once it's readied; the system counts it till then
+  const show = (o, sys) => {
     o.visible = false;
-    const done = () => (o.visible = true);
+    sys.pending++;
+    const done = () => {
+      o.visible = true;
+      sys.pending--;
+    };
     const p = prepare?.(o);
     if (p?.then) p.then(done, done);
     else done();
   };
 
+  // A system's star at once (it lights what's near it from the first); its
+  // planets, moons and rings a few a frame (perFrame), so a system of fifteen
+  // bodies isn't made in one frame. Till every one is made and shown, the
+  // system isn't in built() and its bodies are the far layer's discs.
   const buildSystem = (s) => {
     const g = new THREE.Group();
     g.name = `system:${s.id}`;
@@ -108,49 +117,53 @@ export function createNear(group, { budget, tier = 'mid', build = buildBody, pre
     star.position.set(...s.at);
     star.scale.setScalar(s.star.size);
     g.add(star);
-    show(star);
-    const sys = { system: s, group: g, star, starMat, bodies: [], rings: [], entry: null, solids: [] };
+    const sys = { system: s, group: g, star, starMat, bodies: [], rings: [], entry: null, solids: [], queue: [], pending: 0 };
+    show(star, sys);
     sys.entry = { id: s.id, at: s.at, r: s.star.size, colour: s.star.color, strength: STAR_STRENGTH[s.star.class] ?? 0.7, reach: s.reach * 3 };
     sys.solids.push({ id: s.id, at: s.at, r: s.star.size, reach: s.star.size * 1.2 });
     for (const p of s.planets) {
-      const body = build(TYPE_LOOK[p.type] ?? TYPE_LOOK.rock, { r: p.radius, tier });
-      body.group.name = `planet:${p.id}`;
-      g.add(body.group);
-      show(body.group);
-      const solid = { id: p.id, at: [0, 0, 0], r: p.radius, reach: (body.reach ?? p.radius) * 1.02 };
-      sys.bodies.push({ row: p, body, kind: 'planet', solid });
-      sys.solids.push(solid);
+      sys.queue.push(() => {
+        const body = build(TYPE_LOOK[p.type] ?? TYPE_LOOK.rock, { r: p.radius, tier });
+        body.group.name = `planet:${p.id}`;
+        body.setDetail?.(1 - step * 0.25);
+        g.add(body.group);
+        show(body.group, sys);
+        const solid = { id: p.id, at: [0, 0, 0], r: p.radius, reach: (body.reach ?? p.radius) * 1.02 };
+        sys.bodies.push({ row: p, body, kind: 'planet', solid });
+        sys.solids.push(solid);
+        if (p.ringBand) {
+          const { inner, outer } = p.ringBand;
+          const geo = new THREE.RingGeometry(inner, outer, 96, 1);
+          const mat = new THREE.ShaderMaterial({
+            vertexShader: RING_VERT,
+            fragmentShader: RING_FRAG,
+            uniforms: { uColor: { value: new THREE.Color(p.color ?? '#c8b89a') }, uInner: { value: inner }, uOuter: { value: outer }, uSeed: { value: Number(BigInt.asUintN(20, BigInt(p.seed ?? 0))) / 1048576 } },
+            transparent: true,
+            depthWrite: false,
+            side: THREE.DoubleSide,
+          });
+          const ring = new THREE.Mesh(geo, mat);
+          ring.name = `ring:${p.id}`;
+          ring.quaternion.setFromUnitVectors(Z, axisOf(p));
+          g.add(ring);
+          show(ring, sys);
+          sys.rings.push({ planet: p, ring, geo, mat });
+        }
+      });
       for (const m of p.moonList ?? []) {
-        const mb = build(m.type === 'icy' ? 'hoth' : 'moon-grey', { r: m.radius, small: true, tier });
-        mb.group.name = `moon:${m.id}`;
-        g.add(mb.group);
-        show(mb.group);
-        const ms = { id: m.id, at: [0, 0, 0], r: m.radius, reach: m.radius * 1.05 };
-        sys.bodies.push({ row: m, body: mb, kind: 'moon', planet: p, solid: ms });
-        sys.solids.push(ms);
-      }
-      if (p.ringBand) {
-        const { inner, outer } = p.ringBand;
-        const geo = new THREE.RingGeometry(inner, outer, 96, 1);
-        const mat = new THREE.ShaderMaterial({
-          vertexShader: RING_VERT,
-          fragmentShader: RING_FRAG,
-          uniforms: { uColor: { value: new THREE.Color(p.color ?? '#c8b89a') }, uInner: { value: inner }, uOuter: { value: outer }, uSeed: { value: Number(BigInt.asUintN(20, BigInt(p.seed ?? 0))) / 1048576 } },
-          transparent: true,
-          depthWrite: false,
-          side: THREE.DoubleSide,
+        sys.queue.push(() => {
+          const mb = build(m.type === 'icy' ? 'hoth' : 'moon-grey', { r: m.radius, small: true, tier });
+          mb.group.name = `moon:${m.id}`;
+          mb.setDetail?.(1 - step * 0.25);
+          g.add(mb.group);
+          show(mb.group, sys);
+          const ms = { id: m.id, at: [0, 0, 0], r: m.radius, reach: m.radius * 1.05 };
+          sys.bodies.push({ row: m, body: mb, kind: 'moon', planet: p, solid: ms });
+          sys.solids.push(ms);
         });
-        const ring = new THREE.Mesh(geo, mat);
-        ring.name = `ring:${p.id}`;
-        ring.quaternion.setFromUnitVectors(Z, axisOf(p));
-        g.add(ring);
-        show(ring);
-        sys.rings.push({ planet: p, ring, geo, mat });
       }
     }
-    for (const b of sys.bodies) b.body.setDetail?.(1 - step * 0.25);
     built.set(s.id, sys);
-    ids.add(s.id);
   };
 
   const letGo = (id) => {
@@ -190,6 +203,15 @@ export function createNear(group, { budget, tier = 'mid', build = buildBody, pre
           if (built.size >= most) break;
           buildSystem(s);
         }
+      }
+      // a few more bodies made, then whole systems marked so (their discs give way)
+      let made = 0;
+      for (const sys of built.values()) {
+        while (sys.queue.length && made < perFrame) {
+          sys.queue.shift()();
+          made++;
+        }
+        if (!sys.queue.length && sys.pending === 0) ids.add(sys.system.id);
       }
       // everything on its orbit, now
       starList.length = 0;
