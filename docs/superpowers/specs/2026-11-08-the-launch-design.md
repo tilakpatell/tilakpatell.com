@@ -46,8 +46,20 @@ Headless Chromium on SwiftShader at 1440 × 900, the dev server (so slower than 
 
 Same rig: a first visit that reads the tour finds the universe ready by the third card; Skip the intro then reaches the drawn map in 0.4 s, the card over the swap. Enter the universe at once on a return shows the arrival's card (8 s cold in software GL), never the map's loading screen or a black frame. The classic pick's welcome fetches nothing 3D. On a phone (iPhone 13 emulated) the welcome and the tour fit with no sideways scroll, and the tour's keys give way to touch words.
 
+## Follow-up, 2026-11-12
+
+The owner, on the live site: the orange button flashed the loading screen before the tour, and the crawl did the same; the route's line ran through the planet's outline; the X-wing was wrong in the launch and its bloom wanted work; Space didn't launch.
+
+- **The handovers.** Measured frame by frame on the live site, a click on Start left four frames (about 45 ms) with no launch screen up and the map's loading screen showing. The welcome and the tour are one frame now (`Opening.jsx`), so going from one to the other changes only the words; every part is under one Suspense boundary and a part that loads (the crawl, the cockpit) is asked for in a transition, so the one on screen stays up till the next can draw; and `index.html` darkens the page whenever it's covered (`html[data-covered] body::after`, z 89, under the crawl's 90). Welcome to tour to crawl to cockpit: no frame without a launch screen.
+- **The planet.** Measured at 18 window sizes (text line by line, the route's rules, the bars and the buttons against the disc and its rim, 12 px of margin): before, something touched it at 16 of them. The column stops short of the rim (`--clear`, from where the disc is: 32.3vmax in from the right), the title's size follows that room so it stays on two lines, and on a phone or a window taller than it's wide the planet is in the flow after everything. After: clear at all 18.
+- **Space.** While the cockpit boards (longer with the map still being made behind it) the button was disabled and a press was lost; now a press or a click then is kept, the button says “Launching once seated…”, and it launches as soon as you're sat down.
+- **The X-wing.** Its Yavin was the music planet's map, which became that world's own on 2026-10-23 (purple, a flower on it): Yavin is painted now, banded rust, ochre and cream (`cockpit/gasGiant.js`, its colours tested). The canopy frame is painted gunmetal rather than a near-mirror that read as bronze; the console's buttons glow at 1.05 instead of 1.4; the bloom's threshold is over 1 (0.5, 0.38, 1.0), so it's the lights, the sun and the jump that bloom, not the sunlit nose.
+- **The map made behind it, kinder to the page.** Under the cover a step of the map's prepare, and now its shaders' warm too (`precompile`'s `frame`), waits for a quiet 300 ms after a key or a click (`prepFrame.js`'s `QUIET_MS`), so what the visitor did is drawn first. In software GL most of the tour's Next clicks now paint in 16 to 50 ms; one, as the shaders finish, can still take a second or more, the main thread idle (the graphics process compiling).
+
 ## Left
 
 - On a low tier (software GL, a budget phone) the map has no prepare (`scene.js`'s `prepare: tier === 'low' ? undefined : prepare`), so its first frames upload what they first see; the arrival's card is over the first, and the rest are the map's as before.
 - The cockpit in software GL takes over half a minute to board; that is the cockpit's, unchanged.
 - `StartChoice` stays for a visit the launch doesn't run on (a script's return, a deep link back to `/`).
+- The map's environment (`post.js`'s `createSpaceEnvironment`, a PMREM) compiles and draws its shaders at once as the map is made: in software GL that's most of a 1.8 s task about a quarter of a second after the welcome shows (`getProgramParameter` waiting on links), a click in it waiting with it. Tens of ms on a real chip; made a slice at a time, it would be the universe's own pull request.
+- A phone's welcome scrolls, so its planet is below the first screenful.
