@@ -9,6 +9,7 @@ import { soundOn, voicesOn } from '../../lib/audio';
 import { retold } from './callers';
 import { shipSound } from './uniqueSounds';
 import { abilitySound, alarmSound, arrivalSound, boomSound, boostSound, bumpSound, crashSound, drySound, enemyFireSound, fallSound, fireSound, flareSound, flybySound, gadgetSound, gunSound, hitSound, impactSound, interdictSound, jumpSound, launchSound, popSound, portalSound, powerSound, respawnSound, riftSound, shieldSound, speak, switchSound } from './sounds';
+import { RiBroadcastLine } from 'react-icons/ri';
 import Face from './Faces';
 import { WEAPONS } from './weaponTable';
 import { thud } from '../../lib/sfx';
@@ -17,8 +18,9 @@ import { createImpacts } from '../../lib/impact';
 // The ship's comms: what the crew says as you fly, one line at a time with
 // the speaker's face and voice (their own recording where the line has one,
 // else the line made in their voice where that's been generated (lib/voiced.js),
-// else their blips), the face's mouth moving with it,
-// over the open part of the map. Reaching a world for the first time this
+// else their blips), the face's mouth and a meter by their name moving with it,
+// in a card at the map's top left, under its corner button (universe.css): the
+// panel opening or going never moves it. Reaching a world for the first time this
 // visit plays its sound bite and then the crew's exchange about it;
 // launching, boosting, bumping into things and reaching the edge get a line
 // now and then (not every time); a crash (into a planet too fast), the
@@ -36,6 +38,8 @@ import { createImpacts } from '../../lib/impact';
 
 // a bump's thud by how hard it was (the event's force, ship.js), on the hit law (lib/impact.js)
 const BUMPS = createImpacts();
+
+const OUT_MS = 220; // the line's fade off (universe.css's .universe-line[data-out])
 
 const GAP = { boost: 25000, bump: 12000, edge: 20000, crash: 15000, pulled: 20000, traffic: 18000, kill: 9000, hit: 14000, hunted: 8000, shielded: 15000, deflect: 10000, dry: 8000, closed: 6000, power: 15000, refuse: 8000 }; // ms before the same kind of line again
 
@@ -113,7 +117,12 @@ export default function Comms({ crew, reduced, control }) {
     }
     if (alive.current) {
       await wait(400);
-      if (!queue.current.length && alive.current) setLine(null);
+      // (it fades off rather than blinking out, unless something's been said meanwhile)
+      if (!queue.current.length && alive.current) {
+        setLine((l) => (l ? { ...l, out: true } : l));
+        await wait(reduced ? 0 : OUT_MS);
+        if (!queue.current.length && alive.current) setLine(null);
+      }
     }
     busy.current = false;
     if (queue.current.length && alive.current) run();
@@ -331,7 +340,7 @@ export default function Comms({ crew, reduced, control }) {
   );
 
   const speaker = line?.speaker ?? null;
-  useMouth(box, Boolean(speaker) && line.who !== 'comms', reduced);
+  useMouth(box, Boolean(speaker) && !line.out, reduced); // (the radio's voices too: no mouth to move, but the meter does)
   // the line's height, for what sits under it at the top of the map (the
   // fly-past pill, the siege banner: universe.css), so a two-line message
   // pushes them down instead of covering them
@@ -346,13 +355,25 @@ export default function Comms({ crew, reduced, control }) {
       page.style.removeProperty('--comms-h');
     };
   }, []);
+  // (who's talking in a frame of their colour: their face, or the radio's mark for a voice without one;
+  // the frame and the meter by their name move with the voice, --mouth, which useMouth sets on the box)
   return (
     <div ref={box} className="universe-comms" aria-live="polite" data-motion={reduced ? undefined : ''}>
       {speaker && (
-        <p key={line.n} className="universe-line" style={{ '--who': speaker.color }}>
-          {line.who !== 'comms' && <Face who={line.who} className="universe-face" />}
-          <span>
-            <span className="universe-who">{speaker.name}</span>
+        <p key={line.n} className="universe-line" style={{ '--who': speaker.color }} data-out={line.out ? '' : undefined}>
+          <span className="universe-portrait" aria-hidden="true">
+            <Face who={line.who} className="universe-face" fallback={<RiBroadcastLine className="universe-face universe-face-radio" />} />
+          </span>
+          <span className="universe-line-body">
+            <span className="universe-line-head">
+              <span className="universe-who">{speaker.name}</span>
+              <span className="universe-meter" aria-hidden="true">
+                <i />
+                <i />
+                <i />
+                <i />
+              </span>
+            </span>
             <span className="universe-said">{line.text}</span>
           </span>
         </p>

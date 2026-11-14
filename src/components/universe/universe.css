@@ -259,6 +259,29 @@ body:has(.universe-panel) .guide-btn { display: none; }
   /* the crew's lines keep clear of the bar */
   .universe-page[data-tucked] .universe-comms { right: calc(var(--tab-w) + 28px); }
 }
+/* Flying with a mouse and keys, the HUD stays where it is whether the
+   panel's open or put away: opening it used to push the cluster along the
+   foot 200px aside (and wrap it in two on the map), the ship's view after
+   it. So the cluster and what sits over it take the whole width, as they
+   do with the panel away (hud.css, galaxy/flight.css), the scene frames
+   the ship on the whole canvas (scene.js reads --panel-over), and the
+   panel, open, lies over the map's right side and stops short of the
+   cluster, by its measured height (the HUD kit's FlightHud writes it on
+   the page), so the two never meet. A touch screen keeps its own room. */
+@media (pointer: fine) and (min-width: 768px) {
+  .universe-page:has(.universe-map[data-ship]) { --panel-over: 1; }
+  .universe-page:has(.universe-map[data-ship]) .universe-panel:not([data-tucked]) {
+    max-height: calc(100% - var(--nav-h) - 24px - var(--hud-pad-b) - 10px - var(--hud-cluster-h, 132px));
+  }
+  /* (what's along the top, beside the panel rather than under it, keeps
+     clear of the panel's room whether it's open or not: --panel-width,
+     which never eases or goes to nothing, so putting the panel away
+     doesn't slide it either; the galaxy's war line is flight.css's) */
+  .universe-page:has(.universe-map[data-ship]) .universe-comms { right: calc(var(--panel-width) + 40px); }
+  .universe-page:not(.galaxy-page):has(.universe-map[data-ship]) .universe-siege { max-width: min(440px, calc(100% - var(--panel-width) - 40px)); translate: calc(-50% - var(--panel-width) / 2) 0; }
+  .universe-page:not(.galaxy-page):has(.universe-map[data-ship]) .universe-tour { right: calc(var(--panel-width) + 40px); max-width: calc(100% - var(--panel-width) - 56px); }
+  .universe-page:not(.galaxy-page):has(.universe-map[data-ship]) .universe-arrive { translate: calc(-50% - (var(--panel-width) + 24px) / 2) 0; max-width: min(36rem, calc(100% - var(--panel-width) - 64px)); }
+}
 .universe-title { margin-top: 0.4rem; color: var(--text); font-size: 1.5rem; font-weight: 600; }
 .universe-back {
   display: inline-flex;
@@ -924,7 +947,14 @@ body:has(.universe-panel) .guide-btn { display: none; }
 .universe-ship-name { color: var(--text); font-weight: 600; font-size: 0.95rem; }
 .universe-ship-crew { color: var(--muted); font-size: 0.8rem; }
 
-/* the comms: what the crew says, over the open part of the map */
+/* the comms: what the crew says, as a transmission card at the map's top
+   left (under the galaxy's map button: galaxy.css). Pinned to that edge,
+   the panel opening or going never moves it, and it's off the ship in the
+   middle; it was centred on the open part, so it jumped sideways with the
+   panel and sat over the reticle. The speaker's colour runs down its edge
+   and rings their face; the ring's glow and the meter by their name move
+   with the voice (--mouth, set on the box by lib/mouth.js while it's
+   heard). Glass, never a blur (see .universe-panel) */
 .universe-comms {
   position: absolute;
   z-index: 1;
@@ -932,27 +962,55 @@ body:has(.universe-panel) .guide-btn { display: none; }
   left: 16px;
   right: calc(var(--panel-w) + 40px);
   display: flex;
-  justify-content: center;
+  justify-content: flex-start;
   pointer-events: none;
 }
 .universe-line {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 0.75rem;
-  max-width: 560px;
+  max-width: min(420px, 100%);
   margin: 0;
-  padding: 0.6rem 1rem 0.6rem 0.6rem;
-  border: 1px solid color-mix(in srgb, var(--who) 40%, transparent);
+  padding: 0.65rem 0.95rem 0.7rem 0.65rem;
+  border: 1px solid color-mix(in srgb, var(--who) 35%, transparent);
+  border-left: 3px solid var(--who);
   border-radius: var(--r-card); /* (the colour's corners, as the panel's) */
-  background: var(--hud-sheet-bg); /* (no blur: see .universe-panel) */
+  background: var(--hud-sheet-bg);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.35);
 }
-.universe-comms[data-motion] .universe-line { animation: universe-line 0.25s ease-out; }
+.universe-comms[data-motion] .universe-line { animation: universe-comms-in 0.28s cubic-bezier(0.2, 0.8, 0.2, 1); }
+.universe-comms[data-motion] .universe-line[data-out] { opacity: 0; translate: -8px 0; transition: opacity 0.22s ease-in, translate 0.22s ease-in; } /* (Comms.jsx's OUT_MS) */
+@keyframes universe-comms-in {
+  from { opacity: 0; translate: -10px 0; }
+}
 @keyframes universe-line {
   from { opacity: 0; translate: 0 -6px; }
 }
-.universe-face { flex: none; width: 44px; height: 44px; }
-.universe-who { display: block; color: var(--who); font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.06em; text-transform: uppercase; }
-.universe-said { display: block; color: var(--text); font-size: 0.92rem; line-height: 1.4; }
+/* the face in a ring of their colour (a voice on the radio, the radio's mark) */
+.universe-portrait {
+  --portrait: 48px;
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: var(--portrait);
+  height: var(--portrait);
+  overflow: hidden;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--who) 16%, rgb(6 10 20));
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--who) 70%, transparent), 0 0 calc(var(--mouth, 0) * 16px) color-mix(in srgb, var(--who) 55%, transparent);
+}
+.universe-face { flex: none; width: 100%; height: 100%; translate: 0 6%; } /* (the shoulders at the ring's foot) */
+.universe-face.universe-face-radio { width: 50%; height: 50%; color: var(--who); translate: none; }
+.universe-line-body { display: grid; gap: 0.2rem; min-width: 0; padding-top: 0.1rem; }
+.universe-line-head { display: flex; align-items: center; gap: 0.5rem; }
+.universe-who { display: block; color: var(--who); font-family: var(--font-mono); font-size: 0.7rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; }
+/* the voice's meter: four bars, still dots till it's heard */
+.universe-meter { display: inline-flex; align-items: center; gap: 2px; height: 0.75rem; }
+.universe-meter i { width: 2px; height: 100%; border-radius: 1px; background: var(--who); scale: 1 calc(0.25 + var(--mouth, 0) * var(--k, 1)); }
+.universe-meter i:nth-child(1) { --k: 0.55; }
+.universe-meter i:nth-child(3) { --k: 0.75; }
+.universe-meter i:nth-child(4) { --k: 0.4; }
+.universe-said { display: block; color: var(--text); font-size: 0.95rem; line-height: 1.45; text-wrap: pretty; }
 
 /* the flight settings: a button in the map's corner (over the multiplayer
    pill, online.css), and the sheet over it */
@@ -1162,7 +1220,7 @@ body:has(.universe-panel) .guide-btn { display: none; }
   .universe-comms { right: 16px; left: 16px; }
   /* (the guide is the bar's own cell, at its end: no room kept for a corner button) */
   .universe-panel[data-tucked] { padding-bottom: env(safe-area-inset-bottom, 0px); }
-  .universe-face { width: 36px; height: 36px; }
+  .universe-portrait { --portrait: 38px; }
   .universe-said { font-size: 0.85rem; }
 }
 @media (prefers-reduced-motion: reduce) {
