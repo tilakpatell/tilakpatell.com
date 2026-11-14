@@ -1,20 +1,17 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
 import { IconGo } from '../icons';
 import { useMediaQuery } from '../../lib/hooks';
 import { shortcutLabel } from '../../lib/palette';
 import { cardsFor } from './cards';
-import { ReadyLine, Sky } from './parts';
-import { useFullPage } from './useLaunch';
-import './launch.css';
+import { ReadyLine } from './parts';
 
 // The quick tour, the intro's first part: the site in five cards over the
 // welcome's sky (cards.js), read in half a minute while the universe gets
 // ready behind it. Next and Back, or the arrow keys; "Skip the tour" goes on
 // to what follows it (the crawl, or with reduced motion the universe), "Skip
-// the intro" and Esc straight to the universe. `onCard` hears each card as
-// it's shown (the flying card stands in for the map's first-flight brief).
-// A modal, as the welcome is: the page behind it is inert.
+// the intro" and Esc (the frame's, Opening.jsx) straight to the universe.
+// `onCard` hears each card as it's shown (the flying card stands in for the
+// map's first-flight brief). Drawn in the launch's frame, after the welcome.
 //
 // <QuickTour next="crawl" | "arrive" map={…} onDone={() => …} onSkipIntro={() => …} onCard={(card) => …} />
 
@@ -30,7 +27,9 @@ export default function QuickTour({ next = 'crawl', map, onDone, onSkipIntro, on
   const cbs = useRef({ onDone, onSkipIntro, onCard });
   cbs.current = { onDone, onSkipIntro, onCard };
 
-  useFullPage({ focus: go, onEscape: () => (next === 'arrive' ? cbs.current.onDone() : cbs.current.onSkipIntro()) });
+  useEffect(() => {
+    go.current?.focus({ preventScroll: true });
+  }, []);
   useEffect(() => {
     cbs.current.onCard?.(card);
   }, [card]);
@@ -50,75 +49,71 @@ export default function QuickTour({ next = 'crawl', map, onDone, onSkipIntro, on
     return () => window.removeEventListener('keydown', onKey);
   }, []);
 
-  return createPortal(
-    <div className="welcome launch-tour dark-scope" role="dialog" aria-modal="true" aria-labelledby="launch-tour-title">
-      <Sky />
-      <div className="welcome-main launch-tour-main">
-        <p className="welcome-name">
-          A quick tour
-          <span className="launch-tour-count">
-            {i + 1} of {cards.length}
-          </span>
-        </p>
-        <div className="launch-tour-card" key={card.id} aria-live="polite">
-          <Art kind={card.art} />
-          <div className="launch-tour-words">
-            <h2 id="launch-tour-title" className="launch-tour-title">
-              {card.title}
-            </h2>
-            {card.text && <p className="launch-tour-text">{card.text}</p>}
-            {card.rows && !touch && (
-              <ul className="launch-tour-keys">
-                {card.rows.map((r) => (
-                  <li key={r.text}>
-                    <span className="launch-tour-caps">
-                      {r.keys.map((k) => (
-                        <kbd key={k} className="kbd">
-                          {k}
-                        </kbd>
-                      ))}
-                    </span>
-                    {r.text}
-                  </li>
-                ))}
-              </ul>
-            )}
-            {card.rows && touch && card.touch && <p className="launch-tour-text">{card.touch}</p>}
-            {card.after && <p className="launch-tour-after">{card.after}</p>}
-          </div>
-        </div>
-
-        <div className="launch-tour-dots" aria-hidden="true">
-          {cards.map((c, n) => (
-            <span key={c.id} data-on={n === i ? '' : undefined} data-seen={n < i ? '' : undefined} />
-          ))}
-        </div>
-        <div className="welcome-buttons launch-tour-buttons">
-          <button ref={go} type="button" className="btn btn-primary btn-lg" onClick={forward}>
-            {last ? NEXT[next] : 'Next'} <IconGo className="h-4 w-4" aria-hidden="true" />
-          </button>
-          {i > 0 && (
-            <button type="button" className="btn btn-ghost btn-lg" onClick={back}>
-              Back
-            </button>
+  return (
+    <div className="welcome-main launch-tour-main">
+      <p className="welcome-name">
+        A quick tour
+        <span className="launch-tour-count">
+          {i + 1} of {cards.length}
+        </span>
+      </p>
+      <div className="launch-tour-card" key={card.id} aria-live="polite">
+        <Art kind={card.art} />
+        <div className="launch-tour-words">
+          <h2 id="launch-tour-title" className="launch-tour-title">
+            {card.title}
+          </h2>
+          {card.text && <p className="launch-tour-text">{card.text}</p>}
+          {card.rows && !touch && (
+            <ul className="launch-tour-keys">
+              {card.rows.map((r) => (
+                <li key={r.text}>
+                  <span className="launch-tour-caps">
+                    {r.keys.map((k) => (
+                      <kbd key={k} className="kbd">
+                        {k}
+                      </kbd>
+                    ))}
+                  </span>
+                  {r.text}
+                </li>
+              ))}
+            </ul>
           )}
+          {card.rows && touch && card.touch && <p className="launch-tour-text">{card.touch}</p>}
+          {card.after && <p className="launch-tour-after">{card.after}</p>}
         </div>
-        <p className="welcome-alt launch-tour-skips">
-          {!last && (
-            <button type="button" className="link" onClick={() => cbs.current.onDone()}>
-              Skip the tour
-            </button>
-          )}
-          {next === 'crawl' && (
-            <button type="button" className="link" onClick={() => cbs.current.onSkipIntro()}>
-              Skip the intro
-            </button>
-          )}
-        </p>
-        <ReadyLine map={map} />
       </div>
-    </div>,
-    document.body,
+
+      <div className="launch-tour-dots" aria-hidden="true">
+        {cards.map((c, n) => (
+          <span key={c.id} data-on={n === i ? '' : undefined} data-seen={n < i ? '' : undefined} />
+        ))}
+      </div>
+      <div className="welcome-buttons launch-tour-buttons">
+        <button ref={go} type="button" className="btn btn-primary btn-lg" onClick={forward}>
+          {last ? NEXT[next] : 'Next'} <IconGo className="h-4 w-4" aria-hidden="true" />
+        </button>
+        {i > 0 && (
+          <button type="button" className="btn btn-ghost btn-lg" onClick={back}>
+            Back
+          </button>
+        )}
+      </div>
+      <p className="welcome-alt launch-tour-skips">
+        {!last && (
+          <button type="button" className="link" onClick={() => cbs.current.onDone()}>
+            Skip the tour
+          </button>
+        )}
+        {next === 'crawl' && (
+          <button type="button" className="link" onClick={() => cbs.current.onSkipIntro()}>
+            Skip the intro
+          </button>
+        )}
+      </p>
+      <ReadyLine map={map} />
+    </div>
   );
 }
 

@@ -448,18 +448,21 @@ export function buildBody(look, { r = 40, small = false, tier = typeof document 
   const geo = new THREE.SphereGeometry(r, ws, hs);
   const mat = new THREE.ShaderMaterial({ vertexShader: SURFACE_VERT, fragmentShader: surfaceFrag(L.family, FAMILIES[L.family].slots, { skin: painted }), uniforms, defines });
   const surface = new THREE.Mesh(geo, mat);
-  // (how tall it is on the screen, as it's drawn: the near octaves eased
-  // toward what that asks for, a frame at a time)
-  if (!small) {
-    surface.onBeforeRender = (renderer, scene, camera) => {
+  // (where its middle is as it's drawn, which a map drawn round the camera
+  // has moved since update(): universe/relative.js; and how tall it is on
+  // the screen, as it's drawn: the near octaves eased toward what that asks
+  // for, a frame at a time)
+  surface.onBeforeRender = (renderer, scene, camera) => {
+    shared.uCenter.value.setFromMatrixPosition(group.matrixWorld);
+    if (!small) {
       if (!camera?.isPerspectiveCamera) return;
       renderer.getDrawingBufferSize(bufferSize);
       surface.getWorldPosition(bodyAt);
       const want = nearOctaves({ tier, pxTall: pxTall({ r, dist: camera.position.distanceTo(bodyAt), fov: camera.fov, height: bufferSize.y }) });
       const n = uniforms.uNearOct;
       n.value += Math.max(-NEAR_EASE, Math.min(NEAR_EASE, want - n.value));
-    };
-  }
+    }
+  };
   group.add(surface);
   made.push(geo, mat);
 
