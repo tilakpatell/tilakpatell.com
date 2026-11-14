@@ -125,7 +125,8 @@ export function createStages(k, plan, director) {
   const fell = (o, mine) => {
     o.alive = false;
     if (o.sinks && o.cap && o.cap !== ship) b.wreck?.(o.cap.id);
-    return { type: 'sub', sub: o.key, kind: o.kind, phase: o.phase, at: copy(v3(), o.pos), mine };
+    if (o.kind === 'bridge' && o.cap) o.cap.listed ??= 0; // (out of control from now: battleCapitals.js's listCapitals)
+    return { type: 'sub', sub: o.key, kind: o.kind, phase: o.phase, at: copy(v3(), o.pos), mine, cap: o.cap?.id ?? null };
   };
   // whether an objective's open to be taken: its stage open, and whatever it waits on down
   const open = (o) => o.phase === b.phase && b.stageOpen && (!o.after || !all.find((x) => x.key === o.after)?.alive);

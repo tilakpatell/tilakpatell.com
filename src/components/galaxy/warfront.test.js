@@ -224,7 +224,7 @@ describe('the side you swore to', () => {
   };
   const downOne = (k, team, role) => {
     const f = k.front.battle.fighters.find((x) => x.alive && x.team === team && (!role || x.role === role));
-    for (let i = 0; i < 40 && f.alive; i++) shoot(k.front, f.pos, 5);
+    for (let i = 0; i < 40 && f.alive; i++) shoot(k.front, f.seen ?? f.pos, 5); // (where it's drawn, as your guns see it)
     k.front.update(1 / 30, 0, camera, null);
     return f;
   };
@@ -874,7 +874,7 @@ describe('the Starfighter Assault’s stand-ins on the game’s hulls', () => {
 
   it('flies every ship a level names on the game’s file, bow to +z, credited to the game', async () => {
     const { modelsAt } = await import('./models');
-    const MODELS = modelsAt('mid'); // (a laptop's rows: on a desktop the kits' are their ultra cuts and the fighters' the game's plain surface cuts)
+    const MODELS = modelsAt('mid', { phone: true }); // (a phone's rows: on a computer the kits' are their ultra cuts and the fighters' the game's plain surface cuts)
     const credits = (await import('../../data/modelCredits.json')).default;
     for (const level of ['sb_endor', 'sb_kamino', 'sb_droidbattleship', 'sb_fondor']) {
       const stages = (await import(`../../data/bf2017/maps/${level}.stages.json`)).default;

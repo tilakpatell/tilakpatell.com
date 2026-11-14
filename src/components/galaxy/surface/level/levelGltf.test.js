@@ -2,7 +2,7 @@ import { Document, NodeIO } from '@gltf-transform/core';
 import * as THREE from 'three';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { WasmError } from '../../../../lib/wasm/load.js';
-import { asColour, BARE, bareGlb, bindSlot, colourByName, createLevelLoader, gameWordOf, matchRecipes, recipeMaps, recipesIndex, sharpenPack } from './levelGltf.js';
+import { asColour, BARE, bareGlb, bindSlot, colourByName, createLevelLoader, gameWordOf, matchRecipes, onChannel, ormMetal, recipeMaps, recipesIndex, sharpenPack, swapInto, unTangent } from './levelGltf.js';
 
 // the KTX2 loader the pack's maps come through, as a test sets it (no
 // transcoder here: a test that names no map never asks)
@@ -696,5 +696,77 @@ describe('sharpenPack', () => {
 
   it('passes a missing texture through', () => {
     expect(sharpenPack(null, 'high')).toBe(null);
+  });
+});
+
+describe('a map on its UV set', () => {
+  it('copies a map onto another UV set once, its image the same, and a finer row swapped in reaches the copy', () => {
+    const t = new THREE.Texture();
+    expect(onChannel(t, 0)).toBe(t);
+    const c = onChannel(t, 1);
+    expect(c).not.toBe(t);
+    expect(c.channel).toBe(1);
+    expect(c.source).toBe(t.source);
+    expect(onChannel(t, 1)).toBe(c);
+    expect(onChannel(null, 1)).toBeNull();
+    const next = new THREE.Texture();
+    swapInto(t, next, 2048);
+    expect(t.source).toBe(next.source);
+    expect(c.source).toBe(next.source);
+    expect(t.userData.row).toBe(2048);
+  });
+});
+
+describe('an ORM whose metal is another layout’s', () => {
+  it('binds its roughness alone, a dielectric, where the normal is on the other UV set; its metal where they share one', () => {
+    // (the game's two-UV preset: the colour and its ORM on the unique set, the detail normal on the tiling one)
+    const twoUv = [
+      { material: 0, slot: 'map', uri: 'a', texCoord: 1 },
+      { material: 0, slot: 'metalRough', uri: 'b', texCoord: 1 },
+      { material: 0, slot: 'normalMap', uri: 'c' },
+      { material: 1, slot: 'metalRough', uri: 'd' },
+      { material: 1, slot: 'normalMap', uri: 'e' },
+      { material: 2, slot: 'metalRough', uri: 'f' },
+    ];
+    expect(ormMetal(twoUv, 0)).toBe(false);
+    expect(ormMetal(twoUv, 1)).toBe(true);
+    expect(ormMetal(twoUv, 2)).toBe(true);
+    const m = new THREE.MeshStandardMaterial({ metalness: 1 });
+    const t = new THREE.Texture();
+    bindSlot(m, 'metalRough', t, { metal: false });
+    expect(m.roughnessMap).toBe(t);
+    expect(m.metalnessMap).toBeNull();
+    expect(m.metalness).toBe(0);
+    const k = new THREE.MeshStandardMaterial({ metalness: 1 });
+    bindSlot(k, 'metalRough', t);
+    expect(k.metalnessMap).toBe(t);
+    expect(k.metalness).toBe(1);
+  });
+});
+
+describe('a normal map on the unique UV set', () => {
+  it('is lit through its own set’s frame: the meshes’ tangents (the first set’s) dropped and glTF’s green turned, the rest left be', () => {
+    const geometry = () => {
+      const g = new THREE.BufferGeometry();
+      g.setAttribute('tangent', new THREE.BufferAttribute(new Float32Array(4), 4));
+      return g;
+    };
+    const unique = new THREE.MeshStandardMaterial();
+    const tiling = new THREE.MeshStandardMaterial();
+    const a = new THREE.Mesh(geometry(), unique);
+    const b = new THREE.Mesh(geometry(), tiling);
+    const scene = new THREE.Group().add(a, b);
+    const associations = new Map([
+      [unique, { materials: 0 }],
+      [tiling, { materials: 1 }],
+    ]);
+    unTangent({ scene, parser: { associations } }, [
+      { material: 0, slot: 'normalMap', uri: 'n', texCoord: 1 },
+      { material: 1, slot: 'normalMap', uri: 'm' },
+    ]);
+    expect(a.geometry.getAttribute('tangent')).toBeUndefined();
+    expect(unique.normalScale.y).toBe(-1);
+    expect(b.geometry.getAttribute('tangent')).toBeTruthy();
+    expect(tiling.normalScale.y).toBe(1);
   });
 });

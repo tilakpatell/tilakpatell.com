@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it, vi } from 'vitest';
-import { createHulls } from './hulls.js';
+import { TURNED, createHulls } from './hulls.js';
+import { hullOf } from '../../lib/combat/hulls.js';
 
 // a real hull's bytes (a few KB, committed), as a fresh ArrayBuffer each time
 const BIN = readFileSync(new URL('../../../scripts/fixtures/bf2017/physics/destroyer-hull.bin', import.meta.url));
@@ -80,4 +81,21 @@ describe('createHulls', () => {
     await later();
     expect(hulls.get('xwing')).toBeNull();
   });
+
+  it('turns a hull half round with its model where the model was turned nose first (the MC80’s)', async () => {
+    expect(TURNED.has('moncal')).toBe(true);
+    const hulls = createHulls({ load: () => Promise.resolve(bytes()) });
+    hulls.want(['moncal', 'destroyer']);
+    await later();
+    const plain = hullOf(bytes()).probes;
+    const as = hulls.get('destroyer').probes;
+    const turned = hulls.get('moncal').probes;
+    for (let i = 0; i < plain.length; i += 3) {
+      expect(as[i]).toBeCloseTo(plain[i], 6);
+      expect(turned[i]).toBeCloseTo(-plain[i], 6);
+      expect(turned[i + 1]).toBeCloseTo(plain[i + 1], 6);
+      expect(turned[i + 2]).toBeCloseTo(-plain[i + 2], 6);
+    }
+  });
 });
+

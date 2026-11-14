@@ -197,6 +197,25 @@ describe('waves', () => {
     expect(arrivals()).toEqual(one);
   });
 
+  it('marks a wave launched out of a carrier’s hangar as one (drawn with no flash: battleScene.js), and one with its side’s carriers gone as out in the open', () => {
+    // (with tactics, every arrival is a wave's: no plan's stages, no fighter back on its own)
+    const hangars = (gone) => {
+      const b = make();
+      for (const c of b.capitals) if (c.team === gone && FLIGHTS.carriers.includes(c.kind)) c.alive = false;
+      expect(b.capitals.some((c) => c.team === 1 - gone && c.alive && FLIGHTS.carriers.includes(c.kind))).toBe(true);
+      const seen = [[], []];
+      watch(b, 50, (bb, t, out) => {
+        for (const e of out) if (e.type === 'arrive') seen[e.team].push(e.hangar);
+      });
+      return seen;
+    };
+    for (const gone of [0, 1]) {
+      const seen = hangars(gone);
+      expect(new Set(seen[1 - gone]), `team ${1 - gone}, its carriers up`).toEqual(new Set([true]));
+      expect(new Set(seen[gone]), `team ${gone}, its carriers gone`).toEqual(new Set([false]));
+    }
+  });
+
   it('puts a reserve squadron up for the defender at the final push, from the plan’s escalations', () => {
     const plan = planFor({ id: 'flights.reserve', kind: 'assault', attacker: 0 });
     expect(plan.escalations.map((e) => e.type)).toContain('reserve');

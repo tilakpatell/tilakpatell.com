@@ -139,6 +139,19 @@ export function clusters(xs, link) {
 // animtracks/a3/objects/props/objectsets/_generic/asteroid_{large,medium,small}_01)
 export const trackOf = (metres) => (metres > 200 ? 'large' : metres > 60 ? 'medium' : 'small');
 
+// an instance's whole placement, to tell a second copy of it (Mode7 and
+// SpaceBattle place most of a fleet twice) from another part at the same
+// spot: its mesh, where it is to the metre, its turn (q and -q the same) to
+// a thousandth and its scale's to a hundredth, so the Lucrehulk's six ring
+// arcs, all at its middle and each turned its own way, and its mirrored
+// twins (a scale of -1) are six arcs and two of each, not one
+export function instanceKey(x) {
+  const q = x.quaternion ?? [0, 0, 0, 1];
+  const sign = q[3] < 0 || (q[3] === 0 && (q[1] < 0 || (q[1] === 0 && (q[0] < 0 || (q[0] === 0 && q[2] < 0))))) ? -1 : 1;
+  const round = (v, k) => Math.round(v * k) + 0;
+  return `${x.mesh}:${x.at.map((v) => round(v, 1)).join(',')}:${q.map((v) => round(v * sign, 1000)).join(',')}:${(x.scale ?? [1, 1, 1]).map((v) => round(v, 100)).join(',')}`;
+}
+
 export function piecesOf(map, { subs = SUBS, kits = KITS, kind = kindOf, system = '', minSize = 20 } = {}) {
   const want = new Set([...subs, last(map.name)]);
   const files = map.meshes.map((m) => String(m.file ?? ''));
@@ -153,7 +166,7 @@ export function piecesOf(map, { subs = SUBS, kits = KITS, kind = kindOf, system 
     }
     for (let i = g.first; i < g.first + g.count; i++) {
       const x = instanceOf(map, i);
-      const key = `${x.mesh}:${x.at.map((v) => Math.round(v)).join(',')}`;
+      const key = instanceKey(x);
       if (seen.has(key)) {
         dropped.twice++;
         continue;

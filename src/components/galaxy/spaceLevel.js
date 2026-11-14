@@ -20,6 +20,10 @@ import { createLevel, packOf } from './surface/level';
 import { createLevelArea } from './levelArea';
 import { LIGHTS } from '../../data/bf2017/light';
 import { METRES } from './surface/missions/starfighter';
+import { levelHull } from './capitalHull';
+import { paneHeight, windowsMaterial, withPanes } from './capitalKit';
+import { MAPPED_METAL } from './capitalLook';
+import { budget, device } from '../../lib/device';
 
 const _v = new THREE.Vector3();
 // (a mesh the export gives no colour map, the Death Star's wreckage among
@@ -29,12 +33,55 @@ const greyed = (root) =>
   root.traverse((o) => {
     if (!o.isMesh) return;
     for (const m of [o.material].flat()) {
-      if (!m || m.userData.spaceGrey || m.map || !m.color) continue;
+      if (!m || m.userData.spaceGrey || m.userData.gameHull || m.map || !m.color) continue;
       m.userData.spaceGrey = true;
       m.color.copy(HULL);
       if ('metalness' in m) m.metalness = Math.max(m.metalness, 0.45);
       if ('roughness' in m) m.roughness = Math.min(m.roughness, 0.6);
     }
+  });
+
+// (the Star Destroyer's windows, which the export gives no map (the game's
+// SS_StarDestroyer_Windows_01 lights its panes from a heightmap the bucket
+// hasn't got): lit as the war's ship's are, a pane a cell of their own UVs'
+// grid in the game's own heightmap's shape, capitalKit.js's windowsMaterial,
+// one for the level, not greyed; the Venator's and the Lucrehulk's, another
+// shader's on another layout, are)
+const ISD_WINDOWS = /^M_Windows$/;
+export const litWindows = (root, made = {}, { panes = () => paneHeight(undefined, device().phone) } = {}) => {
+  root.traverse((o) => {
+    if (!o.isMesh || Array.isArray(o.material) || o.material?.map || !ISD_WINDOWS.test(o.material?.name ?? '')) return;
+    if (!made.windows) {
+      made.windows = windowsMaterial({ name: 'M_Windows' });
+      const m = made.windows;
+      panes()?.then((t) => withPanes(m, t));
+    }
+    o.material = made.windows;
+  });
+  return made;
+};
+
+// (the level's own capitals' metal no more than the war's, capitalLook.js's
+// MAPPED_METAL: the level loader keeps a part's ORM metal at the GLB's
+// factor, 1, and a Star Destroyer's panels mirrored the sky's star, the
+// ship flaring white at some angles; capitalKit.js's kit parts the same)
+export const capMetal = (root) =>
+  root.traverse((o) => {
+    if (!o.isMesh) return;
+    for (const m of [o.material].flat()) if (m?.metalnessMap && m.metalness > MAPPED_METAL) m.metalness = MAPPED_METAL;
+  });
+
+// (a level's own bare hull, a Star Destroyer's, a Venator's, an MC80's: the
+// game's material on it as the war's ship of its kind has, capitalHull.js's
+// levelHull, so the level's ships and the war's are one paint; asked once a mesh)
+const asked = new WeakSet();
+export const hulled = (root, { hull = levelHull } = {}) =>
+  root.traverse((o) => {
+    if (!o.isMesh || Array.isArray(o.material) || asked.has(o)) return;
+    asked.add(o);
+    hull(o.material?.name, { detail: device().detail, phone: device().phone, aniso: budget().aniso })?.then((m) => {
+      if (m) o.material = m;
+    });
   });
 
 export function drawSpaceLevel(scene, { pack, origin, packOrigin, tier, renderer = null, area = null, ships = [] }) {
@@ -74,6 +121,7 @@ export function drawSpaceLevel(scene, { pack, origin, packOrigin, tier, renderer
       : null;
     let last = performance.now();
     let looked = -Infinity;
+    const lit = {};
     return {
       group,
       // (where the camera is in the pack's own metres: its LODs and cells by that)
@@ -89,6 +137,9 @@ export function drawSpaceLevel(scene, { pack, origin, packOrigin, tier, renderer
         const now = performance.now();
         if (now - looked >= 1000) {
           looked = now;
+          hulled(group);
+          capMetal(group);
+          litWindows(group, lit);
           greyed(group);
         }
       },
@@ -98,6 +149,7 @@ export function drawSpaceLevel(scene, { pack, origin, packOrigin, tier, renderer
         gone = true;
         room?.dispose();
         level?.dispose();
+        lit.windows?.dispose();
         scene.remove(group);
       },
     };

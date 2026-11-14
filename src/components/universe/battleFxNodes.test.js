@@ -33,8 +33,24 @@ describe('battleFxNodes, the twin of battleFx', () => {
     was.sync(bolts, () => [1, 0.5, 0.2], new THREE.Vector3(2, 2, 2), 0.02);
     now.sync(bolts, () => [1, 0.5, 0.2], new THREE.Vector3(2, 2, 2), 0.02);
     expect(mn.count).toBe(1);
-    expect(mn.instanceMatrix.array.slice(0, 16)).toEqual(ma.instanceMatrix.array.slice(0, 16));
-    expect(mn.instanceColor.array.slice(0, 3)).toEqual(ma.instanceColor.array.slice(0, 3));
+    // (both layers, the core and its halo, alike; near, and far enough that the far dimming's begun)
+    const layers = (g) => g.children.filter((o) => o.isInstancedMesh);
+    const same = () => {
+      const [ca, ha] = layers(a);
+      const [cn, hn] = layers(n);
+      expect(ha).toBeTruthy();
+      for (const [x, y] of [
+        [cn, ca],
+        [hn, ha],
+      ]) {
+        expect(x.instanceMatrix.array.slice(0, 16)).toEqual(y.instanceMatrix.array.slice(0, 16));
+        expect(x.instanceColor.array.slice(0, 3)).toEqual(y.instanceColor.array.slice(0, 3));
+      }
+    };
+    same();
+    was.sync(bolts, () => [1, 0.5, 0.2], new THREE.Vector3(200, 2, 3), 0.02);
+    now.sync(bolts, () => [1, 0.5, 0.2], new THREE.Vector3(200, 2, 3), 0.02);
+    same();
     was.dispose();
     now.dispose();
   });

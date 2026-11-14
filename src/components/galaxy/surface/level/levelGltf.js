@@ -201,17 +201,44 @@ export function asColour(tex, colour) {
 // a pack texture bound to a material's slot, the colour ones read as sRGB
 // unless the pack's word says the game reads that map linear and its name
 // does not say colour
-export function bindSlot(mat, slot, tex) {
+export function bindSlot(mat, slot, tex, { metal = true } = {}) {
   if (COLOUR_SLOTS.has(slot) && slotColour(tex) && tex.colorSpace !== SRGBColorSpace) {
     tex.colorSpace = SRGBColorSpace;
     tex.needsUpdate = true;
   }
   if (slot === 'metalRough') {
     mat.roughnessMap = tex;
-    mat.metalnessMap = tex;
+    mat.metalnessMap = metal ? tex : null;
+    if (!metal) mat.metalness = 0;
   } else mat[slot] = tex;
   mat.needsUpdate = true;
 }
+
+// A normal map on another UV set than the first is lit through the frame of
+// that set, not the GLB's tangents (the export's are the first set's): its
+// meshes' tangents dropped, for three to work the frame out from the normal
+// map's own UVs, and glTF's green turned for that frame as GLTFLoader turns
+// it (normalScale.y)
+export function unTangent(gltf, slots) {
+  const off = new Set(slots.filter((x) => x.slot === 'normalMap' && (x.texCoord ?? 0) !== 0).map((x) => x.material));
+  if (!off.size) return;
+  gltf.scene.traverse((o) => {
+    if (!o.isMesh || !off.has(gltf.parser.associations.get(o.material)?.materials)) return;
+    if (o.geometry.getAttribute('tangent')) o.geometry.deleteAttribute('tangent');
+    if (o.material.normalScale && o.material.normalScale.y > 0) o.material.normalScale.y = -o.material.normalScale.y;
+  });
+}
+
+// whether a material's ORM keeps its metal: the export's ORM is laid out on
+// the colour's UVs and takes its blue, the metal, from the NAM's alpha; where
+// the NAM is on the other UV set (the game's two-UV presets: the colour on
+// the unique set, the detail normal on the tiling one) that blue is another
+// layout's, streaks of chrome over a painted hull, and the part is the
+// dielectric its paint is
+export const ormMetal = (slots, material) => {
+  const at = (slot) => slots.find((x) => x.material === material && x.slot === slot)?.texCoord ?? 0;
+  return !slots.some((x) => x.material === material && x.slot === 'normalMap') || at('metalRough') === at('normalMap');
+};
 
 // A recipe's maps as the material takes them, each through `texture(path)`
 // from the pack's `maps` (game name → 'tex/x.ktx2', or a detail array's
@@ -236,14 +263,35 @@ export async function recipeMaps(recipe, { maps = {}, texture, keys = null }) {
 // copy let go (three uploads a disposed texture again when next drawn, on
 // either backend), then its source and mips the new one's
 export function swapInto(tex, next, row = null) {
-  tex.dispose();
-  tex.source = next.source;
-  tex.mipmaps = next.mipmaps;
-  tex.format = next.format;
-  tex.type = next.type;
-  tex.needsUpdate = true;
+  for (const t of [tex, ...(tex.userData.channels?.values?.() ?? [])]) {
+    t.dispose();
+    t.source = next.source;
+    t.mipmaps = next.mipmaps;
+    t.format = next.format;
+    t.type = next.type;
+    t.needsUpdate = true;
+  }
   if (row != null) tex.userData.row = row;
   return tex;
+}
+
+// A map read on another UV set than the first (a GLB's texCoord: the game's
+// two-UV presets put a part's colour on its unique set and its detail normal
+// on the tiling one, and the same normal on the unique set in another
+// material): a copy on that set, its image the same, kept with the shared
+// one so a finer row swapped in (swapInto) reaches it too
+export function onChannel(tex, channel = 0) {
+  if (!tex || (tex.channel ?? 0) === channel) return tex;
+  if (!(tex.userData.channels instanceof Map)) tex.userData.channels = new Map();
+  const copies = tex.userData.channels;
+  if (!copies.has(channel)) {
+    const c = tex.clone();
+    c.channel = channel;
+    // (the game's word on its colour kept; its row and its copies the shared one's)
+    c.userData = { gameSrgb: tex.userData.gameSrgb, colourName: tex.userData.colourName };
+    copies.set(channel, c);
+  }
+  return copies.get(channel);
 }
 
 // a KTX2's twelve-byte identifier (the Khronos container's), so bytes that
@@ -429,6 +477,11 @@ export function createLevelLoader({
   // alone left the copy, the one drawn, white. Returns the GLB indices of
   // the materials whose colour map was named and did not come (bare, as
   // one that named none: load).
+  // (the classic renderer's materials read each map on its own UV set and
+  // keep a misaligned ORM's metal off; the node renderer's game material
+  // (gameMaterial.js) samples the GLB's maps on its colour map's set itself,
+  // and is given them as before)
+  const ownSets = !(recipes && materialFor);
   async function bind(gltf, slots, glbPath) {
     const lost = new Set();
     const copies = new Map(); // GLB index → the scene's materials of it
@@ -439,16 +492,17 @@ export function createLevelLoader({
       copies.get(i).add(o.material);
     });
     await Promise.all(
-      slots.map(async ({ material, slot, uri }) => {
+      slots.map(async ({ material, slot, uri, texCoord = 0 }) => {
         const [mat, tex] = await Promise.all([gltf.parser.getDependency('material', material), texture(inPack(glbPath, uri), sizes, { of: glbPath })]);
         if (gone) return;
         if (!tex) {
           if (slot === 'map') lost.add(material);
           return;
         }
-        for (const m of new Set([mat, ...(copies.get(material) ?? [])])) bindSlot(m, slot, tex);
+        for (const m of new Set([mat, ...(copies.get(material) ?? [])])) bindSlot(m, slot, ownSets ? onChannel(tex, texCoord) : tex, { metal: !ownSets || ormMetal(slots, material) });
       }),
     );
+    if (ownSets) unTangent(gltf, slots);
     return lost;
   }
 
@@ -585,7 +639,7 @@ export function createLevelLoader({
     counts: () => ({ asked: asked.size, loaded: mapsLoaded, failed: failing.size, why }),
     async dispose() {
       gone = true;
-      for (const t of await Promise.all(textures.values())) t?.dispose();
+      for (const t of await Promise.all(textures.values())) for (const x of [t, ...(t?.userData.channels?.values?.() ?? [])]) x?.dispose();
       for (const k of kept.values()) k.next.dispose();
       kept.clear();
       for (const g of await Promise.all(meshes.values())) {

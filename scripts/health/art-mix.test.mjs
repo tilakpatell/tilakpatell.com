@@ -20,10 +20,12 @@ describe('art-mix, on a fixture tree', () => {
     expect(folders).not.toContain('mixed/inner'); // (its own entry, reaching neither)
   });
 
+  // (the whole site's imports walked: near four seconds alone, past vitest's
+  // five on a runner busy with the rest of the suite)
   it('measures the site in the health table’s shape', async () => {
     const m = await artMixMetric(await makeContext(fileURLToPath(new URL('../..', import.meta.url))));
     expect(m.id).toBe('art-mix');
     expect(m.value).toBe(m.detail.length);
     for (const d of m.detail) expect(d).toMatchObject({ n: 1, file: expect.stringMatching(/^src\/components\//), scan: expect.any(String), ramp: expect.any(String) });
-  });
+  }, 30000);
 });

@@ -117,6 +117,17 @@ describe('nodes/world, the twin of world', () => {
     for (const w of [a, n]) w.update(T0, 0.2, camera, null);
     expect(m.uniforms.uHit.value).toBeCloseTo(a.dsShield.mat.uniforms.uHit.value, 10);
     expect(m.uniforms.uOn.value).toBeCloseTo(a.dsShield.mat.uniforms.uOn.value, 10);
+    // (and the flash as it fails, up then down, the same on both)
+    for (const w of [a, n]) {
+      w.war.holdShield(true);
+      w.update(T0 + 0.2, 0.2, camera, null);
+      w.war.holdShield(false);
+      w.update(T0 + 0.4, 0.2, camera, null);
+      w.update(T0 + 0.6, 0.2, camera, null);
+    }
+    expect(m.uniforms.uHit.value).toBeCloseTo(1 - 0.2 * 1.5, 10);
+    expect(m.uniforms.uHit.value).toBeCloseTo(a.dsShield.mat.uniforms.uHit.value, 10);
+    expect(m.uniforms.uOn.value).toBeCloseTo(a.dsShield.mat.uniforms.uOn.value, 10);
     a.dispose();
     n.dispose();
   });

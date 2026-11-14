@@ -284,6 +284,7 @@ export function buildSystem(sys, { models, bolts, flashes, small = false, ratio 
       const st = stations[kind];
       if (!st) return;
       st.holder.visible = shown;
+      if (st.bubble) st.bubble.visible = shown;
       for (const x of st.solids) {
         x.o.r = shown ? x.r : 0;
         x.o.reach = shown ? x.reach : 0;

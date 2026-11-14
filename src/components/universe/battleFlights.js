@@ -185,7 +185,7 @@ export function createFlights(k) {
         copy(f.prev, f.pos);
         copy(f.seen, f.pos);
       }
-      out.push({ type: 'arrive', team, kind: f.kind, at: copy(v3(), f.pos) });
+      out.push({ type: 'arrive', team, kind: f.kind, at: copy(v3(), f.pos), hangar: Boolean(cap) }); // (out of a hangar: drawn with no flash, battleScene.js)
     });
     // (each flight launched in its formation)
     for (const fl of new Set(waiting.map((f) => f.flight).filter(Boolean))) formUp(fl);

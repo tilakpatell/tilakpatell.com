@@ -59,7 +59,7 @@ export const FLEET = [
   ['vwing', Math.PI / 2, 'galaxy-vwing', { kind: 'vwing' }],
   ['hyena', Math.PI / 2, 'galaxy-hyena', { kind: 'hyena' }],
   ['xwing65', 0, 'galaxy-xwing65', { kind: 'xwing' }],
-  ['nebulon', 0, 'galaxy-nebulon', { name: 'objects/props/landmarks/_rebelalliance/bd_frigatenebulonb_01/frigatenebulonb_01_mesh', as: 'the Nebulon-B frigates', cut: 2 }],
+  ['nebulon', Math.PI, 'galaxy-nebulon', { name: 'objects/props/landmarks/_rebelalliance/bd_frigatenebulonb_01/frigatenebulonb_01_mesh', as: 'the Nebulon-B frigates', cut: 2, turn: -Math.PI }],
   // (lane S1: the close-up Nebulon-B is the game's own at its first LOD,
   // 16,029 triangles with its engine and its lights, over Daniel Andersson's;
   // `_source`: lab/assets/bf2017/web/models.jsonl)
@@ -68,12 +68,17 @@ export const FLEET = [
   // lane V's row binds them, and its landing legs, a material of their own in
   // the drop (`Legs_Shader`), left out; the surfaces keep lane V's, gear down)
   ['falcon', 0, 'galaxy-falcon', { name: 'gameplay/vehicles/air/millenniumfalcon/landmark/millenniumfalcon_01_landmark_mesh', as: 'the Millennium Falcon in flight', cut: 2, drop: /^Legs_Shader/, textures: 'Details_Shader1=color:Gameplay/Vehicles/Air/MillenniumFalcon/T_MillenniumFalconDetails_01_CS,normal:Gameplay/Vehicles/Air/MillenniumFalcon/T_MillenniumFalcon_01_N' }],
-  ['hq/nebulon', 0, 'galaxy-nebulonhq', { name: 'objects/props/landmarks/_rebelalliance/bd_frigatenebulonb_01/frigatenebulonb_01_mesh', as: 'the Nebulon-B frigates, close up', cut: 0, parts: '*_engine_01_mesh,*_emissive_01_mesh' }],
+  ['hq/nebulon', Math.PI, 'galaxy-nebulonhq', { name: 'objects/props/landmarks/_rebelalliance/bd_frigatenebulonb_01/frigatenebulonb_01_mesh', as: 'the Nebulon-B frigates, close up', cut: 0, parts: '*_engine_01_mesh,*_emissive_01_mesh', turn: -Math.PI }],
   // (lane Q: a capital the space levels assemble from its kit, at the fleet's
   // cut: scripts/bf2017-space.mjs --fleet; `turn` brings the kit's nose, along
-  // its −z as the game's capitals are, to +z)
-  ['lucrehulk', 0, 'galaxy-lucrehulk', { space: 'naboo', model: 'naboo-lucrehulk', as: 'the Lucrehulk-class droid control ships', turn: Math.PI }],
-  ['lightcruiser', -Math.PI / 2, 'galaxy-lightcruiser', { space: 'fondor', model: 'fondor-arquitens', as: 'the Arquitens-class light cruisers', turn: Math.PI }],
+  // its −z as the game's capitals are, to +z. The Lucrehulk's and the
+  // Arquitens' kits are not: their noses are along +z, so the files written
+  // with a half turn flew them engines first; the half turn is the rows'
+  // nose since, the sum each file is written with the same, so the files
+  // stand and the galaxy turns them nose first. The MC80 and the Nebulon-B
+  // below the same: scripts/capitals-shot.mjs --views nose, 2026-10-24)
+  ['lucrehulk', Math.PI, 'galaxy-lucrehulk', { space: 'naboo', model: 'naboo-lucrehulk', as: 'the Lucrehulk-class droid control ships', turn: 0 }],
+  ['lightcruiser', Math.PI / 2, 'galaxy-lightcruiser', { space: 'fondor', model: 'fondor-arquitens', as: 'the Arquitens-class light cruisers', turn: 0 }],
   // (lane S1: the war's other capitals from the kits, each with its ultra
   // cut beside it (`ultra`: the capital cap and the game's 1,024 maps, to
   // the bucket), over Daniel Andersson's close-up Star Destroyer and MC80,
@@ -83,7 +88,7 @@ export const FLEET = [
   // along +x, each read off a shot of the written file, 2026-10-11;
   // `turn` brings it to +z)
   ['destroyer', 0, 'galaxy-destroyer', { space: 'endor', model: 'endor-isd', as: 'the Imperial Star Destroyers', turn: 0, ultra: true }],
-  ['moncal', 0, 'galaxy-moncal', { space: 'endor', model: 'endor-mc80', as: 'the Mon Calamari cruisers', turn: Math.PI, ultra: true }],
+  ['moncal', Math.PI, 'galaxy-moncal', { space: 'endor', model: 'endor-mc80', as: 'the Mon Calamari cruisers', turn: 0, ultra: true }],
   ['venator', 0, 'galaxy-venator', { space: 'kamino', model: 'kamino-venator', as: 'the Venator-class Star Destroyers', turn: Math.PI, ultra: true }],
   ['corvette', 0, 'galaxy-corvette', { space: 'endor', model: 'corvettecr90-01', as: 'the CR90 corvettes', turn: 0, ultra: true }],
   ['providence', 0, 'galaxy-providence', { space: 'kamino', model: 'providenceclassdreadnaught-01', as: 'the Providence-class dreadnoughts', turn: Math.PI / 2, ultra: true }],
@@ -115,7 +120,7 @@ async function source([file, , , from], { ultra = false } = {}) {
   const kind = file.replace(/[^a-z0-9]/g, '');
   execFileSync('node', ['scripts/bf2017-fetch.mjs', from.name, ...(from.parts ? ['--parts', from.parts] : [])], { cwd: ROOT, stdio: 'ignore' });
   execFileSync('node', ['scripts/bf2017-import.mjs', from.name, '--kind', kind, '--as', from.as, '--asis', '--native', '--cuts', `plain=${from.cut}`, '--tex', String(from.tex ?? 1024), '--maps', String(from.tex ?? 1024), ...(from.parts ? ['--parts', from.parts] : []), ...(from.textures ? ['--textures', from.textures] : []), '--out', out, '--catalog', join(out, 'cat.js'), '--credits', join(out, 'credits.json')], { cwd: ROOT, stdio: 'inherit' });
-  return { path: join(out, 'surface', `${kind}.glb`), title: from.name, as: from.as };
+  return { path: join(out, 'surface', `${kind}.glb`), title: from.name, as: from.as, turn: from.turn };
 }
 let SURFACE_FROM = () => null;
 

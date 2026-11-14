@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { readMap } from './bf2017-level.mjs';
-import { GRAPH_MAPS, KITS, SUBS, UNIT, clusters, kindOf, piecesOf, rotate, trackOf } from './bf2017-space.mjs';
+import { GRAPH_MAPS, KITS, SUBS, UNIT, clusters, instanceKey, kindOf, piecesOf, rotate, trackOf } from './bf2017-space.mjs';
 
 // SB_Endor_01 trimmed to 28 instances (a Star Destroyer and six of its parts
 // in SpaceBattle, the hull and the same parts again in Mode7, the MC80's hull
@@ -42,6 +42,20 @@ describe('the space levels as set pieces', () => {
     expect(pieces.filter((p) => p.kind === 'rock')).toHaveLength(4);
     expect(pieces.find((p) => p.model === 'debrisfield-02').kind).toBe('backdrop');
     expect(pieces.find((p) => p.model === 'corvettecr90-01').kind).toBe('capital');
+  });
+
+  it('tells a second copy of an instance from another part at the same spot, turned or mirrored', () => {
+    const arc = { mesh: 3, at: [10.2, 0, -4], quaternion: [0, 0, 0, 1], scale: [1, 1, 1] };
+    // (the same placement twice, its turn's sign flipped or a hair off: one)
+    expect(instanceKey({ ...arc, at: [10.4, 0, -4] })).toBe(instanceKey(arc));
+    expect(instanceKey({ ...arc, quaternion: [0, 0, 0, -1] })).toBe(instanceKey(arc));
+    const turned = { ...arc, quaternion: [0, -0.2588, 0, 0.9659] };
+    expect(instanceKey({ ...turned, quaternion: turned.quaternion.map((v) => -v) })).toBe(instanceKey(turned));
+    // (the ring's arcs, each turned its own way, and a mirrored twin: each its own)
+    expect(instanceKey(turned)).not.toBe(instanceKey(arc));
+    expect(instanceKey({ ...arc, quaternion: [0, 1, 0, 0] })).not.toBe(instanceKey(arc));
+    expect(instanceKey({ ...arc, scale: [-1, 1, 1] })).not.toBe(instanceKey(arc));
+    expect(instanceKey({ ...arc, mesh: 4 })).not.toBe(instanceKey(arc));
   });
 
   it('places a second hull of the same parts with the first one’s model', () => {

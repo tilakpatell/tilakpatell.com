@@ -82,8 +82,9 @@ export function pointAlong(obj, dir, up = Y) {
   obj.quaternion.setFromRotationMatrix(basis);
 }
 
-// The second Death Star’s shield: a fresnel rim, brighter where it was hit,
-// faded in and out with the shield (the GLSL’s, line for line)
+// The second Death Star’s shield: unseen at rest but for a faint fresnel rim,
+// flared where it was hit (or as it fails), faded in and out with the shield
+// (the GLSL’s, line for line)
 export function shieldMaterial() {
   const uniforms = { uOn: uniform(1), uHit: uniform(0) };
   const mat = new MeshBasicNodeMaterial({ transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, toneMapped: false, fog: false });
@@ -92,7 +93,7 @@ export function shieldMaterial() {
   const vN = normalize(modelWorldMatrix.mul(vec4(normalLocal, 0)).xyz).toVarying('vN');
   const vV = normalize(cameraPosition.sub(w.xyz)).toVarying('vV');
   const f = pow(float(1).sub(abs(dot(vN, vV))), 3);
-  mat.colorNode = vec3(0.35, 0.85, 1.0).mul(f.mul(0.5).add(uniforms.uHit.mul(0.35))).mul(uniforms.uOn);
+  mat.colorNode = vec3(0.35, 0.85, 1.0).mul(f.mul(0.012).add(uniforms.uHit.mul(f.mul(0.5).add(0.1)))).mul(uniforms.uOn);
   mat.uniforms = uniforms;
   return mat;
 }
@@ -285,6 +286,8 @@ export function setPieces(k) {
           const bubble = new THREE.Mesh(new THREE.SphereGeometry(R, 48, 32), mat);
           bubble.position.copy(at);
           group.add(bubble);
+          // (hidden with its station: a level that draws its own Death Star hides the galaxy's)
+          st.bubble = bubble;
           disposers.push(() => (bubble.geometry.dispose(), mat.dispose()));
           out.dsShield = { solid: shell, mat, R };
           // the shield is up for four minutes, then the strike team on Endor gets it down for two
@@ -296,6 +299,7 @@ export function setPieces(k) {
             mat.uniforms.uOn.value += ((up ? 1 : 0) - mat.uniforms.uOn.value) * clamp01(dt * 2);
             mat.uniforms.uHit.value = Math.max(0, mat.uniforms.uHit.value - dt * 1.5);
             if (was !== null && was !== up) events.push({ type: 'event', id: up ? 'shield-up' : 'shield-down' });
+            if (was === true && !up && st.holder.visible) mat.uniforms.uHit.value = 1; // (seen once, as it fails, where it's seen)
             was = up;
             return mat.uniforms.uHit.value > 0;
           });

@@ -11,7 +11,8 @@
 // it): { b, rand, between, C, A, S, lines, attacker, defender, pending,
 // newId(), youIn(), finish(winner, why, out), decides }.
 // layCapitals(k, objectivesOn); fireBatteries(k, cap, dt); hullHit(cap,
-// damage, out, spare); ageCapitals(k, dt, out); holdCapitals(k) gives the battle
+// damage, out, spare); ageCapitals(k, dt, out); listCapitals(k, dt) (a
+// ship whose bridge has gone lists); holdCapitals(k) gives the battle
 // disable(id, s), wreck(id), moveCapital(cap, d) and turnCapital(cap, axis, a);
 // shiftCapital(cap, d) and turnCapitalBy(cap, axis, a) move one with everything
 // on it. With the battle fought as a fleet (k.fleet, battleFleet.js) a battery
@@ -184,6 +185,26 @@ export function ageCapitals(k, dt, out) {
     if (k.decides === false) continue; // (the director's battle ends when the director says)
     if (cap.objective && cap.role !== 'flagship') k.finish(attacker, cap.kind, out);
     else if (cap.role === 'flagship') k.finish(cap.team === defender ? attacker : defender, 'flagship', out);
+  }
+}
+
+// ── a ship whose bridge is gone: out of control, listing ──
+// (the Executor's at Endor, every crippled Star Destroyer on screen: it rolls
+// and its nose drops, slowly, LIST.most at the most, sinking a little; a
+// ship a set piece moves, `held`, is the set piece's)
+export const LIST = { roll: 0.035, pitch: 0.012, sink: 0.05, most: 0.5 };
+// (`listed`, how far it has rolled, is set where its bridge goes: battle.js's
+// subDown, battleStages.js's fell)
+export function listCapitals(k, dt) {
+  const { b } = k;
+  for (const cap of b.capitals) {
+    if (cap.listed === undefined || cap.held || !cap.alive || cap.listed >= LIST.most) continue;
+    const a = Math.min(LIST.roll * dt, LIST.most - cap.listed);
+    cap.listed += a;
+    const share = a / (LIST.roll * dt);
+    turnCapitalBy(cap, copy(v3(), cap.fwd), a);
+    turnCapitalBy(cap, copy(v3(), cap.right), LIST.pitch * dt * share);
+    shiftCapital(cap, v3(0, -LIST.sink * dt * share, 0));
   }
 }
 
