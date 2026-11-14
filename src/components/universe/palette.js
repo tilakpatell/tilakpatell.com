@@ -6,7 +6,7 @@
 // The values are today's, read from the code where each colour lives, so
 // moving a file onto a name changes no pixel by itself:
 // - sky: the floor between the stars, the darkest thing on the map
-// - nebula: the Veil's violet (deep.js), which deepspace.js and landmarks.js paint
+// - nebula: the Veil's violet (deep.js), the first of its colours nebula/ draws it in
 // - star: the white of a star's point (deepspace.js's young stars)
 // - sun: the home sun's glare (landmarks.js)
 // - bone: the Falcon's hull, its albedo's warm grey
