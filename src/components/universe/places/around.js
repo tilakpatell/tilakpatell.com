@@ -16,6 +16,10 @@
 //     middle, the disc layer's own rule. That layer draws the nearest of the
 //     same set at most its room, so each disc it draws has a row. A planet
 //     or moon out here has no park: that far off it can't be where you're at.
+//   - a sector list's row that the disc layer draws no disc for (catalogue
+//     disc 0: a field, a cloud, a storm, a herd, a swarm, debris, a
+//     gargantuan), within its card's own `far`, outside the cap: it takes no
+//     place a drawn disc needs (lane 4a's).
 // It makes no object for a body it leaves out. The candidates go into a
 // scratch kept between calls (what each is, where, how far), and a row is
 // made only for those kept. What a body's row always is (its name, look, park
@@ -55,7 +59,7 @@
 //   aim.js's aimFrom
 
 import { SECTOR } from '../../../lib/space/address.js';
-import { SECTOR_EXTRAS, THING_KINDS, moonAt, orbitAt, thingRow } from '../../expanse/shared/gen';
+import { THING_KINDS, lookOf, moonAt, orbitAt, thingRow } from '../../expanse/shared/gen';
 import { PARK_GAP } from '../ship';
 import { FAR, placeLook, placeReach, thingCardOf } from './cards';
 import { atTime } from './ids';
@@ -209,7 +213,11 @@ function nearRows(out, sector, sys, cam, t) {
 }
 
 // a wonder or an extra: one that moves is where its card's mover has it
-function addThing(place, si, a, b, row, cam, t, far) {
+// (a list row the disc layer draws no disc for (a field, a cloud, a storm, a
+// herd, a gargantuan) goes straight into `out`, outside the cap: the list
+// follows what the disc layer draws, and in the cap it would take a place a
+// drawn disc needs, or, a gargantuan 100,000 off, never make it at all)
+function addThing(place, si, a, b, row, cam, t, far, out = null) {
   const card = thingCardOf(row.kind);
   const at = card.move ? card.move(row, t) : row.at;
   const reach = placeReach(place === EXTRA ? 'extra' : 'wonder', row);
@@ -217,7 +225,9 @@ function addThing(place, si, a, b, row, cam, t, far) {
   const dy = at[1] - cam[1];
   const dz = at[2] - cam[2];
   const d = Math.sqrt(dx * dx + dy * dy + dz * dz);
-  if (d - reach <= (card.far ?? far)) add(place, si, a, b, 0, at[0], at[1], at[2], d);
+  if (d - reach > (card.far ?? far)) return;
+  if (out && place === EXTRA && lookOf(row.kind).disc === 0) out.push(rowOf(baseOf('extra', row), cam, t, true, [at[0], at[1], at[2]], d));
+  else add(place, si, a, b, 0, at[0], at[1], at[2], d);
 }
 
 // (most: the furthest a lattice thing is listed from, so a sector whose box
@@ -257,7 +267,7 @@ function keptRow(c, cam, t) {
   const place = code[c];
   if (place === THING) return rowOf(thingOf(sector, a), cam, t, true, at, d);
   if (place === WONDER) return rowOf(baseOf('wonder', sector.wonders[a]), cam, t, true, at, d);
-  if (place === EXTRA) return rowOf(baseOf('extra', sector.extras[SECTOR_EXTRAS[a].list][b]), cam, t, true, at, d);
+  if (place === EXTRA) return rowOf(baseOf('extra', Object.values(sector.extras)[a][b]), cam, t, true, at, d);
   const sys = sector.systems[a];
   if (place === SYSTEM) return rowOf(baseOf('system', sys, sys), cam, t, true, at, d);
   const p = sys.planets[b];
@@ -307,9 +317,11 @@ export function placesAround(sectors, cam, t, { far = AROUND.far, inside = AROUN
     }
     const wonders = sector.wonders ?? [];
     for (let j = 0; j < wonders.length; j++) addThing(WONDER, si, j, 0, wonders[j], cam, t, far);
-    for (let e = 0; e < SECTOR_EXTRAS.length; e++) {
-      const rows = sector.extras?.[SECTOR_EXTRAS[e].list] ?? [];
-      for (let k = 0; k < rows.length; k++) addThing(EXTRA, si, e, k, rows[k], cam, t, far);
+    // (every list the sector has, in the order it made them: the generator's, or a test's own)
+    const lists = sector.extras ? Object.values(sector.extras) : [];
+    for (let e = 0; e < lists.length; e++) {
+      const rows = lists[e];
+      for (let k = 0; k < rows.length; k++) addThing(EXTRA, si, e, k, rows[k], cam, t, far, out);
     }
     addLattice(sector, si, cam, t, far, most);
   }

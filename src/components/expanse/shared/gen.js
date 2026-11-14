@@ -7,16 +7,17 @@
 //
 // UNIVERSE, universeOf (seed.js); fullSector, placeOf, placeIn (space.js);
 // orbitAt, moonAt, bodiesAt, spaceTime (orbits.js); systemReach (systems.js);
-// THING_BASE, THING_CELLS, THING_NEAR, THING_KINDS, SECTOR_EXTRAS, thingRow
-// (things.js); WONDER_KINDS (tables.js); STATION_BASE, stationsOf
+// THING_BASE, THING_CELLS, THING_NEAR, THING_KINDS, thingRow
+// (things.js); SECTOR_EXTRAS (extras/index.js); WONDER_KINDS (tables.js); STATION_BASE, stationsOf
 // (stations.js); extentOf (extent.js); KINDS, lookOf, traitsOf (catalogue.js)
 
 export { UNIVERSE, universeOf } from '../gen/seed';
 export { fullSector, placeIn, placeOf } from '../gen/space';
 export { bodiesAt, moonAt, orbitAt, spaceTime } from '../gen/orbits';
 export { systemReach } from '../gen/systems';
-export { SECTOR_EXTRAS, THING_BASE, THING_CELLS, THING_KINDS, THING_NEAR, thingRow } from '../gen/things';
+export { THING_BASE, THING_CELLS, THING_KINDS, THING_NEAR, thingRow } from '../gen/things';
 export { WONDER_KINDS } from '../gen/tables';
 export { STATION_BASE, stationsOf } from '../gen/stations';
 export { extentOf } from '../gen/extent';
 export { KINDS, lookOf, traitsOf } from '../gen/catalogue';
+export { SECTOR_EXTRAS } from '../gen/extras';

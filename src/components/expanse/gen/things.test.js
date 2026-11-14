@@ -6,7 +6,6 @@ import { UNIVERSE, sectorSeedOf } from "./seed";
 import { makeSector } from "./sector";
 import { addBodies, systemReach } from "./systems";
 import {
-  SECTOR_EXTRAS,
   THING_BASE,
   THING_CELLS,
   THING_JITTER,
@@ -17,6 +16,8 @@ import {
   thingSeed,
   thingsOf,
 } from "./things";
+import { EXTRA_HIGH } from "./things";
+import { SECTOR_EXTRAS } from "./extras";
 
 const build = (sx, sz) => {
   const sector = addBodies(makeSector(UNIVERSE, sx, sz));
@@ -39,7 +40,17 @@ const CELL = 6000;
 describe("constants and kinds", () => {
   it("holds the brief's values", () => {
     expect([THING_BASE, THING_CELLS, THING_JITTER, THING_NEAR]).toEqual([64, 20, 0.8, 8]);
-    expect(SECTOR_EXTRAS).toEqual([]);
+  });
+  // (replaces lane 2's `expect(SECTOR_EXTRAS).toEqual([])`: lane 4a fills the lists)
+  it("keeps every list's ids low or high, and no two lists sharing one", () => {
+    const ranges = [];
+    for (const e of SECTOR_EXTRAS) {
+      const low = e.base >= 3 && e.base + e.max <= THING_BASE;
+      const high = e.base >= EXTRA_HIGH && e.base % 10000 === 0 && e.max <= 9999;
+      expect(low || high, e.list).toBe(true);
+      for (const [lo, hi] of ranges) expect(e.base >= hi || lo >= e.base + e.max, e.list).toBe(true);
+      ranges.push([e.base, e.base + e.max]);
+    }
   });
   // (replaces lane 2's "has four valid kinds": the spec gives lane 4a this table, and
   // lane 2's test pinned its starting rows)

@@ -157,3 +157,42 @@ describe('a row round the ship, against its card', () => {
     }
   });
 });
+
+describe('a row that draws no disc', () => {
+  // (lane 4a's: a field, a cloud or a gargantuan is drawn by no disc, so it takes no place in the cap)
+  const dart = (seed) => {
+    let x = seed;
+    return () => ((x = (Math.imul(x, 1664525) + 1013904223) >>> 0) / 4294967296);
+  };
+  const rowsIn = (s, kind, k, rng, size) => Array.from({ length: k }, () => ({ kind, name: kind, size, at: s.origin.map((o) => o + (rng() * 2 - 1) * 50000) }));
+  const make = (withClouds) =>
+    new Map(
+      [[1, 0, 0], [2, 0, 0], [1, 1, 0]].map(([x, y, z]) => {
+        const lists = [
+          ...(withClouds ? [{ list: 'clouds', base: 3, max: 60, make: (ctx) => rowsIn(ctx, 'nebula', 60, dart(ctx.sx * 7 + ctx.sy * 3 + 1), 1500) }] : []),
+          { list: 'lamps', base: 20000, max: 9999, make: (ctx) => [...rowsIn(ctx, 'beacon', 40, dart(ctx.sx * 5 + ctx.sy + 2), 20), ...rowsIn(ctx, 'outpost', 40, dart(ctx.sx * 11 + ctx.sy + 3), 80)] },
+        ];
+        const s = fullSector(UNIVERSE, x, y, z, { extras: lists });
+        return [s.id, s];
+      }),
+    );
+  const clouded = make(true);
+  const plain = make(false);
+  const s1 = clouded.get('E:1,0');
+  const cam = [s1.origin[0] + 7000, s1.origin[1] + 3000, s1.origin[2] - 2000];
+  const near = (r) => r.park != null && r.place !== 'thing' && r.place !== 'extra' && r.place !== 'wonder';
+  it('is listed outside the cap, and the cap holds what it held without it', () => {
+    const a = placesAround(clouded, cam, 0, AROUND);
+    const b = placesAround(plain, cam, 0, AROUND);
+    const key = (r) => `${r.place}|${r.id}`;
+    // (the same rows less the clouds, near ones and capped ones alike, and the cap full)
+    const rest = a.filter((r) => r.src.row.kind !== 'nebula');
+    expect(rest.map(key).sort()).toEqual(b.map(key).sort());
+    expect(b.filter((r) => !near(r)).length).toBeGreaterThan(0);
+    expect(b.length).toBeGreaterThanOrEqual(AROUND.max); // (the candidates outnumber the cap here)
+    const clouds = [...clouded.values()].flatMap((x) => x.extras.clouds);
+    const want = clouds.filter((c) => len(c.at, cam) <= AROUND.far).map((c) => c.id).sort();
+    expect(want.length).toBeGreaterThan(0);
+    expect(a.filter((r) => r.src.row.kind === 'nebula').map((r) => r.id).sort()).toEqual(want);
+  });
+});

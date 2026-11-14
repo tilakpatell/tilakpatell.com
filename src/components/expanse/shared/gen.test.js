@@ -4,6 +4,7 @@ import { FROM, SIDE_EFFECT, uncomment } from '../../../../scripts/health/graph.m
 import * as gen from './gen';
 import * as orbits from './orbits';
 import * as catalogue from '../gen/catalogue';
+import * as extras from '../gen/extras';
 import * as extent from '../gen/extent';
 import * as genOrbits from '../gen/orbits';
 import * as seed from '../gen/seed';
@@ -23,7 +24,7 @@ const GEN = [
 ];
 const LIGHT = ['orbitAt', 'moonAt', 'spaceTime', 'extentOf'];
 const FACE = [
-  [gen, [space, seed, genOrbits, systems, things, tables, stations, extent, catalogue], GEN],
+  [gen, [space, seed, genOrbits, systems, things, tables, stations, extent, catalogue, extras], GEN],
   [orbits, [genOrbits, extent], LIGHT],
 ];
 
