@@ -12,6 +12,8 @@ import MiniMap from './MiniMap';
 import GuideCue from '../guide/GuideCue';
 import { askBrief } from '../tour/brief';
 import LoadingVeil from '../worlds/LoadingVeil';
+import { forgetMap, mapDrawing, mapLoading, mapProgress, mapReady } from '../../lib/mapReady';
+import { settle } from '../../lib/settle';
 import { RiShieldLine } from 'react-icons/ri';
 import PowerBar from './PowerBar';
 // (the kit's parts by their files, not its index: the index brings the
@@ -102,7 +104,7 @@ export default function UniverseMap({ selected, onSelect, onOpen, handle, frozen
   const events = useRef(onEvent);
   events.current = onEvent;
   const reduced = useReducedMotion();
-  const { host, on, meant, rt, progress } = useWorld(universeModule, {
+  const { host, on, meant, rt, progress, status } = useWorld(universeModule, {
     near: '0px', // (made once its box is in view, as useScene had it)
     props: {
       universe, // (the Expanse's seed: a pocket universe's, or the shared one; read once, the map is keyed on it)
@@ -169,6 +171,33 @@ export default function UniverseMap({ selected, onSelect, onOpen, handle, frozen
     }),
     [rt],
   );
+
+  // how far the map has got, for the launch (components/launch, through
+  // lib/mapReady): its full-page cover stays up until the map is made, and
+  // its card over the map until it's drawing (at once when there's nothing
+  // to wait for: 3D held, off or failed, the flat map). The runtime draws
+  // nothing while the page is covered, so a map made under the cover waits
+  // at 'ready' (begun) to be uncovered; made means its shaders too (its
+  // `ready`), which on a low tier the runtime begins it without. Gone with
+  // the page.
+  useEffect(() => {
+    if (!meant || on) {
+      mapDrawing();
+      return undefined;
+    }
+    mapLoading();
+    if (status !== 'ready') return undefined;
+    let live = true;
+    const made = rt?.current?.module === universeModule ? rt.current.world?.ready : null;
+    settle(made, 20000).then(() => live && mapReady());
+    return () => {
+      live = false;
+    };
+  }, [meant, on, status, rt]);
+  useEffect(() => {
+    if (meant && !on) mapProgress(progress.value, progress.step);
+  }, [meant, on, progress.value, progress.step]);
+  useEffect(() => forgetMap, []);
 
   useEffect(() => {
     setFlown(false);
@@ -395,7 +424,7 @@ export default function UniverseMap({ selected, onSelect, onOpen, handle, frozen
         </>
       ) : (
         <div className="universe-flat">
-          <MiniMap selected={selected} onSelect={onSelect} />
+          <MiniMap selected={selected} onSelect={onSelect} interactive />
         </div>
       )}
     </WorldHost>

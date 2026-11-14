@@ -6,7 +6,7 @@
 // fresh, with the intro's dark cover (index.html) up first so there's no flash.
 
 export const VISIT_KEYS = [
-  'tp-intro', // the intro has played (index.html and App's IntroJump)
+  'tp-intro', // a visit had: the next is a return (index.html and components/launch)
   'tp-start', // the front door's choice (pages/Front)
   'tp-cockpit', // the last cockpit you sat in
   'tp-universe-ship', // the ship you fly on the map

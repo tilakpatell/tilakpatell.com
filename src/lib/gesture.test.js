@@ -99,4 +99,23 @@ describe('gesture', () => {
     g.cancel(3);
     expect(g.active).toBe(false);
   });
+  it('a drag begun with the modifier turns the view instead of panning it', () => {
+    const g = createGesture();
+    g.down(1, 300, 300, R, { orbit: true });
+    const m = g.move(1, 360, 270, R);
+    expect(m.pan).toBeUndefined();
+    expect(m.orbit[0]).toBeCloseTo(60 / 600);
+    expect(m.orbit[1]).toBeCloseTo(-30 / 600);
+    g.up(1);
+    expect(g.takeClick()).toBe(true);
+  });
+  it('two fingers say how far the line between them turned and how far they moved up or down', () => {
+    const g = createGesture();
+    g.down(1, 200, 300, R);
+    g.down(2, 400, 300, R);
+    const m = g.move(2, 400, 500, R);
+    expect(m.zoom).toBeCloseTo(Math.hypot(200, 200) / 200);
+    expect(m.turn).toBeCloseTo(Math.PI / 4);
+    expect(m.tilt).toBeCloseTo(100 / 600);
+  });
 });

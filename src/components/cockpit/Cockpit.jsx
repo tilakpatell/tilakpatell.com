@@ -10,6 +10,7 @@ import { SHIP_KEY, parseShip } from '../universe/crews';
 import { audioContext } from '../../lib/audio';
 import { noteArrival } from '../../lib/arrival';
 import { whenShipReady } from '../../lib/shipReady';
+import { whenMapReady } from '../../lib/mapReady';
 import { isMapPath } from '../../lib/view';
 import Hyperspace from '../Hyperspace';
 import Face from '../universe/Faces';
@@ -42,28 +43,35 @@ const reveal = () => {
 // the ship you launched in (remembered for the map, and told to it as
 // 'tp:arrive'): `onPeak` at the flash, `onDone` once it has cleared. Skip
 // (or Escape) goes straight there. The page underneath is uncovered a moment
-// before the flash (`reveal`), so the map is drawn, its loading veil gone,
-// by the time the white clears off it.
+// before the flash (`reveal`, or the launch's own `onReveal`, which keeps the
+// cover up while the map isn't ready: components/launch), so the map is
+// drawn by the time the white clears off it.
 //
 // Where WebGL can't draw it (or it fails), the plain jump to lightspeed
 // plays instead, with the same callbacks.
 // how long past the peak the white may hold for the ship to be whole on the
-// map (lib/shipReady): its model a moment late is better than a stand-in
-// seen turning into it, but a slow network never keeps you in the flash
+// map (lib/shipReady) and the map to be drawing (lib/mapReady): its model a
+// moment late is better than a stand-in seen turning into it, but a slow
+// network never keeps you in the flash (the launch's arrival takes over)
 const OUT_WAIT = 2000;
 
-export default function Cockpit({ start, onPeak, onDone }) {
+export default function Cockpit({ start, onPeak, onDone, onReveal }) {
   const [id, setId] = useState(() => start ?? firstVehicle(local.get(KEY, null)));
   const [scene, setScene] = useState(() => cockpitScene());
   const [fallback, setFallback] = useState(() => !cockpitPossible());
   const [boarded, setBoarded] = useState(null); // the id on screen, once drawn
   const [launching, setLaunching] = useState(false);
+  // Space, or the button, while still boarding: kept, and the launch goes
+  // the moment you're sat down (boarding can take a while with the map
+  // still being made behind it, and a press then was simply lost)
+  const [queued, setQueued] = useState(false);
   const [line, setLine] = useState(null);
   const root = useRef(null);
   const veil = useRef(null);
   const ctl = useRef(null);
-  const cbs = useRef({ onPeak, onDone });
-  cbs.current = { onPeak, onDone };
+  const cbs = useRef({ onPeak, onDone, onReveal });
+  cbs.current = { onPeak, onDone, onReveal };
+  const uncover = useCallback(() => (cbs.current.onReveal ? cbs.current.onReveal() : reveal()), []);
   const go = useRef(null);
   const v = vehicleById(id);
   const idNow = useRef(id);
@@ -143,12 +151,14 @@ export default function Cockpit({ start, onPeak, onDone }) {
         onBoarded: (got) => setBoarded(got),
         onFirstFrame: () => delete document.documentElement.dataset.intro,
         onLine: say,
-        onReveal: () => onMap.current && reveal(),
+        onReveal: () => onMap.current && uncover(),
         onPeak: peak,
-        // (the white at the peak held until the ship it comes out in is whole on the map, a while at most)
+        // (the white at the peak held until the map is drawing and the ship it
+        // comes out in is whole on it, a while at most)
         waitOut: () => {
+          if (!onMap.current) return null;
           const ship = parseShip(vehicleById(idNow.current)?.ship);
-          return ship && onMap.current ? whenShipReady(ship, OUT_WAIT) : null;
+          return Promise.all([ship ? whenShipReady(ship, OUT_WAIT) : true, whenMapReady(OUT_WAIT)]);
         },
         onDone: () => cbs.current.onDone?.(),
         onFail: () => setFallback(true),
@@ -168,7 +178,7 @@ export default function Cockpit({ start, onPeak, onDone }) {
     };
     // the vehicle is switched inside the running scene (below), not by remaking it
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [scene, fallback, say, peak]);
+  }, [scene, fallback, say, peak, uncover]);
 
   useEffect(() => {
     ctl.current?.pick(id);
@@ -206,17 +216,22 @@ export default function Cockpit({ start, onPeak, onDone }) {
   const launch = useCallback(() => {
     audioContext(); // inside the click or key press, so the sound may play
     const c = ctl.current;
-    if (!c) return;
-    if (c.launching) {
+    if (c?.launching) {
       c.skip();
       return;
     }
-    if (c.go()) {
+    if (c?.go()) {
+      setQueued(false);
       setLaunching(true);
       local.set(KEY, id);
       say(vehicleById(id)?.lines.launch?.[0]);
-    }
+    } else setQueued(true);
   }, [id, say]);
+  // (sat down with a launch asked for: it goes now)
+  const ready = boarded === id;
+  useEffect(() => {
+    if (queued && ready && !launching) launch();
+  }, [queued, ready, launching, launch]);
 
   const skip = useCallback(() => {
     audioContext();
@@ -238,14 +253,15 @@ export default function Cockpit({ start, onPeak, onDone }) {
     // not sat down yet (still boarding): straight out, as with no cockpit at
     // all, and the first visit's cover off with it
     delete document.documentElement.dataset.intro;
-    if (onMap.current) reveal();
+    if (onMap.current) uncover();
     peak();
     cbs.current.onDone?.();
-  }, [id, peak]);
+  }, [id, peak, uncover]);
 
   const pick = (to) => {
     if (launching || to === id) return;
     audioContext();
+    setQueued(false); // (another ride picked: it's a choice being made, not a launch)
     setId(to);
     setBoarded(null);
     setLine(null);
@@ -326,7 +342,6 @@ export default function Cockpit({ start, onPeak, onDone }) {
 
   if (fallback) return <Hyperspace entry sound onPeak={() => cbs.current.onPeak?.()} onDone={() => cbs.current.onDone?.()} />;
 
-  const ready = boarded === id;
   return createPortal(
     <div
       ref={root}
@@ -390,9 +405,9 @@ export default function Cockpit({ start, onPeak, onDone }) {
               </button>
             ))}
           </div>
-          <button ref={go} type="button" className="cockpit-go" onClick={launch} disabled={!ready && !launching}>
+          <button ref={go} type="button" className="cockpit-go" onClick={launch} aria-disabled={!ready && !launching ? 'true' : undefined} data-queued={queued || undefined}>
             <span className="cockpit-go-ring" aria-hidden="true" />
-            <span className="cockpit-go-text">{launching ? v.going : ready ? v.go : 'Boarding…'}</span>
+            <span className="cockpit-go-text">{launching ? v.going : ready ? v.go : queued ? 'Launching once seated…' : 'Boarding…'}</span>
             {!launching && <kbd aria-hidden="true">Space</kbd>}
           </button>
           <p className="cockpit-hint" aria-hidden="true">

@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { PLANETS, lifeFor, planetSpecOf } from './fixtures/expanse.js';
-import { DENSITY, KINDS, LIFE, expanseLife, isDead, kindAt } from './lifeTables';
+import { DENSITY, KINDS, LIFE, expanseLife, isDead, kindAt, lifeFor as lifeWith, systemOf } from './lifeTables';
+import { planetSpecOf as specWith } from './planetSpec';
+import { MOONS } from './fixtures/generated';
 
 const BODIES = ['beast', 'person', 'flyer', 'walker', 'speeder', 'drone', 'craft'];
 // the roster's named worlds (docs/research/2026-10-09-planet-geographies.md, “The roster”)
@@ -102,5 +104,32 @@ describe('lifeTables', () => {
   it('halves on low', () => {
     expect(DENSITY.low).toBe(0.5);
     expect(DENSITY.mid).toBe(1);
+  });
+});
+
+describe('moons', () => {
+  it('finds a moon’s system on its row', () => {
+    expect(systemOf(MOONS[0].id, { expanse: MOONS })).toEqual(MOONS[0].system);
+    const life = lifeWith(specWith(MOONS[0].id, { expanse: MOONS }), { expanse: MOONS });
+    expect(Array.isArray(life.air) && Array.isArray(life.ground)).toBe(true);
+  });
+});
+
+describe('a generated planet’s fauna', () => {
+  const biomes = [{ id: 'a' }, { id: 'b' }];
+  const quiet = { faction: null, traffic: 0, hazard: null };
+  const plans = [{ body: 'beast', role: 'herd', tint: '#806040', group: [4, 8] }, { body: 'flyer', role: 'flock', tint: '#c0c0c0', group: [4, 8] }];
+
+  it('lets a generated planet’s fauna walk it, scaled by its density', () => {
+    const { ground } = expanseLife('forest', biomes, quiet, { density: 1, plans });
+    expect(ground).toHaveLength(2);
+    expect(ground.map((r) => [r.model, r.perKm2, r.body])).toEqual([['figure', 0.3, 'beast'], ['figure', 0.3, 'flyer']]);
+    expect(ground[1].alt).toEqual([6, 50]);
+    expect(ground[0].alt).toBeUndefined();
+  });
+
+  it('has no wild rows with no fauna', () => {
+    const life = expanseLife('forest', biomes, quiet, { density: 0, plans });
+    expect(life.ground.filter((r) => r.kind === 'wild')).toEqual([]);
   });
 });

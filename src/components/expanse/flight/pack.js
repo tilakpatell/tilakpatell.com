@@ -28,6 +28,8 @@ export const PACK = {
     '/kit/space/roof.glb',
     '/kit/space/rover.glb',
     '/kit/space/solarpanel.glb',
+    '/kit/space/spaceship.glb',
+    '/kit/space/tree.glb',
     '/models/galaxy/surface/aat.glb',
     '/models/galaxy/surface/aat.lod1.glb',
     '/models/galaxy/surface/airspeeder.glb',
