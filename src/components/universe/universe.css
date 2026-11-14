@@ -260,6 +260,11 @@ body:has(.universe-panel) .guide-btn { display: none; }
   .universe-page[data-tucked] .universe-comms { right: calc(var(--tab-w) + 28px); }
 }
 .universe-title { margin-top: 0.4rem; color: var(--text); font-size: 1.5rem; font-weight: 600; }
+/* a generated place's facts (places/PlaceCard.jsx): label and value in two columns */
+.universe-facts { display: grid; grid-template-columns: auto 1fr; gap: 0.2rem 0.9rem; font-size: 0.85rem; }
+.universe-facts div { display: contents; }
+.universe-facts dt { color: var(--muted); }
+.universe-facts dd { margin: 0; color: var(--text); }
 .universe-back {
   display: inline-flex;
   align-items: center;

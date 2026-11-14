@@ -16,10 +16,10 @@ async function reach(entry) {
 const GENERATOR = /^src\/components\/expanse\/gen\/(space|sector|systems|things|stations|tables|names|keepOuts|grid|job)\.js$|^src\/components\/universe\/places\/(resolve|cards)\.js$/;
 
 // (nav.js itself; ⌘K, preloaded on every page; the home page's lower half, which reaches nav.js
-// through the mini-map once lane 6a's is merged: Task 14 adds it to LOADS_NAV then)
-const LOADS_NAV = ['src/components/universe/nav.js', 'src/components/CommandPalette.jsx'];
+// through lane 6a's mini-map)
+const LOADS_NAV = ['src/components/universe/nav.js', 'src/components/CommandPalette.jsx', 'src/components/interests/Interests.jsx'];
 describe('the generator stays off every page that loads nav.js', () => {
-  it.each([...LOADS_NAV, 'src/components/interests/Interests.jsx'])('%s reaches none of it', async (entry) => {
+  it.each(LOADS_NAV)('%s reaches none of it', async (entry) => {
     expect((await reach(entry)).filter((f) => GENERATOR.test(f))).toEqual([]);
   });
   it.each(LOADS_NAV)('%s loads nav.js, so the check above means something', async (entry) => {
@@ -29,5 +29,15 @@ describe('the generator stays off every page that loads nav.js', () => {
   // these pages may grow by: so the caller's lookup brings the park)
   it('leaves the park to the lookup nav.js is handed', async () => {
     expect(await reach('src/components/universe/nav.js')).not.toContain('src/components/universe/places/park.js');
+  });
+});
+
+// (the universe's page loads with the site's root: it shows a generated place's card the scene
+// found, and never resolves one itself. It reaches the generator's space.js already, through
+// online/rosterWhere.js, so this names the resolver and the cards, not GENERATOR)
+describe('the universe’s page', () => {
+  it('reaches neither the resolver nor the cards', async () => {
+    const files = await reach('src/pages/Universe.jsx');
+    expect(files.filter((f) => /places\/(resolve|cards)\.js$/.test(f))).toEqual([]);
   });
 });

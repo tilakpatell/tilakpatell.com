@@ -101,7 +101,7 @@ describe('the fixed poses', () => {
 
 describe('the endless space’s poses', () => {
   it('are measured on their own, the baseline’s fourteen left as they were', () => {
-    expect(ENDLESS_POSE_NAMES).toEqual(['old-rim', 'above-core', 'expanse-system']);
+    expect(ENDLESS_POSE_NAMES).toEqual(['old-rim', 'above-core', 'expanse-system', 'expanse-station']);
     for (const n of ENDLESS_POSE_NAMES) expect(POSE_NAMES).not.toContain(n);
   });
 
@@ -112,5 +112,22 @@ describe('the endless space’s poses', () => {
     const s = fullSector(UNIVERSE, 1, 0, 0).systems[0];
     expect(p.system).toBe(s.id);
     expect(Math.hypot(...sub(p.at, s.at))).toBeLessThan(s.reach);
+  });
+});
+
+describe('the generated station’s pose (lane 3)', () => {
+  it('is parked at E:1,0’s first station, facing it, the same each time, and holds no sector', async () => {
+    const { UNIVERSE, fullSector, stationsOf } = await import('../expanse/shared/gen');
+    const { ENDLESS_POSES } = await import('./poses');
+    const st = stationsOf(fullSector(UNIVERSE, 1, 0, 0, { things: false }))[0];
+    const p = poseFor('expanse-station');
+    expect(p.station).toBe(st.id);
+    expect(Math.hypot(p.at[0] - st.at[0], p.at[2] - st.at[2])).toBeLessThanOrEqual(1.5 * st.size + 4 + 1e-6); // (level: the park is a ship's height above its middle)
+    const to = [st.at[0] - p.at[0], st.at[2] - p.at[2]];
+    const l = Math.hypot(...to);
+    expect((-Math.sin(p.heading) * to[0] - Math.cos(p.heading) * to[1]) / l).toBeGreaterThan(0.99);
+    expect(poseFor('expanse-station')).toEqual(p);
+    expect(Object.values(ENDLESS_POSES['expanse-station']).every((v) => !Array.isArray(v) || v.length === 3)).toBe(true);
+    expect(JSON.stringify(ENDLESS_POSES['expanse-station'])).not.toMatch(/systems|stations|planets/);
   });
 });

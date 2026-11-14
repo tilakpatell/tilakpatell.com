@@ -9,7 +9,8 @@
 // orbitAt, moonAt, bodiesAt, spaceTime (orbits.js); systemReach (systems.js);
 // THING_BASE, THING_CELLS, THING_NEAR, THING_KINDS, SECTOR_EXTRAS, thingRow
 // (things.js); WONDER_KINDS (tables.js); STATION_BASE, stationsOf
-// (stations.js); extentOf (extent.js)
+// (stations.js); extentOf (extent.js); sectorJob, withMoons (job.js: a
+// sector as the worker makes it, and its moons put back)
 
 export { UNIVERSE, universeOf } from '../gen/seed';
 export { fullSector, placeIn, placeOf } from '../gen/space';
@@ -19,3 +20,4 @@ export { SECTOR_EXTRAS, THING_BASE, THING_CELLS, THING_KINDS, THING_NEAR, thingR
 export { WONDER_KINDS } from '../gen/tables';
 export { STATION_BASE, stationsOf } from '../gen/stations';
 export { extentOf } from '../gen/extent';
+export { sectorJob, withMoons } from '../gen/job';

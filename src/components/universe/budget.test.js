@@ -64,3 +64,11 @@ describe('universeBudget', () => {
     }
   });
 });
+
+describe('the generated places’ names shown at once (lane 3)', () => {
+  it('names 3 on low and 6 above, lowered with the discs and never below 1', () => {
+    expect([BUDGET.low.tags, BUDGET.mid.tags, BUDGET.high.tags, BUDGET.ultra.tags]).toEqual([3, 6, 6, 6]);
+    expect(universeBudget({ detail: 'mid' }, 3).tags).toBe(Math.round(6 * STEPS[3]));
+    expect(universeBudget({ detail: 'low' }, 3, true).tags).toBe(1);
+  });
+});
