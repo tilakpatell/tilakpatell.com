@@ -4,6 +4,7 @@ import { FROM, SIDE_EFFECT, uncomment } from '../../../../scripts/health/graph.m
 import * as gen from './gen';
 import * as orbits from './orbits';
 import * as extent from '../gen/extent';
+import * as job from '../gen/job';
 import * as genOrbits from '../gen/orbits';
 import * as seed from '../gen/seed';
 import * as space from '../gen/space';
@@ -18,11 +19,11 @@ import * as things from '../gen/things';
 const GEN = [
   'UNIVERSE', 'universeOf', 'fullSector', 'placeOf', 'placeIn', 'orbitAt', 'moonAt', 'bodiesAt', 'spaceTime',
   'systemReach', 'THING_BASE', 'THING_CELLS', 'THING_NEAR', 'THING_KINDS', 'SECTOR_EXTRAS', 'thingRow', 'WONDER_KINDS',
-  'STATION_BASE', 'stationsOf', 'extentOf',
+  'STATION_BASE', 'stationsOf', 'extentOf', 'sectorJob', 'withMoons',
 ];
 const LIGHT = ['orbitAt', 'moonAt', 'spaceTime', 'extentOf'];
 const FACE = [
-  [gen, [space, seed, genOrbits, systems, things, tables, stations, extent], GEN],
+  [gen, [space, seed, genOrbits, systems, things, tables, stations, extent, job], GEN],
   [orbits, [genOrbits, extent], LIGHT],
 ];
 

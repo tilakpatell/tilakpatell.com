@@ -14,7 +14,9 @@
 // `system` (into the nearest generated system, till it's built whole) and
 // `climb` (up to 50,000 above home, a few thousand a step), then `travel`
 // (super speed to a generated system and the jump to one in the next sector,
-// each waited for till the ship is at the place's own park). `--only a,b`
+// each waited for till the ship is at the place's own park, then a planet,
+// which moves, carried at its park for 30 s of the wall clock) and `dock`
+// (the jump to the nearest station, docked, shot, and off again). `--only a,b`
 // runs `start` and then only the steps named. Each records the
 // pops (the far layer's: a disc from nothing to whole in a frame), the
 // Expanse's own time a frame, the draw calls and triangles, the places within
@@ -27,7 +29,7 @@
 // judged: headless Chromium draws in software here, so it says little of a
 // real chip (its budget is universe/budget.js's `expanseMs`).
 import { spawn } from 'node:child_process';
-import { existsSync } from 'node:fs';
+import { existsSync, mkdirSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { createServer } from 'node:net';
 import { dirname, join } from 'node:path';
@@ -154,6 +156,62 @@ const leg = async (id, drive) => {
   const s = await page.evaluate(() => window.__universeDebug.state.ship);
   console.log(`travel    ${id} by ${drive}: parked at ${[s.x, s.y, s.z].map(Math.round)}`);
 };
+// a planet moves: the way-to-go marker shows it on the way, and once there
+// the ship is carried with it, still at its park 30 s on
+const planetLeg = async () => {
+  const id = 'E:1,0:0:0';
+  if (!(await until((id) => Boolean(window.__universeDebug.places.resolve(id)), id, 300000))) return fail(`travel: ${id} never loaded`);
+  await page.evaluate((id) => {
+    const d = window.__universeDebug;
+    const p = d.places.resolve(id);
+    d.teleport(p.at[0] + 1500, p.at[1], p.at[2], Math.PI / 2, 0);
+  }, id);
+  const from = await page.evaluate(() => {
+    const s = window.__universeDebug.state.ship;
+    return { at: [s.x, s.z], t0: window.__universe().t };
+  });
+  if (!(await page.evaluate((id) => window.__universeDebug.travel(id, 'super'), id))) return fail(`travel: ${id} wouldn't go`);
+  const name = await page.evaluate((id) => window.__universeDebug.places.resolve(id).name, id);
+  const marked = await until(
+    (name) => {
+      const nav = window.document.querySelector('.universe-nav[data-on]');
+      return Boolean(nav) && window.document.querySelector('.universe-nav-name')?.textContent === name;
+    },
+    name,
+    120000,
+  );
+  if (!marked) fail(`travel: the way-to-go marker never showed ${name}`);
+  const parked = ([id, from]) => {
+    const d = window.__universeDebug;
+    const u = window.__universe();
+    if (d.state.auto || d.state.jump || u.place !== id) return false;
+    const p = d.places.parkAt(id, from.at, from.t0, u.t);
+    const s = d.state.ship;
+    return Boolean(p) && Math.hypot(s.x - p.x, s.y - p.y, s.z - p.z) <= 1;
+  };
+  if (!(await until(parked, [id, from], 300000))) return fail(`travel: never parked at the planet ${id}`);
+  const t1 = await page.evaluate(() => window.__universe().t);
+  await until((t1) => window.__universe().t >= t1 + 30, t1, 120000);
+  const still = await page.evaluate(parked, [id, from]);
+  if (!still) fail(`travel: left behind by the planet ${id} within 30 s`);
+  else console.log(`travel    ${id} by super: parked and carried 30 s`);
+};
+const dockStep = async () => {
+  if (!(await until(() => window.__universeDebug.places.stations().length > 0, null, 300000))) return fail('dock: no station loaded');
+  const st = await page.evaluate(() => window.__universeDebug.places.stations()[0]);
+  if (!(await page.evaluate((id) => window.__universeDebug.travel(id, 'hyper'), st.id))) return fail(`dock: ${st.id} wouldn't go`);
+  if (!(await until((id) => window.__universe().docked === id, st.id, 300000))) return fail(`dock: never docked at ${st.id}`);
+  const out = join(ROOT, 'docs/superpowers/evidence/endless-universe-lane-3');
+  mkdirSync(out, { recursive: true });
+  await page.locator('canvas').first().screenshot({ path: join(out, 'dock.jpg'), type: 'jpeg', quality: 80 });
+  console.log(`dock      docked at ${st.name} (${st.id})`);
+  await page.evaluate(() => {
+    const d = window.__universeDebug;
+    const s = d.state.ship;
+    d.teleport(s.x + 400, s.y, s.z, s.heading, 0);
+  });
+  if (!(await until(() => window.__universe().docked === null, null, 120000))) fail('dock: still docked 400 off');
+};
 const travelStep = async () => {
   // (over the face into E:1,0 first, so its sector is loaded round the ship)
   await page.evaluate(() => window.__universeDebug.teleport(61000, 0, 0, -Math.PI / 2, 0));
@@ -166,6 +224,7 @@ const travelStep = async () => {
   });
   await leg('E:1,0:0', 'super');
   await leg('E:2,0:0', 'hyper');
+  await planetLeg();
 };
 
 try {
@@ -200,6 +259,7 @@ try {
     await step('climb', null, loaded27);
   }
   if (runs('travel')) await travelStep();
+  if (runs('dock')) await dockStep();
 } catch (e) {
   fail(String(e.message ?? e));
 } finally {

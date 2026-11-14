@@ -18,25 +18,26 @@
 //   nebula        { res: the volume's resolution against the screen, steps }
 //   gargantuan    the detail a gargantuan is built at
 //   planetMap     a generated planet's orbit map, [width, height]
+//   tags          the generated places' names shown at once (lane 3's)
 //
 // universeBudget({ tier, detail }, step = 0, floor = false) → a row, fresh
 //   The detail level in force picks the row (lib/device's: the visitor's
 //   pick, or Auto's); a detail it doesn't know goes by the tier; anything
 //   else is mid. `step` is the pace's quality step, 0 to 3, which takes
-//   discs, things and traffic down to 1, 0.75, 0.5 and 0.35 of the row
+//   discs, things, traffic and tags down to 1, 0.75, 0.5 and 0.35 of the row
 //   and, from 2, a ring of starfield and half the nebula's steps; `floor`
 //   is the quality's floor, a quarter of them. No step raises anything.
 
 export const BUDGET = {
-  low: { systemsBuilt: 1, discs: 400, slotSize: 400, nearSlots: 64, beyondRings: 1, thingsNear: 16, thingKinds: {}, workers: 1, expanseMs: 1, traffic: 2, events: 1, nebula: { res: 0.25, steps: 16 }, gargantuan: 'low', planetMap: [256, 128] },
-  mid: { systemsBuilt: 1, discs: 1200, slotSize: 400, nearSlots: 64, beyondRings: 1, thingsNear: 32, thingKinds: {}, workers: 2, expanseMs: 1.5, traffic: 4, events: 2, nebula: { res: 0.5, steps: 32 }, gargantuan: 'mid', planetMap: [256, 128] },
-  high: { systemsBuilt: 2, discs: 2500, slotSize: 400, nearSlots: 64, beyondRings: 2, thingsNear: 64, thingKinds: {}, workers: 3, expanseMs: 2, traffic: 6, events: 3, nebula: { res: 0.5, steps: 48 }, gargantuan: 'high', planetMap: [512, 256] },
-  ultra: { systemsBuilt: 3, discs: 4000, slotSize: 400, nearSlots: 64, beyondRings: 2, thingsNear: 96, thingKinds: {}, workers: 4, expanseMs: 2, traffic: 8, events: 3, nebula: { res: 1, steps: 64 }, gargantuan: 'high', planetMap: [512, 256] },
+  low: { systemsBuilt: 1, discs: 400, slotSize: 400, nearSlots: 64, beyondRings: 1, thingsNear: 16, thingKinds: {}, workers: 1, expanseMs: 1, traffic: 2, events: 1, nebula: { res: 0.25, steps: 16 }, gargantuan: 'low', planetMap: [256, 128], tags: 3 },
+  mid: { systemsBuilt: 1, discs: 1200, slotSize: 400, nearSlots: 64, beyondRings: 1, thingsNear: 32, thingKinds: {}, workers: 2, expanseMs: 1.5, traffic: 4, events: 2, nebula: { res: 0.5, steps: 32 }, gargantuan: 'mid', planetMap: [256, 128], tags: 6 },
+  high: { systemsBuilt: 2, discs: 2500, slotSize: 400, nearSlots: 64, beyondRings: 2, thingsNear: 64, thingKinds: {}, workers: 3, expanseMs: 2, traffic: 6, events: 3, nebula: { res: 0.5, steps: 48 }, gargantuan: 'high', planetMap: [512, 256], tags: 6 },
+  ultra: { systemsBuilt: 3, discs: 4000, slotSize: 400, nearSlots: 64, beyondRings: 2, thingsNear: 96, thingKinds: {}, workers: 4, expanseMs: 2, traffic: 8, events: 3, nebula: { res: 1, steps: 64 }, gargantuan: 'high', planetMap: [512, 256], tags: 6 },
 };
 
 export const STEPS = [1, 0.75, 0.5, 0.35];
 const FLOOR = 0.25;
-const SCALED = ['discs', 'thingsNear', 'traffic'];
+const SCALED = ['discs', 'thingsNear', 'traffic', 'tags'];
 
 const rowFor = ({ tier, detail } = {}) => BUDGET[detail] ?? BUDGET[tier] ?? BUDGET.mid;
 

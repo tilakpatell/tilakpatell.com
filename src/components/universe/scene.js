@@ -150,7 +150,7 @@ import { DEBRIS_DRIFT, SKY_FAR, buildDeepSpace } from './deepspace';
 import { FAR_SLOTS, FAR_STARS, createFarStars } from './farStars';
 import { universeBudget } from './budget';
 import { createLandmarks } from './landmarks';
-import { aimFrom, aimTargets, jumpPhase, nameShows } from './aim';
+import { aimFrom, jumpPhase, nameShows } from './aim';
 import { aligned, steerToward } from '../galaxy/space';
 import { createSectorPortals } from './sectorPortals';
 import { CROSS, GUN, gunHit, gunTransit } from './gunPortal';
@@ -233,8 +233,7 @@ import { createSky } from '../galaxy/sky';
 import { SYSTEMS } from '../galaxy/systems';
 import { UNIVERSE, createExpanse, sectorPools } from '../expanse/shared/space';
 import { spaceTime } from '../expanse/shared/gen';
-import { resolvePlace } from './places/resolve';
-import { followPark, parkPlace } from './places/park';
+import { createScenePlaces } from './places/scenePlaces';
 import { runtime } from '../../runtime';
 import { deedToEarn } from './economy';
 import { createPayLedger, hunterEarn } from './earnRules';
@@ -796,6 +795,7 @@ export async function create(canvas, ctx) {
       if (inExpanse(id) && id !== 'E:0,0') state.note = { text: `The Expanse · ${id}`, until: wall() + 3 };
     },
   });
+  const places = createScenePlaces({ group: map, universe, expanse, workers: ctx.rt?.workers ?? null, startAt: props.startAt, toScreen: (...a) => toScreen(...a), prepare: (o) => warm(o), emit: (e) => emit(e), note: (text) => (state.note = { text, until: wall() + 3 }), device: device() });
   // and the big things, the Maw, the nebulae and the big stars, as landmarks
   // on the sky, at least so big across from anywhere (landmarks.js)
   const landmarks = createLandmarks(map, { renderer, small, level: device().detail, skyFar: SKY_FAR });
@@ -815,10 +815,10 @@ export async function create(canvas, ctx) {
       aimSight.set(s.x + nx * 6, s.y + ny * 6, s.z + nz * 6).sub(camLocal);
       if (aimSight.lengthSq() > 1e-6) aimSight.normalize().toArray(aimNose);
       const sector = mapSectorOf(s.x, s.y, s.z);
-      id = aimFrom([camLocal.x, camLocal.y, camLocal.z], aimNose, aimTargets(sector, state.at), was)?.id ?? null;
+      id = aimFrom([camLocal.x, camLocal.y, camLocal.z], aimNose, places.aimTargets(sector, state.at), was)?.id ?? null;
     }
     state.aim = id;
-    if (id !== was) emit({ type: 'aim', id, name: id ? (destinationById(id)?.name ?? null) : null });
+    if (id !== was) emit({ type: 'aim', id, name: id ? (destinationById(id, places.look)?.name ?? null) : null });
   };
   // whose name shows (aim.js's nameShows): while flying, a place's only
   // where you look (within NAME_CONE of the nose), where it's real, picked
@@ -1817,7 +1817,7 @@ export async function create(canvas, ctx) {
     settle: () => {
       camQOn = false;
     },
-    resolve: (id) => resolvePlace(id, { universe, t: state.spaceT, sectors: expanse.sectors(), build: false }),
+    resolve: (id) => places.resolve(id), fetch: (id) => places.fetch(id), missing: (id) => places.missing(id),
   });
 
   // ── The ship ──
@@ -2190,7 +2190,8 @@ export async function create(canvas, ctx) {
       // so those joining don't all turn up in the same place
       // (a link out to a wonder, /universe/aurelia, starts parked beside it: props.startAt)
       // (never by the Maw, whose pull would have a new ship before it had flown)
-      state.ship = spawn(state.sel, !state.sel && props.startAt && props.startAt !== MAW.id && isGoal(props.startAt) ? parkFor(props.startAt, [0, 0]) : startAt());
+      state.ship = spawn(state.sel, (!state.sel && props.startAt && props.startAt !== MAW.id && (isGoal(props.startAt) ? parkFor(props.startAt, [0, 0]) : places.park(props.startAt, [0, 0]))) || startAt());
+      if (!state.sel && places.missing(props.startAt)) travel(props.startAt, 'hyper'); // (a link whose sector hadn't come: by the jump once it does)
       camQOn = false;
       state.at = state.sel && orbiting(state.ship, null) === state.sel ? state.sel : null;
       state.yaw = -state.ship.heading;
@@ -2825,14 +2826,15 @@ export async function create(canvas, ctx) {
     const place = !mate && isPlace(goal.id) ? byId(goal.id) : null;
     // (the war's front is neither a place nor a wonder: its own goal, front.js's)
     const war = goal.id === 'front' ? front?.goal() : null;
-    const wd = place || war || mate ? null : wonderById(goal.id);
-    const at = mate ? [mate.x, mate.y, mate.z] : place ? POSITIONS[goal.id] : war ? war.at : wd?.at;
+    const gm = !mate && !place && !war ? places.mark(goal.id, state.auto?.place?.dest ?? state.jump?.place?.dest) : null; // (a generated place: where it is now)
+    const wd = place || war || mate || gm ? null : wonderById(goal.id);
+    const at = mate ? [mate.x, mate.y, mate.z] : place ? POSITIONS[goal.id] : war ? war.at : gm ? gm.at : wd?.at;
     if (!at) return null;
     navIn.at = at;
     // (the Citadel gone, the diamond is round where its core was, not round the empty reach of its arms)
-    navIn.reach = mate ? 0.5 : place ? REACH[goal.id] : war ? war.r : wd.id === 'citadel' && siegeSt.down && citadelGeo ? citadelGeo.core * 0.5 : reachOf(wd);
+    navIn.reach = mate ? 0.5 : place ? REACH[goal.id] : war ? war.r : gm ? gm.reach : wd.id === 'citadel' && siegeSt.down && citadelGeo ? citadelGeo.core * 0.5 : reachOf(wd);
     navIn.way = goal.way;
-    navIn.name = mate ? mate.name : place ? place.label : war ? 'The front' : wd.name;
+    navIn.name = mate ? mate.name : place ? place.label : war ? 'The front' : gm ? gm.name : wd.name;
     return navIn;
   };
   let footReticle = null; // (the on-foot crosshair's last state: placeFootHud)
@@ -3655,7 +3657,7 @@ export async function create(canvas, ctx) {
   };
   // (at a waypoint in the region you're headed for, or a beacon, further
   // than farFights.js's FAR: seen from afar, somewhere to go)
-  const fightGoal = () => (state.auto ? destinationById(state.then?.id ?? state.auto.id) : null);
+  const fightGoal = () => (state.auto ? destinationById(state.then?.id ?? state.auto.id, places.look) : null);
   const farFight = (dt, t, live) => {
     if (!skirmishes.active && live && state.clock > state.skirmishAt && !hunters.count && !pieces.destroyerHere && !leviathans.busy && !meteors.count && state.view !== 'map') {
       state.skirmishAt = state.clock + SKIRMISH_EVERY[0] + Math.random() * (SKIRMISH_EVERY[1] - SKIRMISH_EVERY[0]);
@@ -4244,7 +4246,8 @@ export async function create(canvas, ctx) {
     if (!state.jump && pieces.riftAt && pieces.riftInside(state.ship)) riftThrough();
     if (!state.jump) (chasePilot(), followPlace());
     // the big ships moving through (the capital, the sector fleet, the big traffic): solids for the step, and for the autopilot to steer round
-    const moving = solidsWith(NO_SHIPS, pieces.solids, sectorFleet.solids, traffic?.solids(state.ship, 12), expanse.solids());
+    if (!state.held) state.ship = places.carry(state.ship, state.carryT ?? state.spaceT, state.spaceT), (state.carryT = state.spaceT);
+    const moving = solidsWith(NO_SHIPS, pieces.solids, sectorFleet.solids, traffic?.solids(state.ship, 12), expanse.solids(), places.solids());
     if (state.jump?.phase === 'align') input = { throttle: state.ship.speed > SHIP.cruise ? 0 : 0.35, ...steerToward(state.ship, state.jump.dir) }; // (coming round onto it, easing off to cruise)
     else if (state.jump) input = { throttle: 1, boost: true }; // (spooling up: straight on, flat out)
     else if (state.auto) {
@@ -4728,11 +4731,11 @@ export async function create(canvas, ctx) {
     }
     else if (!onFoot() && state.phoneNear && !state.auto && !state.jump && flying()) text = 'Unlock the phone';
     else if (!onFoot() && state.jump?.phase === 'align' && flying()) {
-      text = `Coming round to jump · ${destinationById(state.jump.id)?.name ?? state.jump.name ?? ''}`;
+      text = `Coming round to jump · ${destinationById(state.jump.id, places.look)?.name ?? state.jump.name ?? ''}`;
       plain = true;
     } else if (!onFoot() && state.aim && !state.jump && flying()) {
       // (the star the nose is on: J jumps to it)
-      text = `Jump · ${destinationById(state.aim)?.name ?? state.aim}`;
+      text = `Jump · ${destinationById(state.aim, places.look)?.name ?? state.aim}`;
       cap = 'J';
     }
     if (text === promptWas) return;
@@ -4927,6 +4930,7 @@ export async function create(canvas, ctx) {
     // the old halo and their clouds' shadows at 3, and they come back)
     for (const p of planets) p.setLevel(at.step);
     expanse.setStep(at.step, at.floor);
+    places.setStep(at.step, at.floor);
     return at;
   };
   function render(ms, now) {
@@ -5208,6 +5212,7 @@ export async function create(canvas, ctx) {
     const nowMs = state.held || reduced ? 0 : Date.now();
     state.spaceT = spaceTime(nowMs);
     expanse.update({ camera, ship: state.ship, t, dt, now: nowMs, hidden: onFoot() || Boolean(state.dive) || skySector === 'rickmorty' });
+    places.update({ ship: state.ship, camera, t: state.spaceT, flying: flying() && !onFoot() && !state.dive && !props.frozen, nose: state.ship ? noseOf(state.ship) : null, going: state.jump?.id ?? state.auto?.id ?? state.pending?.id ?? null, arrived: state.arrived, held: state.held });
     sectorPortals.update(t, camera);
     curve.update(t, sectorOf(camLocal.x, camLocal.y, camLocal.z) === 'rickmorty');
     sectorFleet.update(t, Boolean(state.ship) && sectorOf(state.ship.x, state.ship.y, state.ship.z) === 'rickmorty');
@@ -5795,7 +5800,7 @@ export async function create(canvas, ctx) {
 
   // in development, renderer counts and the ship, for checking from a browser
   if (import.meta.env.DEV) {
-    window.__universeDebug = { powers, power: (slot) => power(slot), charge: () => powers.fill(), THREE, post, scene, expanse, farStars, teleport: (x, y, z, heading = state.ship?.heading ?? 0, pitch = 0) => state.ship && (state.ship = { ...state.ship, x, y, z, heading, pitch, speed: 0 }), renderer, camera, traffic, hunters, wingmen, skirmishes, npcs, NPCS, meetNpc: (id) => state.ship && npcs?.add(NPCS[id], skirmishSpot(state.ship) ?? { x: state.ship.x, y: state.ship.y + 5, z: state.ship.z - 40 }), director, pieces, leviathans, meteors, fleet, novae, pilots, standing, deed, wanted, law, wonders: WONDERS.map((w) => ({ id: w.id, name: w.name, at: w.at, reach: reachOf(w) })), state, foot, planets, startFoot: async (o) => (await footCode.want(), startFoot(o)), travel: (id, drive) => travel(id, drive), places: { resolve: (id) => resolvePlace(id, { universe, t: state.spaceT, sectors: expanse.sectors(), build: false }), parkAt: (id, from, t0, t) => { const d = resolvePlace(id, { universe, t: t0, sectors: expanse.sectors(), build: false }); return d && followPark(d, parkPlace(d, from, t0), t); } }, diveAt, net: () => net, siege, citadelGeo, arms, readSiegeState, rockFields, smashed, front: () => front, happen: (id) => happen(id, state.ship), mines, escort: () => escort, eclipse: () => eclipse && { ...eclipse, k: eclipseK, key: key.intensity }, remover: () => remover, removerView, ram: (gap = 6, kind = 'tie') => {
+    window.__universeDebug = { powers, power: (slot) => power(slot), charge: () => powers.fill(), THREE, post, scene, expanse, farStars, teleport: (x, y, z, heading = state.ship?.heading ?? 0, pitch = 0) => state.ship && (state.ship = { ...state.ship, x, y, z, heading, pitch, speed: 0 }), renderer, camera, traffic, hunters, wingmen, skirmishes, npcs, NPCS, meetNpc: (id) => state.ship && npcs?.add(NPCS[id], skirmishSpot(state.ship) ?? { x: state.ship.x, y: state.ship.y + 5, z: state.ship.z - 40 }), director, pieces, leviathans, meteors, fleet, novae, pilots, standing, deed, wanted, law, wonders: WONDERS.map((w) => ({ id: w.id, name: w.name, at: w.at, reach: reachOf(w) })), state, foot, planets, startFoot: async (o) => (await footCode.want(), startFoot(o)), travel: (id, drive) => travel(id, drive), places: places.debug, diveAt, net: () => net, siege, citadelGeo, arms, readSiegeState, rockFields, smashed, front: () => front, happen: (id) => happen(id, state.ship), mines, escort: () => escort, eclipse: () => eclipse && { ...eclipse, k: eclipseK, key: key.intensity }, remover: () => remover, removerView, ram: (gap = 6, kind = 'tie') => {
       // a TIE (or `kind`) put `gap` dead ahead at your height, coming at you, for checking a ram from a browser
       const s = state.ship;
       if (!s || !hunters) return null;
@@ -5808,7 +5813,7 @@ export async function create(canvas, ctx) {
       return b.key;
     } };
     window.__universe = () => ({
-      t: state.spaceT,
+      t: state.spaceT, place: places.here()?.id ?? null, docked: places.docked(),
       calls: renderer.info.render.calls,
       triangles: renderer.info.render.triangles,
       geometries: renderer.info.memory.geometries,
@@ -6179,6 +6184,9 @@ export async function create(canvas, ctx) {
     travel(id, drive) {
       return travel(id, drive);
     },
+    place: (id) => places.find(id), // (a generated place, or null and a 'found' event when its sector lands)
+    fetchPlace: (id) => places.fetch(id),
+    nearby: (max) => places.nearby(max), // (the generated places round the ship, nearest first)
     // and what it shows: where the ship is and which way it points, where
     // it's going and how, whether the hyperdrive's charged, and the other
     // pilots online (null for the ship with none picked)
@@ -6198,6 +6206,7 @@ export async function create(canvas, ctx) {
         pilots: pilots.chart.map((p) => ({ id: p.id, name: p.name, x: p.x, z: p.z })),
         farFights: (state.fights ?? []).map((f) => ({ id: f.id, x: f.at[0], z: f.at[2], label: fightLabel(f.at) })), // (Fighting near …, for the nav map)
         front: front?.where() ?? null, // (the crew's war, for the nav map)
+        place: places.here()?.id ?? null, docked: places.docked(), t: state.spaceT, // (the generated place it's at, docked or not, and the shared clock)
       };
     },
     // the whole map: the view pulls out while you keep the ship (false
@@ -6286,6 +6295,7 @@ export async function create(canvas, ctx) {
       farStars.dispose();
       landmarks.dispose();
       expanse.dispose();
+      places.dispose();
       sectorPortals.dispose();
       gunPortal.dispose();
       curve.dispose();
