@@ -271,7 +271,9 @@ describe('the scene’s generated places', () => {
   });
   it('fetches a place outside its sectors from the worker pool, once a sector, and says when it’s found', async () => {
     const workers = fakePool();
-    const { p, events } = make({ workers, startAt: 'E:9,0:0:0' });
+    const { p, events, tick } = make({ workers, startAt: 'E:9,0:0:0' });
+    expect(workers.request).not.toHaveBeenCalled(); // (the start is asked for on the first update, not as the scene is made)
+    tick({ ...park, speed: 0 });
     expect(p.find('E:9,0:1')).toBeNull();
     const [a, b] = await Promise.all([p.fetch('E:9,0:0'), p.fetch('E:9,0:2')]);
     expect([a.id, b.id]).toEqual(['E:9,0:0', 'E:9,0:2']);

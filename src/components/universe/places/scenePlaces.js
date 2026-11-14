@@ -192,7 +192,7 @@ export function createScenePlaces({ group, universe = UNIVERSE, expanse, workers
 
   const placeEvent = (what, id, more = {}) => emit({ type: 'place', what, id, name: rowOf(id)?.name ?? resolve(id)?.name ?? null, ...more });
 
-  if (startAt && missing(startAt)) find(startAt); // (the link's sector asked for at once, seconds before a ship spawns)
+  let started = false; // (the link's sector, asked for on the first update: scene.js makes the places before its emit, and awaits between)
 
   return {
     setStep(step, floor) {
@@ -203,6 +203,10 @@ export function createScenePlaces({ group, universe = UNIVERSE, expanse, workers
     },
     update({ ship, camera, t: now, flying, nose = null, going = null, arrived = null, held = false, aim = null, picked = null }) {
       sectorsMemo = null;
+      if (!started) {
+        started = true;
+        if (startAt && missing(startAt)) find(startAt); // (seconds before a ship spawns, usually)
+      }
       const dt = held || lastT === null ? 0 : Math.max(0, now - lastT);
       lastT = now;
       t = now;
