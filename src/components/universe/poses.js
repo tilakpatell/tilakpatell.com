@@ -12,7 +12,8 @@
 // (turned `off` radians round from the line to the sun, so a limb shows
 // its terminator), facing the planet, the camera just behind it: the day
 // side toward the camera, which is how a visitor should arrive.
-import { BELT, HOME_RADIUS, ORDER, POSITIONS, REACH, SUN } from './layout';
+import { BELT, HOME_RADIUS, ORDER, POSITIONS, REACH, RIM, SUN } from './layout';
+import { UNIVERSE, fullSector } from '../expanse/shared/gen';
 import { MAW } from './maw';
 import { SHIP, parkAt } from './ship';
 import { byId } from './universes';
@@ -45,6 +46,15 @@ export const POSES = {
   'far-rim': { rim: 60, back: 1.6, rise: 0.3 },
 };
 export const POSE_NAMES = Object.keys(POSES);
+// and the endless space's, measured on their own (scripts/universe-endless-check.mjs,
+// universe-check's --poses): past where the rim was, heading out; 50,000 straight
+// above the core; parked in the first generated system past it, its orbits at t = 0
+export const ENDLESS_POSES = {
+  'old-rim': { out: RIM.outer + 500 },
+  'above-core': { up: 50000 },
+  'expanse-system': { sector: [1, 0, 0], system: 0, out: 0.8 },
+};
+export const ENDLESS_POSE_NAMES = Object.keys(ENDLESS_POSES);
 
 const sub = (a, b) => a.map((v, i) => v - b[i]);
 const add = (a, b, k = 1) => a.map((v, i) => v + b[i] * k);
@@ -64,7 +74,24 @@ const chase = (at, heading, { back = 1.6, rise = 0.3, look = null } = {}) => {
   return { eye: add(add(at, f, -back), UP, rise), look: look ?? add(at, f, 40) };
 };
 
+function endlessPose(name, p) {
+  if (name === 'old-rim') {
+    const at = [p.out, SHIP.height, 0];
+    const heading = headingOf([1, 0, 0]);
+    return { name, at, heading, ...chase(at, heading) };
+  }
+  if (name === 'above-core') {
+    const at = [0, p.up, 0];
+    return { name, at, heading: 0, ...chase(at, 0) };
+  }
+  const s = fullSector(UNIVERSE, ...p.sector, { things: false }).systems[p.system];
+  const at = add(s.at, unit([0.6, 0.15, 0.8]), s.reach * p.out);
+  const heading = headingOf(unit(sub([s.at[0], 0, s.at[2]], [at[0], 0, at[2]])));
+  return { name, system: s.id, at, heading, ...chase(at, heading, { look: s.at }) };
+}
+
 export function poseFor(name, { positions = POSITIONS, sun = SUN.at, reach = REACH } = {}) {
+  if (ENDLESS_POSES[name]) return endlessPose(name, ENDLESS_POSES[name]);
   const p = POSES[name];
   if (!p) return null;
   if (p.planet) {

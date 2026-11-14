@@ -22,7 +22,8 @@
 //   CANOPY, familyOf(node), crownMaterial(material), canopyLevel()
 //   cardGroups(geometry) → Int32Array, bakeCanopy(geometry, { foot, top, family, crown })
 //   canopy() → { wind, uniforms }; aimCanopy({ n, f, R }), lookCanopy(look),
-//     windCanopy({ strength, angle }), tickCanopy(dt), sunCanopy(dir), seeCanopy(point | null)
+//     windCanopy({ strength, angle }), tickCanopy(dt), sunCanopy(dir),
+//     seeCanopy(point | null, frame), placeCanopy() (as a crown's drawn)
 //   canopyShader(shader, { level }) → { vertexShader, fragmentShader, swapped } (pure)
 //
 // The level is the page's, from the device (high 'full': the wind's two
@@ -236,12 +237,25 @@ export function sunCanopy(dir) {
   u.normalize();
 }
 
-// where you are (your chest, in the world), for a crown in the way to
-// open round; null: none
-export function seeCanopy(point = null) {
+// where you are (your chest), for a crown in the way to open round; null:
+// none. In `frame`'s own space (the landing's root), and put in the world
+// as each crown is drawn (placeCanopy): the universe moves its map round the
+// camera for the draw alone (relative.js), so a point in the world worked
+// out before the draw is off by the camera's place. Without a frame, it's
+// in the world as it's drawn
+const see = { at: new THREE.Vector3(), frame: null };
+export function seeCanopy(point = null, frame = null) {
   const u = canopy().uniforms.uCanopySee.value;
-  if (point) u.set(point.x, point.y, point.z, 1);
-  else u.w = 0;
+  see.frame = point ? frame : null;
+  if (!point) u.w = 0;
+  else if (frame) see.at.set(point.x, point.y, point.z);
+  else u.set(point.x, point.y, point.z, 1);
+}
+// (a foliage material's onBeforeRender, models.js: where you are, in the world as drawn)
+export function placeCanopy() {
+  if (!see.frame) return;
+  tmp.copy(see.at).applyMatrix4(see.frame.matrixWorld);
+  canopy().uniforms.uCanopySee.value.set(tmp.x, tmp.y, tmp.z, 1);
 }
 
 // ── the shader ──

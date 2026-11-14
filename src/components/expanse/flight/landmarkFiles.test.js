@@ -34,6 +34,15 @@ describe('landmarkFiles', () => {
     for (const { id } of PLANETS) for (const level of ['low', 'mid', 'high']) for (const u of landmarkFiles(planetSpecOf(id), { kits, level })) expect(listed.has(u), `${id} ${level}: ${u}`).toBe(true);
   });
 
+  // (found on claude/trusting-sagan-tda0fm: the wreck's ship and the exotic trees weren't in the pack)
+  it('lists a generated planet’s places and exotic growth in the pack too', () => {
+    const listed = new Set(PACK.urls);
+    const base = planetSpecOf('e:13,-6:3:3');
+    const pois = ['ruins', 'wreck', 'outpost', 'monolith', 'signal'].map((kind, i) => ({ id: `poi-${i}`, name: kind, kind, dir: base.round.at, at: [i * 600, 0], r: 80, edge: 80 }));
+    for (const exotic of [null, 'crystal', 'glowing', 'floating', 'spires'])
+      for (const level of ['low', 'mid', 'high']) for (const u of landmarkFiles({ ...base, exotic, pois }, { kits, level })) expect(listed.has(u), `${exotic} ${level}: ${u}`).toBe(true);
+  });
+
   it('leaves the kit clutter out on low', () => {
     const low = landmarkFiles(planetSpecOf('endor'), { kits, level: 'low' });
     expect(low.some((u) => u.endsWith('giantpine.glb'))).toBe(false);

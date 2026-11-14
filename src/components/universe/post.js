@@ -611,7 +611,11 @@ export function createPost(renderer, scene, camera, { small = false, bloom: look
   let glow = true; // bloom, until lite() takes it off
   let folding = true; // the finish brings a softer scene up to the canvas (upscale), until lite({ fold: false })
   let sharp = 1; // a share of the renderer's pixel ratio the passes are drawn at
-  const at = { w: 0, h: 0, ratio: 0, full: 0 };
+  // what the passes were last sized for: the scene's size and sharpness, and the canvas's drawing
+  // buffer, which the bring-up's wide picture is the size of (it can come to its size after the
+  // first frame, the canvas's own 300 × 150 till then, with nothing else changed)
+  const at = { w: 0, h: 0, ratio: 0, full: 0, bw: 0, bh: 0 };
+  const buffer = new THREE.Vector2();
   return {
     get on() {
       return on;
@@ -651,8 +655,9 @@ export function createPost(renderer, scene, camera, { small = false, bloom: look
       }
       const full = renderer.getPixelRatio();
       const ratio = drawnAt(full);
-      if (w !== at.w || h !== at.h || ratio !== at.ratio || full !== at.full) {
-        Object.assign(at, { w, h, ratio, full });
+      renderer.getDrawingBufferSize(buffer);
+      if (w !== at.w || h !== at.h || ratio !== at.ratio || full !== at.full || buffer.x !== at.bw || buffer.y !== at.bh) {
+        Object.assign(at, { w, h, ratio, full, bw: buffer.x, bh: buffer.y });
         // (the finish's multisampling by the sharpness drawn at, before the
         // buffers are sized: made again either way)
         if (upscale) resample(samplesAt(ratio, { small, cap: samplesCap }));
@@ -674,8 +679,7 @@ export function createPost(renderer, scene, camera, { small = false, bloom: look
           up ??= { graded: picture(), wide: picture() };
           const read = composer.readBuffer;
           up.graded.setSize(Math.max(1, Math.round(read.width)), Math.max(1, Math.round(read.height)));
-          const px = renderer.getDrawingBufferSize(new THREE.Vector2());
-          up.wide.setSize(Math.max(1, px.x), Math.max(1, px.y));
+          up.wide.setSize(Math.max(1, buffer.x), Math.max(1, buffer.y));
           // (sharpened as hard as it was brought up: lib/three/finish's rcasStops)
           grade.rcas.uniforms.uSharp.value = 2 ** -rcasStops(ratio / full);
           grade.up = up;
@@ -902,8 +906,19 @@ export function spaceEnvironment(renderer, sky, opts) {
 // compiled again in the frame it happened (five programs: the frame through
 // Rick's portal, which crosses to the Curve's sun, was the slowest of a flight).
 //
-// createSpaceEnvironment(renderer, sky) → { make({ light, colour }) → a PMREM
-//   render target (yours to dispose), dispose() }
+// Its first make() compiled everything it draws with (the little scene's
+// spheres, three's background box, the generator's blur and its GGX pass)
+// and drew with them at once: the first draw waits on each link, the page
+// held for it (in software GL most of a 1.8 s task as the map was made,
+// just after the front door's welcome shows). prime() compiles them first,
+// a slice at a time, `frame` between (the map's prepFrame), and is kept once
+// they're linked, so the make() after it draws with shaders already made.
+// It reaches three's PMREMGenerator by its own names (_setSize,
+// _allocateTargets, _blurMaterial…): a three that renames them is primed for
+// nothing, and the make() after works as it did.
+//
+// createSpaceEnvironment(renderer, sky) → { prime({ frame }) → Promise,
+//   make({ light, colour }) → a PMREM render target (yours to dispose), dispose() }
 export function createSpaceEnvironment(renderer, sky) {
   const env = new THREE.Scene();
   const made = [];
@@ -921,6 +936,36 @@ export function createSpaceEnvironment(renderer, sky) {
   add(new THREE.SphereGeometry(2.2, 24, 12), new THREE.MeshBasicMaterial({ color: new THREE.Color(0.35, 0.45, 1.1) })).position.copy(FILL).multiplyScalar(7);
   const pmrem = new THREE.PMREMGenerator(renderer);
   return {
+    async prime({ frame } = {}) {
+      const SIZE = 256; // (fromScene's own)
+      if (typeof pmrem._setSize !== 'function' || typeof pmrem._allocateTargets !== 'function') return;
+      let into = null;
+      const stage = new THREE.Scene();
+      const quad = [];
+      try {
+        pmrem._setSize(SIZE);
+        // (its ping-pong target and the blur and GGX materials, made now as
+        // make() would make them, kept for it: a second call at this size
+        // makes nothing new)
+        into = pmrem._allocateTargets();
+        // the little scene and the background box, drawn into the cube's faces
+        const eye = new THREE.PerspectiveCamera(90, 1, 0.1, 100);
+        const box = new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshBasicMaterial({ name: 'PMREM.Background', side: THREE.BackSide, depthWrite: false, depthTest: false }));
+        quad.push(box.geometry, box.material);
+        const faces = new THREE.Scene();
+        faces.add(box, ...env.children.map((m) => new THREE.Mesh(m.geometry, m.material)));
+        await precompile(renderer, faces, eye, faces, into, frame ? { frame } : {});
+        // the blur and the GGX pass, drawn on its planes into its ping-pong target
+        const plane = pmrem._lodMeshes?.[0]?.geometry;
+        for (const m of [pmrem._blurMaterial, pmrem._ggxMaterial]) if (plane && m) stage.add(new THREE.Mesh(plane, m));
+        if (stage.children.length) await precompile(renderer, stage, eye, stage, pmrem._pingPongRenderTarget ?? into, frame ? { frame } : {});
+      } catch {
+        // (primed for nothing: make() compiles them itself, as before)
+      } finally {
+        into?.dispose();
+        for (const thing of quad) thing.dispose();
+      }
+    },
     make({ light = LIGHT, colour = null } = {}) {
       // (a star's colour as a tint, half way: its brightest channel kept at the white's)
       star.material.color.setRGB(9, 8.2, 7.2);

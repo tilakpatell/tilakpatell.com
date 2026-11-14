@@ -37,6 +37,9 @@ import { lockSpot, pageScript } from './lib/flight-probes.mjs';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const POSES = ['overview', 'falcon-sun', 'middleearth-limb', 'rickmorty', 'gaming', 'caribbean', 'middleearth', 'breakingbad', 'office', 'belt', 'maw', 'landing-middleearth', 'station', 'far-rim'];
+// (the endless space's own poses, poses.js's ENDLESS_POSES: taken when named in --poses, never by default,
+// so the baseline stays the fourteen)
+const ENDLESS = ['old-rim', 'above-core', 'expanse-system'];
 const TIERS = ['high', 'mid', 'low'];
 
 const args = {};
@@ -55,7 +58,7 @@ const FRAMES = Math.max(3, Number(args.frames) || 20);
 const DPR = Number(args.dpr) > 0 ? Number(args.dpr) : 1;
 const LEVEL = args.level === undefined ? null : Math.max(0, Math.floor(Number(args.level)));
 for (const t of tiers) if (!TIERS.includes(t)) throw new Error(`no tier ${t} (high, mid, low or all)`);
-for (const p of poses) if (!POSES.includes(p)) throw new Error(`no pose ${p} (${POSES.join(', ')})`);
+for (const p of poses) if (!POSES.includes(p) && !ENDLESS.includes(p)) throw new Error(`no pose ${p} (${[...POSES, ...ENDLESS].join(', ')})`);
 const outFor = (tier) => (args.baseline ? join(ROOT, 'lab/universe/baseline', tier) : args.out && tiers.length === 1 ? resolve(ROOT, args.out) : join(ROOT, 'lab/universe', tier));
 
 // ── the server: the dev server, as autopilot-check.mjs starts its preview ──

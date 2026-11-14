@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { BELT, POSITIONS, REACH, SUN } from './layout';
 import { MAW } from './maw';
 import { SHIP } from './ship';
-import { POSE_NAMES, poseFor } from './poses';
+import { ENDLESS_POSE_NAMES, POSE_NAMES, poseFor } from './poses';
+import { RIM } from './layout';
+import { UNIVERSE, fullSector } from '../expanse/shared/gen';
 import { HOME_RADIUS } from './layout';
 
 const sub = (a, b) => a.map((v, i) => v - b[i]);
@@ -94,5 +96,21 @@ describe('the fixed poses', () => {
     const to = norm(sub(POSITIONS[rim.toward], rim.at));
     expect(Math.hypot(...POSITIONS[rim.toward])).toBeGreaterThan(20000);
     expect(-Math.sin(rim.heading) * to[0] - Math.cos(rim.heading) * to[2]).toBeGreaterThan(0.99);
+  });
+});
+
+describe('the endless space’s poses', () => {
+  it('are measured on their own, the baseline’s fourteen left as they were', () => {
+    expect(ENDLESS_POSE_NAMES).toEqual(['old-rim', 'above-core', 'expanse-system']);
+    for (const n of ENDLESS_POSE_NAMES) expect(POSE_NAMES).not.toContain(n);
+  });
+
+  it('is past where the rim was, heading out; 50,000 above the core; in the first generated system past it', () => {
+    expect(poseFor('old-rim').at[0]).toBe(RIM.outer + 500);
+    expect(poseFor('above-core').at).toEqual([0, 50000, 0]);
+    const p = poseFor('expanse-system');
+    const s = fullSector(UNIVERSE, 1, 0, 0).systems[0];
+    expect(p.system).toBe(s.id);
+    expect(Math.hypot(...sub(p.at, s.at))).toBeLessThan(s.reach);
   });
 });

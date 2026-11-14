@@ -11,8 +11,7 @@
 // - Ember and Halcyon, two more suns: a boiling surface in their own colour,
 //   bright enough to bloom, a corona with streamers round it and a wide glow
 //   that grows stronger the further off you are, so from across the map each
-//   still reads as a star. Their planets go round them (deep.js's
-//   planetAt), lit by them: rock (craters
+//   still reads as a star. Their planets orbit, lit by them: rock (craters
 //   pressed into a height map, lit with relief), ocean (seas, coasts, ice
 //   caps, clouds, the sun's glint on the water) and gas.
 // - The Maw, the black hole: a shadow of pure black, a thin hard ring of
@@ -22,12 +21,10 @@
 //   faster, white-blue hot inside to red outside, one side brighter where it
 //   comes toward you; faint jets run out of the poles. lens() is where it is,
 //   for the post's bending of the light round it.
-// - The Veil and the Cradle, nebulae: soft clouds of many puffs facing you,
-//   upright to the map (noise painted once into a small texture, so a pixel
-//   is a couple of lookups), glowing in their colours with dark lanes of
-//   dust across them and young stars inside, each puff breathing, drifting
-//   and billowing on its own slow beat. A puff fades out as you come close
-//   to it, so flying through is a drift through haze, not a wall.
+// - The Veil and the Cradle, nebulae: soft clouds of puffs facing you upright
+//   (noise painted once into a small texture), in their colours, with dark
+//   dust lanes and young stars, each puff breathing and billowing on its own
+//   beat and fading as you come close: flying through is haze, not a wall.
 // - The Citadel of Ricks, as the show draws it: a great glass dome with a
 //   city of pale green towers under it on a bronze saucer, four arms out to
 //   smaller domed cities (one riding higher than the rest), a cluster of
@@ -678,10 +675,7 @@ export function buildDeepSpace({ small = false, tier = 'high' } = {}) {
       holder.rotation.set(0.25 * (i ? -1 : 1), 0, 0.15);
       g.add(holder);
       // going round its sun (deep.js's planetAt, the solid's own clock)
-      ticks.push((t) => {
-        const now = planetAt(w, pl, t);
-        holder.position.set(now[0] - w.at[0], now[1] - w.at[1], now[2] - w.at[2]);
-      });
+      ticks.push((t) => holder.position.fromArray(planetAt(w, pl, t)).sub(g.position));
       const base = new THREE.Color(pl.color);
       const kind = pl.kind === 'rock' ? 'ROCK' : pl.kind === 'ocean' ? 'OCEAN' : 'GAS';
       const look = {
@@ -1344,8 +1338,7 @@ export function buildDeepSpace({ small = false, tier = 'high' } = {}) {
       const hh = ((size * SKY_SIZE) / 2) * squash;
       const cu = (cell % 2) * 0.5;
       const cv = cell < 2 ? 0.5 : 0;
-      // each turning in its own plane, slowly, its own way round: a few
-      // minutes a turn (SKY_FRAG turns its picture about the cell's middle)
+      // each turning in its plane, its own way, a few minutes a turn (SKY_FRAG)
       const spin = (0.008 + turns() * 0.014) * (turns() < 0.5 ? -1 : 1);
       [
         [-1, -1],
@@ -1449,6 +1442,13 @@ mat3 tumble(float id) {
   let lastT = null;
   return {
     group,
+    // the suns' places again in the draw, which is round the camera
+    // (relative.js): the step the world moved by taken off, or the worlds
+    // are lit from wherever the camera is rather than from their sun
+    atDraw(shift) {
+      homeW.value.setFromMatrixPosition(group.matrixWorld).sub(shift);
+      for (const [id, light] of lightOf) light.value.copy(wonderGroups[id].position).applyMatrix4(group.matrixWorld).sub(shift);
+    },
     debris: debrisField, // (the streams' rocks, for the ship to hit: rockHits.js)
     // (`names` false: the wonders' names fade, the way in through a planet's
     // air being under a sky of its own; or a test, by wonder id, of whose
