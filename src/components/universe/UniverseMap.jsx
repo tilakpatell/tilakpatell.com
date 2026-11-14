@@ -56,7 +56,7 @@ const FOOT_ABILITIES = [
   { slot: 'second', key: 'V' },
 ];
 
-export default function UniverseMap({ selected, onSelect, onOpen, handle, frozen, ship, loadout, build = null, tune = null, canFit = false, hangar = false, onHangar, net = null, onEvent, onLand, onCrash, drive = 'super', charting = false, onMap, startAt = null, universe = null, skillFx = null, powerPicks = null }) {
+export default function UniverseMap({ selected, onSelect, onOpen, handle, frozen, ship, loadout, build = null, tune = null, canFit = false, hangar = false, onHangar, net = null, onEvent, onLand, onCrash, drive = 'super', charting = false, onMap, startAt = null, universe = null, skillFx = null, powerPicks = null, onLive = null }) {
   const labels = useRef({});
   const tags = useRef(null);
   const stick = useRef(null);
@@ -247,8 +247,16 @@ export default function UniverseMap({ selected, onSelect, onOpen, handle, frozen
       travel: (id, d) => view.current?.travel?.(id, d) ?? false,
       where: () => view.current?.where?.() ?? null,
       crossNow: () => view.current?.crossNow?.(),
+      // (the generated places: one found from the scene's sectors, one fetched off the main thread, those round the ship)
+      place: (id) => view.current?.place?.(id) ?? null,
+      fetchPlace: (id) => view.current?.fetchPlace?.(id) ?? Promise.resolve(null),
+      nearby: (max) => view.current?.nearby?.(max) ?? [],
     };
   }, [handle, on, view]);
+  // whether a scene runs to find a link's place: live, still loading, or flat (3D off, failed or lost)
+  useEffect(() => {
+    onLive?.(meant ? (on ? 'live' : 'loading') : 'flat');
+  }, [onLive, on, meant]);
 
   const focusable = selected ?? ORDER[0];
   const onKeyDown = (e) => {

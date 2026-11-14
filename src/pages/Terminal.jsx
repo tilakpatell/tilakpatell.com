@@ -12,6 +12,7 @@ import { LIGHTSABER, QUOTES } from '../components/terminal/quotes';
 import { COUNTRY_COUNT, PLACES } from '../data/places';
 import { education, profile, skills } from '../data/profile';
 import { DESTINATIONS, findDestination } from '../components/universe/nav';
+import { resolvePlace } from '../components/universe/places/resolve';
 import { roles, fmtShortRange, fmtMonth } from '../data/roles';
 import { projects } from '../data/projects';
 import { local, useDocumentTitle } from '../lib/hooks';
@@ -463,7 +464,8 @@ export default function Terminal() {
       },
       fly: (arg) => {
         if (!arg) return [L("  fly where? Try 'universe' for the list.", 'err')];
-        const d = findDestination(arg);
+        // (a generated place's id is made here, its one sector, on this page alone: nav.js never carries the generator)
+        const d = findDestination(arg, { place: (id) => resolvePlace(id) });
         if (!d) return [L(`  ${arg}: nowhere on the map. Try 'universe' for the list.`, 'err')];
         setTimeout(() => navigate(d.via ? d.to : `/universe/${d.id}`), 400);
         return [L(`  ${d.via ? 'Through the gate to' : 'Setting course for'} ${d.name} (${d.type.toLowerCase()})…`, 'ok')];

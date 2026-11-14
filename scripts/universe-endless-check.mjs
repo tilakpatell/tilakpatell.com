@@ -18,7 +18,12 @@
 // which moves, carried at its park for 30 s of the wall clock) and `dock`
 // (the jump to the nearest station, docked, shot, and off again) and `pick`
 // (inside a generated system facing its star: its name tag shows, and a
-// click on the star flies there). `--only a,b`
+// click on the star flies there), then on fresh pages `link` (a link to a
+// generated planet starts there with its card), `flat` (the same with 3D
+// off: a plain card, never a wait for ever) and `terminal` (`fly E:9,0:0`,
+// its one sector made on the terminal's page, timed at 4× CPU throttling).
+// `dock` also waits for the hangar to open on its shipyard and stay shut
+// after Escape. `--only a,b`
 // runs `start` and then only the steps named. Each records the
 // pops (the far layer's: a disc from nothing to whole in a frame), the
 // Expanse's own time a frame, the draw calls and triangles, the places within
@@ -207,12 +212,110 @@ const dockStep = async () => {
   mkdirSync(out, { recursive: true });
   await page.screenshot({ path: join(out, 'dock.jpg'), type: 'jpeg', quality: 80 });
   console.log(`dock      docked at ${st.name} (${st.id})`);
+  // (a trip that ended at the station opens the hangar on its shipyard, once: Escape shuts it and it stays shut)
+  if (!(await until(() => Boolean(window.document.querySelector('.hangar-panel .hangar-body[data-tab="shipyard"]')), null, 60000))) fail('dock: the hangar never opened');
+  else {
+    mkdirSync(EVIDENCE, { recursive: true });
+    await page.screenshot({ path: join(EVIDENCE, 'hangar.jpg'), type: 'jpeg', quality: 80 });
+    await page.keyboard.press('Escape');
+    if (!(await until(() => !window.document.querySelector('.hangar-panel'), null, 30000))) fail('dock: Escape left the hangar open');
+    for (let i = 0; i < 20; i++) {
+      if (await page.evaluate(() => Boolean(window.document.querySelector('.hangar-panel')))) {
+        fail('dock: the hangar opened again');
+        break;
+      }
+      await page.waitForTimeout(250);
+    }
+    if ((await page.evaluate(() => window.__universe().docked)) !== st.id) fail('dock: no longer docked after Escape');
+  }
   await page.evaluate(() => {
     const d = window.__universeDebug;
     const s = d.state.ship;
     d.teleport(s.x + 400, s.y, s.z, s.heading, 0);
   });
   if (!(await until(() => window.__universe().docked === null, null, 120000))) fail('dock: still docked 400 off');
+};
+const EVIDENCE = join(ROOT, 'docs/superpowers/evidence/endless-universe-lane-3');
+const PLOTTING = 'Plotting a course…';
+const FLAT = 'Out in the endless universe. Fly here in 3D.';
+// a page of its own, as a fresh visitor with a ship (and anything else set before it loads)
+const freshPage = async (more = {}) => {
+  const c = await browser.newContext({ viewport: { width: 1280, height: 720 }, deviceScaleFactor: 1 });
+  await c.addInitScript(
+    ([q, more]) => {
+      window.localStorage.setItem('tp-intro', '1');
+      window.localStorage.setItem('tp-start', '"universe"');
+      window.localStorage.setItem('tp-quality', q);
+      window.localStorage.setItem('tp-universe-ship', '"falcon"');
+      for (const [k, v] of Object.entries(more)) window.localStorage.setItem(k, v);
+    },
+    [QUALITY, more],
+  );
+  const p = await c.newPage();
+  p.on('pageerror', (e) => errors.push(String(e.message ?? e)));
+  p.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
+  return p;
+};
+const waitOn = (p, fn, arg, timeout = 300000) =>
+  p
+    .waitForFunction(fn, arg, { timeout, polling: 500 })
+    .then(() => true)
+    .catch(() => false);
+const title = () => window.document.querySelector('.universe-panel .universe-title')?.textContent ?? null;
+const linkStep = async () => {
+  const id = 'E:1,0:0:0';
+  const p = await freshPage();
+  await p.goto(`${base}/?quality=${QUALITY}#/universe/${id}`, { waitUntil: 'domcontentloaded', timeout: 180000 });
+  if (!(await waitOn(p, ([plotting]) => {
+    const t = window.document.querySelector('.universe-panel .universe-title')?.textContent;
+    return Boolean(t) && (t === plotting || Boolean(window.__universeDebug?.places.resolve('E:1,0:0:0')));
+  }, [PLOTTING]))) return fail('link: no card');
+  const name = await p.evaluate((id) => window.__universeDebug?.places.resolve(id)?.name ?? null, id);
+  if (!(await waitOn(p, ([id, name]) => window.document.querySelector('.universe-panel .universe-title')?.textContent === name && window.__universe?.().place === id, [id, name]))) return fail(`link: never at ${id} with its card`);
+  mkdirSync(EVIDENCE, { recursive: true });
+  await p.screenshot({ path: join(EVIDENCE, 'card.jpg'), type: 'jpeg', quality: 80 });
+  console.log(`link      ${id}: started at ${name}, its card up`);
+  // (a place that isn't there: the card goes, it doesn't wait for ever)
+  await p.goto(`${base}/?quality=${QUALITY}#/universe/E:1,0:0:99`, { waitUntil: 'domcontentloaded', timeout: 180000 });
+  await p.reload({ waitUntil: 'domcontentloaded', timeout: 180000 });
+  if (!(await waitOn(p, (plotting) => typeof window.__universe === 'function' && window.document.querySelector('.universe-panel .universe-title')?.textContent !== plotting, PLOTTING))) fail('link: E:1,0:0:99 stuck plotting');
+  await p.context().close();
+};
+const flatStep = async () => {
+  const id = 'E:1,0:0:0';
+  const p = await freshPage({ 'tp-3d': 'off' });
+  await p.goto(`${base}/?quality=${QUALITY}#/universe/${id}`, { waitUntil: 'domcontentloaded', timeout: 180000 });
+  const ok = await waitOn(p, ([id, flat]) => Boolean(window.document.querySelector('.universe-flat')) && window.document.querySelector('.universe-panel .universe-title')?.textContent === id && window.document.querySelector('.universe-panel')?.textContent.includes(flat), [id, FLAT], 120000);
+  if (!ok) return fail('flat: no plain card with 3D off');
+  for (let i = 0; i < 20; i++) {
+    if ((await p.evaluate(title)) === PLOTTING) return fail('flat: plotting with no scene');
+    await p.waitForTimeout(1000);
+  }
+  mkdirSync(EVIDENCE, { recursive: true });
+  await p.screenshot({ path: join(EVIDENCE, 'card-flat.jpg'), type: 'jpeg', quality: 80 });
+  console.log(`flat      ${id}: a plain card with 3D off, no wait`);
+  await p.context().close();
+};
+const terminalStep = async () => {
+  const p = await freshPage();
+  await p.goto(`${base}/#/terminal`, { waitUntil: 'domcontentloaded', timeout: 180000 });
+  const cdp = await p.context().newCDPSession(p);
+  await cdp.send('Emulation.setCPUThrottlingRate', { rate: 4 });
+  await p.evaluate(() => {
+    window.__longest = 0;
+    new window.PerformanceObserver((l) => {
+      for (const e of l.getEntries()) window.__longest = Math.max(window.__longest, e.duration);
+    }).observe({ type: 'longtask', buffered: false });
+  });
+  const input = p.locator('input').first();
+  await input.waitFor({ timeout: 120000 });
+  await input.fill('fly E:9,0:0');
+  await input.press('Enter');
+  if (!(await waitOn(p, () => window.document.body.textContent.includes('Setting course for'), null, 120000))) return fail('terminal: no course set for E:9,0:0');
+  const ms = await p.evaluate(() => window.__longest);
+  console.log(`terminal  fly E:9,0:0 at 4× throttling: longest task ${Math.round(ms)} ms`);
+  if (ms > 1500) fail(`terminal: a ${Math.round(ms)} ms task`);
+  await p.context().close();
 };
 const pickStep = async () => {
   const id = 'E:1,0:0';
@@ -294,6 +397,9 @@ try {
   if (runs('travel')) await travelStep();
   if (runs('dock')) await dockStep();
   if (runs('pick')) await pickStep();
+  if (runs('link')) await linkStep();
+  if (runs('flat')) await flatStep();
+  if (runs('terminal')) await terminalStep();
 } catch (e) {
   fail(String(e.message ?? e));
 } finally {

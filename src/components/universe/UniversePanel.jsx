@@ -16,6 +16,7 @@ import { useTouring } from '../tour/useTouring';
 import ModelCredits from '../ModelCredits';
 import { CopyButton } from '../ui';
 import { ABOUT, PICK_A_SHIP, moonWay } from './words';
+import PlaceCard from './places/PlaceCard';
 
 // Beside the map (a bottom sheet on a phone). With nothing selected: the
 // ships to fly (or how to fly the one you're in, and what it's fitted with
@@ -142,7 +143,7 @@ function Exits({ onClassic }) {
   );
 }
 
-export default function UniversePanel({ universe, wonder = null, onFly = null, onSelect, onEnter, onWhole, leaving, ship, loadout, build = null, onShip, onHangar, onClassic, tucked: tuckedAsked = false, onTuck, onNav }) {
+export default function UniversePanel({ universe, wonder = null, docked = null, onFly = null, onSelect, onEnter, onWhole, leaving, ship, loadout, build = null, onShip, onHangar, onClassic, tucked: tuckedAsked = false, onTuck, onNav }) {
   // (out of hiding while a tour runs: its stops are on it)
   const touring = useTouring();
   const tucked = tuckedAsked && !touring;
@@ -201,7 +202,7 @@ export default function UniversePanel({ universe, wonder = null, onFly = null, o
   // a wonder, from a link out to it (/universe/aurelia): what it is, and the way there
   if (!universe && wonder) {
     return (
-      <aside ref={panel} className="universe-panel dialog overflow-y-auto" data-tour="panel" aria-label={wonder.name}>
+      <aside ref={panel} className="universe-panel dialog overflow-y-auto" data-tour="panel" aria-label={wonder.name ?? wonder.id}>
         {onTuck && <Tuck onTuck={toggle} />}
         <div className="universe-links flex flex-wrap items-center gap-x-4 gap-y-1">
           <button type="button" className="universe-back" onClick={onWhole}>
@@ -213,17 +214,24 @@ export default function UniversePanel({ universe, wonder = null, onFly = null, o
             </button>
           )}
         </div>
-        <p className="eyebrow mt-3" style={{ color: wonder.color }}>
-          {wonder.type}
-        </p>
-        <h2 className="universe-title">{wonder.name}</h2>
-        <p className="mt-3 text-sm leading-relaxed text-body">{wonder.about}</p>
-        {onFly ? (
-          <button type="button" className="btn btn-primary universe-enter mt-4" onClick={() => onFly(wonder.id)} disabled={leaving}>
-            Fly here <RiArrowRightLine className="h-4 w-4" aria-hidden="true" />
-          </button>
+        {wonder.generated ? (
+          // (a generated place: its card, found by the scene, or waiting on it)
+          <PlaceCard dest={wonder} docked={docked === wonder.id} onFly={onFly} onHangar={onHangar} leaving={leaving} />
         ) : (
-          <p className="mt-4 text-sm text-muted">{PICK_A_SHIP}</p>
+          <>
+            <p className="eyebrow mt-3" style={{ color: wonder.color }}>
+              {wonder.type}
+            </p>
+            <h2 className="universe-title">{wonder.name}</h2>
+            <p className="mt-3 text-sm leading-relaxed text-body">{wonder.about}</p>
+            {onFly ? (
+              <button type="button" className="btn btn-primary universe-enter mt-4" onClick={() => onFly(wonder.id)} disabled={leaving}>
+                Fly here <RiArrowRightLine className="h-4 w-4" aria-hidden="true" />
+              </button>
+            ) : (
+              <p className="mt-4 text-sm text-muted">{PICK_A_SHIP}</p>
+            )}
+          </>
         )}
         {/* this view has its own address: a way to share it */}
         <CopyButton className="universe-back mt-4" text={window.location.href} label="Copy a link to this view" />
