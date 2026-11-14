@@ -144,9 +144,9 @@ describe('the engine’s build kept on the visitor’s disk', () => {
   it('reads the build’s numbered series, each file followed by the next few of its own', () => {
     const next = following(['scene.json', 'scene-t-0.dbx', 'scene-t-0.pixels', 'scene-t-1.dbx', 'scene-t-1.stored.pixels', 'scene-t-2.dbx', 'scene-t-2.pixels', 'scene-t-10.pixels', 'scene-terrain-tile-3_4.bfsw'], 2);
     expect(next.get('scene-t-0.dbx')).toEqual(['scene-t-1.dbx', 'scene-t-2.dbx']);
-    // (a stored texture is a series of its own; a number's order, not its text's)
-    expect(next.get('scene-t-0.pixels')).toEqual(['scene-t-2.pixels', 'scene-t-10.pixels']);
-    expect(next.get('scene-t-1.stored.pixels')).toEqual([]);
+    // Texture bytes are selected by the engine's mip plan, never read ahead as whole files.
+    expect(next.has('scene-t-0.pixels')).toBe(false);
+    expect(next.has('scene-t-1.stored.pixels')).toBe(false);
     expect(next.has('scene.json')).toBe(false);
     expect(next.has('scene-terrain-tile-3_4.bfsw')).toBe(false);
   });
@@ -263,7 +263,81 @@ describe('the engine’s build kept on the visitor’s disk', () => {
 
   it('orders a round’s files as the loader asks for them, the page’s own left out', () => {
     const paths = ['runtime/world-play.mjs', 'ui/main.js', 'index.html', 'scene-m-1.res', 'scene-collision.bfsw', 'scene-t-1.pixels', 'scene-t-10.dbx', 'scene-t-1.dbx', 'scene.json', 'system-0.xml', 'scene-tc-0.bin', 'scene-terrain-tiles.json', 'scene-terrain-tile-3_4.bfsw', 'scene-m-0.res', 'world-solutions.bin', 'programs.json'];
-    expect(warmOrder(paths)).toEqual(['system-0.xml', 'scene.json', 'world-solutions.bin', 'scene-t-1.dbx', 'scene-t-1.pixels', 'scene-t-10.dbx', 'scene-m-0.res', 'scene-m-1.res', 'scene-tc-0.bin', 'scene-collision.bfsw', 'scene-terrain-tile-3_4.bfsw', 'scene-terrain-tiles.json']);
+    expect(warmOrder(paths)).toEqual(['programs.json', 'system-0.xml', 'scene.json', 'world-solutions.bin', 'scene-t-1.dbx', 'scene-t-10.dbx', 'scene-m-0.res', 'scene-m-1.res', 'scene-tc-0.bin', 'scene-collision.bfsw', 'scene-terrain-tile-3_4.bfsw', 'scene-terrain-tiles.json']);
+  });
+
+  it('starts with the engine module and its program lists, as the loader reads them, then the scene pack', () => {
+    const paths = ['scene.json', 'scene-pack.bin', 'cooked-programs.json', 'original-frame-graph.js', 'original-frame-graph.wasm', 'pipelines.json', 'compute-programs.json', 'programs.json', 'compute-pipelines.json', 'scene-pack.json', 'system-0.pixels'];
+    expect(warmOrder(paths)).toEqual(['original-frame-graph.wasm', 'programs.json', 'compute-programs.json', 'cooked-programs.json', 'pipelines.json', 'compute-pipelines.json', 'scene-pack.json', 'scene-pack.bin', 'system-0.pixels', 'scene.json']);
+  });
+
+  it('skips the names it is told the round will not read from the root', () => {
+    const paths = ['scene.json', 'scene-p-0.dbx', 'scene-p-1.dbx', 'scene-m-0.res', 'cooked-programs.json', 'programs.json'];
+    expect(warmOrder(paths, new Set(['scene-p-0.dbx', 'scene-p-1.dbx', 'scene.json', 'cooked-programs.json']))).toEqual(['programs.json', 'scene-m-0.res']);
+    expect(warmOrder(paths)).toEqual(['programs.json', 'cooked-programs.json', 'scene.json', 'scene-p-0.dbx', 'scene-p-1.dbx', 'scene-m-0.res']);
+  });
+
+  it('warms only what every roll reads: not the packed files, not the root copies a lighting variant swaps', async () => {
+    const dir = '/battlefront/engine/main-da7a51b3/';
+    const files = ['programs.json', 'cooked-programs.json', 'scene-pack.json', 'scene-pack.bin', 'scene.json', 'scene-p-0.dbx', 'scene-p-1.dbx', 'scene-t-0.dbx', 'scene-m-0.res', 'scene-m-1.res', 'scene-collision.bfsw',
+      'scene-cloudy/variant.json', 'scene-cloudy/scene.json', 'scene-cloudy/cooked-programs.json', 'scene-cloudy/scene-pack.json', 'scene-cloudy/scene-pack.bin'];
+    const docs = {
+      'scene-pack.json': { 'scene-p-0.dbx': [0, 10], 'scene-p-1.dbx': [10, 10], 'scene-t-0.dbx': [20, 4] },
+      'scene-cloudy/variant.json': { schema: 'bf2-play-site-variant/1', name: 'cloudy', files: ['scene.json', 'cooked-programs.json', 'scene-pack.json', 'scene-pack.bin'] },
+    };
+    const warmed = [], read = [];
+    const win = {
+      navigator: { serviceWorker: { controller: {}, addEventListener: () => {} }, connection: {} },
+      location: { pathname: dir },
+      document: { body: { classList: { contains: () => true } } },
+      MutationObserver: class { observe() {} },
+      fetch: async (url, init) => {
+        const path = url.slice(dir.length);
+        if (path === 'tp-files.json') return { status: 200, json: async () => ({ files }) };
+        if (!init?.headers?.['x-tp-warm']) { read.push(path); return docs[path] ? { status: 200, json: async () => docs[path] } : { status: 404 }; }
+        warmed.push(path);
+        return { status: 204 };
+      },
+    };
+    warmEngineBuild(win, warmOrder);
+    await new Promise((r) => setTimeout(r, 20));
+    expect(read).toEqual(['scene-pack.json', 'scene-cloudy/variant.json']);
+    expect([...warmed].sort()).toEqual(['programs.json', 'scene-collision.bfsw', 'scene-m-0.res', 'scene-m-1.res']);
+  });
+
+  it('skips nothing when the pack or a variant list cannot be read', async () => {
+    const dir = '/battlefront/engine/main-da7a51b3/';
+    const files = ['scene-pack.json', 'scene-p-0.dbx', 'scene-m-0.res', 'scene-cloudy/variant.json'];
+    const warmed = [];
+    const win = {
+      navigator: { serviceWorker: { controller: {}, addEventListener: () => {} }, connection: {} },
+      location: { pathname: dir },
+      document: { body: { classList: { contains: () => true } } },
+      MutationObserver: class { observe() {} },
+      fetch: async (url, init) => {
+        const path = url.slice(dir.length);
+        if (path === 'tp-files.json') return { status: 200, json: async () => ({ files }) };
+        if (!init?.headers?.['x-tp-warm']) { if (path === 'scene-pack.json') throw new TypeError('Failed to fetch'); return { status: 503 }; }
+        warmed.push(path);
+        return { status: 204 };
+      },
+    };
+    warmEngineBuild(win, warmOrder);
+    await new Promise((r) => setTimeout(r, 20));
+    expect([...warmed].sort()).toEqual(['scene-m-0.res', 'scene-p-0.dbx', 'scene-pack.json']);
+  });
+
+  it('leaves normal, stored and variant texture payloads to the engine mip requests', async () => {
+    const files = ['scene-t-0.pixels', 'scene-t-1.pixels', 'scene-t-1.stored.pixels', 'scene-cloudy/scene-t-2.pixels', 'scene-t-0.dbx', 'scene-t-1.dbx'];
+    expect(warmOrder(files)).toEqual(['scene-t-0.dbx', 'scene-t-1.dbx']);
+    expect([...following(files).keys()]).toEqual(['scene-t-0.dbx', 'scene-t-1.dbx']);
+    const dir = '/battlefront/engine/main-da7a51b3/';
+    const w = worker(undefined, files);
+    // An older tab can still send whole-payload warm requests: acknowledge without a download.
+    for (const path of files.slice(0, 4)) expect((await w.get(dir + path, { headers: { 'x-tp-warm': '1' } })).status).toBe(204);
+    expect(w.asked).toEqual([]);
+    expect((await w.get(dir + files[0])).body).toBe(`bytes of ${ORIGIN}${dir}${files[0]}`);
+    expect(w.asked).toEqual([ORIGIN + dir + files[0]]);
   });
 
   it('warms the round’s files once the front end shows and the worker answers, four at a time', async () => {

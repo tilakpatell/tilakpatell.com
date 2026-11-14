@@ -75,6 +75,19 @@ export function starK(dist, real) {
 export const brightness = (dist, real) => Math.min(1, Math.max(DIM_LEAST, (real * BRIGHT_AT) / Math.max(dist, 1e-6)));
 export const starPx = (k) => 7 + 13 * k;
 
+// how a generated speck shows: like a star of the old sky under it (galaxy/sky.js's, most faint,
+// a few bright), not a place's marker. Its brightness by how far off it is (`bright`,
+// expanse/scene/levels.js's speckBright), times a magnitude of its own (`m`, 0…1, seeded by where
+// it is) cubed, so most are faint; its light and its core by that, and from a pixel and a half
+// across to eight. (A speck was drawn as a place is, seven pixels at least with a white core at
+// full strength however faint: past the far plane nearly every one is at the dimmest, so the
+// sectors' 26,000 came out an even snow over the sky.)
+export const SPECK_LOOK = { least: 0.2, px: [1.5, 8] };
+export function speckLook(bright, m) {
+  const lum = bright * (SPECK_LOOK.least + (1 - SPECK_LOOK.least) * m * m * m);
+  return { lum, px: SPECK_LOOK.px[0] + (SPECK_LOOK.px[1] - SPECK_LOOK.px[0]) * Math.sqrt(lum) };
+}
+
 // every place that can be a star far off: the fandoms' worlds (their
 // swatch), the Rick and Morty sector's, the home system's stations (folded
 // into home) and every wonder (its colour, or its first) but the big ones,
@@ -106,6 +119,7 @@ const VERT = /* glsl */ `
   varying vec3 vColor;
   varying float vK;
   varying float vBright;
+  varying float vLum;
   varying float vFocus;
   varying float vDisc;
   varying float vPx;
@@ -116,6 +130,7 @@ const VERT = /* glsl */ `
     float k = aK;
     float size = aSize;
     float bright = aBright;
+    float lum = 1.0; // (a place at full strength; a speck by speckLook)
     vDisc = 0.0;
     vLight = vec3(0.0);
     if (aKind > 0.5 && aKind < 1.5) {
@@ -127,7 +142,10 @@ const VERT = /* glsl */ `
       float real = max(${REAL_LEAST.toFixed(1)}, aR * ${REAL_REACHES.toFixed(1)});
       float q = ${BRIGHT_AT.toFixed(1)} * real / d;
       bright = clamp(q * q, ${SPECK_DIM}, 1.0);
-      size = 7.0 + 13.0 * bright;
+      // (its own magnitude, from where it is in its sector: speckLook)
+      float m = fract(sin(dot(position, vec3(0.12989, 0.78233, 0.37719))) * 43758.5453);
+      lum = bright * (${SPECK_LOOK.least.toFixed(2)} + ${(1 - SPECK_LOOK.least).toFixed(2)} * m * m * m);
+      size = ${SPECK_LOOK.px[0].toFixed(1)} + ${(SPECK_LOOK.px[1] - SPECK_LOOK.px[0]).toFixed(1)} * sqrt(lum);
       color = aColor * (1.1 + 2.0 * bright);
       k = aK * slot.w * smoothstep(uFar * ${(1 - FADE).toFixed(2)}, uFar, d);
     } else if (aKind > 1.5) {
@@ -149,6 +167,7 @@ const VERT = /* glsl */ `
     vColor = color;
     vK = k;
     vBright = bright;
+    vLum = lum;
     vFocus = aFocus;
   }
 `;
@@ -166,6 +185,7 @@ const FRAG = /* glsl */ `
   varying vec3 vColor;
   varying float vK;
   varying float vBright;
+  varying float vLum;
   varying float vFocus;
   varying float vDisc;
   varying float vPx;
@@ -195,7 +215,7 @@ const FRAG = /* glsl */ `
     float core = smoothstep(0.2, 0.05, r);
     float glow = exp(-r * 5.5) * 0.9;
     float spikes = (exp(-abs(q.x) * 30.0) + exp(-abs(q.y) * 30.0)) * (1.0 - r) * (smoothstep(0.3, 0.8, vBright) * 0.5 + vFocus * 0.8);
-    vec3 c = vColor * (glow + spikes) + vec3(1.6 + vFocus * 1.4) * core;
+    vec3 c = (vColor * (glow + spikes) + vec3(1.6 + vFocus * 1.4) * core) * vLum;
     gl_FragColor = vec4(c * smoothstep(1.0, 0.75, r) * vK, 0.0);
   }
 `;
