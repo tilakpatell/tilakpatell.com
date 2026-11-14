@@ -52,4 +52,9 @@ describe('lane 4a’s cards', () => {
     }
     expect(CATALOGUE_CARDS.debris).toMatchObject({ solid: false, chart: { shape: 'dot', priority: 15 } });
   });
+  it('gives the dead stars, the young ones and the wormholes their cards', () => {
+    for (const k of ['magnetar', 'protostar']) expect(CATALOGUE_CARDS[k], k).toMatchObject({ type: PLACE.thing[k], solid: true, chart: { shape: 'star', priority: 30 } });
+    expect(CATALOGUE_CARDS.wormhole).toMatchObject({ type: PLACE.thing.wormhole, solid: true, chart: { shape: 'hole', priority: 40 } });
+    expect(THING_CARDS.pulsar.type).toBe(PLACE.thing.pulsar); // (lane 3's own, for the generated pulsars too)
+  });
 });

@@ -4,7 +4,10 @@
 // imports none of them, so every list can import its constants with no cycle.
 //
 // SECTOR_EXTRAS: [{ list, base, max, make(ctx, made) → rows }] (things.js's thingsOf says the rules)
+//   wormhole w8        a one-way wormhole, one a sector (stars.js)
 //   remnant  w10–w11   supernova remnants, 1–2 a sector (clouds.js)
+//   pulsar   w12–w14   pulsars and magnetars, 1–3 (stars.js)
+//   protostar w15–w17  forming stars, 1–3 (stars.js)
 //   storm    w18–w21   ion storms on loops, 2–4 (clouds.js)
 //   pocket   w22–w27   nebula pockets, 2–6 (clouds.js)
 //   swarm    w28–w36   a swarm in each pocket and legacy nebula, 9 at most (clouds.js)
@@ -19,9 +22,10 @@
 // NEBULA_SHOW (place.js)
 
 import { FLEETS, YARDS } from './anchored';
+import { PROTOSTARS, PULSARS, WORMHOLES } from './stars';
 import { DEBRIS, HERDS, POCKETS, REMNANTS, STORMS, SWARMS } from './clouds';
 import { COMETS, FIELDS, RIGS } from './systems';
 
 export { NEBULA_SHOW } from './place';
 
-export const SECTOR_EXTRAS = [FIELDS, COMETS, RIGS, FLEETS, YARDS, REMNANTS, POCKETS, SWARMS, STORMS, HERDS, DEBRIS];
+export const SECTOR_EXTRAS = [FIELDS, COMETS, RIGS, FLEETS, YARDS, WORMHOLES, PULSARS, PROTOSTARS, REMNANTS, POCKETS, SWARMS, STORMS, HERDS, DEBRIS];

@@ -8,6 +8,7 @@ import * as companions from '../gen/companions';
 import * as extras from '../gen/extras';
 import * as extrasSystems from '../gen/extras/systems';
 import * as paths from '../gen/paths';
+import * as extrasStars from '../gen/extras/stars';
 import * as extent from '../gen/extent';
 import * as genOrbits from '../gen/orbits';
 import * as seed from '../gen/seed';
@@ -24,11 +25,11 @@ const GEN = [
   'UNIVERSE', 'universeOf', 'fullSector', 'placeOf', 'placeIn', 'orbitAt', 'moonAt', 'bodiesAt', 'spaceTime',
   'systemReach', 'THING_BASE', 'THING_CELLS', 'THING_NEAR', 'THING_KINDS', 'SECTOR_EXTRAS', 'thingRow', 'WONDER_KINDS',
   'STATION_BASE', 'stationsOf', 'extentOf', 'KINDS', 'lookOf', 'traitsOf',
-  'COMET_PERIOD', 'pathAt', 'pathSpeed', 'rowAt', 'tailOf', 'companionsOf', 'companionAt', 'NEBULA_SHOW',
+  'COMET_PERIOD', 'pathAt', 'pathSpeed', 'rowAt', 'tailOf', 'companionsOf', 'companionAt', 'NEBULA_SHOW', 'wormholeExit',
 ];
 const LIGHT = ['orbitAt', 'moonAt', 'spaceTime', 'extentOf'];
 const FACE = [
-  [gen, [space, seed, genOrbits, systems, things, tables, stations, extent, catalogue, extras, paths, extrasSystems, companions], GEN],
+  [gen, [space, seed, genOrbits, systems, things, tables, stations, extent, catalogue, extras, paths, extrasSystems, companions, extrasStars], GEN],
   [orbits, [genOrbits, extent], LIGHT],
 ];
 

@@ -61,7 +61,7 @@ export const PLACE = {
   planet: { rock: 'Rocky world', ice: 'Ice world', gas: 'Gas giant', lava: 'Lava world', ocean: 'Ocean world', desert: 'Desert world', forest: 'Forest world', ringed: 'Ringed giant' },
   moon: { rocky: 'Rocky moon', icy: 'Icy moon' },
   station: 'Station',
-  thing: { rock: 'Asteroid', ice: 'Ice shard', derelict: 'Derelict', rogue: 'Rogue planet', nebula: 'Nebula', pulsar: 'Pulsar', outpost: 'Abandoned outpost', beacon: 'Beacon', relay: 'Relay array', monolith: 'Monolith', field: 'Asteroid field', icefield: 'Ice field', comet: 'Comet', rig: 'Mining rig', fleet: 'Fleet at anchor', shipyard: 'Shipyard', pocket: 'Nebula', remnant: 'Supernova remnant', storm: 'Ion storm', herd: 'Leviathan herd', swarm: 'Swarm', debris: 'Battle debris', default: 'Something in space' },
+  thing: { rock: 'Asteroid', ice: 'Ice shard', derelict: 'Derelict', rogue: 'Rogue planet', nebula: 'Nebula', pulsar: 'Pulsar', outpost: 'Abandoned outpost', beacon: 'Beacon', relay: 'Relay array', monolith: 'Monolith', field: 'Asteroid field', icefield: 'Ice field', comet: 'Comet', rig: 'Mining rig', fleet: 'Fleet at anchor', shipyard: 'Shipyard', pocket: 'Nebula', remnant: 'Supernova remnant', storm: 'Ion storm', herd: 'Leviathan herd', swarm: 'Swarm', debris: 'Battle debris', magnetar: 'Magnetar', protostar: 'Forming star', wormhole: 'Wormhole', default: 'Something in space' },
   about: {
     system: ({ star, planets, station, held, companions = [] }) => `${/^[aeiou]/i.test(star) ? 'An' : 'A'} ${[star.toLowerCase(), ...companions.map((c) => `${/^[aeiou]/i.test(c) ? 'an' : 'a'} ${c}`)].join(', ').replace(/, ([^,]*)$/, ' and $1')} with ${count(planets, 'planet')}${station ? ' and a station' : ''}, held by ${held}.`,
     planet: ({ type, system, moons, rings }) => `${type} round ${system}, with ${count(moons, 'moon')}${rings ? ' and rings' : ''}.`,
@@ -89,6 +89,9 @@ export const PLACE = {
     herd: 'A herd of space leviathans going their own way.',
     swarm: 'Glowing drifters that live in the nebula.',
     debris: 'What’s left of an old battle. Salvage what you can.',
+    magnetar: 'A dead star with a field strong enough to scramble a ship’s screens.',
+    protostar: 'A star still forming in its disc of dust.',
+    wormhole: 'A tear in space. Fly in and it throws you far away, one way only.',
     default: 'Out here between the stars.',
   },
   held: (name) => name.replace(/^The /, 'the '), // (a faction's name mid-sentence)
