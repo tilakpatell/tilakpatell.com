@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { PARK_GAP } from '../ship';
-import { UNIVERSE, fullSector, moonAt, orbitAt, thingRow } from '../../expanse/shared/gen';
+import { UNIVERSE, fullSector, lookOf, moonAt, orbitAt, thingRow } from '../../expanse/shared/gen';
 import { resolvePlace } from './resolve';
 import { parkDistance, parkPlace } from './park';
 import { AROUND, aimStars, hereZone, orbitingPlace, placesAround } from './around';
@@ -28,8 +28,12 @@ describe('what’s round the ship', () => {
     expect(rows.some(inside)).toBe(true);
     const capped = placesAround(sectors, cam, 0, { ...AROUND, max: 10 });
     expect(capped.filter(inside).map((r) => r.id).sort()).toEqual(rows.filter(inside).map((r) => r.id).sort());
-    const rest = rows.filter((r) => !inside(r)).sort((a, b) => mid(a) - mid(b));
-    expect(capped.filter((r) => !inside(r)).map((r) => r.id).sort()).toEqual(rest.slice(0, 10).map((r) => r.id).sort());
+    // (a list row the disc layer draws no disc for, lane 4a's field, rides outside the cap too:
+    // the test below says so; here the cap is the rest)
+    const disc = (r) => r.place !== 'extra' || lookOf(r.src.row.kind).disc > 0;
+    expect(capped.filter((r) => !disc(r)).map((r) => r.id).sort()).toEqual(rows.filter((r) => !disc(r)).map((r) => r.id).sort());
+    const rest = rows.filter((r) => !inside(r) && disc(r)).sort((a, b) => mid(a) - mid(b));
+    expect(capped.filter((r) => !inside(r) && disc(r)).map((r) => r.id).sort()).toEqual(rest.slice(0, 10).map((r) => r.id).sort());
   });
   it('puts planets and moons where their orbits have them, as discs from far off, and the station and the parks only once near the system', () => {
     const sys = s.systems.find((x) => s.stations.some((st) => st.i === x.i) && x.planets.some((p) => p.moonList.length));

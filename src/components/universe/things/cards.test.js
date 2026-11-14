@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { THING_KINDS, UNIVERSE, fullSector, thingRow, traitsOf } from '../../expanse/shared/gen';
+import { THING_KINDS, UNIVERSE, fullSector, rowAt, thingRow, traitsOf } from '../../expanse/shared/gen';
+import { atTime } from '../places/ids';
+import { resolvePlace } from '../places/resolve';
 import { THING_CARDS, placeCard } from '../places/cards';
 import { PLACE } from '../words';
 import { CATALOGUE_CARDS } from './cards';
@@ -29,5 +31,13 @@ describe('lane 4a’s cards', () => {
   });
   it('marks the four new kinds on the chart as dots', () => {
     for (const k of ['outpost', 'beacon', 'relay', 'monolith']) expect(CATALOGUE_CARDS[k].chart, k).toEqual({ shape: 'dot', priority: 20 });
+  });
+  it('gives the fields, comets and rigs their cards, and moves a comet where its path has it', () => {
+    expect(CATALOGUE_CARDS.field).toMatchObject({ type: PLACE.thing.field, solid: false, chart: { shape: 'dot', priority: 15 } });
+    expect(CATALOGUE_CARDS.icefield).toMatchObject({ type: PLACE.thing.icefield, solid: false, chart: { shape: 'dot', priority: 15 } });
+    expect(CATALOGUE_CARDS.comet).toMatchObject({ type: PLACE.thing.comet, solid: true, chart: { shape: 'dot', priority: 25 } });
+    expect(CATALOGUE_CARDS.rig).toMatchObject({ type: PLACE.thing.rig, solid: true, chart: { shape: 'dot', priority: 20 } });
+    const comet = s.extras.comet[0];
+    expect(atTime(resolvePlace(comet.id, { t: 0, sectors: [s] }), 5000)).toEqual(rowAt(comet, 5000));
   });
 });

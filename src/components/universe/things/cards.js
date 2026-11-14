@@ -9,10 +9,11 @@
 //   land(row) → boolean, for a kind you can land on (placeCard's `land`)
 //   chart: { shape: 'dot' | 'cloud' | 'hole' | 'star', priority }, for the map's marks
 
-import { KINDS, traitsOf } from '../../expanse/shared/gen';
+import { KINDS, rowAt, traitsOf } from '../../expanse/shared/gen';
 import { PLACE } from '../words';
 
 const DOT = Object.freeze({ shape: 'dot', priority: 20 });
+const dot = (priority) => Object.freeze({ shape: 'dot', priority });
 const card = (kind, more = {}) => ({ type: PLACE.thing[kind], about: PLACE.about[kind], color: KINDS[kind].color, solid: true, chart: DOT, ...more });
 
 export const CATALOGUE_CARDS = {
@@ -21,4 +22,8 @@ export const CATALOGUE_CARDS = {
   beacon: card('beacon'),
   relay: card('relay'),
   monolith: card('monolith'),
+  field: card('field', { solid: false, chart: dot(15) }),
+  icefield: card('icefield', { solid: false, chart: dot(15) }),
+  comet: card('comet', { move: (row, t) => rowAt(row, t), chart: dot(25) }),
+  rig: card('rig'),
 };

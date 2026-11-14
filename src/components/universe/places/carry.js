@@ -28,7 +28,8 @@
 //   past outer (body.park, a row's park distance, or parkDistance(body))
 // carryWeight(dist, zone) → 0…1, 1 − smoothstep(inner, outer, dist)
 // frameOf(rows, { here, going }) → the row whose id is going, when it's a
-//   planet or moon; else the row whose id is here, when it's one; else null
+//   planet, a moon or a thing that moves (a comet: a row with a `move`);
+//   else the row whose id is here, when it's one; else null
 // carryFrames(frames, body, dt) → a new [{ body, k, zone }]: body's entry
 //   (matched by id) rises by dt / fade to 1, joining at 0 while another fades
 //   out and at 1 into an empty list (a ship placed at a park is carried from
@@ -47,7 +48,7 @@ import { parkDistance } from './park';
 
 export const CARRY = { inner: 2, outer: 4, fade: 2 };
 
-const carries = (row) => row?.place === 'planet' || row?.place === 'moon';
+const carries = (row) => row?.place === 'planet' || row?.place === 'moon' || typeof row?.move === 'function';
 const smoothstep = (e0, e1, x) => {
   const u = Math.min(1, Math.max(0, (x - e0) / (e1 - e0)));
   return u * u * (3 - 2 * u);

@@ -9,7 +9,8 @@
 // orbitAt, moonAt, bodiesAt, spaceTime (orbits.js); systemReach (systems.js);
 // THING_BASE, THING_CELLS, THING_NEAR, THING_KINDS, thingRow
 // (things.js); SECTOR_EXTRAS (extras/index.js); WONDER_KINDS (tables.js); STATION_BASE, stationsOf
-// (stations.js); extentOf (extent.js); KINDS, lookOf, traitsOf (catalogue.js)
+// (stations.js); extentOf (extent.js); KINDS, lookOf, traitsOf (catalogue.js);
+// COMET_PERIOD, pathAt, pathSpeed, rowAt (paths.js); tailOf (extras/systems.js)
 
 export { UNIVERSE, universeOf } from '../gen/seed';
 export { fullSector, placeIn, placeOf } from '../gen/space';
@@ -21,3 +22,5 @@ export { STATION_BASE, stationsOf } from '../gen/stations';
 export { extentOf } from '../gen/extent';
 export { KINDS, lookOf, traitsOf } from '../gen/catalogue';
 export { SECTOR_EXTRAS } from '../gen/extras';
+export { COMET_PERIOD, pathAt, pathSpeed, rowAt } from '../gen/paths';
+export { tailOf } from '../gen/extras/systems';

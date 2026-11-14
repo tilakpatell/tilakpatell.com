@@ -4,5 +4,13 @@
 // imports none of them, so every list can import its constants with no cycle.
 //
 // SECTOR_EXTRAS: [{ list, base, max, make(ctx, made) → rows }] (things.js's thingsOf says the rules)
+//   field    w20000 +  asteroid and ice fields, one system in three (systems.js)
+//   comet    w30000 +  comets, one system in four (systems.js)
+//   rig      w40000 +  mining rigs, one field in three (systems.js)
+// NEBULA_SHOW (place.js)
 
-export const SECTOR_EXTRAS = [];
+import { COMETS, FIELDS, RIGS } from './systems';
+
+export { NEBULA_SHOW } from './place';
+
+export const SECTOR_EXTRAS = [FIELDS, COMETS, RIGS];
