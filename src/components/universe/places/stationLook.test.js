@@ -5,12 +5,13 @@ import { MAX, createStationLook } from './stationLook';
 const rows = (n) => Array.from({ length: n }, (_, i) => ({ at: [i * 100, 5, -i * 30], size: 20 + i, grow: i === 1 ? 0.5 : 1 }));
 
 describe('generated stations drawn', () => {
-  it('costs nothing with none, draws what it’s given up to eight, and warms each mesh once', () => {
+  it('costs nothing with none, draws what it’s given up to eight, and warms each mesh once, on its first update', () => {
     const group = new THREE.Group();
     const prepare = vi.fn();
     const look = createStationLook(group, { prepare });
-    expect(prepare).toHaveBeenCalledTimes(2);
+    expect(prepare).not.toHaveBeenCalled(); // (the scene's warm-up isn't there yet when it's made)
     look.update([]);
+    expect(prepare).toHaveBeenCalledTimes(2);
     expect(group.children.map((m) => [m.visible, m.count])).toEqual([
       [false, 0],
       [false, 0],

@@ -85,6 +85,7 @@ if (!exe) throw new Error('no Chromium (set CHROMIUM=/path/to/chrome)');
 const browser = await chromium.launch({ executablePath: exe, args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', '--enable-webgl', '--js-flags=--max-old-space-size=4096'] });
 const ctx = await browser.newContext({ viewport: { width: 1280, height: 720 }, deviceScaleFactor: 1 });
 await ctx.addInitScript((q) => {
+  if (window.location.protocol === 'about:') return; // (the page parked for the fresh pages' steps: no storage there)
   window.localStorage.setItem('tp-intro', '1');
   window.localStorage.setItem('tp-start', '"universe"');
   window.localStorage.setItem('tp-quality', q);
@@ -262,15 +263,25 @@ const waitOn = (p, fn, arg, timeout = 300000) =>
     .then(() => true)
     .catch(() => false);
 const title = () => window.document.querySelector('.universe-panel .universe-title')?.textContent ?? null;
+// (the route's own page parked, so a fresh page's scene isn't drawn beside it in software)
+let parked = false;
+const quiet = async () => {
+  if (parked) return;
+  parked = true;
+  await page.goto('about:blank');
+};
 const linkStep = async () => {
   const id = 'E:1,0:0:0';
+  await quiet();
   const p = await freshPage();
   await p.goto(`${base}/?quality=${QUALITY}#/universe/${id}`, { waitUntil: 'domcontentloaded', timeout: 180000 });
   if (!(await waitOn(p, ([plotting]) => {
     const t = window.document.querySelector('.universe-panel .universe-title')?.textContent;
     return Boolean(t) && (t === plotting || Boolean(window.__universeDebug?.places.resolve('E:1,0:0:0')));
   }, [PLOTTING]))) return fail('link: no card');
-  const name = await p.evaluate((id) => window.__universeDebug?.places.resolve(id)?.name ?? null, id);
+  // (the name once the scene knows the place: its sector loaded round the ship, or fetched for the link)
+  if (!(await waitOn(p, (id) => Boolean(window.__universeDebug?.places.resolve(id)), id))) return fail(`link: ${id} never found`);
+  const name = await p.evaluate((id) => window.__universeDebug.places.resolve(id).name, id);
   if (!(await waitOn(p, ([id, name]) => window.document.querySelector('.universe-panel .universe-title')?.textContent === name && window.__universe?.().place === id, [id, name]))) return fail(`link: never at ${id} with its card`);
   mkdirSync(EVIDENCE, { recursive: true });
   await p.screenshot({ path: join(EVIDENCE, 'card.jpg'), type: 'jpeg', quality: 80 });
@@ -283,6 +294,7 @@ const linkStep = async () => {
 };
 const flatStep = async () => {
   const id = 'E:1,0:0:0';
+  await quiet();
   const p = await freshPage({ 'tp-3d': 'off' });
   await p.goto(`${base}/?quality=${QUALITY}#/universe/${id}`, { waitUntil: 'domcontentloaded', timeout: 180000 });
   const ok = await waitOn(p, ([id, flat]) => Boolean(window.document.querySelector('.universe-flat')) && window.document.querySelector('.universe-panel .universe-title')?.textContent === id && window.document.querySelector('.universe-panel')?.textContent.includes(flat), [id, FLAT], 120000);
@@ -297,22 +309,33 @@ const flatStep = async () => {
   await p.context().close();
 };
 const terminalStep = async () => {
+  await quiet();
   const p = await freshPage();
   await p.goto(`${base}/#/terminal`, { waitUntil: 'domcontentloaded', timeout: 180000 });
   const cdp = await p.context().newCDPSession(p);
   await cdp.send('Emulation.setCPUThrottlingRate', { rate: 4 });
+  // (the tasks from the command to the terminal's own navigation to the universe, 400 ms on: the
+  // universe page's load after it is another page's, not the terminal's)
   await p.evaluate(() => {
-    window.__longest = 0;
-    new window.PerformanceObserver((l) => {
-      for (const e of l.getEntries()) window.__longest = Math.max(window.__longest, e.duration);
-    }).observe({ type: 'longtask', buffered: false });
+    window.__tasks = [];
+    window.__navAt = Infinity;
+    const mark = () => (window.__navAt = Math.min(window.__navAt, window.performance.now()));
+    window.addEventListener('hashchange', mark);
+    for (const k of ['pushState', 'replaceState']) {
+      const was = window.history[k].bind(window.history);
+      window.history[k] = (...a) => (mark(), was(...a));
+    }
+    new window.PerformanceObserver((l) => window.__tasks.push(...l.getEntries().map((e) => [e.startTime, e.duration]))).observe({ type: 'longtask', buffered: false });
   });
   const input = p.locator('input').first();
   await input.waitFor({ timeout: 120000 });
   await input.fill('fly E:9,0:0');
+  await p.evaluate(() => (window.__from = window.performance.now())); // (from the command on: the page's own start is behind it)
   await input.press('Enter');
   if (!(await waitOn(p, () => window.document.body.textContent.includes('Setting course for'), null, 120000))) return fail('terminal: no course set for E:9,0:0');
-  const ms = await p.evaluate(() => window.__longest);
+  await waitOn(p, () => window.__navAt < Infinity, null, 30000);
+  await p.waitForTimeout(500); // (a task's entry comes after it ends)
+  const ms = await p.evaluate(() => window.__tasks.filter(([at, d]) => at + d >= window.__from && at < window.__navAt).reduce((m, [, d]) => Math.max(m, d), 0));
   console.log(`terminal  fly E:9,0:0 at 4× throttling: longest task ${Math.round(ms)} ms`);
   if (ms > 1500) fail(`terminal: a ${Math.round(ms)} ms task`);
   await p.context().close();

@@ -7,7 +7,8 @@
 // createStationLook(group, { prepare }) → { update(rows), dispose() }
 //   rows: [{ at: [x, y, z] (the map's frame), size, grow (0…1) }], the
 //   first MAX drawn, each at its at, scaled by size × grow; prepare(mesh) is
-//   called once a mesh, when it's made (the scene's shader warm-up)
+//   called once a mesh, on the first update (the scene's shader warm-up,
+//   which scene.js declares after it makes the places)
 
 import * as THREE from 'three';
 import { glowMat, parts } from '../kit';
@@ -46,14 +47,18 @@ export function createStationLook(group, { prepare = () => {} } = {}) {
     m.visible = false;
     m.frustumCulled = false; // (the instances are spread over a system: the mesh's own bounds say nothing)
     group.add(m);
-    prepare(m);
   }
+  let warmed = false;
   const mat = new THREE.Matrix4();
   const pos = new THREE.Vector3();
   const q = new THREE.Quaternion();
   const scale = new THREE.Vector3();
   return {
     update(rows) {
+      if (!warmed) {
+        warmed = true;
+        for (const m of meshes) prepare(m);
+      }
       const n = Math.min(MAX, rows.length);
       for (let i = 0; i < n; i++) {
         const r = rows[i];
