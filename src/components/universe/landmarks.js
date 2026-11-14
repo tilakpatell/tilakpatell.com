@@ -249,6 +249,10 @@ export function createLandmarks(parent, { skyFar }) {
   const hidden = new Map(); // group → whether this hid it (only its own undone)
   const ks = LANDMARKS.map(() => 1);
   const camAt = new THREE.Vector3();
+  // (the draw skipped when none of its squares is in view: a call saved)
+  const frustum = new THREE.Frustum();
+  const viewProj = new THREE.Matrix4();
+  const sphere = new THREE.Sphere();
   return {
     mesh,
     update(camera, t = 0, { sector = 'main', groups = () => null } = {}) {
@@ -257,6 +261,10 @@ export function createLandmarks(parent, { skyFar }) {
       parent.worldToLocal(camera.getWorldPosition(camAt));
       mat.uniforms.uCam.value.copy(camAt);
       const hideGroup = new Map();
+      camera.updateMatrixWorld();
+      viewProj.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
+      frustum.setFromProjectionMatrix(viewProj, camera.coordinateSystem);
+      let seen = false;
       LANDMARKS.forEach((l, i) => {
         const at = centreOf(l, t);
         const dx = at[0] - camAt.x;
@@ -275,6 +283,11 @@ export function createLandmarks(parent, { skyFar }) {
         A.aCenter.setXYZ(i, camAt.x + dx * s, camAt.y + dy * s, camAt.z + dz * s);
         A.aSize.setX(i, drawnAngle(l.r, dist, l.least));
         A.aK.setX(i, k);
+        if (k > 0 && !seen) {
+          sphere.center.set(camAt.x + dx * s, camAt.y + dy * s, camAt.z + dz * s).applyMatrix4(parent.matrixWorld);
+          sphere.radius = skyFar * Math.tan(drawnAngle(l.r, dist, l.least) / 2) * Math.SQRT2;
+          seen = frustum.intersectsSphere(sphere);
+        }
         // the real thing: hidden while it's all landmark, or in another sector
         const hide = !here || k >= 1;
         hideGroup.set(l.group, (hideGroup.get(l.group) ?? true) && hide);
@@ -285,6 +298,7 @@ export function createLandmarks(parent, { skyFar }) {
         if (hide !== (hidden.get(g) ?? false)) g.visible = !hide;
         hidden.set(g, hide);
       }
+      mesh.visible = seen;
       for (const a of Object.values(A)) a.needsUpdate = true;
     },
     // how much of a landmark it is now (the nearest part, for the Twins)

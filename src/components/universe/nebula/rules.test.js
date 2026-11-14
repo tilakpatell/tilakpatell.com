@@ -31,10 +31,15 @@ describe('where a nebula is drawn', () => {
   });
 });
 describe('its levels', () => {
-  it('is near inside four radii, far past them, smooth between', () => {
-    expect(detailAt(4 * 700 * 0.79, 700)).toBe(1);
-    expect(detailAt(4 * 700 * 1.21, 700)).toBe(0);
-    expect(detailAt(4 * 700, 700)).toBeCloseTo(0.5);
+  it('is near within a thousand of its edge (four radii at most), far past, smooth between', () => {
+    expect(detailAt(1700 * 0.79, 700)).toBe(1);
+    expect(detailAt(1700 * 1.21, 700)).toBe(0);
+    expect(detailAt(1700, 700)).toBeCloseTo(0.5);
+    // (a small one by its radii; a vast one only at its edge)
+    expect(detailAt(4 * 200 * 1.21, 200)).toBe(0);
+    expect(detailAt(4 * 200 * 0.79, 200)).toBe(1);
+    expect(detailAt(8400, 5500)).toBe(0);
+    expect(detailAt(5000, 5500)).toBe(1);
     expect(stepsAt(0, NEBULA_BUDGET.high)).toBe(6);
     expect(stepsAt(1, NEBULA_BUDGET.high)).toBe(32);
   });

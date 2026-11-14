@@ -12,9 +12,12 @@
 
 import { PALETTE } from '../palette';
 
-// inside NEAR radii a cloud is near (marched finely, its young stars in);
-// FADE the share either side of it the two levels blend over
+// a cloud is near (marched finely, its young stars in) within NEAR_UNITS
+// of its edge, and never further than NEAR radii: a small cloud from a
+// little off, a vast one only once you're at it (its stars are specks
+// from further). FADE the share either side the two levels blend over.
 export const NEAR = 4;
+export const NEAR_UNITS = 1000;
 export const FADE = 0.2;
 // the share of the camera's far plane a cloud is drawn within
 export const LIMIT = 0.98;
@@ -103,9 +106,10 @@ export function placement(at, r, cam, limit) {
   return { centre: [d[0] * scale, d[1] * scale, d[2] * scale], radius: r * scale, scale, dist };
 }
 
-// how near a cloud is drawn: 1 inside NEAR radii (less the fade), 0 past
-// them, smooth between
-export const detailAt = (dist, r) => 1 - smoothstep(NEAR * r * (1 - FADE), NEAR * r * (1 + FADE), dist);
+// how near a cloud is drawn: 1 inside its near reach (less the fade), 0
+// past it, smooth between
+export const nearOf = (r) => Math.min(NEAR * r, r + NEAR_UNITS);
+export const detailAt = (dist, r) => 1 - smoothstep(nearOf(r) * (1 - FADE), nearOf(r) * (1 + FADE), dist);
 
 export const stepsAt = (detail, row) => Math.round(row.farSteps + (row.nearSteps - row.farSteps) * detail);
 

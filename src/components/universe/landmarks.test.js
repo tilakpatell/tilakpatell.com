@@ -179,3 +179,24 @@ describe('the nebulae, handed on', () => {
     lm.dispose();
   });
 });
+
+describe('its draw', () => {
+  const look = (from, to) => {
+    const c = new THREE.PerspectiveCamera(34, 16 / 9, 1, 45000);
+    c.position.set(...from);
+    c.lookAt(...to);
+    c.updateMatrixWorld(true);
+    return c;
+  };
+  it('is drawn when a landmark is in view, and skipped when none is (a call saved)', () => {
+    const lm = createLandmarks(new THREE.Group(), { skyFar: 24000 });
+    const maw = WONDERS.find((w) => w.id === 'maw').at;
+    const from = [maw[0] + 30000, maw[1], maw[2]];
+    lm.update(look(from, maw), 0, { sector: 'main', groups: () => null });
+    expect(lm.mesh.visible).toBe(true);
+    // (straight down from far above the map's plane, the big things all near the horizon behind)
+    lm.update(look([from[0], 1e6, from[2]], [from[0], 1e6 + 1, from[2] + 1e-3]), 0, { sector: 'main', groups: () => null });
+    expect(lm.mesh.visible).toBe(false);
+    lm.dispose();
+  });
+});
