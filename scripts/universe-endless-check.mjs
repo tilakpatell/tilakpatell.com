@@ -16,7 +16,9 @@
 // (super speed to a generated system and the jump to one in the next sector,
 // each waited for till the ship is at the place's own park, then a planet,
 // which moves, carried at its park for 30 s of the wall clock) and `dock`
-// (the jump to the nearest station, docked, shot, and off again). `--only a,b`
+// (the jump to the nearest station, docked, shot, and off again) and `pick`
+// (inside a generated system facing its star: its name tag shows, and a
+// click on the star flies there). `--only a,b`
 // runs `start` and then only the steps named. Each records the
 // pops (the far layer's: a disc from nothing to whole in a frame), the
 // Expanse's own time a frame, the draw calls and triangles, the places within
@@ -203,7 +205,7 @@ const dockStep = async () => {
   if (!(await until((id) => window.__universe().docked === id, st.id, 300000))) return fail(`dock: never docked at ${st.id}`);
   const out = join(ROOT, 'docs/superpowers/evidence/endless-universe-lane-3');
   mkdirSync(out, { recursive: true });
-  await page.locator('canvas').first().screenshot({ path: join(out, 'dock.jpg'), type: 'jpeg', quality: 80 });
+  await page.screenshot({ path: join(out, 'dock.jpg'), type: 'jpeg', quality: 80 });
   console.log(`dock      docked at ${st.name} (${st.id})`);
   await page.evaluate(() => {
     const d = window.__universeDebug;
@@ -211,6 +213,37 @@ const dockStep = async () => {
     d.teleport(s.x + 400, s.y, s.z, s.heading, 0);
   });
   if (!(await until(() => window.__universe().docked === null, null, 120000))) fail('dock: still docked 400 off');
+};
+const pickStep = async () => {
+  const id = 'E:1,0:0';
+  await page.evaluate(() => window.__universeDebug.teleport(61000, 0, 0, -Math.PI / 2, 0));
+  if (!(await until((id) => Boolean(window.__universeDebug.places.resolve(id)), id, 300000))) return fail(`pick: ${id} never loaded`);
+  // (inside its reach, on +z, facing the star: heading 0 looks along −z)
+  const name = await page.evaluate((id) => {
+    const d = window.__universeDebug;
+    const sys = d.places.resolve(id);
+    d.teleport(sys.at[0], sys.at[1], sys.at[2] + sys.src.row.reach * 0.6, 0, 0);
+    return sys.name;
+  }, id);
+  const tagged = await until(
+    (name) => [...window.document.querySelectorAll('.universe-place-tag[data-on] b')].some((b) => b.textContent === name),
+    name,
+    300000,
+  );
+  if (!tagged) return fail(`pick: no name tag for ${name}`);
+  const pt = await page.evaluate((id) => {
+    const d = window.__universeDebug;
+    const p = d.places.screen(id);
+    const r = d.renderer.domElement.getBoundingClientRect(); // (its points are the canvas's own)
+    return p && { x: r.left + p.x, y: r.top + p.y, z: p.z };
+  }, id);
+  if (!pt || !(pt.z > 0)) return fail(`pick: ${id} isn't on screen`);
+  await page.mouse.click(pt.x, pt.y);
+  if (!(await until((id) => (window.__universeDebug.state.auto?.id ?? window.__universeDebug.state.jump?.id) === id, id, 60000))) return fail(`pick: a click on ${name} didn't fly there`);
+  const out = join(ROOT, 'docs/superpowers/evidence/endless-universe-lane-3');
+  mkdirSync(out, { recursive: true });
+  await page.screenshot({ path: join(out, 'pick.jpg'), type: 'jpeg', quality: 80 });
+  console.log(`pick      ${name} tagged, and a click flies there`);
 };
 const travelStep = async () => {
   // (over the face into E:1,0 first, so its sector is loaded round the ship)
@@ -260,6 +293,7 @@ try {
   }
   if (runs('travel')) await travelStep();
   if (runs('dock')) await dockStep();
+  if (runs('pick')) await pickStep();
 } catch (e) {
   fail(String(e.message ?? e));
 } finally {

@@ -118,3 +118,28 @@
 
 /* The X on a sheet: the colour's pill, as multiplayer's card has it. */
 .universe-settings-close { border-radius: var(--r-btn); }
+
+/* a generated place's name tag (places/placeTags.js): the pilots' tag's
+   pill and face, in the nav map's blue, its top-left set by transform */
+.universe-place-tag {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: none;
+  flex-direction: column;
+  gap: 1px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgb(3 4 10 / 0.6);
+  color: #9fd8ff;
+  font-family: var(--font-mono);
+  font-size: max(0.8rem, 12px);
+  line-height: 1.2;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  pointer-events: auto;
+  cursor: pointer;
+}
+.universe-place-tag[data-on] { display: flex; }
+.universe-place-tag b { font-weight: 500; }
+.universe-place-tag small { font-size: 1em; opacity: 0.8; }

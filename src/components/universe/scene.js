@@ -795,7 +795,7 @@ export async function create(canvas, ctx) {
       if (inExpanse(id) && id !== 'E:0,0') state.note = { text: `The Expanse · ${id}`, until: wall() + 3 };
     },
   });
-  const places = createScenePlaces({ group: map, universe, expanse, workers: ctx.rt?.workers ?? null, startAt: props.startAt, toScreen: (...a) => toScreen(...a), prepare: (o) => warm(o), emit: (e) => emit(e), note: (text) => (state.note = { text, until: wall() + 3 }), device: device() });
+  const places = createScenePlaces({ group: map, universe, expanse, workers: ctx.rt?.workers ?? null, startAt: props.startAt, toScreen: (...a) => toScreen(...a), prepare: (o) => warm(o), emit: (e) => emit(e), note: (text) => (state.note = { text, until: wall() + 3 }), device: device(), tags: () => props.tags?.current ?? null, onPick: (id) => navTo(id), frame: () => size });
   // and the big things, the Maw, the nebulae and the big stars, as landmarks
   // on the sky, at least so big across from anywhere (landmarks.js)
   const landmarks = createLandmarks(map, { renderer, small, level: device().detail, skyFar: SKY_FAR });
@@ -5212,7 +5212,7 @@ export async function create(canvas, ctx) {
     const nowMs = state.held || reduced ? 0 : Date.now();
     state.spaceT = spaceTime(nowMs);
     expanse.update({ camera, ship: state.ship, t, dt, now: nowMs, hidden: onFoot() || Boolean(state.dive) || skySector === 'rickmorty' });
-    places.update({ ship: state.ship, camera, t: state.spaceT, flying: flying() && !onFoot() && !state.dive && !props.frozen, nose: state.ship ? noseOf(state.ship) : null, going: state.jump?.id ?? state.auto?.id ?? state.pending?.id ?? null, arrived: state.arrived, held: state.held });
+    places.update({ ship: state.ship, camera, t: state.spaceT, flying: flying() && !onFoot() && !state.dive && !props.frozen, nose: state.ship ? noseOf(state.ship) : null, going: state.jump?.id ?? state.auto?.id ?? state.pending?.id ?? null, arrived: state.arrived, held: state.held, aim: state.aim, picked: state.sel });
     sectorPortals.update(t, camera);
     curve.update(t, sectorOf(camLocal.x, camLocal.y, camLocal.z) === 'rickmorty');
     sectorFleet.update(t, Boolean(state.ship) && sectorOf(state.ship.x, state.ship.y, state.ship.z) === 'rickmorty');
@@ -5601,7 +5601,7 @@ export async function create(canvas, ctx) {
     }
     const sign = pickSign(x, y);
     const id = sign ? null : pick(x, y);
-    canvas.style.cursor = sign || id || (!id && (pickWonder(x, y) || pickPhone(x, y))) ? 'pointer' : 'grab';
+    canvas.style.cursor = sign || id || (!id && (pickWonder(x, y) || pickPhone(x, y) || places.pick(x, y, { tanHalf, height: size.h }))) ? 'pointer' : 'grab';
     setSignHover(sign);
     setHover(id);
   };
@@ -5652,8 +5652,8 @@ export async function create(canvas, ctx) {
         const id = pick(x, y);
         if (id) props.onPick?.(id);
         else if (flying()) {
-          // a wonder: the ship flies itself there
-          const wid = pickWonder(x, y);
+          // a generated place, else a wonder: the ship flies itself there
+          const wid = places.pick(x, y, { tanHalf, height: size.h }) ?? pickWonder(x, y);
           if (wid) navTo(wid);
         }
       }

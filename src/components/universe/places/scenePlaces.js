@@ -12,9 +12,10 @@
 // with group.worldToLocal each update, as scene.js's camLocal is.
 //
 // createScenePlaces({ group, universe, expanse, workers, startAt, toScreen,
-//   prepare, emit, note, device, clock }) → {
+//   prepare, emit, note, device, clock, tags, onPick, frame, makeTags }) → {
 //   setStep(step, floor), update({ ship, camera, t, flying, nose, going,
-//   arrived, held }), around(), carry(ship, t0, t1), solids(), here(),
+//   arrived, held, aim, picked }), pick(px, py, { tanHalf, height }),
+//   screen(id), around(), carry(ship, t0, t1), solids(), here(),
 //   docked(), resolve(id), fetch(id), find(id), missing(id), park(id, from),
 //   look, mark(id, dest), name(id), nearby(max), aimTargets(sector, at),
 //   debug, dispose() }
@@ -22,12 +23,16 @@
 // when going nowhere or there), 'leave', 'dock' (open: the trip that ended
 // there, once), 'undock', 'found' (a start or a find that had to wait; dest
 // is null when there's nothing there).
+// The names: tags (a thunk, the scene's tag box) shows at most budget.tags
+// of them, the gone-to, aimed and picked places first, then the one it's at,
+// then those near the nose (pick.js's tagsFor), none while held or not
+// flying. frame() is the scene's { w, h }; onPick(id) is a tag's click.
 
 import * as THREE from 'three';
 import { parseSpaceId } from '../../../lib/space/address.js';
 import { UNIVERSE, withMoons } from '../../expanse/shared/gen';
 import { universeBudget } from '../budget';
-import { aimTargets as handMadeTargets } from '../aim';
+import { NAME_CONE, aimTargets as handMadeTargets } from '../aim';
 import { destinationById } from '../nav';
 import { PLACE } from '../words';
 import { AROUND, aimStars, hereZone, orbitingPlace, placesAround } from './around';
@@ -35,6 +40,8 @@ import { carry, carryFrames, frameOf } from './carry';
 import { dockState } from './dock';
 import { atTime, canonicalPlace } from './ids';
 import { followPark, parkPlace } from './park';
+import { PICK, pickPlace, tagsFor } from './pick';
+import { createPlaceTags } from './placeTags';
 import { resolvePlace } from './resolve';
 import { createStationLook } from './stationLook';
 
@@ -48,7 +55,7 @@ const smoothstep = (e0, e1, x) => {
 };
 const len = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
 
-export function createScenePlaces({ group, universe = UNIVERSE, expanse, workers = null, startAt = null, toScreen = null, prepare = () => {}, emit = () => {}, note = () => {}, device = {}, clock = () => performance.now() / 1000 }) {
+export function createScenePlaces({ group, universe = UNIVERSE, expanse, workers = null, startAt = null, toScreen = null, prepare = () => {}, emit = () => {}, note = () => {}, device = {}, clock = () => performance.now() / 1000, tags = () => null, onPick = () => {}, frame = () => ({ w: 0, h: 0 }), makeTags = createPlaceTags }) {
   // (the list's cap is the far layer's own room, made at step 0, so it holds
   // whatever the disc layer draws at any step; the names come down with it)
   const room = universeBudget(device, 0).discs;
@@ -75,6 +82,32 @@ export function createScenePlaces({ group, universe = UNIVERSE, expanse, workers
   let starsWhen = -Infinity;
   let aimList = null;
   let aimKey = null;
+  let flyingNow = false;
+  let tagBox = null;
+  let tagView = null;
+  const pt = { x: 0, y: 0, z: 0 };
+  // the tag view, made on the box the scene has now (a page can swap it)
+  const tagsNow = () => {
+    const box = tags() ?? null;
+    if (box !== tagBox) {
+      tagView?.dispose();
+      tagBox = box;
+      tagView = box ? makeTags(box, { onPick: (id) => onPick(id) }) : null;
+    }
+    return tagView;
+  };
+  const showTags = (ship, nose, focus) => {
+    const view = tagsNow();
+    if (!view) return;
+    if (!ship) return view.show([], frame());
+    const list = [];
+    for (const r of tagsFor(rows, { ship, nose: nose ?? [0, 0, -1], focus, here, max: budget.tags, cone: NAME_CONE })) {
+      const p = toScreen(r.at[0], r.at[1], r.at[2], pt);
+      if (!(p.z > PICK.near)) continue; // (behind the camera, or at it)
+      list.push({ id: r.id, name: r.name, dist: Math.max(0, Math.hypot(ship.x - r.at[0], ship.y - r.at[1], ship.z - r.at[2]) - (r.reach ?? 0)), x: p.x, y: p.y });
+    }
+    view.show(list, frame());
+  };
 
   // the loaded sectors and the fetched ones, each by its own id (lane 2's
   // chunk grid names its cells otherwise), made again once an update
@@ -168,7 +201,7 @@ export function createScenePlaces({ group, universe = UNIVERSE, expanse, workers
     get budget() {
       return budget;
     },
-    update({ ship, camera, t: now, flying, going = null, arrived = null, held = false }) {
+    update({ ship, camera, t: now, flying, nose = null, going = null, arrived = null, held = false, aim = null, picked = null }) {
       sectorsMemo = null;
       const dt = held || lastT === null ? 0 : Math.max(0, now - lastT);
       lastT = now;
@@ -192,7 +225,9 @@ export function createScenePlaces({ group, universe = UNIVERSE, expanse, workers
         aimList = null;
       }
       placeStations();
-      if (!flying || !ship) return;
+      flyingNow = Boolean(flying && ship);
+      if (!flyingNow || held) showTags(null);
+      if (!flyingNow) return;
 
       // a trip's end: preferred where it ended, and a dock there may open the hangar
       if (arrived !== seenArrival) {
@@ -236,6 +271,15 @@ export function createScenePlaces({ group, universe = UNIVERSE, expanse, workers
         }
       }
       frames = carryFrames(frames, frameOf(rows, { here, going }), dt);
+      if (!held) showTags(ship, nose, [going, aim, picked]);
+    },
+    // a click on the flight: the place under it, where it shows (a far thing as much as a near one)
+    pick: (px, py, opts) => (flyingNow && toScreen ? pickPlace(rows, toScreen, px, py, opts) : null),
+    screen(id) {
+      const r = rowOf(id);
+      if (!r || !toScreen) return null;
+      const p = toScreen(r.at[0], r.at[1], r.at[2], { x: 0, y: 0, z: 0 });
+      return { x: p.x, y: p.y };
     },
     around: () => rows,
     carry: (ship, t0, t1) => carry(ship, frames, t0, t1),
@@ -277,6 +321,10 @@ export function createScenePlaces({ group, universe = UNIVERSE, expanse, workers
         const d = resolvePlace(id, { universe, t: t0, sectors: sectors(), build: false });
         return d && followPark(d, parkPlace(d, from, t0), t1);
       },
+      screen: (id) => {
+        const r = rowOf(id);
+        return r && toScreen ? toScreen(r.at[0], r.at[1], r.at[2], { x: 0, y: 0, z: 0 }) : null;
+      },
       stations() {
         const all = [];
         for (const s of sectors().values()) for (const st of s.stations ?? []) all.push({ id: st.id, name: st.name, at: st.at, size: st.size, d: len(cam, st.at) });
@@ -288,6 +336,7 @@ export function createScenePlaces({ group, universe = UNIVERSE, expanse, workers
       for (const key of asking.keys()) workers?.cancel?.('expanse', `place|${key}`);
       asking.clear();
       look3.dispose();
+      tagView?.dispose();
     },
   };
 }
