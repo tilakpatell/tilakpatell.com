@@ -87,3 +87,19 @@ export const PLACE = {
   plotting: 'Plotting a course…', // (a link's card while the scene finds the place)
   flat: 'Out in the endless universe. Fly here in 3D.', // (a link's card with 3D off, failed or lost: no scene runs to find it)
 };
+
+// The nav map's chart: its tools, its readout of where the ship is (its
+// sector, lib/space/address.js, and how far above or below the disc the
+// hand-made places sit in), and its keys. ("3D view" is retired: the chart
+// tilts and turns, and looks straight down again.)
+export const CHART_WORDS = {
+  tools: 'Chart',
+  zoomIn: 'Zoom in',
+  zoomOut: 'Zoom out',
+  toShip: 'Back to the ship',
+  flat: 'Look straight down',
+  fit: 'Show everything',
+  sector: ([sx, sy, sz]) => `Sector ${[sx, sy, sz].map((n) => String(n).replace('-', '−')).join(', ')}`,
+  height: (far, side) => (side === 0 ? 'Level with the disc' : `${far} ${side > 0 ? 'above' : 'below'} the disc`),
+  keys: 'zoom in and out, 0 back to the ship',
+};
