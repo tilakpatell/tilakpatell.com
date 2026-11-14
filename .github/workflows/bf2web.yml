@@ -15,8 +15,6 @@ run-name: >-
 on:
   repository_dispatch:
     types: [bf2web-main]
-  schedule:
-    - cron: '41 */6 * * *'
   workflow_dispatch:
     inputs:
       stage:
