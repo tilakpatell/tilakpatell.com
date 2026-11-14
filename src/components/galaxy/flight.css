@@ -18,8 +18,15 @@
    not, so nothing along the foot moves when it opens: the panel stops above
    the cluster instead (universe.css) */
 @media (pointer: fine) and (min-width: 768px) {
-  .galaxy-page:has(.galaxy-map[data-ship]) { --fc-right: 24px; --galaxy-mid: calc(-50% - 12px); }
-  .galaxy-page:has(.galaxy-map[data-ship]) .galaxy-note { translate: var(--galaxy-mid) 0; }
+  .galaxy-page:has(.galaxy-map[data-ship]) { --fc-right: 24px; --galaxy-mid: -50%; }
+  /* (what's said at the foot goes over the cluster, by its measured height (FlightHud writes it on the page), in the middle of the
+     same band as the jump: the way down at a planet and a pilot's note sat on the cluster's top at 128 and 72px, and what you've
+     just earned in the middle of it; a row each, the way down lowest, and with it up the jump goes over it) */
+  .galaxy-page:has(.galaxy-map[data-ship]) :is(.galaxy-land, .galaxy-note, .universe-earn) { left: calc(var(--fc-left) + (100% - var(--fc-left) - var(--fc-right)) / 2); bottom: calc(var(--hud-pad-b, 12px) + 18px + var(--hud-cluster-h, 132px)); }
+  .galaxy-page:has(.galaxy-map[data-ship]) :is(.galaxy-note, .universe-earn) { translate: var(--galaxy-mid) 0; }
+  .galaxy-page:has(.galaxy-map[data-ship]) .galaxy-note { bottom: calc(var(--hud-pad-b, 12px) + 64px + var(--hud-cluster-h, 132px)); }
+  .galaxy-page:has(.galaxy-map[data-ship]) .universe-earn { bottom: calc(var(--hud-pad-b, 12px) + 110px + var(--hud-cluster-h, 132px)); }
+  .galaxy-page:has(.galaxy-land) .galaxy-jumpbtn { bottom: calc(var(--hud-pad-b, 12px) + 64px + var(--hud-cluster-h, 132px)); }
   /* (what's along the top and in the middle, beside the panel rather than under it, keeps clear of the panel's room whether it's
      open or not: --panel-width, which never goes to nothing, so the war's line doesn't slide 200px when the panel's put away, nor
      run under its bar; the battle's end card and a pickup's note the same) */

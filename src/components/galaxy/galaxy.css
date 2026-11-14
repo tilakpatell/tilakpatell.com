@@ -608,7 +608,7 @@
   z-index: 1;
   left: 50%;
   bottom: 128px;
-  translate: var(--galaxy-mid, calc(-50% - (var(--panel-w) + 24px) / 2)) 0; /* (flying, the middle of the whole width: flight.css) */
+  translate: var(--galaxy-mid, calc(-50% - (var(--panel-w) + 24px) / 2)) 0; /* (flying, the middle of the cluster’s band: flight.css) */
   display: inline-flex;
   align-items: center;
   gap: 0.55rem;
