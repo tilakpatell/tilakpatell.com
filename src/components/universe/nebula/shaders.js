@@ -242,8 +242,13 @@ void main() {
   vec3 centre = (modelViewMatrix * vec4(uCentre, 1.0)).xyz;
   vec3 p = toMap * (vView - centre) / (s2 * uRadius);
   vec3 f = nebField(form, p, uSeed.xyz, 1.0);
+  // wisps at the ship's own scale: the gas tapped again every 350 units of
+  // the world, whatever the cloud's size, so a vast cloud streams past in
+  // threads, not one smooth wash
+  vec3 w = toMap * (vView - centre) / s2;
+  float wisp = texture(uVolume, w / 350.0 + uSeed.zxy + nebFlow(uSeed.xyz) * 4.0).r;
   // never quite clear inside: a floor of haze, so a gap in the gas is thin, not empty
-  float dens = max(f.x, 0.08 * nebEnvelope(form, p));
+  float dens = max(f.x * mix(0.25, 1.6, smoothstep(0.3, 0.75, wisp)), 0.06 * nebEnvelope(form, p));
   float a = (1.0 - exp(-(dens * uAbsorb + f.z * 2.0) * vLayer.y / uRadius)) * uDepth;
   vec3 c = nebColour(form, p, f, uC0, uC1, uC2) * uEmit;
   // the ship's lights, scattering in the gas just ahead of the eye

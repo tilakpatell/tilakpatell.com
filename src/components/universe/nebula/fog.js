@@ -16,6 +16,8 @@ import { EMIT } from './tone';
 
 // how quickly a layer of gas hides what's behind it, per radius; tuned at the in-nebula pose
 export const ABSORB_FOG = 0.8;
+// and how bright the gas round the ship glows, against the clouds' (it fills the screen: kept dimmer)
+export const FOG_EMIT = 0.7;
 // the ship's lights' warm white
 const GLOW = new THREE.Color(1, 0.9, 0.78).multiplyScalar(0.35);
 
@@ -43,7 +45,7 @@ export function createFog({ volume, row }) {
       uSeed: { value: new THREE.Vector4() },
       uDepth: { value: 0 },
       uAbsorb: { value: ABSORB_FOG },
-      uEmit: { value: EMIT },
+      uEmit: { value: EMIT * FOG_EMIT },
       uGlow: { value: GLOW.clone() },
       uTime: { value: 0 },
     },
