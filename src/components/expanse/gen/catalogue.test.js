@@ -1,7 +1,7 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import { PALETTE, tint } from '../../universe/shared/space';
 import { PLANET_TYPES } from './tables';
-import { CATALOGUE, KINDS, LORE_COUNT, PLANET_SIZE, ROGUE_TYPES, discRadius, hexOf, lookOf, rowSolids, solidOf, traitsOf } from './catalogue';
+import { CATALOGUE, KINDS, LORE_COUNT, fleetLayout, PLANET_SIZE, ROGUE_TYPES, discRadius, hexOf, lookOf, rowSolids, solidOf, traitsOf } from './catalogue';
 import { UNIVERSE } from './seed';
 import { fullSector } from './space';
 import { THING_KINDS, thingRow } from './things';
@@ -109,5 +109,26 @@ describe('a thing’s traits, from its own seed', () => {
     expect(t.period).toBeGreaterThanOrEqual(1.5);
     expect(t.period).toBeLessThan(6);
     expect(t.beam).toBe(25);
+  });
+});
+
+describe('a fleet, solid ship by ship', () => {
+  it('gives each ship a sphere, the capital three times an escort, all within the fleet and none overlapping', () => {
+    const fleets = [[1, 0, 0], [2, 0, 0], [1, 1, 0]].flatMap(([x, y, z]) => fullSector(UNIVERSE, x, y, z, { lattice: false }).extras.fleet);
+    expect(fleets.length).toBeGreaterThan(10);
+    for (const f of fleets) {
+      const ss = rowSolids(f);
+      expect(ss).toHaveLength(f.ships);
+      const lay = fleetLayout(f);
+      expect(ss.map((x) => x.at)).toEqual(lay.map((x) => x.at));
+      expect(ss.map((x) => x.id)).toEqual(lay.map((x) => `${f.id}:s${x.k}`));
+      for (let i = 1; i < ss.length; i++) expect(ss[0].r).toBeCloseTo(3 * ss[i].r, 9);
+      for (const a of ss) expect(Math.hypot(a.at[0] - f.at[0], a.at[1] - f.at[1], a.at[2] - f.at[2]) + a.r).toBeLessThanOrEqual(f.size);
+      for (let i = 0; i < ss.length; i++)
+        for (let j = i + 1; j < ss.length; j++) expect(Math.hypot(ss[i].at[0] - ss[j].at[0], ss[i].at[1] - ss[j].at[1], ss[i].at[2] - ss[j].at[2])).toBeGreaterThan(ss[i].r + ss[j].r);
+      expect(solidOf(f)).toBeNull();
+      const moved = rowSolids(f, [0, 0, 0]);
+      moved.forEach((m, i) => m.at.forEach((v, k) => expect(v).toBeCloseTo(ss[i].at[k] - f.at[k], 6)));
+    }
   });
 });

@@ -17,6 +17,7 @@
 // rowSolids(row, at = row.at) → [{ id, at, r, reach }]: everything solid a row adds to the
 //   solids, [solidOf(row, at)] or [] where that's null. Read this, never solidOf alone: a
 //   fleet is solid ship by ship, not as one sphere, and its ships come in here.
+// fleetLayout(row, at = row.at) → [{ k, at, heading, length }]: a fleet's ships (below)
 // discRadius(kind, size, { core = false } = {}) → the far layer's disc radius, size × disc,
 //   but a beacon's in the core sector is its own size: the core is lighter and holds the
 //   hand-made places, and some 75 beacons lie within the far plane of a core pose
@@ -170,8 +171,27 @@ export function solidOf(row, at = row.at) {
 }
 
 export function rowSolids(row, at = row.at) {
+  if (row.kind === 'fleet') return fleetLayout(row, at).map((sh) => ({ id: `${row.id}:s${sh.k}`, at: sh.at, r: 0.3 * sh.length, reach: 0.3 * sh.length }));
   const s = solidOf(row, at);
   return s ? [s] : [];
+}
+
+// A fleet's ships: a loose line abreast through `at`, all on one heading, the capital
+// (ship 0, 0.48 × size long) in the middle and the escorts (0.16 × size) on alternate sides at
+// 0.3, 0.6 and 0.9 × size along the line, each jittered by up to 0.03 × size. Every ship's
+// sphere (0.3 × its length) is then within `size` of `at`, and no two overlap. The one place
+// they are: the solids and the drawing both read it.
+export function fleetLayout(row, at = row.at) {
+  const rng = rngOf(hash64(row.seed, 'ships'));
+  const heading = rng() * 2 * Math.PI;
+  const side = [Math.cos(heading + Math.PI / 2), 0, Math.sin(heading + Math.PI / 2)];
+  const out = [{ k: 0, at: [at[0], at[1], at[2]], heading, length: 0.48 * row.size }];
+  for (let k = 1; k < row.ships; k++) {
+    const along = (k % 2 ? 1 : -1) * [0.3, 0.6, 0.9][Math.floor((k - 1) / 2)] * row.size;
+    const j = () => range(rng, -0.03, 0.03) * row.size;
+    out.push({ k, at: [at[0] + side[0] * along + j(), at[1] + j(), at[2] + side[2] * along + j()], heading, length: 0.16 * row.size });
+  }
+  return out;
 }
 
 export function discRadius(kind, size, { core = false } = {}) {

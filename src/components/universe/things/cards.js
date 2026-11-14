@@ -26,4 +26,6 @@ export const CATALOGUE_CARDS = {
   icefield: card('icefield', { solid: false, chart: dot(15) }),
   comet: card('comet', { move: (row, t) => rowAt(row, t), chart: dot(25) }),
   rig: card('rig'),
+  fleet: card('fleet', { chart: dot(30) }),
+  shipyard: card('shipyard', { chart: dot(30) }),
 };

@@ -40,4 +40,7 @@ describe('lane 4a’s cards', () => {
     const comet = s.extras.comet[0];
     expect(atTime(resolvePlace(comet.id, { t: 0, sectors: [s] }), 5000)).toEqual(rowAt(comet, 5000));
   });
+  it('gives fleets and shipyards their cards', () => {
+    for (const k of ['fleet', 'shipyard']) expect(CATALOGUE_CARDS[k], k).toMatchObject({ type: PLACE.thing[k], about: PLACE.about[k], solid: true, chart: { shape: 'dot', priority: 30 } });
+  });
 });
