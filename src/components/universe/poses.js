@@ -13,7 +13,9 @@
 // its terminator), facing the planet, the camera just behind it: the day
 // side toward the camera, which is how a visitor should arrive.
 import { BELT, HOME_RADIUS, ORDER, POSITIONS, REACH, RIM, SUN } from './layout';
-import { UNIVERSE, fullSector } from '../expanse/shared/gen';
+import { UNIVERSE, fullSector, stationsOf } from '../expanse/shared/gen';
+import { resolvePlace } from './places/resolve';
+import { parkPlace } from './places/park';
 import { MAW } from './maw';
 import { SHIP, parkAt } from './ship';
 import { byId } from './universes';
@@ -48,12 +50,15 @@ export const POSES = {
 export const POSE_NAMES = Object.keys(POSES);
 // and the endless space's, measured on their own (scripts/universe-endless-check.mjs,
 // universe-check's --poses): past where the rim was, heading out; 50,000 straight
-// above the core; parked in the first generated system past it, its orbits at t = 0
+// above the core; parked in the first generated system past it, its orbits at t = 0;
+// parked at that sector's first station (lane 3's), its sector made the first time it's asked for
 export const ENDLESS_POSES = {
   'old-rim': { out: RIM.outer + 500 },
   'above-core': { up: 50000 },
   'expanse-system': { sector: [1, 0, 0], system: 0, out: 0.8 },
+  'expanse-station': { sector: [1, 0, 0], back: 1.6, rise: 0.3 },
 };
+let stationPose = null; // (made once, when asked: never at import, which every scene load pays for)
 export const ENDLESS_POSE_NAMES = Object.keys(ENDLESS_POSES);
 
 const sub = (a, b) => a.map((v, i) => v - b[i]);
@@ -83,6 +88,15 @@ function endlessPose(name, p) {
   if (name === 'above-core') {
     const at = [0, p.up, 0];
     return { name, at, heading: 0, ...chase(at, 0) };
+  }
+  if (name === 'expanse-station') {
+    if (!stationPose) {
+      const st = stationsOf(fullSector(UNIVERSE, ...p.sector, { things: false }))[0];
+      const k = parkPlace(resolvePlace(st.id, { t: 0 }), [st.at[0], st.at[2] + 1000], 0);
+      const at = [k.x, k.y, k.z];
+      stationPose = { name, station: st.id, at, heading: k.heading, ...chase(at, k.heading, { back: p.back, rise: p.rise, look: st.at }) };
+    }
+    return { ...stationPose, at: [...stationPose.at], eye: [...stationPose.eye], look: [...stationPose.look] };
   }
   const s = fullSector(UNIVERSE, ...p.sector, { things: false }).systems[p.system];
   const at = add(s.at, unit([0.6, 0.15, 0.8]), s.reach * p.out);

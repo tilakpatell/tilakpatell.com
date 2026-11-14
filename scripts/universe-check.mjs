@@ -39,7 +39,7 @@ const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const POSES = ['overview', 'falcon-sun', 'middleearth-limb', 'rickmorty', 'gaming', 'caribbean', 'middleearth', 'breakingbad', 'office', 'belt', 'maw', 'landing-middleearth', 'station', 'far-rim'];
 // (the endless space's own poses, poses.js's ENDLESS_POSES: taken when named in --poses, never by default,
 // so the baseline stays the fourteen)
-const ENDLESS = ['old-rim', 'above-core', 'expanse-system'];
+const ENDLESS = ['old-rim', 'above-core', 'expanse-system', 'expanse-station'];
 const TIERS = ['high', 'mid', 'low'];
 
 const args = {};
