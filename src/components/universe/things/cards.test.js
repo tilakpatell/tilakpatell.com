@@ -57,4 +57,9 @@ describe('lane 4a’s cards', () => {
     expect(CATALOGUE_CARDS.wormhole).toMatchObject({ type: PLACE.thing.wormhole, solid: true, chart: { shape: 'hole', priority: 40 } });
     expect(THING_CARDS.pulsar.type).toBe(PLACE.thing.pulsar); // (lane 3's own, for the generated pulsars too)
   });
+  it('lists each gargantuan out to 400,000, and parks outside it', () => {
+    for (const k of ['hole', 'arc', 'hulk', 'giant', 'dyson']) expect(CATALOGUE_CARDS[k], k).toMatchObject({ type: PLACE.thing[k], about: PLACE.about[k], solid: true, far: 400000 });
+    expect(CATALOGUE_CARDS.hole.chart.shape).toBe('hole');
+    expect(CATALOGUE_CARDS.dyson.chart.shape).toBe('star');
+  });
 });

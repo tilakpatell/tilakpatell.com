@@ -4,6 +4,7 @@ import { UNIVERSE, companionAt, companionsOf, fullSector, lookOf, moonAt, orbitA
 import { resolvePlace } from './resolve';
 import { parkDistance, parkPlace } from './park';
 import { AROUND, aimStars, hereZone, orbitingPlace, placesAround } from './around';
+import { pickPlace } from './pick';
 
 const sectors = new Map([[1, 0, 0], [2, 0, 0], [1, 1, 0]].map(([x, y, z]) => fullSector(UNIVERSE, x, y, z)).map((s) => [s.id, s]));
 const s = sectors.get('E:1,0');
@@ -213,5 +214,44 @@ describe('a system’s companions', () => {
         expect(rows.find((r) => r.id === plain.id)?.also).toBeUndefined();
       }
     }
+  });
+});
+
+describe('a gargantuan', () => {
+  it('is listed and picked from 100,000 off, outside the cap', () => {
+    const home = [];
+    for (let x = -1; x <= 1; x++) for (let y = -1; y <= 1; y++) for (let z = -1; z <= 1; z++) home.push([x, y, z]);
+    const gs = home.map((c) => fullSector(UNIVERSE, ...c, { lattice: false })).flatMap((x) => x.extras.gargantuan);
+    expect(gs).toHaveLength(1);
+    const g = gs[0];
+    const dir = g.at.map((v) => -v / Math.hypot(...g.at));
+    const cam = g.at.map((v, k) => v + dir[k] * 100000);
+    const cube = (p) => p.map((v) => Math.floor(v / 120000 + 0.5));
+    const keys = new Map();
+    for (const c of [cube(cam), cube(g.at)])
+      for (let x = -1; x <= 1; x++)
+        for (let y = -1; y <= 1; y++)
+          for (let z = -1; z <= 1; z++) {
+            const k = [c[0] + x, c[1] + y, c[2] + z];
+            if (!keys.has(String(k))) keys.set(String(k), k);
+          }
+    const near = new Map([...keys.values()].map((k) => fullSector(UNIVERSE, ...k)).map((x) => [x.id, x]));
+    const rows = placesAround(near, cam, 0, AROUND);
+    expect(rows.some((r) => r.id === g.id)).toBe(true);
+    const capped = rows.filter((r) => !(r.place === 'extra' && lookOf(r.src.row.kind).disc === 0));
+    expect(capped.length).toBe(AROUND.max);
+    // (looking straight at it from cam: a projection along dir, as pick.test.js makes one)
+    const project = (x, y, z, out) => {
+      const v = [x - cam[0], y - cam[1], z - cam[2]];
+      const depth = v[0] * -dir[0] + v[1] * -dir[1] + v[2] * -dir[2];
+      const up = [0, 1, 0];
+      const right = [-dir[2], 0, dir[0]].map((c) => c / Math.hypot(dir[0], dir[2]));
+      const u = up.map((c, k) => c - (up[0] * -dir[0] + up[1] * -dir[1] + up[2] * -dir[2]) * -dir[k]);
+      const ul = Math.hypot(...u);
+      return Object.assign(out, { x: 640 + ((v[0] * right[0] + v[2] * right[2]) / depth) * 360, y: 360 - ((v[0] * u[0] + v[1] * u[1] + v[2] * u[2]) / ul / depth) * 360, z: depth });
+    };
+    // (a rock nearer in line covers it, as it should: picked among what isn't in front of it)
+    const behind = rows.filter((r) => len(r.at, cam) >= 90000);
+    expect(pickPlace(behind, project, 640, 360, { tanHalf: 1, height: 720 })).toBe(g.id);
   });
 });

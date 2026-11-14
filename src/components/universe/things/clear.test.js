@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { beforeAll, describe, expect, it } from 'vitest';
-import { KINDS, NEBULA_SHOW, THING_NEAR, UNIVERSE, fullSector } from '../../expanse/shared/gen';
+import { GARGANTUAN, KINDS, NEBULA_SHOW, THING_NEAR, UNIVERSE, fullSector } from '../../expanse/shared/gen';
 import { poseFor } from '../poses';
 
 // Every baseline pose (lab/universe/baseline/mid.json's) stays as it was: no list row of lane
@@ -32,5 +32,10 @@ describe('the baseline poses', () => {
           expect(len(pt, mid), r.id).toBeGreaterThan(THING_NEAR * r.size + (r.extent ?? 0));
         }
       }
+  });
+  it('builds no gargantuan’s mesh: each is the far plane and its size off', () => {
+    const big = rows.filter((r) => r.gargantuan && r.id.endsWith(':w3'));
+    expect(big).toHaveLength(1); // (one in the 3 × 3 × 3 round home)
+    for (const pt of points) for (const g of big) expect(len(pt, g.at)).toBeGreaterThanOrEqual(GARGANTUAN.far + g.size);
   });
 });

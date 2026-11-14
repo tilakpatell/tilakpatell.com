@@ -12,7 +12,7 @@ import { SECTOR } from '../../../../lib/space/address.js';
 import { KEEP_OUTS, clearOfKeepOuts } from '../keepOuts';
 import { COMET_PERIOD, pathAt, pathSpeed, rowAt } from '../paths';
 import { hash64, range, rngOf } from '../seed';
-import { nameIn, roomFor } from './place';
+import { nameIn, placedOf, roomFor } from './place';
 
 export const FIELD = Object.freeze({ share: 1 / 3, ice: 0.3, size: [250, 700], out: [1.15, 1.6], height: 300 });
 export const COMET = Object.freeze({ share: 0.25, size: [6, 20], q: [1.2, 2.0], Q: [1.5, 3], tail: [60, 160], tilt: 0.6, fast: 0.25 });
@@ -29,9 +29,9 @@ const sphere = (rng) => {
   return [r * Math.cos(a), r * Math.sin(a), z];
 };
 
-function fieldsOf(ctx) {
+function fieldsOf(ctx, made) {
   const out = [];
-  const placed = [];
+  const placed = placedOf(made);
   for (const sys of ctx.systems) {
     const seed = hash64(sys.seed, 'field');
     const rng = rngOf(seed);

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { PLACE } from '../words';
 import { PARK_GAP, clearOf } from '../ship';
-import { THING_KINDS, WONDER_KINDS, companionsOf, fullSector, placeIn, thingRow, UNIVERSE } from '../../expanse/shared/gen';
+import { GARGANTUAN_FORMS, THING_KINDS, WONDER_KINDS, companionsOf, fullSector, placeIn, thingRow, UNIVERSE } from '../../expanse/shared/gen';
 import { parseSpaceId } from '../../../lib/space/address';
 import { FAR, THING_CARDS, placeCard, placeLook, placeReach } from './cards';
 
@@ -25,7 +25,8 @@ describe('a generated place’s card', () => {
     for (const [k, c] of Object.entries(THING_CARDS)) {
       expect(c.move === undefined || typeof c.move === 'function', k).toBe(true);
       expect(c.at, k).toBeUndefined(); // (a mover is `move`: a Destination's `at` is a position)
-      expect(c.far, k).toBe(FAR); // (lane 2's far plane, the one around.js lists by)
+      // (replaces `expect(c.far, k).toBe(FAR)`: lane 4a's gargantuans are listed out to 400,000, seen across a sector)
+      expect(c.far, k).toBe(GARGANTUAN_FORMS.includes(k) ? 400000 : FAR); // (lane 2's far plane, the one around.js lists by)
     }
     expect(placeCard({ kind: 'thing', row: thingRow(s, 0), sector: s }).move).toBeNull();
   });

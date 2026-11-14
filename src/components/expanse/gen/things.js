@@ -13,7 +13,8 @@
 //   base + max ≤ THING_BASE) or high (base ≥ EXTRA_HIGH, a multiple of 10,000, max ≤ 9,999).
 // thingsOf(ctx, extras = [], kinds = THING_KINDS, { lattice = true } = {}) → { things: ThingSet, extras: { [list]: Row[] } }
 //   ctx is { sx, sy, sz, origin, seed, systems, outs, wonders? } (wonders: the legacy ones; absent means none),
-//   and for the lists also { universe, beacons, stations, d, core }. lattice: false leaves the lattice empty.
+//   and for the lists also { universe, beacons, stations, d, core, gargantuan, arrivals, keeps }
+//   (keeps: a gargantuan's solid parts, [{ at, r }], which the lattice keeps off as it does outs). lattice: false leaves the lattice empty.
 //   A ctx is treated as immutable: the per-ctx cache snapshots its systems and wonders.
 //   A wonder's size is its radius (tables.js WONDERS says so; scene/sectors.js draws a nebula as a cloud of
 //   about that size and the others as a ball of size * 0.15 to 0.5, so the table radius is the safe reach).
@@ -111,6 +112,8 @@ function prepare(ctx, kinds) {
     .filter((w) => w.kind !== 'nebula')
     .map((w) => ({ at: w.at, r: w.size }));
   p = {
+    // (the keep-outs and a gargantuan's solid parts, kept off alike)
+    outs: ctx.keeps?.length ? [...(ctx.outs ?? []), ...ctx.keeps] : (ctx.outs ?? []),
     wonders,
     h0: Number(seed & 0xffffffffn) | 0,
     h1: Number((seed >> 32n) & 0xffffffffn) | 0,
@@ -146,7 +149,7 @@ function cell(ctx, p, kinds, slot) {
     at = place({ slot, kind: kinds[ki].kind, at, size }, ctx);
     if (!at) return null;
   }
-  if (!clearOfKeepOuts(at, (THING_NEAR + 1) * size, ctx.outs ?? [])) return null;
+  if (!clearOfKeepOuts(at, (THING_NEAR + 1) * size, p.outs)) return null;
   const near = p.grid.get(
     key(
       Math.floor((at[0] - ctx.origin[0]) / BUCKET),

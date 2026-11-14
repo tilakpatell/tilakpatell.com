@@ -8,11 +8,13 @@
 // CATALOGUE_CARDS: { [kind]: { type, about, color, solid, far?, move?, land?, chart } }
 //   land(row) → boolean, for a kind you can land on (placeCard's `land`)
 //   chart: { shape: 'dot' | 'cloud' | 'hole' | 'star', priority }, for the map's marks
+// GIANT_FAR: how far off a gargantuan is listed (400,000: it's seen from across a sector)
 
 import { KINDS, rowAt, traitsOf } from '../../expanse/shared/gen';
 import { PLACE } from '../words';
 
 const DOT = Object.freeze({ shape: 'dot', priority: 20 });
+export const GIANT_FAR = 400000;
 const STAR = Object.freeze({ shape: 'star', priority: 30 });
 const CLOUD = Object.freeze({ shape: 'cloud', priority: 35 });
 const dot = (priority) => Object.freeze({ shape: 'dot', priority });
@@ -41,4 +43,11 @@ export const CATALOGUE_CARDS = {
   protostar: card('protostar', { chart: STAR }),
   // (parked outside its throat)
   wormhole: card('wormhole', { chart: Object.freeze({ shape: 'hole', priority: 40 }) }),
+  // (a gargantuan is on the sky from across a sector, so it's listed out to 400,000; parked
+  // outside its whole extent)
+  hole: card('hole', { far: GIANT_FAR, chart: Object.freeze({ shape: 'hole', priority: 80 }) }),
+  arc: card('arc', { far: GIANT_FAR, chart: Object.freeze({ shape: 'dot', priority: 80 }) }),
+  hulk: card('hulk', { far: GIANT_FAR, chart: Object.freeze({ shape: 'dot', priority: 80 }) }),
+  giant: card('giant', { far: GIANT_FAR, chart: Object.freeze({ shape: 'dot', priority: 80 }) }),
+  dyson: card('dyson', { far: GIANT_FAR, chart: Object.freeze({ shape: 'star', priority: 80 }) }),
 };

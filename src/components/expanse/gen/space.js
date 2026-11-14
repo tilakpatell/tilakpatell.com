@@ -13,7 +13,11 @@
 //   legacy: { systems, wonders } (where the appended part begins) }
 //   things: false makes neither the lattice nor any list; lattice: false (things true) makes the
 //   lists alone; extras is for tests. What appended systems keep out of holds whatever they are,
-//   so a system's id never depends on them.
+//   so a system's id never depends on them. arrivals (for tests) is the arrival's gargantuan
+//   rows: ARRIVAL_GARGANTUANS in the shared universe's core, [] elsewhere; more than one throws.
+//   The sector's gargantuan (gargantuans.js) and the arrival's are the lists `gargantuan` (w3)
+//   and `arrival` (w4); appended systems keep their size + 2,000 off them, and the lattice and
+//   the lists keep off their solid parts (ctx.keeps).
 // wonderPlace(sector, n, extras = SECTOR_EXTRAS) → placeIn's answer for w<n>. The lists come
 //   first: a high list's numbers are past the stations' base too, and the station branch would
 //   read w20001 as station 10001. Then lane 3's stations, the lattice and the legacy wonders.
@@ -26,9 +30,10 @@
 
 import { parseSpaceId, sectorCentre, sectorKey } from '../../../lib/space/address.js';
 import { CUBE_HALF } from './cube';
+import { ARRIVAL_GARGANTUANS, ARRIVAL_MAX, GARGANTUAN, gargantuanKeeps, gargantuanOf } from './gargantuans';
 import { SECTOR_EXTRAS } from './extras';
 import { clearOfKeepOuts, keepOutsNear } from './keepOuts';
-import { hash64, int, range, rngOf, sectorSeedOf, systemSeed } from './seed';
+import { UNIVERSE, hash64, int, range, rngOf, sectorSeedOf, systemSeed } from './seed';
 import { beaconsOf, makeSector } from './sector';
 import { STATION_BASE, stationsOf } from './stations';
 import { addBodies, localFactions, systemAt } from './systems';
@@ -121,7 +126,7 @@ function appendSystems(sector, outs) {
   }
 }
 
-export function fullSector(universe, sx, sy, sz, { things = true, lattice = things, extras = SECTOR_EXTRAS } = {}) {
+export function fullSector(universe, sx, sy, sz, { things = true, lattice = things, extras = SECTOR_EXTRAS, arrivals = null } = {}) {
   const id = sectorKey(sx, sy, sz);
   const seed = sectorSeedOf(universe, sx, sy, sz);
   const origin = sectorCentre(sx, sy, sz);
@@ -138,11 +143,18 @@ export function fullSector(universe, sx, sy, sz, { things = true, lattice = thin
   }
   sector.legacy = { systems: sector.systems.length, wonders: sector.wonders.length };
   const outs = keepOutsNear(sx, sy, sz);
-  appendSystems(sector, outs);
+  // (the gargantuan comes before the appended systems: a system appended into a black hole's
+  // disc couldn't be moved after. The arrival's, lane 4c's, likewise in the shared core.)
+  const g = gargantuanOf(universe, sx, sy, sz, sector);
+  const core = !sx && !sy && !sz;
+  const came = arrivals ?? (core && universe === UNIVERSE ? ARRIVAL_GARGANTUANS : []);
+  if (came.length > ARRIVAL_MAX) throw new RangeError('at most one gargantuan a sector (spec C): the core holds the arrival’s one only');
+  const big = g ? [g, ...came] : [...came];
+  appendSystems(sector, big.length ? [...outs, ...big.map((b) => ({ id: 'gargantuan', at: b.at, r: b.size + GARGANTUAN.systems }))] : outs);
   sector.stations = stationsOf(sector);
   if (things) {
     const d = Math.max(Math.abs(sx), Math.abs(sy), Math.abs(sz));
-    const ctx = { sx, sy, sz, origin, seed, universe, systems: sector.systems, wonders: sector.wonders, beacons: sector.beacons, stations: sector.stations, outs, d, core: !d };
+    const ctx = { sx, sy, sz, origin, seed, universe, systems: sector.systems, wonders: sector.wonders, beacons: sector.beacons, stations: sector.stations, outs, d, core: !d, gargantuan: g, arrivals: came, keeps: big.flatMap(gargantuanKeeps) };
     const made = thingsOf(ctx, extras, undefined, { lattice });
     sector.things = made.things;
     sector.extras = made.extras;

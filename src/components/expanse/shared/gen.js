@@ -11,7 +11,9 @@
 // (things.js); SECTOR_EXTRAS, NEBULA_SHOW (extras/index.js); WONDER_KINDS (tables.js); STATION_BASE, stationsOf
 // (stations.js); extentOf (extent.js); KINDS, lookOf, traitsOf (catalogue.js);
 // COMET_PERIOD, pathAt, pathSpeed, rowAt (paths.js); tailOf (extras/systems.js);
-// companionsOf, companionAt (companions.js); wormholeExit (extras/stars.js)
+// companionsOf, companionAt (companions.js); wormholeExit (extras/stars.js);
+// GARGANTUAN_FORMS, GARGANTUAN, gargantuanSectors, formOf, gargantuanKeeps, ARRIVAL_BASE,
+// ARRIVAL_MAX, ARRIVAL_GARGANTUANS, checkGargantuan (gargantuans.js)
 
 export { UNIVERSE, universeOf } from '../gen/seed';
 export { fullSector, placeIn, placeOf } from '../gen/space';
@@ -27,3 +29,4 @@ export { COMET_PERIOD, pathAt, pathSpeed, rowAt } from '../gen/paths';
 export { tailOf } from '../gen/extras/systems';
 export { companionAt, companionsOf } from '../gen/companions';
 export { wormholeExit } from '../gen/extras/stars';
+export { ARRIVAL_BASE, ARRIVAL_GARGANTUANS, ARRIVAL_MAX, GARGANTUAN, GARGANTUAN_FORMS, checkGargantuan, formOf, gargantuanKeeps, gargantuanSectors } from '../gen/gargantuans';
