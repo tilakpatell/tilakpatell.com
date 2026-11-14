@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
-import { FAR_STARS, brightness, createFarStars, realAt, starK, starPx } from './farStars';
+import { FAR_STARS, SPECK_LOOK, brightness, createFarStars, realAt, speckLook, starK, starPx } from './farStars';
 import { MOONS, UNIVERSES } from './universes';
 import { SUN } from './layout';
 
@@ -282,6 +282,26 @@ describe('the far layer of the endless space', () => {
     expect(pop.px).toBeGreaterThan(30);
     expect(stars.pops().count).toBe(0); // (since last asked)
     stars.dispose();
+  });
+
+  it('shows a speck as a star of the old sky does, most faint and a few bright, not as a place', () => {
+    // (at the dimmest, where nearly every speck past the far plane is, faint and small whatever its magnitude)
+    for (const m of [0, 0.5, 1]) {
+      const { lum, px } = speckLook(0.06, m);
+      expect(lum).toBeLessThanOrEqual(0.06);
+      expect(px).toBeLessThan(starPx(0) / 2);
+    }
+    // (most of a sector's specks fainter than a fifth of the brightest: a magnitude cubed)
+    const ms = Array.from({ length: 1000 }, (_, i) => (i + 0.5) / 1000);
+    expect(ms.filter((m) => speckLook(1, m).lum < 0.5).length).toBeGreaterThan(600);
+    // (a near giant at full strength, eight pixels across)
+    expect(speckLook(1, 1)).toEqual({ lum: 1, px: SPECK_LOOK.px[1] });
+    expect(speckLook(1, 0).lum).toBe(SPECK_LOOK.least);
+    // (and the shader draws it by the same numbers, its light and its core by lum)
+    const m = make().points.material;
+    expect(m.vertexShader).toContain(`lum = bright * (${SPECK_LOOK.least.toFixed(2)} + ${(1 - SPECK_LOOK.least).toFixed(2)} * m * m * m)`);
+    expect(m.vertexShader).toContain(`size = ${SPECK_LOOK.px[0].toFixed(1)} + ${(SPECK_LOOK.px[1] - SPECK_LOOK.px[0]).toFixed(1)} * sqrt(lum)`);
+    expect(m.fragmentShader).toContain('* core) * vLum');
   });
 
   it('adds a star’s light and draws a disc over, by premultiplied blending, from the same rules', () => {
