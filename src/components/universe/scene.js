@@ -131,7 +131,7 @@ import { createImpacts, impactGroups } from '../../lib/impact';
 import { debugOn, debugPanel } from '../../lib/debugPanel';
 import { LEAN, OPEN_SPACE, PLANETS, SHIP, SOLIDS, autopilot, crashLoud, forward, headingTo, holdReach, isGoal, isPlace, noseOf, orbiting, parkAt, spawn, startAt, step } from './ship';
 import { HYPER, destinationById, hyperState, parkFor, riftExit } from './nav';
-import { parkBehind, pilotId } from './pilotGoal';
+import { pilotId } from './pilotGoal';
 import { FACTIONS, HUNTER_KINDS, NAMES, createHunters } from './hunters';
 import { ION } from './hunterRules';
 import { difficultyOf } from './difficulty';
@@ -232,6 +232,9 @@ import { NX5_LEN, createRemoverView } from './removerView';
 import { createSky } from '../galaxy/sky';
 import { SYSTEMS } from '../galaxy/systems';
 import { UNIVERSE, createExpanse, sectorPools } from '../expanse/shared/space';
+import { spaceTime } from '../expanse/shared/gen';
+import { resolvePlace } from './places/resolve';
+import { followPark, parkPlace } from './places/park';
 import { runtime } from '../../runtime';
 import { deedToEarn } from './economy';
 import { createPayLedger, hunterEarn } from './earnRules';
@@ -779,8 +782,9 @@ export async function create(canvas, ctx) {
   const farStars = createFarStars(map, { places: FAR_STARS.map((p) => ({ ...p, group: planetOf[p.id]?.group ?? deep.groupOf(p.id) ?? null })), skyFar: SKY_FAR, slots: FAR_SLOTS, slotSize: spaceBudget.slotSize, discs: spaceBudget.discs });
   // the endless space (expanse/scene/expanse.js): generated sectors round the
   // camera in every direction, made in the worker pool, the site's own places kept clear
+  const universe = typeof ctx.universe === 'bigint' ? ctx.universe : UNIVERSE;
   const expanse = createExpanse(map, {
-    universe: typeof ctx.universe === 'bigint' ? ctx.universe : UNIVERSE,
+    universe,
     tier,
     workers: sectorPools(ctx.rt?.workers, spaceBudget),
     far: farStars,
@@ -1212,6 +1216,7 @@ export async function create(canvas, ctx) {
 
   const size = { w: 1, h: 1 };
   const state = {
+    spaceT: spaceTime(reduced ? 0 : Date.now()), arrived: null, pending: null, // (the shared clock, a trip's end, a trip waiting on its sector: trips.js)
     through: null, // a gate flown into (galaxy/gateway.js): the page's taking you through
     yaw: 0,
     vel: 0, // radians per ms, after a flick
@@ -1806,12 +1811,13 @@ export async function create(canvas, ctx) {
   // over the page in real time, and the ship has to be out under its flash
   // however slowly the frames come)
   const wall = () => performance.now() / 1000;
-  const { travel, dropAuto, arriveAt, navTo, frontSpace, withPilot, pilotGone, chasePilot } = createTrips({
+  const { travel, dropAuto, arriveAt, navTo, frontSpace, pilotGone, chasePilot, followPlace, outOfJump, endTrip } = createTrips({
     state, props: () => props, emit, pilots, front: () => front, powers: () => powers, unique: () => unique,
     heard: () => heard(), retarget: (ms) => retarget(ms), invalidate: () => ctx.invalidate(), reduced, onFoot, wall,
     settle: () => {
       camQOn = false;
     },
+    resolve: (id) => resolvePlace(id, { universe, t: state.spaceT, sectors: expanse.sectors(), build: false }),
   });
 
   // ── The ship ──
@@ -2136,7 +2142,7 @@ export async function create(canvas, ctx) {
       cabWanted = null;
       if (kind && state.seat === 'cockpit') buildCab(kind);
       stockUp(); // (the hunters this ship's side meets)
-      state.auto = null;
+      state.auto = state.arrived = state.pending = null;
       state.flown = false;
     }
     if (!kind) {
@@ -2232,10 +2238,11 @@ export async function create(canvas, ctx) {
       state.flown = true;
       emit({ type: 'launch' });
     }
+    state.pending = null; // (and a trip still waiting on its sector)
     if (state.auto) {
       // the pilot has the stick now (and the page hears the trip's off: a tour or a trip on through the gate ends here)
       const id = state.auto.id;
-      state.auto = null;
+      state.auto = state.arrived = null;
       emit({ type: 'arrived', id, done: false });
     }
     if (state.view === 'map') {
@@ -2924,7 +2931,7 @@ export async function create(canvas, ctx) {
     };
     // (into a big ship: the crew's crash line, and back out from where its middle was)
     if (solid.ship) Object.assign(state.crash, { kind: 'ship', ship: true, centre: [...solid.at] });
-    state.auto = null;
+    state.auto = state.arrived = state.pending = null;
     state.boosting = false;
     state.interdicted = false;
     burst.clear();
@@ -2976,7 +2983,7 @@ export async function create(canvas, ctx) {
       through: false,
       back: false,
     };
-    state.auto = null;
+    state.auto = state.arrived = state.pending = null;
     state.boosting = false;
     burst.clear();
     hunters?.clear();
@@ -4119,6 +4126,7 @@ export async function create(canvas, ctx) {
     if (!out) return;
     const then = state.then;
     state.then = null;
+    state.arrived = state.pending = null;
     if (state.auto) {
       const going = state.auto.id;
       state.auto = null;
@@ -4218,13 +4226,7 @@ export async function create(canvas, ctx) {
       // for the cruiser) where it comes out
       const j = state.jump;
       state.jump = null;
-      // (to a pilot: parked behind them as they are now, at the flash; gone,
-      // and it comes out where they were when it jumped)
-      const pid = pilotId(j.id);
-      const pose = pid ? pilots.pose(pid) : null;
-      const park = parkBehind(pose) ?? j.park;
-      if (pid && pose) withPilot(pose.name);
-      else if (pid) pilotGone(j.id, j.name);
+      const park = outOfJump(j); // (behind a pilot as they are now, at a place where it is now)
       arriveAt(park);
       hunters?.clear();
       meteors.clear();
@@ -4240,7 +4242,7 @@ export async function create(canvas, ctx) {
       emit({ type: 'jumped', id: j.id });
     }
     if (!state.jump && pieces.riftAt && pieces.riftInside(state.ship)) riftThrough();
-    if (!state.jump) chasePilot();
+    if (!state.jump) (chasePilot(), followPlace());
     // the big ships moving through (the capital, the sector fleet, the big traffic): solids for the step, and for the autopilot to steer round
     const moving = solidsWith(NO_SHIPS, pieces.solids, sectorFleet.solids, traffic?.solids(state.ship, 12), expanse.solids());
     if (state.jump?.phase === 'align') input = { throttle: state.ship.speed > SHIP.cruise ? 0 : 0.35, ...steerToward(state.ship, state.jump.dir) }; // (coming round onto it, easing off to cruise)
@@ -4251,11 +4253,7 @@ export async function create(canvas, ctx) {
       const hold = front ? (x, y, z) => front.holdAt(x, y, z, null) : null;
       const a = autopilot(state.ship, state.auto.id, state.auto.park, state.auto.space ?? (state.auto.id === 'front' && front ? frontSpace() : OPEN_SPACE), od, hold, moving);
       input = a.input;
-      if (a.done) {
-        const id = state.auto.id;
-        state.auto = null;
-        emit({ type: 'arrived', id, done: true }); // (the page's tour, and a trip on through the gate, go on from here)
-      }
+      if (a.done) endTrip(state.auto.id);
       // the crew's word on super speed, the first time it's past the pulse drive
       if (od > 1 && !state.odSaid && state.ship.speed > SHIP.pulse * 1.2) {
         state.odSaid = true;
@@ -5207,7 +5205,9 @@ export async function create(canvas, ctx) {
     farStars.update(camera, dt, { focus: state.jump?.id ?? state.aim ?? state.auto?.id ?? null, sector: skySector });
     landmarks.update(camera, t, { sector: skySector, groups: landmarkGroup });
     aimAt();
-    expanse.update({ camera, ship: state.ship, t, dt, now: state.held || reduced ? 0 : Date.now(), hidden: onFoot() || Boolean(state.dive) || skySector === 'rickmorty' });
+    const nowMs = state.held || reduced ? 0 : Date.now();
+    state.spaceT = spaceTime(nowMs);
+    expanse.update({ camera, ship: state.ship, t, dt, now: nowMs, hidden: onFoot() || Boolean(state.dive) || skySector === 'rickmorty' });
     sectorPortals.update(t, camera);
     curve.update(t, sectorOf(camLocal.x, camLocal.y, camLocal.z) === 'rickmorty');
     sectorFleet.update(t, Boolean(state.ship) && sectorOf(state.ship.x, state.ship.y, state.ship.z) === 'rickmorty');
@@ -5795,7 +5795,7 @@ export async function create(canvas, ctx) {
 
   // in development, renderer counts and the ship, for checking from a browser
   if (import.meta.env.DEV) {
-    window.__universeDebug = { powers, power: (slot) => power(slot), charge: () => powers.fill(), THREE, post, scene, expanse, farStars, teleport: (x, y, z, heading = state.ship?.heading ?? 0, pitch = 0) => state.ship && (state.ship = { ...state.ship, x, y, z, heading, pitch, speed: 0 }), renderer, camera, traffic, hunters, wingmen, skirmishes, npcs, NPCS, meetNpc: (id) => state.ship && npcs?.add(NPCS[id], skirmishSpot(state.ship) ?? { x: state.ship.x, y: state.ship.y + 5, z: state.ship.z - 40 }), director, pieces, leviathans, meteors, fleet, novae, pilots, standing, deed, wanted, law, wonders: WONDERS.map((w) => ({ id: w.id, name: w.name, at: w.at, reach: reachOf(w) })), state, foot, planets, startFoot: async (o) => (await footCode.want(), startFoot(o)), travel: (id, drive) => travel(id, drive), diveAt, net: () => net, siege, citadelGeo, arms, readSiegeState, rockFields, smashed, front: () => front, happen: (id) => happen(id, state.ship), mines, escort: () => escort, eclipse: () => eclipse && { ...eclipse, k: eclipseK, key: key.intensity }, remover: () => remover, removerView, ram: (gap = 6, kind = 'tie') => {
+    window.__universeDebug = { powers, power: (slot) => power(slot), charge: () => powers.fill(), THREE, post, scene, expanse, farStars, teleport: (x, y, z, heading = state.ship?.heading ?? 0, pitch = 0) => state.ship && (state.ship = { ...state.ship, x, y, z, heading, pitch, speed: 0 }), renderer, camera, traffic, hunters, wingmen, skirmishes, npcs, NPCS, meetNpc: (id) => state.ship && npcs?.add(NPCS[id], skirmishSpot(state.ship) ?? { x: state.ship.x, y: state.ship.y + 5, z: state.ship.z - 40 }), director, pieces, leviathans, meteors, fleet, novae, pilots, standing, deed, wanted, law, wonders: WONDERS.map((w) => ({ id: w.id, name: w.name, at: w.at, reach: reachOf(w) })), state, foot, planets, startFoot: async (o) => (await footCode.want(), startFoot(o)), travel: (id, drive) => travel(id, drive), places: { resolve: (id) => resolvePlace(id, { universe, t: state.spaceT, sectors: expanse.sectors(), build: false }), parkAt: (id, from, t0, t) => { const d = resolvePlace(id, { universe, t: t0, sectors: expanse.sectors(), build: false }); return d && followPark(d, parkPlace(d, from, t0), t); } }, diveAt, net: () => net, siege, citadelGeo, arms, readSiegeState, rockFields, smashed, front: () => front, happen: (id) => happen(id, state.ship), mines, escort: () => escort, eclipse: () => eclipse && { ...eclipse, k: eclipseK, key: key.intensity }, remover: () => remover, removerView, ram: (gap = 6, kind = 'tie') => {
       // a TIE (or `kind`) put `gap` dead ahead at your height, coming at you, for checking a ram from a browser
       const s = state.ship;
       if (!s || !hunters) return null;
@@ -5808,6 +5808,7 @@ export async function create(canvas, ctx) {
       return b.key;
     } };
     window.__universe = () => ({
+      t: state.spaceT,
       calls: renderer.info.render.calls,
       triangles: renderer.info.render.triangles,
       geometries: renderer.info.memory.geometries,

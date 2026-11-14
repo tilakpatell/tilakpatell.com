@@ -7,12 +7,25 @@
 //
 // createTrips({ state, props, emit, pilots, front, powers, unique, heard,
 //   retarget, invalidate, reduced, onFoot, wall, settle })
+//   resolve(id) → Destination | null: a generated place among the sectors
+//     the scene has (places/resolve.js, never building one)
+//   fetch(id) → Promise<Destination | null>, missing(id) → true when the
+//     id's sector isn't at hand: the worker pool's, optional
 //   → { travel(id, drive), dropAuto(), arriveAt(park), navTo(id),
-//       frontSpace(), withPilot(name), pilotGone(id, name), chasePilot() }
+//       frontSpace(), withPilot(name), pilotGone(id, name), chasePilot(),
+//       followPlace(), outOfJump(j) → park, endTrip(id) }
+//
+// A generated place (an `E:` id in any spelling) is gone to as it is now: its
+// park moves with it (park.js's followPark), a jump comes out where it is at
+// the flash, and one whose sector isn't made yet waits for the pool's fetch
+// (state.pending), which a later trip, a drop, the stick or a crash calls off.
+// A trip's end is state.arrived, a new object each time.
 
 import { HYPER, driveById, hyperState, legOf, parkFor } from './nav';
 import { portalById } from './portals';
 import { OPEN_SPACE, headingTo, isGoal } from './ship';
+import { atTime, canonicalPlace } from './places/ids';
+import { followPark, parkPlace, placeSpace } from './places/park';
 import { REAIM_MS, parkBehind, pilotId, pilotSpace, reached } from './pilotGoal';
 import { JAMMED, jumpState } from './words';
 
@@ -22,12 +35,16 @@ export function createTrips(deps) {
   // page): the page hears, so a tour or a trip on through the gate ends
   const dropAuto = () => {
     state.then = null; // (and a trip on through a portal with it)
+    state.arrived = state.pending = null;
     if (!state.auto) return;
     const id = state.auto.id;
     state.auto = null;
     emit({ type: 'arrived', id, done: false });
   };
   const travel = (id, drive = deps.props().drive) => {
+    state.arrived = state.pending = null;
+    const placeId = canonicalPlace(id);
+    if (placeId) return toPlace(placeId, drive);
     const s = state.ship;
     // (another pilot, `pilot:<id>`, is somewhere to go while they're flying
     // here in sight: pilots.js's pose, and pilotGoal.js)
@@ -47,6 +64,14 @@ export function createTrips(deps) {
     // front's is just inside the fight, on your side of it; a pilot's, behind them)
     const park = id === 'front' ? frontPark([s.x, s.z]) : pose ? parkBehind(pose) : parkFor(id, [s.x, s.z]);
     if (!park) return false;
+    return setOff(id, park, drive, pose, pid, null);
+  };
+  // under way to a park (travel's, the same for a place on the map, a pilot
+  // and a generated place): the jump if it's charged, else the autopilot, or
+  // simply there with reduced motion. `place` is a generated place's { dest,
+  // park }, which its trip follows as it moves
+  const setOff = (id, park, drive, pose, pid, place) => {
+    const s = state.ship;
     deps.heard();
     state.view = state.seat;
     state.lastInput = performance.now();
@@ -56,7 +81,7 @@ export function createTrips(deps) {
     }
     if (reduced) {
       state.auto = null;
-      arriveAt(park);
+      arriveAt(place ? followPark(place.dest, park, state.spaceT) : park);
       if (pose) withPilot(pose.name);
       deps.invalidate();
       if (!portalById(id)) setTimeout(() => emit({ type: 'arrived', id, done: true }), 0); // (there: the page's tour and a trip through the gate go on; after the page's own select. Through a portal, its trip ends at the far end: portalThrough)
@@ -75,7 +100,7 @@ export function createTrips(deps) {
       const l = Math.hypot(dx, dy, dz) || 1;
       deps.powers().cancel();
       deps.unique().clear();
-      state.jump = { id, park, phase: 'align', age: 0, dir: [dx / l, dy / l, dz / l], at: Infinity, name: pose?.name ?? null };
+      state.jump = { id, park, phase: 'align', age: 0, dir: [dx / l, dy / l, dz / l], at: Infinity, name: pose?.name ?? null, place };
     } else {
       if (hyper) {
         // (not yet: on super speed instead, and the HUD says why)
@@ -83,12 +108,54 @@ export function createTrips(deps) {
         state.note = { text: hyper.why === 'interdicted' ? JAMMED.long : `${jumpState(false, hyper.wait)}: super speed instead`, until: wall() + 3.5 };
       }
       state.auto = { id, park, od: driveById(hyper ? 'super' : drive).od };
+      if (place) Object.assign(state.auto, { place, space: placeSpace(OPEN_SPACE, place.dest) });
       // (a pilot moves: where they'll be parked behind is worked out again every REAIM_MS, chasePilot)
       if (pose) Object.assign(state.auto, { pilot: pid, name: pose.name, drive, space: pilotSpace(OPEN_SPACE, pid, pose), reaimAt: performance.now() + REAIM_MS });
     }
     deps.retarget(700);
     deps.invalidate();
     return true;
+  };
+  // a generated place: gone to now when the scene has it, else waited for
+  // while the pool makes its sector; never when its sector is at hand and
+  // hasn't got it (E:1,0:0:99), which is nowhere
+  const toPlace = (id, drive) => {
+    const s = state.ship;
+    if (!s || state.crash || state.dive || state.jump || deps.props().frozen || onFoot()) return false;
+    const dest = deps.resolve?.(id);
+    if (dest) return go(dest, drive);
+    if (!deps.fetch || !deps.missing?.(id)) return false;
+    const pending = { id, drive };
+    state.pending = pending;
+    const gone = (d) => {
+      if (state.pending !== pending) return; // (called off, or something else came first)
+      state.pending = null;
+      if (!d || !go(d, pending.drive)) emit({ type: 'arrived', id, done: false });
+    };
+    let ask;
+    try {
+      ask = Promise.resolve(deps.fetch(id)); // (asked now, so the pool starts at once)
+    } catch {
+      ask = Promise.resolve(null);
+    }
+    ask.then(gone, () => gone(null));
+    return true;
+  };
+  const go = (dest, drive) => {
+    const s = state.ship;
+    if (!s || state.crash || state.dive || state.jump || deps.props().frozen || onFoot()) return false;
+    const { id } = dest;
+    // (from the Curve, by the portal home first, and on from its far end)
+    const leg = legOf(s, id);
+    if (leg !== id) {
+      if (!travel(leg, drive)) return false;
+      state.then = { id, drive, name: null };
+      return true;
+    }
+    state.then = null;
+    const park = parkPlace(dest, [s.x, s.z], state.spaceT);
+    if (!park) return false;
+    return setOff(id, park, drive, null, null, { dest, park });
   };
   // the ship put straight down at a parking spot, still, level and facing
   // the place (reduced motion's trip, and a jump's way out of hyperspace)
@@ -158,5 +225,31 @@ export function createTrips(deps) {
     a.space = pilotSpace(OPEN_SPACE, a.pilot, pose);
   };
 
-  return { travel, dropAuto, arriveAt, navTo, frontSpace, withPilot, pilotGone, chasePilot };
+  // each frame of a trip to a generated place: its park where the place is
+  // now, and its goal in the autopilot's space with it
+  const followPlace = () => {
+    const a = state.auto;
+    if (!a?.place) return;
+    a.park = followPark(a.place.dest, a.place.park, state.spaceT);
+    const g = a.space?.goals?.[a.id];
+    if (g) atTime(a.place.dest, state.spaceT, g.at);
+  };
+  // out of hyperspace: where to come out (a pilot's, behind them as they are
+  // now; a place's, where it is at the flash; else the jump's park)
+  const outOfJump = (j) => {
+    const pid = pilotId(j.id);
+    const pose = pid ? pilots.pose(pid) : null;
+    const park = j.place ? followPark(j.place.dest, j.place.park, state.spaceT) : (parkBehind(pose) ?? j.park);
+    if (pid && pose) withPilot(pose.name);
+    else if (pid) pilotGone(j.id, j.name);
+    state.arrived = { id: j.id };
+    return park;
+  };
+  // the autopilot's done: the page hears, and the trip's end is an arrival
+  const endTrip = (id) => {
+    state.auto = null;
+    emit({ type: 'arrived', id, done: true }); // (the page's tour, and a trip on through the gate, go on from here)
+    state.arrived = { id };
+  };
+  return { travel, dropAuto, arriveAt, navTo, frontSpace, withPilot, pilotGone, chasePilot, followPlace, outOfJump, endTrip };
 }

@@ -6,13 +6,16 @@
 // ship comes in, and that the ship climbs 50,000 straight up and is never
 // turned back.
 //
-//   node scripts/universe-endless-check.mjs [--quality mid|low] [--url http://127.0.0.1:5173]
+//   node scripts/universe-endless-check.mjs [--quality mid|low] [--url http://127.0.0.1:5173] [--only a,b]
 //
 // Steps, each waited for on a condition, never a time: `start` (the default
 // start with a ship), `old-rim` (from inside where the rim was to past it, on
 // the pulse drive), `boundary` (across x = 60,000, till the new face is in),
 // `system` (into the nearest generated system, till it's built whole) and
-// `climb` (up to 50,000 above home, a few thousand a step). Each records the
+// `climb` (up to 50,000 above home, a few thousand a step), then `travel`
+// (super speed to a generated system and the jump to one in the next sector,
+// each waited for till the ship is at the place's own park). `--only a,b`
+// runs `start` and then only the steps named. Each records the
 // pops (the far layer's: a disc from nothing to whole in a frame), the
 // Expanse's own time a frame, the draw calls and triangles, the places within
 // 9,000 and the nearest (generated, and the site's own stations, worlds and
@@ -38,6 +41,8 @@ const arg = (name, fallback) => {
   return i > 0 ? process.argv[i + 1] : fallback;
 };
 const QUALITY = arg('quality', 'mid');
+const ONLY = arg('only', null)?.split(',') ?? null;
+const runs = (name) => !ONLY || ONLY.includes(name);
 const freePort = () =>
   new Promise((res) => {
     const s = createServer();
@@ -122,15 +127,56 @@ const step = async (name, go, arrived) => {
   return r;
 };
 
+// A trip to a generated place, waited for till the ship is still at the
+// place's own park as it is now (a system parks in a gap past its planets'
+// bands, so never a distance from its star). Both legs go to systems, which
+// don't move.
+const leg = async (id, drive) => {
+  if (!(await until((id) => Boolean(window.__universeDebug.places.resolve(id)), id, 300000))) return fail(`travel: ${id} never loaded`);
+  const from = await page.evaluate(() => {
+    const s = window.__universeDebug.state.ship;
+    return { at: [s.x, s.z], t0: window.__universe().t };
+  });
+  if (!(await page.evaluate(([id, drive]) => window.__universeDebug.travel(id, drive), [id, drive]))) return fail(`travel: ${id} by ${drive} wouldn't go`);
+  const there = await until(
+    ([id, from]) => {
+      const d = window.__universeDebug;
+      const u = window.__universe();
+      if (d.state.auto || d.state.jump) return false;
+      const p = d.places.parkAt(id, from.at, from.t0, u.t);
+      const s = d.state.ship;
+      return Boolean(p) && Math.hypot(s.x - p.x, s.y - p.y, s.z - p.z) <= 1;
+    },
+    [id, from],
+    300000,
+  );
+  if (!there) return fail(`travel: never parked at ${id} by ${drive}`);
+  const s = await page.evaluate(() => window.__universeDebug.state.ship);
+  console.log(`travel    ${id} by ${drive}: parked at ${[s.x, s.y, s.z].map(Math.round)}`);
+};
+const travelStep = async () => {
+  // (over the face into E:1,0 first, so its sector is loaded round the ship)
+  await page.evaluate(() => window.__universeDebug.teleport(61000, 0, 0, -Math.PI / 2, 0));
+  if (!(await until(() => Boolean(window.__universeDebug.places.resolve('E:1,0:0')), null, 300000))) return fail('travel: E:1,0 never loaded');
+  await page.evaluate(() => {
+    const d = window.__universeDebug;
+    const sys = d.places.resolve('E:1,0:0');
+    const span = sys.src.row.reach;
+    d.teleport(sys.at[0] + span + 1500, sys.at[1], sys.at[2], Math.PI / 2, 0);
+  });
+  await leg('E:1,0:0', 'super');
+  await leg('E:2,0:0', 'hyper');
+};
+
 try {
   await page.goto(`${base}/?quality=${QUALITY}#/universe`, { waitUntil: 'domcontentloaded', timeout: 180000 });
   if (!(await until(() => typeof window.__universe === 'function' && window.__universe().ship && window.__universeDebug?.state?.model, null, 300000))) throw new Error('the map never came up');
   const loaded27 = () => window.__universeDebug.expanse.loaded().length >= 27;
   await step('start', null, loaded27);
-  await step('old-rim', () => window.__universeDebug.teleport(47000, 0, 0, -Math.PI / 2, 0), () => window.__universeDebug.state.ship.x >= 46000 && window.__universeDebug.expanse.loaded().length >= 27);
-  await page.evaluate(() => window.__universeDebug.teleport(53000, 0, 0, -Math.PI / 2, 0));
-  await step('boundary', () => window.__universeDebug.teleport(61000, 0, 0, -Math.PI / 2, 0), () => window.__universeDebug.expanse.sector() === 'E:1,0' && window.__universeDebug.expanse.loaded().length >= 27);
-  await step(
+  if (runs('old-rim')) await step('old-rim', () => window.__universeDebug.teleport(47000, 0, 0, -Math.PI / 2, 0), () => window.__universeDebug.state.ship.x >= 46000 && window.__universeDebug.expanse.loaded().length >= 27);
+  if (runs('boundary')) await page.evaluate(() => window.__universeDebug.teleport(53000, 0, 0, -Math.PI / 2, 0));
+  if (runs('boundary')) await step('boundary', () => window.__universeDebug.teleport(61000, 0, 0, -Math.PI / 2, 0), () => window.__universeDebug.expanse.sector() === 'E:1,0' && window.__universeDebug.expanse.loaded().length >= 27);
+  if (runs('system')) await step(
     'system',
     () => {
       const d = window.__universeDebug;
@@ -141,16 +187,19 @@ try {
     },
     () => window.__universeDebug.expanse.built().size > 0,
   );
-  // the climb: 5,000 at a time, never pushed back down
-  let lowest = Infinity;
-  for (let y = 5000; y <= 50000; y += 5000) {
-    await page.evaluate((y) => window.__universeDebug.teleport(0, y, 3000, 0, 0.6), y);
-    await page.waitForTimeout(400);
-    const at = await page.evaluate(() => window.__universeDebug.state.ship.y);
-    if (at < y - 50) lowest = Math.min(lowest, at - y);
+  if (runs('climb')) {
+    // the climb: 5,000 at a time, never pushed back down
+    let lowest = Infinity;
+    for (let y = 5000; y <= 50000; y += 5000) {
+      await page.evaluate((y) => window.__universeDebug.teleport(0, y, 3000, 0, 0.6), y);
+      await page.waitForTimeout(400);
+      const at = await page.evaluate(() => window.__universeDebug.state.ship.y);
+      if (at < y - 50) lowest = Math.min(lowest, at - y);
+    }
+    if (lowest < 0) fail(`climb: pushed back down by ${Math.round(-lowest)}`);
+    await step('climb', null, loaded27);
   }
-  if (lowest < 0) fail(`climb: pushed back down by ${Math.round(-lowest)}`);
-  await step('climb', null, loaded27);
+  if (runs('travel')) await travelStep();
 } catch (e) {
   fail(String(e.message ?? e));
 } finally {

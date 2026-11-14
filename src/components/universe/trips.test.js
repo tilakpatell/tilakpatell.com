@@ -4,6 +4,9 @@ import { driveById, parkFor } from './nav';
 import { OVERDRIVE, spawn } from './ship';
 import { SECTORS } from './layout';
 import { JAMMED, jumpState } from './words';
+import { resolvePlace } from './places/resolve';
+import { atTime } from './places/ids';
+import { followPark, parkPlace } from './places/park';
 
 // (the deps as scene.js passes them: the page's props, the powers and the
 // arms are thunks, read when they're needed, never when the trips are made)
@@ -105,5 +108,90 @@ describe('trips (the scene’s travel, moved out)', () => {
     trips.travel('marvel', 'hyper');
     expect(state.jump?.phase).toBe('align');
     expect([powers.cancel, unique.clear].map((f) => f.mock.calls.length)).toEqual([1, 1]);
+  });
+});
+describe('trips to generated places', () => {
+  const resolve = (id) => resolvePlace(id, { t: 0 });
+  const id = 'E:1,0:0:0';
+  const xyz = (k) => ({ x: k.x, y: k.y, z: k.z, heading: k.heading });
+  const flush = () => new Promise((r) => setTimeout(r, 0));
+  it('flies to a planet in any spelling, re-parked on it as its orbit carries it', () => {
+    const { state, trips } = make({ state: { spaceT: 0 }, deps: { resolve } });
+    expect(trips.travel('e:1,0:0:0', 'super')).toBe(true);
+    const d = resolve(id);
+    const park = parkPlace(d, [spawn('home').x, spawn('home').z], 0);
+    expect(state.auto.id).toBe(id);
+    expect(xyz(state.auto.park)).toEqual(xyz(park));
+    expect(state.auto.space.goals[id]).toMatchObject({ id, r: d.r, reach: d.reach });
+    state.spaceT = 600;
+    trips.followPlace();
+    expect(xyz(state.auto.park)).toEqual(xyz(followPark(d, park, 600)));
+    expect(state.auto.space.goals[id].at).toEqual(atTime(d, 600));
+  });
+  it('comes out of a jump where the place is at the flash', () => {
+    const { state, trips } = make({ state: { spaceT: 0 }, deps: { resolve } });
+    trips.travel(id, 'hyper');
+    state.spaceT = 900;
+    const out = trips.outOfJump(state.jump);
+    expect(xyz(out)).toEqual(xyz(followPark(resolve(id), state.jump.place.park, 900)));
+    expect(state.arrived).toEqual({ id });
+  });
+  it('won’t go to a place that isn’t there, or one it can’t fetch', () => {
+    expect(make({ deps: { resolve } }).trips.travel('E:1,0:0:99')).toBe(false);
+    expect(make({ deps: { resolve: () => null } }).trips.travel('E:9,0:0')).toBe(false);
+    // (its sector is at hand and holds nothing there: no wait, no fetch)
+    const fetch = vi.fn(async () => null);
+    const none = make({ deps: { resolve, fetch, missing: () => false } });
+    expect(none.trips.travel('E:1,0:0:99')).toBe(false);
+    expect([none.state.pending, fetch.mock.calls.length]).toEqual([null, 0]);
+  });
+  it('waits for a place whose sector isn’t made yet, then goes, unless something came first', async () => {
+    let land;
+    const fetch = vi.fn(() => new Promise((r) => { land = r; }));
+    // (resolve still misses when the fetch lands: the trip goes with what landed, never resolving again)
+    const missing = () => true;
+    const a = make({ state: { spaceT: 0 }, deps: { resolve: () => null, fetch, missing } });
+    expect(a.trips.travel(id, 'super')).toBe(true);
+    expect([a.state.auto, a.state.pending]).toEqual([null, { id, drive: 'super' }]);
+    land(resolve(id));
+    await flush();
+    expect([a.state.auto?.id, a.state.pending]).toEqual([id, null]);
+    expect(xyz(a.state.auto.park)).toEqual(xyz(parkPlace(resolve(id), [spawn('home').x, spawn('home').z], 0)));
+    expect(fetch).toHaveBeenCalledTimes(1);
+    const b = make({ state: { spaceT: 0 }, deps: { resolve: () => null, fetch, missing } });
+    b.trips.travel(id, 'super');
+    b.trips.travel('marvel', 'super');
+    land(resolve(id));
+    await flush();
+    expect(b.state.auto.id).toBe('marvel');
+    const c = make({ state: { spaceT: 0 }, deps: { resolve: () => null, fetch, missing } });
+    c.trips.travel(id, 'super');
+    c.trips.dropAuto();
+    land(resolve(id));
+    await flush();
+    expect(c.state.auto).toBeNull();
+    const d = make({ deps: { resolve: () => null, fetch: async () => null, missing } });
+    d.trips.travel('E:9,0:0', 'super');
+    await flush();
+    expect(d.events.at(-1)).toEqual({ type: 'arrived', id: 'E:9,0:0', done: false });
+    const e = make({ deps: { resolve: () => null, fetch: async () => { throw new Error('the pool went away'); }, missing } });
+    e.trips.travel('E:9,0:0', 'super');
+    await flush();
+    expect([e.state.pending, e.events.at(-1)]).toEqual([null, { type: 'arrived', id: 'E:9,0:0', done: false }]);
+  });
+  it('marks a trip’s end as an arrival, each time afresh, and a dropped one or a new one as none', () => {
+    const { state, events, trips } = make({ state: { spaceT: 0 }, deps: { resolve } });
+    trips.travel(id);
+    trips.endTrip(id);
+    const first = state.arrived;
+    expect([state.auto, first]).toEqual([null, { id }]);
+    expect(events.at(-1)).toEqual({ type: 'arrived', id, done: true });
+    trips.travel(id);
+    expect(state.arrived).toBeNull();
+    trips.endTrip(id);
+    expect(state.arrived).not.toBe(first);
+    trips.travel(id);
+    trips.dropAuto();
+    expect(state.arrived).toBeNull();
   });
 });
