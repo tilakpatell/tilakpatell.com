@@ -32,15 +32,15 @@ Mid's `landing-middleearth` read 0 calls (the landing wasn't drawn when the fram
 
 `/galaxy` has no before shot: in software GL it stops at its “needs a graphics chip” card (twice, `scripts/autopilot-check.mjs --routes /galaxy`), so the 3D never starts. Its picture is pinned instead by `galaxy/sky.test.js`: with the new `clouds` option left at its default, every system's bake gets the same nebula colours as before, and the bake's shader is not touched.
 
-## The browser check (`scripts/nebula-check.mjs`, high, at 9a081a787)
+## The browser check (`scripts/nebula-check.mjs`, high, final)
 
-Before `scene.js` is wired (the sky still bakes its clouds; lane 2's PR 2.4 lands first), with the grown clouds (the Veil's gas 5,500, the Cradle's 6,000). `nebula-check.json`:
+Run on the branch with `scene.js` wired and the final look (8474282bf and the measure's last fix). `nebula-check.json`:
 
-- **Parallax:** the Veil's centroid moved 288.5 px for 5,000 sideways, its projection 296 (within 10 %).
-- **Roll:** the view turned 30° about its axis; two of the map's points projected say the picture turned 30°, the cloud turned 30°. (On `main` the landmark's picture didn't turn.)
-- **Inside:** in the Cradle the fog covers 96 % of the frame.
+- **Parallax:** at the veil-side pose, 5,000 sideways, the cloud's centroid (the difference's biggest part) moved 292.9 px, its projection 296.
+- **Roll:** the Veil 16,500 off and centred, the view turned 30° about its axis; two of the map's points projected say the picture turned 30°, the cloud turned 30°. (On `main` the landmark's picture didn't turn.)
+- **Inside:** in the Cradle the fog covers 92 % of the frame.
 
-The shots: `check-veil-side` (20,000 off), `check-veil-near` and `check-veil-rolled` (16,500 off, centred, before and after the roll), `check-in-cradle` and `check-in-cradle-off` (the same frame with the nebulae hidden).
+An earlier run's shots (before the wiring): `check-veil-side`, `check-veil-near`, `check-veil-rolled`, `check-in-cradle`, `check-in-cradle-off`.
 
 ## Before and after, like for like (2026-11-14)
 

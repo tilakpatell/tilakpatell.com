@@ -8,21 +8,21 @@
     "parallax": {
       "ok": true,
       "predicted": 296,
-      "measured": 288.5,
+      "measured": 292.9,
       "pixels": [
-        31803,
-        5881
+        1540,
+        7575
       ]
     },
     "roll": {
       "ok": true,
       "turn": 30,
       "cloud": 30,
-      "cloudShare": 0.022
+      "cloudShare": 0.013
     },
     "inside": {
       "ok": true,
-      "share": 0.964
+      "share": 0.923
     }
   },
   "errors": []
