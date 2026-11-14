@@ -197,6 +197,24 @@ describe('the finish (the map’s: FSR 1 up to a canvas of the screen’s pixels
     expect(r.setPixelRatio).not.toHaveBeenCalled();
   });
 
+  it('sizes its wide picture again when the canvas comes to its size after the first frame brought up', () => {
+    // (the canvas's own 300 × 150 till the page sizes it: a frame brought up before then, and the
+    // canvas's drawing buffer sized after it with nothing else changed, kept the 300 × 150 picture
+    // and stretched it over the whole screen, grey bands down it)
+    const buffer = [300, 150];
+    const r = { ...renderer(), getPixelRatio: () => 1, getDrawingBufferSize: (v) => v.set(...buffer) };
+    const post = createPost(r, new THREE.Scene(), new THREE.PerspectiveCamera(), { upscale: true, top: () => 1 });
+    post.composer.render = () => {};
+    post.sharpness = 0.5;
+    post.render(1280, 720);
+    const grade = gradeOf(post);
+    expect([grade.up.wide.width, grade.up.wide.height]).toEqual([300, 150]);
+    buffer.splice(0, 2, 1280, 720);
+    post.render(1280, 720);
+    expect([grade.up.wide.width, grade.up.wide.height]).toEqual([1280, 720]);
+    expect([grade.up.graded.width, grade.up.graded.height]).toEqual([768, 432]);
+  });
+
   it('takes the visitor’s cap on samples at the next frame', () => {
     const post = createPost({ ...renderer(), getPixelRatio: () => 1 }, new THREE.Scene(), new THREE.PerspectiveCamera(), { upscale: true, top: () => 1 });
     post.composer.render = () => {};
