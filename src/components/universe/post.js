@@ -587,7 +587,11 @@ export function createPost(renderer, scene, camera, { small = false, bloom: look
   let glow = true; // bloom, until lite() takes it off
   let folding = true; // the finish brings a softer scene up to the canvas (upscale), until lite({ fold: false })
   let sharp = 1; // a share of the renderer's pixel ratio the passes are drawn at
-  const at = { w: 0, h: 0, ratio: 0, full: 0 };
+  // what the passes were last sized for: the scene's size and sharpness, and the canvas's drawing
+  // buffer, which the bring-up's wide picture is the size of (it can come to its size after the
+  // first frame, the canvas's own 300 × 150 till then, with nothing else changed)
+  const at = { w: 0, h: 0, ratio: 0, full: 0, bw: 0, bh: 0 };
+  const buffer = new THREE.Vector2();
   return {
     get on() {
       return on;
@@ -627,8 +631,9 @@ export function createPost(renderer, scene, camera, { small = false, bloom: look
       }
       const full = renderer.getPixelRatio();
       const ratio = drawnAt(full);
-      if (w !== at.w || h !== at.h || ratio !== at.ratio || full !== at.full) {
-        Object.assign(at, { w, h, ratio, full });
+      renderer.getDrawingBufferSize(buffer);
+      if (w !== at.w || h !== at.h || ratio !== at.ratio || full !== at.full || buffer.x !== at.bw || buffer.y !== at.bh) {
+        Object.assign(at, { w, h, ratio, full, bw: buffer.x, bh: buffer.y });
         // (the finish's multisampling by the sharpness drawn at, before the
         // buffers are sized: made again either way)
         if (upscale) resample(samplesAt(ratio, { small, cap: samplesCap }));
@@ -648,8 +653,7 @@ export function createPost(renderer, scene, camera, { small = false, bloom: look
           up ??= { graded: picture(), wide: picture() };
           const read = composer.readBuffer;
           up.graded.setSize(Math.max(1, Math.round(read.width)), Math.max(1, Math.round(read.height)));
-          const px = renderer.getDrawingBufferSize(new THREE.Vector2());
-          up.wide.setSize(Math.max(1, px.x), Math.max(1, px.y));
+          up.wide.setSize(Math.max(1, buffer.x), Math.max(1, buffer.y));
           // (sharpened as hard as it was brought up: lib/three/finish's rcasStops)
           grade.rcas.uniforms.uSharp.value = 2 ** -rcasStops(ratio / full);
           grade.up = up;
