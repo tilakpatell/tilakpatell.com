@@ -13,7 +13,7 @@ async function reach(entry) {
   }
   return [...seen].map((f) => f.slice(ROOT.length));
 }
-const GENERATOR = /^src\/components\/expanse\/gen\/(space|sector|systems|things|stations|tables|names|keepOuts|grid|job)\.js$|^src\/components\/universe\/places\/(resolve|cards)\.js$/;
+const GENERATOR = /^src\/components\/expanse\/gen\/(space|sector|systems|things|stations|tables|names|keepOuts|grid|job|catalogue|gargantuans|finder|companions)\.js$|^src\/components\/expanse\/gen\/extras\/[^/]+\.js$|^src\/components\/universe\/places\/(resolve|cards)\.js$|^src\/components\/universe\/things\/(cards|rules)\.js$|^src\/components\/universe\/gargantuans\/rules\.js$/;
 
 // (nav.js itself; ⌘K, preloaded on every page; the home page's lower half, which reaches nav.js
 // through the mini-map once lane 6a's is merged: Task 14 adds it to LOADS_NAV then)

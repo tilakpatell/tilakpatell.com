@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { beforeAll, describe, expect, it } from 'vitest';
-import { GARGANTUAN, KINDS, NEBULA_SHOW, THING_NEAR, UNIVERSE, fullSector } from '../../expanse/shared/gen';
+import { GARGANTUAN, KINDS, NEBULA_SHOW, THING_KINDS, THING_NEAR, UNIVERSE, discRadius, fullSector } from '../../expanse/shared/gen';
+import { FAR, discPx } from '../../expanse/shared/levels';
 import { poseFor } from '../poses';
 
 // Every baseline pose (lab/universe/baseline/mid.json's) stays as it was: no list row of lane
@@ -38,4 +39,30 @@ describe('the baseline poses', () => {
     expect(big).toHaveLength(1); // (one in the 3 × 3 × 3 round home)
     for (const pt of points) for (const g of big) expect(len(pt, g.at)).toBeGreaterThanOrEqual(GARGANTUAN.far + g.size);
   });
+  it('counts the discs over 4 px each kind adds at the baseline poses, for the owner', () => {
+    // (the lattice and every list, at 1080 high and the map's 34°; lane 2's four kinds apart)
+    const full = [];
+    for (let x = -1; x <= 1; x++) for (let y = -1; y <= 1; y++) for (let z = -1; z <= 1; z++) full.push(fullSector(UNIVERSE, x, y, z));
+    const table = {};
+    for (const n of names) {
+      const p = poseFor(n);
+      const row = (table[n] = {});
+      for (const sec of full) {
+        const core = !sec.sx && !sec.sy && !sec.sz;
+        const t = sec.things;
+        const add = (kind, at, size) => {
+          const r = discRadius(kind, size, { core });
+          if (!r) return;
+          const d = len(p.at, at);
+          if (d > FAR + r) return;
+          if (kind === 'beacon' && core) expect(r).toBeLessThanOrEqual(size);
+          if (discPx(d, r, { fov: 34, height: 1080 }) > 4) row[kind] = (row[kind] ?? 0) + 1;
+        };
+        for (let i = 0; i < t.count; i++) add(THING_KINDS[t.kind[i]].kind, [0, 1, 2].map((k) => sec.origin[k] + t.at[3 * i + k]), t.size[i]);
+        for (const rs of Object.values(sec.extras)) for (const r of rs) add(r.kind, r.at, r.size);
+      }
+      for (const v of Object.values(row)) expect(Number.isInteger(v)).toBe(true);
+    }
+    console.log('DISCS', JSON.stringify(table));
+  }, 120000);
 });

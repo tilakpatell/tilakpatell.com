@@ -1,5 +1,6 @@
-import { describe, expect, it } from 'vitest';
-import { THING_KINDS, UNIVERSE, fullSector, rowAt, thingRow, traitsOf } from '../../expanse/shared/gen';
+import { beforeAll, describe, expect, it } from 'vitest';
+import { GARGANTUAN_FORMS, KINDS, THING_KINDS, UNIVERSE, fullSector, gargantuanKeeps, rowAt, rowSolids, thingRow, traitsOf } from '../../expanse/shared/gen';
+import { parkPlace } from '../places/park';
 import { atTime } from '../places/ids';
 import { resolvePlace } from '../places/resolve';
 import { THING_CARDS, placeCard } from '../places/cards';
@@ -61,5 +62,48 @@ describe('lane 4a’s cards', () => {
     for (const k of ['hole', 'arc', 'hulk', 'giant', 'dyson']) expect(CATALOGUE_CARDS[k], k).toMatchObject({ type: PLACE.thing[k], about: PLACE.about[k], solid: true, far: 400000 });
     expect(CATALOGUE_CARDS.hole.chart.shape).toBe('hole');
     expect(CATALOGUE_CARDS.dyson.chart.shape).toBe('star');
+  });
+});
+
+describe('every kind of thing in space', () => {
+  // (spec B: every one has a name, a card and a parking spot, through lane 3's own resolver)
+  const sectors = new Map();
+  beforeAll(() => {
+    for (let x = 0; x <= 2; x++) for (let y = -1; y <= 1; y++) for (let z = -1; z <= 1; z++) {
+      const sec = fullSector(UNIVERSE, x, y, z);
+      sectors.set(sec.id, sec);
+    }
+  }, 120000);
+  const OTHERS = ['system', 'station', 'nebula'];
+  const rowsOf = (kind) => {
+    const out = [];
+    for (const sec of sectors.values()) {
+      const lattice = THING_KINDS.findIndex((k) => k.kind === kind);
+      if (lattice >= 0) for (let i = 0; i < sec.things.count && out.length < 3; i++) if (sec.things.kind[i] === lattice) out.push(thingRow(sec, i));
+      for (const rows of Object.values(sec.extras)) for (const r of rows) if (r.kind === kind && out.length < 3) out.push(r);
+    }
+    return out;
+  };
+  it('has a name, a card and a park clear of its solids, for each of lane 4a’s kinds and the block’s gargantuan', () => {
+    const kinds = Object.keys(KINDS).filter((k) => !OTHERS.includes(k));
+    let gargantuans = 0;
+    for (const kind of kinds) {
+      const rows = rowsOf(kind);
+      if (GARGANTUAN_FORMS.includes(kind)) gargantuans += rows.length;
+      else expect(rows.length, kind).toBeGreaterThan(0);
+      for (const row of rows) {
+        const dest = resolvePlace(row.id, { t: 0, sectors, build: false });
+        expect(dest, row.id).not.toBeNull();
+        expect(typeof dest.name === 'string' && dest.name.length > 0, row.id).toBe(true);
+        expect(dest.type, row.id).toBe(kind === 'pulsar' ? PLACE.thing.pulsar : PLACE.thing[kind]);
+        expect(dest.about.length, row.id).toBeGreaterThan(0);
+        const sec = sectors.get(dest.key);
+        const park = parkPlace(dest, [sec.origin[0] + 50000, sec.origin[2]], 0);
+        expect(park, row.id).not.toBeNull();
+        const solids = row.gargantuan ? gargantuanKeeps(row) : rowSolids(row, rowAt(row, 0));
+        for (const so of solids) expect(Math.hypot(park.x - so.at[0], park.y - so.at[1], park.z - so.at[2]) - so.r, row.id).toBeGreaterThanOrEqual(1);
+      }
+    }
+    expect(gargantuans).toBeGreaterThan(0);
   });
 });
