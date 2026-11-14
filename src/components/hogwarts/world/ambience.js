@@ -5,10 +5,12 @@
 // hiss by how hard it falls), the owls at night (a soft two-note hoot, now
 // and then, somewhere off to one side), and the castle’s bell striking the
 // hour (a struck bell’s inharmonic partials dying away, quieter the further
-// you are from the clock tower). Nothing is asked of the browser until a
+// you are from the clock tower); and the Willow’s whoosh as a limb comes
+// through, and the covered bridge’s creak under you. Nothing is asked of the browser until a
 // key or a touch (`wake()`): before that a context will not start.
 //
-//   createAmbience(rt) → { wake(), set({ wind, rain, water, height, night, bell }), strike(n, near), update(dt), stats(), dispose() }
+//   createAmbience(rt) → { wake(), set({ wind, rain, water, height, night, bell }), strike(n, near),
+//     whoosh(k) (the Willow’s limb), creak(k) (the covered bridge), update(dt), stats(), dispose() }
 //   BELL: the bell’s partials [ratio, level, decay s]; bellAt(t, f0) → the struck sound at t (pure)
 //   hootTimes(seed, seconds) → when the owls call over a stretch (pure)
 
@@ -63,6 +65,8 @@ export function createAmbience(rt) {
   let owlSeed = 3;
   let hoots = 0;
   let strikes = 0;
+  let whooshes = 0;
+  let creaks = 0;
   const live = new Set();
 
   const ready = () => {
@@ -162,6 +166,53 @@ export function createAmbience(rt) {
       }
       strikes += n;
     },
+    // the Willow’s limb through the air: a swell of filtered noise sweeping down, `k` how hard
+    whoosh(k = 1) {
+      if (!ready()) return;
+      const now = ctx.currentTime;
+      const src = ctx.createBufferSource();
+      src.buffer = beds.wind.src.buffer;
+      const f = ctx.createBiquadFilter();
+      f.type = 'bandpass';
+      f.Q.value = 1.2;
+      f.frequency.setValueAtTime(1400, now);
+      f.frequency.exponentialRampToValueAtTime(260, now + 0.45);
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0, now);
+      g.gain.linearRampToValueAtTime(0.22 * clamp01(k), now + 0.12);
+      g.gain.setTargetAtTime(0, now + 0.2, 0.12);
+      src.connect(f).connect(g).connect(bus);
+      src.start(now, Math.random() * 3);
+      src.stop(now + 0.9);
+      live.add(src);
+      src.onended = () => live.delete(src);
+      whooshes += 1;
+    },
+    // the covered bridge’s timbers under you: a low wooden groan, rising and falling in pitch
+    creak(k = 1) {
+      if (!ready()) return;
+      const now = ctx.currentTime;
+      const o = ctx.createOscillator();
+      o.type = 'sawtooth';
+      const f0 = 70 + Math.random() * 40;
+      o.frequency.setValueAtTime(f0, now);
+      o.frequency.linearRampToValueAtTime(f0 * 1.35, now + 0.25);
+      o.frequency.linearRampToValueAtTime(f0 * 0.9, now + 0.6);
+      const f = ctx.createBiquadFilter();
+      f.type = 'bandpass';
+      f.frequency.value = 520;
+      f.Q.value = 3;
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0, now);
+      g.gain.linearRampToValueAtTime(0.05 * clamp01(k), now + 0.08);
+      g.gain.setTargetAtTime(0, now + 0.45, 0.1);
+      o.connect(f).connect(g).connect(bus);
+      o.start(now);
+      o.stop(now + 0.9);
+      live.add(o);
+      o.onended = () => live.delete(o);
+      creaks += 1;
+    },
     update(dt) {
       t += dt;
       if (!ready()) return;
@@ -179,7 +230,7 @@ export function createAmbience(rt) {
         owlIn = 14 + r() * 32;
       }
     },
-    stats: () => ({ state: ctx?.state ?? null, hoots, strikes, wind: beds.wind?.g.gain.value ?? 0, water: beds.water?.g.gain.value ?? 0, rain: beds.rain?.g.gain.value ?? 0 }),
+    stats: () => ({ state: ctx?.state ?? null, hoots, strikes, whooshes, creaks, wind: beds.wind?.g.gain.value ?? 0, water: beds.water?.g.gain.value ?? 0, rain: beds.rain?.g.gain.value ?? 0 }),
     dispose() {
       for (const s of live)
         try {

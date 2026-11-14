@@ -107,13 +107,13 @@ export const PLAN = [
   { kind: 'tower', id: 'owlery', at: [-30, -268], base: 50, r: 5.5, h: 20, cone: { h: 9, flare: 1.15 }, windows: { rows: [13, 16.5], per: 8, w: 1, h: 2.2, voids: true }, stone: 'rubble', tone: 'old' },
   // the greenhouses below the south-east corner, in a row, their doors to the castle
   { kind: 'glasshouse', id: 'greenhouse-1', at: [128, 41], len: 24, w: 10, turn: -E },
-  { kind: 'glasshouse', id: 'greenhouse-3', at: [150, 41], len: 24, w: 10, turn: -E },
+  { kind: 'glasshouse', id: 'greenhouse-3', at: [150, 41], len: 24, w: 10, turn: -E, open: true },
   { kind: 'glasshouse', id: 'greenhouse-5', at: [172, 41], len: 24, w: 10, turn: -E },
 ];
 
 // the doors that open (doors.js): where each stands, which way it faces
 // (yaw from +z), its size and its leaves, and what is through it
-const door = (id, o) => ({ id, place: o.place ?? id, at: o.at, y: o.y ?? F, faces: o.faces, w: o.w, h: o.h, leaves: o.leaves ?? 2, room: o.room ?? null, kind: o.room ? 'room' : 'gate' });
+const door = (id, o) => ({ id, place: o.place ?? id, at: o.at, y: o.y === undefined ? F : o.y, faces: o.faces, w: o.w, h: o.h, leaves: o.leaves ?? 2, room: o.room ?? null, kind: o.room ? 'room' : 'gate', ...(o.shut ? { shut: o.shut } : {}) });
 export const DOORS = [
   door('great-doors', { at: [50.2, 8], faces: E, w: 5, h: 9, room: 'greatHall' }),
   door('courtyard-door', { at: [13.2, -24], faces: E, w: 3.2, h: 5.6, room: 'staircase' }),
@@ -121,7 +121,7 @@ export const DOORS = [
   door('bridge-gate', { at: [BRIDGES.covered.from[0] + 3, BRIDGES.covered.from[2] + 0.7], faces: across(BRIDGES.covered) + Math.PI, w: 4, h: 5.6 }),
   door('boathouse', { at: [-25, 47.4], y: 1.2, faces: Math.PI, w: 2, h: 3, leaves: 1, room: 'boathouse' }),
   door('owlery', { at: [-30, -262.4], y: 50, faces: S, w: 1.6, h: 3, leaves: 1, room: 'owlery' }),
-  door('greenhouse-door', { at: [150, 29], y: null, faces: Math.PI, w: 1.8, h: 2.6 }),
+  door('greenhouse-door', { at: [150, 29], y: null, faces: Math.PI, w: 1.8, h: 2.6, shut: 'Go in' }),
 ].map((d) => ({ ...d, name: placeById(d.place)?.door ?? d.id }));
 
 // What a figure walks into: each standing part’s outline on the ground
@@ -148,6 +148,16 @@ export function footprints(plan = PLAN) {
         const u = side * ((p.gap ?? 5) / 2 + 2.6);
         out.push({ id: `${p.id}:tower`, kind: 'circle', at: [p.at[0] + u * c, p.at[1] - u * s], r: 3.1 });
       }
+    } else if (p.kind === 'glasshouse' && p.open) {
+      // (the open one walked into: its two long sides, its far end, and its door’s end either side of the door)
+      const c = Math.cos(p.turn ?? 0);
+      const s = Math.sin(p.turn ?? 0);
+      const P = (u, v) => [p.at[0] + u * c + v * s, p.at[1] - u * s + v * c];
+      const wall = (u, v, w, d) => out.push({ id: p.id, kind: 'box', at: P(u, v), w, d, turn: p.turn ?? 0 });
+      for (const side of [1, -1]) wall(0, (side * p.w) / 2, p.len, 0.4);
+      wall(p.len / 2, 0, 0.4, p.w);
+      const half = p.w / 2 - 1.1;
+      for (const side of [1, -1]) wall(-p.len / 2, side * (1.1 + half / 2), 0.4, half);
     } else if (p.kind === 'glasshouse' || p.kind === 'boathouse') out.push({ id: p.id, kind: 'box', at: p.at, w: p.len, d: p.w, turn: p.turn ?? 0 });
     else if (p.kind === 'fountain') out.push({ id: p.id, kind: 'circle', at: p.at, r: (p.r ?? 4) + 0.2 });
   }

@@ -93,7 +93,7 @@ import { createQuidditch } from './play/snitch';
 import { createCards } from './play/glow';
 import { createSaid } from './play/said';
 import { createLessons } from './play/lessons';
-import { practiceSet } from './play/props';
+import { makeProp, practiceSet } from './play/props';
 import { createFeel } from '../../lib/three/feel';
 import { ARRIVE, parseAt } from './rules/clock';
 import { HALF, placeById } from './rules/places';
@@ -212,7 +212,7 @@ export default {
     // a stair’s step near the height you were at); a room has its own (rooms/host.js)
     let lastY = null;
     // (the castle’s standing parts once; the gates, which open and shut, each frame)
-    const castleWalls = solidsOf(grounds.castle?.colliders ?? []);
+    const castleWalls = solidsOf([...(grounds.castle?.colliders ?? []), ...(grounds.landmarks?.colliders ?? [])]);
     const ground = {
       floorAt: (x, z) => grounds.groundAt(x, z, lastY),
       level: 0,
@@ -249,6 +249,18 @@ export default {
     const wand = createWand({ rt, scene, camera, house, houseName: school.house, floorAt, tell, feel, learnt: school.learnt });
     const carried = new Set(scene.children.filter((o) => !mine.has(o)));
     wand.place(practiceSet({ at: start.at, yaw: start.yaw, floorAt, house, rt }));
+    // (and two stones on the slope below the Whomping Willow, out of its reach, for its knot: quest 7)
+    const willowAt = placeById('willow').at;
+    for (const [i, [dx, dz]] of [
+      [16, 6],
+      [17.5, 3.5],
+    ].entries()) {
+      const object = makeProp('stone', { house, rt });
+      const x = willowAt[0] + dx;
+      const z = willowAt[1] + dz;
+      object.position.set(x, floorAt(x, z), z);
+      wand.add({ id: `willow-stone-${i + 1}`, kind: 'stone', object, r: 0.25, mid: 0.13 });
+    }
 
     // the notice board (Lane F, world/noticeBoard.js): to the right of where
     // you come up from the boats, past the practice set, turned to face you
@@ -284,10 +296,10 @@ export default {
     const air = createCards({ count: 400, parent: scene });
     for (const o of scene.children) if (o === air.mesh || o === air.group) carried.add(o);
     const broom = createBroom({ rt, scene, camera, house, floorAt, level: 0, solids: castleWalls, bounds: { x0: BOUNDS.x0 - 150, x1: BOUNDS.x1 + 150, z0: BOUNDS.z0 - 150, z1: BOUNDS.z1 + 150 }, feel, reduced, cards: air });
-    // (a match on the pitch's place on the lawn, until the grounds' second task builds its hoops and stands there)
+    // (a match on the grounds’ pitch, its stands’ tiers the crowd’s seats: world/grounds/pitch.js; the stage only if there’s none)
     const said = createSaid({ rt, camera, tell });
     const pitchAt = placeById('pitch').at;
-    const quidditch = createQuidditch({ rt, scene, camera, house, broom, cards: air, feel, tier, tell, said, stage: { at: [pitchAt[0], grounds.groundAt(pitchAt[0], pitchAt[1]) + 0.15, pitchAt[1]], yaw: 0 } });
+    const quidditch = createQuidditch({ rt, scene, camera, house, broom, cards: air, feel, tier, tell, said, pitch: grounds.pitch ?? null, stage: { at: [pitchAt[0], grounds.groundAt(pitchAt[0], pitchAt[1]) + 0.15, pitchAt[1]], yaw: 0 } });
     const BROOM_REACH = 2.4; // m: near enough the broom on the ground to get on it
     const broomThing = () => wand.things.get('broom');
     const nearBroom = () => {
@@ -512,6 +524,21 @@ export default {
     const known = (at) => Boolean(at) && (PARTS.includes(at) || BEATS.some((x) => x.id === at));
     if (known(props.at) || !arrival.save.arrived) arrival.start(known(props.at) ? props.at : null);
 
+    // a stone come down on the Willow’s knot (Leviosa’s and let go, or thrown): it stills the tree
+    const stoneWas = new Map();
+    const knot = () => {
+      const w = grounds.willow;
+      if (!w) return;
+      for (const th of wand.things.values()) {
+        if (th.kind !== 'stone' || th.held || th.gone || !th.object) continue;
+        const p = th.object.position;
+        const was = stoneWas.get(th.id);
+        stoneWas.set(th.id, p.y);
+        const falling = was != null && was - p.y > 0.002;
+        if (falling && Math.hypot(p.x - w.knot[0], p.z - w.knot[2]) < w.KNOT_R && Math.abs(p.y - w.knot[1]) < 1.2) grounds.landmarks.knock();
+      }
+    };
+
     const world = {
       ready: rt.gfx?.compile?.(scene, camera),
       resize(w, h) {
@@ -590,6 +617,15 @@ export default {
         }
         if (out.toast) tell('toast', { text: out.toast });
         if (out.enter) enter(out.enter.room, { from: out.enter.from });
+        // what the landmarks did: the Willow’s clout throws you clear (and costs a point of your house’s),
+        // the forest’s fog turns you about, and what the term counts goes to the page
+        if (out.throw) {
+          walker.place([s.x + out.throw[0], s.z + out.throw[1]], s.yaw);
+          feel.trauma(0.6);
+        }
+        if (out.turn) walker.place(out.turn.to, out.turn.yaw);
+        for (const e of out.events ?? []) tell(e.type, e.type === 'points' ? { ...e, house: school.house ?? arrival.save.house ?? 'gryffindor' } : e);
+        knot();
       },
       draw(f) {
         const r = f?.renderer ?? renderer;
@@ -732,6 +768,8 @@ export default {
         time: (h) => grounds.setHour(parseAt(h) ?? Number(h)),
         // (Lane A’s: s seconds into the first night’s dusk)
         dusk: (sec) => grounds.setHour(ARRIVE + sec / 60),
+        // (the Willow’s knot struck, as a stone come down on it would)
+        knot: () => grounds.landmarks?.knock(),
         cast: (spell, at) => wand.cast(spell, at),
         wand: () => wand.state(),
         curfew: () => curfew.state(),

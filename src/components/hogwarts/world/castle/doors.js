@@ -32,7 +32,8 @@ const SPEED = 1.6; // of the way a second
 
 export function promptFor(door, { open = 0, hasRoom = registered } = {}) {
   if (door.kind === 'room') return { key: 'E', verb: 'Go in', name: door.name, locked: !hasRoom(door.room) };
-  return { key: 'E', verb: open > 0.5 ? 'Close' : 'Open', name: door.name, locked: false };
+  // (a gate is opened and shut where it stands; one you go through to be inside says so while it’s shut)
+  return { key: 'E', verb: open > 0.5 ? 'Close' : (door.shut ?? 'Open'), name: door.name, locked: false };
 }
 
 export function nearestDoor(doors, x, z, y = null) {
