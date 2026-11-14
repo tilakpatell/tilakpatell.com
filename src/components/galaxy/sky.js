@@ -33,7 +33,7 @@
 //
 // createSky({ small, renderer, beacons }) → { group, setSystem(system), bake(renderer),
 //   prepare(renderer) → Promise, update(camera, t), focus(id), beacons, sunDirs,
-//   setRatio(r), dispose() };
+//   setRatio(r), setDeep(k), dispose() };
 //   setSystem then bake (with the renderer it was made with, unless given
 //   another); beacons: [{ id, dir }] (unit vectors), the other systems' stars
 //   (drawn unless `beacons: false`, for a sky borrowed where there's no jumping)
@@ -103,6 +103,7 @@ void main() {
 const LOOK_FRAG = /* glsl */ `
 uniform samplerCube uSky;
 uniform sampler2D uGrain;
+uniform float uDeep;
 varying vec3 vDir;
 float grain(vec3 d, float f) {
   vec3 w = pow(abs(d), vec3(4.0));
@@ -116,6 +117,13 @@ void main() {
   if (lit > 0.0) {
     float g = grain(d, 40.0) * 0.55 + grain(d, 110.0) * 0.45;
     c *= 1.0 + clamp((g - 0.5) * 1.6, -1.0, 1.0) * 0.2 * lit;
+  }
+  // deep (setDeep, off unless asked: the universe map's): the faint glow
+  // between taken down faster than the bright, so the band's star clouds
+  // and the nebulae keep their light and the dark between goes to black
+  if (uDeep > 0.0) {
+    float l = dot(c, vec3(0.2126, 0.7152, 0.0722));
+    c *= mix(1.0, clamp(pow(max(l, 1e-6) / 0.25, 0.9), 0.25, 1.0), uDeep);
   }
   float n = fract(sin(dot(gl_FragCoord.xy, vec2(12.9898, 78.233))) * 43758.5453) - 0.5;
   c = sRGBTransferOETF(vec4(c, 1.0)).rgb + n / 255.0;
@@ -381,7 +389,7 @@ export function createSky({ small = false, level = null, renderer = null, beacon
 
   // the sphere you see: it looks the baked cube up (black till there is one)
   const skyGeo = new THREE.SphereGeometry(SKY_R, 64, 32);
-  const lookMat = new THREE.ShaderMaterial({ vertexShader: SKY_VERT, fragmentShader: LOOK_FRAG, uniforms: { uSky: { value: null }, uGrain: { value: grainMap() } }, side: THREE.BackSide, depthWrite: false });
+  const lookMat = new THREE.ShaderMaterial({ vertexShader: SKY_VERT, fragmentShader: LOOK_FRAG, uniforms: { uSky: { value: null }, uGrain: { value: grainMap() }, uDeep: { value: 0 } }, side: THREE.BackSide, depthWrite: false });
   const sky = new THREE.Mesh(skyGeo, lookMat);
   sky.renderOrder = -20;
   sky.frustumCulled = false;
@@ -600,6 +608,11 @@ export function createSky({ small = false, level = null, renderer = null, beacon
     setRatio(dpr) {
       starMat.uniforms.uDpr.value = dpr;
       beaconMat.uniforms.uDpr.value = dpr;
+    },
+    // how deep the dark between is, 0 (as baked, the galaxy's) to 1 (the
+    // faint glow taken down toward black, the bright kept: the universe map's)
+    setDeep(k) {
+      lookMat.uniforms.uDeep.value = Math.max(0, Math.min(1, k));
     },
     // the bake's shader made and linking now, as the bake will draw it (to the
     // cube, so no tone mapping); resolves once it has. The first bake is then a

@@ -180,7 +180,7 @@ for (const tier of tiers) {
       // opacity 0 behind the loading veil (runtime.css's data-fresh). The scene is made (and the pose
       // draws) a minute or more before that in software, so the shot taken
       // then was a clear canvas over a white page: one colour, at every pose.
-      await page.waitForFunction(() => window.__universeDebug.renderer.domElement.parentElement?.dataset.gl === 'on', null, { timeout: 600000, polling: 500 });
+      await page.waitForFunction(() => window.__universeDebug?.renderer?.domElement?.parentElement?.dataset.gl === 'on', null, { timeout: 600000, polling: 500 });
       await page.waitForTimeout(2000);
       await page.evaluate((n) => window.__universe().pose(n), name);
       // (a planet pose: its near maps given a moment to land, unless they're off)

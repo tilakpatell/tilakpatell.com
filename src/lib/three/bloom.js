@@ -16,6 +16,7 @@ const slider = (pass, key, max) => ({ key, type: 'range', min: 0, max, step: 0.0
 
 export const bloomGroups = (pass) => {
   const soft = typeof pass.knee === 'number';
-  const items = [slider(pass, 'threshold', soft ? 3 : 2), ...(soft ? [slider(pass, 'knee', 1)] : []), slider(pass, 'strength', 1.5), slider(pass, 'radius', 1)];
+  // (strength up to 1.5, or twice what it's at: the universe map's chain starts past 1.5)
+  const items = [slider(pass, 'threshold', soft ? 3 : 2), ...(soft ? [slider(pass, 'knee', 1)] : []), slider(pass, 'strength', Math.max(1.5, (pass.strength ?? 0) * 2)), slider(pass, 'radius', 1)];
   return [{ name: 'bloom', items }];
 };

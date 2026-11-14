@@ -27,7 +27,7 @@
 //
 // createSky({ small, level, renderer, beacons }) → { group, setSystem(system), bake(renderer),
 //   prepare(renderer) → Promise, update(camera, t), focus(id), beacons, sunDirs,
-//   setRatio(r), dispose() }; nebulaeOf(sys), bakeSize({ small, level }), starCount({ small, level })
+//   setRatio(r), setDeep(k), dispose() }; nebulaeOf(sys), bakeSize({ small, level }), starCount({ small, level })
 
 import * as THREE from 'three';
 import { CubeRenderTarget, MeshBasicNodeMaterial } from 'three/webgpu';
@@ -122,7 +122,8 @@ function lookMaterial(cube) {
       lit.value = t ? 1 : 0;
     },
   };
-  mat.uniforms = { uSky, uGrain: grainTex };
+  const uDeep = uniform(0); // (setDeep's: 0, as baked)
+  mat.uniforms = { uSky, uGrain: grainTex, uDeep };
   const grain = (d, f) => {
     const w = pow(abs(d), vec3(4)).toVar();
     w.divAssign(w.x.add(w.y).add(w.z));
@@ -135,6 +136,9 @@ function lookMaterial(cube) {
     const bright = smoothstep(0.004, 0.05, dot(c, vec3(0.2126, 0.7152, 0.0722)));
     const g = grain(d, 40).mul(0.55).add(grain(d, 110).mul(0.45));
     c.mulAssign(clamp(g.sub(0.5).mul(1.6), -1, 1).mul(0.2).mul(bright).add(1));
+    // deep: the faint glow between taken toward black, the bright kept (LOOK_FRAG's)
+    const l = dot(c, vec3(0.2126, 0.7152, 0.0722));
+    c.mulAssign(mix(float(1), clamp(pow(max(l, 1e-6).div(0.25), 0.9), 0.25, 1), uDeep));
     const n = fract(sin(dot(screenCoordinate.xy, vec2(12.9898, 78.233))).mul(43758.5453)).sub(0.5);
     return sRGBTransferEOTF(max(sRGBTransferOETF(c).add(n.div(255)), 0));
   })();
@@ -590,6 +594,10 @@ export function createSky({ small = false, level = null, renderer = null, beacon
     setRatio(dpr) {
       starMat.uniforms.uDpr.value = dpr;
       beaconMat.uniforms.uDpr.value = dpr;
+    },
+    // how deep the dark between is, 0 (as baked) to 1 (../sky.js's setDeep)
+    setDeep(k) {
+      lookMat.uniforms.uDeep.value = Math.max(0, Math.min(1, k));
     },
     // the bake's shader made now, as the bake will draw it (into the cube:
     // the node renderer's pipeline is the target's); resolves once it has

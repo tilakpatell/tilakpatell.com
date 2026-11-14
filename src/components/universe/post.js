@@ -24,6 +24,15 @@
 // any. Short of that, lite() drops the bloom (the costliest pass) and keeps
 // the last one, so the tone map and the grade stay.
 //
+// The universe map's bloom is the lens's (createPost's `chain`, off by
+// default, so the galaxy's and Cybertron's picture is as it was; its
+// numbers ./look.js's CHAIN): lib/three/bloomChain's mip chain, thirteen
+// taps down with Karis's average on the first level (a star or a bolt's tip
+// can't flicker in it as it moves), a tent back up, each level at its
+// weight and the light kept; a veil of all the light (a lit limb's haze, a
+// sun's sky never quite black) under a glare of what's over the line. The
+// rest keep three's UnrealBloomPass, patched as below.
+//
 // Bloom and the last pass both read the scene through finite(): a pixel
 // that isn't a number (some GPUs make one of a pow() just below zero, or a
 // normal of length zero) reads as black, and nothing reads hotter than 64.
@@ -94,7 +103,8 @@ import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer
 import { FullScreenQuad } from 'three/examples/jsm/postprocessing/Pass.js';
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
-import { LOOK } from './look';
+import { CHAIN, LOOK } from './look';
+import { ChainBloomPass } from '../../lib/three/bloomChain';
 import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
 import { blueNoiseTexture } from '../../lib/three/noise';
 import { guardOf } from '../../lib/three/frameGuard';
@@ -507,7 +517,7 @@ const FINAL = {
 // (FSR 1 up to the canvas, the multisampling by the sharpness drawn at),
 // with top() the most the scene may be drawn at, the canvas's own ratio
 // where it gives none.
-export function createPost(renderer, scene, camera, { small = false, bloom: look = null, ratio = renderer.getPixelRatio(), upscale = false, top = null } = {}) {
+export function createPost(renderer, scene, camera, { small = false, bloom: look = null, ratio = renderer.getPixelRatio(), upscale = false, top = null, chain = null } = {}) {
   // multisampled below a pixel ratio of about 2; at 2 the pixels are too
   // small for jagged edges to show, and on a half-float target four samples
   // a pixel cost more than the rest of the frame put together. (With its
@@ -526,22 +536,36 @@ export function createPost(renderer, scene, camera, { small = false, bloom: look
   over.clearDepth = true;
   over.enabled = false;
   composer.addPass(over);
-  const BLOOM = { ...LOOK.bloom, ...look };
-  const bloom = new UnrealBloomPass(new THREE.Vector2(256, 256), BLOOM.strength, BLOOM.radius, BLOOM.threshold);
-  if (BLOOM.falloff) bloom.compositeMaterial.uniforms.bloomFactors.value = [...BLOOM.falloff];
-  // its first step (picking out what's bright enough to glow) reads through
-  // finite(): three's pass patched, or the soft knee
-  const bright = bloom.materialHighPassFilter;
-  const knee = typeof BLOOM.knee === 'number';
-  const read = 'vec4 texel = texture2D( tDiffuse, vUv );';
-  if (knee) {
-    bright.uniforms.uKnee = { value: BLOOM.knee };
-    bright.uniforms.uStep = { value: new THREE.Vector2(0.001, 0.001) };
-    bright.fragmentShader = KNEE;
-    bright.needsUpdate = true;
-  } else if (bright.fragmentShader.includes(read)) {
-    bright.fragmentShader = bright.fragmentShader.replace('void main() {', `${FINITE}\nvoid main() {`).replace(read, 'vec4 texel = vec4( finite( texture2D( tDiffuse, vUv ).rgb ), 1.0 );');
-    bright.needsUpdate = true;
+  // (a scene that asks for the chain, the universe map's: its numbers,
+  // ./look.js's CHAIN unless it brings its own; the rest keep three's pass)
+  const CH = chain ? { ...CHAIN, ...(chain === true ? null : chain) } : null;
+  const BLOOM = CH ? { ...CH } : { ...LOOK.bloom, ...look };
+  let bloom;
+  let bright = null;
+  let knee = false;
+  if (CH) {
+    // the lens's bloom (lib/three/bloomChain): a mip chain down and up, a
+    // veil of all the light and a glare of what's over the line, the light
+    // kept; finite() and the soft knee are its own
+    bloom = new ChainBloomPass(new THREE.Vector2(256, 256), CH);
+    knee = true;
+  } else {
+    bloom = new UnrealBloomPass(new THREE.Vector2(256, 256), BLOOM.strength, BLOOM.radius, BLOOM.threshold);
+    if (BLOOM.falloff) bloom.compositeMaterial.uniforms.bloomFactors.value = [...BLOOM.falloff];
+    // its first step (picking out what's bright enough to glow) reads through
+    // finite(): three's pass patched, or the soft knee
+    bright = bloom.materialHighPassFilter;
+    knee = typeof BLOOM.knee === 'number';
+    const read = 'vec4 texel = texture2D( tDiffuse, vUv );';
+    if (knee) {
+      bright.uniforms.uKnee = { value: BLOOM.knee };
+      bright.uniforms.uStep = { value: new THREE.Vector2(0.001, 0.001) };
+      bright.fragmentShader = KNEE;
+      bright.needsUpdate = true;
+    } else if (bright.fragmentShader.includes(read)) {
+      bright.fragmentShader = bright.fragmentShader.replace('void main() {', `${FINITE}\nvoid main() {`).replace(read, 'vec4 texel = vec4( finite( texture2D( tDiffuse, vUv ).rgb ), 1.0 );');
+      bright.needsUpdate = true;
+    }
   }
   composer.addPass(bloom);
   const grade = upscale ? new FinishPass(FINAL) : new ShaderPass(FINAL);
@@ -643,8 +667,10 @@ export function createPost(renderer, scene, camera, { small = false, bloom: look
         // screen's, it looks the same on every screen and costs a quarter
         // as much on a sharp one
         const [bw, bh] = bloomSize(w * ratio, h * ratio, { small, cap: BLOOM.cap });
-        bloom.setSize(bw * 2, bh * 2);
-        if (knee) bright.uniforms.uStep.value.set(0.25 / bw, 0.25 / bh);
+        // (three's pass halves what it's given for its first level; the chain doesn't)
+        if (CH) bloom.setSize(bw, bh);
+        else bloom.setSize(bw * 2, bh * 2);
+        if (knee && bright) bright.uniforms.uStep.value.set(0.25 / bw, 0.25 / bh);
         grade.uniforms.uAspect.value = w / h;
         grade.uniforms.uTexel.value.set(1 / Math.max(1, w * ratio), 1 / Math.max(1, h * ratio));
         // brought up to the canvas (FSR 1) when it's sharper than the scene:
@@ -691,10 +717,12 @@ export function createPost(renderer, scene, camera, { small = false, bloom: look
         bloom.threshold = v;
       },
       get knee() {
+        if (CH) return bloom.knee;
         return knee ? bright.uniforms.uKnee.value : undefined;
       },
       set knee(v) {
-        if (knee) bright.uniforms.uKnee.value = v;
+        if (CH) bloom.knee = v;
+        else if (knee) bright.uniforms.uKnee.value = v;
       },
       get strength() {
         return BLOOM.strength;
@@ -713,7 +741,10 @@ export function createPost(renderer, scene, camera, { small = false, bloom: look
     // bloom's strength, for a moment's flare (a boost, an arrival): k times
     // the base, k no more than the bloom's flareMax
     flare(k) {
-      if (glow) bloom.strength = BLOOM.strength * Math.min(k, BLOOM.flareMax ?? Infinity);
+      if (!glow) return;
+      const m = Math.min(k, BLOOM.flareMax ?? Infinity);
+      if (CH) bloom.scale = m;
+      else bloom.strength = BLOOM.strength * m;
     },
     // the boost's rush, 0…1, out from (x, y) on the canvas (0…1, y up)
     rush(k, x = 0.5, y = 0.5) {
@@ -820,6 +851,7 @@ export function createPost(renderer, scene, camera, { small = false, bloom: look
       glow = Boolean(want);
       bloom.enabled = glow;
       bloom.strength = BLOOM.strength;
+      if (CH) bloom.scale = 1;
     },
     // the most samples a pixel the finish multisamples with (the visitor's
     // video settings; Infinity: as samplesAt has it), taken at the next frame

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DEEP, DEEP_SOLIDS, PLACES, STARS, WONDERS, beyondOf, binaryAt, moveBinaries, nearestPlace, nearestStar, openness, parseWonder, planetAt, reachOf, wonderById } from './deep';
+import { DEEP, DEEP_SOLIDS, ORBIT_PERIOD, PLACES, STARS, WONDERS, beyondOf, binaryAt, moveBinaries, movePlanets, nearestPlace, nearestStar, openness, orbitPeriod, parseWonder, planetAt, reachOf, wonderById } from './deep';
 import { GOALS } from './ship';
 import { HOME_RADIUS, ORDER, POSITIONS, REACH, SECTORS, SECTOR_OF, inSector, sectorOf } from './layout';
 import { MOONS, byId } from './universes';
@@ -250,5 +250,44 @@ describe('deep space, spread (scale.js’s SPREAD)', () => {
         expect(d, `${w.id} and ${p.id}`).toBeGreaterThan(1.5 * reachOf(w));
       }
     }
+  });
+});
+
+describe('a sun’s worlds go round it', () => {
+  const suns = WONDERS.filter((w) => w.kind === 'star' && w.planets.length);
+  it('keeps each on its orbit, level with its sun, starting at its angle', () => {
+    for (const w of suns) {
+      for (const p of w.planets) {
+        expect(planetAt(w, p)).toEqual(planetAt(w, p, 0));
+        for (const t of [0, 37, 400, 5000]) {
+          const at = planetAt(w, p, t);
+          expect(Math.hypot(at[0] - w.at[0], at[2] - w.at[2])).toBeCloseTo(p.orbit, 6);
+          expect(at[1]).toBe(w.at[1]);
+        }
+        const once = planetAt(w, p, orbitPeriod(p));
+        planetAt(w, p, 0).forEach((v, i) => expect(once[i]).toBeCloseTo(v, 6));
+      }
+    }
+  });
+  it('the inner ones faster, as Kepler has it, at a few units a second', () => {
+    for (const w of suns) {
+      const [a, b] = [...w.planets].sort((x, y) => x.orbit - y.orbit);
+      expect(orbitPeriod(a)).toBeLessThan(orbitPeriod(b));
+      for (const p of w.planets) {
+        const speed = (2 * Math.PI * p.orbit) / orbitPeriod(p);
+        expect(speed).toBeGreaterThan(1);
+        expect(speed).toBeLessThan(5);
+      }
+    }
+    expect(ORBIT_PERIOD).toBeGreaterThan(60);
+  });
+  it('moves their solids with them, and back', () => {
+    const w = suns[0];
+    const one = DEEP_SOLIDS.find((o) => o.id === `${w.id}-1`);
+    const t = orbitPeriod(w.planets[0]) / 4;
+    movePlanets(t);
+    planetAt(w, w.planets[0], t).forEach((v, i) => expect(one.at[i]).toBeCloseTo(v, 9));
+    movePlanets(0); // (back where the other tests expect them)
+    planetAt(w, w.planets[0]).forEach((v, i) => expect(one.at[i]).toBeCloseTo(v, 9));
   });
 });

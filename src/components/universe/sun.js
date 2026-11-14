@@ -1,15 +1,18 @@
 // The sun in the middle of the map. Its surface is Solar System Scope's map
 // set boiling: the map is pushed about by a few layers of slow noise, so the
-// granules churn and the bright and dark patches drift, darker and redder
-// toward the edge (limb darkening, as a real star's disc is), and drawn
-// brighter than white so bloom (post.js) gives it its glare. Round it is the
-// corona: a disc that always faces you, glowing out from the edge with long
-// streamers that slowly turn and change, so the light round the sun moves.
+// granules churn (in a net of thin dark lanes close in), the bright and dark
+// patches drift and the hottest go whiter, darker and redder toward the edge
+// by the quadratic limb-darkening law, as a real star's disc is; drawn
+// brighter than white so bloom (post.js) gives it its glare. Round it
+// is the corona: a disc that always faces you, upright, glowing out from the
+// edge with long streamers that slowly change, so the light round the sun
+// moves.
 //
 // buildSun(T) → { group, update(t, camera) }
 
 import * as THREE from 'three';
 import { SUN } from './layout';
+import { faceUpright } from '../../lib/three/upright';
 
 // 3D simplex noise (Ashima Arts / Stefan Gustavson, MIT)
 export const NOISE_GLSL = `
@@ -84,6 +87,7 @@ varying vec3 vN;
 varying vec3 vView;
 varying vec2 vUv;
 ${NOISE_GLSL}
+float lum(vec3 c) { return dot(c, vec3(0.2126, 0.7152, 0.0722)); }
 void main() {
   vec3 p = normalize(vPos) * 2.6;
   float t = uTime * 0.04;
@@ -97,9 +101,18 @@ void main() {
   vec3 col = base * (0.78 + 0.32 * cells + 0.22 * gran);
   // hot spots where the cells peak
   col += vec3(1.0, 0.72, 0.35) * smoothstep(0.55, 0.95, cells + gran * 0.3) * 0.5;
-  // darker and redder toward the edge
+  // the granules' net: thin dark lanes where the noise crosses nought,
+  // fine enough that it shows only close in
+  float net = smoothstep(0.0, 0.3, abs(snoise(q * 12.0 - t * 5.0)));
+  col *= 0.8 + 0.2 * net;
+  // and the hotter a patch, the whiter (a 5,800 K photosphere's hottest)
+  float l = lum(col);
+  col = mix(col, vec3(l) * vec3(1.0, 0.93, 0.8), smoothstep(0.6, 1.3, l) * 0.35);
+  // darker and redder toward the edge: the quadratic limb-darkening law with
+  // the sun's own coefficients, the edge about a third as bright as the middle
   float mu = clamp(dot(normalize(vN), normalize(vView)), 0.0, 1.0);
-  col *= 0.42 + 0.58 * pow(mu, 0.55);
+  float m1 = 1.0 - mu;
+  col *= 1.0 - 0.47 * m1 - 0.23 * m1 * m1;
   col *= mix(vec3(1.0, 0.6, 0.32), vec3(1.0), smoothstep(0.0, 0.7, mu));
   gl_FragColor = vec4(col * uHeat, 1.0);
 }`;
@@ -153,6 +166,7 @@ export function buildSun(T = {}) {
   corona.renderOrder = 1;
   group.add(surface, corona);
   const q = new THREE.Quaternion();
+  const eye = new THREE.Vector3();
   return {
     group,
     update(t, camera) {
@@ -160,9 +174,10 @@ export function buildSun(T = {}) {
       surfaceMat.uniforms.uTime.value = t;
       coronaMat.uniforms.uTime.value = t;
       if (camera) {
-        // the corona faces you: undo the map's turn, then take the camera's
-        group.getWorldQuaternion(q);
-        corona.quaternion.copy(q.invert()).multiply(camera.quaternion);
+        // the corona faces you, upright to the map: toward the camera's
+        // place, never its roll, so the streamers hold still as the ship
+        // banks (lib/three/upright.js)
+        faceUpright(corona, camera.getWorldPosition(eye), q);
       }
     },
   };
