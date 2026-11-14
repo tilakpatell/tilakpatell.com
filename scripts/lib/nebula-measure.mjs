@@ -64,3 +64,35 @@ export function bestRotation(a, b, { width, height, about, radius, range = 60, s
   }
   return best;
 }
+
+// largestBlob(mask, width, height) → the mask's largest 4-connected part
+// alone (the cloud; not a star that twinkled between the two shots)
+export function largestBlob(mask, width, height) {
+  const label = new Int32Array(mask.length);
+  const stack = [];
+  let best = 0, bestSize = 0, next = 0;
+  for (let p = 0; p < mask.length; p++) {
+    if (!mask[p] || label[p]) continue;
+    const id = ++next;
+    let size = 0;
+    label[p] = id;
+    stack.push(p);
+    while (stack.length) {
+      const q = stack.pop();
+      size++;
+      const x = q % width, y = (q - x) / width;
+      for (const n of [x > 0 ? q - 1 : -1, x < width - 1 ? q + 1 : -1, y > 0 ? q - width : -1, y < height - 1 ? q + width : -1])
+        if (n >= 0 && mask[n] && !label[n]) {
+          label[n] = id;
+          stack.push(n);
+        }
+    }
+    if (size > bestSize) {
+      bestSize = size;
+      best = id;
+    }
+  }
+  const out = new Uint8Array(mask.length);
+  if (best) for (let p = 0; p < mask.length; p++) out[p] = label[p] === best ? 1 : 0;
+  return out;
+}

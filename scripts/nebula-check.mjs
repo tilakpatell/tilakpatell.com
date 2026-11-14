@@ -28,7 +28,7 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright-core';
 import sharp from 'sharp';
-import { bestRotation, centroid, diffMask } from './lib/nebula-measure.mjs';
+import { bestRotation, centroid, diffMask, largestBlob } from './lib/nebula-measure.mjs';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const args = {};
@@ -168,8 +168,9 @@ try {
   await frames();
   const b = await both();
   const pb = await project('veil');
-  const ca = centroid(diffMask({ ...a, width: W, height: H }), W);
-  const cb = centroid(diffMask({ ...b, width: W, height: H }), W);
+  // (the cloud is the difference's biggest part: a star that twinkled between the shots isn't)
+  const ca = centroid(largestBlob(diffMask({ ...a, width: W, height: H }), W, H), W);
+  const cb = centroid(largestBlob(diffMask({ ...b, width: W, height: H }), W, H), W);
   const predicted = Math.hypot(pb[0] - pa[0], pb[1] - pa[1]);
   const measured = Math.hypot(cb.x - ca.x, cb.y - ca.y);
   verdict('parallax', ca.n > 50 && cb.n > 50 && predicted >= 100 && Math.abs(measured - predicted) <= Math.max(8, 0.1 * predicted), { predicted: +predicted.toFixed(1), measured: +measured.toFixed(1), pixels: [ca.n, cb.n] });
