@@ -4,6 +4,7 @@ import { FROM, SIDE_EFFECT, uncomment } from '../../../../scripts/health/graph.m
 import * as gen from './gen';
 import * as orbits from './orbits';
 import * as catalogue from '../gen/catalogue';
+import * as companions from '../gen/companions';
 import * as extras from '../gen/extras';
 import * as extrasSystems from '../gen/extras/systems';
 import * as paths from '../gen/paths';
@@ -23,11 +24,11 @@ const GEN = [
   'UNIVERSE', 'universeOf', 'fullSector', 'placeOf', 'placeIn', 'orbitAt', 'moonAt', 'bodiesAt', 'spaceTime',
   'systemReach', 'THING_BASE', 'THING_CELLS', 'THING_NEAR', 'THING_KINDS', 'SECTOR_EXTRAS', 'thingRow', 'WONDER_KINDS',
   'STATION_BASE', 'stationsOf', 'extentOf', 'KINDS', 'lookOf', 'traitsOf',
-  'COMET_PERIOD', 'pathAt', 'pathSpeed', 'rowAt', 'tailOf',
+  'COMET_PERIOD', 'pathAt', 'pathSpeed', 'rowAt', 'tailOf', 'companionsOf', 'companionAt',
 ];
 const LIGHT = ['orbitAt', 'moonAt', 'spaceTime', 'extentOf'];
 const FACE = [
-  [gen, [space, seed, genOrbits, systems, things, tables, stations, extent, catalogue, extras, paths, extrasSystems], GEN],
+  [gen, [space, seed, genOrbits, systems, things, tables, stations, extent, catalogue, extras, paths, extrasSystems, companions], GEN],
   [orbits, [genOrbits, extent], LIGHT],
 ];
 

@@ -63,7 +63,7 @@ export const PLACE = {
   station: 'Station',
   thing: { rock: 'Asteroid', ice: 'Ice shard', derelict: 'Derelict', rogue: 'Rogue planet', nebula: 'Nebula', pulsar: 'Pulsar', outpost: 'Abandoned outpost', beacon: 'Beacon', relay: 'Relay array', monolith: 'Monolith', field: 'Asteroid field', icefield: 'Ice field', comet: 'Comet', rig: 'Mining rig', default: 'Something in space' },
   about: {
-    system: ({ star, planets, station, held }) => `${/^[aeiou]/i.test(star) ? 'An' : 'A'} ${star.toLowerCase()} with ${count(planets, 'planet')}${station ? ' and a station' : ''}, held by ${held}.`,
+    system: ({ star, planets, station, held, companions = [] }) => `${/^[aeiou]/i.test(star) ? 'An' : 'A'} ${[star.toLowerCase(), ...companions.map((c) => `${/^[aeiou]/i.test(c) ? 'an' : 'a'} ${c}`)].join(', ').replace(/, ([^,]*)$/, ' and $1')} with ${count(planets, 'planet')}${station ? ' and a station' : ''}, held by ${held}.`,
     planet: ({ type, system, moons, rings }) => `${type} round ${system}, with ${count(moons, 'moon')}${rings ? ' and rings' : ''}.`,
     moon: ({ type, planet, system }) => `${type} of ${planet}, round ${system}.`,
     station: ({ system, held }) => `A station over ${system}’s star, held by ${held}. Dock for the hangar and the shop.`,

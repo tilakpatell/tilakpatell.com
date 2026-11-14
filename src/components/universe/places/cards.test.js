@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { PLACE } from '../words';
 import { PARK_GAP, clearOf } from '../ship';
-import { THING_KINDS, WONDER_KINDS, fullSector, placeIn, thingRow, UNIVERSE } from '../../expanse/shared/gen';
+import { THING_KINDS, WONDER_KINDS, companionsOf, fullSector, placeIn, thingRow, UNIVERSE } from '../../expanse/shared/gen';
 import { parseSpaceId } from '../../../lib/space/address';
 import { FAR, THING_CARDS, placeCard, placeLook, placeReach } from './cards';
 
@@ -142,5 +142,14 @@ describe('a generated place’s look, without its card', () => {
       expect(card, f.row.id).toMatchObject(look);
       expect(placeReach(f.kind, f.row), f.row.id).toBe(card.reach);
     }
+  });
+});
+
+describe('a binary’s card', () => {
+  it('names its companions with its star', () => {
+    const sys = s.systems.find((x) => companionsOf(x).length);
+    const c = placeCard(found(sys.id));
+    expect(c.about).toMatch(/^An? [a-z-]+ (star|giant|dwarf)( and |, )/);
+    expect(c.about).toMatch(/^An? .+, held by .+\.$/);
   });
 });

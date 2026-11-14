@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { PARK_GAP } from '../ship';
-import { UNIVERSE, fullSector, lookOf, moonAt, orbitAt, thingRow } from '../../expanse/shared/gen';
+import { UNIVERSE, companionAt, companionsOf, fullSector, lookOf, moonAt, orbitAt, thingRow } from '../../expanse/shared/gen';
 import { resolvePlace } from './resolve';
 import { parkDistance, parkPlace } from './park';
 import { AROUND, aimStars, hereZone, orbitingPlace, placesAround } from './around';
@@ -198,5 +198,20 @@ describe('a row that draws no disc', () => {
     const want = clouds.filter((c) => len(c.at, cam) <= AROUND.far).map((c) => c.id).sort();
     expect(want.length).toBeGreaterThan(0);
     expect(a.filter((r) => r.src.row.kind === 'nebula').map((r) => r.id).sort()).toEqual(want);
+  });
+});
+
+describe('a system’s companions', () => {
+  it('ride on its row, where they are, near or far, and take no row of their own', () => {
+    const sys = s.systems.find((x) => companionsOf(x).length === 2);
+    const plain = s.systems.find((x) => !companionsOf(x).length);
+    for (const t of [0, 1000]) {
+      for (const cam of [[sys.at[0] + sys.reach * 0.5, sys.at[1], sys.at[2]], [sys.at[0] + 30000, sys.at[1], sys.at[2]]]) {
+        const rows = placesAround(sectors, cam, t, all);
+        const row = rows.find((r) => r.id === sys.id);
+        expect(row.also).toEqual(companionsOf(sys).map((c) => ({ at: companionAt(c, sys, t), reach: c.size })));
+        expect(rows.find((r) => r.id === plain.id)?.also).toBeUndefined();
+      }
+    }
   });
 });

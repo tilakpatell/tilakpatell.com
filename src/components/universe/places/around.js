@@ -41,7 +41,8 @@
 //   own device's); the speed a ship is under way at
 // Row: { id, place ('system' | 'planet' | 'moon' | 'station' | 'thing' |
 //   'extra' | 'wonder'), kind, name, at (where it is at t, its own array),
-//   r, reach, deep, color, move (cards.js's, by placeLook), dist (max(0,
+//   r, reach, deep, color, move (cards.js's, by placeLook), also (a
+//   system's companions, [{ at, reach }], for the pick; absent without), dist (max(0,
 //   |cam − at| − reach)), park (parkDistance, or null), src: { row, system,
 //   planet } (the generator's rows: read them, never write them) }. A light
 //   destination: resolvePlace(row.id) gives its card.
@@ -59,7 +60,7 @@
 //   aim.js's aimFrom
 
 import { SECTOR } from '../../../lib/space/address.js';
-import { THING_KINDS, lookOf, moonAt, orbitAt, thingRow } from '../../expanse/shared/gen';
+import { THING_KINDS, companionAt, companionsOf, lookOf, moonAt, orbitAt, thingRow } from '../../expanse/shared/gen';
 import { PARK_GAP } from '../ship';
 import { FAR, placeLook, placeReach, thingCardOf } from './cards';
 import { atTime } from './ids';
@@ -193,6 +194,11 @@ const sectorsOf = (sectors) => (!sectors ? [] : typeof sectors.values === 'funct
 // when the scratch has them; parked, with its park (worked out once a body)
 function rowOf(b, cam, t, parked, at = null, d = -1) {
   const r = { id: b.id, place: b.place, kind: b.kind, name: b.name, at, r: b.r, reach: b.reach, deep: b.deep, color: b.color, move: b.move, dist: 0, park: null, src: b.src };
+  // (a system's companions, where they are, so a click on one's disc picks the system: lane 4a's)
+  if (b.place === 'system') {
+    const cs = companionsOf(b.src.row);
+    if (cs.length) r.also = cs.map((c) => ({ at: companionAt(c, b.src.row, t), reach: c.size }));
+  }
   if (!r.at) r.at = atTime(r, t);
   const away = d >= 0 ? d : Math.sqrt((r.at[0] - cam[0]) ** 2 + (r.at[1] - cam[1]) ** 2 + (r.at[2] - cam[2]) ** 2);
   r.dist = Math.max(0, away - r.reach);

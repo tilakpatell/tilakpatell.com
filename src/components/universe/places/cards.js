@@ -30,7 +30,7 @@
 // thingCardOf(kind) → THING_CARDS' row for a thing's kind, or the default's
 
 import { parseSpaceId } from '../../../lib/space/address.js';
-import { THING_KINDS } from '../../expanse/shared/gen';
+import { THING_KINDS, companionsOf } from '../../expanse/shared/gen';
 import { CATALOGUE_CARDS } from '../things/cards';
 import { PLACE } from '../words';
 
@@ -101,7 +101,7 @@ function systemCard(row, sector) {
     ...NONE,
     ...placeLook('system', row),
     type: PLACE.system(star),
-    about: PLACE.about.system({ star, planets: row.planets.length, station, held: PLACE.held(row.faction.name) }),
+    about: PLACE.about.system({ star, planets: row.planets.length, station, held: PLACE.held(row.faction.name), companions: companionsOf(row).map((c) => PLACE.star[c.class].toLowerCase()) }),
     facts,
     faction: row.faction,
     system: row.id,
