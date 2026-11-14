@@ -22,7 +22,7 @@ export default function PlaceCard({ dest, docked = false, onFly = null, onHangar
   return (
     <>
       <p className="eyebrow mt-3" style={{ color: dest.color }}>
-        {dest.type} · {sector}
+        {dest.type} · <span className="whitespace-nowrap">{sector}</span>
       </p>
       <h2 className="universe-title">{dest.name}</h2>
       <p className="mt-3 text-sm leading-relaxed text-body">{dest.about}</p>

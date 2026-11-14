@@ -211,13 +211,12 @@ const dockStep = async () => {
   if (!(await until((id) => window.__universe().docked === id, st.id, 300000))) return fail(`dock: never docked at ${st.id}`);
   const out = join(ROOT, 'docs/superpowers/evidence/endless-universe-lane-3');
   mkdirSync(out, { recursive: true });
+  await until(() => Boolean(window.document.querySelector('.hangar-panel')), null, 30000); // (the shot shows the hangar the dock opened)
   await page.screenshot({ path: join(out, 'dock.jpg'), type: 'jpeg', quality: 80 });
   console.log(`dock      docked at ${st.name} (${st.id})`);
   // (a trip that ended at the station opens the hangar on its shipyard, once: Escape shuts it and it stays shut)
   if (!(await until(() => Boolean(window.document.querySelector('.hangar-panel .hangar-body[data-tab="shipyard"]')), null, 60000))) fail('dock: the hangar never opened');
   else {
-    mkdirSync(EVIDENCE, { recursive: true });
-    await page.screenshot({ path: join(EVIDENCE, 'hangar.jpg'), type: 'jpeg', quality: 80 });
     await page.keyboard.press('Escape');
     if (!(await until(() => !window.document.querySelector('.hangar-panel'), null, 30000))) fail('dock: Escape left the hangar open');
     for (let i = 0; i < 20; i++) {

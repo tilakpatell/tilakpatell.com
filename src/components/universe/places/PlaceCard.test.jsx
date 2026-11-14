@@ -13,7 +13,7 @@ describe('a generated place’s card', () => {
   it('says what a planet is, in which sector, its facts and the way there', () => {
     const dest = resolvePlace('E:1,0:0:0', { t: 0 });
     const h = html({ dest });
-    expect(h).toContain(`${dest.type} · Sector 1, 0, 0`);
+    expect(text(h)).toMatch(new RegExp(`${dest.type} · +Sector 1, 0, 0`));
     expect(h).toContain(`<h2 class="universe-title">${dest.name}</h2>`);
     for (const [dt] of dest.facts) expect(h).toContain(`<dt>${dt}</dt>`);
     expect(h.match(/<dd>/g)).toHaveLength(dest.facts.length);
