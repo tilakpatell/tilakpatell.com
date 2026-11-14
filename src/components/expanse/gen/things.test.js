@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { parseSpaceId, sectorCentre } from "../../../lib/space/address.js";
+import { KINDS } from "./catalogue";
 import { keepOutsNear } from "./keepOuts";
 import { UNIVERSE, sectorSeedOf } from "./seed";
 import { makeSector } from "./sector";
@@ -40,13 +41,16 @@ describe("constants and kinds", () => {
     expect([THING_BASE, THING_CELLS, THING_JITTER, THING_NEAR]).toEqual([64, 20, 0.8, 8]);
     expect(SECTOR_EXTRAS).toEqual([]);
   });
-  it("has four valid kinds", () => {
-    expect(THING_KINDS.map((k) => k.kind)).toEqual(["rock", "ice", "derelict", "rogue"]);
+  // (replaces lane 2's "has four valid kinds": the spec gives lane 4a this table, and
+  // lane 2's test pinned its starting rows)
+  it("has eight valid kinds, lane 2's four first", () => {
+    expect(THING_KINDS.map((k) => k.kind)).toEqual(["rock", "ice", "derelict", "rogue", "outpost", "beacon", "relay", "monolith"]);
     for (const k of THING_KINDS) {
       expect(k.weight).toBeGreaterThan(0);
       expect(k.size[0]).toBeLessThan(k.size[1]);
       expect(k.look.color).toMatch(/^#[0-9a-f]{6}$/);
-      expect(k.look.lit).toBe(true);
+      expect(k.look.color).toBe(KINDS[k.kind].color);
+      expect(k.look.lit).toBe(KINDS[k.kind].lit);
     }
   });
 });

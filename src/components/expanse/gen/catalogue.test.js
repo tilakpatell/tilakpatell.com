@@ -1,7 +1,10 @@
-import { describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
 import { PALETTE, tint } from '../../universe/shared/space';
 import { PLANET_TYPES } from './tables';
-import { CATALOGUE, KINDS, PLANET_SIZE, discRadius, hexOf, lookOf, rowSolids, solidOf } from './catalogue';
+import { CATALOGUE, KINDS, LORE_COUNT, PLANET_SIZE, ROGUE_TYPES, discRadius, hexOf, lookOf, rowSolids, solidOf, traitsOf } from './catalogue';
+import { UNIVERSE } from './seed';
+import { fullSector } from './space';
+import { THING_KINDS, thingRow } from './things';
 
 const LANE2 = { rock: '#8a8178', ice: '#cfe3ee', derelict: '#6d727c', rogue: '#4a3f38' };
 
@@ -52,5 +55,59 @@ describe('the catalogue', () => {
     const w = PLANET_TYPES.reduce((s, p) => s + p.weight, 0);
     expect(PLANET_SIZE).toBeCloseTo(PLANET_TYPES.reduce((s, p) => s + (p.weight * (p.radius[0] + p.radius[1])) / 2, 0) / w, 9);
     expect(PLANET_SIZE).toBeCloseTo(54.04, 1);
+  });
+});
+
+describe('a thing’s traits, from its own seed', () => {
+  const rows = { rogue: [], beacon: [], monolith: [], derelict: [] };
+  beforeAll(() => {
+    for (const [sx, sy, sz] of [[1, 0, 0], [2, 0, 0], [1, 1, 0]]) {
+      const s = fullSector(UNIVERSE, sx, sy, sz);
+      for (let i = 0; i < s.things.count; i++) {
+        const kind = THING_KINDS[s.things.kind[i]].kind;
+        if (rows[kind]) rows[kind].push(thingRow(s, i));
+      }
+    }
+  });
+  const share = (list, f) => list.filter(f).length / list.length;
+  it('holds enough of each kind to judge its shares', () => {
+    expect(rows.rogue.length).toBeGreaterThanOrEqual(600);
+    expect(rows.beacon.length).toBeGreaterThanOrEqual(600);
+    expect(rows.derelict.length).toBeGreaterThanOrEqual(1200);
+  });
+  it('makes a rogue rocky, icy, desert or a gas giant, and only a gas giant unlandable', () => {
+    const types = ROGUE_TYPES.map((t) => t[0]);
+    for (const r of rows.rogue) {
+      const t = traitsOf(r);
+      expect(types).toContain(t.type);
+      expect(t.land).toBe(t.type !== 'gas');
+    }
+    const gas = share(rows.rogue, (r) => traitsOf(r).type === 'gas');
+    expect(gas).toBeGreaterThan(0.15);
+    expect(gas).toBeLessThan(0.25);
+  });
+  it('sends beacons mostly to someone in distress, gives monoliths a line and traps a few derelicts', () => {
+    const d = share(rows.beacon, (r) => traitsOf(r).leads === 'distress');
+    expect(d).toBeGreaterThan(0.5);
+    expect(d).toBeLessThan(0.7);
+    for (const r of rows.monolith) expect(traitsOf(r).lore).toBeGreaterThanOrEqual(0), expect(traitsOf(r).lore).toBeLessThan(LORE_COUNT);
+    expect(LORE_COUNT).toBe(12);
+    const trap = share(rows.derelict, (r) => traitsOf(r).trap);
+    expect(trap).toBeGreaterThan(0.1);
+    expect(trap).toBeLessThan(0.24);
+  });
+  it('gives the same answer twice, nothing for a rock, and keys by seed, never by id', () => {
+    const r = rows.rogue[0];
+    expect(traitsOf(r)).toEqual(traitsOf({ ...r }));
+    expect(traitsOf({ id: 'x', kind: 'rock', seed: 5n })).toEqual({});
+    const traps = new Set(Array.from({ length: 64 }, (_, i) => traitsOf({ id: 'E:1,0:w64', kind: 'derelict', seed: BigInt(i + 1) }).trap));
+    expect(traps.size).toBe(2);
+  });
+  it('spins a pulsar about a unit axis, a turn every 1.5 to 6 seconds', () => {
+    const t = traitsOf({ id: 'p', kind: 'pulsar', seed: 9n });
+    expect(Math.hypot(...t.spin)).toBeCloseTo(1, 9);
+    expect(t.period).toBeGreaterThanOrEqual(1.5);
+    expect(t.period).toBeLessThan(6);
+    expect(t.beam).toBe(25);
   });
 });

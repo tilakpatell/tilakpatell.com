@@ -22,6 +22,12 @@
 //   hand-made places, and some 75 beacons lie within the far plane of a core pose
 // hexOf([r, g, b]) → '#rrggbb', from linear light (the inverse of palette.js's linearOf)
 // PLANET_SIZE: the weighted mean of PLANET_TYPES' radius midpoints, what "a planet's size" means
+// ROGUE_TYPES: [[type, weight]] a rogue world is drawn from; LORE_COUNT: the monoliths' lines
+// traitsOf(row) → what a thing is, from its own seed: a rogue's { type, land }, a beacon's
+//   { leads: 'distress' | 'treasure' }, a monolith's { lore }, a derelict's { trap }, a pulsar's
+//   or magnetar's { spin, period, beam }; {} for any other kind. Memoised by the row's seed
+//   (the last 512), never by its id: a pocket universe's rows share id strings with the
+//   shared universe's.
 //
 // Colours. Every kind is tinted from the palette's nine names, tint(name, k), so a frame
 // holds one art. Lane 2's four lattice kinds (rock, ice, derelict, rogue) keep the colours
@@ -44,6 +50,7 @@
 // - a wormhole: its throat is the way through
 
 import { PALETTE, tint } from '../../universe/shared/space';
+import { hash64, range, rngOf, weighted } from './seed';
 import { PLANET_TYPES } from './tables';
 
 export const CATALOGUE = Object.freeze(
@@ -175,3 +182,40 @@ export function discRadius(kind, size, { core = false } = {}) {
 const PLANET_WEIGHT = PLANET_TYPES.reduce((s, p) => s + p.weight, 0);
 export const PLANET_SIZE =
   PLANET_TYPES.reduce((s, p) => s + (p.weight * (p.radius[0] + p.radius[1])) / 2, 0) / PLANET_WEIGHT;
+
+export const ROGUE_TYPES = Object.freeze([['rock', 4], ['ice', 3], ['desert', 1], ['gas', 2]]);
+export const LORE_COUNT = 12;
+
+const TRAITS = {
+  rogue: (rng) => {
+    const type = weighted(rng, ROGUE_TYPES, (x) => x[1])[0];
+    return { type, land: type !== 'gas' };
+  },
+  beacon: (rng) => ({ leads: rng() < 0.6 ? 'distress' : 'treasure' }),
+  monolith: (rng) => ({ lore: Math.floor(rng() * LORE_COUNT) }),
+  derelict: (rng) => ({ trap: rng() < 1 / 6 }),
+  pulsar: (rng) => spun(rng),
+  magnetar: (rng) => spun(rng),
+};
+function spun(rng) {
+  // (a direction even over the sphere: z even in [-1, 1], an even angle round it)
+  const z = rng() * 2 - 1;
+  const a = rng() * 2 * Math.PI;
+  const r = Math.sqrt(1 - z * z);
+  return { spin: [r * Math.cos(a), r * Math.sin(a), z], period: range(rng, 1.5, 6), beam: 25 };
+}
+
+const memo = new Map();
+const MEMO = 512;
+export function traitsOf(row) {
+  const make = Object.hasOwn(TRAITS, row.kind) ? TRAITS[row.kind] : null;
+  if (!make) return {};
+  const key = `${row.kind}:${String(row.seed)}`;
+  let t = memo.get(key);
+  if (!t) {
+    t = Object.freeze(make(rngOf(hash64(row.seed, 'traits'))));
+    if (memo.size >= MEMO) memo.delete(memo.keys().next().value);
+    memo.set(key, t);
+  }
+  return t;
+}

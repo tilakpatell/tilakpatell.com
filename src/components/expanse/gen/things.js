@@ -25,6 +25,7 @@
 // and not overlap each other's [base, base + max).
 
 import { SECTOR, spaceId } from '../../../lib/space/address.js';
+import { KINDS } from './catalogue';
 import { clearOfKeepOuts } from './keepOuts';
 import { nameOf } from './names';
 import { hash64, rngOf } from './seed';
@@ -35,11 +36,19 @@ export const THING_CELLS = 20;
 export const THING_JITTER = 0.8;
 export const THING_NEAR = 8;
 
+// (lane 2's four first, in their order; the four after them are lane 4a's: an
+// outpost, a beacon, a relay and a monolith, every one solid at its size and
+// staying put. Each look is the catalogue's.)
+const kindRow = (kind, weight, size) => ({ kind, weight, size, look: { color: KINDS[kind].color, lit: KINDS[kind].lit } });
 export const THING_KINDS = [
-  { kind: 'rock', weight: 6, size: [20, 120], look: { color: '#8a8178', lit: true } },
-  { kind: 'ice', weight: 2, size: [15, 90], look: { color: '#cfe3ee', lit: true } },
-  { kind: 'derelict', weight: 1, size: [30, 140], look: { color: '#6d727c', lit: true } },
-  { kind: 'rogue', weight: 0.4, size: [100, 260], look: { color: '#4a3f38', lit: true } },
+  kindRow('rock', 6, [20, 120]),
+  kindRow('ice', 2, [15, 90]),
+  kindRow('derelict', 1, [30, 140]),
+  kindRow('rogue', 0.4, [100, 260]),
+  kindRow('outpost', 0.35, [40, 160]),
+  kindRow('beacon', 0.5, [12, 30]),
+  kindRow('relay', 0.5, [12, 45]),
+  kindRow('monolith', 0.25, [15, 60]),
 ];
 
 export const SECTOR_EXTRAS = [];

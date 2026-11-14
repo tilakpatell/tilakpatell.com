@@ -61,7 +61,7 @@ export const PLACE = {
   planet: { rock: 'Rocky world', ice: 'Ice world', gas: 'Gas giant', lava: 'Lava world', ocean: 'Ocean world', desert: 'Desert world', forest: 'Forest world', ringed: 'Ringed giant' },
   moon: { rocky: 'Rocky moon', icy: 'Icy moon' },
   station: 'Station',
-  thing: { rock: 'Asteroid', ice: 'Ice shard', derelict: 'Derelict', rogue: 'Rogue planet', nebula: 'Nebula', pulsar: 'Pulsar', default: 'Something in space' },
+  thing: { rock: 'Asteroid', ice: 'Ice shard', derelict: 'Derelict', rogue: 'Rogue planet', nebula: 'Nebula', pulsar: 'Pulsar', outpost: 'Abandoned outpost', beacon: 'Beacon', relay: 'Relay array', monolith: 'Monolith', default: 'Something in space' },
   about: {
     system: ({ star, planets, station, held }) => `${/^[aeiou]/i.test(star) ? 'An' : 'A'} ${star.toLowerCase()} with ${count(planets, 'planet')}${station ? ' and a station' : ''}, held by ${held}.`,
     planet: ({ type, system, moons, rings }) => `${type} round ${system}, with ${count(moons, 'moon')}${rings ? ' and rings' : ''}.`,
@@ -73,6 +73,10 @@ export const PLACE = {
     rogue: 'A planet with no star of its own, dark and cold.',
     nebula: 'A cloud of gas and dust. Not solid: fly right through it.',
     pulsar: 'A dead star, spinning, its beams sweeping round.',
+    outpost: 'An outpost nobody runs any more. Some of it might still be worth taking.',
+    beacon: 'A beacon, blinking. Something out here is calling for someone.',
+    relay: 'A relay array, still listening. Worth a scan.',
+    monolith: 'A dark slab older than the stars round it, cut all over with signs.',
     default: 'Out here between the stars.',
   },
   held: (name) => name.replace(/^The /, 'the '), // (a faction's name mid-sentence)

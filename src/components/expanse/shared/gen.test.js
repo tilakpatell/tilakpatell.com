@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { FROM, SIDE_EFFECT, uncomment } from '../../../../scripts/health/graph.mjs';
 import * as gen from './gen';
 import * as orbits from './orbits';
+import * as catalogue from '../gen/catalogue';
 import * as extent from '../gen/extent';
 import * as genOrbits from '../gen/orbits';
 import * as seed from '../gen/seed';
@@ -18,11 +19,11 @@ import * as things from '../gen/things';
 const GEN = [
   'UNIVERSE', 'universeOf', 'fullSector', 'placeOf', 'placeIn', 'orbitAt', 'moonAt', 'bodiesAt', 'spaceTime',
   'systemReach', 'THING_BASE', 'THING_CELLS', 'THING_NEAR', 'THING_KINDS', 'SECTOR_EXTRAS', 'thingRow', 'WONDER_KINDS',
-  'STATION_BASE', 'stationsOf', 'extentOf',
+  'STATION_BASE', 'stationsOf', 'extentOf', 'KINDS', 'lookOf', 'traitsOf',
 ];
 const LIGHT = ['orbitAt', 'moonAt', 'spaceTime', 'extentOf'];
 const FACE = [
-  [gen, [space, seed, genOrbits, systems, things, tables, stations, extent], GEN],
+  [gen, [space, seed, genOrbits, systems, things, tables, stations, extent, catalogue], GEN],
   [orbits, [genOrbits, extent], LIGHT],
 ];
 
