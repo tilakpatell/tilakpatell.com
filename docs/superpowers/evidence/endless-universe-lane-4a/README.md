@@ -17,3 +17,26 @@ Pure: it changes the generator, lane 3’s `places/` and the words. Today’s dr
 **Discs over 4 px at the baseline poses,** by kind (`things/clear.test.js`, “counts the discs over 4 px”, 1080 high at 34°, counted to the far plane; today’s drawing stops lattice discs at 20,000 and draws no list row, so these are an upper bound for what 4a.2 shows). At `overview`: rock 817, ice 228, derelict 147, rogue 58 (lane 2’s four); outpost 56, monolith 16, relay 16, beacon 8, comet 4 (this lane’s). The other nine poses are within a few of it; `rickmorty`, `caribbean`, `maw` and `middleearth-limb` add one to four rigs. The core’s beacons are drawn at their own size, not three times it. Every one is a point of farStars’ one `Points`: no draw call, no triangle.
 
 **Tests replaced, each by its successor** (named in its commit): lane 2’s `things.test.js` “has four valid kinds” and `expect(SECTOR_EXTRAS).toEqual([])`; lane 3’s `cards.test.js` `expect(c.far, k).toBe(FAR)` (the five gargantuan cards at 400,000). Lane 3’s `around.test.js` cap test leaves the disc-less list rows out of its capped half, as the new rule lists them outside the cap.
+
+**Draw calls and triangles at mid** (`node scripts/universe-check.mjs --quality mid --frames 3`, main at `6ae5a82b` and this branch run side by side, each from its own checkout with its own `node_modules`; side by side because the generated orbits and traffic run on the wall clock, so runs at different times differ by tens of triangles even on main):
+
+| pose | main calls | branch calls | main triangles | branch triangles |
+| --- | --: | --: | --: | --: |
+| overview | 97 | 96 | 518,697 | 518,617 |
+| falcon-sun | 79 | 79 | 503,595 | 503,595 |
+| middleearth-limb | 37 | 37 | 67,387 | 67,387 |
+| rickmorty | 38 | 38 | 68,513 | 68,513 |
+| gaming | 41 | 41 | 75,121 | 75,121 |
+| caribbean | 41 | 41 | 117,147 | 117,147 |
+| middleearth | 37 | 37 | 67,387 | 67,387 |
+| breakingbad | 62 | 62 | 61,585 | 61,585 |
+| office | 39 | 39 | 52,891 | 52,891 |
+| belt | 44 | 44 | 450,953 | 450,953 |
+| maw | 41 | 41 | 103,909 | 103,929 |
+| landing-middleearth | 117 | 117 | 138,056 | 138,078 |
+| station | 67 | 67 | 488,869 | 488,869 |
+| far-rim | 40 | 40 | 70,261 | 70,259 |
+
+No pose gains a call. Maw’s and landing-middleearth’s twenty-odd triangles are the clock’s: a second maw visit in the same run gave 103,905 on the branch against main’s 103,907, and a list of every visible mesh and instance count at maw is the same on both trees (51 each). The first run found a rogue world 18.7 of its sizes from the breakingbad camera (+1 call, +720 triangles, the near layer’s default sphere): the new weights had moved a lattice thing inside the near layer’s 30-size mesh hand-over, which lane 2 had held by measurement alone. The lattice now keeps `THING_CLEAR` (31) of its sizes off every keep-out, every baseline pose being inside one, and `things/clear.test.js` holds every lattice thing over 30 sizes from every pose. That also takes a rock off the overview (one call, 80 triangles fewer).
+
+**The endless check** (`node scripts/universe-endless-check.mjs --quality mid`): every step ok, no pop, at least 10 places within 9,000 and the nearest within 4,700 at each.

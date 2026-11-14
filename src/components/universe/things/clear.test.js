@@ -65,4 +65,17 @@ describe('the baseline poses', () => {
     }
     console.log('DISCS', JSON.stringify(table));
   }, 120000);
+  it('builds no lattice thing near: each is over 30 of its sizes off every pose', () => {
+    // (the near layer's mesh hand-over is 30 sizes: lane 2's MESH_NEAR; the lattice keeps 31 off every keep-out)
+    for (let x = -1; x <= 1; x++)
+      for (let y = -1; y <= 1; y++)
+        for (let z = -1; z <= 1; z++) {
+          const sec = fullSector(UNIVERSE, x, y, z, { extras: [] });
+          const t = sec.things;
+          for (let i = 0; i < t.count; i++) {
+            const at = [0, 1, 2].map((k) => sec.origin[k] + t.at[3 * i + k]);
+            for (const pt of points) expect(len(pt, at) / t.size[i], `${sec.id} ${THING_KINDS[t.kind[i]].kind}`).toBeGreaterThan(30);
+          }
+        }
+  }, 120000);
 });

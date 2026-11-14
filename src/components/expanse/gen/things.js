@@ -4,7 +4,7 @@
 // sits in it, so any one cell can be rebuilt alone, in any order, and give
 // what the whole list gives. Pure (no three.js), so it runs in Node.
 //
-// THING_BASE (wonder ids from here up are lattice slots), THING_CELLS, THING_JITTER, THING_NEAR
+// THING_BASE (wonder ids from here up are lattice slots), THING_CELLS, THING_JITTER, THING_NEAR, THING_CLEAR
 // THING_KINDS: the table of kinds, { kind, weight, size: [least, most], look: { color, lit }, place?(site, ctx) }
 //   (place may return a new [x, y, z] in absolute space or null to drop the site; it runs before the clearance checks)
 // Whole-sector lists { list, base, max, make(ctx, made) → [{ kind, at, size, ... }] } live in
@@ -40,6 +40,11 @@ export const THING_BASE = 64;
 export const THING_CELLS = 20;
 export const THING_JITTER = 0.8;
 export const THING_NEAR = 8;
+// How many of its sizes a lattice thing keeps off a hand-made place's keep-out: one more than
+// the near layer's mesh hand-over (scene/nearThings.js's MESH_NEAR, 30), so a camera anywhere
+// inside a keep-out (every baseline pose is) never has a lattice thing built near it, and the
+// hand-made core keeps its draw calls whatever the lattice's kinds and sizes are.
+export const THING_CLEAR = 31;
 
 // (lane 2's four first, in their order; the four after them are lane 4a's: an
 // outpost, a beacon, a relay and a monolith, every one solid at its size and
@@ -112,8 +117,8 @@ function prepare(ctx, kinds) {
     .filter((w) => w.kind !== 'nebula')
     .map((w) => ({ at: w.at, r: w.size }));
   p = {
-    // (the keep-outs and a gargantuan's solid parts, kept off alike)
-    outs: ctx.keeps?.length ? [...(ctx.outs ?? []), ...ctx.keeps] : (ctx.outs ?? []),
+    outs: ctx.outs ?? [],
+    keeps: ctx.keeps ?? [], // (a gargantuan's solid parts)
     wonders,
     h0: Number(seed & 0xffffffffn) | 0,
     h1: Number((seed >> 32n) & 0xffffffffn) | 0,
@@ -149,7 +154,8 @@ function cell(ctx, p, kinds, slot) {
     at = place({ slot, kind: kinds[ki].kind, at, size }, ctx);
     if (!at) return null;
   }
-  if (!clearOfKeepOuts(at, (THING_NEAR + 1) * size, p.outs)) return null;
+  if (!clearOfKeepOuts(at, THING_CLEAR * size, p.outs)) return null;
+  if (p.keeps.length && !clearOfKeepOuts(at, (THING_NEAR + 1) * size, p.keeps)) return null;
   const near = p.grid.get(
     key(
       Math.floor((at[0] - ctx.origin[0]) / BUCKET),

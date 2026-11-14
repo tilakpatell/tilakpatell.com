@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { fullSector } from '../gen/space';
 import { UNIVERSE } from '../gen/seed';
 import { MESH_NEAR, createNearThings, pickNear, thingsAround } from './nearThings';
+import { THING_CLEAR } from '../gen/things';
 
 const sector = fullSector(UNIVERSE, 3, 0, 0);
 const sectorAt = (sx, sy, sz) => (sx === 3 && sy === 0 && sz === 0 ? sector : null);
@@ -70,5 +71,11 @@ describe('the things drawn', () => {
     const near = createNearThings(new THREE.Group());
     near.update(rows, null, 0);
     expect(near.solids()).toEqual(rows.map((r) => ({ id: r.id, at: r.at, r: r.size, reach: r.size * 1.2 })));
+  });
+});
+
+describe('the lattice and the mesh hand-over', () => {
+  it('keeps every lattice thing one more of its sizes off a keep-out than it is built near', () => {
+    expect(THING_CLEAR).toBe(MESH_NEAR + 1);
   });
 });
