@@ -5,6 +5,10 @@ import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { CONTRACT } from '../lib/bf2web-site.mjs';
 import { readRulebooks, validateEvidence, validateRulebookDigest, verifyExportFiles } from './bf2web-publish.mjs';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { deviationLines, finishedReceipt } from '../lib/bf2web-deviations.mjs';
+import { CASES, RULED, runCase } from '../lib/bf2web-deviations.cases.mjs';
 
 const sha = 'a'.repeat(40), site = '/completed/site';
 const fixture = () => ({
@@ -76,5 +80,35 @@ describe('publishing an existing verified desktop build', () => {
       expect(dirname(resolve(root))).toBe(resolve(tmpdir()));
       rmSync(root, { recursive: true });
     }
+  });
+});
+
+// The ruled-deviations route (../lib/bf2web-deviations.mjs): byte-identical with bf2-web's tools/gates/release-deviations.mjs,
+// which gate-all reads for its receipt precondition; bf2-web's tools/gates/release-deviations.test.mjs pins the same digests and
+// runs the same case table. Digests over LF-normalised text (core.autocrlf checkouts hold CRLF in the working tree).
+const PINNED = { module: '9922f80d9a11fc98cb7cc74d99cbf1ca2d9c0d36ecd621cca502551c7b750b51', cases: '4e29a0f8b00d9cfcf098740be2699ce6ba327ac4952acff9ce5c1c58ea30fe06' };
+const libDigest = (name) => createHash('sha256').update(readFileSync(fileURLToPath(new URL(`../lib/${name}`, import.meta.url)), 'utf8').replace(/\r\n/g, '\n')).digest('hex');
+describe('publishing a build with ruled deviations', () => {
+  it('runs the copy pinned in both repos', () => {
+    expect(libDigest('bf2web-deviations.mjs')).toBe(PINNED.module);
+    expect(libDigest('bf2web-deviations.cases.mjs')).toBe(PINNED.cases);
+  });
+  it.each(CASES.map((c) => [c.name, c]))('%s', (_, c) => {
+    const r = runCase(finishedReceipt, c);
+    if (c.refuses) { expect(r.finished).toBe(false); expect(r.reason).toMatch(c.refuses); }
+    else { expect(r.finished).toBe(true); expect(r.deviations.flatMap((d) => d.lines)).toEqual(c.lines); expect(deviationLines(r)).toHaveLength(c.lines.length); }
+  });
+  const failed = (receipt) => { const f = fixture(); f.build.passed = false; f.build.steps.push({ name: 'solutions-gate', ok: false }); return { ...f, receipt }; };
+  it('passes a passed:false build only with a finished receipt', () => {
+    expect(validateEvidence(failed({ finished: true, file: 'release-deviations-1071-aaaaaaaa.json', deviations: [{ step: 'solutions-gate', lines: [RULED] }] }))).toBe(true);
+  });
+  it('refuses a passed:false build with the receipt\'s reason, or with none', () => {
+    expect(() => validateEvidence(failed({ finished: false, reason: 'failed steps not listed in x: verify', deviations: [] }))).toThrow(/the build did not pass: failed steps not listed in x: verify/);
+    expect(() => validateEvidence(failed(undefined))).toThrow(/the build did not pass/);
+  });
+  it('a clean build needs no receipt, and a required step that failed still refuses', () => {
+    expect(validateEvidence(fixture())).toBe(true);
+    const f = failed({ finished: true, deviations: [] }); f.build.steps.find((s) => s.name === 'verify').ok = false;
+    expect(() => validateEvidence(f)).toThrow(/hardware check/);
   });
 });

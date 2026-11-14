@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { BELT, POSITIONS, REACH, SUN } from './layout';
 import { MAW } from './maw';
 import { SHIP } from './ship';
-import { POSE_NAMES, poseFor } from './poses';
+import { ENDLESS_POSE_NAMES, POSE_NAMES, poseFor } from './poses';
+import { RIM } from './layout';
+import { UNIVERSE, fullSector } from '../expanse/shared/gen';
 import { HOME_RADIUS } from './layout';
 import { WONDERS } from './deep';
 import { insideOf } from './nebula/rules';
@@ -120,5 +122,21 @@ describe('the nebula poses', () => {
     expect(dot(right, norm(sub(veil, p.eye)))).toBeGreaterThan(0);
     const moved = p.eye.map((v, i) => v + right[i] * 5000);
     expect(Math.acos(dot(view, norm(sub(veil, moved))))).toBeLessThan(0.45); // (inside the lens's half-width at 16:9)
+  });
+});
+
+describe('the endless space’s poses', () => {
+  it('are measured on their own, the baseline’s fourteen left as they were', () => {
+    expect(ENDLESS_POSE_NAMES).toEqual(['old-rim', 'above-core', 'expanse-system']);
+    for (const n of ENDLESS_POSE_NAMES) expect(POSE_NAMES).not.toContain(n);
+  });
+
+  it('is past where the rim was, heading out; 50,000 above the core; in the first generated system past it', () => {
+    expect(poseFor('old-rim').at[0]).toBe(RIM.outer + 500);
+    expect(poseFor('above-core').at).toEqual([0, 50000, 0]);
+    const p = poseFor('expanse-system');
+    const s = fullSector(UNIVERSE, 1, 0, 0).systems[0];
+    expect(p.system).toBe(s.id);
+    expect(Math.hypot(...sub(p.at, s.at))).toBeLessThan(s.reach);
   });
 });

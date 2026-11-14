@@ -9,6 +9,7 @@
 //   faction sector.js names there and then.
 // HAZARDS: [null, 'storm', 'pirates', 'minefield']; hazardWeights(d) → [[hazard, weight]…]
 // WONDERS: [{ kind, size: [least, most] (its radius), weight }]; WONDER_KINDS: their kinds
+// STATION_NAMES: what a station is called after its system's name
 
 export const STAR_CLASSES = [
   { class: "O", color: "#9bb0ff", size: [320, 420], weight: 0.4 },
@@ -148,3 +149,12 @@ export const WONDERS = [
   { kind: "rogue", size: [100, 260], weight: 2 },
 ];
 export const WONDER_KINDS = WONDERS.map((w) => w.kind);
+
+export const STATION_NAMES = [
+  "Station",
+  "Dock",
+  "Exchange",
+  "Port",
+  "Yards",
+  "Waystation",
+];

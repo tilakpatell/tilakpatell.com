@@ -1239,6 +1239,13 @@ mat3 tumble(float id) {
   return {
     group,
     nebulae, // (the map's nebula renderer: the Expanse's nebulae are handed to it too)
+    // the suns' places again in the draw, which is round the camera
+    // (relative.js): the step the world moved by taken off, or the worlds
+    // are lit from wherever the camera is rather than from their sun
+    atDraw(shift) {
+      homeW.value.setFromMatrixPosition(group.matrixWorld).sub(shift);
+      for (const [id, light] of lightOf) light.value.copy(wonderGroups[id].position).applyMatrix4(group.matrixWorld).sub(shift);
+    },
     debris: debrisField, // (the streams' rocks, for the ship to hit: rockHits.js)
     // (`names` false: the wonders' names fade, the way in through a planet's
     // air being under a sky of its own; or a test, by wonder id, of whose

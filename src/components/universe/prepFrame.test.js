@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { coveredIn, prepFrame } from './prepFrame';
+import { QUIET_MS, afterPress, coveredIn, prepFrame } from './prepFrame';
 
 const page = (dataset = {}) => ({ documentElement: { dataset } });
 
@@ -50,6 +50,32 @@ describe("the map's prepare, a step at a time", () => {
     open();
     await expect(step).resolves.toBe('frame');
     expect(frame).toHaveBeenCalledTimes(2);
+  });
+
+  it('under a cover, waits for the quiet after a press before its idle moment; uncovered, never', async () => {
+    let calm;
+    const quiet = vi.fn(() => new Promise((resolve) => (calm = resolve)));
+    const idle = vi.fn((fn) => fn());
+    const step = prepFrame({ doc: page({ covered: '' }), frame: vi.fn(), idle, quiet });
+    await new Promise((r) => setTimeout(r, 0));
+    expect(quiet).toHaveBeenCalledTimes(1);
+    expect(idle).not.toHaveBeenCalled();
+    calm();
+    await step;
+    expect(idle).toHaveBeenCalledTimes(1);
+    const q2 = vi.fn(() => Promise.resolve());
+    await prepFrame({ doc: page(), frame: vi.fn(() => Promise.resolve()), idle: vi.fn(), quiet: q2 });
+    expect(q2).not.toHaveBeenCalled();
+  });
+
+  it('the quiet is what is left of QUIET_MS since the last press, and nothing long after one', async () => {
+    const wait = vi.fn(() => Promise.resolve());
+    await afterPress({ last: 1000, now: 1100, wait });
+    expect(wait).toHaveBeenCalledWith(QUIET_MS - 100);
+    wait.mockClear();
+    await afterPress({ last: 1000, now: 1000 + QUIET_MS + 1, wait });
+    await afterPress({ last: -Infinity, now: 5, wait });
+    expect(wait).not.toHaveBeenCalled();
   });
 
   it('reads no page where there is none (Node)', () => {

@@ -12,6 +12,23 @@
    height as well as the width (a laptop at 125% is 1093 by 525); and the
    short-window rules below take out what can go, the route's notes, then
    the route. */
+/* Where the planet's rim is, and how wide the column may go and stay clear
+   of it. The disc (.welcome-sun::after) is 70% of the sun's 78vmax, its
+   centre 34vmax past the window's right edge, so its leftmost point is
+   32.3vmax in from the right; the column's left is the frame's padding, half
+   what's left over past 1080 px, and its own padding. --clear is the width
+   from there to the rim, less a gap. With the planet at the foot (a phone, a
+   tall window) it's in the flow, under everything, and nothing needs to
+   keep clear of it. */
+.welcome,
+.launch-arrive {
+  --pad-l: max(20px, env(safe-area-inset-left));
+  --col-pad: clamp(0px, 4vw, 48px);
+  --rim-in: 32.3vmax;
+  --clear: calc(100vw - var(--rim-in) - var(--pad-l) - max(0px, (100vw - 2 * var(--pad-l) - 1080px) / 2) - var(--col-pad) - 48px);
+  --horizon-h: clamp(96px, 22vmax, 240px);
+  --room: var(--clear); /* (a length, for the title's size: --clear is a percentage with the planet at the foot) */
+}
 .welcome {
   position: fixed;
   z-index: calc(var(--z-cover) + 6); /* over the first-visit cover (index.html, 94) */
@@ -24,7 +41,10 @@
   background: #04050a;
   color: var(--text);
 }
-.welcome-sky { position: fixed; inset: 0; overflow: hidden; pointer-events: none; }
+/* the stars, then the planet over them, both under the words (the frame is
+   its own stacking context) */
+.welcome-sky { position: fixed; z-index: -2; inset: 0; overflow: hidden; pointer-events: none; }
+.welcome-horizon { position: fixed; z-index: -1; inset: 0; overflow: hidden; pointer-events: none; }
 /* the sun behind a planet's edge, off to the right: a glow, and a dark disc
    over most of it whose rim the glow lights (the theme's saber, as the map's
    accent is) */
@@ -53,8 +73,10 @@
   position: relative;
   width: min(1080px, 100%);
   margin: auto;
-  padding: clamp(8px, 5vh, 56px) clamp(0px, 4vw, 48px);
+  padding: clamp(8px, 5vh, 56px) var(--col-pad);
 }
+/* every block in the column stops short of the planet's rim */
+.welcome-main > * { max-width: var(--clear); }
 /* each part rises in, one after another, as a title card's lines would */
 .welcome-main > * { animation: welcome-rise 0.7s var(--ease-out) both; }
 .welcome-main > :nth-child(2) { animation-delay: 70ms; }
@@ -67,19 +89,20 @@
 .welcome-name { display: flex; align-items: center; gap: 0.65rem; color: var(--text-body); font-size: var(--fs-sm); font-weight: 600; letter-spacing: 0.01em; }
 .welcome-name::before { content: ''; width: 22px; height: 2px; border-radius: 2px; background: var(--saber); }
 .welcome-title {
-  max-width: 12ch;
+  max-width: min(12ch, var(--clear));
   margin-top: clamp(0.5rem, 2.2vh, 1.1rem);
-  font-size: clamp(2.2rem, min(7vw, 10.5vh), 5.2rem);
+  /* (two lines where the room allows: its longer line, “can fly through”, is about 8.3 of its size wide) */
+  font-size: min(clamp(2.2rem, min(7vw, 10.5vh), 5.2rem), calc(var(--room) / 8.5));
   font-stretch: 125%;
   font-weight: 680;
   letter-spacing: -0.035em;
   line-height: 0.98;
   text-wrap: balance;
 }
-.welcome-text { max-width: 48ch; margin-top: clamp(0.75rem, 2.6vh, 1.4rem); color: var(--text-body); font-size: var(--fs-lead); line-height: 1.55; }
+.welcome-text { max-width: min(48ch, var(--clear)); margin-top: clamp(0.75rem, 2.6vh, 1.4rem); color: var(--text-body); font-size: var(--fs-lead); line-height: 1.55; }
 
 /* the intro's parts, a hairline with a mark at each */
-.welcome-route { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); max-width: 780px; margin-top: clamp(1rem, 4vh, 2.25rem); list-style: none; }
+.welcome-route { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); max-width: min(780px, var(--clear)); margin-top: clamp(1rem, 4vh, 2.25rem); list-style: none; }
 .welcome-route li { position: relative; display: grid; align-content: start; gap: 0.2rem; padding: 1rem 1.25rem 0 0; border-top: 1px solid var(--border-strong); }
 .welcome-route li::before { content: ''; position: absolute; top: -4px; left: 0; width: 7px; height: 7px; border-radius: 50%; background: #04050a; box-shadow: 0 0 0 1.5px var(--border-strong); }
 .welcome-route li:first-child::before { background: var(--saber); box-shadow: 0 0 0 4px color-mix(in srgb, var(--saber) 22%, transparent); }
@@ -95,7 +118,7 @@
 
 /* whose worlds these are: the foot of the window, quiet, read by whoever
    wants it (and by a screen reader in its place after the buttons) */
-.welcome-fine { --pad: clamp(0px, 4vw, 48px); position: relative; width: calc(min(1080px, 100%) - 2 * var(--pad)); margin: 0 auto; padding-top: 0.9rem; border-top: 1px solid var(--border); color: var(--muted); font-size: 0.75rem; line-height: 1.55; animation: welcome-rise 0.7s 420ms var(--ease-out) both; } /* (0.75 rem: under the shell's floor on purpose, the small print it is) */
+.welcome-fine { --pad: var(--col-pad); position: relative; width: min(calc(min(1080px, 100%) - 2 * var(--pad)), var(--clear)); margin: 0 auto 0 calc((100% - min(1080px, 100%)) / 2 + var(--pad)); padding-top: 0.9rem; border-top: 1px solid var(--border); color: var(--muted); font-size: 0.75rem; line-height: 1.55; animation: welcome-rise 0.7s 420ms var(--ease-out) both; } /* (0.75 rem: under the shell's floor on purpose, the small print it is) */
 
 .welcome-on-touch { display: none; }
 @media (pointer: coarse) {
@@ -107,14 +130,29 @@
 /* a phone, or a narrow window: the sun rises at the foot instead, the route's
    notes go (the sentence above keeps the sound; the cockpit shows its own
    keys) and the buttons take the width */
-@media (max-width: 640px) {
-  .welcome-sun { top: auto; right: 50%; bottom: -52vmax; translate: 50% 0; }
+/* A phone, or a window taller than it's wide (a tablet held upright): the
+   planet rises at the foot instead, in the flow after everything else, so
+   the words never sit over it (a column that scrolls ends on it); its rim
+   at about 40% down its strip. The column takes its width. */
+@media (max-width: 640px), (max-aspect-ratio: 9/10) {
+  .welcome,
+  .launch-arrive { --clear: 100%; --room: calc(100vw - 2 * var(--pad-l)); }
+  .welcome-horizon { position: relative; z-index: auto; inset: auto; flex: none; height: var(--horizon-h); margin: 12px calc(-1 * max(20px, env(safe-area-inset-right))) calc(-1 * max(16px, env(safe-area-inset-bottom))) calc(-1 * var(--pad-l)); }
+  .welcome-sun { top: calc(var(--horizon-h) * 0.4 - 11.7vmax); right: auto; left: 50%; translate: -50% 0; }
   .welcome-sun::after { box-shadow: inset 0 2px 0 color-mix(in srgb, var(--saber) 55%, transparent), inset 0 14px 40px -18px color-mix(in srgb, var(--saber) 70%, transparent); }
+  @keyframes welcome-sun { from { opacity: 0; transform: translateY(4vmax); } }
+}
+@media (max-width: 640px) {
   .welcome-route li { padding-right: 0.75rem; }
   .welcome-route-title { font-size: var(--fs-sm); }
   .welcome-route-text { display: none; }
   .welcome-buttons .btn { flex: 1 1 100%; }
   .welcome-alt { text-align: center; }
+}
+/* a laptop's window (1280 by 720): the column a little tighter top and
+   bottom, so the small print is in the first screenful too */
+@media (max-height: 760px) {
+  .welcome-main { padding-block: clamp(8px, 3vh, 28px); }
 }
 /* a short window (a laptop at 125% or 150%): tighter, and the notes go */
 @media (max-height: 600px) {
@@ -154,8 +192,8 @@
 /* The quick tour (QuickTour.jsx): the welcome's frame, a card at a time; the
    drawing beside the words on a wide window, over them on a narrow one. */
 .launch-tour-count { margin-left: auto; padding-left: 1rem; color: var(--muted); font-weight: 500; font-variant-numeric: tabular-nums; }
-.launch-tour-main .welcome-name { max-width: 780px; }
-.launch-tour-card { display: grid; grid-template-columns: minmax(120px, 200px) minmax(0, 1fr); align-items: center; gap: clamp(1.25rem, 4vw, 3rem); max-width: 780px; margin-top: clamp(1rem, 4vh, 2.5rem); animation: welcome-rise 0.5s var(--ease-out) both; }
+.launch-tour-main .welcome-name { max-width: min(780px, var(--clear)); }
+.launch-tour-card { display: grid; grid-template-columns: minmax(120px, 200px) minmax(0, 1fr); align-items: center; gap: clamp(1.25rem, 4vw, 3rem); max-width: min(780px, var(--clear)); margin-top: clamp(1rem, 4vh, 2.5rem); animation: welcome-rise 0.5s var(--ease-out) both; }
 .launch-tour-art { width: 100%; height: auto; color: var(--text); }
 .launch-tour-art .art-line { fill: none; stroke: color-mix(in srgb, var(--text) 38%, transparent); stroke-width: 1.5; }
 .launch-tour-art .art-faint { opacity: 0.55; }
@@ -200,4 +238,12 @@
    launch's white clears onto it; over the page and the map's own veil. */
 .launch-arrive { position: fixed; z-index: calc(var(--z-cover) + 3); inset: 0; background: #04050a; color: var(--text); opacity: 1; transition: opacity 0.45s ease; }
 .launch-arrive.is-done { opacity: 0; pointer-events: none; }
-.launch-arrive .launch-arrive-veil { --veil-at: center; background: transparent; }
+.launch-arrive .launch-arrive-veil { --veil-at: center; right: calc(var(--rim-in) + 24px); background: transparent; }
+/* (the planet at the foot: the card centred above its strip, the strip at the bottom) */
+@media (max-width: 640px), (max-aspect-ratio: 9/10) {
+  .launch-arrive .launch-arrive-veil { right: 0; bottom: var(--horizon-h); }
+  .launch-arrive .welcome-horizon { position: absolute; right: 0; bottom: 0; left: 0; margin: 0; }
+}
+/* (the planet is already up when the arrival comes, behind the tour or the
+   cockpit's white: it doesn't rise in again) */
+.launch-arrive .welcome-sun { animation: none; }
