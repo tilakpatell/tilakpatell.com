@@ -43,4 +43,13 @@ describe('lane 4a’s cards', () => {
   it('gives fleets and shipyards their cards', () => {
     for (const k of ['fleet', 'shipyard']) expect(CATALOGUE_CARDS[k], k).toMatchObject({ type: PLACE.thing[k], about: PLACE.about[k], solid: true, chart: { shape: 'dot', priority: 30 } });
   });
+  it('gives the clouds and the life between the systems their cards, the movers where their paths have them', () => {
+    for (const k of ['pocket', 'remnant']) expect(CATALOGUE_CARDS[k], k).toMatchObject({ type: PLACE.thing[k], solid: false, chart: { shape: 'cloud', priority: 35 } });
+    for (const k of ['storm', 'herd', 'swarm']) {
+      expect(CATALOGUE_CARDS[k], k).toMatchObject({ type: PLACE.thing[k], solid: true, chart: { shape: 'dot', priority: 30 } });
+      const row = s.extras[k][0];
+      expect(CATALOGUE_CARDS[k].move(row, 777), k).toEqual(rowAt(row, 777));
+    }
+    expect(CATALOGUE_CARDS.debris).toMatchObject({ solid: false, chart: { shape: 'dot', priority: 15 } });
+  });
 });

@@ -61,7 +61,7 @@ export const PLACE = {
   planet: { rock: 'Rocky world', ice: 'Ice world', gas: 'Gas giant', lava: 'Lava world', ocean: 'Ocean world', desert: 'Desert world', forest: 'Forest world', ringed: 'Ringed giant' },
   moon: { rocky: 'Rocky moon', icy: 'Icy moon' },
   station: 'Station',
-  thing: { rock: 'Asteroid', ice: 'Ice shard', derelict: 'Derelict', rogue: 'Rogue planet', nebula: 'Nebula', pulsar: 'Pulsar', outpost: 'Abandoned outpost', beacon: 'Beacon', relay: 'Relay array', monolith: 'Monolith', field: 'Asteroid field', icefield: 'Ice field', comet: 'Comet', rig: 'Mining rig', fleet: 'Fleet at anchor', shipyard: 'Shipyard', default: 'Something in space' },
+  thing: { rock: 'Asteroid', ice: 'Ice shard', derelict: 'Derelict', rogue: 'Rogue planet', nebula: 'Nebula', pulsar: 'Pulsar', outpost: 'Abandoned outpost', beacon: 'Beacon', relay: 'Relay array', monolith: 'Monolith', field: 'Asteroid field', icefield: 'Ice field', comet: 'Comet', rig: 'Mining rig', fleet: 'Fleet at anchor', shipyard: 'Shipyard', pocket: 'Nebula', remnant: 'Supernova remnant', storm: 'Ion storm', herd: 'Leviathan herd', swarm: 'Swarm', debris: 'Battle debris', default: 'Something in space' },
   about: {
     system: ({ star, planets, station, held, companions = [] }) => `${/^[aeiou]/i.test(star) ? 'An' : 'A'} ${[star.toLowerCase(), ...companions.map((c) => `${/^[aeiou]/i.test(c) ? 'an' : 'a'} ${c}`)].join(', ').replace(/, ([^,]*)$/, ' and $1')} with ${count(planets, 'planet')}${station ? ' and a station' : ''}, held by ${held}.`,
     planet: ({ type, system, moons, rings }) => `${type} round ${system}, with ${count(moons, 'moon')}${rings ? ' and rings' : ''}.`,
@@ -83,6 +83,12 @@ export const PLACE = {
     rig: 'A mining rig on a big rock, its haulers coming and going.',
     fleet: 'Ships at anchor, flying their colours. Hail them.',
     shipyard: 'A hull going up in its scaffold, the cranes still working.',
+    pocket: 'A pocket of glowing gas. Fly in.',
+    remnant: 'The shell a star threw off when it blew. Fly through it.',
+    storm: 'An ion storm, drifting. Inside it the shields drain.',
+    herd: 'A herd of space leviathans going their own way.',
+    swarm: 'Glowing drifters that live in the nebula.',
+    debris: 'What’s left of an old battle. Salvage what you can.',
     default: 'Out here between the stars.',
   },
   held: (name) => name.replace(/^The /, 'the '), // (a faction's name mid-sentence)

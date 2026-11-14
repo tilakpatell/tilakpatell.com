@@ -18,6 +18,9 @@
 //   CUBE_HALF − size − extent round the sector's middle, until roomFor, so the row's whole
 //   extent stays in its own sector, where a neighbour's lists, which don't know it, can't reach
 // nameIn(rng, ctx) → a name, in the culture of the sector's distance from home
+// placedOf(made) → [{ at, r }]: every row of the lists made so far, a mover from its path's
+//   middle with its extent (a comet's tail too), for roomFor's `placed`
+// loopOf(rng, centre, radius, revs) → a loop path round centre, on a random plane
 
 import { CUBE_HALF } from '../cube';
 import { KEEP_OUTS, clearOfKeepOuts } from '../keepOuts';
@@ -60,4 +63,30 @@ export function dartIn(rng, ctx, spec, placed = [], tries = 40) {
 export function nameIn(rng, ctx) {
   const n = nameOf(rng, cultureOf(rng, ctx.d ?? 0));
   return n[0].toUpperCase() + n.slice(1);
+}
+
+export function placedOf(made) {
+  const out = [];
+  for (const rows of Object.values(made))
+    for (const row of rows) {
+      const at = row.path ? (row.path.focus ?? row.path.centre) : row.at;
+      out.push({ at, r: row.size + (row.extent ?? 0) + (row.tail ?? 0) });
+    }
+  return out;
+}
+
+const sphere = (rng) => {
+  const z = rng() * 2 - 1;
+  const a = rng() * 2 * Math.PI;
+  const r = Math.sqrt(1 - z * z);
+  return [r * Math.cos(a), r * Math.sin(a), z];
+};
+
+export function loopOf(rng, centre, radius, revs) {
+  const normal = sphere(rng);
+  // (ref: square to the normal, from whichever axis it's furthest from)
+  const ax = Math.abs(normal[0]) < 0.9 ? [1, 0, 0] : [0, 1, 0];
+  const c = [normal[1] * ax[2] - normal[2] * ax[1], normal[2] * ax[0] - normal[0] * ax[2], normal[0] * ax[1] - normal[1] * ax[0]];
+  const l = Math.hypot(c[0], c[1], c[2]);
+  return { type: 'loop', centre: [...centre], radius, revs, phase: rng(), normal, ref: [c[0] / l, c[1] / l, c[2] / l] };
 }

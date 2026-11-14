@@ -13,6 +13,7 @@ import { KINDS, rowAt, traitsOf } from '../../expanse/shared/gen';
 import { PLACE } from '../words';
 
 const DOT = Object.freeze({ shape: 'dot', priority: 20 });
+const CLOUD = Object.freeze({ shape: 'cloud', priority: 35 });
 const dot = (priority) => Object.freeze({ shape: 'dot', priority });
 const card = (kind, more = {}) => ({ type: PLACE.thing[kind], about: PLACE.about[kind], color: KINDS[kind].color, solid: true, chart: DOT, ...more });
 
@@ -28,4 +29,11 @@ export const CATALOGUE_CARDS = {
   rig: card('rig'),
   fleet: card('fleet', { chart: dot(30) }),
   shipyard: card('shipyard', { chart: dot(30) }),
+  pocket: card('pocket', { solid: false, chart: CLOUD }),
+  remnant: card('remnant', { solid: false, chart: CLOUD }),
+  // (a storm, a herd and a swarm are parked outside, not inside: solid on the card, passable in flight)
+  storm: card('storm', { move: (row, t) => rowAt(row, t), chart: dot(30) }),
+  herd: card('herd', { move: (row, t) => rowAt(row, t), chart: dot(30) }),
+  swarm: card('swarm', { move: (row, t) => rowAt(row, t), chart: dot(30) }),
+  debris: card('debris', { solid: false, chart: dot(15) }),
 };
