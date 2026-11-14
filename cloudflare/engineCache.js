@@ -45,6 +45,8 @@ const AHEAD = 8;
 export function following(paths, ahead = AHEAD) {
   const series = new Map();
   for (const path of paths) {
+    // The engine chooses mip byte ranges after selecting quality and view. Never warm the whole payload.
+    if (/(^|\/)scene-t-\d+(?:\.stored)?\.pixels$/.test(path)) continue;
     const m = /^(.*-)(\d+)(\.[^/]+)$/.exec(path);
     if (!m) continue;
     const key = `${m[1]}#${m[3]}`;
@@ -139,6 +141,8 @@ export function engineWorker(self, keep, follow) {
   };
   // a file fetched onto the disk, once: true when it's there
   const fill = (cache, build, url) => {
+    // Also reject warm requests from an older open page or a stale series list.
+    if (/(^|\/)scene-t-\d+(?:\.stored)?\.pixels$/.test(new URL(url).pathname)) return Promise.resolve(true);
     if (onDisk.has(url)) return Promise.resolve(true);
     if (!writable) return Promise.resolve(false);
     if (!coming.has(url))
@@ -243,6 +247,7 @@ export function warmOrder(paths) {
   };
   return paths
     .filter((p) => !p.includes('/'))
+    .filter((p) => !/^scene-t-\d+(?:\.stored)?\.pixels$/.test(p))
     .map((path) => ({ path, rank: rankOf(path), n: Number(/-(\d+)[.]/.exec(path)?.[1] ?? 0) }))
     .filter((f) => f.rank >= 0)
     .sort((a, b) => a.rank - b.rank || a.n - b.n || (a.path < b.path ? -1 : 1))
