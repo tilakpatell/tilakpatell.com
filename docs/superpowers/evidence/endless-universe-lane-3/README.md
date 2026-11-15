@@ -195,36 +195,51 @@ The PR's own checks: `npx vitest run src/components/universe/places src/componen
 | Task 12: the scene's places | 6,334 |
 | Task 13: picking and names | 6,334 |
 | After merging `main` (#1308, #1312) | 6,370 (`main`: 6,491) |
+| After merging `main` (#1313, #1316) | 6,336 (`main` at `f4b7e7ee`: 6,457) |
 
 ### Draw calls and triangles at mid
 
-Both sides measured in the same checkout, one after the other: `main` at `30fcc43d` (its `src` and `scripts` checked out over this branch's), then this branch, with `node scripts/universe-check.mjs --quality mid --poses …`. A pose that captured nothing (0 calls) was taken again (`far-rim`, `old-rim`, `above-core`, `landing-middleearth` and `office` on the branch). `expanse-system` was taken again on both sides back to back, since generated planets and moons move on the wall clock.
+Both sides were measured in this one checkout with its own `node_modules`: `main` at `f4b7e7ee` (its `src` checked out over this branch's), then this branch, three times each, one after the other. The command was `node scripts/universe-check.mjs --quality mid --draws --poses …`. A capture that drew nothing is taken again, up to eight frames, so every pose has real numbers on both sides, `rickmorty` and `office` among them. `--draws` records every draw by object path and material, so every difference can be named.
 
-| Pose | Calls, main | Calls, branch | Triangles, main | Triangles, branch |
-|---|--:|--:|--:|--:|
-| overview | 101 | 101 | 523,071 | 522,349 |
-| falcon-sun | 80 | 79 | 503,591 | 503,603 |
-| middleearth-limb | 39 | 41 | 64,781 | 67,697 |
-| rickmorty | 0 | 0 | 0 | 0 |
-| gaming | 43 | 43 | 75,123 | 75,123 |
-| caribbean | 43 | 43 | 114,533 | 114,533 |
-| middleearth | 39 | 39 | 64,773 | 64,773 |
-| breakingbad | 64 | 62 | 58,971 | 61,585 |
-| office | 0 | 39 | 0 | 52,891 |
-| belt | 44 | 46 | 450,965 | 450,979 |
-| maw | 43 | 43 | 103,919 | 103,939 |
-| landing-middleearth | 117 | 117 | 138,058 | 138,060 |
-| station | 67 | 67 | 488,901 | 488,877 |
-| far-rim | 42 | 40 | 70,259 | 70,255 |
-| old-rim | 48 | 48 | 90,722 | 87,125 |
-| above-core | 43 | 35 | 48,189 | 42,937 |
-| expanse-system | 51 | 49 | 201,465 | 201,459 |
-| expanse-station | — | 43 | — | 92,791 |
+Each cell is the lowest and highest of the three runs. “Without random ships” is the draw list's total less the ships that `traffic.js` and the hunters spawn with `Math.random`: `traffic-*`, the interceptor, the Sketchfab NPC and their glows. That total is about 5 above `calls`, the same on both sides, because the list also counts the post passes.
 
-- Five poses match exactly, and most of the rest are within a few dozen triangles. Moving things in a frame, traffic and meteors, account for those.
-- `breakingbad` and `middleearth-limb` each flip between two states from run to run, about 2 calls and 2,600 to 2,900 triangles apart. Both values were seen on both sides: `main`'s code gave `breakingbad` 62 calls and 61,585 triangles in another run, and this branch gave `middleearth-limb` 39 calls and 64,779 triangles in its first after run.
-- No station is in view at any hand-made pose: the keep-outs keep every generated system's reach off them. `expanse-station` is new and is its own baseline: 43 calls and 92,791 triangles, the station's hull and lights being two of the calls.
-- A first try at the before, from a git worktree whose `node_modules` was a link to this checkout's, drew about 29,655 triangles and 2 calls less at every pose for `main`'s own code. It isn't a fair before, and isn't used here.
+| Pose | Calls, main | Calls, branch | Without random ships, main | Without random ships, branch | Triangles, main | Triangles, branch |
+|---|--:|--:|--:|--:|--:|--:|
+| overview | 92–102 | 92–109 | 93 | 93 | 518,595–527,812 | 518,607–529,203 |
+| falcon-sun | 74–75 | 74–81 | 75 | 74–75 | 503,571–503,655 | 503,575–507,305 |
+| middleearth-limb | 34 | 34–38 | 39 | 39 | 67,367–67,373 | 67,377–71,109 |
+| rickmorty | 35 | 35 | 40 | 40 | 68,491 | 65,875–68,491 |
+| gaming | 38 | 38 | 43 | 43 | 75,103 | 75,103 |
+| caribbean | 39 | 39 | 44 | 44 | 114,511–117,127 | 114,511–117,127 |
+| middleearth | 35 | 35 | 40 | 40 | 67,367 | 64,751–67,367 |
+| breakingbad | 60 | 60 | 65 | 65 | 61,579 | 58,963–61,579 |
+| office | 36 | 36 | 41 | 41 | 52,871 | 50,255–52,871 |
+| belt | 40 | 40 | 45 | 45 | 450,935–450,955 | 450,935–450,939 |
+| maw | 39–51 | 39 | 44 | 44 | 103,891–109,507 | 103,889–103,917 |
+| landing-middleearth | 72–119 | 72 | 77–124 | 77 | 61,642–144,356 | 61,638–61,648 |
+| station | 72–73 | 71–75 | 72–73 | 72–73 | 502,679–502,937 | 502,601–505,931 |
+| far-rim | 36 | 25–36 | 41 | 30–41 | 70,235–70,243 | 70,235–70,243 |
+| old-rim | 34–42 | 34–36 | 39 | 39 | 82,205–87,473 | 82,207–90,277 |
+| above-core | 19–30 | 19–38 | 24–35 | 24–35 | 42,900–42,925 | 42,946–48,737 |
+| expanse-system | 43–45 | 45 | 50 | 50 | 164,251–212,895 | 212,891–212,899 |
+| expanse-station | — | 37 | — | 42 | — | 80,901–80,909 |
+
+- Without the random ships, the branch is never above `main` at any pose: 13 of 17 match exactly, and at `far-rim` and `falcon-sun` the branch's low is lower and its high the same.
+- Raw, the branch's high is above `main`'s at `overview`, `falcon-sun`, `middleearth-limb`, `station` and `above-core`. The draw lists show what each extra is, and every one is a random ship: a traffic freighter (4 calls) or X-wing (16), a TIE (8), a transport (8), an interceptor (2). `main` has the same kind of high where the branch has none: `maw` up to 51, `landing-middleearth` up to 119 (a run that caught more of the ground's scatter loaded), `old-rim` up to 42.
+- `belt` is 40 against 40 in every run; the earlier 44 → 46 was a ship.
+- `above-core`: the earlier 43 → 35 was taken against an older `main` and doesn't stand. Against `f4b7e7ee` its spread, 19 to 38, is the post passes caught as one draw in some frames (12 against 1) and a transport or interceptor passing. Without the ships, both sides are 24 to 35.
+- No generated station is in view at any hand-made pose: the keep-outs keep every generated system off them. `expanse-station` is new and is its own baseline, 37 calls and about 80,900 triangles.
+
+### Shots, `main` and this branch side by side
+
+From home with the autopilot off and `post.sharpness` at 1, the ship at `[0, 3000, 9000, 0, -0.25]`, `[6000, 400, 14000, 0.8π, 0.05]` and `[-4000, 1500, 6000, 2.2, 0.55]`; then docked at a generated station. `main` is on the left, at `f4b7e7ee`.
+
+![The first sky](pair-sky-1.jpg)
+![The second sky](pair-sky-2.jpg)
+![The third sky](pair-sky-3.jpg)
+![Docked at Selaxselu Dock: main has no generated stations](pair-docked.jpg)
+
+The skies are the same apart from the generated places' name tags. `main` has no generated stations, so its fourth shot is the empty place where the branch's Selaxselu Dock is, with its card and the Hangar.
 
 ### The endless check, the whole route at mid
 
