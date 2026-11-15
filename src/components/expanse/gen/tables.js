@@ -10,6 +10,8 @@
 // HAZARDS: [null, 'storm', 'pirates', 'minefield']; hazardWeights(d) → [[hazard, weight]…]
 // WONDERS: [{ kind, size: [least, most] (its radius), weight }]; WONDER_KINDS: their kinds
 // STATION_NAMES: what a station is called after its system's name
+// THING_NAMES: what a thing round a system is called after it (lane 4a's: a field, an ice field,
+//   a rig, a fleet, a shipyard); a comet is its system's own
 
 export const STAR_CLASSES = [
   { class: "O", color: "#9bb0ff", size: [320, 420], weight: 0.4 },
@@ -158,3 +160,6 @@ export const STATION_NAMES = [
   "Yards",
   "Waystation",
 ];
+
+export const THING_NAMES = Object.freeze({ field: 'Belt', icefield: 'Ice', rig: 'Rig', fleet: 'Fleet', shipyard: 'Yards' });
+export const cometName = (system) => `${system}’s Comet`;
