@@ -234,6 +234,8 @@ import { createSky } from '../galaxy/sky';
 import { SYSTEMS } from '../galaxy/systems';
 import { UNIVERSE, createExpanse, sectorPools } from '../expanse/shared/space';
 import { createThingDrawers } from './things/drawers';
+import { createThingPlay } from './things';
+import { CABS, CAB_HFOV, CAB_VFOV, EYE, SEAT_KEY } from './cabs';
 import { runtime } from '../../runtime';
 import { deedToEarn } from './economy';
 import { createPayLedger, hunterEarn } from './earnRules';
@@ -261,19 +263,6 @@ const NO_SHIPS = []; // (no big ship moving through: solidsWith's base)
 const RAM_CLEARED = 2; // seconds after a ram's kill a pack cleared is the ram's (said as one)
 const PREFETCH_AFTER = 2.5; // seconds at a planet you could land on before what landing there wants is fetched (not as you fly past)
 const PREFETCH_AHEAD = 2; // seconds, at most, from flying into its air when the part of it you'll come down on is fetched too
-// the cockpit view: the intro's cockpits, built on demand; the eye sits a
-// little ahead of the ship's middle and above it (map units); the lens is
-// the intro's, framed for a wide horizontal view, kept within sane vertical limits
-const CABS = {
-  falcon: () => import('../cockpit/vehicles/falcon'),
-  xwing: () => import('../cockpit/vehicles/xwing'),
-  cruiser: () => import('../cockpit/vehicles/cruiser'),
-  rv: () => import('../cockpit/vehicles/rv'),
-};
-const SEAT_KEY = 'tp:universe-seat'; // 'chase' or 'cockpit', remembered
-const EYE = { ahead: 0.035, up: 0.045 };
-const CAB_HFOV = 88;
-const CAB_VFOV = [52, 94];
 // a crash, in seconds from the moment it hits: on into the planet, the
 // impact, on through into its page (a planet or a station, not the sun),
 // or else the ship back again, and the end of its coming back. Into the
@@ -815,6 +804,8 @@ export async function create(canvas, ctx) {
       if (inExpanse(id) && id !== 'E:0,0') state.note = { text: `The Expanse · ${id}`, until: wall() + 3 };
     },
   });
+  // lane 4a's things in space played: E at one, a storm's drain, a pulsar's beam, a wormhole's throw (things/index.js)
+  const thingPlay = createThingPlay({ sectors: () => expanse.sectors().values(), pay: (what, n) => pay(what, n), say: (text) => (state.note = { text, until: wall() + 3.5 }), travelling: () => Boolean(state.auto || state.jump), universe: typeof ctx.universe === 'bigint' ? ctx.universe : UNIVERSE });
   // and the big things, the Maw, the nebulae and the big stars, as landmarks on the sky (landmarks.js)
   const landmarks = createLandmarks(map, { renderer, small, level: device().detail, skyFar: SKY_FAR });
   await breathe();
@@ -4016,6 +4007,7 @@ export async function create(canvas, ctx) {
     }
     if (live) {
       // shields come back once you've been out of trouble a while
+      thingPlay.update(state, dt, Date.now() / 1000);
       if (state.clock - state.hitAt > state.stats.delay && state.shield < 100) state.shield = Math.min(100, state.shield + dt * 12 * state.stats.regen * diff().regen);
       if (state.shield > 70) state.lowSaid = false;
       state.heat = Math.max(0, state.heat - dt / 45);
@@ -5536,6 +5528,7 @@ export async function create(canvas, ctx) {
       emit({ type: 'siege', what: 'closed' });
       return;
     }
+    if ((key === 'e' || (key === 'enter' && !onControl)) && !state.at && thingPlay.press(state)) return e.preventDefault();
     if ((key === 'e' || (key === 'enter' && !onControl)) && state.at) {
       e.preventDefault();
       props.onLand?.();

@@ -55,6 +55,36 @@ export const moonWay = (moon) =>
 // its facts and its buttons, and the card a link shows before the scene has
 // found the place, or with no scene to find it.
 const count = (n, word) => (n ? `${n} ${word}${n === 1 ? '' : 's'}` : `no ${word}s`);
+// Lane 4a's things in space: what E does there, and what's said when it does.
+const LORE = [
+  'The signs say the stars here were moved, once, by hand.',
+  'A map, cut in stone, of a sky that hasn’t been seen for a million years.',
+  'Names, thousands of them, and the last one left unfinished.',
+  'A warning, repeated in seven scripts: do not wake the deep one.',
+  'A count of days that stops at the day this slab was set here.',
+  'Instructions for building a gate. Half the stone is missing.',
+  'A poem about the cold between the galaxies. It rhymes in no tongue you know.',
+  'The same face, over and over, smaller each time.',
+  'A record of a trade: one star for one song.',
+  'A list of worlds. Three of them are ones you’ve been to.',
+  'A promise to come back. It’s signed with a handprint of six fingers.',
+  'Nothing but a spiral, worn smooth by hands.',
+];
+export const THINGS = {
+  verb: { mine: 'Mine', salvage: 'Salvage', scan: 'Scan', follow: 'Follow the signal', hail: 'Hail' },
+  prompt: (verb, name) => `E: ${THINGS.verb[verb]} · ${name}`,
+  did: ({ verb, pay, lore, leads, trap, name }) => {
+    if (verb === 'mine') return pay ? 'Ore aboard. Worth something at any station.' : 'You’ve taken all this field will give for now.';
+    if (verb === 'salvage') return !pay ? `Nothing left worth taking from ${name}.` : trap ? `Salvaged ${name}. Something on it has woken up.` : `Salvaged ${name}.`;
+    if (verb === 'scan') return lore !== undefined ? LORE[lore % LORE.length] : pay ? `Scanned ${name}: the logs are worth something.` : `Already scanned ${name}.`;
+    if (verb === 'follow') return leads === 'distress' ? 'A distress call. Somebody out here needs help.' : 'A signal with coordinates in it. Something’s hidden out there.';
+    return `${name} answers your hail.`;
+  },
+  tail: 'Through the comet’s tail: ice samples aboard.',
+  beam: (kind) => (kind === 'magnetar' ? 'A magnetar’s beam: your screens scramble.' : 'A pulsar’s beam sweeps over you: your screens scramble.'),
+  thrown: (key) => `Through the wormhole. You’re in ${key}, a long way from where you were.`,
+};
+
 export const PLACE = {
   star: { O: 'Blue giant', B: 'Blue giant', A: 'White star', F: 'Yellow-white star', G: 'Yellow star', K: 'Orange star', M: 'Red dwarf', 'white dwarf': 'White dwarf', neutron: 'Neutron star' },
   system: (star) => `${star} system`,
