@@ -73,7 +73,10 @@ if (!base) {
 const exe = args.chromium ?? process.env.CHROMIUM ?? (await readdir('/opt/pw-browsers').catch(() => [])).filter((n) => /^chromium-\d+$/.test(n)).flatMap((n) => [`/opt/pw-browsers/${n}/chrome-linux/chrome`, `/opt/pw-browsers/${n}/chrome-linux64/chrome`]).find(existsSync);
 if (!exe) throw new Error('no Chromium (set CHROMIUM=/path/to/chrome)');
 const browser = await chromium.launch({ executablePath: exe, args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', '--enable-webgl', '--js-flags=--max-old-space-size=4096'] });
-const ctx = await browser.newContext({ viewport: { width: W, height: H } });
+// (reduced motion: the scene's clock stands still, so the gas's breathing and
+// drift and the living sky don't move between two shots minutes apart in
+// software GL; what's measured is where the cloud is, not how it breathes)
+const ctx = await browser.newContext({ viewport: { width: W, height: H }, reducedMotion: 'reduce' });
 await ctx.addInitScript((q) => {
   window.localStorage.setItem('tp-intro', '1');
   window.localStorage.setItem('tp-start', '"universe"');
