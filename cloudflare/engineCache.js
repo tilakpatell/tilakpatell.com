@@ -61,7 +61,10 @@ export function following(paths, ahead = AHEAD) {
   return next;
 }
 
-export function engineWorker(self, keep, follow) {
+// limits (15 Nov, live r1073 boot hangs: nothing here had a time limit): a network ask that has not answered in `fetch` ms is
+// aborted and asked again (the retries below); a demanded file waits on its read-ahead already on its way at most `waitAhead` ms,
+// then asks for itself.
+export function engineWorker(self, keep, follow, limits = { fetch: 15000, waitAhead: 3000 }) {
   const NAME = 'tp-engine-';
   const LIST = 'tp-files.json';
   const WARM = 'x-tp-warm';
@@ -84,12 +87,24 @@ export function engineWorker(self, keep, follow) {
   };
   // (the engine's loader asks again for nothing: a dropped answer, or the Worker's 503, is asked again here, after
   // half a second, then one and a half, then four; a 404 is the answer)
+  // (one network ask, aborted and failed when it has not answered in time: a stalled answer is then asked again like a dropped one)
+  const timedFetch = (request) => {
+    const control = typeof AbortController === 'function' ? new AbortController() : null;
+    let timer;
+    const late = new Promise((_, reject) => {
+      timer = setTimeout(() => {
+        try { control?.abort(); } catch { /* already settled */ }
+        reject(new Error('engine-cache: no answer in ' + limits.fetch + ' ms'));
+      }, limits.fetch);
+    });
+    return Promise.race([control ? self.fetch(request, { signal: control.signal }) : self.fetch(request), late]).finally(() => clearTimeout(timer));
+  };
   const network = async (request) => {
     let last = null;
     for (const wait of [0, 500, 1500, 4000]) {
       if (wait) await new Promise((r) => setTimeout(r, wait));
       try {
-        last = await self.fetch(request);
+        last = await timedFetch(request);
         if (last.status < 500) return last;
       } catch (error) {
         last = error;
@@ -202,7 +217,9 @@ export function engineWorker(self, keep, follow) {
             .catch(() => {}),
         );
         // (one already on its way: waited for, not asked again)
-        if (coming.has(dir + kept.path)) await coming.get(dir + kept.path);
+        // (a read-ahead that has stalled is not waited on for long: the demand asks for itself)
+        if (coming.has(dir + kept.path))
+          await Promise.race([coming.get(dir + kept.path), new Promise((r) => setTimeout(r, limits.waitAhead))]);
         let hit;
         try {
           hit = await cache.match(request, same);
