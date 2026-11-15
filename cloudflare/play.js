@@ -87,6 +87,15 @@ export function playRoute(pathname, config) {
 }
 
 // an R2 read, asked once again when it throws; null for a key the bucket hasn't got
+// a 416 for a single byte range whose start is at or past the object's end, or null (no range, a range R2 can answer, or no head)
+async function unsatisfiableRange(env, key, range) {
+  const start = /^bytes=(\d+)-\d*$/.exec(range ?? '')?.[1];
+  if (start === undefined || typeof env.PLAY.head !== 'function') return null;
+  const head = await env.PLAY.head(key).catch(() => null);
+  if (!head || Number(start) < head.size) return null;
+  return new Response(null, { status: 416, headers: { ...ISOLATED, 'content-range': `bytes */${head.size}`, 'cache-control': 'no-store' } });
+}
+
 async function read(env, key, opts) {
   try {
     return await env.PLAY.get(key, opts);
@@ -249,7 +258,16 @@ async function answerBuild(request, url, route, env, config, manifests, ctx, cac
   if (route.root === 'site' && !(await listed(env, config, manifests)).has(route.path)) return isolatedNotFound();
   const page = route.root === 'site' && route.path === 'index.html';
   // (the page whole, and its precondition the Worker's: its ETag isn't the object's)
-  const object = await read(env, route.key, page ? {} : { range: request.headers, onlyIf: request.headers });
+  let object;
+  try {
+    object = await read(env, route.key, page ? {} : { range: request.headers, onlyIf: request.headers });
+  } catch (error) {
+    // (a range that starts at or past the end: R2 refuses it, and the 503 "try again" it became made the service worker and the
+    // page ask again three times for bytes that will never exist. It is answered 416 with the size; any other failure stays a 503.)
+    const unsatisfiable = !page && (await unsatisfiableRange(env, route.key, request.headers.get('range')));
+    if (unsatisfiable) return unsatisfiable;
+    throw error;
+  }
   if (!object) return isolatedNotFound();
   const headers = new Headers({
     ...ISOLATED,

@@ -165,6 +165,37 @@ describe('serving the play site', () => {
     expect(await res.text()).toBe('wasm');
   });
 
+  // (R2 refuses a range that starts at or past the end: a 503 "try again" made the service worker and the page ask three more times)
+  it('answers 416 with the size for a range past the end; any other failed read stays a 503', async () => {
+    const r2 = (getFails) => {
+      const inner = bucket(files);
+      return {
+        gets: inner.gets,
+        head: async (key) => (key in files ? { size: new TextEncoder().encode(files[key]).length } : null),
+        get: async (key, opts = {}) => {
+          const start = /^bytes=(\d+)-/.exec(opts.range?.get?.('range') ?? '')?.[1];
+          if (getFails || (start !== undefined && Number(start) >= 10)) throw new Error('InvalidRange');
+          return inner.get(key, opts);
+        },
+      };
+    };
+    for (const range of ['bytes=10-', 'bytes=1048576-', 'bytes=12-20']) {
+      const past = await serve(`${ENGINE}b1/original-frame-graph.wasm`, { range }, { PLAY: r2(false) });
+      expect(past.status).toBe(416);
+      expect(past.headers.get('content-range')).toBe('bytes */10');
+      expect(past.headers.get('cross-origin-embedder-policy')).toBe('require-corp');
+      expect(past.headers.get('retry-after')).toBeNull();
+    }
+    // (a range inside the file whose read fails is an outage, not a bad range)
+    const down = await serve(`${ENGINE}b1/original-frame-graph.wasm`, { range: 'bytes=2-' }, { PLAY: r2(true) });
+    expect(down.status).toBe(503);
+    // (a binding with no head, or a head that fails: the 503 as before)
+    const { head, ...noHead } = r2(false);
+    expect((await serve(`${ENGINE}b1/original-frame-graph.wasm`, { range: 'bytes=10-' }, { PLAY: noHead })).status).toBe(503);
+    const headDown = { ...r2(false), head: async () => { throw new Error('R2 unavailable'); } };
+    expect((await serve(`${ENGINE}b1/original-frame-graph.wasm`, { range: 'bytes=10-' }, { PLAY: headDown })).status).toBe(503);
+  });
+
   it('serves the front end and the export’s allowed folders, and leaves the rest to the site', async () => {
     expect((await serve('/ui/main.js')).status).toBe(200);
     expect((await serve('/export/fonts/a.ttf')).status).toBe(200);
