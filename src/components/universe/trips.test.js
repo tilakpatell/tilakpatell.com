@@ -195,3 +195,13 @@ describe('trips to generated places', () => {
     expect(state.arrived).toBeNull();
   });
 });
+
+describe('a trip to a pilot in the other sector (after the move)', () => {
+  it('goes by the portal first, the pilot the trip’s end', () => {
+    const o = SECTORS.rickmorty.origin;
+    const pose = { name: 'Fakey', x: o[0], y: 0, z: o[2] + 300, heading: 0, speed: 0 };
+    const { state, trips } = make({ deps: { pilots: { pose: (id) => (id === 'fake' ? pose : null) } } });
+    expect(trips.travel('pilot:fake', 'super')).toBe(true);
+    expect([state.auto.id, state.then]).toEqual(['rmportal', { id: 'pilot:fake', drive: 'super', name: 'Fakey' }]);
+  });
+});
