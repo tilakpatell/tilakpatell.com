@@ -101,3 +101,7 @@ From the same eye on `main` and the branch, at high (`before-*.webp`, `after-*.w
 - `home`: the `far-rim` pose. On `main` a baked cloud rides the camera (bottom left); on the branch the sky has none.
 - `veil-20000`: the Veil 20,000 off. On `main` the painted landmark, at least 14° across; on the branch the cloud at its true size (its gas 5,500 from its middle), a broken shell.
 - `in-cradle`: 2,700 from the Cradle's middle. On `main` that is outside its small cloud; on the branch it is inside its gas, the fog round the ship and the stars through it.
+
+## From far off: main's painting, kept (2026-11-15)
+
+The orchestrator's check found the Veil from thousands off a soft blob where main drew detailed gas. From three radii out a cloud is now main's landmark painting (ported into the cloud's shader), crossfaded into the volume within one and a half. Main (left) and the branch (right), mid, the same held eye (`far-*.webp`): `orch-held`, the orchestrator's place (6,000 / 400 / 14,000), the Veil 24,000 off; `veil-20000`; `cradle-roll0` and `cradle-roll30`, the Cradle from 18,000 off before and after the view's 30° roll.
