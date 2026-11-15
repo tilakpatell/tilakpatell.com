@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { PALETTE } from '../palette';
 import { NEBULA_BUDGET } from './budget';
-import { FORMS, checkDesc, detailAt, envelope, fogLayers, insideOf, placement, seedOf, stepsAt, youngStars } from './rules';
+import { FORMS, PAINT_IN, PAINT_OUT, checkDesc, detailAt, paintAt, envelope, fogLayers, insideOf, placement, seedOf, stepsAt, youngStars } from './rules';
 
 const len = (a) => Math.hypot(...a);
 describe('where a nebula is drawn', () => {
@@ -100,5 +100,18 @@ describe('young stars', () => {
     expect(youngStars(d, 16)).toHaveLength(16);
     const spread = (f) => youngStars({ ...d, form: f }, 64).reduce((s, x) => s + Math.hypot(...x.at), 0);
     expect(spread('shell')).toBeGreaterThan(spread('nursery'));
+  });
+});
+
+describe('the far painting', () => {
+  it('is the whole picture from three radii out, the volume within one and a half, smooth between', () => {
+    expect(paintAt(PAINT_OUT * 5500, 5500)).toBe(1);
+    expect(paintAt(20000, 5500)).toBe(1);
+    expect(paintAt(PAINT_IN * 6000, 6000)).toBe(0);
+    expect(paintAt(0, 6000)).toBe(0);
+    const mid = paintAt(((PAINT_IN + PAINT_OUT) / 2) * 700, 700);
+    expect(mid).toBeCloseTo(0.5);
+    // (no pop: a small step in, a small change)
+    for (let d = PAINT_IN; d <= PAINT_OUT; d += 0.01) expect(Math.abs(paintAt((d + 0.01) * 100, 100) - paintAt(d * 100, 100))).toBeLessThan(0.02);
   });
 });

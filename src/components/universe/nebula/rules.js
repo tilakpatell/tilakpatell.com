@@ -16,6 +16,13 @@ import { PALETTE } from '../palette';
 // of its edge, and never further than NEAR radii: a small cloud from a
 // little off, a vast one only once you're at it (its stars are specks
 // from further). FADE the share either side the two levels blend over.
+// from PAINT_OUT radii out a cloud is the landmarks' painting (shaders.js's
+// nebPainted, the picture main drew); within PAINT_IN, its volume; between,
+// the two crossfaded by distance
+export const PAINT_IN = 1.5;
+export const PAINT_OUT = 3;
+// how far the painting reaches, in radii (paintAt: 1 the painting, 0 the volume)
+export const paintAt = (dist, r) => smoothstep(PAINT_IN, PAINT_OUT, dist / r);
 export const NEAR = 4;
 export const NEAR_UNITS = 1000;
 export const FADE = 0.2;

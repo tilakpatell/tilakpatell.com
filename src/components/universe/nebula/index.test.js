@@ -141,3 +141,10 @@ it('marches fewer steps near at the pace’s softer steps, and breathes on the c
   n.update(cam([0, 0, 0], [0, 0, -1]));
   expect(attr(n, 'aSteps', 0)[0]).toBe(nebulaAtStep(nebulaBudget('high'), 4).nearSteps);
 });
+
+it('paints a far cloud as the landmarks did, its crossfade and light from rules.js and tone.js', () => {
+  const m = clouds(made().n).material;
+  expect(m.defines).toMatchObject({ NEB_FAR_IN: '1.500', NEB_FAR_OUT: '3.000' });
+  expect(m.fragmentShader).toMatch(/nebPainted\(/);
+  expect(m.fragmentShader).toMatch(/smoothstep\(FAR_IN, FAR_OUT/);
+});

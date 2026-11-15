@@ -8,3 +8,6 @@
 export const EMIT = 0.6;
 // how quickly a cloud hides what's behind it, per radius of gas
 export const ABSORB = 1.4;
+// the far painting's light against its colours at full strength (the
+// atlas it was took them as they were, a little under these)
+export const PAINT_LIGHT = 0.65;

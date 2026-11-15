@@ -141,11 +141,62 @@ void main() {
   gl_Position = projectionMatrix * vec4(p, 1.0);
 }`;
 
+const PAINT = /* glsl */ `
+// From far off, a nebula is the painting the landmarks drew (landmarks.js's
+// atlas, on main till lane 1): warped noise in its own colours, dark dust
+// lanes across it, a few young stars, here painted per pixel on the plane
+// through its middle square to the line of sight, in the map's upright
+// axes (so it turns with the stars, never with the camera), and breathing
+// a little on the scene's clock. Nearer, the volume takes over (CLOUD_FRAG).
+float nebHash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+float nebNoise2(vec2 p) {
+  vec2 i = floor(p);
+  vec2 f = fract(p);
+  f = f * f * (3.0 - 2.0 * f);
+  return mix(mix(nebHash(i), nebHash(i + vec2(1.0, 0.0)), f.x), mix(nebHash(i + vec2(0.0, 1.0)), nebHash(i + vec2(1.0, 1.0)), f.x), f.y);
+}
+float nebFbm2(vec2 p) {
+  float s = 0.0;
+  float a = 0.5;
+  for (int i = 0; i < 6; i++) {
+    s += a * nebNoise2(p);
+    p = p * 2.03 + vec2(1.7, 9.2);
+    a *= 0.5;
+  }
+  return s;
+}
+// p in [-1, 1] across the cloud; returns premultiplied (light, dust's dimming)
+vec4 nebPainted(vec2 p, vec3 c0, vec3 c1, vec3 c2, float cell) {
+  float tt = uTime * 0.06 + cell;
+  p += vec2(sin(p.y * 5.0 + tt) + sin(p.y * 2.3 - tt * 0.7), cos(p.x * 4.3 - tt * 0.8) + cos(p.x * 1.9 + tt * 0.5)) * 0.012;
+  vec2 s = p * 2.2 + cell * 17.3;
+  vec2 q = vec2(nebFbm2(s), nebFbm2(s + vec2(5.2, 1.3))) - 0.5;
+  vec2 w = s + q * 2.4;
+  float gas = nebFbm2(w);
+  float rr = length(p + q * 0.3);
+  float m = exp(-rr * rr * 1.3) * (1.0 - smoothstep(0.78, 1.0, length(p)));
+  float body = smoothstep(0.22, 0.8, gas * (0.6 + 0.8 * m)) * m;
+  float mixc = nebFbm2(w * 1.7 + 3.1);
+  vec3 col = mix(c0, c1, smoothstep(0.35, 0.65, mixc));
+  col = mix(col, c2, smoothstep(0.6, 0.85, nebFbm2(w * 2.3 + 8.0)) * 0.6);
+  col = mix(col, vec3(dot(col, vec3(0.45))), body * body * 0.35);
+  float dust = smoothstep(0.55, 0.78, nebFbm2(w * 3.1 + vec2(11.0, 4.0))) * m;
+  vec3 light = col * body * 0.75 * (1.0 - dust * 0.8) + c0 * m * 0.05;
+  // a few young stars in the thick of it
+  float st = step(0.9985, nebHash(floor((p * 0.5 + 0.5) * 256.0) + cell * 91.0)) * body;
+  light += vec3(1.4, 1.35, 1.25) * st;
+  float glow = 0.94 + 0.06 * sin(uTime * 0.08 + cell * 4.1);
+  // (the colours here are at full strength, brighter than the atlas's were: taken back to them)
+  return vec4(light * glow * float(NEB_PAINT_LIGHT), dust * 0.9 * 0.6);
+}
+`;
+
 export const CLOUD_FRAG = /* glsl */ `
 uniform mat4 modelViewMatrix; // (three declares it in the vertex stage only)
 uniform float uEmit;
 uniform float uAbsorb;
 ${FIELD}
+${PAINT}
 varying vec3 vView;
 varying vec3 vCentre;
 varying float vRadius;
@@ -160,6 +211,9 @@ varying float vKind;
 varying vec2 vCorner;
 
 const int MAX_STEPS = NEB_MAX_STEPS;
+// (the painting's crossfade, in radii: rules.js's PAINT_IN and PAINT_OUT)
+const float FAR_IN = NEB_FAR_IN;
+const float FAR_OUT = NEB_FAR_OUT;
 
 void main() {
   if (vKind > 0.5) {
@@ -184,6 +238,25 @@ void main() {
   float s2 = dot(modelViewMatrix[0].xyz, modelViewMatrix[0].xyz);
   // a sample's place in radii, map axes: toMap(rd·t − c) / (s² · r), r = R / s
   float k = 1.0 / (sqrt(s2) * vRadius);
+  // far off, the painting; within FAR_IN radii the volume, crossfaded over
+  // the radii between (by distance alone: nothing pops as you come in)
+  float far = smoothstep(FAR_IN, FAR_OUT, length(vCentre) / vRadius);
+  vec4 painted = vec4(0.0);
+  if (far > 0.001) {
+    vec3 dir = normalize(vCentre);
+    vec3 dirMap = normalize(toMap * dir);
+    vec3 refMap = abs(dirMap.y) < 0.999 ? vec3(0.0, 1.0, 0.0) : vec3(1.0, 0.0, 0.0);
+    vec3 rightMap = normalize(cross(dirMap, refMap));
+    vec3 upMap = cross(rightMap, dirMap);
+    // where the ray meets the plane through the middle, square to the line of sight, in radii
+    vec3 onPlane = toMap * (rd * (dot(vCentre, dir) / max(dot(rd, dir), 1e-4)) - vCentre) * k;
+    painted = nebPainted(vec2(dot(onPlane, rightMap), dot(onPlane, upMap)), vC0, vC1, vC2, vSeed.x * 7.0);
+    if (far > 0.999) {
+      gl_FragColor = painted;
+      #include <colorspace_fragment>
+      return;
+    }
+  }
   vec3 o = toMap * (-vCentre) * k;
   vec3 dirMap = toMap * rd * k;
   float steps = max(vSteps, 1.0);
@@ -206,7 +279,7 @@ void main() {
     trans *= 1.0 - a;
     t += dt;
   }
-  gl_FragColor = vec4(light, 1.0 - trans);
+  gl_FragColor = mix(vec4(light, 1.0 - trans), painted, far);
   #include <colorspace_fragment>
 }`;
 

@@ -21,10 +21,10 @@
 
 import * as THREE from 'three';
 import { nebulaAtStep, nebulaBudget } from './budget';
-import { FORM_INDEX, LIMIT, checkDesc, detailAt, fogLayers, insideOf, placement, seedOf, stepsAt, youngStars } from './rules';
+import { FORM_INDEX, LIMIT, PAINT_IN, PAINT_OUT, checkDesc, detailAt, fogLayers, insideOf, placement, seedOf, stepsAt, youngStars } from './rules';
 import { CLOUD_FRAG, CLOUD_VERT } from './shaders';
 import { createFog } from './fog';
-import { ABSORB, EMIT } from './tone';
+import { ABSORB, EMIT, PAINT_LIGHT } from './tone';
 import { formUniforms, volumeTexture } from './uniforms';
 
 
@@ -60,7 +60,7 @@ export function createNebulae({ renderer = null, tier = 'mid' } = {}) {
   const mat = new THREE.ShaderMaterial({
     vertexShader: CLOUD_VERT,
     fragmentShader: CLOUD_FRAG,
-    defines: { NEB_MAX_STEPS: row.nearSteps },
+    defines: { NEB_MAX_STEPS: row.nearSteps, NEB_FAR_IN: PAINT_IN.toFixed(3), NEB_FAR_OUT: PAINT_OUT.toFixed(3), NEB_PAINT_LIGHT: PAINT_LIGHT.toFixed(3) },
     uniforms: { uVolume: { value: volume }, ...formUniforms(), uEmit: { value: EMIT }, uAbsorb: { value: ABSORB }, uViewport: { value: new THREE.Vector2(1, 1) }, uScale: { value: 500 }, uTime: { value: 0 } },
     transparent: true,
     side: THREE.DoubleSide, // (the square facing the view is wound either way round)
