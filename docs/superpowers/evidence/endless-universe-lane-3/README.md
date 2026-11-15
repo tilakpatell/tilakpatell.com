@@ -243,23 +243,46 @@ The skies are the same apart from the generated places' name tags. `main` has no
 
 ### The endless check, the whole route at mid
 
-`node scripts/universe-endless-check.mjs --quality mid`, after Task 14 (lane 2's steps and this lane's):
+`node scripts/universe-endless-check.mjs --quality mid` on this branch after merging `main` at `f4b7e7ee`: lane 2's steps, lane 4a's (`gargantuan`, `kinds`, `act`) and this lane's, all passing:
 
-    start     {"at":[-12665,-286,5634],"sector":"E:0,0","loaded":27,"built":[],"workMs":0.5,"discs":281,"calls":45,"tris":68637,"around":{"count":14,"nearest":125.79515772493006},"pops":{"count":0,"px":0}}
-    old-rim   {"at":[47000,0,0],"sector":"E:0,0","loaded":27,"built":[],"workMs":0.5,"discs":298,"calls":40,"tris":100629,"around":{"count":15,"nearest":3599.922653015442},"pops":{"count":0,"px":0}}
-    boundary  {"at":[61000,0,0],"sector":"E:1,0","loaded":36,"built":[],"workMs":0.9,"discs":323,"calls":37,"tris":78449,"around":{"count":10,"nearest":4617.648777856878},"pops":{"count":0,"px":0}}
-    system    {"at":[67231,8701,3370],"sector":"E:1,0","loaded":36,"built":["E:1,0:256"],"workMs":0.9,"discs":362,"calls":48,"tris":176689,"around":{"count":15,"nearest":2059.8450956769575},"pops":{"count":0,"px":0}}
-    climb     {"at":[0,50000,3000],"sector":"E:0,0","loaded":36,"built":[],"workMs":0.5,"discs":340,"calls":35,"tris":42929,"around":{"count":15,"nearest":3716.2203165232545},"pops":{"count":0,"px":0}}
+    start     {"at":[-13882,505,27705],"sector":"E:0,0","loaded":27,"built":[],"workMs":1.6,"discs":370,"calls":35,"tris":100669,"around":{"count":10,"nearest":816.9999999999998},"pops":{"count":0,"px":0}}
+    old-rim   {"at":[47000,0,0],"sector":"E:0,0","loaded":27,"built":[],"workMs":3,"discs":0,"calls":36,"tris":101323,"around":{"count":15,"nearest":3599.922653015442},"pops":{"count":0,"px":0}}
+    boundary  {"at":[61000,0,0],"sector":"E:1,0","loaded":29,"built":[],"workMs":3.2,"discs":384,"calls":33,"tris":81481,"around":{"count":10,"nearest":4617.648777856878},"pops":{"count":0,"px":0}}
+    system    {"at":[67231,8701,3370],"sector":"E:1,0","loaded":36,"built":["E:1,0:256"],"workMs":1.2,"discs":433,"calls":55,"tris":280433,"around":{"count":15,"nearest":2059.8450956769575},"pops":{"count":0,"px":0}}
+    climb     {"at":[0,50000,3000],"sector":"E:0,0","loaded":36,"built":[],"workMs":1,"discs":396,"calls":30,"tris":42913,"around":{"count":15,"nearest":3716.2203165232545},"pops":{"count":0,"px":0}}
+    gargantuan {"at":[102542,113403,10866],"sector":"E:1,0,1","loaded":40,"built":[],"workMs":2,"discs":488,"calls":34,"tris":47313,"around":{"count":17,"nearest":2778.0272792280666},"pops":{"count":0,"px":0}}
+              arc E:1,0,1:w3 built, 121046 off at the start
+    kind      outpost   drawn
+    kind      beacon    drawn
+    kind      relay     drawn
+    kind      monolith  drawn
+    kind      comet     drawn
+    kind      field     drawn
+    kind      icefield  drawn
+    kind      rig       drawn
+    kind      debris    drawn
+    kind      fleet     drawn
+    kind      shipyard  drawn
+    kind      storm     drawn
+    kind      herd      drawn
+    kind      swarm     drawn
+    kind      pulsar    drawn
+    kind      magnetar  drawn
+    kind      protostar drawn
+    kind      wormhole  drawn
+    act       salvage ok
+    act       storm drain ok
     travel    E:1,0:0 by super: parked at 131792,416,-4335
     travel    E:2,0:0 by hyper: parked at 208458,-333,-47247
     travel    E:1,0:0:0 by super: parked and carried 30 s
     dock      docked at Mucli Port (E:1,0:w10124)
-    FAIL pick: a click on Ledex didn't fly there
+    pick      Ledex tagged, and a click flies there
     link      E:1,0:0:0: started at Lithialsur, its card up
     flat      E:1,0:0:0: a plain card with 3D off, no wait
-    terminal  fly E:9,0:0 at 4× throttling: longest task 229 ms
+    terminal  fly E:9,0:0 at 4× throttling: longest task 183 ms
+    ok
 
-The `pick` step's one failure there was the check's own: after the dock step's arrival the map is turned, the debug teleport left it so, and the star's point lay under the panel. The step now levels the map and clicks only the canvas, and `--only dock,pick` passes.
+The run before it failed only `pick`: after `dock` the ship is turned, and the camera eases round to its new heading over a second or so, so the step clicked where the star had been. The step now waits for the star’s point to hold still before it clicks.
 
 ### A sector made on the main thread
 
