@@ -15,7 +15,8 @@
 // GARGANTUAN_FORMS, GARGANTUAN, gargantuanSectors, formOf, gargantuanKeeps, ARRIVAL_BASE,
 // ARRIVAL_MAX, ARRIVAL_GARGANTUANS, checkGargantuan (gargantuans.js); CATALOGUE, solidOf,
 // rowSolids, fleetLayout, discRadius, PLANET_SIZE (catalogue.js); EXTRA_HIGH (things.js);
-// EXTRA_LISTS (extras/index.js); kindsIn, nearestOfKind (finder.js)
+// EXTRA_LISTS (extras/index.js); kindsIn, nearestOfKind (finder.js); sectorJob,
+// withMoons (job.js: a sector as the worker makes it, and its moons put back)
 
 export { UNIVERSE, universeOf } from '../gen/seed';
 export { fullSector, placeIn, placeOf } from '../gen/space';
@@ -33,3 +34,4 @@ export { companionAt, companionsOf } from '../gen/companions';
 export { wormholeExit } from '../gen/extras/stars';
 export { ARRIVAL_BASE, ARRIVAL_GARGANTUANS, ARRIVAL_MAX, GARGANTUAN, GARGANTUAN_FORMS, checkGargantuan, formOf, gargantuanKeeps, gargantuanSectors } from '../gen/gargantuans';
 export { kindsIn, nearestOfKind } from '../gen/finder';
+export { sectorJob, withMoons } from '../gen/job';

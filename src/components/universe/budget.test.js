@@ -66,6 +66,14 @@ describe('universeBudget', () => {
   });
 });
 
+describe('the generated places’ names shown at once (lane 3)', () => {
+  it('names 3 on low and 6 above, lowered with the discs and never below 1', () => {
+    expect([BUDGET.low.tags, BUDGET.mid.tags, BUDGET.high.tags, BUDGET.ultra.tags]).toEqual([3, 6, 6, 6]);
+    expect(universeBudget({ detail: 'mid' }, 3).tags).toBe(Math.round(6 * STEPS[3]));
+    expect(universeBudget({ detail: 'low' }, 3, true).tags).toBe(1);
+  });
+});
+
 describe('things and gargantuans (lane 4a)', () => {
   const ROWS = { low: [48, 16, 4, 300], mid: [96, 32, 8, 900], high: [160, 56, 12, 1800], ultra: [240, 80, 16, 3000] };
   const ORDER = ['low', 'mid', 'high'];

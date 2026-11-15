@@ -182,3 +182,115 @@ None of the 16 files is one this lane changed. On `main` at `cc5e2eaf`, the coor
 The PR's own checks: `npx vitest run src/components/universe/places src/components/expanse src/components/universe/nav.test.js src/components/universe/budget.test.js src/components/universe/ship.test.js` is 62 files and 679 tests, all green (the reviews added `extent.test.js` and split the long tests). Lane 2's `fingerprint.test.js`, `density.test.js` and `space.test.js` are unchanged since `dcf19687` and green: 52 tests, the speed test's ten sectors under its 600 ms.
 
 `health.mjs`: `big-files` 22, `boundary-breaks` 481 and `cycles` 5, as before Task 1. `src/components/universe/scene.js`: 6,374 lines before and after (`wc -l`); PR 3.1 doesn't touch it. Nothing on screen changes, so there are no new draw calls, triangles, frame times or pops to take: the table above stands.
+
+## PR 3.2, the wiring
+
+### `scene.js`
+
+| Step | Lines |
+|---|--:|
+| `main` before Task 10 (lane 2's #1304 in) | 6,455 |
+| Task 10: the travel block out to `trips.js` (132 out, 7 in) | 6,323 |
+| Task 11: trips to generated places | 6,324 |
+| Task 12: the scene's places | 6,334 |
+| Task 13: picking and names | 6,334 |
+| After merging `main` (#1308, #1312) | 6,370 (`main`: 6,491) |
+| After merging `main` (#1313, #1316) | 6,336 (`main` at `f4b7e7ee`: 6,457) |
+
+### Draw calls and triangles at mid
+
+Both sides were measured in this one checkout with its own `node_modules`: `main` at `f4b7e7ee` (its `src` checked out over this branch’s), then this branch, three times each, one after the other. The command was `node scripts/universe-check.mjs --quality mid --draws --poses …`. A capture that drew nothing is taken again, up to eight frames, so every pose has real numbers on both sides, `rickmorty` and `office` among them. `--draws` records every draw by object path and material, so every difference can be named.
+
+Each cell is the lowest and highest of the three runs. “Without random ships” is the draw list’s total less the ships that `traffic.js` and the hunters spawn with `Math.random`: `traffic-*`, the interceptor, the Sketchfab NPC and their glows. That total is about 5 above `calls`, the same on both sides, because the list also counts the post passes.
+
+| Pose | Calls, main | Calls, branch | Without random ships, main | Without random ships, branch | Triangles, main | Triangles, branch |
+|---|--:|--:|--:|--:|--:|--:|
+| overview | 92–102 | 92–109 | 93 | 93 | 518,595–527,812 | 518,607–529,203 |
+| falcon-sun | 74–75 | 74–81 | 75 | 74–75 | 503,571–503,655 | 503,575–507,305 |
+| middleearth-limb | 34 | 34–38 | 39 | 39 | 67,367–67,373 | 67,377–71,109 |
+| rickmorty | 35 | 35 | 40 | 40 | 68,491 | 65,875–68,491 |
+| gaming | 38 | 38 | 43 | 43 | 75,103 | 75,103 |
+| caribbean | 39 | 39 | 44 | 44 | 114,511–117,127 | 114,511–117,127 |
+| middleearth | 35 | 35 | 40 | 40 | 67,367 | 64,751–67,367 |
+| breakingbad | 60 | 60 | 65 | 65 | 61,579 | 58,963–61,579 |
+| office | 36 | 36 | 41 | 41 | 52,871 | 50,255–52,871 |
+| belt | 40 | 40 | 45 | 45 | 450,935–450,955 | 450,935–450,939 |
+| maw | 39–51 | 39 | 44 | 44 | 103,891–109,507 | 103,889–103,917 |
+| landing-middleearth | 72–119 | 72 | 77–124 | 77 | 61,642–144,356 | 61,638–61,648 |
+| station | 72–73 | 71–75 | 72–73 | 72–73 | 502,679–502,937 | 502,601–505,931 |
+| far-rim | 36 | 25–36 | 41 | 30–41 | 70,235–70,243 | 70,235–70,243 |
+| old-rim | 34–42 | 34–36 | 39 | 39 | 82,205–87,473 | 82,207–90,277 |
+| above-core | 19–30 | 19–38 | 24–35 | 24–35 | 42,900–42,925 | 42,946–48,737 |
+| expanse-system | 43–45 | 45 | 50 | 50 | 164,251–212,895 | 212,891–212,899 |
+| expanse-station | — | 37 | — | 42 | — | 80,901–80,909 |
+
+- Without the random ships, the branch is never above `main` at any pose: 14 of 17 match exactly. At `far-rim` and `falcon-sun` the branch’s low is lower and its high the same; at `landing-middleearth` `main`’s high is the higher.
+- Raw, the branch’s high is above `main`’s at `overview`, `falcon-sun`, `middleearth-limb`, `station` and `above-core`. The draw lists show what each extra is, and every one is a random ship: a traffic freighter (4 calls) or X-wing (16), a TIE (8), a transport (8), an interceptor (2). `main` has the same kind of high where the branch has none: `maw` up to 51, `landing-middleearth` up to 119 (a run that caught more of the ground’s scatter loaded), `old-rim` up to 42.
+- `belt` is 40 against 40 in every run; the earlier 44 → 46 was a ship.
+- `above-core`: the earlier 43 → 35 was taken against an older `main` and doesn’t stand. Against `f4b7e7ee` its spread, 19 to 38, is the post passes caught as one draw in some frames (12 against 1) and a transport or interceptor passing. Without the ships, both sides are 24 to 35.
+- No generated station is in view at any hand-made pose: the keep-outs keep every generated system off them. `expanse-station` is new and is its own baseline, 37 calls and about 80,900 triangles.
+
+### Shots, `main` and this branch side by side
+
+From home with the autopilot off and `post.sharpness` at 1, the ship at `[0, 3000, 9000, 0, -0.25]`, `[6000, 400, 14000, 0.8π, 0.05]` and `[-4000, 1500, 6000, 2.2, 0.55]`; then docked at a generated station. `main` is on the left, at `f4b7e7ee`.
+
+![The first sky](pair-sky-1.jpg)
+![The second sky](pair-sky-2.jpg)
+![The third sky](pair-sky-3.jpg)
+![Docked at Selaxselu Dock: main has no generated stations](pair-docked.jpg)
+
+The three skies were taken again after the aim and tag fix, against `main` at `d291ad8f`. They are the same, tags and draw lists, apart from the jump on offer. From the first pose both say “Jump · Home”: a hand-made place in the aim cone always wins. From the other two, where no hand-made place is in the cone, the branch offers the nearest generated star in it, and `main` offers nothing. No generated place is named by the nose past 45,000 ship-lengths, as the tags count it (about 11,700 map units), so the home sky has no names. The draw lists match at all three poses apart from a random interceptor in `main`’s second. The docked pair is from `f4b7e7ee`: `main` has no generated stations, so its fourth shot is the empty place where the branch’s Selaxselu Dock is, with its card and the Hangar.
+
+### The endless check, the whole route at mid
+
+`node scripts/universe-endless-check.mjs --quality mid` on this branch after merging `main` at `f4b7e7ee`: lane 2's steps, lane 4a’s (`gargantuan`, `kinds`, `act`) and this lane’s, all passing:
+
+    start     {"at":[-13882,505,27705],"sector":"E:0,0","loaded":27,"built":[],"workMs":1.6,"discs":370,"calls":35,"tris":100669,"around":{"count":10,"nearest":816.9999999999998},"pops":{"count":0,"px":0}}
+    old-rim   {"at":[47000,0,0],"sector":"E:0,0","loaded":27,"built":[],"workMs":3,"discs":0,"calls":36,"tris":101323,"around":{"count":15,"nearest":3599.922653015442},"pops":{"count":0,"px":0}}
+    boundary  {"at":[61000,0,0],"sector":"E:1,0","loaded":29,"built":[],"workMs":3.2,"discs":384,"calls":33,"tris":81481,"around":{"count":10,"nearest":4617.648777856878},"pops":{"count":0,"px":0}}
+    system    {"at":[67231,8701,3370],"sector":"E:1,0","loaded":36,"built":["E:1,0:256"],"workMs":1.2,"discs":433,"calls":55,"tris":280433,"around":{"count":15,"nearest":2059.8450956769575},"pops":{"count":0,"px":0}}
+    climb     {"at":[0,50000,3000],"sector":"E:0,0","loaded":36,"built":[],"workMs":1,"discs":396,"calls":30,"tris":42913,"around":{"count":15,"nearest":3716.2203165232545},"pops":{"count":0,"px":0}}
+    gargantuan {"at":[102542,113403,10866],"sector":"E:1,0,1","loaded":40,"built":[],"workMs":2,"discs":488,"calls":34,"tris":47313,"around":{"count":17,"nearest":2778.0272792280666},"pops":{"count":0,"px":0}}
+              arc E:1,0,1:w3 built, 121046 off at the start
+    kind      outpost   drawn
+    kind      beacon    drawn
+    kind      relay     drawn
+    kind      monolith  drawn
+    kind      comet     drawn
+    kind      field     drawn
+    kind      icefield  drawn
+    kind      rig       drawn
+    kind      debris    drawn
+    kind      fleet     drawn
+    kind      shipyard  drawn
+    kind      storm     drawn
+    kind      herd      drawn
+    kind      swarm     drawn
+    kind      pulsar    drawn
+    kind      magnetar  drawn
+    kind      protostar drawn
+    kind      wormhole  drawn
+    act       salvage ok
+    act       storm drain ok
+    travel    E:1,0:0 by super: parked at 131792,416,-4335
+    travel    E:2,0:0 by hyper: parked at 208458,-333,-47247
+    travel    E:1,0:0:0 by super: parked and carried 30 s
+    dock      docked at Mucli Port (E:1,0:w10124)
+    pick      Ledex tagged, and a click flies there
+    link      E:1,0:0:0: started at Lithialsur, its card up
+    flat      E:1,0:0:0: a plain card with 3D off, no wait
+    terminal  fly E:9,0:0 at 4× throttling: longest task 183 ms
+    ok
+
+The run before it failed only `pick`: after `dock` the ship is turned, and the camera eases round to its new heading over a second or so, so the step clicked where the star had been. The step now waits for the star’s point to hold still before it clicks.
+
+### A sector made on the main thread
+
+The terminal's `fly E:9,0:0` at 4× CPU throttling, from the command to its navigation: 177 to 229 ms longest task over three runs (in software GL here). That is under the plan's 500 ms, so it isn't a finding. In Node, `resolvePlace('E:9,0:0')` takes 62 ms.
+
+### The repo's checks
+
+- `autopilot-check.mjs --only smoke --routes /universe`: everything green.
+- `navmap-check.mjs desktop`: one branch run failed one step (the line wasn’t kept), and another threw because no place's name was near the chart's middle, which depends on the random spawn. On `main`'s code it failed one step too: “the site’s jump plays over the map”.
+- `flyto-check.mjs --fake`: on `main`'s code and in one branch run it crashed at the jump step with `__universeDebug` undefined. In the other branch run, its portal step read the trip before the scene had the moved pilot's new position. `trips.test.js` pins that rule in Node: the portal first, the pilot the trip's end.
+- `sector-check.mjs`: it didn't finish within 15 minutes in software GL here.

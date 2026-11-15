@@ -8,6 +8,8 @@
 //     [--near off] (without the planets' near maps and finer spheres, nearMaps.js: what they cost, measured on one tree)
 //     [--dpr 2] (the screen's device pixels to a CSS one: 1 by default; post.js's finish draws a 2× screen otherwise than a 1×)
 //     [--level 3] (the pace's step held at each pose, runtime/quality.js's setLevel: what a weak chip's calibration lands on)
+//     [--draws] (every object the counted frame draws, by its path in the scene, with its calls
+//       and triangles: the report's `draws`, to say what a change in calls is)
 //     [--lock] (a TIE put ahead and locked by hand at each flying pose, scripts/lib/flight-probes.mjs: the bracket,
 //       the lead and the reticle drawn; the overlay's marks in the report and <pose>.hud.webp, the shot with the HUD;
 //       the report's `hud`: what the bracket says of the lock's distance, and how far it is in the map's units, which
@@ -39,7 +41,7 @@ const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const POSES = ['overview', 'falcon-sun', 'middleearth-limb', 'rickmorty', 'gaming', 'caribbean', 'middleearth', 'breakingbad', 'office', 'belt', 'maw', 'landing-middleearth', 'station', 'far-rim'];
 // (the endless space's own poses, poses.js's ENDLESS_POSES: taken when named in --poses, never by default,
 // so the baseline stays the fourteen)
-const ENDLESS = ['old-rim', 'above-core', 'expanse-system'];
+const ENDLESS = ['old-rim', 'above-core', 'expanse-system', 'expanse-station'];
 // (and the nebulae's, lane 1's: inside the Cradle, and 20,000 off the Veil; named only, likewise)
 const NEBULA_POSES = ['in-nebula', 'veil-side'];
 const TIERS = ['high', 'mid', 'low'];
@@ -207,16 +209,39 @@ for (const tier of tiers) {
         lock = await page.evaluate((at) => window.__fp.forceLock(at), lockSpot(ship));
         await page.evaluate(() => window.__universe().frames(2));
       }
-      const numbers = await page.evaluate(async (n) => {
+      const numbers = await page.evaluate(async ([n, wantDraws]) => {
         const { renderer } = window.__universeDebug;
+        // (--draws: each draw of the counted frame, by its object's path, so two trees' lists can be set side by side)
+        const draws = wantDraws ? new Map() : null;
+        const plain = renderer.renderBufferDirect;
+        if (draws)
+          renderer.renderBufferDirect = function (camera, scene, geometry, material, object) {
+            const path = [];
+            for (let o = object; o && path.length < 6; o = o.parent) path.unshift(o.name || o.type);
+            const key = `${path.join(' / ')} · ${material.type}`;
+            const index = geometry.index ? geometry.index.count : (geometry.attributes.position?.count ?? 0);
+            const had = draws.get(key) ?? { calls: 0, triangles: 0 };
+            had.calls += 1;
+            had.triangles += Math.round((index / 3) * (object.isInstancedMesh ? object.count : 1));
+            draws.set(key, had);
+            return plain.apply(this, arguments);
+          };
         const u = window.__universe();
         // one whole frame's count, every pass in it (the renderer otherwise resets at each render())
+        // (a frame the scene didn't draw, resting or between passes, counts nothing: up to eight
+        // frames, till one draws, so a pose's 0 is never a measure)
         const auto = renderer.info.autoReset;
         renderer.info.autoReset = false;
-        renderer.info.reset();
-        await u.frames(1);
-        const { calls, triangles } = renderer.info.render;
+        let calls = 0;
+        let triangles = 0;
+        for (let i = 0; i < 8 && calls === 0; i++) {
+          renderer.info.reset();
+          draws?.clear();
+          await u.frames(1);
+          ({ calls, triangles } = renderer.info.render);
+        }
         renderer.info.autoReset = auto;
+        if (draws) renderer.renderBufferDirect = plain;
         // twenty frames (or --frames), each one drawn (held still, the scene would otherwise rest)
         const times = [];
         for (let i = 0; i < n; i++) {
@@ -231,8 +256,8 @@ for (const tier of tiers) {
         // (how sharp the scene was drawn, and post.js's finish: brought up or not, its samples)
         const post = window.__universeDebug.post;
         const drawn = { canvas: renderer.getPixelRatio(), scene: post ? Number(post.ratio.toFixed(3)) : null, finish: post?.finish ?? null };
-        return { calls, triangles, shipPx, drawn, frameMs: r1(times.reduce((s, v) => s + v, 0) / times.length), frameMsMedian: r1(sorted[Math.floor(n / 2)]), memory: { ...renderer.info.memory } };
-      }, FRAMES);
+        return { calls, triangles, ...(draws ? { draws: Object.fromEntries([...draws].sort()) } : {}), shipPx, drawn, frameMs: r1(times.reduce((s, v) => s + v, 0) / times.length), frameMsMedian: r1(sorted[Math.floor(n / 2)]), memory: { ...renderer.info.memory } };
+      }, [FRAMES, Boolean(args.draws)]);
       // the picture alone: the page's bar, panel and HUD hidden (they'd be
       // half the shot, and in its metrics), the map's own canvas (the
       // renderer's, not the biggest on the page)

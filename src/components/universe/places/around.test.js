@@ -132,12 +132,12 @@ describe('what’s round the ship', () => {
     expect(orbitingPlace(ship(0), null, [planet, moon])).toBe('M');
     expect(orbitingPlace(ship(0), 'P', [planet, { ...moon, park: null }])).toBe('P');
   });
-  it('names the stars to aim at, nearest first, each by its card’s reach', () => {
+  it('names the stars to aim at, nearest first, each by its card’s reach, as generated', () => {
     const cam = s.systems[0].at;
     const stars = aimStars(sectors, cam, { max: 50 });
     expect(stars).toHaveLength(50);
     for (let i = 1; i < 50; i++) expect(len(stars[i].at, cam)).toBeGreaterThanOrEqual(len(stars[i - 1].at, cam));
-    expect(stars[0]).toEqual({ id: s.systems[0].id, at: s.systems[0].at, reach: s.systems[0].star.size * 2 });
+    expect(stars[0]).toEqual({ id: s.systems[0].id, at: s.systems[0].at, reach: s.systems[0].star.size * 2, gen: true });
   });
 });
 

@@ -13,6 +13,7 @@ import * as extrasStars from '../gen/extras/stars';
 import * as gargantuans from '../gen/gargantuans';
 import * as finder from '../gen/finder';
 import * as extent from '../gen/extent';
+import * as job from '../gen/job';
 import * as genOrbits from '../gen/orbits';
 import * as seed from '../gen/seed';
 import * as space from '../gen/space';
@@ -31,10 +32,11 @@ const GEN = [
   'COMET_PERIOD', 'pathAt', 'pathSpeed', 'rowAt', 'tailOf', 'companionsOf', 'companionAt', 'NEBULA_SHOW', 'wormholeExit',
   'GARGANTUAN_FORMS', 'GARGANTUAN', 'gargantuanSectors', 'formOf', 'gargantuanKeeps', 'ARRIVAL_BASE', 'ARRIVAL_MAX', 'ARRIVAL_GARGANTUANS', 'checkGargantuan',
   'CATALOGUE', 'solidOf', 'rowSolids', 'fleetLayout', 'discRadius', 'PLANET_SIZE', 'EXTRA_HIGH', 'EXTRA_LISTS', 'kindsIn', 'nearestOfKind',
+  'sectorJob', 'withMoons',
 ];
 const LIGHT = ['orbitAt', 'moonAt', 'spaceTime', 'extentOf'];
 const FACE = [
-  [gen, [space, seed, genOrbits, systems, things, tables, stations, extent, catalogue, extras, paths, extrasSystems, companions, extrasStars, gargantuans, finder], GEN],
+  [gen, [space, seed, genOrbits, systems, things, tables, stations, extent, catalogue, extras, paths, extrasSystems, companions, extrasStars, gargantuans, finder, job], GEN],
   [orbits, [genOrbits, extent], LIGHT],
 ];
 

@@ -15,7 +15,10 @@
 //   the nose within the cone (the galaxy's starAhead), of those far enough
 //   off to be stars (past farStars.js's realAt: one nearer is somewhere to
 //   fly to); `keep`, the one it had, is kept a little longer, so the aim
-//   doesn't flick between two close ones
+//   doesn't flick between two close ones. A hand-made place in the cone
+//   always wins: a generated target (gen: true, lane 3's) is aimed at only
+//   with none in it, and then the nearest of them, `keep` while it's in the
+//   cone (the hand-made worlds stay one jump away)
 // jumpPhase(jump, { aligned, age, input }) → 'align' | 'spool' | 'cancel'
 // nameShows({ k, station, picked, viewAll, onFoot, noseDot }) → whether a
 //   place's name shows: all of them with the whole map in view (or no
@@ -60,9 +63,39 @@ export const aimTargets = (sector, at) => {
 const dirs = [];
 const pool = [];
 const realArg = { reach: 0 }; // (realAt's question, kept)
+const nl = (v) => Math.hypot(v[0], v[1], v[2]) || 1;
 export function aimFrom(from, nose, targets, keep = null) {
+  const made = handMade(from, nose, targets, keep);
+  if (made) return made;
+  // (a generated one: the nearest in the cone, the one it had while it's in it)
+  const cos = Math.cos(AIM_CONE);
+  const len = nl(nose);
+  let best = null;
+  let bestL = Infinity;
+  for (const t of targets) {
+    if (!t.gen) continue;
+    const dx = t.at[0] - from[0];
+    const dy = t.at[1] - from[1];
+    const dz = t.at[2] - from[2];
+    const l = Math.hypot(dx, dy, dz) || 1;
+    const c = (dx * nose[0] + dy * nose[1] + dz * nose[2]) / (l * len);
+    if (c < cos) continue;
+    if (t.reach != null) {
+      realArg.reach = t.reach;
+      if (l < realAt(realArg)) continue;
+    }
+    const score = t.id === keep ? -1 : l;
+    if (score < bestL) {
+      bestL = score;
+      best = { id: t.id, angle: Math.acos(Math.min(1, c)) };
+    }
+  }
+  return best;
+}
+function handMade(from, nose, targets, keep) {
   let n = 0;
   for (const t of targets) {
+    if (t.gen) continue;
     const dx = t.at[0] - from[0];
     const dy = t.at[1] - from[1];
     const dz = t.at[2] - from[2];
