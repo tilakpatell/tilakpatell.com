@@ -216,7 +216,24 @@ describe('serving the play site', () => {
     expect(await plain.text()).toBe('scene bytes, whole');
     const plainAgain = await servePlay(ask(path), env, config, new Map(), null, cache);
     expect(plainAgain.headers.get('x-play-cache')).toBe('hit');
+    const isolatedTyped = (res, what) => {
+      for (const [k, v] of Object.entries(ISOLATED)) expect(res.headers.get(k), `${what} ${k}`).toBe(v);
+      expect(res.headers.get('content-type'), what).toBe('application/octet-stream');
+    };
+    isolatedTyped(plainAgain, 'identity hit');
     expect(await plainAgain.text()).toBe('scene bytes, whole');
+    const plain304 = await servePlay(ask(path, { 'if-none-match': plainAgain.headers.get('etag') }), env, config, new Map(), null, cache);
+    expect(plain304.status).toBe(304);
+    isolatedTyped(plain304, 'identity 304');
+    // (a range is never answered from the edge's whole copy: R2's bytes, 206, whichever encoding the browser takes)
+    for (const headers of [{ range: 'bytes=0-4' }, { range: 'bytes=0-4', 'accept-encoding': 'br' }]) {
+      const ranged = await servePlay(ask(path, headers), env, config, new Map(), null, cache);
+      expect(ranged.status, JSON.stringify(headers)).toBe(206);
+      expect(ranged.headers.get('content-range')).toBe('bytes 0-4/18');
+      expect(ranged.headers.has('x-play-cache')).toBe(false);
+      expect(ranged.headers.has('content-encoding')).toBe(false);
+      expect(await ranged.text()).toBe('scene');
+    }
     // (what is stored holds no Vary and no Content-Encoding, so neither the edge nor the runtime recodes it)
     expect(kept.size).toBe(2);
     for (const stored of kept.values()) {
