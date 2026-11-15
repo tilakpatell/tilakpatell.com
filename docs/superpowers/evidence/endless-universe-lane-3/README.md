@@ -199,9 +199,9 @@ The PR's own checks: `npx vitest run src/components/universe/places src/componen
 
 ### Draw calls and triangles at mid
 
-Both sides were measured in this one checkout with its own `node_modules`: `main` at `f4b7e7ee` (its `src` checked out over this branch's), then this branch, three times each, one after the other. The command was `node scripts/universe-check.mjs --quality mid --draws --poses …`. A capture that drew nothing is taken again, up to eight frames, so every pose has real numbers on both sides, `rickmorty` and `office` among them. `--draws` records every draw by object path and material, so every difference can be named.
+Both sides were measured in this one checkout with its own `node_modules`: `main` at `f4b7e7ee` (its `src` checked out over this branch’s), then this branch, three times each, one after the other. The command was `node scripts/universe-check.mjs --quality mid --draws --poses …`. A capture that drew nothing is taken again, up to eight frames, so every pose has real numbers on both sides, `rickmorty` and `office` among them. `--draws` records every draw by object path and material, so every difference can be named.
 
-Each cell is the lowest and highest of the three runs. “Without random ships” is the draw list's total less the ships that `traffic.js` and the hunters spawn with `Math.random`: `traffic-*`, the interceptor, the Sketchfab NPC and their glows. That total is about 5 above `calls`, the same on both sides, because the list also counts the post passes.
+Each cell is the lowest and highest of the three runs. “Without random ships” is the draw list’s total less the ships that `traffic.js` and the hunters spawn with `Math.random`: `traffic-*`, the interceptor, the Sketchfab NPC and their glows. That total is about 5 above `calls`, the same on both sides, because the list also counts the post passes.
 
 | Pose | Calls, main | Calls, branch | Without random ships, main | Without random ships, branch | Triangles, main | Triangles, branch |
 |---|--:|--:|--:|--:|--:|--:|
@@ -224,10 +224,10 @@ Each cell is the lowest and highest of the three runs. “Without random ships�
 | expanse-system | 43–45 | 45 | 50 | 50 | 164,251–212,895 | 212,891–212,899 |
 | expanse-station | — | 37 | — | 42 | — | 80,901–80,909 |
 
-- Without the random ships, the branch is never above `main` at any pose: 13 of 17 match exactly, and at `far-rim` and `falcon-sun` the branch's low is lower and its high the same.
-- Raw, the branch's high is above `main`'s at `overview`, `falcon-sun`, `middleearth-limb`, `station` and `above-core`. The draw lists show what each extra is, and every one is a random ship: a traffic freighter (4 calls) or X-wing (16), a TIE (8), a transport (8), an interceptor (2). `main` has the same kind of high where the branch has none: `maw` up to 51, `landing-middleearth` up to 119 (a run that caught more of the ground's scatter loaded), `old-rim` up to 42.
+- Without the random ships, the branch is never above `main` at any pose: 14 of 17 match exactly. At `far-rim` and `falcon-sun` the branch’s low is lower and its high the same; at `landing-middleearth` `main`’s high is the higher.
+- Raw, the branch’s high is above `main`’s at `overview`, `falcon-sun`, `middleearth-limb`, `station` and `above-core`. The draw lists show what each extra is, and every one is a random ship: a traffic freighter (4 calls) or X-wing (16), a TIE (8), a transport (8), an interceptor (2). `main` has the same kind of high where the branch has none: `maw` up to 51, `landing-middleearth` up to 119 (a run that caught more of the ground’s scatter loaded), `old-rim` up to 42.
 - `belt` is 40 against 40 in every run; the earlier 44 → 46 was a ship.
-- `above-core`: the earlier 43 → 35 was taken against an older `main` and doesn't stand. Against `f4b7e7ee` its spread, 19 to 38, is the post passes caught as one draw in some frames (12 against 1) and a transport or interceptor passing. Without the ships, both sides are 24 to 35.
+- `above-core`: the earlier 43 → 35 was taken against an older `main` and doesn’t stand. Against `f4b7e7ee` its spread, 19 to 38, is the post passes caught as one draw in some frames (12 against 1) and a transport or interceptor passing. Without the ships, both sides are 24 to 35.
 - No generated station is in view at any hand-made pose: the keep-outs keep every generated system off them. `expanse-station` is new and is its own baseline, 37 calls and about 80,900 triangles.
 
 ### Shots, `main` and this branch side by side
@@ -239,11 +239,11 @@ From home with the autopilot off and `post.sharpness` at 1, the ship at `[0, 300
 ![The third sky](pair-sky-3.jpg)
 ![Docked at Selaxselu Dock: main has no generated stations](pair-docked.jpg)
 
-The skies are the same apart from the generated places' name tags. `main` has no generated stations, so its fourth shot is the empty place where the branch's Selaxselu Dock is, with its card and the Hangar.
+The skies are the same apart from the generated places' name tags. `main` has no generated stations, so its fourth shot is the empty place where the branch’s Selaxselu Dock is, with its card and the Hangar.
 
 ### The endless check, the whole route at mid
 
-`node scripts/universe-endless-check.mjs --quality mid` on this branch after merging `main` at `f4b7e7ee`: lane 2's steps, lane 4a's (`gargantuan`, `kinds`, `act`) and this lane's, all passing:
+`node scripts/universe-endless-check.mjs --quality mid` on this branch after merging `main` at `f4b7e7ee`: lane 2's steps, lane 4a’s (`gargantuan`, `kinds`, `act`) and this lane’s, all passing:
 
     start     {"at":[-13882,505,27705],"sector":"E:0,0","loaded":27,"built":[],"workMs":1.6,"discs":370,"calls":35,"tris":100669,"around":{"count":10,"nearest":816.9999999999998},"pops":{"count":0,"px":0}}
     old-rim   {"at":[47000,0,0],"sector":"E:0,0","loaded":27,"built":[],"workMs":3,"discs":0,"calls":36,"tris":101323,"around":{"count":15,"nearest":3599.922653015442},"pops":{"count":0,"px":0}}
