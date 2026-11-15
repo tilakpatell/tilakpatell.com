@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { ENGINE, ISOLATED, contentType, playRoute, servePlay } from './play.js';
+import { ENGINE, ISOLATED, buildKind, contentType, playRoute, servePlay } from './play.js';
 import { RETURN_VERSION } from './playReturn.js';
 
 const config = { build: 'b1', site: 'sites/b1/', export: 'extract/', uiData: 'library/ui/frontend/', exportAllow: ['fonts/', 'strings/'] };
@@ -45,6 +45,7 @@ describe('an open build across a deployment', () => {
   const next = { ...config, uiData: 'sites/b1/ui-data/', retainedBuilds: { b0: previous } };
   const oldFiles = { ...files,
     'sites/b0/manifest.json': JSON.stringify(manifest),
+    'sites/b0/index.html': '<!doctype html><title>b0</title>',
     'sites/b0/runtime/world-play.mjs': 'old runtime',
     'sites/b0/ui/main.js': 'old UI',
     'sites/b0/ui-data/screens.json': 'old rules',
@@ -64,8 +65,11 @@ describe('an open build across a deployment', () => {
     expect((await servePlay(ask(`${ENGINE}b0/not-listed.js`), env, next, manifests)).status).toBe(404);
     expect(await servePlay(ask(`${ENGINE}unpublished/ui/main.js`), env, next, manifests)).toBeNull();
     expect(env.PLAY.gets.some(key => key.startsWith('sites/unpublished/'))).toBe(false);
-    expect((await servePlay(ask(`${ENGINE}b0/`), env, next, manifests)).headers.get('location')).toBe(`https://tilakpatell.com${ENGINE}b1/`);
-    expect((await servePlay(ask(`${ENGINE}b0/index.html?from=/galaxy/hoth`), env, next, manifests)).headers.get('location')).toBe(`https://tilakpatell.com${ENGINE}b1/?from=/galaxy/hoth`);
+    // (a retained build is opened by its exact name, the rollback as a control; an unknown name still leads to the current)
+    expect((await servePlay(ask(`${ENGINE}b0/`), env, next, manifests)).status).toBe(200);
+    expect((await servePlay(ask(`${ENGINE}b0/index.html?from=/galaxy/hoth`), env, next, manifests)).status).toBe(200);
+    expect((await servePlay(ask(`${ENGINE}b0?from=/galaxy/hoth`), env, next, manifests)).headers.get('location')).toBe(`https://tilakpatell.com${ENGINE}b0/?from=/galaxy/hoth`);
+    expect((await servePlay(ask(`${ENGINE}unpublished/`), env, next, manifests)).headers.get('location')).toBe(`https://tilakpatell.com${ENGINE}b1/`);
     expect((await servePlay(ask(`${ENGINE}b1/index.html`), env, next, manifests)).status).toBe(200);
   });
 
@@ -296,6 +300,90 @@ describe('serving the play site', () => {
 
   it('leaves everything to the site without the binding', async () => {
     expect(await serve(`${ENGINE}b1/`, {}, {})).toBeNull();
+  });
+});
+
+describe('opening a build by its exact name: current, staged, retained', () => {
+  // (r1074 gated on the hosted path before adoption; r1072, the rollback, opened beside r1073 as a control)
+  const named = { ...config, uiData: 'sites/b1/ui-data/',
+    stagedBuilds: { s2: { site: 'sites/s2/', export: 'extract/', uiData: 'sites/s2/ui-data/', exportAllow: ['fonts/'] } },
+    retainedBuilds: { b0: { site: 'sites/b0/', export: 'extract-old/', uiData: 'sites/b0/ui-data/', exportAllow: ['fonts/'] } } };
+  const pages = { ...files };
+  for (const b of ['b0', 's2']) Object.assign(pages, {
+    [`sites/${b}/manifest.json`]: JSON.stringify(manifest), [`sites/${b}/index.html`]: `<!doctype html><title>${b}</title>`,
+    [`sites/${b}/ui/main.js`]: `${b} UI`, [`sites/${b}/ui-data/screens.json`]: `${b} rules`, [`sites/${b}/runtime/world-play.mjs`]: `${b} runtime`,
+  });
+  Object.assign(pages, { 'sites/b1/ui-data/screens.json': 'b1 rules', 'extract-old/fonts/a.ttf': 'b0 font', 'sites/unknown/manifest.json': JSON.stringify(manifest), 'sites/unknown/index.html': 'never' });
+  const open = (path, headers = {}, env = { PLAY: bucket(pages) }) => servePlay(ask(path, headers), env, named, new Map());
+
+  it('serves the current build’s page as before: cached by revalidation, indexable', async () => {
+    const res = await open(`${ENGINE}b1/`);
+    expect(res.status).toBe(200);
+    expect(res.headers.get('cache-control')).toBe('public, max-age=0, must-revalidate');
+    expect(res.headers.has('x-robots-tag')).toBe(false);
+    expect(buildKind(named, 'b1')).toBe('current');
+  });
+
+  it('serves a staged build by its exact name, noindex and never stored', async () => {
+    const res = await open(`${ENGINE}s2/?from=%2Fgalaxy%2Fhoth`);
+    expect(res.status).toBe(200);
+    expect(await res.text()).toContain('<title>s2</title>');
+    expect(res.headers.get('x-robots-tag')).toBe('noindex');
+    expect(res.headers.get('cache-control')).toBe('no-store');
+    expect(res.headers.get('cross-origin-embedder-policy')).toBe('require-corp');
+    const file = await open(`${ENGINE}s2/runtime/world-play.mjs`);
+    expect(await file.text()).toBe('s2 runtime');
+    expect(file.headers.get('x-robots-tag')).toBe('noindex');
+    expect(file.headers.get('cache-control')).toBe('public, max-age=31536000, immutable');
+    // (its directory without the slash goes to its own directory, not the current build)
+    expect((await open(`${ENGINE}s2`)).headers.get('location')).toBe(`https://tilakpatell.com${ENGINE}s2/`);
+    expect(buildKind(named, 's2')).toBe('staged');
+  });
+
+  it('serves a retained build (the rollback) by its exact name, noindex and never stored', async () => {
+    const res = await open(`${ENGINE}b0/index.html`);
+    expect(res.status).toBe(200);
+    expect(await res.text()).toContain('<title>b0</title>');
+    expect(res.headers.get('x-robots-tag')).toBe('noindex');
+    expect(res.headers.get('cache-control')).toBe('no-store');
+    expect(buildKind(named, 'b0')).toBe('retained');
+  });
+
+  it('still sends a name play.json does not know to the current build, reading nothing of it', async () => {
+    const env = { PLAY: bucket(pages) };
+    for (const path of [`${ENGINE}unknown/`, `${ENGINE}unknown/index.html`, `${ENGINE}unknown`]) {
+      const res = await open(path, {}, env);
+      expect(res.status, path).toBe(302);
+      expect(res.headers.get('location')).toBe(`https://tilakpatell.com${ENGINE}b1/`);
+      expect(res.headers.get('cache-control')).toBe('no-store');
+    }
+    expect(env.PLAY.gets.some((key) => key.startsWith('sites/unknown/'))).toBe(false);
+    expect(buildKind(named, 'unknown')).toBeNull();
+    expect(buildKind(named, 'hasOwnProperty')).toBeNull();
+  });
+
+  it('lands the public entry on the current build exactly as before', async () => {
+    for (const path of ['/battlefront', '/battlefront/']) {
+      const res = await open(path + '?from=%2Fgalaxy%2Fhoth');
+      expect(res.status).toBe(302);
+      expect(res.headers.get('location')).toBe(`https://tilakpatell.com${ENGINE}b1/?from=%2Fgalaxy%2Fhoth`);
+      expect(res.headers.get('cache-control')).toBe('no-store');
+    }
+  });
+
+  it('resolves an open staged or retained page’s /ui/, /ui-data/ and /export/ roots to its own build', async () => {
+    for (const [build, ui, rules] of [['b0', 'b0 UI', 'b0 rules'], ['s2', 's2 UI', 's2 rules']]) {
+      const referer = `https://tilakpatell.com${ENGINE}${build}/runtime/world-play.mjs`;
+      for (const [path, body] of [['/ui/main.js', ui], ['/ui-data/screens.json', rules], ['/export/fonts/a.ttf', build === 'b0' ? 'b0 font' : 'font']]) {
+        const hop = await open(path, { referer });
+        expect(hop.status, `${build} ${path}`).toBe(302);
+        const location = hop.headers.get('location');
+        expect(location).toBe(`https://tilakpatell.com${ENGINE}${build}${path}`);
+        const res = await open(new URL(location).pathname, { referer });
+        expect(res.status, `${build} ${path}`).toBe(200);
+        expect(await res.text()).toBe(body);
+      }
+    }
   });
 });
 

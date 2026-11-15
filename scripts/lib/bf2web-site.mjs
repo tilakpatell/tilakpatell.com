@@ -177,7 +177,19 @@ export function adopted(play, id, manifest, uiData = play.uiData, needs = play.n
     retainedBuilds[play.build] = { site, export: exportRoot, uiData: previousUi, exportAllow: [...(exportAllow ?? [])] };
   }
   delete retainedBuilds[id];
-  return { ...play, build: id, site: `sites/${id}/`, uiData, ...(levels ? { levels: [...levels] } : {}), mb: Math.round(bytes / 1e6), retainedBuilds, ...(needs ? { needs } : {}) };
+  // (a staged build adopted is promoted: it leaves stagedBuilds, the other staged builds stay)
+  const stagedBuilds = play.stagedBuilds ? { ...play.stagedBuilds } : null;
+  if (stagedBuilds) delete stagedBuilds[id];
+  return { ...play, build: id, site: `sites/${id}/`, uiData, ...(levels ? { levels: [...levels] } : {}), mb: Math.round(bytes / 1e6), retainedBuilds, ...(stagedBuilds ? { stagedBuilds } : {}), ...(needs ? { needs } : {}) };
+}
+
+// A build uploaded ahead of adoption (the pre-upload path), held to the same contract, recorded so the Worker serves
+// it by its exact name (cloudflare/play.js: noindex, its page no-store) for gates on the hosted path; play.json's build,
+// what /battlefront/ opens, does not move. Adopting it later promotes it (adopted() above).
+export function staged(play, id, uiData = play.uiData) {
+  if (id === play.build) return play;
+  const { export: exportRoot, exportAllow } = play;
+  return { ...play, stagedBuilds: { ...play.stagedBuilds, [id]: { site: `sites/${id}/`, export: exportRoot, uiData, exportAllow: [...(exportAllow ?? [])] } } };
 }
 
 // (Cloudflare compresses what it calls text, the wasm and the JSON among it, on its own: 104 MB of engine reaches a

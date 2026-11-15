@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createHash } from 'node:crypto';
-import { CONTRACT, ENCODINGS, SHARED_UI, adopted, compressible, encodingsOf, floorNeeds, programNeeds, contractProblems, hookProblems, levelProblems, missingFiles, newest, rulebookProblems, uiDataFor, uploadPlan } from './bf2web-site.mjs';
+import { CONTRACT, ENCODINGS, SHARED_UI, adopted, staged, compressible, encodingsOf, floorNeeds, programNeeds, contractProblems, hookProblems, levelProblems, missingFiles, newest, rulebookProblems, uiDataFor, uploadPlan } from './bf2web-site.mjs';
 import BOOK from '../../src/data/bf2017/modes.json' with { type: 'json' };
 
 const sha = (c) => c.repeat(64);
@@ -112,6 +112,26 @@ describe('which build the site plays', () => {
     expect(Object.keys(rollback.retainedBuilds)).toEqual(['b', 'c']);
     expect(rollback.retainedBuilds.c.uiData).toBe('sites/c/ui-data/');
     expect(adopted({ ...a, build: null }, 'b', m).retainedBuilds).toEqual({});
+  });
+
+  it('stages a pre-uploaded build by name without moving the build, and promotes it on adoption', () => {
+    const a = { build: 'a', site: 'sites/a/', uiData: 'sites/a/ui-data/', export: 'web/', exportAllow: ['fonts/'], retainedBuilds: { z: { site: 'sites/z/' } } };
+    const s = staged(staged(a, 'b', 'sites/b/ui-data/'), 'c', 'sites/c/ui-data/');
+    expect(s.build).toBe('a');
+    expect(s.site).toBe('sites/a/');
+    expect(s.retainedBuilds).toEqual(a.retainedBuilds);
+    expect(s.stagedBuilds).toEqual({
+      b: { site: 'sites/b/', export: 'web/', uiData: 'sites/b/ui-data/', exportAllow: ['fonts/'] },
+      c: { site: 'sites/c/', export: 'web/', uiData: 'sites/c/ui-data/', exportAllow: ['fonts/'] },
+    });
+    expect(a).not.toHaveProperty('stagedBuilds');
+    // (the current build is never staged)
+    expect(staged(a, 'a')).toBe(a);
+    const promoted = adopted(s, 'b', manifest([]), 'sites/b/ui-data/');
+    expect(promoted.build).toBe('b');
+    expect(Object.keys(promoted.stagedBuilds)).toEqual(['c']);
+    expect(Object.keys(promoted.retainedBuilds)).toEqual(['z', 'a']);
+    expect(promoted.retainedBuilds.a.uiData).toBe('sites/a/ui-data/');
   });
 });
 

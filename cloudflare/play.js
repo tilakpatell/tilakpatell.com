@@ -7,8 +7,9 @@
 // served from the build. Everything is cross-origin isolated, as the engine's threads need (COOP, COEP require-corp:
 // the page loads nothing from another origin). A build's files are a year and immutable under its id; the roots,
 // whose paths don't carry it, redirect to the requesting engine build's qualified path. Requests outside an engine
-// page still use the current roots and revalidate. Previously published roots are explicitly retained by adoption;
-// unpublished bucket builds are never discovered or served. The page itself is served with the site's
+// page still use the current roots and revalidate. Previously published roots are explicitly retained by adoption,
+// and a pre-uploaded build is explicitly staged (play.json's retainedBuilds / stagedBuilds): each is opened by its
+// exact name, its page noindex and no-store; any other bucket build is never discovered or served. The page itself is served with the site's
 // way back added (playReturn.js), under an ETag of its object's and the script's, so a new script is a new page.
 //
 //   playRoute(pathname, config) → { key, root, path } | null   (null: not the play site's, the site's files answer)
@@ -39,11 +40,21 @@ export const contentType = (path) => TYPES[/\.([a-z0-9]+)$/i.exec(path)?.[1]?.to
 
 const safe = (rest) => !rest.split('/').some((part) => part === '..' || part === '.' || part === '');
 
-// Retention is an explicit publication record, not permission to read any build found in the bucket.
+// Retention and staging are explicit publication records, not permission to read any build found in the bucket:
+// stagedBuilds (a build uploaded ahead of adoption, scripts/bf2web-adopt.mjs --stage) and retainedBuilds (the builds
+// adoption moved off, the rollback among them) are served by their exact names; play.json's build stays the current one.
+export function buildKind(config, build) {
+  if (!build || !config?.build) return null;
+  if (build === config.build) return 'current';
+  if (config.stagedBuilds && Object.hasOwn(config.stagedBuilds, build)) return 'staged';
+  if (config.retainedBuilds && Object.hasOwn(config.retainedBuilds, build)) return 'retained';
+  return null;
+}
+
 function configForBuild(config, build) {
-  if (build === config?.build) return config;
-  const retained = config?.retainedBuilds;
-  return retained && Object.hasOwn(retained, build) ? { ...config, ...retained[build], build } : null;
+  const kind = buildKind(config, build);
+  if (kind === 'current') return config;
+  return kind ? { ...config, ...config[kind === 'staged' ? 'stagedBuilds' : 'retainedBuilds'][build], build } : null;
 }
 
 function externalRoute(pathname, config) {
@@ -132,14 +143,18 @@ const engineWorkerScript = () =>
 export async function servePlay(request, env, config, manifests, ctx = null, cache = null) {
   const url = new URL(request.url);
   if (url.pathname === ENGINE + 'sw.js' && config?.build) return engineWorkerScript();
-  // Public entry addresses and an older build's page lead to the current build, with the query intact. The build
-  // directory needs its trailing slash: otherwise the page's relative modules and assets resolve outside it.
-  // These redirects name a moving build, so they are never cached. Explicitly retained files remain available
-  // to already-open pages; fresh navigation to a build directory still starts the current version.
+  // Public entry addresses lead to the current build, with the query intact, and so does a build directory that
+  // names no build play.json knows. A build play.json names (current, staged or retained) is opened by its exact
+  // name: a staged build can be gated on the hosted path before adoption and the rollback opened as a control.
+  // The build directory needs its trailing slash: otherwise the page's relative modules and assets resolve outside it.
+  // These redirects are never cached.
   const entry = url.pathname === '/battlefront' || url.pathname === '/battlefront/';
   const named = /^\/battlefront\/engine(?:\/([^/]+))?(?:\/(index\.html))?\/?$/.exec(url.pathname);
-  if (config?.build && (entry || (named && named[1] !== 'sw.js' && (named[1] !== config.build || (!url.pathname.endsWith('/') && !named[2])))))
-    return new Response(null, { status: 302, headers: { location: new URL(`${ENGINE}${config.build}/${url.search}`, url).toString(), 'cache-control': 'no-store' } });
+  if (config?.build && (entry || (named && named[1] !== 'sw.js'))) {
+    const known = !entry && buildKind(config, named[1]) ? named[1] : null;
+    if (!known || (!url.pathname.endsWith('/') && !named[2]))
+      return new Response(null, { status: 302, headers: { location: new URL(`${ENGINE}${known ?? config.build}/${url.search}`, url).toString(), 'cache-control': 'no-store' } });
+  }
 
   // Older exports request these roots by absolute URL. Redirect each request to the build that initiated it,
   // so relative imports use the final versioned module URL and HTTP caches cannot mix two generations at /ui/.
@@ -167,15 +182,28 @@ export async function servePlay(request, env, config, manifests, ctx = null, cac
   const route = playRoute(url.pathname, config);
   if (!route) return null;
   if (!env.PLAY) return null;
-  const selected = url.pathname.startsWith(ENGINE) ? configForBuild(config, url.pathname.slice(ENGINE.length).split('/')[0]) : config;
+  const build = url.pathname.startsWith(ENGINE) ? url.pathname.slice(ENGINE.length).split('/')[0] : config.build;
+  const selected = configForBuild(config, build);
+  // (a staged or retained build is not the site: never indexed, and its page never kept by a cache)
+  const preview = buildKind(config, build) !== 'current';
   try {
-    return await answer(request, url, route, env, selected, manifests, ctx, cache);
+    return await answer(request, url, route, env, selected, manifests, ctx, cache, preview);
   } catch {
     return unavailable();
   }
 }
 
-async function answer(request, url, route, env, config, manifests, ctx, cache) {
+async function answer(request, url, route, env, config, manifests, ctx, cache, preview = false) {
+  const response = await answerBuild(request, url, route, env, config, manifests, ctx, cache);
+  if (!preview || !response) return response;
+  // (headers of a Response read from the edge cache are immutable: copied onto a new one)
+  const headers = new Headers(response.headers);
+  headers.set('x-robots-tag', 'noindex');
+  if (route.root === 'site' && route.path === 'index.html') headers.set('cache-control', 'no-store');
+  return new Response(response.body, { status: response.status, statusText: response.statusText, headers, ...(headers.get('content-encoding') === 'br' ? { encodeBody: 'manual' } : {}) });
+}
+
+async function answerBuild(request, url, route, env, config, manifests, ctx, cache) {
   if (request.method !== 'GET' && request.method !== 'HEAD') return new Response(null, { status: 405, headers: { ...ISOLATED, allow: 'GET, HEAD' } });
   const immutable = route.root === 'site' && url.pathname.startsWith(ENGINE) && route.path !== 'index.html';
   const whole = !request.headers.has('range');
