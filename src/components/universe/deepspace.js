@@ -11,7 +11,7 @@
 // - Ember and Halcyon, two more suns: a boiling surface in their own colour,
 //   bright enough to bloom, a corona with streamers round it and a wide glow
 //   that grows stronger the further off you are, so from across the map each
-//   still reads as a star. Their planets are lit by them: rock (craters
+//   still reads as a star. Their planets orbit, lit by them: rock (craters
 //   pressed into a height map, lit with relief), ocean (seas, coasts, ice
 //   caps, clouds, the sun's glint on the water) and gas.
 // - The Maw, the black hole: a shadow of pure black, a thin hard ring of
@@ -40,8 +40,8 @@
 //   under it, at the same size on screen however far off. They show only out
 //   of the home system and well clear of the wonder, and fade in and out.
 // - Further off still: a few galaxies and a cluster, riding with the camera
-//   like the Milky Way (so they never come any closer), and two thin streams
-//   of tumbling rocks in the open space between the wonders.
+//   like the Milky Way (so they never come any closer), each turning in its
+//   plane, and two thin streams of tumbling rocks between the wonders.
 //
 // Lit things are lit in world space from where their light is (the home sun
 // at the map's middle, or their own star), so the map can turn under them.
@@ -645,6 +645,8 @@ export function buildDeepSpace({ small = false, tier = 'high', renderer = null }
       holder.position.set(at[0] - w.at[0], at[1] - w.at[1], at[2] - w.at[2]);
       holder.rotation.set(0.25 * (i ? -1 : 1), 0, 0.15);
       g.add(holder);
+      // going round its sun (deep.js's planetAt, the solid's own clock)
+      ticks.push((t) => holder.position.fromArray(planetAt(w, pl, t)).sub(g.position));
       const base = new THREE.Color(pl.color);
       const kind = pl.kind === 'rock' ? 'ROCK' : pl.kind === 'ocean' ? 'OCEAN' : 'GAS';
       const look = {
@@ -1107,6 +1109,7 @@ export function buildDeepSpace({ small = false, tier = 'high', renderer = null }
   group.add(sky);
   {
     const rand = rng('far-galaxies');
+    const turns = rng('far-galaxies-turning'); // (its own, so each galaxy's roll is as it was)
     const list = [
       // [azimuth, elevation (degrees), size (units at SKY_FAR), squash, cell, tint, brightness]
       [35, 22, 190, 0.42, 0, [1, 0.95, 0.9], 0.55],
@@ -1121,6 +1124,7 @@ export function buildDeepSpace({ small = false, tier = 'high', renderer = null }
     const pos = [];
     const uv = [];
     const col = [];
+    const spins = [];
     const idx = [];
     const d = new THREE.Vector3();
     const right = new THREE.Vector3();
@@ -1138,6 +1142,8 @@ export function buildDeepSpace({ small = false, tier = 'high', renderer = null }
       const hh = ((size * SKY_SIZE) / 2) * squash;
       const cu = (cell % 2) * 0.5;
       const cv = cell < 2 ? 0.5 : 0;
+      // each turning in its plane, its own way, a few minutes a turn (SKY_FRAG)
+      const spin = (0.008 + turns() * 0.014) * (turns() < 0.5 ? -1 : 1);
       [
         [-1, -1],
         [1, -1],
@@ -1148,6 +1154,7 @@ export function buildDeepSpace({ small = false, tier = 'high', renderer = null }
         pos.push(p.x, p.y, p.z);
         uv.push(cu + (sx > 0 ? 0.5 : 0), cv + (sy > 0 ? 0.5 : 0));
         col.push(tint[0] * b, tint[1] * b, tint[2] * b);
+        spins.push(cu + 0.25, cv + 0.25, spin);
       });
       const o = i * 4;
       idx.push(o, o + 1, o + 2, o, o + 2, o + 3);
@@ -1156,6 +1163,7 @@ export function buildDeepSpace({ small = false, tier = 'high', renderer = null }
     geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
     geo.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
     geo.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+    geo.setAttribute('aSpin', new THREE.Float32BufferAttribute(spins, 3));
     geo.setIndex(idx);
     const m = mesh(geo, shader(SKY_VERT, SKY_FRAG, { uMap: { value: own(galaxyAtlas(seg(1024, 512))) } }, { ...additive, side: THREE.DoubleSide }), sky, -5);
     m.frustumCulled = false;

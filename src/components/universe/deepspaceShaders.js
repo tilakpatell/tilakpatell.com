@@ -4,6 +4,7 @@
 
 import { SWIRL_GLSL } from '../rickmorty/swirl';
 import { NOISE_GLSL } from './sun';
+import { UPRIGHT_GLSL } from '../../lib/three/upright';
 
 // ── GLSL shared by the shaders ──
 
@@ -40,20 +41,22 @@ vec4 globe(sampler2D map, vec3 p) {
 // a quad that always faces the camera, `position` its offset in world units
 // (the mesh's turn is ignored); vC is that offset in its radii, vSil how much
 // wider than its radius a sphere of that radius looks on the quad's plane
-// (from close in you see less than half of it), vDist how far off it is
+// (from close in you see less than half of it), vDist how far off it is.
+// Turned toward the eye's place and kept upright to the world
+// (lib/three/upright.js), so a corona's streamers don't spin as the ship banks
 export const BILLBOARD_VERT = `
 uniform float uR;
 varying vec2 vC;
 varying float vSil;
 varying float vDist;
+${UPRIGHT_GLSL}
 void main() {
-  vec4 mv = modelViewMatrix * vec4(0.0, 0.0, 0.0, 1.0);
-  float d = length(mv.xyz);
+  vec3 c = (modelMatrix * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
+  float d = distance(c, cameraPosition);
   vDist = d;
   vSil = d > uR * 1.02 ? d / sqrt(d * d - uR * uR) : 5.0;
   vC = position.xy / uR;
-  mv.xy += position.xy;
-  gl_Position = projectionMatrix * mv;
+  gl_Position = projectionMatrix * viewMatrix * vec4(upright(c, position.xy), 1.0);
 }`;
 
 // ── Planets: one shader, a look per kind ──
@@ -729,19 +732,32 @@ void main() {
 
 export const SKY_VERT = `
 attribute vec3 color;
+attribute vec3 aSpin;
 varying vec2 vUv;
 varying vec3 vColor;
+varying vec3 vSpin;
 void main() {
   vUv = uv;
   vColor = color;
+  vSpin = aSpin;
   gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
 }`;
+// each galaxy turning in its own plane: its picture turned about its
+// cell's middle (vSpin.xy) at its own rate (vSpin.z, radians a second),
+// nothing read from past the cell's round edge
 export const SKY_FRAG = `
 uniform sampler2D uMap;
+uniform float uTime;
 varying vec2 vUv;
 varying vec3 vColor;
+varying vec3 vSpin;
 void main() {
-  vec4 c = texture2D(uMap, vUv);
+  vec2 o = vUv - vSpin.xy;
+  float a = uTime * vSpin.z;
+  float cs = cos(a);
+  float sn = sin(a);
+  o = vec2(cs * o.x - sn * o.y, sn * o.x + cs * o.y);
+  vec4 c = texture2D(uMap, vSpin.xy + o) * smoothstep(0.25, 0.235, length(o));
   gl_FragColor = vec4(c.rgb * c.a * vColor, 1.0);
   #include <colorspace_fragment>
 }`;

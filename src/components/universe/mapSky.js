@@ -14,6 +14,10 @@ import { SYSTEMS } from '../galaxy/systems';
 export function createMapSky(parent, { renderer = null, small = false, level = null, post, prepFrame = () => Promise.resolve() }) {
   const sky = createSky({ small, level, renderer, beacons: false, clouds: false });
   sky.setSystem({ ...SYSTEMS.find((s) => s.id === 'kashyyyk'), suns: [] });
+  // (and deep: the galaxy's faint glow between taken toward black, its star
+  // clouds kept, so it reads as space, not a lit grey; measured at the far
+  // rim, the sky's middle grey 67 of 255 before: the map's lens, PR #1311)
+  sky.setDeep(1);
   // (its stars sized in the pixels the post draws at, which the quality
   // softens over a canvas that keeps its size; told again when that moves:
   // the galaxy's drawnAt.js does the same, kept here rather than reached
