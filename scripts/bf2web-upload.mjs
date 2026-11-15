@@ -116,17 +116,27 @@ for (const p of plan.filter((q) => sizeOf(q) > LARGE)) {
   console.log(`  large ${p.key} (${Math.round(sizeOf(p) / 1e6)} MB) sent`);
 }
 const queue = plan.filter((q) => !(sizeOf(q) > LARGE));
-await Promise.all(
-  // Four streams, each file with up to three rounds of attemptUpload's tries: r1057's run lost a 1 MB file to
-  // three resets in a row once the large ones were up.
-  Array.from({ length: 4 }, async () => {
-    for (let p = queue.shift(); p; p = queue.shift()) {
-      for (let round = 1; ; round++) {
-        try { await send(p); break; } catch (error) { if (round === 6) throw error; await new Promise((r) => setTimeout(r, 3000 * round)); console.log(`  ${p.key}: ${error.message}, again`); }
-      }
-      if (++done % 250 === 0) console.log(`  ${done} of ${plan.length}`);
+// Copies in a pool of their own. A copy (PUT with x-amz-copy-source) carries no body: one small request, the bytes move inside R2.
+// The four-stream limit below is for bodies (connections reset with more, r1057); held to it, r1072's 29,090 copies took 78 of the
+// run's 88 minutes at about 6.4 a second. BF2WEB_COPY_STREAMS (the workflow's copy_streams input, default 32) sets the copy pool;
+// 4 is the old behaviour exactly (one pool of four for copies and puts alike). Same tries per object, the manifest still last.
+const COPY_STREAMS = Math.max(1, Math.floor(Number(process.env.BF2WEB_COPY_STREAMS ?? 32)) || 32);
+const lane = (items) => async () => {
+  for (let p = items.shift(); p; p = items.shift()) {
+    for (let round = 1; ; round++) {
+      try { await send(p); break; } catch (error) { if (round === 6) throw error; await new Promise((r) => setTimeout(r, 3000 * round)); console.log(`  ${p.key}: ${error.message}, again`); }
     }
-  }),
-);
+    if (++done % 250 === 0) console.log(`  ${done} of ${plan.length}`);
+  }
+};
+const copies = COPY_STREAMS === 4 ? [] : queue.filter((q) => q.action === 'copy');
+const copySet = new Set(copies), rest = queue.filter((q) => !copySet.has(q));
+console.log(`  ${copies.length} copies on ${COPY_STREAMS} streams, ${rest.length} others on 4`);
+await Promise.all([
+  // Four streams for bodies, each file with up to three rounds of attemptUpload's tries: r1057's run lost a 1 MB file to
+  // three resets in a row once the large ones were up.
+  ...Array.from({ length: 4 }, lane(rest)),
+  ...Array.from({ length: copies.length ? COPY_STREAMS : 0 }, lane(copies)),
+]);
 await send(last);
 console.log(`${id}: uploaded, its manifest last`);
