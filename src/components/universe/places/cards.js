@@ -30,7 +30,8 @@
 // thingCardOf(kind) → THING_CARDS' row for a thing's kind, or the default's
 
 import { parseSpaceId } from '../../../lib/space/address.js';
-import { THING_KINDS } from '../../expanse/shared/gen';
+import { THING_KINDS, companionsOf } from '../../expanse/shared/gen';
+import { CATALOGUE_CARDS } from '../things/cards';
 import { PLACE } from '../words';
 
 // The universe camera's far plane (scene.js's 45,000). Lane 2's levels.js
@@ -53,6 +54,8 @@ export const THING_CARDS = {
   nebula: thing('nebula', '#b48cff', { solid: false }),
   pulsar: thing('pulsar', '#b8f4ff'),
   default: thing('default', '#b8c2d0'),
+  // (lane 4a's kinds, listed out to the far plane unless their card says otherwise)
+  ...Object.fromEntries(Object.entries(CATALOGUE_CARDS).map(([k, c]) => [k, { far: FAR, ...c }])),
 };
 
 const NONE = { facts: [], solid: true, dock: false, land: false, faction: null, system: null, span: null, move: null };
@@ -98,7 +101,7 @@ function systemCard(row, sector) {
     ...NONE,
     ...placeLook('system', row),
     type: PLACE.system(star),
-    about: PLACE.about.system({ star, planets: row.planets.length, station, held: PLACE.held(row.faction.name) }),
+    about: PLACE.about.system({ star, planets: row.planets.length, station, held: PLACE.held(row.faction.name), companions: companionsOf(row).map((c) => PLACE.star[c.class].toLowerCase()) }),
     facts,
     faction: row.faction,
     system: row.id,
@@ -169,6 +172,7 @@ function thingCard(kind, row) {
     ...placeLook(kind, row),
     type: c.type,
     about: c.about,
+    land: c.land?.(row) ?? false,
     faction: row.faction ?? null,
   };
 }

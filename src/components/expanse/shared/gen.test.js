@@ -2,7 +2,16 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { FROM, SIDE_EFFECT, uncomment } from '../../../../scripts/health/graph.mjs';
 import * as gen from './gen';
+import { FAR } from '../scene/levels';
 import * as orbits from './orbits';
+import * as catalogue from '../gen/catalogue';
+import * as companions from '../gen/companions';
+import * as extras from '../gen/extras';
+import * as extrasSystems from '../gen/extras/systems';
+import * as paths from '../gen/paths';
+import * as extrasStars from '../gen/extras/stars';
+import * as gargantuans from '../gen/gargantuans';
+import * as finder from '../gen/finder';
 import * as extent from '../gen/extent';
 import * as genOrbits from '../gen/orbits';
 import * as seed from '../gen/seed';
@@ -18,11 +27,14 @@ import * as things from '../gen/things';
 const GEN = [
   'UNIVERSE', 'universeOf', 'fullSector', 'placeOf', 'placeIn', 'orbitAt', 'moonAt', 'bodiesAt', 'spaceTime',
   'systemReach', 'THING_BASE', 'THING_CELLS', 'THING_NEAR', 'THING_KINDS', 'SECTOR_EXTRAS', 'thingRow', 'WONDER_KINDS',
-  'STATION_BASE', 'stationsOf', 'extentOf',
+  'STATION_BASE', 'stationsOf', 'extentOf', 'KINDS', 'lookOf', 'traitsOf',
+  'COMET_PERIOD', 'pathAt', 'pathSpeed', 'rowAt', 'tailOf', 'companionsOf', 'companionAt', 'NEBULA_SHOW', 'wormholeExit',
+  'GARGANTUAN_FORMS', 'GARGANTUAN', 'gargantuanSectors', 'formOf', 'gargantuanKeeps', 'ARRIVAL_BASE', 'ARRIVAL_MAX', 'ARRIVAL_GARGANTUANS', 'checkGargantuan',
+  'CATALOGUE', 'solidOf', 'rowSolids', 'fleetLayout', 'discRadius', 'PLANET_SIZE', 'EXTRA_HIGH', 'EXTRA_LISTS', 'kindsIn', 'nearestOfKind',
 ];
 const LIGHT = ['orbitAt', 'moonAt', 'spaceTime', 'extentOf'];
 const FACE = [
-  [gen, [space, seed, genOrbits, systems, things, tables, stations, extent], GEN],
+  [gen, [space, seed, genOrbits, systems, things, tables, stations, extent, catalogue, extras, paths, extrasSystems, companions, extrasStars, gargantuans, finder], GEN],
   [orbits, [genOrbits, extent], LIGHT],
 ];
 
@@ -52,5 +64,8 @@ describe('expanse/shared, the universe’s faces', () => {
     expect(from.length).toBeGreaterThan(0);
     expect(from.filter((p) => !p.startsWith('../gen/'))).toEqual([]);
     expect(from.filter((p) => /scene|three|react/.test(p))).toEqual([]);
+  });
+  it('restates the far plane as the gargantuans’ own, the same number', () => {
+    expect(gen.GARGANTUAN.far).toBe(FAR);
   });
 });

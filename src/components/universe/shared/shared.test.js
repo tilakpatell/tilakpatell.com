@@ -17,7 +17,7 @@ const FACE = [
   [wallet, ['EARN', 'LEVELS', 'TITLES', 'createPayLedger', 'tellSkills', 'useEarn', 'useEconomy']],
   [powerBar, ['PowerBar']],
   [fit, ['statsOf', 'useShipyardPage']],
-  [space, ['PLACES', 'SECTORS', 'SECTOR_RADIUS', 'sectorOf']],
+  [space, ['PALETTE', 'PLACES', 'SECTORS', 'SECTOR_RADIUS', 'sectorOf', 'tint']],
 ];
 
 describe('universe/shared', () => {
