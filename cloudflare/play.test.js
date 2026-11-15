@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
-import { describe, expect, it } from 'vitest';
-import { ENGINE, ISOLATED, buildKind, contentType, playRoute, servePlay } from './play.js';
+import { describe, expect, it, vi } from 'vitest';
+import { ENGINE, HEAD_MS, ISOLATED, buildKind, contentType, playRoute, servePlay } from './play.js';
 import { RETURN_VERSION } from './playReturn.js';
 
 const config = { build: 'b1', site: 'sites/b1/', export: 'extract/', uiData: 'library/ui/frontend/', exportAllow: ['fonts/', 'strings/'] };
@@ -194,6 +194,25 @@ describe('serving the play site', () => {
     expect((await serve(`${ENGINE}b1/original-frame-graph.wasm`, { range: 'bytes=10-' }, { PLAY: noHead })).status).toBe(503);
     const headDown = { ...r2(false), head: async () => { throw new Error('R2 unavailable'); } };
     expect((await serve(`${ENGINE}b1/original-frame-graph.wasm`, { range: 'bytes=10-' }, { PLAY: headDown })).status).toBe(503);
+  });
+
+  // (s-buildfast's review of #1324: the head is the same hang class as #1323's reads, so it has a time limit)
+  it('a head that never answers leaves the ranged read a 503 after HEAD_MS, not a hang', async () => {
+    vi.useFakeTimers();
+    try {
+      const inner = bucket(files);
+      const env = { PLAY: { gets: inner.gets, head: () => new Promise(() => {}), get: async (key, opts = {}) => { if (opts.range?.get?.('range')) throw new Error('InvalidRange'); return inner.get(key, opts); } } };
+      let settled = null;
+      const pending = serve(`${ENGINE}b1/original-frame-graph.wasm`, { range: 'bytes=10-' }, env).then((res) => (settled = res));
+      await vi.advanceTimersByTimeAsync(HEAD_MS - 1);
+      expect(settled).toBeNull();
+      await vi.advanceTimersByTimeAsync(1);
+      await pending;
+      expect(settled.status).toBe(503);
+      expect(settled.headers.get('retry-after')).toBe('1');
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('serves the front end and the export’s allowed folders, and leaves the rest to the site', async () => {

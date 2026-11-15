@@ -86,16 +86,21 @@ export function playRoute(pathname, config) {
   return externalRoute(pathname, config);
 }
 
-// an R2 read, asked once again when it throws; null for a key the bucket hasn't got
-// a 416 for a single byte range whose start is at or past the object's end, or null (no range, a range R2 can answer, or no head)
-async function unsatisfiableRange(env, key, range) {
+// a 416 for a single byte range whose start is at or past the object's end, or null (no range, a range R2 can answer, or no head).
+// The head has a time limit (HEAD_MS): a head that never answers is null, so the request stays the 503 it was, never a hang.
+// (When #1323's timed()/TIMEOUTS land, this uses them instead.)
+export const HEAD_MS = 5000;
+async function unsatisfiableRange(env, key, range, headMs = HEAD_MS) {
   const start = /^bytes=(\d+)-\d*$/.exec(range ?? '')?.[1];
   if (start === undefined || typeof env.PLAY.head !== 'function') return null;
-  const head = await env.PLAY.head(key).catch(() => null);
+  let timer;
+  const late = new Promise((resolve) => { timer = setTimeout(() => resolve(null), headMs); });
+  const head = await Promise.race([Promise.resolve().then(() => env.PLAY.head(key)).catch(() => null), late]).finally(() => clearTimeout(timer));
   if (!head || Number(start) < head.size) return null;
   return new Response(null, { status: 416, headers: { ...ISOLATED, 'content-range': `bytes */${head.size}`, 'cache-control': 'no-store' } });
 }
 
+// an R2 read, asked once again when it throws; null for a key the bucket hasn't got
 async function read(env, key, opts) {
   try {
     return await env.PLAY.get(key, opts);
