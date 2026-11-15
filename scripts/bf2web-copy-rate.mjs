@@ -5,7 +5,7 @@
 // printed before the next count starts. In every case (finally), every object under scratch/copy-rate- is removed (lib/bucket.mjs remove:
 // this run's and any an earlier run left) and the prefix listed empty. What it writes: only scratch/copy-rate-<run>/<streams>/<path>; it
 // reads sites/<from>/; play.json, the pointer and every sites/ prefix are untouched. Exit 1 on any failed copy, mismatch, throttling answer,
-// transport reset or leftover.
+// copy-side transport reset or leftover (a reset on a read of this script's own checks is retried and reported in the final line, not failed).
 //   node scripts/bf2web-copy-rate.mjs --from <build id> [--count 600] [--streams 8,16,32]
 import { list, objectUrl, encodePath, remove } from './lib/bucket.mjs';
 import { BUCKET, open } from './lib/bf2web-r2.mjs';
@@ -84,7 +84,8 @@ try {
 } finally {
   // every object under scratch/copy-rate- (this run's and any an earlier run left), then the prefix listed empty
   try {
-    const left = await listed(SWEEP);
+    // ([c5]: a key with a '..', '.' or empty segment would be normalised by the URL outside scratch/: never removed, reported as leftover)
+    const left = (await listed(SWEEP)).filter((f) => f.key.startsWith(SWEEP) && !f.key.split('/').some((s) => s === '..' || s === '.' || !s));
     for (let i = 0; i < left.length; i += 8) await Promise.all(left.slice(i, i + 8).map((f) => read(`remove ${f.key}`, () => remove(r2.fetch, BUCKET, f.key))));
     removed = left.length;
     leftover = (await listed(SWEEP)).length;
