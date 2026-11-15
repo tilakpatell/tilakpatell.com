@@ -386,7 +386,7 @@ export function aimStars(sectors, cam, { max = 2000 } = {}) {
   const out = new Array(k);
   for (let j = 0; j < k; j++) {
     const sys = stars[nearest[j]];
-    out[j] = { id: sys.id, at: sys.at, reach: placeReach('system', sys) };
+    out[j] = { id: sys.id, at: sys.at, reach: placeReach('system', sys), gen: true };
   }
   stars.length = 0;
   return out;

@@ -20,10 +20,11 @@
 //   pixels, and its depth (scene.js's toScreen, over map-frame points). A
 //   row's radius on screen is reach / (z · tanHalf) · height / 2. A row's
 //   `also` points ([{ at, reach }], a system's companions) pick it as its own.
-// tagsFor(rows, { ship, nose, focus = [], here = null, max, cone }) → Row[],
+// tagsFor(rows, { ship, nose, focus = [], here = null, max, cone, far }) → Row[],
 //   each once, at most max: the rows whose ids are in focus, in its order;
 //   the row whose id is here; then those within cone (radians) of the nose,
-//   ahead of the ship, nearest first (from the ship, past their reach). An
+//   ahead of the ship and within far of it, nearest first (from the ship,
+//   past their reach: a field of far names is never shown unasked). An
 //   id with no row, or a null, is skipped. ship: { x, y, z }; nose: [x, y,
 //   z], any length; no cone (it has no default) names nothing by the nose.
 
@@ -50,7 +51,7 @@ export function pickPlace(rows, project, px, py, { tanHalf, height }) {
   return best;
 }
 
-export function tagsFor(rows, { ship, nose, focus = [], here = null, max, cone }) {
+export function tagsFor(rows, { ship, nose, focus = [], here = null, max, cone, far = Infinity }) {
   const room = Math.max(0, Math.floor(max ?? 0));
   if (room === 0) return [];
   const byId = new Map();
@@ -80,6 +81,7 @@ export function tagsFor(rows, { ship, nose, focus = [], here = null, max, cone }
     const l = Math.hypot(dx, dy, dz);
     if (l === 0 || (dx * nose[0] + dy * nose[1] + dz * nose[2]) / (l * nl) <= cos) continue;
     const d = Math.max(0, l - (row.reach ?? 0));
+    if (d > far) continue;
     if (near.length === left && d >= near[left - 1].d) continue;
     let i = Math.min(near.length, left - 1);
     while (i > 0 && near[i - 1].d > d) i--;

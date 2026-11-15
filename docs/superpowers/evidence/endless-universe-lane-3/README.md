@@ -239,7 +239,7 @@ From home with the autopilot off and `post.sharpness` at 1, the ship at `[0, 300
 ![The third sky](pair-sky-3.jpg)
 ![Docked at Selaxselu Dock: main has no generated stations](pair-docked.jpg)
 
-The skies are the same apart from the generated places' name tags. `main` has no generated stations, so its fourth shot is the empty place where the branch’s Selaxselu Dock is, with its card and the Hangar.
+The three skies were taken again after the aim and tag fix, against `main` at `d291ad8f`. They are the same, tags and draw lists, apart from the jump on offer. From the first pose both say “Jump · Home”: a hand-made place in the aim cone always wins. From the other two, where no hand-made place is in the cone, the branch offers the nearest generated star in it, and `main` offers nothing. No generated place is named by the nose past 45,000 ship-lengths, as the tags count it (about 11,700 map units), so the home sky has no names. The draw lists match at all three poses apart from a random interceptor in `main`’s second. The docked pair is from `f4b7e7ee`: `main` has no generated stations, so its fourth shot is the empty place where the branch’s Selaxselu Dock is, with its card and the Hangar.
 
 ### The endless check, the whole route at mid
 

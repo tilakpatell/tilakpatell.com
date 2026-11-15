@@ -6,6 +6,7 @@ import { aimTargets } from '../aim';
 import { destinationById } from '../nav';
 import { UNIVERSE, fullSector, moonAt, sectorJob, thingRow, universeOf } from '../../expanse/shared/gen';
 import { universeBudget } from '../budget';
+import { LENGTH } from '../scale';
 import { resolvePlace } from './resolve';
 import { followPark, parkPlace } from './park';
 import { hereZone } from './around';
@@ -348,10 +349,24 @@ describe('the scene’s generated places', () => {
       expect(pt).not.toBeNull();
       expect(p.pick(pt.x, pt.y, { tanHalf: tan17, height: 720 })).toBe(row.id);
     });
-    it('names no more than the tier table says, and fewer at a lower quality step', () => {
-      // (a nose on the busiest way from a ship out among the things: a field of them in its cone)
+    it('names nothing by the nose past 45,000 ship-lengths: the home sky has no field of far names', () => {
       const at = thingRow(s, 40).at;
-      const ship = { ...spawn(null), x: at[0] + 5000, y: at[1], z: at[2], speed: 0 };
+      const far = 45000 * LENGTH + 20000;
+      const ship = { ...spawn(null), x: at[0] + far, y: at[1], z: at[2], speed: 0 };
+      const m = make({ device: { tier: 'mid' } });
+      m.tick({ ...ship, heading: headingTo(-1, 0) }, { nose: [-1, 0, 0] });
+      const rows = m.p.around();
+      const named = m.shown.at(-1);
+      for (const t of named) {
+        const r = rows.find((x) => x.id === t.id);
+        expect(Math.max(0, Math.hypot(r.at[0] - ship.x, r.at[1] - ship.y, r.at[2] - ship.z) - (r.reach ?? 0))).toBeLessThanOrEqual(45000 * LENGTH);
+      }
+    });
+    it('names no more than the tier table says, and fewer at a lower quality step', () => {
+      // (a nose on the busiest way from a ship in the fullest system: a field of places in its cone)
+      const sys = s.systems.reduce((a, b) => (b.planets.length + b.planets.reduce((n, p) => n + p.moonList.length, 0) > a.planets.length + a.planets.reduce((n, p) => n + p.moonList.length, 0) ? b : a));
+      const at = sys.at;
+      const ship = { ...spawn(null), x: at[0] + 3000, y: at[1], z: at[2], speed: 0 };
       const probe = make();
       probe.tick(ship);
       const rows = probe.p.around();
@@ -360,7 +375,9 @@ describe('the scene’s generated places', () => {
         const l = Math.hypot(...d);
         return d.map((x) => x / l);
       };
-      const inCone = (n) => rows.filter((r) => way(r).reduce((a, x, i) => a + x * n[i], 0) > Math.cos(0.14)).length;
+      // (on the nose and within 45,000 ship-lengths, past its reach: what can be named)
+      const inRange = (r) => Math.max(0, Math.hypot(r.at[0] - ship.x, r.at[1] - ship.y, r.at[2] - ship.z) - (r.reach ?? 0)) <= 45000 * LENGTH;
+      const inCone = (n) => rows.filter((r) => inRange(r) && way(r).reduce((a, x, i) => a + x * n[i], 0) > Math.cos(0.14)).length;
       const nose = rows.map(way).reduce((best, n) => (inCone(n) > inCone(best) ? n : best));
       expect(inCone(nose)).toBeGreaterThan(6);
       const heading = headingTo(nose[0], nose[2]);

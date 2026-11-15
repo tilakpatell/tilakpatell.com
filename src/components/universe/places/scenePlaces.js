@@ -25,8 +25,9 @@
 // is null when there's nothing there).
 // The names: tags (a thunk, the scene's tag box) shows at most budget.tags
 // of them, the gone-to, aimed and picked places first, then the one it's at,
-// then those near the nose (pick.js's tagsFor), none while held or not
-// flying. frame() is the scene's { w, h }; onPick(id) is a tag's click.
+// then those near the nose within 45,000 ship-lengths (pick.js's tagsFor),
+// none while held or not flying. frame() is the scene's { w, h }; onPick(id)
+// is a tag's click.
 
 import * as THREE from 'three';
 import { parseSpaceId } from '../../../lib/space/address.js';
@@ -41,6 +42,7 @@ import { dockState } from './dock';
 import { atTime, canonicalPlace } from './ids';
 import { followPark, parkPlace } from './park';
 import { PICK, pickPlace, tagsFor } from './pick';
+import { LENGTH } from '../scale';
 import { createPlaceTags } from './placeTags';
 import { resolvePlace } from './resolve';
 import { createStationLook } from './stationLook';
@@ -86,6 +88,9 @@ export function createScenePlaces({ group, universe = UNIVERSE, expanse, workers
   let tagBox = null;
   let tagView = null;
   const pt = { x: 0, y: 0, z: 0 };
+  // (a place by the nose is named only within 45,000 as the tags count it, in ship-lengths:
+  // about 11,700 map units, so the home sky has no field of far names)
+  const TAG_FAR = 45000 * LENGTH;
   // the tag view, made on the box the scene has now (a page can swap it)
   const tagsNow = () => {
     const box = tags() ?? null;
@@ -101,7 +106,7 @@ export function createScenePlaces({ group, universe = UNIVERSE, expanse, workers
     if (!view) return;
     if (!ship) return view.show([], frame());
     const list = [];
-    for (const r of tagsFor(rows, { ship, nose: nose ?? [0, 0, -1], focus, here, max: budget.tags, cone: NAME_CONE })) {
+    for (const r of tagsFor(rows, { ship, nose: nose ?? [0, 0, -1], focus, here, max: budget.tags, cone: NAME_CONE, far: TAG_FAR })) {
       const p = toScreen(r.at[0], r.at[1], r.at[2], pt);
       if (!(p.z > PICK.near)) continue; // (behind the camera, or at it)
       list.push({ id: r.id, name: r.name, dist: Math.max(0, Math.hypot(ship.x - r.at[0], ship.y - r.at[1], ship.z - r.at[2]) - (r.reach ?? 0)), x: p.x, y: p.y });

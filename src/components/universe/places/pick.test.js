@@ -35,6 +35,12 @@ describe('which places are named', () => {
     expect(pickPlace([sys], project, 640 + 300 + 2 * 160, 360, view)).toBeNull();
     expect(pickPlace([R('plain', [0, 0, 0], 5)], project, 640 + 300, 360, view)).toBeNull();
   });
+  it('names a place on the nose only within `far` (past its reach); what’s asked for at any distance', () => {
+    const cone = NAME_CONE;
+    expect(tagsFor(rows, { ship, nose, max: 6, cone, far: 3000 }).map((r) => r.id)).toEqual(['ahead']);
+    expect(tagsFor(rows, { ship, nose, focus: ['picked'], here: 'behind', max: 6, cone, far: 3000 }).map((r) => r.id)).toEqual(['picked', 'behind', 'ahead']);
+    expect(tagsFor([{ id: 'big', at: [0, 0, -5000], reach: 2500 }], { ship, nose, max: 6, cone, far: 3000 }).map((r) => r.id)).toEqual(['big']);
+  });
   it('names what you picked, then where you are, then what’s on the nose, nearest first', () => {
     const cone = NAME_CONE;
     expect(tagsFor(rows, { ship, nose, focus: ['picked'], max: 6, cone }).map((r) => r.id)).toEqual(['picked', 'ahead', 'aheadFar']);
