@@ -7,9 +7,10 @@
 // FLEETS (w50000 +), YARDS (w60000 +): the lists
 
 import { KEEP_OUTS, clearOfKeepOuts } from '../keepOuts';
-import { hash64, int, range, rngOf } from '../seed';
+import { int, range } from '../seed';
 import { poleHeight } from '../stations';
-import { nameIn } from './place';
+import { THING_NAMES } from '../tables';
+import { quickRng, quickSeed } from './place';
 
 export const FLEET = Object.freeze({ share: 0.5, size: [80, 220], ships: [3, 7] });
 export const YARD = Object.freeze({ share: 0.25, size: [120, 300] });
@@ -20,17 +21,16 @@ function fleetsOf(ctx) {
   if (ctx.core) return [];
   const out = [];
   for (const st of ctx.stations ?? []) {
-    const seed = hash64(st.seed, 'fleet');
-    const rng = rngOf(seed);
+    const seed = quickSeed(st.seed, 'fleet');
+    const rng = quickRng(seed);
     if (!(rng() < FLEET.share)) continue;
     const size = range(rng, ...FLEET.size);
     const ships = int(rng, ...FLEET.ships);
     const sys = systemOf(ctx, st);
     const side = Math.sign(st.at[1] - sys.at[1]) || 1;
     const at = [st.at[0], st.at[1] + side * (3 * st.size + size), st.at[2]];
-    const name = nameIn(rng, ctx);
     if (!clearOfKeepOuts(at, 9 * size, KEEP_OUTS)) continue;
-    out.push({ kind: 'fleet', name, at, size, station: st.id, system: sys.id, faction: sys.faction, ships, seed });
+    out.push({ kind: 'fleet', name: `${sys.name} ${THING_NAMES.fleet}`, at, size, station: st.id, system: sys.id, faction: sys.faction, ships, seed });
   }
   return out;
 }
@@ -39,8 +39,8 @@ function yardsOf(ctx) {
   if (ctx.core) return [];
   const out = [];
   for (const st of ctx.stations ?? []) {
-    const seed = hash64(st.seed, 'yard');
-    const rng = rngOf(seed);
+    const seed = quickSeed(st.seed, 'yard');
+    const rng = quickRng(seed);
     if (!(rng() < YARD.share)) continue;
     const size = range(rng, ...YARD.size);
     const sys = systemOf(ctx, st);
@@ -48,9 +48,8 @@ function yardsOf(ctx) {
     if (h === null) continue;
     const side = Math.sign(st.at[1] - sys.at[1]) || 1;
     const at = [sys.at[0], sys.at[1] - side * h, sys.at[2]];
-    const name = nameIn(rng, ctx);
     if (!clearOfKeepOuts(at, 9 * size, KEEP_OUTS)) continue;
-    out.push({ kind: 'shipyard', name, at, size, station: st.id, system: sys.id, seed });
+    out.push({ kind: 'shipyard', name: `${sys.name} ${THING_NAMES.shipyard}`, at, size, station: st.id, system: sys.id, seed });
   }
   return out;
 }
