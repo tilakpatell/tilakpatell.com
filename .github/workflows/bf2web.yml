@@ -23,7 +23,7 @@ on:
         description: 'build, publish an already validated desktop build, adopt, both, or compress'
         required: true
         type: choice
-        options: [both, build, publish, adopt, compress]
+        options: [both, build, publish, adopt, compress, copy-rate]
         default: both
       sha:
         description: 'build: the bf2-web commit (default its main)'
@@ -51,6 +51,10 @@ on:
         type: string
       previous:
         description: 'publish: the build whose bucket files a re-publish copies from by sha256 (default: the one play.json names)'
+        required: false
+        type: string
+      copy_streams:
+        description: 'publish/upload: server-side copies at once (bf2web-upload.mjs BF2WEB_COPY_STREAMS; default 32; 4 is the old single pool). copy-rate: the counts to test, e.g. 8,16,32'
         required: false
         type: string
 permissions:
@@ -84,6 +88,11 @@ jobs:
         shell: powershell
         run: |
           $runnerSettings = Join-Path (Split-Path (Split-Path $env:RUNNER_WORKSPACE -Parent) -Parent) '.env'
+          if ($env:STAGE -eq 'copy-rate') {
+            # (scripts/bf2web-copy-rate.mjs: copies of a released build's small objects into scratch/copy-rate-<run>/ at each count, checked, then removed)
+            node "--env-file-if-exists=$runnerSettings" scripts/bf2web-copy-rate.mjs --from $env:BF2WEB_PREVIOUS --streams $(if ($env:COPY_STREAMS_INPUT) { $env:COPY_STREAMS_INPUT } else { '8,16,32' })
+            exit $LASTEXITCODE
+          }
           if ($env:STAGE -eq 'publish') {
             node "--env-file-if-exists=$runnerSettings" scripts/desktop/bf2web-publish.mjs --site $env:SITE --build $env:BUILD --sha $env:SHA --ui-data $env:UI_DATA --ui-sha256 $env:UI_SHA256
             exit $LASTEXITCODE
@@ -100,6 +109,8 @@ jobs:
           UI_DATA: ${{ inputs.ui_data }}
           UI_SHA256: ${{ inputs.ui_sha256 }}
           BF2WEB_PREVIOUS: ${{ inputs.previous }}
+          BF2WEB_COPY_STREAMS: ${{ inputs.stage != 'copy-rate' && inputs.copy_streams || '32' }}
+          COPY_STREAMS_INPUT: ${{ inputs.copy_streams }}
           R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
           R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
           GCM_INTERACTIVE: never
@@ -109,7 +120,7 @@ jobs:
     # (whatever the build's result: a desktop that can't build, or a build that failed, doesn't keep a good build already
     # in the bucket, one the desktop uploaded by hand among them, from Hoth; adopt takes only main builds that pass the
     # contract)
-    if: ${{ always() && !cancelled() && (github.event_name != 'workflow_dispatch' || (inputs.stage != 'build' && inputs.stage != 'compress')) && (inputs.stage != 'publish' || needs.build.result == 'success') }}
+    if: ${{ always() && !cancelled() && (github.event_name != 'workflow_dispatch' || (inputs.stage != 'build' && inputs.stage != 'compress' && inputs.stage != 'copy-rate')) && (inputs.stage != 'publish' || needs.build.result == 'success') }}
     runs-on: ubuntu-24.04  # Playwright has no chromium for ubuntu-latest (26.04) yet: run 41052884531
     timeout-minutes: 30
     env:
