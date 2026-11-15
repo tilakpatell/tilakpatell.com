@@ -10,20 +10,33 @@
 // call: at 100 they had 2 to 17 each.)
 // A kind with a drawer of its own (lane 4a's, `drawers`) is handed its rows
 // instead and draws them its own way.
+// Lane 4a's: a sector's list rows (gen/extras) of a kind drawn near
+// (catalogue KINDS[kind].near) are entries too, at where they are now
+// (rowAt) within THING_NEAR of their sizes, nearest by the share of that
+// reach; and the gargantuans in view (`giants`) within giants.js's mesh
+// reach, outside the cap. Each entry carries its generator `row`, and what's
+// solid is the catalogue's (rowSolids; a gargantuan's gargantuanKeeps). The
+// legacy wonders keep lane 2's own looks, solids and reach: a lane doesn't
+// change another's drawing on the way past.
 //
 // thingsAround(sectorAt, cam, reach, visit): every lattice thing whose cell is
 //   within `reach` of the camera; sectorAt(sx, sy, sz) → a loaded sector or null;
 //   visit(sector, i, dist) for each, i its index in the sector's ThingSet
 // MESH_NEAR (sizes), THING_DISC (units)
-// pickNear(sectorAt, sectors, cam, { max }) → [{ id, kind, at, size, look }]: things and
-//   wonders within MESH_NEAR × their size, the nearest `max`
+// pickNear(sectorAt, sectors, cam, { max, t = 0, giants = [] }) → [{ id, kind, at, size, look, row, d }]:
+//   things and wonders within MESH_NEAR × their size, list rows within THING_NEAR × theirs, the
+//   nearest `max` by the share of their reach, and every gargantuan within its mesh reach
 // createNearThings(group, { drawers = {}, prepare = null, tier }) → { update(rows, camera, t),
 //   solids() → [{ id, at, r, reach }], dispose() }
 
 import * as THREE from 'three';
 import { SECTOR } from '../../../lib/space/address.js';
 import { rock, rockMaterial } from '../../../lib/three/rock';
-import { THING_BASE, THING_CELLS, THING_KINDS } from '../gen/things';
+import { KINDS, lookOf, rowSolids } from '../gen/catalogue';
+import { gargantuanKeeps } from '../gen/gargantuans';
+import { rowAt } from '../gen/paths';
+import { THING_BASE, THING_CELLS, THING_KINDS, THING_NEAR, thingRow } from '../gen/things';
+import { GIANT } from './giants';
 
 export const MESH_NEAR = 30;
 export const THING_DISC = 20000;
@@ -76,25 +89,57 @@ export function thingsAround(sectorAt, cam, reach, visit) {
 
 const reachFor = Math.max(...THING_KINDS.map((k) => k.size[1])) * MESH_NEAR;
 
-export function pickNear(sectorAt, sectors, cam, { max }) {
+// (a lattice thing's generator row, made once a slot and kept with its sector: its name's seed is ~20 µs)
+const rowsOf = new WeakMap();
+const latticeRow = (sector, i) => {
+  let m = rowsOf.get(sector);
+  if (!m) rowsOf.set(sector, (m = new Map()));
+  let r = m.get(i);
+  if (!r) m.set(i, (r = thingRow(sector, i)));
+  return r;
+};
+const look = (kind) => {
+  const l = lookOf(kind);
+  return { color: l.color, lit: l.lit };
+};
+
+export function pickNear(sectorAt, sectors, cam, { max, t = 0, giants = [] }) {
   const out = [];
   thingsAround(sectorAt, cam, reachFor, (sector, i, d) => {
-    const t = sector.things;
-    if (d > t.size[i] * MESH_NEAR) return;
-    const k = THING_KINDS[t.kind[i]];
+    const th = sector.things;
+    if (d > th.size[i] * MESH_NEAR) return;
+    const k = THING_KINDS[th.kind[i]];
     const o = sector.origin;
-    out.push({ id: `${sector.id}:w${THING_BASE + t.slot[i]}`, kind: k.kind, at: [o[0] + t.at[i * 3], o[1] + t.at[i * 3 + 1], o[2] + t.at[i * 3 + 2]], size: t.size[i], look: k.look, d });
+    out.push({ id: `${sector.id}:w${THING_BASE + th.slot[i]}`, kind: k.kind, at: [o[0] + th.at[i * 3], o[1] + th.at[i * 3 + 1], o[2] + th.at[i * 3 + 2]], size: th.size[i], look: k.look, d, share: d / (th.size[i] * MESH_NEAR), sector, slot: i });
   });
-  for (const s of sectors)
+  for (const s of sectors) {
     for (const w of s.wonders) {
-      const look = WONDER_NEAR[w.kind];
-      if (!look) continue;
-      const size = w.size * look.r;
+      const wl = WONDER_NEAR[w.kind];
+      if (!wl) continue;
+      const size = w.size * wl.r;
       const d = Math.hypot(w.at[0] - cam[0], w.at[1] - cam[1], w.at[2] - cam[2]);
-      if (d <= size * MESH_NEAR) out.push({ id: w.id, kind: w.kind, at: w.at, size, look: { color: look.color, lit: w.kind !== 'pulsar' }, d });
+      if (d <= size * MESH_NEAR) out.push({ id: w.id, kind: w.kind, at: w.at, size, look: { color: wl.color, lit: w.kind !== 'pulsar' }, d, share: d / (size * MESH_NEAR), legacy: true });
     }
-  out.sort((a, b) => a.d - b.d);
+    for (const rows of Object.values(s.extras ?? {}))
+      for (const row of rows) {
+        if (!KINDS[row.kind]?.near) continue;
+        const at = rowAt(row, t);
+        const d = Math.hypot(at[0] - cam[0], at[1] - cam[1], at[2] - cam[2]);
+        const reach = THING_NEAR * row.size;
+        if (d <= reach) out.push({ id: row.id, kind: row.kind, at, size: row.size, look: look(row.kind), d, share: d / reach, row });
+      }
+  }
+  out.sort((a, b) => a.share - b.share);
   if (out.length > max) out.length = max;
+  for (const e of out)
+    if (e.sector) {
+      e.row = latticeRow(e.sector, e.slot);
+      e.sector = undefined;
+    }
+  for (const g of giants) {
+    const d = Math.hypot(g.at[0] - cam[0], g.at[1] - cam[1], g.at[2] - cam[2]);
+    if (d - g.size <= 1.2 * GIANT.near) out.push({ id: g.id, kind: g.kind, at: g.at, size: g.size, look: look(g.kind), d, row: g });
+  }
   return out;
 }
 
@@ -178,7 +223,11 @@ export function createNearThings(group, { drawers = {}, prepare = null, tier = '
           m.instanceMatrix.needsUpdate = true;
           if (m.instanceColor) m.instanceColor.needsUpdate = true;
         }
-        for (const r of list) solidList.push({ id: r.id, at: r.at, r: r.size, reach: r.size * 1.2 });
+        for (const r of list) {
+          if (!r.row) solidList.push({ id: r.id, at: r.at, r: r.size, reach: r.size * 1.2 }); // (a legacy wonder: lane 2's)
+          else if (r.row.gargantuan) for (const k of gargantuanKeeps(r.row)) solidList.push({ id: r.id, at: k.at, r: k.r, reach: k.r * 1.2 });
+          else for (const so of rowSolids(r.row, r.at)) solidList.push(so);
+        }
       }
     },
     solids: () => solidList,

@@ -39,7 +39,8 @@ describe('universeBudget', () => {
     r.thingKinds.rock = 9;
     expect(BUDGET.high.nebula.steps).toBe(48);
     expect(BUDGET.high.planetMap[0]).toBe(512);
-    expect(BUDGET.high.thingKinds).toEqual({});
+    // (replaces `toEqual({})`: lane 4a fills the row)
+    expect(BUDGET.high.thingKinds).toEqual({ rocks: 160, pieces: 56, bodies: 12, panels: 1800 });
   });
 
   it('takes the counts down by the quality step, and a quarter at the floor', () => {
@@ -62,5 +63,30 @@ describe('universeBudget', () => {
         }
       }
     }
+  });
+});
+
+describe('things and gargantuans (lane 4a)', () => {
+  const ROWS = { low: [48, 16, 4, 300], mid: [96, 32, 8, 900], high: [160, 56, 12, 1800], ultra: [240, 80, 16, 3000] };
+  const ORDER = ['low', 'mid', 'high'];
+  it('holds the counts, each rising with the tier', () => {
+    for (const [tier, [rocks, pieces, bodies, panels]] of Object.entries(ROWS)) expect(BUDGET[tier].thingKinds).toEqual({ rocks, pieces, bodies, panels });
+    const tiers = Object.keys(ROWS);
+    for (let i = 1; i < tiers.length; i++) for (const k of Object.keys(BUDGET.low.thingKinds)) expect(BUDGET[tiers[i]].thingKinds[k]).toBeGreaterThanOrEqual(BUDGET[tiers[i - 1]].thingKinds[k]);
+  });
+  it('steps the counts down, never below one, and the gargantuans’ detail one level from step 2', () => {
+    for (const tier of Object.keys(ROWS))
+      for (const step of [0, 1, 2, 3])
+        for (const floor of [false, true]) {
+          const r = universeBudget({ detail: tier }, step, floor);
+          for (const [k, v] of Object.entries(r.thingKinds)) {
+            expect(v).toBeLessThanOrEqual(BUDGET[tier].thingKinds[k]);
+            expect(v).toBeGreaterThanOrEqual(1);
+          }
+          expect(ORDER.indexOf(r.gargantuan)).toBeLessThanOrEqual(ORDER.indexOf(BUDGET[tier].gargantuan));
+        }
+    expect(universeBudget({ tier: 'high' }, 2).gargantuan).toBe('mid');
+    expect(universeBudget({ tier: 'high' }, 1).gargantuan).toBe('high');
+    expect(universeBudget({ tier: 'mid' }, 0, true).gargantuan).toBe('low');
   });
 });

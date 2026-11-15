@@ -125,6 +125,7 @@ export function createExpanse(parent, { universe = UNIVERSE, tier = 'mid', worke
   const cam = [0, 0, 0];
   const nearSectors = [];
   const nearSystems = [];
+  const giants = []; // (the gargantuans of the 3 × 3 × 3)
   const sectorAt = (sx, sy, sz) => loaded.get(keyOf(sx, sy, sz))?.sector ?? null;
   // (how much of a sector shows: its slot's, so its discs come and go with its specks)
   const recOf = new WeakMap(); // sector → its record
@@ -237,6 +238,7 @@ export function createExpanse(parent, { universe = UNIVERSE, tier = 'mid', worke
       askBeyond(centre);
       nearSectors.length = 0;
       nearSystems.length = 0;
+      giants.length = 0;
       let ready = true;
       for (let z = -1; z <= 1; z++)
         for (let y = -1; y <= 1; y++)
@@ -247,6 +249,9 @@ export function createExpanse(parent, { universe = UNIVERSE, tier = 'mid', worke
               continue;
             }
             giveSlot(rec);
+            // (a gargantuan is on the sky from across the 3 × 3 × 3: lane 4a's)
+            for (const g of rec.sector.extras?.gargantuan ?? []) giants.push(g);
+            for (const g of rec.sector.extras?.arrival ?? []) giants.push(g);
             // (only a sector the far plane reaches has a disc in it, and only one a system's reach does, a body built)
             const d = boxDist(rec.sector.origin, cam);
             if (d <= FAR + MOST_REACH) nearSectors.push(rec.sector);
@@ -286,12 +291,12 @@ export function createExpanse(parent, { universe = UNIVERSE, tier = 'mid', worke
       // ── the bodies: built whole within a system's reach, discs to the far plane ──
       const orbitT = spaceTime(now);
       near.update(hidden ? [] : nearSystems, cam, orbitT, camera);
-      things.update(hidden ? [] : pickNear(sectorAt, nearSectors, cam, { max: Math.max(1, budget.thingsNear) }), camera, orbitT);
+      things.update(hidden ? [] : pickNear(sectorAt, nearSectors, cam, { max: Math.max(1, budget.thingsNear), t: orbitT, giants }), camera, orbitT);
       if (discs) {
         if (hidden) {
           far.discs.begin();
           far.discs.end();
-        } else discs.feed(nearSectors, cam, orbitT, near.built(), sectorAt, shownOf, dt);
+        } else discs.feed(nearSectors, cam, orbitT, near.built(), sectorAt, shownOf, dt, giants);
       }
       solidList.length = 0;
       for (const so of near.solids()) solidList.push(so);
