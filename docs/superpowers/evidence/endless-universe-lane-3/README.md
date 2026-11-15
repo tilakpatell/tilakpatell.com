@@ -182,3 +182,77 @@ None of the 16 files is one this lane changed. On `main` at `cc5e2eaf`, the coor
 The PR's own checks: `npx vitest run src/components/universe/places src/components/expanse src/components/universe/nav.test.js src/components/universe/budget.test.js src/components/universe/ship.test.js` is 62 files and 679 tests, all green (the reviews added `extent.test.js` and split the long tests). Lane 2's `fingerprint.test.js`, `density.test.js` and `space.test.js` are unchanged since `dcf19687` and green: 52 tests, the speed test's ten sectors under its 600 ms.
 
 `health.mjs`: `big-files` 22, `boundary-breaks` 481 and `cycles` 5, as before Task 1. `src/components/universe/scene.js`: 6,374 lines before and after (`wc -l`); PR 3.1 doesn't touch it. Nothing on screen changes, so there are no new draw calls, triangles, frame times or pops to take: the table above stands.
+
+## PR 3.2, the wiring
+
+### `scene.js`
+
+| Step | Lines |
+|---|--:|
+| `main` before Task 10 (lane 2's #1304 in) | 6,455 |
+| Task 10: the travel block out to `trips.js` (132 out, 7 in) | 6,323 |
+| Task 11: trips to generated places | 6,324 |
+| Task 12: the scene's places | 6,334 |
+| Task 13: picking and names | 6,334 |
+| After merging `main` (#1308, #1312) | 6,370 (`main`: 6,491) |
+
+### Draw calls and triangles at mid
+
+Both sides measured in the same checkout, one after the other: `main` at `30fcc43d` (its `src` and `scripts` checked out over this branch's), then this branch, with `node scripts/universe-check.mjs --quality mid --poses …`. A pose that captured nothing (0 calls) was taken again (`far-rim`, `old-rim`, `above-core`, `landing-middleearth` and `office` on the branch). `expanse-system` was taken again on both sides back to back, since generated planets and moons move on the wall clock.
+
+| Pose | Calls, main | Calls, branch | Triangles, main | Triangles, branch |
+|---|--:|--:|--:|--:|
+| overview | 101 | 101 | 523,071 | 522,349 |
+| falcon-sun | 80 | 79 | 503,591 | 503,603 |
+| middleearth-limb | 39 | 41 | 64,781 | 67,697 |
+| rickmorty | 0 | 0 | 0 | 0 |
+| gaming | 43 | 43 | 75,123 | 75,123 |
+| caribbean | 43 | 43 | 114,533 | 114,533 |
+| middleearth | 39 | 39 | 64,773 | 64,773 |
+| breakingbad | 64 | 62 | 58,971 | 61,585 |
+| office | 0 | 39 | 0 | 52,891 |
+| belt | 44 | 46 | 450,965 | 450,979 |
+| maw | 43 | 43 | 103,919 | 103,939 |
+| landing-middleearth | 117 | 117 | 138,058 | 138,060 |
+| station | 67 | 67 | 488,901 | 488,877 |
+| far-rim | 42 | 40 | 70,259 | 70,255 |
+| old-rim | 48 | 48 | 90,722 | 87,125 |
+| above-core | 43 | 35 | 48,189 | 42,937 |
+| expanse-system | 51 | 49 | 201,465 | 201,459 |
+| expanse-station | — | 43 | — | 92,791 |
+
+- Five poses match exactly, and most of the rest are within a few dozen triangles. Moving things in a frame, traffic and meteors, account for those.
+- `breakingbad` and `middleearth-limb` each flip between two states from run to run, about 2 calls and 2,600 to 2,900 triangles apart. Both values were seen on both sides: `main`'s code gave `breakingbad` 62 calls and 61,585 triangles in another run, and this branch gave `middleearth-limb` 39 calls and 64,779 triangles in its first after run.
+- No station is in view at any hand-made pose: the keep-outs keep every generated system's reach off them. `expanse-station` is new and is its own baseline: 43 calls and 92,791 triangles, the station's hull and lights being two of the calls.
+- A first try at the before, from a git worktree whose `node_modules` was a link to this checkout's, drew about 29,655 triangles and 2 calls less at every pose for `main`'s own code. It isn't a fair before, and isn't used here.
+
+### The endless check, the whole route at mid
+
+`node scripts/universe-endless-check.mjs --quality mid`, after Task 14 (lane 2's steps and this lane's):
+
+    start     {"at":[-12665,-286,5634],"sector":"E:0,0","loaded":27,"built":[],"workMs":0.5,"discs":281,"calls":45,"tris":68637,"around":{"count":14,"nearest":125.79515772493006},"pops":{"count":0,"px":0}}
+    old-rim   {"at":[47000,0,0],"sector":"E:0,0","loaded":27,"built":[],"workMs":0.5,"discs":298,"calls":40,"tris":100629,"around":{"count":15,"nearest":3599.922653015442},"pops":{"count":0,"px":0}}
+    boundary  {"at":[61000,0,0],"sector":"E:1,0","loaded":36,"built":[],"workMs":0.9,"discs":323,"calls":37,"tris":78449,"around":{"count":10,"nearest":4617.648777856878},"pops":{"count":0,"px":0}}
+    system    {"at":[67231,8701,3370],"sector":"E:1,0","loaded":36,"built":["E:1,0:256"],"workMs":0.9,"discs":362,"calls":48,"tris":176689,"around":{"count":15,"nearest":2059.8450956769575},"pops":{"count":0,"px":0}}
+    climb     {"at":[0,50000,3000],"sector":"E:0,0","loaded":36,"built":[],"workMs":0.5,"discs":340,"calls":35,"tris":42929,"around":{"count":15,"nearest":3716.2203165232545},"pops":{"count":0,"px":0}}
+    travel    E:1,0:0 by super: parked at 131792,416,-4335
+    travel    E:2,0:0 by hyper: parked at 208458,-333,-47247
+    travel    E:1,0:0:0 by super: parked and carried 30 s
+    dock      docked at Mucli Port (E:1,0:w10124)
+    FAIL pick: a click on Ledex didn't fly there
+    link      E:1,0:0:0: started at Lithialsur, its card up
+    flat      E:1,0:0:0: a plain card with 3D off, no wait
+    terminal  fly E:9,0:0 at 4× throttling: longest task 229 ms
+
+The `pick` step's one failure there was the check's own: after the dock step's arrival the map is turned, the debug teleport left it so, and the star's point lay under the panel. The step now levels the map and clicks only the canvas, and `--only dock,pick` passes.
+
+### A sector made on the main thread
+
+The terminal's `fly E:9,0:0` at 4× CPU throttling, from the command to its navigation: 177 to 229 ms longest task over three runs (in software GL here). That is under the plan's 500 ms, so it isn't a finding. In Node, `resolvePlace('E:9,0:0')` takes 62 ms.
+
+### The repo's checks
+
+- `autopilot-check.mjs --only smoke --routes /universe`: everything green.
+- `navmap-check.mjs desktop`: one branch run failed one step (the line wasn’t kept), and another threw because no place's name was near the chart's middle, which depends on the random spawn. On `main`'s code it failed one step too: “the site’s jump plays over the map”.
+- `flyto-check.mjs --fake`: on `main`'s code and in one branch run it crashed at the jump step with `__universeDebug` undefined. In the other branch run, its portal step read the trip before the scene had the moved pilot's new position. `trips.test.js` pins that rule in Node: the portal first, the pilot the trip's end.
+- `sector-check.mjs`: it didn't finish within 15 minutes in software GL here.
