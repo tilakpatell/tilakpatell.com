@@ -76,6 +76,8 @@ body:has(.universe-page) .tour-offer { bottom: calc(128px + env(safe-area-inset-
   body:has(.universe-page) .tour-offer-pick { min-height: 40px; padding: 0.4rem 0.55rem; }
   body:has(.universe-page) .tour-offer-pick-label { font-size: var(--fs-xs); }
   body:has(.universe-page) .tour-offer-pick-time { font-size: 0.72rem; }
+  /* (over Rick's portal gun too, which sits over those buttons in a ship: universe/desk.css) */
+  body:has(.universe-portalgun) .tour-offer { bottom: calc(156px + env(safe-area-inset-bottom)); }
 }
 @media (max-width: 767px) {
   .tour-offer, body:has(.universe-page) .tour-offer { top: calc(var(--nav-h) + 8px); bottom: auto; }

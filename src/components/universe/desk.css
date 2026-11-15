@@ -61,6 +61,10 @@
   .universe-page:not(.galaxy-page) :is(.universe-settings-btn, .universe-hangar-btn, .universe-navmap-btn) { bottom: 62px; width: 38px; height: 38px; border-width: 1px; border-radius: 10px; }
   .universe-page:not(.galaxy-page) .universe-hangar-btn { left: calc(var(--hud-edge) + 46px); }
   .universe-page:not(.galaxy-page) .universe-navmap-btn[data-ship] { left: calc(var(--hud-edge) + 92px); }
+  /* (Rick's portal gun in the same column, over that row: at 172px in it
+     sat inside the cluster's band, and in a window under 1,200px wide the
+     radar ran over it; the tour's offer goes over it in turn: offer.css) */
+  .universe-page:not(.galaxy-page) .universe-portalgun { left: var(--hud-edge); bottom: 108px; }
   .universe-page:not(.galaxy-page) .universe-stick { border-width: 1px; }
   .universe-page:not(.galaxy-page) { --hud-reticle-line: 1px; }
 }

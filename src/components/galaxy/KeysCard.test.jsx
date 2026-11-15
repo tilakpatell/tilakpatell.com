@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
 import KeysCard from './KeysCard';
-import { GROUPS } from './keyRows';
+import { FLOWN_KEY, GROUPS, hasFlown, keysUp } from './keyRows';
 import { PAGES } from '../guide/pages';
 import { keyTokens } from '../guide/keys';
 
@@ -25,6 +25,15 @@ describe('KeysCard', () => {
   });
   it('is nothing when shut', () => {
     expect(renderToStaticMarkup(<KeysCard open={false} onClose={() => {}} />)).toBe('');
+  });
+  it('comes up by itself until the first flight on this device, then waits for its chip', () => {
+    expect(keysUp({ flown: false, asked: false })).toBe(true);
+    expect(keysUp({ flown: true, asked: false })).toBe(false);
+    expect(keysUp({ flown: true, asked: true })).toBe(true);
+    // (only a flight remembered counts: anything else stored is a first visit)
+    expect(hasFlown(true)).toBe(true);
+    for (const raw of [null, undefined, 'yes', 1, {}]) expect(hasFlown(raw), String(raw)).toBe(false);
+    expect(FLOWN_KEY).toMatch(/^tp-galaxy-/);
   });
   it('has only keys the guide lists for the galaxy', () => {
     // (the guide, pages.js, is where the keys are written out; the card is a few of them)
