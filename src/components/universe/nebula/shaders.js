@@ -196,7 +196,9 @@ void main() {
     if (float(i) >= steps || trans < 0.02) break;
     vec3 p = o + dirMap * t;
     vec3 f = nebField(form, p, vSeed.xyz, vDetail);
-    float sigma = f.x * uAbsorb + f.z * 3.0;
+    // (from inside, the gas beyond the fog half as thick: the old sky and its
+    // stars show through it, the owner's ask, rather than a wall of colour)
+    float sigma = (f.x * uAbsorb + f.z * 3.0) * (vStart > 0.0 ? 0.5 : 1.0);
     float a = 1.0 - exp(-sigma * dtR);
     vec3 c = nebColour(form, p, f, vC0, vC1, vC2) * uEmit;
     // emitted light where the gas is, dimmed by the dust in it
@@ -248,7 +250,7 @@ void main() {
   vec3 w = toMap * (vView - centre) / s2;
   float wisp = texture(uVolume, w / 350.0 + uSeed.zxy + nebFlow(uSeed.xyz) * 4.0).r;
   // never quite clear inside: a floor of haze, so a gap in the gas is thin, not empty
-  float dens = max(f.x * mix(0.25, 1.6, smoothstep(0.3, 0.75, wisp)), 0.06 * nebEnvelope(form, p));
+  float dens = max(f.x * mix(0.45, 1.3, wisp), 0.04 * nebEnvelope(form, p));
   float a = (1.0 - exp(-(dens * uAbsorb + f.z * 2.0) * vLayer.y / uRadius)) * uDepth;
   vec3 c = nebColour(form, p, f, uC0, uC1, uC2) * uEmit;
   // the ship's lights, scattering in the gas just ahead of the eye

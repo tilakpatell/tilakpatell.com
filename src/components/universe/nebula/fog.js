@@ -15,9 +15,9 @@ import { FOG_FRAG, FOG_VERT } from './shaders';
 import { EMIT } from './tone';
 
 // how quickly a layer of gas hides what's behind it, per radius; tuned at the in-nebula pose
-export const ABSORB_FOG = 0.8;
+export const ABSORB_FOG = 0.45;
 // and how bright the gas round the ship glows, against the clouds' (it fills the screen: kept dimmer)
-export const FOG_EMIT = 0.7;
+export const FOG_EMIT = 0.5;
 // the ship's lights' warm white
 const GLOW = new THREE.Color(1, 0.9, 0.78).multiplyScalar(0.35);
 
