@@ -318,6 +318,18 @@ try {
     return r.dist !== null ? r : null;
   }, 120000, 'Alpha sees Bravo flying');
   ok(true, `Alpha sees ${BRAVO} (${bravoId.slice(0, 8)}…), ${seen.dist.toFixed(0)} units off`);
+  // (and sees them where they are: Bravo's jump home lands only a moment
+  // before this, and Alpha's pose for them can still be the one from before
+  // it, tens of thousands of units off, for the second or two a pose takes to
+  // cross between two pages drawing in software. Put behind that one, Alpha
+  // was a whole map's flight from Bravo, and three tries of 90 s weren't enough)
+  const t0 = Date.now();
+  const agree = await waitFor(async () => {
+    const [mine, theirs] = await Promise.all([a.evaluate(([d, id]) => window[d].pilots.pose(id), [DEBUG, bravoId]), b.evaluate((d) => window[d].state.ship, DEBUG)]);
+    const off = mine && theirs ? Math.hypot(mine.x - theirs.x, mine.y - theirs.y, mine.z - theirs.z) : Infinity;
+    return off < 20 ? { off } : null;
+  }, 60000, 'Alpha’s pose for Bravo where Bravo is');
+  console.log(`note Alpha's pose for Bravo within ${agree.off.toFixed(1)} of Bravo's own after ${((Date.now() - t0) / 1000).toFixed(0)} s`);
   // (Alpha put 40 units behind Bravo, side on, so the trip is a short one:
   // in software a frame can take a second, and the scene's clock goes by frames)
   const near = await a.evaluate(
