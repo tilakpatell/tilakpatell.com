@@ -320,7 +320,9 @@ export function quiet(renderer) {
 // compileSlices), for a loading screen that says so; `frame`, if given, is
 // how it waits between slices (the next frame by default; the universe map
 // passes its prepFrame, so a warm under the launch's cover goes in the
-// page's idle moments and holds off just after a press).
+// page's idle moments and holds off just after a press); `gentle()`, if
+// given, makes it a small batch at a time, each linked before the next,
+// while it says so (gpuWork's compileSlices).
 //
 // (three's own compileAsync does the same, but polls forever if the context
 // goes in the meantime, and throws if the renderer is disposed first: a scene
@@ -328,11 +330,11 @@ export function quiet(renderer) {
 const CAP = 4000;
 let compiling = 0; // precompiles in flight, on any renderer (see releaseContext)
 
-export function precompile(renderer, root, camera, scene = null, target, { onStep = null, frame } = {}) {
+export function precompile(renderer, root, camera, scene = null, target, { onStep = null, frame, gentle = null } = {}) {
   // a slice at a time, a fence between (lib/three/gpuWork), for the target
   // it's drawn into
   compiling += 1;
-  return compileSlices(renderer, [root], camera, scene ?? root, { cap: CAP, target, onStep, ...(frame ? { frame } : {}) })
+  return compileSlices(renderer, [root], camera, scene ?? root, { cap: CAP, target, onStep, gentle, ...(frame ? { frame } : {}) })
     .catch(() => {})
     .then(() => {
       compiling -= 1;

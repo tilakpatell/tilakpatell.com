@@ -190,6 +190,15 @@ function Run() {
   useEffect(() => {
     if (arriving) setArriveUp(true);
   }, [arriving]);
+  // (the map told it's waited on now, html[data-arriving]: its shaders as
+  // fast as they go, where behind the welcome and the tour they go gently,
+  // universe/prepFrame.js's readingIn)
+  useEffect(() => {
+    const el = document.documentElement;
+    if (arriving) el.dataset.arriving = '';
+    else delete el.dataset.arriving;
+    return () => delete el.dataset.arriving;
+  }, [arriving]);
   // (one boundary for every part, already up from the welcome on: a part
   // that's still loading, asked for in a transition (onTo), leaves the one
   // on screen up until it can draw)

@@ -101,7 +101,8 @@ import { takeArrival } from '../../lib/arrival';
 import { clamp01, disposeTree, easeOut, precompile, precompilePasses, singlePass, uploadTextures } from '../../lib/three/renderer';
 import { prepareScene, uploadSlices } from '../../lib/three/gpuWork';
 import { calibrate, calibrationKey, recall, remember } from '../../lib/three/calibrate';
-import { prepFrame } from './prepFrame';
+import { prepFrame, readingIn } from './prepFrame';
+import { breather } from '../../lib/breathe';
 import { foreground } from '../../lib/foreground';
 import { forgetShip, shipMounted, shipPending } from '../../lib/shipReady';
 import { settle as settleWithin } from '../../lib/settle';
@@ -167,7 +168,7 @@ import { createModels as createBattleModels } from '../galaxy/models';
 import { createTrench } from './trench';
 import { PHONE, createPhone } from './phone';
 import { SUPERNOVA_SITES, createSupernovae } from './supernova';
-import { DEEP, PLACES, WONDERS, moveBinaries, nearestStar, openness, reachOf, wonderById } from './deep';
+import { DEEP, PLACES, WONDERS, moveBinaries, movePlanets, nearestStar, openness, reachOf, wonderById } from './deep';
 import { KEY as KEY_FULL, STARS as LIT_STARS, dayYaw, lightAt, sunFor } from './lighting';
 import { createCrash } from './crash';
 import { createExplosions } from '../../lib/three/explosions';
@@ -650,10 +651,23 @@ export async function create(canvas, ctx) {
   // starts to pass on at the prepare, after the shaders made before it)
   const steps = loadSteps((value, step) => !disposed && ctx.rt?.events?.emit?.('prepare', { module: 'universe', value, step }));
   const T = await loadTextures({ small, onStep: steps.maps });
+  // The making below in parts, the page given a turn between them once a
+  // part has run 12 ms (lib/breathe): made all at once it was one task of
+  // 1.5 s in software GL as the front door's welcome came up (the spare
+  // ships, the landmarks, the planets, deep space and the environment the
+  // biggest), and a click on it waited the lot out. Nothing started before
+  // a breath reads a name made after it (the callbacks set going here are
+  // the sky's bake, below, and the ship's, at setShip: both read only what's
+  // made before them), so a promise kept in a breath finds what it needs.
+  const breathe = breather(12);
 
-  // what metal reflects, and the passes after the scene (post.js)
+  // what metal reflects, and the passes after the scene (post.js): its
+  // shaders linked first, a slice at a time (./prepFrame.js's pace), so its
+  // first making doesn't hold the page on their links
   const envMaker = createSpaceEnvironment(renderer, T['sky-glow']);
+  await envMaker.prime({ frame: () => prepFrame() });
   let env = envMaker.make();
+  await breathe();
   scene.environment = env.texture;
   // (drawn at the most the runtime's quality gives, module.js's 2 at most:
   // the budget's least and the visitor's render resolution over a canvas of
@@ -665,7 +679,7 @@ export async function create(canvas, ctx) {
   // runtime: made at a handover, the renderer is still at the last world's
   // ratio)
   const mostRatio = () => ctx.rt?.quality?.ratioUnder?.(2, { unscaled: true }) ?? pixelRatio(2);
-  const post = createPost(renderer, scene, camera, { small, ratio: mostRatio(), upscale: true, top: mostRatio });
+  const post = createPost(renderer, scene, camera, { small, ratio: mostRatio(), upscale: true, top: mostRatio, chain: true });
   // the visitor's video settings, what they turned of them (lib/videoLook.js):
   // the grain, the aberration, the bloom and the multisampling, at the start
   // and live from the settings (onVideo, below)
@@ -690,6 +704,11 @@ export async function create(canvas, ctx) {
   // with the camera, baked once into a cube
   const sky = createSky({ small, level: device().detail, renderer, beacons: false });
   sky.setSystem({ ...SYSTEMS.find((s) => s.id === 'kashyyyk'), suns: [] });
+  // (and deep: the galaxy's faint glow between taken toward black, its star
+  // clouds and nebulae kept, so it reads as space, not a lit grey; measured
+  // at the far rim, the sky's middle grey 67 of 255 before)
+  sky.setDeep(1);
+  await breathe();
   // (its stars sized in the pixels the post draws at, which the quality
   // softens over a canvas that keeps its size; told again when that moves:
   // the galaxy's drawnAt.js does the same, kept here rather than reached
@@ -715,6 +734,7 @@ export async function create(canvas, ctx) {
   // deep space, out past the home system: its wonders, and the trench run
   // round the Death Star's middle
   const deep = buildDeepSpace({ small, tier });
+  await breathe();
   // what the ship can hit among the rocks (rockHits.js): the belt, the rim
   // and the debris streams, each from the same rocks its mesh draws. A rock
   // the ship's smashed is gone a while (`smashed`: field → index → when it's back)
@@ -765,12 +785,14 @@ export async function create(canvas, ctx) {
   // each planet lit from its own star (lighting.js's sunFor, in the map's
   // axes; turned with the map into the world's each frame: lights())
   const sunInMap = Object.fromEntries(BODIES.map((id) => [id, sunFor(id)]));
-  const planets = BODIES.map((id) => {
+  const planets = [];
+  for (const id of BODIES) {
     const p = buildPlanet(byId(id), T, { sun: new THREE.Vector3(...sunInMap[id]), tier, key: keyW });
     p.group.position.set(...POSITIONS[id]);
     map.add(p.group);
-    return p;
-  });
+    planets.push(p);
+    await breathe();
+  }
   const planetOf = Object.fromEntries(planets.map((p) => [p.id, p]));
   // every place past where it's real drawn as a star instead, the galaxy's
   // way (farStars.js): from anywhere, the other worlds are stars; and the
@@ -795,6 +817,7 @@ export async function create(canvas, ctx) {
   // and the big things, the Maw, the nebulae and the big stars, as landmarks
   // on the sky, at least so big across from anywhere (landmarks.js)
   const landmarks = createLandmarks(map, { renderer, small, level: device().detail, skyFar: SKY_FAR });
+  await breathe();
   const landmarkGroup = (id) => deep.groupOf(id) ?? (id === 'sun' ? sun.group : null);
   // the aim (aim.js): while flying, the star the nose is on (the way the
   // reticle is from the eye, the ship's nose six units ahead), in this
@@ -977,9 +1000,11 @@ export async function create(canvas, ctx) {
   const warm = (root, cam = camera, target = scene, onStep = null) => {
     if (target === scene) house.adopt(root);
     // (paced by ./prepFrame.js: under the launch's cover, in the page's idle
-    // moments and not just after a press, so the welcome and the tour stay
-    // quick while the map is made behind them)
-    return precompile(renderer, singlePass(root), cam, target, post.on ? post.composer.readBuffer : undefined, { onStep, frame: () => prepFrame() });
+    // moments and not just after a press, and gently, a couple of shaders
+    // linked at a time, while something over it is being read, so the
+    // welcome and the tour stay quick while the map is made behind them;
+    // waited on, or uncovered, as fast as it goes)
+    return precompile(renderer, singlePass(root), cam, target, post.on ? post.composer.readBuffer : undefined, { onStep, frame: () => prepFrame(), gentle: () => readingIn(document) });
   };
   // (a model that comes after the first frame: its pictures sent as it comes, not on the frame it's first seen)
   const sendAndWarm = (o) => {
@@ -4999,6 +5024,10 @@ export async function create(canvas, ctx) {
   const byNear = (a, b) => a.d - b.d;
   const camAt = [0, 0, 0];
   const lights = (dt) => {
+    // what metal reflects turns with the map, as the sky and the lights do:
+    // made once in world axes, the star's glint and the Milky Way slid
+    // round the hull against the light whenever the map turned under it
+    scene.environmentRotation.y = state.yaw;
     for (const p of planets) {
       const s = sunInMap[p.id];
       p.sun.set(s[0], s[1], s[2]).applyAxisAngle(Y_AXIS, state.yaw);
@@ -5021,7 +5050,8 @@ export async function create(canvas, ctx) {
     // neighbourhood to another's): its glow where the star is, in its colour
     if (l.key.id !== envStar && !lightNow.first) {
       envStar = l.key.id;
-      const next = envMaker.make({ light: lightTo.set(...l.key.dir).negate().applyAxisAngle(Y_AXIS, state.yaw), colour: l.key.colour });
+      // (made in the map's axes, and turned with the map below)
+      const next = envMaker.make({ light: lightTo.set(...l.key.dir).negate(), colour: l.key.colour });
       scene.environment = next.texture;
       env.dispose();
       env = next;
@@ -5068,6 +5098,7 @@ export async function create(canvas, ctx) {
     const t = reduced ? 0 : state.low ? state.tLow : (now - t0) / 1000;
     // (the Twins' suns going round each other: their solids where they're drawn, deep.js)
     moveBinaries(t);
+    movePlanets(t);
     if (!state.pose && !flying()) {
       // first frame: straight onto a universe from a link; the overview
       // drifts in from a little further out (flying, it's below)
@@ -5826,6 +5857,7 @@ export async function create(canvas, ctx) {
       const made = buildTraffic(k);
       spares.add(made.group);
       stock.push([k, made]);
+      await breathe();
     }
     // and the boost's burst, which only joins the ship as it lights (so
     // isn't in the scene: its shader would otherwise be made on the first boost)

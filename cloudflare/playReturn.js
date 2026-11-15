@@ -80,7 +80,7 @@ export function watchReturn(win, back) {
 
 // (first the page's short timers kept going while its tab is hidden, playTimers.js; then the way back; then the
 // service worker that keeps the build on the visitor's disk, engineCache.js; the bundler's __name stood in for, source.js)
-const SCRIPT = `<script>${sourceOf(`(${steadyTimers})(window);\n(${watchReturn})(window, (${returnFrom})(location.search));\n(${registerEngineCache})(window);\n(${warmEngineBuild})(window, (paths) => (${warmOrder})(paths));`)}</script>`;
+const SCRIPT = `<script>${sourceOf(`(${steadyTimers})(window);\n(${watchReturn})(window, (${returnFrom})(location.search));\n(${registerEngineCache})(window);\n(${warmEngineBuild})(window, (paths, skip) => (${warmOrder})(paths, skip));`)}</script>`;
 
 // FNV-1a, 32-bit: a new script is a new page for the browser's cache
 let h = 0x811c9dc5;

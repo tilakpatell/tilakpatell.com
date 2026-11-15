@@ -23,6 +23,12 @@ import { nextFrame } from '../../lib/three/gpuWork';
 import { foreground, whenClear } from '../../lib/foreground';
 
 export const coveredIn = (doc) => Boolean(doc) && ('covered' in doc.documentElement.dataset || 'tourStill' in doc.documentElement.dataset);
+// Covered by something being read or used (the launch's welcome, its tour,
+// the crawl, the cockpit), not by its arrival, where the visitor waits on the
+// map itself (html[data-arriving], components/launch): the map's shaders
+// gently then (lib/three/gpuWork's `gentle`), and as fast as they go while
+// it's waited on
+export const readingIn = (doc) => coveredIn(doc) && !('arriving' in doc.documentElement.dataset);
 
 // (half a second at most for an idle moment: a page that never rests still gets there)
 const whenIdle = (fn) => (typeof requestIdleCallback === 'function' ? requestIdleCallback(fn, { timeout: 500 }) : setTimeout(fn, 50));

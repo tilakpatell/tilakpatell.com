@@ -1,11 +1,25 @@
 import { createServer } from 'node:http';
 import { expect, it } from 'vitest';
-import { attemptUpload, completeUploadResponse, copyUploadHeaders } from './bf2web-upload-response.mjs';
+import { SHA_HEADER, attemptUpload, completeUploadResponse, copyUploadHeaders, recordedSha, shaHeader, withRecordedShas } from './bf2web-upload-response.mjs';
+import { uploadPlan } from './bf2web-site.mjs';
 
 it('replaces moved-copy metadata with ordinary upload metadata and preserves same-path copy headers', () => {
   const source = '/bf2017-assets/sites/old/scene-t-1.pixels';
   expect(copyUploadHeaders(source)).toEqual({'x-amz-copy-source': source});
   expect(copyUploadHeaders(source, true)).toEqual({'x-amz-copy-source': source, 'x-amz-metadata-directive': 'REPLACE', 'content-type': 'application/octet-stream'});
+});
+
+it('records the manifest sha256 as object metadata and reads it back', () => {
+  const source = '/bf2017-assets/sites/old/scene-t-1.pixels', digest = 'ab'.repeat(32);
+  expect(SHA_HEADER).toBe('x-amz-meta-sha256');
+  expect(shaHeader(digest)).toEqual({'x-amz-meta-sha256': digest});
+  expect(shaHeader(null)).toEqual({});
+  expect(shaHeader('not-a-digest')).toEqual({});
+  expect(copyUploadHeaders(source, true, digest)).toEqual({'x-amz-copy-source': source, 'x-amz-metadata-directive': 'REPLACE', 'content-type': 'application/octet-stream', 'x-amz-meta-sha256': digest});
+  expect(copyUploadHeaders(source, false, digest)).toEqual({'x-amz-copy-source': source});
+  expect(recordedSha(new Headers({'x-amz-meta-sha256': digest}))).toBe(digest);
+  expect(recordedSha(new Headers({}))).toBe(null);
+  expect(recordedSha(new Headers({'x-amz-meta-sha256': 'zz'}))).toBe(null);
 });
 
 const copied = '<?xml version="1.0"?><CopyObjectResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/"><LastModified>2026-10-29T00:00:00Z</LastModified><ETag>&quot;original-content&quot;</ETag></CopyObjectResult>';
@@ -109,4 +123,30 @@ it('retains the transport cause code after the final retry without logging reque
   const failure = new Error('fetch failed', { cause: Object.assign(new Error('connection reset'), { code: 'ECONNRESET' }) });
   await expect(attemptUpload('put fixture', async () => { throw failure; }, { sleep: async () => {} }))
     .rejects.toThrow('put fixture: fetch failed [ECONNRESET]');
+});
+
+it('asks only the keys at the manifest’s size, at most `workers` HEADs at a time, in listed order', async () => {
+  const digest = 'cd'.repeat(32), listed = Array.from({ length: 50 }, (_, i) => ({ key: `sites/n/f${i}`, size: i % 2 ? 7 : 3 }));
+  const bytesByKey = new Map(listed.map((f) => [f.key, 7]));
+  let inFlight = 0, most = 0; const asked = [];
+  const head = async (key) => { asked.push(key); inFlight++; most = Math.max(most, inFlight); await new Promise((r) => setTimeout(r, 2)); inFlight--; return new Response(null, { headers: { 'x-amz-meta-sha256': digest } }); };
+  const out = await withRecordedShas(listed, bytesByKey, head, { workers: 4, attempt: (what, fn) => fn() });
+  expect(asked.length).toBe(25);
+  expect(most <= 4).toBe(true);
+  expect(out.map((f) => f.key)).toEqual(listed.map((f) => f.key));
+  expect(out[1].sha256).toBe(digest);
+  expect(out[0].sha256).toBe(undefined);
+  expect([out.asked, out.failed]).toEqual([25, 0]);
+});
+
+it('a HEAD that fails its tries gives no sha256: the key is put again and the run goes on', async () => {
+  const key = 'sites/n/cooked-programs.json', listed = [{ key, size: 7 }, { key: 'sites/n/b', size: 7 }];
+  const bytesByKey = new Map([[key, 7], ['sites/n/b', 7]]);
+  const head = async (k) => { if (k === key) throw new Error('UND_ERR_SOCKET'); return new Response(null, { status: 503 }); };
+  const fails = (what, fn) => fn();
+  const out = await withRecordedShas(listed, bytesByKey, head, { attempt: fails });
+  expect(out.map((f) => f.sha256)).toEqual([null, null]);
+  expect(out.failed).toBe(2);
+  const manifest = { entries: [{ path: 'cooked-programs.json', bytes: 7, sha256: 'cd'.repeat(32) }] };
+  expect(uploadPlan(manifest, { prefix: 'sites/n/', existing: out })[0]).toEqual({ action: 'put', key, path: 'cooked-programs.json' });
 });

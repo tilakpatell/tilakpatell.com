@@ -143,6 +143,11 @@
   @keyframes welcome-sun { from { opacity: 0; transform: translateY(4vmax); } }
 }
 @media (max-width: 640px) {
+  /* a phone: the planet between the column and the small print, so the
+     first screenful has it (the small print, read by whoever wants it,
+     under it), its strip fading out at its foot rather than cut */
+  .welcome-horizon { order: 1; margin-bottom: 8px; mask-image: linear-gradient(to bottom, #000 72%, transparent); }
+  .welcome-fine { order: 2; }
   .welcome-route li { padding-right: 0.75rem; }
   .welcome-route-title { font-size: var(--fs-sm); }
   .welcome-route-text { display: none; }

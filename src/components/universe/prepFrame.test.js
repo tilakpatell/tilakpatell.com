@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { QUIET_MS, afterPress, coveredIn, prepFrame } from './prepFrame';
+import { QUIET_MS, afterPress, coveredIn, prepFrame, readingIn } from './prepFrame';
 
 const page = (dataset = {}) => ({ documentElement: { dataset } });
 
@@ -76,6 +76,13 @@ describe("the map's prepare, a step at a time", () => {
     await afterPress({ last: 1000, now: 1000 + QUIET_MS + 1, wait });
     await afterPress({ last: -Infinity, now: 5, wait });
     expect(wait).not.toHaveBeenCalled();
+  });
+
+  it('counts a cover as being read unless it is the arrival, waited on', () => {
+    expect(readingIn(page({ covered: '' }))).toBe(true);
+    expect(readingIn(page({ covered: '', arriving: '' }))).toBe(false);
+    expect(readingIn(page())).toBe(false);
+    expect(readingIn(null)).toBe(false);
   });
 
   it('reads no page where there is none (Node)', () => {

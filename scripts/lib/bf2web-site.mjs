@@ -36,7 +36,10 @@
 //     (typeOf: cloudflare/play.js's contentType, application/octet-stream), 1 KB or more
 //   ENCODINGS: encodings.json's schema   encodingsOf(sizes, quality) → encodings.json for those copies
 //   uploadPlan(manifest, { prefix, previous, previousPrefix, existing, previousExisting }) → [{ action, key, path?, from? }]
-//     copy a file the previous build has byte for byte (by its sha256), skip one already there, put the rest;
+//     existing: [{ key, size, sha256? }] (sha256: the object's x-amz-meta-sha256, which the uploader writes and reads back)
+//     copy a file the previous build has byte for byte (by its sha256), skip one already there with the manifest's size AND
+//     sha256 (13 Nov 2026: a key at the same size was skipped unhashed, so a rebuilt site under a build id already used kept
+//     stale bytes; an object with no recorded sha256 is sent again), put the rest;
 //     moved files additionally require equal size/extension and a matching prior remote inventory entry; the manifest always last
 
 import { worldsOf } from '../../src/lib/bf2web/levels.js';
@@ -189,7 +192,7 @@ export function encodingsOf(sizes, quality) {
 
 export function uploadPlan(manifest, { prefix, previous = null, previousPrefix = null, existing = [], previousExisting = [] }) {
   const was = new Map((previous?.entries ?? []).map((e) => [e.path, e.sha256]));
-  const there = new Map(existing.map((f) => [f.key, f.size]));
+  const there = new Map(existing.map((f) => [f.key, f]));
   const previousSizes = new Map(previousExisting.map((f) => [f.key, f.size]));
   const extension = (file) => { const name = file.slice(file.lastIndexOf('/') + 1), dot = name.lastIndexOf('.'); return dot <= 0 ? '' : name.slice(dot); };
   const contentKey = (e) => JSON.stringify([e.sha256, e.bytes, extension(e.path)]);
@@ -203,7 +206,8 @@ export function uploadPlan(manifest, { prefix, previous = null, previousPrefix =
   }
   const plan = manifest.entries.map((e) => {
     const key = prefix + e.path;
-    if (there.get(key) === e.bytes) return { action: 'skip', key };
+    const remote = there.get(key);
+    if (remote && remote.size === e.bytes && /^[0-9a-f]{64}$/.test(e.sha256 ?? '') && remote.sha256 === e.sha256) return { action: 'skip', key };
     if (previousPrefix && was.get(e.path) === e.sha256) return { action: 'copy', key, from: previousPrefix + e.path };
     const from = moved.get(contentKey(e));
     if (from) return { action: 'copy', key, from, replaceMetadata: true };
