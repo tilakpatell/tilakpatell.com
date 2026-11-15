@@ -15,7 +15,7 @@
 import { sectorKey } from '../../../../lib/space/address.js';
 import { beaconsOf } from '../sector';
 import { hash64, int, range, rngOf, sectorSeedOf } from '../seed';
-import { dartIn, nameIn, placedOf } from './place';
+import { dartIn, nameIn, placedOf, quickSeed } from './place';
 
 export const STARS = Object.freeze({
   wormhole: { base: 8, max: 1, count: [1, 1], size: [60, 140] },
@@ -39,7 +39,7 @@ function scatter(ctx, made, list, make) {
     const at = dartIn(rng, ctx, { size, extent }, placed);
     if (!at) continue;
     placed.push({ at, r: size + extent });
-    out.push({ kind, name: nameIn(rng, ctx), at, size, ...(extent ? { extent } : {}), ...make.more(ctx), seed: hash64(ctx.seed, list, i) });
+    out.push({ kind, name: nameIn(rng, ctx), at, size, ...(extent ? { extent } : {}), ...make.more(ctx), seed: quickSeed(ctx.seed, list, i) });
   }
   return out;
 }
