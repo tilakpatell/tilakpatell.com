@@ -233,6 +233,7 @@ import { NX5_LEN, createRemoverView } from './removerView';
 import { createSky } from '../galaxy/sky';
 import { SYSTEMS } from '../galaxy/systems';
 import { UNIVERSE, createExpanse, sectorPools } from '../expanse/shared/space';
+import { createThingDrawers } from './things/drawers';
 import { runtime } from '../../runtime';
 import { deedToEarn } from './economy';
 import { createPayLedger, hunterEarn } from './earnRules';
@@ -799,9 +800,9 @@ export async function create(canvas, ctx) {
   // endless space's stars and discs in the same draw (its slots and discs)
   const spaceBudget = universeBudget(device(), 0);
   const farStars = createFarStars(map, { places: FAR_STARS.map((p) => ({ ...p, group: planetOf[p.id]?.group ?? deep.groupOf(p.id) ?? null })), skyFar: SKY_FAR, slots: FAR_SLOTS, slotSize: spaceBudget.slotSize, discs: spaceBudget.discs });
-  // the endless space (expanse/scene/expanse.js): generated sectors round the
-  // camera in every direction, made in the worker pool, the site's own places kept clear
+  // the endless space (expanse/scene/expanse.js) round the camera, the site's own places kept clear; lane 4a's things drawn near
   const expanse = createExpanse(map, {
+    drawers: createThingDrawers({ budget: () => spaceBudget, tier }).drawers,
     universe: typeof ctx.universe === 'bigint' ? ctx.universe : UNIVERSE,
     tier,
     workers: sectorPools(ctx.rt?.workers, spaceBudget),
@@ -814,8 +815,7 @@ export async function create(canvas, ctx) {
       if (inExpanse(id) && id !== 'E:0,0') state.note = { text: `The Expanse · ${id}`, until: wall() + 3 };
     },
   });
-  // and the big things, the Maw, the nebulae and the big stars, as landmarks
-  // on the sky, at least so big across from anywhere (landmarks.js)
+  // and the big things, the Maw, the nebulae and the big stars, as landmarks on the sky (landmarks.js)
   const landmarks = createLandmarks(map, { renderer, small, level: device().detail, skyFar: SKY_FAR });
   await breathe();
   const landmarkGroup = (id) => deep.groupOf(id) ?? (id === 'sun' ? sun.group : null);
