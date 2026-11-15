@@ -151,6 +151,8 @@ import { DEBRIS_DRIFT, SKY_FAR, buildDeepSpace } from './deepspace';
 import { FAR_SLOTS, FAR_STARS, createFarStars } from './farStars';
 import { universeBudget } from './budget';
 import { createLandmarks } from './landmarks';
+import { createMapSky } from './mapSky';
+import { expanseNebulae } from './nebula/expanse';
 import { aimFrom, aimTargets, jumpPhase, nameShows } from './aim';
 import { aligned, steerToward } from '../galaxy/space';
 import { createSectorPortals } from './sectorPortals';
@@ -230,8 +232,6 @@ import { createNearMaps } from './nearMaps';
 import { poseFor } from './poses';
 import { REMOVER, hitRemover, hpLeft, landingOpen, newRemover, stepRemover } from './remover';
 import { NX5_LEN, createRemoverView } from './removerView';
-import { createSky } from '../galaxy/sky';
-import { SYSTEMS } from '../galaxy/systems';
 import { UNIVERSE, createExpanse, sectorPools } from '../expanse/shared/space';
 import { createThingDrawers } from './things/drawers';
 import { createThingPlay } from './things';
@@ -687,43 +687,14 @@ export async function create(canvas, ctx) {
   post.contrast(MAP_LENS.contrast);
   post.defocus(tier === 'low' ? 0 : 1);
 
-  // the sky: the Star Wars galaxy's (galaxy/sky.js), its disc and dust,
-  // its core and nebulae, as Kashyyyk sees it (the core a third of the way
-  // in: bright, not blinding), without its suns (the map has its own) or
-  // the other systems' stars to jump to; turning with the map and riding
-  // with the camera, baked once into a cube
-  const sky = createSky({ small, level: device().detail, renderer, beacons: false });
-  sky.setSystem({ ...SYSTEMS.find((s) => s.id === 'kashyyyk'), suns: [] });
-  // (and deep: the galaxy's faint glow between taken toward black, its star
-  // clouds and nebulae kept, so it reads as space, not a lit grey; measured
-  // at the far rim, the sky's middle grey 67 of 255 before)
-  sky.setDeep(1);
+  // the sky (mapSky.js): the galaxy's band, dust and stars as Kashyyyk sees
+  // them, its clouds left out: every nebula is a place now (nebula/)
+  const { sky, followDrawn } = createMapSky(map, { renderer, small, level: device().detail, post, prepFrame });
   await breathe();
-  // (its stars sized in the pixels the post draws at, which the quality
-  // softens over a canvas that keeps its size; told again when that moves:
-  // the galaxy's drawnAt.js does the same, kept here rather than reached
-  // into, a world's insides being its own)
-  let drawnWas = null;
-  const followDrawn = () => {
-    const r = post.ratio;
-    if (r !== drawnWas) {
-      drawnWas = r;
-      sky.setRatio(r);
-    }
-    return r;
-  };
-  followDrawn();
-  map.add(sky.group);
-  // (the bake is the sky drawn six times over, one long job on the chip:
-  // under the intro, in an idle moment and never in the cockpit's launch,
-  // as the map's other making is; ./prepFrame.js)
-  sky.prepare(renderer)
-    .then(() => prepFrame())
-    .then(() => sky.bake(renderer));
 
   // deep space, out past the home system: its wonders, and the trench run
   // round the Death Star's middle
-  const deep = buildDeepSpace({ small, tier });
+  const deep = buildDeepSpace({ small, tier, renderer }); // (and the map's nebulae: deep.nebulae)
   await breathe();
   // what the ship can hit among the rocks (rockHits.js): the belt, the rim
   // and the debris streams, each from the same rocks its mesh draws. A rock
@@ -798,6 +769,7 @@ export async function create(canvas, ctx) {
     far: farStars,
     budget: spaceBudget,
     stars: LIT_STARS, // (the hand-made stars, lighting.js's: the generated ones lit beside them)
+    drawNebula: expanseNebulae(deep.nebulae), // (its nebulae drawn by the map's one renderer: nebula/)
     prepare: (o) => sendAndWarm(o), // (declared further down)
     keyed: import.meta.env.DEV,
     onSector: (id) => {
@@ -806,8 +778,8 @@ export async function create(canvas, ctx) {
   });
   // lane 4a's things in space played: E at one, a storm's drain, a pulsar's beam, a wormhole's throw (things/index.js)
   const thingPlay = createThingPlay({ sectors: () => expanse.sectors().values(), pay: (what, n) => pay(what, n), say: (text) => (state.note = { text, until: wall() + 3.5 }), travelling: () => Boolean(state.auto || state.jump), universe: typeof ctx.universe === 'bigint' ? ctx.universe : UNIVERSE });
-  // and the big things, the Maw, the nebulae and the big stars, as landmarks on the sky (landmarks.js)
-  const landmarks = createLandmarks(map, { renderer, small, level: device().detail, skyFar: SKY_FAR });
+  // and the big things, the Maw and the big stars, as landmarks on the sky, upright in the world (landmarks.js)
+  const landmarks = createLandmarks(map, { skyFar: SKY_FAR });
   await breathe();
   const landmarkGroup = (id) => deep.groupOf(id) ?? (id === 'sun' ? sun.group : null);
   // the aim (aim.js): while flying, the star the nose is on (the way the
@@ -5087,6 +5059,7 @@ export async function create(canvas, ctx) {
     // the old halo and their clouds' shadows at 3, and they come back)
     for (const p of planets) p.setLevel(at.step);
     expanse.setStep(at.step, at.floor);
+    deep.nebulae.setLevel(at.step); // (fewer steps near: nebula/budget.js's nebulaAtStep)
     return at;
   };
   function render(ms, now) {

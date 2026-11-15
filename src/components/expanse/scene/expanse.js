@@ -21,7 +21,8 @@
 // createExpanse(parent, { universe, tier, workers, far, budget, prepare, onSector, keyed, drawNebula, drawers, stars })
 //   budget: universe/budget.js's row; stars: the hand-made stars (lighting.js's), lit beside the built ones
 //   drawNebula(w) → { object?, dispose() }: a middle-layer nebula drawn while its sector holds a
-//   slot, dispose()d when it gives it back; drawers: nearThings.js's, a kind's own drawing
+//   slot, dispose()d when it gives it back (the universe's one nebula renderer:
+//   universe/nebula/expanse.js; null, the default, draws none); drawers: nearThings.js's, a kind's own drawing
 //   → { root, update({ camera, ship, t, dt, now, hidden }), loaded(), sector(), sectors(),
 //       nearestSystem(at), stars(), solids(), setStep(step, floor), pops(), workMs(), reload(key), dispose() }
 // sectorPools(workers, budget) → the runtime's pool with the two sector pools defined
@@ -38,15 +39,6 @@ import { UNIVERSE } from '../gen/seed';
 import { createDiscs } from './discs';
 import { createNear } from './near';
 import { createNearThings, pickNear } from './nearThings';
-import { nebula } from './sectors';
-
-// today's nebula, drawn as the release shape asks: lane 1's renderer takes its place
-const puffs = (w) => {
-  const made = [];
-  const object = nebula(w, made);
-  return { object, dispose: () => made.forEach((m) => m.dispose()) };
-};
-
 export const POOL = 'expanse';
 export const BEYOND_POOL = 'expanse-beyond';
 const NEAR_SLOTS = 54; // (the far layer's first 54 slots: the 27 shown and the 27 a crossing stages)
@@ -99,7 +91,7 @@ export function localPool() {
   };
 }
 
-export function createExpanse(parent, { universe = UNIVERSE, tier = 'mid', workers = null, far = null, budget, prepare = null, onSector = null, keyed = false, drawNebula = puffs, drawers = {}, stars: baseStars = [] } = {}) {
+export function createExpanse(parent, { universe = UNIVERSE, tier = 'mid', workers = null, far = null, budget, prepare = null, onSector = null, keyed = false, drawNebula = null, drawers = {}, stars: baseStars = [] } = {}) {
   const root = new THREE.Group();
   root.name = 'expanse';
   parent.add(root);
