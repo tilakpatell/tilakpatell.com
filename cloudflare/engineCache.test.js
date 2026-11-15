@@ -231,6 +231,22 @@ describe('the engine’s build kept on the visitor’s disk', () => {
     expect(res.body).toBe(`bytes of ${ORIGIN}${dir}scene-p-1.dbx`);
   });
 
+  it('waits for a healthy read-ahead whose download onto the disk is slow, fetching the file once ([c5] on #1323)', async () => {
+    const dir = '/battlefront/engine/main-da7a51b3/';
+    const w = worker(undefined, ['scene-p-0.dbx', 'scene-p-1.dbx'], { fetch: 60_000, waitAhead: 40 });
+    // (the read-ahead's answer comes at once; putting it on the disk takes 300 ms, far past waitAhead)
+    const open = w.self.caches.open;
+    w.self.caches.open = async (name) => {
+      const c = await open(name);
+      return { match: c.match, put: async (r, res) => { await new Promise((ok) => setTimeout(ok, 300)); return c.put(r, res); } };
+    };
+    w.get(dir + 'scene-p-0.dbx');
+    while (!w.asked.some((u) => u.endsWith('scene-p-1.dbx'))) await new Promise((r) => setTimeout(r, 0));
+    const res = await w.get(dir + 'scene-p-1.dbx');
+    expect(res.body).toBe(`bytes of ${ORIGIN}${dir}scene-p-1.dbx`);
+    expect(w.asked.filter((u) => u.endsWith('scene-p-1.dbx'))).toHaveLength(1);
+  });
+
   it('works as before without the build’s list', async () => {
     const w = worker();
     await w.get('/battlefront/engine/main-da7a51b3/scene-m-0.res');
