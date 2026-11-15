@@ -42,6 +42,29 @@ Run on the branch with `scene.js` wired and the final look (8474282bf and the me
 
 An earlier run's shots (before the wiring): `check-veil-side`, `check-veil-near`, `check-veil-rolled`, `check-in-cradle`, `check-in-cradle-off`.
 
+## Against the latest main (2026-11-15)
+
+`main` at 5aeb4e035 (the polish session's lens and living sky, #1311, and lane 2's #1308 merged), from its own worktree, against this branch with them merged in (b695a0008), at mid: `main-latest-mid.json`, `after-latest-mid.json`. **Every pose has no more draw calls and no more triangles than main.**
+
+| pose | calls (main → branch) | triangles (main → branch) |
+| --- | --: | --: |
+| `overview` | 95 → 93 | 518,695 → 518,675 |
+| `falcon-sun` | 78 → 75 | 503,673 → 503,573 |
+| `middleearth-limb` | 35 → 34 | 67,385 → 67,365 |
+| `rickmorty` | 36 → 35 | 68,511 → 68,491 |
+| `gaming` | 39 → 38 | 75,119 → 75,101 |
+| `caribbean` | 39 → 39 | 117,145 → 117,127 |
+| `middleearth` | 35 → 35 | 67,385 → 67,367 |
+| `breakingbad` | 60 → 60 | 61,583 → 61,579 |
+| `office` | 37 → 36 | 52,889 → 52,871 |
+| `belt` | 42 → 40 | 450,951 → 450,931 |
+| `maw` | 39 → 39 | 103,907 → 103,885 |
+| `landing-middleearth` | 115 → 114 | 138,056 → 138,044 |
+| `station` | 65 → 63 | 488,867 → 488,847 |
+| `far-rim` | 38 → 36 | 70,255 → 70,235 |
+
+The shots (`before-*.webp` on this main, `after-*.webp` on the branch, high) were retaken here, with the bloom chain #1311 brought: `home` (the baked cloud gone, the old sky kept), `veil-20000`, `in-cradle` (the old sky and its stars through the gas), and `cradle-roll0` / `cradle-roll30`, the Cradle from 18,000 off, centred, then the view turned 30° about its axis: the same cloud, turned with the stars, nothing rearranged.
+
 ## Before and after, like for like (2026-11-14)
 
 `main` at 5f54821ae (lane 2's one space merged, #1304), measured from a worktree with its own `node_modules`, against this branch at 08eee366a; `node scripts/universe-check.mjs --quality <tier> --frames 3`, the fourteen poses, a whole frame's draw calls and triangles: `main-<tier>.json` and `after-<tier>.json`. (The look's later commit, 8474282bf, changed two shader numbers and a texture lookup, no draw.)
