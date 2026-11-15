@@ -361,6 +361,20 @@ const pickStep = async () => {
     300000,
   );
   if (!tagged) return fail(`pick: no name tag for ${name}`);
+  // (the camera eases round to the ship’s new heading over a second or so, the map’s yaw with it:
+  // the click waits till the star’s point holds still, or it lands where the star was)
+  const settled = await until(
+    (id) => {
+      const d = window.__universeDebug;
+      const p = d.places.screen(id);
+      const was = window.__pickWas;
+      window.__pickWas = p && [p.x, p.y];
+      return Boolean(p && was && Math.hypot(p.x - was[0], p.y - was[1]) < 1);
+    },
+    id,
+    30000,
+  );
+  if (!settled) return fail(`pick: ${name}'s point never held still`);
   const pt = await page.evaluate((id) => {
     const d = window.__universeDebug;
     const p = d.places.screen(id);
