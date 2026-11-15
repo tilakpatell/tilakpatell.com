@@ -83,7 +83,10 @@ describe('generatedSpecOf', () => {
     }
   });
 
-  it('puts an exotic’s growth in place of the template’s own row, never a second one beside it', () => {
+  // (about 1,300 whole specs at some 2.6 ms each to find its 60 exotics: 3.4 s
+  // on a quiet machine, and over vitest’s 5 s on CI’s busy runner, so the
+  // allowance says so rather than the test finding fewer)
+  it('puts an exotic’s growth in place of the template’s own row, never a second one beside it', { timeout: 20_000 }, () => {
     const base = { name: 'X', radius: 40, system: { faction: null, traffic: 0, hazard: null } };
     let n = 0;
     for (let i = 0; i < 4000 && n < 60; i++) {

@@ -365,8 +365,9 @@
   left: 16px;
   right: 16px;
   z-index: 2;
+  justify-content: center; /* (bottom centre here, as subtitles: the map's card is at its top left) */
 }
-.surface-page .universe-line { background: var(--glass); border: 1px solid var(--line); }
+.surface-page .universe-line { background: var(--glass); border: 1px solid var(--line); border-left: 3px solid var(--who); }
 @media (pointer: coarse) {
   .surface-page .universe-comms { bottom: auto; top: calc(var(--nav-h, 64px) + 128px); }
 }

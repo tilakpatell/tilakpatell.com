@@ -18,7 +18,8 @@
 // pickPlace(rows, project, px, py, { tanHalf, height }) → id | null.
 //   project(x, y, z, out) → out with { x, y, z }: the point on screen, in
 //   pixels, and its depth (scene.js's toScreen, over map-frame points). A
-//   row's radius on screen is reach / (z · tanHalf) · height / 2.
+//   row's radius on screen is reach / (z · tanHalf) · height / 2. A row's
+//   `also` points ([{ at, reach }], a system's companions) pick it as its own.
 // tagsFor(rows, { ship, nose, focus = [], here = null, max, cone }) → Row[],
 //   each once, at most max: the rows whose ids are in focus, in its order;
 //   the row whose id is here; then those within cone (radians) of the nose,
@@ -33,13 +34,18 @@ const scratch = { x: 0, y: 0, z: 0 };
 export function pickPlace(rows, project, px, py, { tanHalf, height }) {
   let best = null;
   let bestZ = Infinity;
-  for (const row of rows) {
-    const s = project(row.at[0], row.at[1], row.at[2], scratch);
-    if (!(s.z > PICK.near) || s.z >= bestZ) continue;
-    const r = ((row.reach ?? 0) / (s.z * tanHalf)) * (height / 2);
-    if (Math.hypot(px - s.x, py - s.y) > Math.max(Math.min(r, PICK.max), PICK.min)) continue;
-    best = row.id;
+  const test = (id, at, reach) => {
+    const s = project(at[0], at[1], at[2], scratch);
+    if (!(s.z > PICK.near) || s.z >= bestZ) return;
+    const r = ((reach ?? 0) / (s.z * tanHalf)) * (height / 2);
+    if (Math.hypot(px - s.x, py - s.y) > Math.max(Math.min(r, PICK.max), PICK.min)) return;
+    best = id;
     bestZ = s.z;
+  };
+  for (const row of rows) {
+    test(row.id, row.at, row.reach);
+    // (a system's companions are picked as it: lane 4a's)
+    if (row.also) for (const a of row.also) test(row.id, a.at, a.reach);
   }
   return best;
 }

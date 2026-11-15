@@ -34,6 +34,7 @@ import * as THREE from 'three';
 import { WONDERS, binaryAt, reachOf } from './deep';
 import { SUN } from './layout';
 import { TILT } from './maw';
+import { UPRIGHT_GLSL } from '../../lib/three/upright';
 
 const deg = (d) => (d * Math.PI) / 180;
 const LEAST = { hole: deg(4), nebula: deg(14), star: deg(4), pulsar: deg(2.5) };
@@ -109,6 +110,7 @@ attribute float aK;
 attribute float aCell;
 attribute vec3 aAxis;
 uniform float uFar;
+uniform float uTime;
 varying vec2 vUv;
 varying float vKind;
 varying vec3 vCol0;
@@ -116,6 +118,7 @@ varying vec3 vCol1;
 varying float vK;
 varying float vCell;
 varying vec3 vAxis;
+${UPRIGHT_GLSL}
 void main() {
   vUv = position.xy;
   vKind = aKind;
@@ -124,9 +127,21 @@ void main() {
   vK = aK;
   vCell = aCell;
   vAxis = normalize((modelViewMatrix * vec4(aAxis, 0.0)).xyz);
-  vec4 mv = modelViewMatrix * vec4(aCenter, 1.0);
   float extent = uFar * tan(aSize * 0.5);
-  mv.xy += position.xy * extent;
+  vec4 mv;
+  if (aKind > 1.5 && aKind < 2.5) {
+    // a nebula is a thing on the sky, not in the lens: turned toward the
+    // eye and kept upright to the map (lib/three/upright.js), so its clouds
+    // don't spin round as the ship banks; and breathing, a slow swell of a
+    // few per cent on a beat of its own
+    vec3 c = (modelMatrix * vec4(aCenter, 1.0)).xyz;
+    float breath = 1.0 + 0.03 * sin(uTime * 0.05 + aCell * 2.3);
+    mv = viewMatrix * vec4(upright(c, position.xy * extent * breath), 1.0);
+  } else {
+    // a star's glare and rays are the lens's: square to the screen
+    mv = modelViewMatrix * vec4(aCenter, 1.0);
+    mv.xy += position.xy * extent;
+  }
   gl_Position = aK > 0.0 ? projectionMatrix * mv : vec4(2.0, 2.0, 2.0, 1.0);
   // (never cut by the far plane: on foot it's at the landing's sky,
   // footScene's far(), which the landmarks are well past)
@@ -187,9 +202,15 @@ void main() {
   } else if (vKind < 2.5) {
     // a nebula: its cell of the atlas (light, and the dust's dimming)
     if (uHasAtlas > 0.5) {
-      vec2 cell = vec2((uv.x * 0.5 + 0.5 + vCell) * 0.5, uv.y * 0.5 + 0.5);
+      // its gas billowing: the painting read through a slow flow (a
+      // couple of per cent of it, never a turn), its glow breathing
+      float tt = uTime * 0.06 + vCell * 9.0;
+      vec2 flow = vec2(sin(uv.y * 5.0 + tt) + sin(uv.y * 2.3 - tt * 0.7), cos(uv.x * 4.3 - tt * 0.8) + cos(uv.x * 1.9 + tt * 0.5)) * 0.012;
+      vec2 wv = uv + flow * smoothstep(1.0, 0.6, r);
+      vec2 cell = vec2((clamp(wv.x, -1.0, 1.0) * 0.5 + 0.5 + vCell) * 0.5, clamp(wv.y, -1.0, 1.0) * 0.5 + 0.5);
       vec4 t = texture2D(uAtlas, cell);
-      c = vec4(t.rgb, t.a * 0.6);
+      float glow = 0.94 + 0.06 * sin(uTime * 0.08 + vCell * 4.1);
+      c = vec4(t.rgb * glow, t.a * 0.6);
     }
   } else {
     // the Lantern: a point in a glare, two beams sweeping round

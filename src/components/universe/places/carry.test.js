@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { OPEN_SPACE, PARK_GAP, SHIP, SOLIDS, autopilot, spawn, step } from '../ship';
-import { UNIVERSE, fullSector, moonAt, orbitAt } from '../../expanse/shared/gen';
+import { UNIVERSE, fullSector, moonAt, orbitAt, pathSpeed } from '../../expanse/shared/gen';
 import { atTime } from './ids';
 import { resolvePlace } from './resolve';
 import { followPark, parkDistance, parkPlace, placeSpace } from './park';
@@ -152,5 +152,22 @@ describe('the carry', () => {
       ship = step(carry(ship, frames, t, t + dt), a.input, dt, solidsAt(mooned, t + dt), space).ship;
     }
     expect(done).toBe(true);
+  });
+  // (lane 4a's: a comet moves on the shared clock, so it is a frame as a planet is)
+  it('takes a thing that moves for a frame, and keeps a ship parked at the fastest comet', () => {
+    const things = fullSector(UNIVERSE, 1, 0, 0, { lattice: false });
+    const comet = things.extras.comet.reduce((a, b) => (pathSpeed(b.path) > pathSpeed(a.path) ? b : a));
+    const d = resolvePlace(comet.id, { t: 0, sectors: [things] });
+    const sys = resolvePlace(things.systems[0].id, { t: 0, sectors: [things] });
+    expect(frameOf([d, sys], { here: null, going: comet.id })).toBe(d);
+    expect(frameOf([d, sys], { here: comet.id, going: null })).toBe(d);
+    expect(frameOf([d, sys], { here: sys.id, going: null })).toBeNull();
+    const park = parkPlace(d, [d.at[0] + 5000, d.at[2]], 0);
+    let ship = { ...spawn(null), ...park };
+    for (let t = 0; t < 300 - 1e-9; t += 0.25) {
+      ship = carry(ship, [{ body: d, k: 1 }], t, t + 0.25);
+      ship = step(ship, { throttle: 0 }, 0.25, SOLIDS, OPEN_SPACE).ship;
+    }
+    expect(len(xyz(ship), xyz(followPark(d, park, 300)))).toBeLessThan(1);
   });
 });

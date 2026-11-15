@@ -29,6 +29,12 @@ describe('which places are named', () => {
     { id: 'behind', at: [0, 0, 4000], dist: 4000 },
     { id: 'picked', at: [20000, 0, 0], dist: 20000 },
   ];
+  it('picks a row by its `also` points too, as its own (a system’s companions)', () => {
+    const sys = { ...R('sys', [0, 0, 0], 5), also: [{ at: [300, 0, 0], reach: 5 }] };
+    expect(pickPlace([sys], project, 640 + 300, 360, view)).toBe('sys');
+    expect(pickPlace([sys], project, 640 + 300 + 2 * 160, 360, view)).toBeNull();
+    expect(pickPlace([R('plain', [0, 0, 0], 5)], project, 640 + 300, 360, view)).toBeNull();
+  });
   it('names what you picked, then where you are, then what’s on the nose, nearest first', () => {
     const cone = NAME_CONE;
     expect(tagsFor(rows, { ship, nose, focus: ['picked'], max: 6, cone }).map((r) => r.id)).toEqual(['picked', 'ahead', 'aheadFar']);

@@ -7,17 +7,31 @@
 //
 // UNIVERSE, universeOf (seed.js); fullSector, placeOf, placeIn (space.js);
 // orbitAt, moonAt, bodiesAt, spaceTime (orbits.js); systemReach (systems.js);
-// THING_BASE, THING_CELLS, THING_NEAR, THING_KINDS, SECTOR_EXTRAS, thingRow
-// (things.js); WONDER_KINDS (tables.js); STATION_BASE, stationsOf
-// (stations.js); extentOf (extent.js); sectorJob, withMoons (job.js: a
-// sector as the worker makes it, and its moons put back)
+// THING_BASE, THING_CELLS, THING_NEAR, THING_KINDS, thingRow
+// (things.js); SECTOR_EXTRAS, NEBULA_SHOW (extras/index.js); WONDER_KINDS (tables.js); STATION_BASE, stationsOf
+// (stations.js); extentOf (extent.js); KINDS, lookOf, traitsOf (catalogue.js);
+// COMET_PERIOD, pathAt, pathSpeed, rowAt (paths.js); tailOf (extras/systems.js);
+// companionsOf, companionAt (companions.js); wormholeExit (extras/stars.js);
+// GARGANTUAN_FORMS, GARGANTUAN, gargantuanSectors, formOf, gargantuanKeeps, ARRIVAL_BASE,
+// ARRIVAL_MAX, ARRIVAL_GARGANTUANS, checkGargantuan (gargantuans.js); CATALOGUE, solidOf,
+// rowSolids, fleetLayout, discRadius, PLANET_SIZE (catalogue.js); EXTRA_HIGH (things.js);
+// EXTRA_LISTS (extras/index.js); kindsIn, nearestOfKind (finder.js); sectorJob,
+// withMoons (job.js: a sector as the worker makes it, and its moons put back)
 
 export { UNIVERSE, universeOf } from '../gen/seed';
 export { fullSector, placeIn, placeOf } from '../gen/space';
 export { bodiesAt, moonAt, orbitAt, spaceTime } from '../gen/orbits';
 export { systemReach } from '../gen/systems';
-export { SECTOR_EXTRAS, THING_BASE, THING_CELLS, THING_KINDS, THING_NEAR, thingRow } from '../gen/things';
+export { EXTRA_HIGH, THING_BASE, THING_CELLS, THING_KINDS, THING_NEAR, thingRow } from '../gen/things';
 export { WONDER_KINDS } from '../gen/tables';
 export { STATION_BASE, stationsOf } from '../gen/stations';
 export { extentOf } from '../gen/extent';
+export { CATALOGUE, KINDS, PLANET_SIZE, discRadius, fleetLayout, lookOf, rowSolids, solidOf, traitsOf } from '../gen/catalogue';
+export { EXTRA_LISTS, NEBULA_SHOW, SECTOR_EXTRAS } from '../gen/extras';
+export { COMET_PERIOD, pathAt, pathSpeed, rowAt } from '../gen/paths';
+export { tailOf } from '../gen/extras/systems';
+export { companionAt, companionsOf } from '../gen/companions';
+export { wormholeExit } from '../gen/extras/stars';
+export { ARRIVAL_BASE, ARRIVAL_GARGANTUANS, ARRIVAL_MAX, GARGANTUAN, GARGANTUAN_FORMS, checkGargantuan, formOf, gargantuanKeeps, gargantuanSectors } from '../gen/gargantuans';
+export { kindsIn, nearestOfKind } from '../gen/finder';
 export { sectorJob, withMoons } from '../gen/job';
