@@ -1,0 +1,29 @@
+{
+  "tier": "high",
+  "viewport": [
+    1280,
+    720
+  ],
+  "measures": {
+    "parallax": {
+      "ok": true,
+      "predicted": 148,
+      "measured": 151.7,
+      "pixels": [
+        106256,
+        110232
+      ]
+    },
+    "roll": {
+      "ok": true,
+      "turn": 30,
+      "cloud": 30,
+      "cloudShare": 0.054
+    },
+    "inside": {
+      "ok": true,
+      "share": 0.994
+    }
+  },
+  "errors": []
+}

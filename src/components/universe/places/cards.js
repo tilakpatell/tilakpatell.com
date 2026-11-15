@@ -45,7 +45,7 @@ const STATION_COLOR = '#9fd8ff'; // the nav map's blue
 const look = (kind) => THING_KINDS.find((k) => k.kind === kind)?.look.color;
 const thing = (kind, color, more = {}) => ({ type: PLACE.thing[kind], about: PLACE.about[kind], color, solid: true, far: FAR, ...more });
 
-// (the legacy wonders' colours are expanse/scene/sectors.js's WONDER's)
+// (the legacy wonders' colours, as the Expanse's sectors drew them)
 export const THING_CARDS = {
   rock: thing('rock', look('rock')),
   ice: thing('ice', look('ice')),
