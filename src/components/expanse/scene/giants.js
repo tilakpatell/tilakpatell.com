@@ -14,7 +14,8 @@
 //   - a derelict hulk: lumpy discs down its spine
 //   - a supergiant: one ball, lit from its light
 //   - a Dyson swarm: the dark swarm, and the star a little nearer, burning through
-//   Colours are linear light, hot ones over 1 so they clear the bloom.
+//   Colours are linear light, a glow only a little over 1 and never bigger than its body: the
+//   owner keeps the old sky, and nothing far off brightens it as a whole.
 
 import { arcPoints } from '../gen/gargantuans';
 
@@ -56,7 +57,7 @@ export function giantParts(row, cam) {
   const light = lightFor(row, cam);
   if (row.kind === 'hole')
     return [
-      { at: row.at, r: row.size * 0.55, color: scale(c0, 2.4), light: null, rough: 0 },
+      { at: row.at, r: row.size * 0.55, color: scale(c0, 1.2), light: null, rough: 0 },
       { at: toward(row.at, cam, row.body), r: row.body * 1.6, color: [0.004, 0.003, 0.003], light: null, rough: 0 },
     ];
   if (row.kind === 'arc') {
@@ -74,6 +75,6 @@ export function giantParts(row, cam) {
   if (row.kind === 'giant') return [{ at: row.at, r: row.size, color: scale(c0, 1.3), light, rough: 0 }];
   return [
     { at: row.at, r: row.size, color: scale(c0, 0.45), light, rough: 0.6 },
-    { at: toward(row.at, cam, row.size * 1.01), r: row.body * 1.4, color: scale(c0, 3), light: null, rough: 0 },
+    { at: toward(row.at, cam, row.size * 1.01), r: row.body, color: scale(c0, 1.6), light: null, rough: 0 },
   ];
 }

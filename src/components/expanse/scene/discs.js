@@ -17,8 +17,8 @@
 //   A star shines by itself; a planet is lit from its star; a wonder from the way home.
 //   `keyed`: each disc is pushed with a hash of its id, so the far layer can count pops (dev).
 //   giants: the gargantuans in view (gen/gargantuans.js's rows), drawn past the far plane too.
-// Lane 4a's: a lattice thing's disc is the catalogue's (discRadius: a beacon's three times its
-//   size, but its own in the core), and so is a list row's, at where it is now (rowAt), handing
+// Lane 4a's: a lattice thing's disc is the catalogue's (discRadius, never bigger than its body),
+//   and so is a list row's, at where it is now (rowAt), handing
 //   over to its mesh within THING_NEAR of its sizes; a kind with no disc (a field, a cloud) is
 //   none. A binary's companions are discs beside its star, faded with it and given way with it
 //   where near.js builds the system. A gargantuan is giants.js's discs, at its true angular size
@@ -43,6 +43,7 @@ const WONDER = {
 };
 const LUMPY = new Set(['rock', 'ice', 'derelict', 'outpost', 'relay', 'monolith', 'debris', 'rig', 'shipyard', 'fleet']);
 const STAR_LIFT = 2.2; // (a star's disc as bright as its speck's core)
+const THING_LIFT = 1.2;
 const JUMP = 3000; // (further than this in a frame is a jump, not flight: the pulse drive is 300 a second)
 const EASE_IN = 0.5;
 
@@ -136,8 +137,7 @@ export function createDiscs(writer, { budget, far = FAR, keyed = false } = {}) {
           shownNow = shownOf ? shownOf(sector) : 1;
           if (!(shownNow > 0)) return;
           const o = sector.origin;
-          const core = !sector.sx && !sector.sy && !sector.sz;
-          add(o[0] + th.at[i * 3], o[1] + th.at[i * 3 + 1], o[2] + th.at[i * 3 + 2], discRadius(THING_KINDS[th.kind[i]].kind, th.size[i], { core }), 'thing', sector, i);
+          add(o[0] + th.at[i * 3], o[1] + th.at[i * 3 + 1], o[2] + th.at[i * 3 + 2], discRadius(THING_KINDS[th.kind[i]].kind, th.size[i]), 'thing', sector, i);
         });
       for (const sector of sectors) {
         shownNow = shownOf ? shownOf(sector) : 1;
@@ -161,10 +161,9 @@ export function createDiscs(writer, { budget, far = FAR, keyed = false } = {}) {
           if (near(w.at, cam, w.size * look.r * MESH_NEAR)) continue; // (a mesh there: nearThings.js)
           add(w.at[0], w.at[1], w.at[2], w.size * look.r, 'wonder', w, null);
         }
-        const core = !sector.sx && !sector.sy && !sector.sz;
         for (const rows of Object.values(sector.extras ?? {}))
           for (const row of rows) {
-            const r = discRadius(row.kind, row.size, { core });
+            const r = discRadius(row.kind, row.size);
             if (!r || row.gargantuan) continue;
             const at = rowAt(row, t);
             if (!near(at, cam, far + r)) continue;
@@ -209,7 +208,7 @@ export function createDiscs(writer, { budget, far = FAR, keyed = false } = {}) {
             lx = -x;
             ly = -y;
             lz = -z;
-          } else lift = STAR_LIFT;
+          } else lift = THING_LIFT; // (a lamp or a glow: lit by itself, but never as bright as a star)
         } else if (w.kind === 'companion') {
           c = rgb(w.row.color);
           lift = STAR_LIFT;
