@@ -7,22 +7,22 @@
   "measures": {
     "parallax": {
       "ok": true,
-      "predicted": 296,
-      "measured": 292.9,
+      "predicted": 148,
+      "measured": 161.4,
       "pixels": [
-        1540,
-        7575
+        12149,
+        23510
       ]
     },
     "roll": {
       "ok": true,
       "turn": 30,
       "cloud": 30,
-      "cloudShare": 0.013
+      "cloudShare": 0.005
     },
     "inside": {
       "ok": true,
-      "share": 0.923
+      "share": 0.994
     }
   },
   "errors": []

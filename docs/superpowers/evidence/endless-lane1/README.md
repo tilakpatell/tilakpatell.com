@@ -34,11 +34,11 @@ Mid's `landing-middleearth` read 0 calls (the landing wasn't drawn when the fram
 
 ## The browser check (`scripts/nebula-check.mjs`, high, final)
 
-Run on the branch with `scene.js` wired and the final look (8474282bf and the measure's last fix). `nebula-check.json`:
+Run on the branch with #1311 merged and the final look, the scene's clock held still (reduced motion: shots minutes apart in software GL otherwise catch the gas mid-breath). `nebula-check.json`:
 
-- **Parallax:** at the veil-side pose, 5,000 sideways, the cloud's centroid (the difference's biggest part) moved 292.9 px, its projection 296.
-- **Roll:** the Veil 16,500 off and centred, the view turned 30° about its axis; two of the map's points projected say the picture turned 30°, the cloud turned 30°. (On `main` the landmark's picture didn't turn.)
-- **Inside:** in the Cradle the fog covers 92 % of the frame.
+- **Parallax:** at the veil-side pose, 2,500 sideways (the spec's 5,000 takes the vast cloud past the frame's edge, and a cut cloud's centroid lags), the cloud's centroid (the difference's biggest part) moved 161.4 px, its projection 148 (within 10 %).
+- **Roll:** the Veil 30,000 off and centred, the view turned 30° about its axis; two of the map's points projected say the picture turned 30°, the cloud turned 30°. (On `main` the landmark's picture didn't turn.)
+- **Inside:** in the Cradle the fog covers 99 % of the frame, the old sky's band and stars through it.
 
 An earlier run's shots (before the wiring): `check-veil-side`, `check-veil-near`, `check-veil-rolled`, `check-in-cradle`, `check-in-cradle-off`.
 
