@@ -348,6 +348,7 @@ const pickStep = async () => {
     const d = window.__universeDebug;
     const sys = d.places.resolve(id);
     d.teleport(sys.at[0], sys.at[1], sys.at[2] + sys.src.row.reach * 0.6, 0, 0);
+    d.state.yaw = 0; // (the map turned back square to the ship, as an arrival leaves it: a step before may have turned it)
     return sys.name;
   }, id);
   const tagged = await until(
@@ -363,6 +364,9 @@ const pickStep = async () => {
     return p && { x: r.left + p.x, y: r.top + p.y, z: p.z };
   }, id);
   if (!pt || !(pt.z > 0)) return fail(`pick: ${id} isn't on screen`);
+  // (a click on the flight, not on the panel or a tag over it)
+  const over = await page.evaluate(([x, y]) => window.document.elementFromPoint(x, y)?.tagName ?? null, [pt.x, pt.y]);
+  if (over !== 'CANVAS') return fail(`pick: ${name}'s point is under ${over}, not the canvas`);
   await page.mouse.click(pt.x, pt.y);
   if (!(await until((id) => (window.__universeDebug.state.auto?.id ?? window.__universeDebug.state.jump?.id) === id, id, 60000))) return fail(`pick: a click on ${name} didn't fly there`);
   const out = join(ROOT, 'docs/superpowers/evidence/endless-universe-lane-3');
