@@ -19,6 +19,8 @@ const scratch = `scratch/copy-rate-${process.env.GITHUB_RUN_ID || Date.now()}/`;
 if (!scratch.startsWith('scratch/') || scratch.startsWith('sites/')) throw new Error('scratch prefix');
 const manifest = await r2.json(`sites/${from}/manifest.json`);
 if (!manifest) throw new Error(`no manifest for ${from}`);
+// ([c5]: a '..', '.' or empty segment would be normalised by the URL and could land outside scratch/: refused for any build)
+for (const e of manifest.entries) if (String(e.path).split('/').some((s) => s === '..' || s === '.' || !s)) throw new Error(`manifest path refused: ${e.path}`);
 const small = manifest.entries.filter((e) => e.bytes > 0 && e.bytes < 6e6);
 if (small.length < count * streams.length) throw new Error(`only ${small.length} small objects`);
 const etagOf = async (key) => { const r = await r2.fetch(objectUrl(BUCKET, key), { method: 'HEAD' }); return r.ok ? r.headers.get('etag') : null; };
