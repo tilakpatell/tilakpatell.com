@@ -47,11 +47,17 @@ export function briefKeyFor(pathname) {
   return key && BRIEFED.has(key) ? key : null;
 }
 
-// Shown on a first arrival: not if they've been shown here before, and not
-// to a browser driven by a script (the shot and check scripts walk straight
-// in; the guide's button still shows them).
+// Worlds whose basics wait for the guide's button instead of coming up on
+// arrival. The galaxy's own keys card (galaxy/KeysCard.jsx) teaches its
+// first flight where you fly: five cards of the same keys before it, held
+// over the galaxy as it loaded, and then the card, were one lesson twice.
+export const ON_ASK = new Set(['/galaxy']);
+
+// Shown on a first arrival: not if they've been shown here before, not
+// where they wait to be asked, and not to a browser driven by a script (the
+// shot and check scripts walk straight in; the guide's button still shows them).
 export function briefHere(key, seen, driven = false) {
-  if (!key || driven) return false;
+  if (!key || driven || ON_ASK.has(key)) return false;
   return !(Array.isArray(seen) && seen.includes(key));
 }
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ASKED, BRIEFED, briefHere, briefKeyFor, sawBrief } from './brief';
+import { ASKED, BRIEFED, ON_ASK, briefHere, briefKeyFor, sawBrief } from './brief';
 import { WORLDS } from '../worlds/worlds';
 
 describe('which basics a page gets', () => {
@@ -46,6 +46,19 @@ describe('when the basics show', () => {
   it('never shows them where there are none, or to a script', () => {
     expect(briefHere(null, null)).toBe(false);
     expect(briefHere('/c-137', null, true)).toBe(false);
+  });
+
+  it('leaves the galaxy’s to the guide’s button: its keys card teaches the first flight', () => {
+    expect(ON_ASK.has('/galaxy')).toBe(true);
+    expect(briefHere('/galaxy', null)).toBe(false);
+    // (the guide still has them to show: it asks by the page's key)
+    expect(briefKeyFor('/galaxy/hoth')).toBe('/galaxy');
+    // (landing is its own place, with its own first minute)
+    expect(briefHere('/galaxy/surface', null)).toBe(true);
+  });
+
+  it('only waits to be asked where there are basics to show', () => {
+    for (const key of ON_ASK) expect(BRIEFED.has(key), key).toBe(true);
   });
 
   it('keeps a short list of the worlds seen, the latest last and each once', () => {
