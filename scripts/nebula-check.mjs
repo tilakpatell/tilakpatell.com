@@ -7,10 +7,11 @@
 //
 // 1. Parallax: at the veil-side pose, the Veil shot with the nebulae on
 //    and off (the difference is the cloud), then again with the camera
-//    moved 5,000 to its right. The cloud's centroid must move as its
+//    moved 2,500 to its right (the spec's 5,000 takes the vast cloud past
+//    the frame's edge, and a cut cloud's centroid lags). The cloud's centroid must move as its
 //    projection says it does (at least 100 px predicted, measured within
 //    max(8 px, 10 %)).
-// 2. Roll: the Veil 16,500 off, centred, the view turned 30° about its own
+// 2. Roll: the Veil 30,000 off, centred, the view turned 30° about its own
 //    axis. The picture's turn is read from two of the map's points
 //    projected before and after; the cloud must turn within 3° of it (on
 //    main the landmark's picture didn't turn at all).
@@ -163,7 +164,7 @@ try {
   await page.evaluate(() => {
     const { state, THREE } = window.__universeDebug;
     const right = new THREE.Vector3(1, 0, 0).applyQuaternion(state.held.view.quat);
-    state.held.view.target.addScaledVector(right, 5000);
+    state.held.view.target.addScaledVector(right, 2500); // (half the spec's 5,000: the cloud, at its full size now, stays whole in the frame)
   });
   await frames();
   const b = await both();
@@ -175,7 +176,7 @@ try {
   const measured = Math.hypot(cb.x - ca.x, cb.y - ca.y);
   verdict('parallax', ca.n > 50 && cb.n > 50 && predicted >= 100 && Math.abs(measured - predicted) <= Math.max(8, 0.1 * predicted), { predicted: +predicted.toFixed(1), measured: +measured.toFixed(1), pixels: [ca.n, cb.n] });
 
-  // 2. roll: the Veil brought to 16,500 off and centred, so it fills the
+  // 2. roll: the Veil brought to 30,000 off and centred, its whole outline in the
   // frame's middle; the view turned 30° about its own axis. What the turn
   // should do to the picture is read from two of the map's points (the
   // Veil's middle and a point above it) projected before and after; the
@@ -187,7 +188,7 @@ try {
     const v = state.held.view;
     const fwd = new THREE.Vector3(0, 0, -1).applyQuaternion(v.quat);
     const eye = v.target.clone().addScaledVector(fwd, -v.dist);
-    const at = veil.clone().add(eye.sub(veil).setLength(16500)); // (three of its gas's radii, deep.js's cloud: outside it, filling the middle)
+    const at = veil.clone().add(eye.sub(veil).setLength(30000)); // (well outside its gas, deep.js's cloud: its whole outline in the frame, something to turn)
     v.quat.setFromRotationMatrix(new THREE.Matrix4().lookAt(at, veil, new THREE.Vector3(0, 1, 0)));
     const dir = veil.clone().sub(at).normalize();
     v.target.copy(at).addScaledVector(dir, v.dist);
@@ -238,7 +239,7 @@ try {
     return d;
   };
   const moved = shiftTo(before, m1[0][0] - m0[0][0], m1[0][1] - m0[0][1]);
-  const cloud = bestRotation(moved, after, { width: W, height: H, about: m1[0], radius: 260, range: 45, step: 1 });
+  const cloud = bestRotation(moved, after, { width: W, height: H, about: m1[0], radius: 320, range: 45, step: 1 });
   const seen = centroid(diffMask({ ...r0, width: W, height: H }), W).n / (W * H);
   verdict('roll', Math.abs(Math.abs(turn) - 30) <= 1 && Math.abs(cloud - turn) <= 3 && seen * W * H > 2000, { turn: +turn.toFixed(1), cloud, cloudShare: +seen.toFixed(3) });
 
