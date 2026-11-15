@@ -12,7 +12,7 @@
 // modelViewMatrix, made in doubles, carries them camera-relative). One past
 // the far plane is pulled in along its own direction and shrunk with it.
 //
-// createNebulae({ renderer, tier }) → { group, add(desc) → handle, remove(handle), update(camera, t), setLevel(step), inside(position) → { id, depth } | null, dispose() }
+// createNebulae({ renderer, tier }) → { group, add(desc) → handle, remove(handle), move(handle, at), update(camera, t), setLevel(step), inside(position) → { id, depth } | null, dispose() }
 //   desc: { id, at: [x, y, z], r, colors: string[], seed, form?: 'cloud' | 'shell' | 'nursery' }
 //   The same id added twice draws once, until each handle is removed; a
 //   stale handle, or anything after dispose(), does nothing. The group goes
@@ -227,6 +227,11 @@ export function createNebulae({ renderer = null, tier = 'mid' } = {}) {
     group,
     add,
     remove,
+    // (a cloud that drifts, lane 4a's ion storms: its middle moved, the same cloud)
+    move(handle, at) {
+      const e = entries.get(handles.get(handle));
+      if (e) e.desc.at = [at[0], at[1], at[2]];
+    },
     update,
     // lib/three/pace's quality step: fewer steps near (budget.js's nebulaAtStep)
     setLevel(step) {

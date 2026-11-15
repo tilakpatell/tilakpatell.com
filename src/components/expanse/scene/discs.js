@@ -16,8 +16,19 @@
 //   each past where it's a mesh and within THING_DISC, fading over the last fifth.
 //   A star shines by itself; a planet is lit from its star; a wonder from the way home.
 //   `keyed`: each disc is pushed with a hash of its id, so the far layer can count pops (dev).
+//   giants: the gargantuans in view (gen/gargantuans.js's rows), drawn past the far plane too.
+// Lane 4a's: a lattice thing's disc is the catalogue's (discRadius, never bigger than its body),
+//   and so is a list row's, at where it is now (rowAt), handing
+//   over to its mesh within THING_NEAR of its sizes; a kind with no disc (a field, a cloud) is
+//   none. A binary's companions are discs beside its star, faded with it and given way with it
+//   where near.js builds the system. A gargantuan is giants.js's discs, at its true angular size
+//   out to 400,000, outside the room (there's one in every 3 × 3 × 3), and never a pop.
 
-import { THING_KINDS } from '../gen/things';
+import { discRadius, lookOf } from '../gen/catalogue';
+import { companionAt, companionsOf } from '../gen/companions';
+import { rowAt } from '../gen/paths';
+import { THING_KINDS, THING_NEAR } from '../gen/things';
+import { giantK, giantParts } from './giants';
 import { orbitAt } from '../gen/orbits';
 import { FAR, levelWeights } from './levels';
 import { MESH_NEAR, THING_DISC, thingsAround } from './nearThings';
@@ -30,7 +41,9 @@ const WONDER = {
   derelict: { color: '#2a2d33', r: 0.12 },
   rogue: { color: '#1e1a18', r: 0.5 },
 };
+const LUMPY = new Set(['rock', 'ice', 'derelict', 'outpost', 'relay', 'monolith', 'debris', 'rig', 'shipyard', 'fleet']);
 const STAR_LIFT = 2.2; // (a star's disc as bright as its speck's core)
+const THING_LIFT = 1.2;
 const JUMP = 3000; // (further than this in a frame is a jump, not flight: the pulse drive is 300 a second)
 const EASE_IN = 0.5;
 
@@ -82,6 +95,7 @@ export function createDiscs(writer, { budget, far = FAR, keyed = false } = {}) {
   // arrived at fades in, as its sectors' specks do; over EASE_IN seconds, and never fewer than
   // ten frames (a slow frame's time counted as a twentieth of a second at most)
   let jumpK = 1;
+  const giantList = []; // (a gargantuan's disc, its weight, …)
   let was = null;
   const add = (x, y, z, r, kind, row, star) => {
     if (n === room) {
@@ -111,7 +125,7 @@ export function createDiscs(writer, { budget, far = FAR, keyed = false } = {}) {
   };
 
   return {
-    feed(sectors, cam, t, built = null, sectorAt = null, shownOf = null, dt = 1 / 60) {
+    feed(sectors, cam, t, built = null, sectorAt = null, shownOf = null, dt = 1 / 60, giants = []) {
       n = 0;
       if (was && Math.hypot(cam[0] - was[0], cam[1] - was[1], cam[2] - was[2]) > JUMP) jumpK = 0;
       else jumpK = Math.min(1, jumpK + Math.min(dt, 1 / 20) / EASE_IN);
@@ -123,7 +137,7 @@ export function createDiscs(writer, { budget, far = FAR, keyed = false } = {}) {
           shownNow = shownOf ? shownOf(sector) : 1;
           if (!(shownNow > 0)) return;
           const o = sector.origin;
-          add(o[0] + th.at[i * 3], o[1] + th.at[i * 3 + 1], o[2] + th.at[i * 3 + 2], th.size[i], 'thing', sector, i);
+          add(o[0] + th.at[i * 3], o[1] + th.at[i * 3 + 1], o[2] + th.at[i * 3 + 2], discRadius(THING_KINDS[th.kind[i]].kind, th.size[i]), 'thing', sector, i);
         });
       for (const sector of sectors) {
         shownNow = shownOf ? shownOf(sector) : 1;
@@ -132,6 +146,10 @@ export function createDiscs(writer, { budget, far = FAR, keyed = false } = {}) {
           if (built?.has(s.id)) continue;
           if (!near(s.at, cam, far + (s.reach ?? s.star.size))) continue;
           add(s.at[0], s.at[1], s.at[2], s.star.size, 'star', s, null);
+          for (const c of companionsOf(s)) {
+            const a = companionAt(c, s, t);
+            add(a[0], a[1], a[2], c.size, 'companion', c, s);
+          }
           for (const p of s.planets) {
             const o = p.centre ? orbitAt(p, t) : p.at;
             add(o[0], o[1], o[2], p.radius, 'planet', p, s);
@@ -143,10 +161,25 @@ export function createDiscs(writer, { budget, far = FAR, keyed = false } = {}) {
           if (near(w.at, cam, w.size * look.r * MESH_NEAR)) continue; // (a mesh there: nearThings.js)
           add(w.at[0], w.at[1], w.at[2], w.size * look.r, 'wonder', w, null);
         }
+        for (const rows of Object.values(sector.extras ?? {}))
+          for (const row of rows) {
+            const r = discRadius(row.kind, row.size);
+            if (!r || row.gargantuan) continue;
+            const at = rowAt(row, t);
+            if (!near(at, cam, far + r)) continue;
+            add(at[0], at[1], at[2], r, 'extra', row, null);
+          }
       }
       // (the writer sorts and keeps what it has room for; only a frame with more
       // than the budget's worth is picked first, the nearest kept)
-      const order = n > max ? pickDiscs(xyzr, n, cam, { far, max }) : null;
+      // (the gargantuans' discs first, so the room the writer keeps the nearest of has a place for them)
+      giantList.length = 0;
+      for (const g of giants) {
+        const k = giantK(Math.hypot(g.at[0] - cam[0], g.at[1] - cam[1], g.at[2] - cam[2]), g).disc * jumpK;
+        if (k > 0) for (const p of giantParts(g, cam)) giantList.push(p, k);
+      }
+      const room = Math.max(0, max - giantList.length / 2);
+      const order = n > room ? pickDiscs(xyzr, n, cam, { far, max: room }) : null;
       const m = order ? order.length : n;
       writer.begin();
       for (let k = 0; k < m; k++) {
@@ -161,18 +194,24 @@ export function createDiscs(writer, { budget, far = FAR, keyed = false } = {}) {
         // what's built whole is skipped above)
         const w = what[i];
         // (and as much as its sector's specks show: a sector coming in fades its discs in with them)
-        const alpha = levelWeights(dist, { reach: 0, far: w.kind === 'thing' ? THING_DISC : far }).disc * w.shown * jumpK;
+        const reach = w.kind === 'extra' ? THING_NEAR * w.row.size : 0;
+        const alpha = levelWeights(dist, { reach, far: w.kind === 'thing' ? THING_DISC : far }).disc * w.shown * jumpK;
         let c;
         let lx = 0;
         let ly = 0;
         let lz = 0;
         let lift = 1;
-        if (w.kind === 'thing') {
-          const k = THING_KINDS[w.row.things.kind[w.star]];
-          c = rgb(k.look.color);
-          lx = -x;
-          ly = -y;
-          lz = -z;
+        if (w.kind === 'thing' || w.kind === 'extra') {
+          const l = lookOf(w.kind === 'thing' ? THING_KINDS[w.row.things.kind[w.star]].kind : w.row.kind);
+          c = rgb(l.color);
+          if (l.lit) {
+            lx = -x;
+            ly = -y;
+            lz = -z;
+          } else lift = THING_LIFT; // (a lamp or a glow: lit by itself, but never as bright as a star)
+        } else if (w.kind === 'companion') {
+          c = rgb(w.row.color);
+          lift = STAR_LIFT;
         } else if (w.kind === 'star') {
           c = rgb(w.row.star.color);
           lift = STAR_LIFT;
@@ -192,9 +231,17 @@ export function createDiscs(writer, { budget, far = FAR, keyed = false } = {}) {
           }
         }
         // (a rock, ice or a derelict lumpy, seeded by where it is; a rogue world, a star or a planet a smooth ball)
-        const lumpy = (w.kind === 'thing' && THING_KINDS[w.row.things.kind[w.star]].kind !== 'rogue') || (w.kind === 'wonder' && w.row.kind === 'derelict');
+        const lumpy = (w.kind === 'thing' && LUMPY.has(THING_KINDS[w.row.things.kind[w.star]].kind)) || (w.kind === 'extra' && LUMPY.has(w.row.kind)) || (w.kind === 'wonder' && w.row.kind === 'derelict');
         const rough = lumpy ? 0.05 + 0.95 * (((Math.abs(x * 0.0137 + z * 0.0291 + y * 0.0071) % 1) + 1) % 1) : 0;
-        writer.push(x, y, z, r, c[0] * lift, c[1] * lift, c[2] * lift, lx, ly, lz, alpha, keyed ? (w.kind === 'thing' ? (keyOf(w.row.id) ^ Math.imul(w.row.things.slot[w.star] + 1, 0x9e3779b1)) >>> 0 : keyOf(w.row.id)) : -1, rough);
+        const id = w.kind === 'companion' ? `${w.star.id}:c${w.row.k}` : w.row.id;
+        writer.push(x, y, z, r, c[0] * lift, c[1] * lift, c[2] * lift, lx, ly, lz, alpha, keyed ? (w.kind === 'thing' ? (keyOf(w.row.id) ^ Math.imul(w.row.things.slot[w.star] + 1, 0x9e3779b1)) >>> 0 : keyOf(id)) : -1, rough);
+      }
+      // (the gargantuans: no key, so a sector coming in doesn't count them as pops; they're huge
+      // and on the sky from 400,000, eased in with the sector's specks)
+      for (let i = 0; i < giantList.length; i += 2) {
+        const p = giantList[i];
+        const l = p.light;
+        writer.push(p.at[0], p.at[1], p.at[2], p.r, p.color[0], p.color[1], p.color[2], l ? l[0] : 0, l ? l[1] : 0, l ? l[2] : 0, giantList[i + 1], -1, p.rough);
       }
       writer.end();
       count = writer.count?.() ?? m;

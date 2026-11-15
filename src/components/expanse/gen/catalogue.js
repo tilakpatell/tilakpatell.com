@@ -18,9 +18,9 @@
 //   solids, [solidOf(row, at)] or [] where that's null. Read this, never solidOf alone: a
 //   fleet is solid ship by ship, not as one sphere, and its ships come in here.
 // fleetLayout(row, at = row.at) → [{ k, at, heading, length }]: a fleet's ships (below)
-// discRadius(kind, size, { core = false } = {}) → the far layer's disc radius, size × disc,
-//   but a beacon's in the core sector is its own size: the core is lighter and holds the
-//   hand-made places, and some 75 beacons lie within the far plane of a core pose
+// discRadius(kind, size, { core = false } = {}) → the far layer's disc radius, size × disc.
+//   No far glow is bigger than its body (the owner keeps the old sky): a beacon's disc is its
+//   own size, a comet's its nucleus and a little of its coma
 // hexOf([r, g, b]) → '#rrggbb', from linear light (the inverse of palette.js's linearOf)
 // PLANET_SIZE: the weighted mean of PLANET_TYPES' radius midpoints, what "a planet's size" means
 // ROGUE_TYPES: [[type, weight]] a rogue world is drawn from; LORE_COUNT: the monoliths' lines
@@ -92,7 +92,7 @@ const CORE = [...LATTICE, 'field', 'icefield', 'comet', 'rig', 'system', 'statio
 const ROWS = {
   system: [['star', 0], null, 0],
   rogue: [['sky', 0.05], 1, 1],
-  comet: [['star', 0], 1, 4],
+  comet: [['star', 0], 1, 1.5],
   field: [['grey', 0.25], null, 0],
   icefield: [['engine', 0.6], null, 0],
   rock: [['grey', 0.15], 1, 1],
@@ -111,7 +111,7 @@ const ROWS = {
   debris: [['grey', 0.1], null, 0],
   fleet: [['bone', 0.2], null, 0.4],
   rig: [['sun', 0], 0.6, 1],
-  beacon: [['shot', 0], 1, 3],
+  beacon: [['shot', 0], 1, 1],
   relay: [['ink', 0.3], 1, 1],
   monolith: [['sky', 0.05], 1, 1],
   shipyard: [['bone', 0.3], 0.5, 0.8],
@@ -194,8 +194,7 @@ export function fleetLayout(row, at = row.at) {
   return out;
 }
 
-export function discRadius(kind, size, { core = false } = {}) {
-  if (kind === 'beacon' && core) return size;
+export function discRadius(kind, size) {
   return size * lookOf(kind).disc;
 }
 

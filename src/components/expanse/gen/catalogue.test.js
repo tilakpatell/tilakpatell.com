@@ -40,9 +40,10 @@ describe('the catalogue', () => {
     expect(rowSolids(rock)).toEqual([solidOf(rock)]);
     expect(rowSolids({ id: 's', kind: 'storm', at: [0, 0, 0], size: 2000 })).toEqual([]);
   });
-  it('draws a beacon’s disc three times its size, but its own size in the core', () => {
-    expect(discRadius('beacon', 20)).toBe(60);
-    expect(discRadius('beacon', 20, { core: true })).toBe(20);
+  it('draws no far disc bigger than its body', () => {
+    // (no far glow bigger than its body: the owner keeps the old sky)
+    expect(discRadius('beacon', 20)).toBe(20);
+    expect(discRadius('comet', 10)).toBe(15);
     expect(discRadius('rock', 50, { core: true })).toBe(50);
     expect(discRadius('storm', 3000)).toBe(0);
   });

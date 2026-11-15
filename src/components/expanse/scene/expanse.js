@@ -35,6 +35,8 @@ import { SECTOR, sectorKey } from '../../../lib/space/address.js';
 import { createChunkGrid3 } from '../../../runtime/chunkGrid3';
 import { beyondJob, sectorJob, withMoons } from '../gen/job';
 import { spaceTime } from '../gen/orbits';
+import { NEBULA_SHOW } from '../gen/extras';
+import { rowAt } from '../gen/paths';
 import { UNIVERSE } from '../gen/seed';
 import { createDiscs } from './discs';
 import { createNear } from './near';
@@ -117,6 +119,8 @@ export function createExpanse(parent, { universe = UNIVERSE, tier = 'mid', worke
   const cam = [0, 0, 0];
   const nearSectors = [];
   const nearSystems = [];
+  const giants = []; // (the gargantuans of the 3 × 3 × 3)
+  const clouds = []; // ({ row, rec, n }: lane 4a's clouds, n their drawing while near)
   const sectorAt = (sx, sy, sz) => loaded.get(keyOf(sx, sy, sz))?.sector ?? null;
   // (how much of a sector shows: its slot's, so its discs come and go with its specks)
   const recOf = new WeakMap(); // sector → its record
@@ -164,6 +168,10 @@ export function createExpanse(parent, { universe = UNIVERSE, tier = 'mid', worke
         }
         rec.nebulae.push(n);
       }
+      // (lane 4a's clouds: nebula pockets, supernova remnants and ion storms, the same renderer,
+      // each handed to it only while the camera is within NEBULA_SHOW of its edge (below), so
+      // none is drawn from a hand-made place, which they all keep that far off)
+      for (const list of ['pocket', 'remnant', 'storm']) for (const row of rec.sector.extras?.[list] ?? []) clouds.push({ row, rec, n: null });
     }
   };
   const askBeyond = (c) => {
@@ -229,6 +237,7 @@ export function createExpanse(parent, { universe = UNIVERSE, tier = 'mid', worke
       askBeyond(centre);
       nearSectors.length = 0;
       nearSystems.length = 0;
+      giants.length = 0;
       let ready = true;
       for (let z = -1; z <= 1; z++)
         for (let y = -1; y <= 1; y++)
@@ -239,6 +248,9 @@ export function createExpanse(parent, { universe = UNIVERSE, tier = 'mid', worke
               continue;
             }
             giveSlot(rec);
+            // (a gargantuan is on the sky from across the 3 × 3 × 3: lane 4a's)
+            for (const g of rec.sector.extras?.gargantuan ?? []) giants.push(g);
+            for (const g of rec.sector.extras?.arrival ?? []) giants.push(g);
             // (only a sector the far plane reaches has a disc in it, and only one a system's reach does, a body built)
             const d = boxDist(rec.sector.origin, cam);
             if (d <= FAR + MOST_REACH) nearSectors.push(rec.sector);
@@ -277,13 +289,30 @@ export function createExpanse(parent, { universe = UNIVERSE, tier = 'mid', worke
       }
       // ── the bodies: built whole within a system's reach, discs to the far plane ──
       const orbitT = spaceTime(now);
+      for (let i = clouds.length - 1; i >= 0; i--) {
+        const c = clouds[i];
+        if (c.rec.slot < 0) {
+          // (its sector let its slot go)
+          c.n?.dispose();
+          clouds.splice(i, 1);
+          continue;
+        }
+        const at = c.row.path ? rowAt(c.row, orbitT) : c.row.at;
+        const near = !hidden && Math.hypot(at[0] - cam[0], at[1] - cam[1], at[2] - cam[2]) <= NEBULA_SHOW + c.row.size;
+        if (near && !c.n) c.n = drawNebula(c.row);
+        else if (!near && c.n) {
+          c.n.dispose();
+          c.n = null;
+        }
+        if (c.n && c.row.path) c.n.move?.(at); // (a storm drifts on its loop)
+      }
       near.update(hidden ? [] : nearSystems, cam, orbitT, camera);
-      things.update(hidden ? [] : pickNear(sectorAt, nearSectors, cam, { max: Math.max(1, budget.thingsNear) }), camera, orbitT);
+      things.update(hidden ? [] : pickNear(sectorAt, nearSectors, cam, { max: Math.max(1, budget.thingsNear), t: orbitT, giants }), camera, orbitT);
       if (discs) {
         if (hidden) {
           far.discs.begin();
           far.discs.end();
-        } else discs.feed(nearSectors, cam, orbitT, near.built(), sectorAt, shownOf, dt);
+        } else discs.feed(nearSectors, cam, orbitT, near.built(), sectorAt, shownOf, dt, giants);
       }
       solidList.length = 0;
       for (const so of near.solids()) solidList.push(so);

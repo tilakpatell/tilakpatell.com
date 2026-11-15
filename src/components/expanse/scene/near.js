@@ -22,6 +22,7 @@
 import * as THREE from 'three';
 import { buildBody } from '../../galaxy/bodies';
 import { hot } from '../../../lib/three/canvasTexture';
+import { companionAt, companionsOf } from '../gen/companions';
 import { moonAt, orbitAt } from '../gen/orbits';
 
 export const TYPE_LOOK = {
@@ -121,6 +122,18 @@ export function createNear(group, { budget, tier = 'mid', build = buildBody, pre
     show(star, sys);
     sys.entry = { id: s.id, at: s.at, r: s.star.size, colour: s.star.color, strength: STAR_STRENGTH[s.star.class] ?? 0.7, reach: s.reach * 3 };
     sys.solids.push({ id: s.id, at: s.at, r: s.star.size, reach: s.star.size * 1.2 });
+    // (a binary's or trinary's companions, lane 4a's: a ball each, the disc's size and colour, so
+    // the disc gives way to one like it; made with the star, in its group, so readied with it)
+    sys.companions = companionsOf(s).map((c) => {
+      const mat = new THREE.MeshBasicMaterial({ color: hot(c.color, STAR_GLOW), toneMapped: false });
+      const ball = new THREE.Mesh(BALL, mat);
+      ball.name = `companion:${s.id}:${c.k}`;
+      ball.scale.setScalar(c.size);
+      g.add(ball);
+      const solid = { id: `${s.id}:c${c.k}`, at: [0, 0, 0], r: c.size, reach: c.size * 1.2 };
+      sys.solids.push(solid);
+      return { c, ball, mat, solid };
+    });
     for (const p of s.planets) {
       sys.queue.push(() => {
         const body = build(TYPE_LOOK[p.type] ?? TYPE_LOOK.rock, { r: p.radius, tier });
@@ -175,6 +188,7 @@ export function createNear(group, { budget, tier = 'mid', build = buildBody, pre
       r.mat.dispose();
     }
     sys.starMat.dispose();
+    for (const k of sys.companions ?? []) k.mat.dispose();
     sys.group.removeFromParent();
     built.delete(id);
     ids.delete(id);
@@ -228,6 +242,13 @@ export function createNear(group, { budget, tier = 'mid', build = buildBody, pre
           sunDir.set(s.at[0] - at[0], s.at[1] - at[1], s.at[2] - at[2]).normalize();
           b.body.setSuns(sun);
           b.body.update(t, camera);
+        }
+        for (const k of sys.companions) {
+          const at = companionAt(k.c, s, t);
+          k.ball.position.set(at[0], at[1], at[2]);
+          k.solid.at[0] = at[0];
+          k.solid.at[1] = at[1];
+          k.solid.at[2] = at[2];
         }
         for (const r of sys.rings) {
           const at = orbitAt(r.planet, t);

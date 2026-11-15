@@ -40,3 +40,32 @@ Pure: it changes the generator, lane 3’s `places/` and the words. Today’s dr
 No pose gains a call. Maw’s and landing-middleearth’s twenty-odd triangles are the clock’s: a second maw visit in the same run gave 103,905 on the branch against main’s 103,907, and a list of every visible mesh and instance count at maw is the same on both trees (51 each). The first run found a rogue world 18.7 of its sizes from the breakingbad camera (+1 call, +720 triangles, the near layer’s default sphere): the new weights had moved a lattice thing inside the near layer’s 30-size mesh hand-over, which lane 2 had held by measurement alone. The lattice now keeps `THING_CLEAR` (31) of its sizes off every keep-out, every baseline pose being inside one, and `things/clear.test.js` holds every lattice thing over 30 sizes from every pose. That also takes a rock off the overview (one call, 80 triangles fewer).
 
 **The endless check** (`node scripts/universe-endless-check.mjs --quality mid`): every step ok, no pop, at least 10 places within 9,000 and the nearest within 4,700 at each.
+
+## PR 4a.2: drawn
+
+The near and far layers read the catalogue: a list row is a disc of its catalogue size out to the far plane and a mesh near (`universe/things/`, through lane 2’s `drawers` hook), a binary’s companions are discs and then balls, and each gargantuan is a few discs of farStars’ one `Points` at its true angular size out to 400,000, then a mesh within 36,000 of its edge. Stock materials only: `glsl-sites` stays 613 of 613. `scene.js` 6,487 lines, as main.
+
+**Draw calls and triangles at mid,** main at `81e13aaf` (4a.1 merged) and this branch side by side:
+
+| pose | main calls | branch calls | main triangles | branch triangles |
+| --- | --: | --: | --: | --: |
+| overview | 94 | 95 | 518,615 | 518,695 |
+| falcon-sun | 76 | 77 | 503,591 | 503,671 |
+| middleearth-limb | 35 | 35 | 67,385 | 67,385 |
+| rickmorty | 36 | 36 | 68,511 | 68,511 |
+| gaming | 39 | 39 | 75,119 | 75,119 |
+| caribbean | 39 | 39 | 117,145 | 117,145 |
+| middleearth | 35 | 35 | 67,385 | 67,385 |
+| breakingbad | 60 | 60 | 61,583 | 61,583 |
+| office | 37 | 37 | 52,889 | 52,889 |
+| belt | 42 | 42 | 450,951 | 450,951 |
+| maw | 39 | 39 | 103,907 | 103,903 |
+| landing-middleearth | 119 | 119 | 144,108 | 144,108 |
+| station | 74 | 75 | 502,873 | 502,953 |
+| far-rim | 38 | 38 | 70,253 | 70,255 |
+
+The one call and 80 triangles at overview, falcon-sun and station are the clock’s, not this lane’s: run again, main and the branch flip between 94 and 95 at overview together, the same number in the same run each time, and no mesh of this lane’s exists in the scene there (a list of every object named `things:`, `gargantuan:` or `companion:` at overview is empty).
+
+**The endless check** (`scripts/universe-endless-check.mjs --quality mid`), with its new steps: every step ok, no pop, at least 10 places within 9,000 at each; the `gargantuan` step teleports 15,000 past the edge of the nearest (the ringworld arc of `E:1,0,1`, 121,000 off at the start) and its mesh is built; the sweep finds and draws all 18 near kinds (outpost, beacon, relay, monolith, comet, field, ice field, rig, debris, fleet, shipyard, storm, herd, swarm, pulsar, magnetar, forming star, wormhole).
+
+**Looked at in a browser** (headless, software GL, mid): the ringworld arc on the sky from 120,000 and its band near; the Dyson swarm a lit ball far off and a shell of collectors round its star near; an asteroid field of stone-coloured rocks; an ion storm a soft drifting cloud; a fleet ship by ship; a wormhole’s throat and swirl.

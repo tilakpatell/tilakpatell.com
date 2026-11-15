@@ -10,13 +10,16 @@
 //   nearSlots     sector slots in the far layer, the 3 × 3 × 3 and spare
 //   beyondRings   rings of sectors past the 3 × 3 × 3 drawn as starfield
 //   thingsNear    small things in space built as meshes round the ship
-//   thingKinds    a share of `discs` by kind (lane 4a fills it)
+//   thingKinds    lane 4a's near things: { rocks (a field's), pieces (a debris
+//                 field's), bodies (a herd's or swarm's creatures), panels (a
+//                 Dyson swarm's collectors) }, each stepped as `discs` is
 //   workers       the worker pool's threads making sectors
 //   expanseMs     main-thread milliseconds a frame for taking sectors in
 //   traffic       traffic groups flying round the ship
 //   events        events at once
 //   nebula        { res: the volume's resolution against the screen, steps }
-//   gargantuan    the detail a gargantuan is built at
+//   gargantuan    the detail a gargantuan is built at ('low' | 'mid' | 'high'),
+//                 one level down from step 2, 'low' at the floor
 //   planetMap     a generated planet's orbit map, [width, height]
 //   tags          the generated places' names shown at once (lane 3's)
 //
@@ -29,13 +32,14 @@
 //   is the quality's floor, a quarter of them. No step raises anything.
 
 export const BUDGET = {
-  low: { systemsBuilt: 1, discs: 400, slotSize: 400, nearSlots: 64, beyondRings: 1, thingsNear: 16, thingKinds: {}, workers: 1, expanseMs: 1, traffic: 2, events: 1, nebula: { res: 0.25, steps: 16 }, gargantuan: 'low', planetMap: [256, 128], tags: 3 },
-  mid: { systemsBuilt: 1, discs: 1200, slotSize: 400, nearSlots: 64, beyondRings: 1, thingsNear: 32, thingKinds: {}, workers: 2, expanseMs: 1.5, traffic: 4, events: 2, nebula: { res: 0.5, steps: 32 }, gargantuan: 'mid', planetMap: [256, 128], tags: 6 },
-  high: { systemsBuilt: 2, discs: 2500, slotSize: 400, nearSlots: 64, beyondRings: 2, thingsNear: 64, thingKinds: {}, workers: 3, expanseMs: 2, traffic: 6, events: 3, nebula: { res: 0.5, steps: 48 }, gargantuan: 'high', planetMap: [512, 256], tags: 6 },
-  ultra: { systemsBuilt: 3, discs: 4000, slotSize: 400, nearSlots: 64, beyondRings: 2, thingsNear: 96, thingKinds: {}, workers: 4, expanseMs: 2, traffic: 8, events: 3, nebula: { res: 1, steps: 64 }, gargantuan: 'high', planetMap: [512, 256], tags: 6 },
+  low: { systemsBuilt: 1, discs: 400, slotSize: 400, nearSlots: 64, beyondRings: 1, thingsNear: 16, thingKinds: { rocks: 48, pieces: 16, bodies: 4, panels: 300 }, workers: 1, expanseMs: 1, traffic: 2, events: 1, nebula: { res: 0.25, steps: 16 }, gargantuan: 'low', planetMap: [256, 128], tags: 3 },
+  mid: { systemsBuilt: 1, discs: 1200, slotSize: 400, nearSlots: 64, beyondRings: 1, thingsNear: 32, thingKinds: { rocks: 96, pieces: 32, bodies: 8, panels: 900 }, workers: 2, expanseMs: 1.5, traffic: 4, events: 2, nebula: { res: 0.5, steps: 32 }, gargantuan: 'mid', planetMap: [256, 128], tags: 6 },
+  high: { systemsBuilt: 2, discs: 2500, slotSize: 400, nearSlots: 64, beyondRings: 2, thingsNear: 64, thingKinds: { rocks: 160, pieces: 56, bodies: 12, panels: 1800 }, workers: 3, expanseMs: 2, traffic: 6, events: 3, nebula: { res: 0.5, steps: 48 }, gargantuan: 'high', planetMap: [512, 256], tags: 6 },
+  ultra: { systemsBuilt: 3, discs: 4000, slotSize: 400, nearSlots: 64, beyondRings: 2, thingsNear: 96, thingKinds: { rocks: 240, pieces: 80, bodies: 16, panels: 3000 }, workers: 4, expanseMs: 2, traffic: 8, events: 3, nebula: { res: 1, steps: 64 }, gargantuan: 'high', planetMap: [512, 256], tags: 6 },
 };
 
 export const STEPS = [1, 0.75, 0.5, 0.35];
+const GARGANTUAN = ['low', 'mid', 'high'];
 const FLOOR = 0.25;
 const SCALED = ['discs', 'thingsNear', 'traffic', 'tags'];
 
@@ -51,6 +55,10 @@ export function universeBudget(dev = {}, step = 0, floor = false) {
     row.beyondRings = Math.max(0, base.beyondRings - 1);
     row.nebula.steps = Math.max(1, Math.round(base.nebula.steps / 2));
   }
+  for (const f of Object.keys(base.thingKinds)) row.thingKinds[f] = Math.max(1, Math.round(base.thingKinds[f] * k));
+  const g = GARGANTUAN.indexOf(base.gargantuan);
+  if (floor) row.gargantuan = 'low';
+  else if (s >= 2 && g > 0) row.gargantuan = GARGANTUAN[g - 1];
   row.systemsBuilt = Math.max(1, base.systemsBuilt);
   return row;
 }

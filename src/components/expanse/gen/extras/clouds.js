@@ -17,7 +17,7 @@ import { pathAt } from '../paths';
 import { hash64, int, range, rngOf } from '../seed';
 import { THING_NEAR } from '../things';
 import { tint } from '../../../universe/shared/space';
-import { dartIn, loopOf, nameIn, placedOf, roomFor } from './place';
+import { dartIn, loopOf, nameIn, placedOf, quickSeed, roomFor } from './place';
 
 export const CLOUDS = Object.freeze({
   remnant: { base: 10, max: 2, count: [1, 2], size: [2500, 6000] },
@@ -50,7 +50,8 @@ function scatter(ctx, made, list, { show = false, extent = () => 0, make }) {
   return out;
 }
 
-const seedOf = (ctx, list, at) => hash64(ctx.seed, list, at.map((v) => Math.round(v)).join(','));
+// (a row's seed from the sector's, its list and where it is: quickSeed, not hash64, which works in BigInt)
+const seedOf = (ctx, list, at) => quickSeed(ctx.seed, list, Math.round(at[0]) ^ Math.round(at[1] * 3) ^ Math.round(at[2] * 7));
 
 function pockets(ctx, made) {
   return scatter(ctx, made, 'pocket', {
@@ -131,7 +132,7 @@ function swarms(ctx, made) {
     const path = loopOf(rng, n.at, radius, int(rng, 4, 12));
     // (drawn near, not by the nebula renderer, so it keeps the near things' rule)
     if (!clearOfKeepOuts(n.at, (THING_NEAR + 1) * size + radius, KEEP_OUTS)) continue;
-    out.push({ kind: 'swarm', name: nameIn(rng, ctx), at: pathAt(path, 0), size, path, extent: radius, nebula: n.id, seed: hash64(ctx.seed, 'swarm', n.id) });
+    out.push({ kind: 'swarm', name: nameIn(rng, ctx), at: pathAt(path, 0), size, path, extent: radius, nebula: n.id, seed: quickSeed(ctx.seed, 'swarm', out.length) });
   }
   return out;
 }

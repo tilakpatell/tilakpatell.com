@@ -48,14 +48,13 @@ describe('the baseline poses', () => {
       const p = poseFor(n);
       const row = (table[n] = {});
       for (const sec of full) {
-        const core = !sec.sx && !sec.sy && !sec.sz;
         const t = sec.things;
         const add = (kind, at, size) => {
-          const r = discRadius(kind, size, { core });
+          const r = discRadius(kind, size);
           if (!r) return;
           const d = len(p.at, at);
           if (d > FAR + r) return;
-          if (kind === 'beacon' && core) expect(r).toBeLessThanOrEqual(size);
+          expect(r, kind).toBeLessThanOrEqual(1.5 * size); // (no far glow bigger than its body)
           if (discPx(d, r, { fov: 34, height: 1080 }) > 4) row[kind] = (row[kind] ?? 0) + 1;
         };
         for (let i = 0; i < t.count; i++) add(THING_KINDS[t.kind[i]].kind, [0, 1, 2].map((k) => sec.origin[k] + t.at[3 * i + k]), t.size[i]);

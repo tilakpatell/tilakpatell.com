@@ -11,8 +11,9 @@
 import { SECTOR } from '../../../../lib/space/address.js';
 import { KEEP_OUTS, clearOfKeepOuts } from '../keepOuts';
 import { COMET_PERIOD, pathAt, pathSpeed, rowAt } from '../paths';
-import { hash64, range, rngOf } from '../seed';
-import { nameIn, placedOf, roomFor } from './place';
+import { range } from '../seed';
+import { THING_NAMES, cometName } from '../tables';
+import { placedOf, quickRng, quickSeed, roomFor } from './place';
 
 export const FIELD = Object.freeze({ share: 1 / 3, ice: 0.3, size: [250, 700], out: [1.15, 1.6], height: 300 });
 export const COMET = Object.freeze({ share: 0.25, size: [6, 20], q: [1.2, 2.0], Q: [1.5, 3], tail: [60, 160], tilt: 0.6, fast: 0.25 });
@@ -33,19 +34,18 @@ function fieldsOf(ctx, made) {
   const out = [];
   const placed = placedOf(made);
   for (const sys of ctx.systems) {
-    const seed = hash64(sys.seed, 'field');
-    const rng = rngOf(seed);
+    const seed = quickSeed(sys.seed, 'field');
+    const rng = quickRng(seed);
     if (!(rng() < FIELD.share)) continue;
     const size = range(rng, ...FIELD.size);
     const ice = rng() < FIELD.ice;
     const a = rng() * 2 * Math.PI;
     const out1 = range(rng, ...FIELD.out) * sys.reach;
     const h = range(rng, -FIELD.height, FIELD.height);
-    const name = nameIn(rng, ctx);
     const at = [sys.at[0] + Math.cos(a) * out1, sys.at[1] + h, sys.at[2] + Math.sin(a) * out1];
     if (!roomFor(at, { size, own: sys.id }, ctx, placed)) continue;
     placed.push({ at, r: size });
-    out.push({ kind: ice ? 'icefield' : 'field', name, at, size, system: sys.id, seed });
+    out.push({ kind: ice ? 'icefield' : 'field', name: `${sys.name} ${THING_NAMES[ice ? 'icefield' : 'field']}`, at, size, system: sys.id, seed });
   }
   return out;
 }
@@ -55,11 +55,25 @@ function inCube(focus, origin, reach) {
   return true;
 }
 
+// (another system's star within span + its reach of this one's: squared, no hypot, over some 270)
+function crowded(systems, sys, span) {
+  const [x, y, z] = sys.at;
+  for (const o of systems) {
+    if (o === sys) continue;
+    const r = span + o.reach;
+    const dx = o.at[0] - x;
+    const dy = o.at[1] - y;
+    const dz = o.at[2] - z;
+    if (dx * dx + dy * dy + dz * dz < r * r) return true;
+  }
+  return false;
+}
+
 function cometsOf(ctx) {
   const out = [];
   for (const sys of ctx.systems) {
-    const seed = hash64(sys.seed, 'comet');
-    const rng = rngOf(seed);
+    const seed = quickSeed(sys.seed, 'comet');
+    const rng = quickRng(seed);
     if (!(rng() < COMET.share)) continue;
     const size = range(rng, ...COMET.size);
     const q = range(rng, ...COMET.q) * sys.star.size;
@@ -73,14 +87,14 @@ function cometsOf(ctx) {
     const d = n0[0] * peri[0] + n0[1] * peri[1] + n0[2] * peri[2];
     const normal = unit([n0[0] - d * peri[0], n0[1] - d * peri[1], n0[2] - d * peri[2]]);
     const phase = rng();
-    const name = nameIn(rng, ctx);
+    const name = cometName(sys.name);
     const e = (Q - q) / (Q + q);
     const path = { type: 'kepler', focus: [...sys.at], q, e, peri, normal, period: COMET_PERIOD, phase };
     if (!(pathSpeed(path) < COMET.fast)) continue;
     const span = Q + tail;
     if (!clearOfKeepOuts(sys.at, span + 9 * size, KEEP_OUTS)) continue;
     if (!inCube(sys.at, ctx.origin, span)) continue;
-    if (ctx.systems.some((o) => o !== sys && Math.hypot(o.at[0] - sys.at[0], o.at[1] - sys.at[1], o.at[2] - sys.at[2]) < span + o.reach)) continue;
+    if (crowded(ctx.systems, sys, span)) continue;
     if ((ctx.keeps ?? []).some((g) => Math.hypot(g.at[0] - sys.at[0], g.at[1] - sys.at[1], g.at[2] - sys.at[2]) < g.r + span + size)) continue;
     out.push({ kind: 'comet', name, at: pathAt(path, 0), size, system: sys.id, star: [...sys.at], path, tail, extent: Q, seed });
   }
@@ -90,11 +104,11 @@ function cometsOf(ctx) {
 function rigsOf(ctx, made) {
   const out = [];
   for (const f of made.field ?? []) {
-    const seed = hash64(f.seed, 'rig');
-    const rng = rngOf(seed);
+    const seed = quickSeed(f.seed, 'rig');
+    const rng = quickRng(seed);
     if (!(rng() < RIG.share)) continue;
     const size = range(rng, ...RIG.size);
-    out.push({ kind: 'rig', name: nameIn(rng, ctx), at: [...f.at], size, field: f.id, system: f.system, seed });
+    out.push({ kind: 'rig', name: `${f.name.replace(/ (Belt|Ice)$/, '')} ${THING_NAMES.rig}`, at: [...f.at], size, field: f.id, system: f.system, seed });
   }
   return out;
 }

@@ -232,11 +232,14 @@ export function thingsOf(ctx, extras = [], kinds = THING_KINDS, { lattice = true
   const lists = {};
   const ranges = [];
   for (const e of extras) checkList(e, ranges);
+  // (the id's sector part made once: spaceId for every row of some 270 cost more than the copy)
+  const w0 = spaceId([ctx.sx, ctx.sy, ctx.sz], { wonder: 0 });
+  const prefix = w0.slice(0, -1);
   for (const e of extras) {
     lists[e.list] = e
       .make(ctx, lists)
       .slice(0, e.max)
-      .map((row, k) => ({ ...row, id: spaceId([ctx.sx, ctx.sy, ctx.sz], { wonder: e.base + k }) }));
+      .map((row, k) => ({ ...row, id: prefix + (e.base + k) }));
   }
   return { things, extras: lists };
 }
