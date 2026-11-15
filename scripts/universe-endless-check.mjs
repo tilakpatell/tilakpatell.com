@@ -247,6 +247,43 @@ try {
     console.log(`kind      ${kind.padEnd(9)} ${drawn ? 'drawn' : 'NOT drawn'}`);
     if (!drawn) fail(`kind: ${kind} never drawn near`);
   }
+  // what you can do (lane 4a's): E at a debris field salvages it; an ion storm drains the shields
+  const nearest = (kind) =>
+    page.evaluate((kind) => {
+      const s = window.__universeDebug.state.ship;
+      let best = null;
+      for (const sec of window.__universeDebug.expanse.sectors().values())
+        for (const r of sec.extras?.[kind] ?? []) {
+          const d = Math.hypot(r.at[0] - s.x, r.at[1] - s.y, r.at[2] - s.z);
+          if (!best || d < best.d) best = { at: r.at, size: r.size, path: r.path ?? null, d };
+        }
+      return best;
+    }, kind);
+  const debris = await nearest('debris');
+  if (debris) {
+    await page.evaluate((p) => window.__universeDebug.teleport(p.at[0], p.at[1], p.at[2], 0, 0), debris);
+    const said = await until(() => /^E: /.test(window.__universeDebug.state.note?.text ?? ''), null, 60000);
+    await page.keyboard.press('e');
+    const done = said && (await until(() => /^Salvaged /.test(window.__universeDebug.state.note?.text ?? ''), null, 30000));
+    console.log(`act       salvage ${done ? 'ok' : 'NOT done'}`);
+    if (!done) fail('act: E at debris never salvaged it');
+  }
+  const storm = await nearest('storm');
+  if (storm) {
+    // (its middle on its loop now, as the sweep works it out; the drain is 4 a second)
+    await page.evaluate((p) => {
+      const q = p.path;
+      const fr = (x) => x - Math.floor(x);
+      const th = 2 * Math.PI * fr(q.revs * fr(Date.now() / 1000 / 65536) + q.phase);
+      const side = [q.normal[1] * q.ref[2] - q.normal[2] * q.ref[1], q.normal[2] * q.ref[0] - q.normal[0] * q.ref[2], q.normal[0] * q.ref[1] - q.normal[1] * q.ref[0]];
+      const c = [0, 1, 2].map((i) => q.centre[i] + Math.cos(th) * q.radius * q.ref[i] + Math.sin(th) * q.radius * side[i]);
+      window.__universeDebug.state.shield = 100;
+      window.__universeDebug.teleport(c[0], c[1], c[2], 0, 0);
+    }, storm);
+    const drained = await until(() => window.__universeDebug.state.shield < 99, null, 60000);
+    console.log(`act       storm drain ${drained ? 'ok' : 'NOT seen'}`);
+    if (!drained) fail('act: an ion storm never drained the shields');
+  }
 } catch (e) {
   fail(String(e.message ?? e));
 } finally {
