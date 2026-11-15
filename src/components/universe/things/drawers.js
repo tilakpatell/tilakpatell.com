@@ -25,7 +25,9 @@ import { DRAWN, partsOf } from './shapes';
 import { GIANT_KINDS, createGiantDrawer } from './gargantuans';
 
 const ENTRIES = 24; // (a kind's entries near at once, at most: lane 2's cap is thingsNear, 32 on mid)
-const PER = { rocks: null, pieces: null, bodies: null, haulers: 5, ships: 7, puffs: 28, sparks: 6, motes: 24, beams: 2 };
+const PER = { rocks: null, pieces: null, bodies: null, haulers: 5, ships: 7, sparks: 4, motes: 24, beams: 2, arcs: 3 };
+// (the visitor asked for less motion: no lightning flickers)
+const REDUCED = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
 const TAU = 2 * Math.PI;
 const frac = (x) => x - Math.floor(x);
 const Y = new THREE.Vector3(0, 1, 0);
@@ -105,20 +107,15 @@ function place(kind, e, t, w, budget, put, names) {
     return;
   }
   if (kind === 'storm') {
+    // (lightning inside its cloud: a spark here for a moment, then somewhere else; none when the
+    // visitor asks for less motion)
+    if (REDUCED) return;
     const r = seededRng(seed);
-    for (let i = 0; i < PER.puffs; i++) {
-      // (a flattened drift of puffs, each breathing on its own clock)
-      const p = [at[0] + (r() * 2 - 1) * size * 0.7, at[1] + (r() * 2 - 1) * size * 0.25, at[2] + (r() * 2 - 1) * size * 0.7];
-      const k = size * (0.35 + 0.35 * r());
-      const breathe = 0.65 + 0.35 * Math.sin(TAU * frac(t / (5 + 6 * r())) + i);
-      put('puffs', p, q, k, k, k, w * breathe);
-    }
     for (let i = 0; i < PER.sparks; i++) {
-      // (lightning: a spark here, then gone, then somewhere else)
-      const f = frac(t / (0.7 + r()) + r());
-      const p = [at[0] + (r() * 2 - 1) * size * 0.5, at[1] + (r() * 2 - 1) * size * 0.2, at[2] + (r() * 2 - 1) * size * 0.5];
-      const k = size * 0.12;
-      put('sparks', p, q, k, k, k, f < 0.08 ? w : 0);
+      const f = frac(t / (0.9 + r()) + r());
+      const p = [at[0] + (r() * 2 - 1) * size * 0.5, at[1] + (r() * 2 - 1) * size * 0.25, at[2] + (r() * 2 - 1) * size * 0.5];
+      const k = size * 0.06;
+      put('sparks', p, q, k, k, k, f < 0.05 ? w : 0);
     }
     return;
   }
@@ -150,8 +147,14 @@ function place(kind, e, t, w, budget, put, names) {
     return;
   }
   if (kind === 'wormhole') {
-    q.setFromEuler(e3.set(0.3, TAU * frac(t / 40), 0));
-    for (const p of ['throat', 'swirl', 'halo']) put(p, at, q, s, s, s, p === 'throat' ? 1 : w);
+    put('throat', at, q.identity(), s, s, s);
+    put('ring', at, q, s, s, s, w);
+    put('halo', at, q, s, s, s, w);
+    // (smeared starlight: short arcs at the rim, turned round it slowly)
+    for (let i = 0; i < PER.arcs; i++) {
+      const a = TAU * (i / PER.arcs + frac(t / 90));
+      put('arcs', at, q, s * (1 + 0.08 * i), s * (1 + 0.08 * i), s, w * (0.4 + 0.15 * i), a);
+    }
     return;
   }
   if (kind === 'beacon') {
@@ -195,11 +198,15 @@ function createKindDrawer(kind, group, { prepare, tier, budget }) {
     return m;
   };
   const facing = new THREE.Quaternion(); // (the camera's turn: a glow's quad faces it)
-  const put = (name, at, quat, sx, sy, sz, glow = 1) => {
+  const rollQ = new THREE.Quaternion();
+  const Z = new THREE.Vector3(0, 0, 1);
+  // (a glow's quad faces the camera, turned `roll` about the way it faces)
+  const put = (name, at, quat, sx, sy, sz, glow = 1, roll = 0) => {
     const m = meshOf(name, 1);
     if (m.n >= m.cap) return;
     pos.set(at[0] - anchor[0], at[1] - anchor[1], at[2] - anchor[2]);
-    m4.compose(pos, m.part.billboard ? facing : quat, sc.set(sx, sy, sz));
+    const turn = m.part.billboard ? (roll ? rollQ.setFromAxisAngle(Z, roll).premultiply(facing) : facing) : quat;
+    m4.compose(pos, turn, sc.set(sx, sy, sz));
     m.mesh.setMatrixAt(m.n, m4);
     if (m.part.additive) colour.setScalar(glow);
     else if (m.part.tint) colour.set(m.part.tint).offsetHSL(0, 0, ((m.n * 0.618) % 1 - 0.5) * 0.12);

@@ -19,6 +19,7 @@ import * as THREE from 'three';
 import { hot } from '../../../lib/three/canvasTexture';
 import { giantK } from '../../expanse/shared/levels';
 import { seededRng } from './layout';
+import { softDot } from './shapes';
 
 export const GIANT_KINDS = ['hole', 'arc', 'hulk', 'giant', 'dyson'];
 const DETAIL = { low: 0.5, mid: 0.75, high: 1 };
@@ -105,25 +106,54 @@ function build(row, detail, panels) {
     spinning.add(new THREE.Mesh(shaded(geo, c0, c1, rng), solid({ vertexColors: true, roughness: 0.95, metalness: 0 })));
     g.add(new THREE.Mesh(new THREE.SphereGeometry(row.size * 1.035, seg(64), seg(48)), glow(c0, 0.6, 0.25, THREE.BackSide)));
   } else {
-    g.add(new THREE.Mesh(new THREE.SphereGeometry(row.body, seg(48), seg(32)), glow(c0, 4)));
-    const n = panels;
-    const mesh = new THREE.InstancedMesh(new THREE.PlaneGeometry(1, 1), solid({ color: '#3a3020', metalness: 0.85, roughness: 0.35, side: THREE.DoubleSide, emissive: hot(c0, 0.15) }), n);
+    // a Dyson swarm: its star, and its glow behind, burning through a sparse shell of collectors,
+    // each a thin dark panel turned its own way off facing the star, most dark, some catching the
+    // light as glints; gaps between them
+    g.add(new THREE.Mesh(new THREE.SphereGeometry(row.body, seg(48), seg(32)), glow(c0, 3)));
+    const halo = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), fade(new THREE.MeshBasicMaterial({ map: softDot(), color: hot(c0, 1.6), toneMapped: false, blending: THREE.AdditiveBlending }), 0.8));
+    halo.scale.setScalar(row.body * 7);
+    halo.userData.billboard = true;
+    g.add(halo);
+    const n = Math.max(60, Math.round(panels * 0.45));
+    const glints = Math.round(n / 12);
+    const panel = new THREE.BoxGeometry(1, 0.62, 0.03);
+    // (dark panels, lit by the scene at their edges; a glint is a panel catching the star, glowing)
+    const mesh = new THREE.InstancedMesh(panel, solid({ color: '#ffffff', metalness: 0.85, roughness: 0.35 }), n - glints);
+    const shine = new THREE.InstancedMesh(panel, glow(c0, 1.4, 0.85, THREE.DoubleSide), glints);
     const m4 = new THREE.Matrix4();
     const q = new THREE.Quaternion();
+    const tilt = new THREE.Quaternion();
+    const e = new THREE.Euler();
     const p = new THREE.Vector3();
     const s = new THREE.Vector3();
     const Z = new THREE.Vector3(0, 0, 1);
+    const tone = new THREE.Color();
+    const spacing = row.size * Math.sqrt((4 * Math.PI) / n);
+    let dark = 0;
+    let lit = 0;
     for (let i = 0; i < n; i++) {
-      // (a Fibonacci sphere, each at its own radius in the shell, facing the star)
+      // (a Fibonacci sphere: even, with room between; each at its own radius in the shell, turned
+      // its own way off facing the star)
       const y = 1 - (2 * (i + 0.5)) / n;
       const r = Math.sqrt(1 - y * y);
       const a = i * 2.399963;
-      const d = row.size * (0.82 + 0.18 * rng());
+      const d = row.size * (0.8 + 0.2 * rng());
       p.set(Math.cos(a) * r * d, y * d, Math.sin(a) * r * d);
       q.setFromUnitVectors(Z, p.clone().normalize().negate());
-      const k = row.size * (0.06 + 0.06 * rng());
-      mesh.setMatrixAt(i, m4.compose(p, q, s.set(k, k * 0.6, 1)));
+      tilt.setFromEuler(e.set((rng() - 0.5) * 1.2, (rng() - 0.5) * 1.2, rng() * Math.PI));
+      q.multiply(tilt);
+      const k = spacing * (0.25 + 0.3 * rng());
+      m4.compose(p, q, s.set(k, k, k));
+      if (i % 12 === 5 && lit < glints) shine.setMatrixAt(lit++, m4); // (one in twelve catches the star)
+      else if (dark < n - glints) {
+        mesh.setMatrixAt(dark, m4);
+        mesh.setColorAt(dark++, tone.set('#1e1d22').offsetHSL(0, 0, (rng() - 0.5) * 0.06));
+      }
     }
+    mesh.count = dark;
+    shine.count = lit;
+    shine.frustumCulled = false;
+    spinning.add(shine);
     mesh.frustumCulled = false;
     spinning.add(mesh);
   }
@@ -156,6 +186,9 @@ export function createGiantDrawer(kind, group, { prepare, budget = () => null } 
         b.group.visible = true;
         for (const m of b.materials) m.opacity = (m.userData.opacity ?? 1) * k;
         b.spinning.rotation.z = TAU * frac(t / 600);
+        b.group.traverse((o) => {
+          if (o.userData.billboard && camera) o.quaternion.copy(b.group.quaternion).invert().multiply(camera.quaternion);
+        });
         shown++;
       }
       for (const [id, b] of built)

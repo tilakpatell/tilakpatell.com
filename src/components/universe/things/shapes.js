@@ -31,7 +31,7 @@ const hullGeometry = () => merged([box(0.22, 0.12, 0.7, 0, 0, -0.1), new THREE.C
 
 // a soft round glow, made in code (no canvas, so it's the same in Node): a puff, a coma, a lamp
 let dot = null;
-const softDot = () => {
+export const softDot = () => {
   if (dot) return dot;
   const n = 64;
   const data = new Uint8Array(n * n * 4);
@@ -48,6 +48,18 @@ const softDot = () => {
 // a camera-facing glow (the drawer turns each instance to face the camera)
 const puff = (hex, k, opacity) => new THREE.MeshBasicMaterial({ map: softDot(), color: hot(hex, k), toneMapped: false, transparent: true, opacity, blending: THREE.AdditiveBlending, depthWrite: false });
 const PLANE = () => new THREE.PlaneGeometry(2, 2);
+// a ring whose light falls off from its inner edge to nothing at its outer (additive: black is clear)
+const fading = (inner, outer) => {
+  const g = new THREE.RingGeometry(inner, outer, 128, 8);
+  const pos = g.attributes.position;
+  const col = new Float32Array(pos.count * 3);
+  for (let i = 0; i < pos.count; i++) {
+    const k = Math.pow(1 - (Math.hypot(pos.getX(i), pos.getY(i)) - inner) / (outer - inner), 3);
+    col.set([k, k, k], i * 3);
+  }
+  g.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  return g;
+};
 
 const SHAPES = {
   outpost: (tier) => [{ name: 'hub', geometry: merged([box(0.6, 0.35, 0.6), box(1.4, 0.08, 0.12), box(0.12, 0.08, 1.4), new THREE.CylinderGeometry(0.06, 0.06, 0.9, 6).translate(0.3, 0.5, 0.3)]), material: lit('outpost', { metalness: 0.5 }), tier }],
@@ -81,10 +93,8 @@ const SHAPES = {
     { name: 'hull', geometry: hullGeometry().scale(2, 2, 1.8), material: lit('fleet', { color: '#6f747d' }) },
     { name: 'lights', geometry: new THREE.SphereGeometry(0.03, 6, 4).translate(0.35, 0.28, 0.75), material: glow('#ffc070', 3), additive: true },
   ],
-  storm: () => [
-    { name: 'puffs', geometry: PLANE(), material: puff(KINDS.storm.color, 1.1, 0.35), additive: true, many: 'puffs', billboard: true },
-    { name: 'sparks', geometry: PLANE(), material: puff('#e8f4ff', 4, 0.9), additive: true, many: 'sparks', billboard: true },
-  ],
+  // (its body is lane 1's nebula volume, the storm's own cloud: here only the lightning inside it)
+  storm: () => [{ name: 'sparks', geometry: PLANE(), material: puff('#e8f4ff', 3, 0.9), additive: true, many: 'sparks', billboard: true }],
   herd: () => [{ name: 'bodies', geometry: merged([new THREE.SphereGeometry(0.5, 14, 10).scale(0.55, 0.45, 1.6), new THREE.ConeGeometry(0.3, 0.9, 8).rotateX(-Math.PI / 2).translate(0, 0, -1.2)]), material: lit('herd', { roughness: 0.5, metalness: 0.1, flatShading: false, emissive: KINDS.herd.color, emissiveIntensity: 0.25 }), many: 'bodies' }],
   swarm: () => [{ name: 'motes', geometry: PLANE(), material: puff(KINDS.swarm.color, 3, 0.9), additive: true, many: 'motes', billboard: true }],
   pulsar: () => [
@@ -102,10 +112,13 @@ const SHAPES = {
     { name: 'halo', geometry: PLANE(), material: puff(KINDS.protostar.color, 2, 0.6), additive: true, billboard: true },
     { name: 'disc', geometry: new THREE.RingGeometry(0.2, 1, 48, 2).rotateX(-Math.PI / 2), material: new THREE.MeshBasicMaterial({ color: hot(KINDS.protostar.color, 0.9), toneMapped: false, transparent: true, opacity: 0.45, side: THREE.DoubleSide, depthWrite: false }) },
   ],
+  // (a dark throat ringed by the starlight it bends: a thin bright ring at the edge, a fainter
+  // one further out, and arcs of smeared stars; no painted spiral)
   wormhole: () => [
-    { name: 'throat', geometry: new THREE.SphereGeometry(0.45, 24, 16), material: new THREE.MeshBasicMaterial({ color: '#020205' }) },
-    { name: 'swirl', geometry: new THREE.TorusGeometry(0.62, 0.16, 12, 48), material: glow(KINDS.wormhole.color, 2.2, 0.8), additive: true },
-    { name: 'halo', geometry: new THREE.TorusGeometry(0.85, 0.05, 8, 48), material: glow('#e8d0ff', 2.6, 0.6), additive: true },
+    { name: 'throat', geometry: new THREE.SphereGeometry(0.42, 32, 20), material: new THREE.MeshBasicMaterial({ color: '#000000' }) },
+    { name: 'ring', geometry: new THREE.RingGeometry(0.425, 0.438, 128, 1), material: new THREE.MeshBasicMaterial({ color: hot('#e6eeff', 2.4), toneMapped: false, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }), additive: true, billboard: true },
+    { name: 'halo', geometry: fading(0.44, 0.75), material: new THREE.MeshBasicMaterial({ vertexColors: true, color: hot('#b9c8ff', 0.9), toneMapped: false, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }), additive: true, billboard: true },
+    { name: 'arcs', geometry: new THREE.RingGeometry(0.5, 0.505, 48, 1, 0, 0.8), material: new THREE.MeshBasicMaterial({ color: hot('#ffffff', 1.2), toneMapped: false, transparent: true, opacity: 0.5, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }), additive: true, billboard: true, many: 'arcs' },
   ],
 };
 

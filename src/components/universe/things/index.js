@@ -5,7 +5,7 @@
 // sectors the Expanse has loaded and the ship, and says what happened. It
 // never stores anything: what's been paid is for the visit.
 //
-// createThingPlay({ sectors, pay, say, travelling }) → { update(state, dt, t), press(state) → boolean,
+// createThingPlay({ sectors, pay, say, travelling, universe, reduced }) → { update(state, dt, t), press(state) → boolean,
 //   near() → { id, kind, verb } | null, ledger }
 //   sectors() → an iterable of loaded sectors; pay(what, n) the scene's earning (EARN keys);
 //   say(text) a note on screen; travelling() → true mid-trip (a wormhole throws only by hand)
@@ -22,7 +22,7 @@ const LOOK = 0.25; // seconds between looks for what's near enough to act on
 const LATTICE_ACTS = new Set(THING_KINDS.map((k, i) => (actionOf(k.kind) ? i : -1)).filter((i) => i >= 0));
 const len = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
 
-export function createThingPlay({ sectors, pay, say = () => {}, travelling = () => false, universe } = {}) {
+export function createThingPlay({ sectors, pay, say = () => {}, travelling = () => false, universe, reduced = false } = {}) {
   const ledger = createLedger();
   let looked = 0;
   let near = null; // { id, kind, row, reach }
@@ -86,8 +86,10 @@ export function createThingPlay({ sectors, pay, say = () => {}, travelling = () 
         for (const r of ex.storm ?? []) if (len(rowAt(r, t), ship) < r.size) draining = true;
         for (const r of ex.pulsar ?? [])
           if (len(r.at, ship) < 25 * r.size && inBeam(beamDirs(traitsOf(r), t), r.at, ship, r.size)) {
-            if (!(state.static > 0)) say(THINGS.beam(r.kind));
-            state.static = Math.max(state.static ?? 0, SCRAMBLE);
+            if (!(state.static > 0) && !(state.beamSaid > state.clock)) say(THINGS.beam(r.kind));
+            state.beamSaid = state.clock + SCRAMBLE * 4; // (said once a pass, not every sweep)
+            // (the HUD scrambles a moment; for a visitor who asks for less motion, the note alone)
+            if (!reduced) state.static = Math.max(state.static ?? 0, SCRAMBLE);
           }
         for (const r of ex.wormhole ?? [])
           if (wormholeThrows(r, ship, { travelling: travelling() })) {

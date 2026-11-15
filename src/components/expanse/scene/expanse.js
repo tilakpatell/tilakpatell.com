@@ -35,6 +35,7 @@ import { SECTOR, sectorKey } from '../../../lib/space/address.js';
 import { createChunkGrid3 } from '../../../runtime/chunkGrid3';
 import { beyondJob, sectorJob, withMoons } from '../gen/job';
 import { spaceTime } from '../gen/orbits';
+import { rowAt } from '../gen/paths';
 import { UNIVERSE } from '../gen/seed';
 import { createDiscs } from './discs';
 import { createNear } from './near';
@@ -118,6 +119,7 @@ export function createExpanse(parent, { universe = UNIVERSE, tier = 'mid', worke
   const nearSectors = [];
   const nearSystems = [];
   const giants = []; // (the gargantuans of the 3 × 3 × 3)
+  const drifting = []; // ({ row, n, rec }: a storm's cloud, moved along its path)
   const sectorAt = (sx, sy, sz) => loaded.get(keyOf(sx, sy, sz))?.sector ?? null;
   // (how much of a sector shows: its slot's, so its discs come and go with its specks)
   const recOf = new WeakMap(); // sector → its record
@@ -165,6 +167,14 @@ export function createExpanse(parent, { universe = UNIVERSE, tier = 'mid', worke
         }
         rec.nebulae.push(n);
       }
+      // (lane 4a's clouds: nebula pockets, supernova remnants and ion storms, the same renderer;
+      // a storm drifts on its loop, so its cloud is moved each frame: drifting)
+      for (const list of ['pocket', 'remnant', 'storm'])
+        for (const row of rec.sector.extras?.[list] ?? []) {
+          const n = drawNebula(row);
+          rec.nebulae.push(n);
+          if (row.path && n.move) drifting.push({ row, n, rec });
+        }
     }
   };
   const askBeyond = (c) => {
@@ -282,6 +292,11 @@ export function createExpanse(parent, { universe = UNIVERSE, tier = 'mid', worke
       }
       // ── the bodies: built whole within a system's reach, discs to the far plane ──
       const orbitT = spaceTime(now);
+      for (let i = drifting.length - 1; i >= 0; i--) {
+        const d = drifting[i];
+        if (!d.rec.nebulae.includes(d.n)) drifting.splice(i, 1); // (its sector let its slot go)
+        else d.n.move(rowAt(d.row, orbitT));
+      }
       near.update(hidden ? [] : nearSystems, cam, orbitT, camera);
       things.update(hidden ? [] : pickNear(sectorAt, nearSectors, cam, { max: Math.max(1, budget.thingsNear), t: orbitT, giants }), camera, orbitT);
       if (discs) {

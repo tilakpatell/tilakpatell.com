@@ -13,7 +13,7 @@
 //   - a ringworld arc: discs along its band, overlapping into one curve, lit from its light
 //   - a derelict hulk: lumpy discs down its spine
 //   - a supergiant: one ball, lit from its light
-//   - a Dyson swarm: the dark swarm, and the star a little nearer, burning through
+//   - a Dyson swarm: its star, and a ring of glints round it at the shell's size
 //   Colours are linear light, a glow only a little over 1 and never bigger than its body: the
 //   owner keeps the old sky, and nothing far off brightens it as a whole.
 
@@ -30,6 +30,11 @@ const rgbOf = (hex) => {
   return [((v >> 16) & 255) / 255, ((v >> 8) & 255) / 255, (v & 255) / 255];
 };
 const scale = (c, k) => [c[0] * k, c[1] * k, c[2] * k];
+const norm = (a) => {
+  const l = Math.hypot(a[0], a[1], a[2]) || 1;
+  return [a[0] / l, a[1] / l, a[2] / l];
+};
+const GLINTS = 28;
 
 export function giantK(dist, row) {
   const mesh = 1 - smoothstep(GIANT.near, 1.2 * GIANT.near, dist - row.size);
@@ -73,8 +78,19 @@ export function giantParts(row, cam) {
     return out;
   }
   if (row.kind === 'giant') return [{ at: row.at, r: row.size, color: scale(c0, 1.3), light, rough: 0 }];
-  return [
-    { at: row.at, r: row.size, color: scale(c0, 0.45), light, rough: 0.6 },
-    { at: toward(row.at, cam, row.size * 1.01), r: row.body, color: scale(c0, 1.6), light: null, rough: 0 },
-  ];
+  // a Dyson swarm: its star, and a ring of glints round it at the shell's size, turned about its
+  // axis (no dark disc over the sky behind)
+  const out = [{ at: row.at, r: row.body, color: scale(c0, 1.6), light: null, rough: 0 }];
+  const ax = row.axis;
+  const ref = Math.abs(ax[0]) < 0.9 ? [1, 0, 0] : [0, 1, 0];
+  const u = norm([ax[1] * ref[2] - ax[2] * ref[1], ax[2] * ref[0] - ax[0] * ref[2], ax[0] * ref[1] - ax[1] * ref[0]]);
+  const v = [ax[1] * u[2] - ax[2] * u[1], ax[2] * u[0] - ax[0] * u[2], ax[0] * u[1] - ax[1] * u[0]];
+  for (let i = 0; i < GLINTS; i++) {
+    const a = (i / GLINTS) * 2 * Math.PI;
+    const lean = 0.25 * Math.sin(i * 2.3);
+    const k1 = row.size / Math.sqrt(1 + lean * lean); // (on the shell, however it leans)
+    const at = [0, 1, 2].map((k) => row.at[k] + k1 * (Math.cos(a) * u[k] + Math.sin(a) * v[k] + lean * ax[k]));
+    out.push({ at, r: row.size * 0.035, color: scale(c0, 0.9 + 0.5 * ((i * 7) % 3 === 0)), light: null, rough: 0 });
+  }
+  return out;
 }

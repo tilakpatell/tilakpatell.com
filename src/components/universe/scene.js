@@ -777,7 +777,7 @@ export async function create(canvas, ctx) {
     },
   });
   // lane 4a's things in space played: E at one, a storm's drain, a pulsar's beam, a wormhole's throw (things/index.js)
-  const thingPlay = createThingPlay({ sectors: () => expanse.sectors().values(), pay: (what, n) => pay(what, n), say: (text) => (state.note = { text, until: wall() + 3.5 }), travelling: () => Boolean(state.auto || state.jump), universe: typeof ctx.universe === 'bigint' ? ctx.universe : UNIVERSE });
+  const thingPlay = createThingPlay({ sectors: () => expanse.sectors().values(), pay: (what, n) => pay(what, n), say: (text) => (state.note = { text, until: wall() + 3.5 }), travelling: () => Boolean(state.auto || state.jump), universe: typeof ctx.universe === 'bigint' ? ctx.universe : UNIVERSE, reduced });
   // and the big things, the Maw and the big stars, as landmarks on the sky, upright in the world (landmarks.js)
   const landmarks = createLandmarks(map, { skyFar: SKY_FAR });
   await breathe();

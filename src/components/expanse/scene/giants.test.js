@@ -22,6 +22,7 @@ describe('a gargantuan far off', () => {
       const parts = giantParts({ ...base, kind }, cam);
       expect(parts.length, kind).toBeGreaterThan(0);
       expect(parts.length, kind).toBeLessThanOrEqual(48);
+      for (const p of parts) expect(Math.max(...p.color), kind).toBeLessThanOrEqual(2.5); // (no far glow burning the sky)
       for (const p of parts) {
         expect(len(p.at, base.at), kind).toBeLessThanOrEqual(base.size * 1.02); // (a swarm's star just over its shell's face)
         expect(p.r, kind).toBeLessThanOrEqual(base.size);
@@ -31,7 +32,9 @@ describe('a gargantuan far off', () => {
     // (a hole's shadow and a swarm's star drawn over their glow and shell: nearer the camera)
     const h = giantParts({ ...base, kind: 'hole' }, cam);
     expect(len(h[1].at, cam)).toBeLessThan(len(h[0].at, cam));
+    // (a Dyson swarm: its star no bigger than its body, and a ring of small glints at its shell)
     const s = giantParts({ ...base, kind: 'dyson' }, cam);
-    expect(len(s[1].at, cam)).toBeLessThan(len(s[0].at, cam) - base.size);
+    expect(s[0].r).toBe(base.body);
+    for (const g of s.slice(1)) expect(g.r).toBeLessThan(base.size * 0.05);
   });
 });
