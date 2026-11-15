@@ -16,7 +16,7 @@
 //   and for the lists also { universe, beacons, stations, d, core, gargantuan, arrivals, keeps }
 //   (keeps: a gargantuan's solid parts, [{ at, r }], which the lattice keeps off as it does outs). lattice: false leaves the lattice empty.
 //   A ctx is treated as immutable: the per-ctx cache snapshots its systems and wonders.
-//   A wonder's size is its radius (tables.js WONDERS says so; scene/sectors.js draws a nebula as a cloud of
+//   A wonder's size is its radius (tables.js WONDERS says so; universe/nebula/ draws a nebula as a cloud of
 //   about that size and the others as a ball of size * 0.15 to 0.5, so the table radius is the safe reach).
 //   Every wonder but a nebula (a soft cloud a rock can sit in) keeps lattice things its size plus the thing's away.
 //   ThingSet is { count, slot: Uint16Array, kind: Uint8Array (index into kinds), at: Float32Array (xyz from the origin), size: Float32Array }
