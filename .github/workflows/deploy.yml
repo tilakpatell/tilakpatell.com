@@ -114,3 +114,8 @@ jobs:
         run: |
           [ -n "$CLOUDFLARE_API_TOKEN" ] || { echo "::error::the secret CLOUDFLARE_API_TOKEN is missing (docs/stack/cloudflare.md)"; exit 1; }
           npx --yes wrangler@4.149.0 deploy
+      # After the Worker deploy, before anyone is told the build is up: every Worker isolate starts cold, and a browser's first
+      # request on a cold isolate reads the build's manifest from R2 first (16 Nov: every black-page boot on record came shortly
+      # after a deploy). The boot files of the current build and every staged one, asked as a browser asks, until fast (exit 1 if not).
+      - name: Warm the engine's boot at the edge
+        run: node scripts/bf2web-warm.mjs
