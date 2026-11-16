@@ -231,33 +231,54 @@ async function answerBuild(request, url, route, env, config, manifests, ctx, cac
       });
     }
   }
+  const cacheable = cache && immutable && request.method === 'GET' && whole;
   if (immutable && whole && /\bbr\b/.test(request.headers.get('accept-encoding') ?? '')) {
     const listedPaths = await listed(env, config, manifests);
     if (!listedPaths.has(route.path)) return isolatedNotFound();
     if ((await brotliCopies(env, config, manifests)).has(route.path)) {
-      const copy = await read(env, route.key + '.br', { onlyIf: request.headers });
-      if (copy) {
+      const brotli = (body, etag, size, state) => {
         const headers = new Headers({
           ...ISOLATED,
           'content-type': contentType(route.path),
           'content-encoding': 'br',
           vary: 'accept-encoding',
-          etag: copy.httpEtag,
+          etag,
           'cache-control': 'public, max-age=31536000, immutable',
+          'x-play-cache': state,
         });
-        if (!('body' in copy) || !copy.body) return new Response(null, { status: 304, headers });
-        headers.set('content-length', String(copy.size));
+        if (!body) return new Response(null, { status: 304, headers });
+        if (size != null) headers.set('content-length', String(size));
         // (encodeBody manual: the bytes are brotli already, sent as they are)
-        return new Response(request.method === 'HEAD' ? null : copy.body, { status: 200, headers, encodeBody: 'manual' });
+        return new Response(request.method === 'HEAD' ? null : body, { status: 200, headers, encodeBody: 'manual' });
+      };
+      // (the edge's copy first, so a visit after the first costs no read of the bucket: the brotli copies are most
+      // of a look's bytes, and every one was a Worker-to-R2 read, 250-700 ms on a cold visit, s-collection 15 Nov)
+      const hit = cacheable ? await edgeMatch(cache, url, 'br') : null;
+      if (hit) return brotli(notModified(request, hit) ? null : hit.body, hit.headers.get('etag'), hit.headers.get('content-length'), 'hit');
+      const copy = await read(env, route.key + '.br', { onlyIf: request.headers });
+      if (copy) {
+        if (!('body' in copy) || !copy.body) return brotli(null, copy.httpEtag, null, 'miss');
+        let body = copy.body;
+        if (cacheable) {
+          const [sent, kept] = streamOf(body).tee();
+          body = sent;
+          await edgePut(cache, url, 'br', kept, {
+            'content-type': 'application/octet-stream', etag: copy.httpEtag, 'content-length': String(copy.size), 'cache-control': 'public, max-age=31536000, immutable',
+          }, ctx);
+        }
+        return brotli(body, copy.httpEtag, copy.size, cacheable ? 'miss' : 'off');
       }
     }
   }
-  const cacheable = cache && immutable && request.method === 'GET' && whole;
   if (cacheable) {
-    try {
-      const hit = await timed(cache.match(request), TIMEOUTS.cacheMatch, 'edge cache');
-      if (hit) return hit;
-    } catch { /* The edge cache is optional (a lookup past its time is a miss); the manifest-checked R2 read still answers. */ }
+    const hit = await edgeMatch(cache, url, 'identity');
+    if (hit) {
+      const headers = new Headers(hit.headers);
+      headers.set('vary', 'accept-encoding');
+      headers.set('x-play-cache', 'hit');
+      if (notModified(request, hit)) { headers.delete('content-length'); return new Response(null, { status: 304, headers }); }
+      return new Response(hit.body, { status: 200, headers });
+    }
   }
   if (route.root === 'site' && !(await listed(env, config, manifests)).has(route.path)) return isolatedNotFound();
   const page = route.root === 'site' && route.path === 'index.html';
@@ -292,18 +313,57 @@ async function answerBuild(request, url, route, env, config, manifests, ctx, cac
     return new Response(request.method === 'HEAD' ? null : object.body, { status: 206, headers });
   }
   headers.set('content-length', String(object.size));
-  const response = new Response(request.method === 'HEAD' ? null : object.body, { status: 200, headers });
-  if (cacheable) {
-    const copy = response.clone();
-    const put = (async () => {
-      try { await cache.put(request, copy); }
-      catch {
-        // Abandon the failed cache branch without awaiting the caller's still-unread body.
-        try { copy.body?.cancel().catch(() => {}); } catch { /* already consumed or locked */ }
-      }
-    })();
-    if (ctx) ctx.waitUntil(put);
-    else await put;
+  if (immutable) headers.set('x-play-cache', cacheable ? 'miss' : 'off');
+  let body = request.method === 'HEAD' ? null : object.body;
+  if (cacheable && body) {
+    const [sent, kept] = streamOf(body).tee();
+    body = sent;
+    const stored = new Headers(headers);
+    stored.delete('vary');
+    stored.delete('x-play-cache');
+    await edgePut(cache, url, 'identity', kept, stored, ctx);
   }
-  return response;
+  return new Response(body, { status: 200, headers });
+}
+
+// The edge cache (caches.default), keyed by the file's URL and its encoding variant, with no request header in the key.
+// A stored copy holds no Vary and no Content-Encoding (a brotli copy is kept as the bytes it is, octet-stream), so
+// neither the cache nor the runtime recodes or varies it; the response's encoding headers are put back on the way out.
+// x-play-cache on a build file says which: hit, miss (read from R2, put at the edge) or off (not cacheable).
+const edgeKey = (url, variant) => {
+  const key = new URL(url);
+  key.searchParams.append('play-encoding', variant);
+  return new Request(key.toString(), { method: 'GET' });
+};
+
+async function edgeMatch(cache, url, variant) {
+  try {
+    return (await timed(cache.match(edgeKey(url, variant)), TIMEOUTS.cacheMatch, 'edge cache')) ?? null;
+  } catch {
+    return null; // (the edge cache is optional, and a lookup past its time is a miss; the manifest-checked R2 read still answers)
+  }
+}
+
+async function edgePut(cache, url, variant, body, headers, ctx) {
+  const put = (async () => {
+    try { await cache.put(edgeKey(url, variant), new Response(body, { status: 200, headers })); }
+    catch {
+      // Abandon the failed cache branch without awaiting the caller's still-unread body.
+      try { body?.cancel().catch(() => {}); } catch { /* already consumed or locked */ }
+    }
+  })();
+  if (ctx) ctx.waitUntil(put);
+  else await put;
+}
+
+// (an R2 body is a stream; anything else, as a test's bucket gives, is made one so it can be split for the edge)
+const streamOf = (body) => (body instanceof ReadableStream ? body : new Response(body).body);
+
+// a conditional request the stored copy meets (If-None-Match, weak or strong, one of a list)
+function notModified(request, stored) {
+  const asked = request.headers.get('if-none-match');
+  const etag = stored.headers.get('etag');
+  if (!asked || !etag) return false;
+  const bare = (t) => t.trim().replace(/^W\//, '');
+  return asked.trim() === '*' || asked.split(',').some((t) => bare(t) === bare(etag));
 }

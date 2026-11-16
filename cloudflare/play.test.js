@@ -188,6 +188,83 @@ describe('serving the play site', () => {
     expect(kept.has(`https://tilakpatell.com${ENGINE}b1/`)).toBe(false);
   });
 
+  it('keeps a brotli copy at the edge too, apart from the file itself, and serves both from there', async () => {
+    // (hosted 15 Nov, r1073: a look's .glb files, brotli copies, were a Worker-to-R2 read every time: first byte
+    // 163 ms median the first time, 188 ms the second; the cache was looked up only after the brotli branch returned)
+    const env = { PLAY: bucket(files) };
+    const kept = new Map();
+    const cache = { match: async (r) => kept.get(r.url)?.clone() ?? null, put: async (r, res) => void kept.set(r.url, res) };
+    const path = `${ENGINE}b1/scene-r-0.res`, br = { 'accept-encoding': 'gzip, br' };
+    const first = await servePlay(ask(path, br), env, config, new Map(), null, cache);
+    expect(first.headers.get('content-encoding')).toBe('br');
+    expect(first.headers.get('x-play-cache')).toBe('miss');
+    expect(await first.text()).toBe('BR');
+    const reads = env.PLAY.gets.length;
+    const second = await servePlay(ask(path, br), env, config, new Map(), null, cache);
+    expect(second.status).toBe(200);
+    expect(second.headers.get('x-play-cache')).toBe('hit');
+    expect(second.headers.get('content-encoding')).toBe('br');
+    expect(second.headers.get('vary')).toBe('accept-encoding');
+    expect(second.headers.get('cross-origin-embedder-policy')).toBe('require-corp');
+    expect(second.headers.get('etag')).toBe(first.headers.get('etag'));
+    expect(second.headers.get('content-length')).toBe('2');
+    expect(await second.text()).toBe('BR');
+    expect(env.PLAY.gets.slice(reads).filter((k) => k.endsWith('.br'))).toEqual([]);
+    // (a browser that doesn't take brotli gets the file itself, never the edge's brotli copy)
+    const plain = await servePlay(ask(path), env, config, new Map(), null, cache);
+    expect(plain.headers.has('content-encoding')).toBe(false);
+    expect(await plain.text()).toBe('scene bytes, whole');
+    const plainAgain = await servePlay(ask(path), env, config, new Map(), null, cache);
+    expect(plainAgain.headers.get('x-play-cache')).toBe('hit');
+    const isolatedTyped = (res, what) => {
+      for (const [k, v] of Object.entries(ISOLATED)) expect(res.headers.get(k), `${what} ${k}`).toBe(v);
+      expect(res.headers.get('content-type'), what).toBe('application/octet-stream');
+    };
+    isolatedTyped(plainAgain, 'identity hit');
+    expect(await plainAgain.text()).toBe('scene bytes, whole');
+    const plain304 = await servePlay(ask(path, { 'if-none-match': plainAgain.headers.get('etag') }), env, config, new Map(), null, cache);
+    expect(plain304.status).toBe(304);
+    isolatedTyped(plain304, 'identity 304');
+    // (a range is never answered from the edge's whole copy: R2's bytes, 206, whichever encoding the browser takes)
+    for (const headers of [{ range: 'bytes=0-4' }, { range: 'bytes=0-4', 'accept-encoding': 'br' }]) {
+      const ranged = await servePlay(ask(path, headers), env, config, new Map(), null, cache);
+      expect(ranged.status, JSON.stringify(headers)).toBe(206);
+      expect(ranged.headers.get('content-range')).toBe('bytes 0-4/18');
+      expect(ranged.headers.has('x-play-cache')).toBe(false);
+      expect(ranged.headers.has('content-encoding')).toBe(false);
+      expect(await ranged.text()).toBe('scene');
+    }
+    // (what is stored holds no Vary and no Content-Encoding, so neither the edge nor the runtime recodes it)
+    expect(kept.size).toBe(2);
+    for (const stored of kept.values()) {
+      expect(stored.headers.has('vary')).toBe(false);
+      expect(stored.headers.has('content-encoding')).toBe(false);
+      expect(stored.headers.has('x-play-cache')).toBe(false);
+    }
+  });
+
+  it('answers a conditional request a stored copy meets with a 304, either encoding', async () => {
+    const env = { PLAY: bucket(files) };
+    const kept = new Map();
+    const cache = { match: async (r) => kept.get(r.url)?.clone() ?? null, put: async (r, res) => void kept.set(r.url, res) };
+    const path = `${ENGINE}b1/scene-r-0.res`;
+    for (const encoding of [{ 'accept-encoding': 'br' }, {}]) {
+      const first = await servePlay(ask(path, encoding), env, config, new Map(), null, cache);
+      const etag = first.headers.get('etag');
+      await first.text();
+      const again = await servePlay(ask(path, { ...encoding, 'if-none-match': `W/${etag}` }), env, config, new Map(), null, cache);
+      expect(again.status).toBe(304);
+      expect(again.headers.get('x-play-cache')).toBe('hit');
+    }
+  });
+
+  it('says a build file was not cacheable when there is no edge cache, and never on the page', async () => {
+    const env = { PLAY: bucket(files) };
+    expect((await servePlay(ask(`${ENGINE}b1/original-frame-graph.wasm`), env, config, new Map())).headers.get('x-play-cache')).toBe('off');
+    expect((await servePlay(ask(`${ENGINE}b1/scene-r-0.res`, { 'accept-encoding': 'br' }), env, config, new Map())).headers.get('x-play-cache')).toBe('off');
+    expect((await servePlay(ask(`${ENGINE}b1/`), env, config, new Map())).headers.has('x-play-cache')).toBe(false);
+  });
+
   it('serves the R2 asset when the optional edge cache cannot read', async () => {
     const cache = { match: async () => { throw new Error('edge cache read unavailable'); }, put: async () => {} };
     const env = { PLAY: bucket(files) };
