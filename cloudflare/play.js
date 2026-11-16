@@ -262,11 +262,20 @@ async function answerBuild(request, url, route, env, config, manifests, ctx, cac
   // manifest from R2 before the edge was asked; a client without br went straight to the edge). Safe without the manifest: a
   // copy is put only after a manifest-checked whole read of a listed file, under its build's immutable path, and a build
   // play.json does not name never reaches this function.
+  // Which entry: a browser that takes br gets the br copy of a file that can have one (only application/octet-stream files
+  // get one, scripts/bf2web-compress.mjs compressible, by this module's contentType), so for those only the br entry is taken
+  // edge-first; on its miss the brotli branch below reads and stores the copy. Every other file (the engine's .js and .wasm,
+  // the JSON) never has a br copy, and its own entry is the answer for any client ([c5] on abe9d8522: an identity entry put by a
+  // client without br must not be served, uncompressed, to a browser in place of a .res or .glb's br copy).
   if (cacheable) {
-    const hit = takesBrotli ? await edgeMatch(cache, url, 'br') : null;
-    if (hit) return brotli(notModified(request, hit) ? null : hit.body, hit.headers.get('etag'), hit.headers.get('content-length'), 'hit');
-    const plain = await fromEdge();
-    if (plain) return plain;
+    const mayHaveCopy = contentType(route.path) === 'application/octet-stream';
+    if (takesBrotli && mayHaveCopy) {
+      const hit = await edgeMatch(cache, url, 'br');
+      if (hit) return brotli(notModified(request, hit) ? null : hit.body, hit.headers.get('etag'), hit.headers.get('content-length'), 'hit');
+    } else {
+      const plain = await fromEdge();
+      if (plain) return plain;
+    }
   }
   if (immutable && whole && takesBrotli) {
     const listedPaths = await listed(env, config, manifests);
@@ -286,6 +295,11 @@ async function answerBuild(request, url, route, env, config, manifests, ctx, cac
         return brotli(body, copy.httpEtag, copy.size, cacheable ? 'miss' : 'off');
       }
     }
+  }
+  // (a br client's octet-stream file that has no br copy: its own entry, as #1322 had it)
+  if (cacheable && takesBrotli && contentType(route.path) === 'application/octet-stream') {
+    const plain = await fromEdge();
+    if (plain) return plain;
   }
   if (route.root === 'site' && !(await listed(env, config, manifests)).has(route.path)) return isolatedNotFound();
   const page = route.root === 'site' && route.path === 'index.html';

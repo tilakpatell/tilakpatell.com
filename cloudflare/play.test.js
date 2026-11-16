@@ -210,6 +210,31 @@ describe('serving the play site', () => {
     expect(env.PLAY.gets.slice(reads)).toContain('sites/b1/manifest.json');
   });
 
+  it('never serves a br client the identity entry of a file that has a br copy, whoever came first ([c5] on abe9d8522)', async () => {
+    const env = { PLAY: bucket(files) };
+    const kept = new Map();
+    const cache = { match: async (r) => kept.get(r.url)?.clone() ?? null, put: async (r, res) => void kept.set(r.url, res) };
+    const path = `${ENGINE}b1/scene-r-0.res`, browser = { 'accept-encoding': 'gzip, deflate, br, zstd' };
+    // (a client without br first: the file itself goes to the edge)
+    expect(await (await servePlay(ask(path), env, config, new Map(), null, cache)).text()).toBe('scene bytes, whole');
+    // (then browsers: the br copy, read once and stored, then from the edge)
+    const first = await servePlay(ask(path, browser), env, config, new Map(), null, cache);
+    expect(first.headers.get('content-encoding')).toBe('br');
+    expect(first.headers.get('x-play-cache')).toBe('miss');
+    expect(await first.text()).toBe('BR');
+    const again = await servePlay(ask(path, browser), env, config, new Map(), null, cache);
+    expect(again.headers.get('content-encoding')).toBe('br');
+    expect(again.headers.get('x-play-cache')).toBe('hit');
+    expect([...kept.keys()].map((k) => new URL(k).searchParams.get('play-encoding')).sort()).toEqual(['br', 'identity']);
+    // (a file that can never have a br copy, the engine's .wasm: its own entry, edge-first, for a browser too)
+    await (await servePlay(ask(`${ENGINE}b1/original-frame-graph.wasm`), env, config, new Map(), null, cache)).text();
+    const reads = env.PLAY.gets.length;
+    const wasm = await servePlay(ask(`${ENGINE}b1/original-frame-graph.wasm`, browser), env, config, new Map(), null, cache);
+    expect(wasm.headers.get('x-play-cache')).toBe('hit');
+    expect(wasm.headers.has('content-encoding')).toBe(false);
+    expect(env.PLAY.gets.slice(reads)).toEqual([]);
+  });
+
   it('keeps a brotli copy at the edge too, apart from the file itself, and serves both from there', async () => {
     // (hosted 15 Nov, r1073: a look's .glb files, brotli copies, were a Worker-to-R2 read every time: first byte
     // 163 ms median the first time, 188 ms the second; the cache was looked up only after the brotli branch returned)
