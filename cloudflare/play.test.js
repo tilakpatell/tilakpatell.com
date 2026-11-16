@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it, vi } from 'vitest';
-import { ENGINE, HEAD_MS, ISOLATED, buildKind, contentType, playRoute, servePlay } from './play.js';
+import { ENGINE, ISOLATED, TIMEOUTS, buildKind, contentType, playRoute, servePlay } from './play.js';
 import { RETURN_VERSION } from './playReturn.js';
 
 const config = { build: 'b1', site: 'sites/b1/', export: 'extract/', uiData: 'library/ui/frontend/', exportAllow: ['fonts/', 'strings/'] };
@@ -197,14 +197,14 @@ describe('serving the play site', () => {
   });
 
   // (s-buildfast's review of #1324: the head is the same hang class as #1323's reads, so it has a time limit)
-  it('a head that never answers leaves the ranged read a 503 after HEAD_MS, not a hang', async () => {
+  it('a head that never answers leaves the ranged read a 503 after TIMEOUTS.read, not a hang', async () => {
     vi.useFakeTimers();
     try {
       const inner = bucket(files);
       const env = { PLAY: { gets: inner.gets, head: () => new Promise(() => {}), get: async (key, opts = {}) => { if (opts.range?.get?.('range')) throw new Error('InvalidRange'); return inner.get(key, opts); } } };
       let settled = null;
       const pending = serve(`${ENGINE}b1/original-frame-graph.wasm`, { range: 'bytes=10-' }, env).then((res) => (settled = res));
-      await vi.advanceTimersByTimeAsync(HEAD_MS - 1);
+      await vi.advanceTimersByTimeAsync(TIMEOUTS.read - 1);
       expect(settled).toBeNull();
       await vi.advanceTimersByTimeAsync(1);
       await pending;
@@ -351,6 +351,45 @@ describe('serving the play site', () => {
   it('leaves everything to the site without the binding', async () => {
     expect(await serve(`${ENGINE}b1/`, {}, {})).toBeNull();
   });
+});
+
+describe('nothing the Worker waits on waits forever (live r1073 boot hangs, 15 Nov)', () => {
+  const never = () => new Promise(() => {});
+  const short = async (fn) => {
+    const saved = { ...TIMEOUTS };
+    Object.assign(TIMEOUTS, { read: 30, manifest: 120, cacheMatch: 30 });
+    try { await fn(); } finally { Object.assign(TIMEOUTS, saved); }
+  };
+  const path = `${ENGINE}b1/original-frame-graph.wasm`;
+
+  it('a read that never answers is asked once again, then answered 503 with Retry-After', () => short(async () => {
+    const inner = bucket(files);
+    let reads = 0;
+    const env = { PLAY: { get: (key, opts) => (key.endsWith('.wasm') ? (reads++, never()) : inner.get(key, opts)) } };
+    const res = await servePlay(ask(path), env, config, new Map());
+    expect(res.status).toBe(503);
+    expect(res.headers.get('retry-after')).toBe('1');
+    expect(res.headers.get('cache-control')).toBe('no-store');
+    expect(reads).toBe(2);
+  }), 5000);
+
+  it('a manifest that never arrives is dropped, so the isolate answers once the bucket does', () => short(async () => {
+    const manifests = new Map();
+    const inner = bucket(files);
+    // (the manifest's object arrives, its body never does: only the manifest's own time limit can end it)
+    const stuck = { PLAY: { get: (key, opts) => (key.endsWith('manifest.json') ? Promise.resolve({ json: never }) : inner.get(key, opts)) } };
+    expect((await servePlay(ask(path), stuck, config, manifests)).status).toBe(503);
+    const res = await servePlay(ask(path), { PLAY: bucket(files) }, config, manifests);
+    expect(res.status).toBe(200);
+    expect(await res.text()).toBe('wasm-bytes');
+  }), 5000);
+
+  it('an edge cache lookup that never answers is a miss: the bucket answers', () => short(async () => {
+    const cache = { match: never, put: async () => {} };
+    const res = await servePlay(ask(path), { PLAY: bucket(files) }, config, new Map(), null, cache);
+    expect(res.status).toBe(200);
+    expect(await res.text()).toBe('wasm-bytes');
+  }), 5000);
 });
 
 describe('opening a build by its exact name: current, staged, retained', () => {

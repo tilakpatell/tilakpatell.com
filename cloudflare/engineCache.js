@@ -61,7 +61,12 @@ export function following(paths, ahead = AHEAD) {
   return next;
 }
 
-export function engineWorker(self, keep, follow) {
+// limits (15 Nov, live r1073 boot hangs: nothing here had a time limit): a network ask that has not answered in `fetch` ms is
+// aborted and asked again (the retries below); a demanded file waits for the ANSWER of its read-ahead already on its way at most
+// `waitAhead` ms, then asks for itself. Once the read-ahead's answer has come, its download onto the disk is waited for whole,
+// however long ([c5] on #1323: capping the whole download fetched healthy slow files twice; the hosted cold run's read-aheads
+// took 3-6 s).
+export function engineWorker(self, keep, follow, limits = { fetch: 15000, waitAhead: 20000 }) {
   const NAME = 'tp-engine-';
   const LIST = 'tp-files.json';
   const WARM = 'x-tp-warm';
@@ -69,6 +74,8 @@ export function engineWorker(self, keep, follow) {
   const lists = new Map();
   const onDisk = new Set();
   const coming = new Map();
+  // (a read-ahead's answer: resolved when its network ask has answered, or the file was on the disk already)
+  const answered = new Map();
   const same = { ignoreVary: true };
   let writable = true;
   const put = async (cache, request, response) => {
@@ -84,12 +91,24 @@ export function engineWorker(self, keep, follow) {
   };
   // (the engine's loader asks again for nothing: a dropped answer, or the Worker's 503, is asked again here, after
   // half a second, then one and a half, then four; a 404 is the answer)
+  // (one network ask, aborted and failed when it has not answered in time: a stalled answer is then asked again like a dropped one)
+  const timedFetch = (request) => {
+    const control = typeof AbortController === 'function' ? new AbortController() : null;
+    let timer;
+    const late = new Promise((_, reject) => {
+      timer = setTimeout(() => {
+        try { control?.abort(); } catch { /* already settled */ }
+        reject(new Error('engine-cache: no answer in ' + limits.fetch + ' ms'));
+      }, limits.fetch);
+    });
+    return Promise.race([control ? self.fetch(request, { signal: control.signal }) : self.fetch(request), late]).finally(() => clearTimeout(timer));
+  };
   const network = async (request) => {
     let last = null;
     for (const wait of [0, 500, 1500, 4000]) {
       if (wait) await new Promise((r) => setTimeout(r, wait));
       try {
-        last = await self.fetch(request);
+        last = await timedFetch(request);
         if (last.status < 500) return last;
       } catch (error) {
         last = error;
@@ -145,12 +164,15 @@ export function engineWorker(self, keep, follow) {
     if (/(^|\/)scene-t-\d+(?:\.stored)?\.pixels$/.test(new URL(url).pathname)) return Promise.resolve(true);
     if (onDisk.has(url)) return Promise.resolve(true);
     if (!writable) return Promise.resolve(false);
-    if (!coming.has(url))
+    if (!coming.has(url)) {
+      let heard;
+      answered.set(url, new Promise((r) => (heard = r)));
       coming.set(
         url,
         (async () => {
           if (!(await cache.match(url, same))) {
             const response = await network(url);
+            heard();
             if (response.status !== 200) return false;
             if (!(await put(cache, url, response))) return false;
             await prune(build);
@@ -159,8 +181,13 @@ export function engineWorker(self, keep, follow) {
           return true;
         })()
           .catch(() => false)
-          .finally(() => coming.delete(url)),
+          .finally(() => {
+            heard();
+            coming.delete(url);
+            answered.delete(url);
+          }),
       );
+    }
     return coming.get(url);
   };
   self.addEventListener('install', () => self.skipWaiting());
@@ -202,7 +229,16 @@ export function engineWorker(self, keep, follow) {
             .catch(() => {}),
         );
         // (one already on its way: waited for, not asked again)
-        if (coming.has(dir + kept.path)) await coming.get(dir + kept.path);
+        // (a read-ahead on its way is waited for, whole, once its answer has come; one whose answer has not come in time is
+        // left to itself and the demand asks for itself)
+        const ahead = coming.get(dir + kept.path);
+        if (ahead) {
+          let timer;
+          const late = new Promise((r) => (timer = setTimeout(() => r('late'), limits.waitAhead)));
+          const heard = await Promise.race([answered.get(dir + kept.path) ?? ahead, late]);
+          clearTimeout(timer);
+          if (heard !== 'late') await ahead;
+        }
         let hit;
         try {
           hit = await cache.match(request, same);

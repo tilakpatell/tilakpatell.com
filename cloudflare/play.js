@@ -86,63 +86,73 @@ export function playRoute(pathname, config) {
   return externalRoute(pathname, config);
 }
 
+// Nothing the Worker waits on may wait forever (live r1073, 15 Nov 22:07Z and 22:32Z: a boot's first script request
+// pending 15+ minutes with 0 bytes on a fresh profile, while the same file from the edge answered in under a second;
+// tilak-06's query-busted probes stalled 2 of 40 past 20 s through the Worker, during a Cloudflare "Partially Degraded").
+// A read that has not answered in time is a failure: asked once again, then a 503 with Retry-After, which the page's
+// and the service worker's loaders already ask again. A cached manifest that has not arrived in time is dropped, so
+// one stuck read cannot hold every later request of the isolate. The edge cache is optional: a lookup that does not
+// answer in time is a miss. (TIMEOUTS is exported for the tests.)
+export const TIMEOUTS = { read: 10_000, manifest: 15_000, cacheMatch: 3_000 };
+
+class PlayTimeout extends Error {}
+function timed(promise, ms, what) {
+  let timer;
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => { timer = setTimeout(() => reject(new PlayTimeout(`play-timeout ${ms} ms: ${what}`)), ms); }),
+  ]).finally(() => clearTimeout(timer));
+}
+
+// an R2 read, asked once again when it throws or does not answer in time; null for a key the bucket hasn't got
+async function read(env, key, opts) {
+  try {
+    return await timed(env.PLAY.get(key, opts), TIMEOUTS.read, key);
+  } catch {
+    return timed(env.PLAY.get(key, opts), TIMEOUTS.read, key);
+  }
+}
+
 // a 416 for a single byte range whose start is at or past the object's end, or null (no range, a range R2 can answer, or no head).
-// The head has a time limit (HEAD_MS): a head that never answers is null, so the request stays the 503 it was, never a hang.
-// (When #1323's timed()/TIMEOUTS land, this uses them instead.)
-export const HEAD_MS = 5000;
-async function unsatisfiableRange(env, key, range, headMs = HEAD_MS) {
+// The head is timed like every read (TIMEOUTS.read): a head that fails or does not answer in time is null, so the request stays
+// the 503 it was, never a hang.
+async function unsatisfiableRange(env, key, range) {
   const start = /^bytes=(\d+)-\d*$/.exec(range ?? '')?.[1];
   if (start === undefined || typeof env.PLAY.head !== 'function') return null;
-  let timer;
-  const late = new Promise((resolve) => { timer = setTimeout(() => resolve(null), headMs); });
-  const head = await Promise.race([Promise.resolve().then(() => env.PLAY.head(key)).catch(() => null), late]).finally(() => clearTimeout(timer));
+  const head = await timed(Promise.resolve().then(() => env.PLAY.head(key)), TIMEOUTS.read, key + ' (head)').catch(() => null);
   if (!head || Number(start) < head.size) return null;
   return new Response(null, { status: 416, headers: { ...ISOLATED, 'content-range': `bytes */${head.size}`, 'cache-control': 'no-store' } });
 }
 
-// an R2 read, asked once again when it throws; null for a key the bucket hasn't got
-async function read(env, key, opts) {
+// one value per isolate, read once and kept; a failure or a read past its time is not kept (only the promise this call
+// waited on is dropped: a newer one another request put there stays)
+async function kept(manifests, key, load) {
+  if (!manifests.has(key)) manifests.set(key, timed(load(), TIMEOUTS.manifest, key));
+  const pending = manifests.get(key);
   try {
-    return await env.PLAY.get(key, opts);
-  } catch {
-    return env.PLAY.get(key, opts);
+    return await pending;
+  } catch (error) {
+    if (manifests.get(key) === pending) manifests.delete(key);
+    throw error;
   }
 }
 
 // the build's manifest, read once an isolate and kept: the paths it lists
-async function listed(env, config, manifests) {
-  if (!manifests.has(config.build)) {
-    manifests.set(config.build, (async () => {
-      const object = await read(env, config.site + 'manifest.json');
-      if (!object) throw new Error('play-manifest-missing');
-      return new Set((await object.json()).entries.map((e) => e.path));
-    })());
-  }
-  try {
-    return await manifests.get(config.build);
-  } catch (error) {
-    // (a failure isn't kept: the next request asks again)
-    manifests.delete(config.build);
-    throw error;
-  }
+function listed(env, config, manifests) {
+  return kept(manifests, config.build, async () => {
+    const object = await read(env, config.site + 'manifest.json');
+    if (!object) throw new Error('play-manifest-missing');
+    return new Set((await object.json()).entries.map((e) => e.path));
+  });
 }
 
 // the build's brotli copies (encodings.json, written last by scripts/bf2web-compress.mjs), read once an isolate and
 // kept: the paths that have one; none without the file
-async function brotliCopies(env, config, manifests) {
-  const key = `${config.build}#br`;
-  if (!manifests.has(key)) {
-    manifests.set(key, (async () => {
-      const object = await read(env, config.site + 'encodings.json');
-      return new Set(Object.keys(object ? (await object.json()).br ?? {} : {}));
-    })());
-  }
-  try {
-    return await manifests.get(key);
-  } catch (error) {
-    manifests.delete(key);
-    throw error;
-  }
+function brotliCopies(env, config, manifests) {
+  return kept(manifests, `${config.build}#br`, async () => {
+    const object = await read(env, config.site + 'encodings.json');
+    return new Set(Object.keys(object ? (await object.json()).br ?? {} : {}));
+  });
 }
 
 const isolatedNotFound = () => new Response('Not found', { status: 404, headers: { ...ISOLATED, 'content-type': 'text/plain; charset=utf-8' } });
@@ -256,9 +266,9 @@ async function answerBuild(request, url, route, env, config, manifests, ctx, cac
   const cacheable = cache && immutable && request.method === 'GET' && whole;
   if (cacheable) {
     try {
-      const hit = await cache.match(request);
+      const hit = await timed(cache.match(request), TIMEOUTS.cacheMatch, 'edge cache');
       if (hit) return hit;
-    } catch { /* The edge cache is optional; the manifest-checked R2 read still answers. */ }
+    } catch { /* The edge cache is optional (a lookup past its time is a miss); the manifest-checked R2 read still answers. */ }
   }
   if (route.root === 'site' && !(await listed(env, config, manifests)).has(route.path)) return isolatedNotFound();
   const page = route.root === 'site' && route.path === 'index.html';
