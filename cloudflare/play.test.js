@@ -235,6 +235,25 @@ describe('serving the play site', () => {
     expect(env.PLAY.gets.slice(reads)).toEqual([]);
   });
 
+  it('answers a br client\'s octet-stream file that has no br copy from its own edge entry, not R2 ([c5] on 7457f2def)', async () => {
+    // (a file under 1 KB of scene data: the compress step makes it no br copy, so encodings.json does not list it)
+    const tinyManifest = { ...manifest, entries: [...manifest.entries, { path: 'scene-tiny.bin' }] };
+    const env = { PLAY: bucket({ ...files, 'sites/b1/manifest.json': JSON.stringify(tinyManifest), 'sites/b1/scene-tiny.bin': 'tiny' }) };
+    const kept = new Map();
+    const cache = { match: async (r) => kept.get(r.url)?.clone() ?? null, put: async (r, res) => void kept.set(r.url, res) };
+    const path = `${ENGINE}b1/scene-tiny.bin`, browser = { 'accept-encoding': 'gzip, deflate, br, zstd' };
+    const first = await servePlay(ask(path, browser), env, config, new Map(), null, cache);
+    expect(first.headers.get('x-play-cache')).toBe('miss');
+    expect(await first.text()).toBe('tiny');
+    const fileReads = () => env.PLAY.gets.filter((k) => k === 'sites/b1/scene-tiny.bin').length;
+    const before = fileReads();
+    const again = await servePlay(ask(path, browser), env, config, new Map(), null, cache);
+    expect(again.headers.get('x-play-cache')).toBe('hit');
+    expect(again.headers.has('content-encoding')).toBe(false);
+    expect(await again.text()).toBe('tiny');
+    expect(fileReads()).toBe(before);
+  });
+
   it('keeps a brotli copy at the edge too, apart from the file itself, and serves both from there', async () => {
     // (hosted 15 Nov, r1073: a look's .glb files, brotli copies, were a Worker-to-R2 read every time: first byte
     // 163 ms median the first time, 188 ms the second; the cache was looked up only after the brotli branch returned)
