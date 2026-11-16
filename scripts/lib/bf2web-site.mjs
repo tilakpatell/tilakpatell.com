@@ -192,6 +192,16 @@ export function staged(play, id, uiData = play.uiData) {
   return { ...play, stagedBuilds: { ...play.stagedBuilds, [id]: { site: `sites/${id}/`, export: exportRoot, uiData, exportAllow: [...(exportAllow ?? [])] } } };
 }
 
+// A staged build that will not be adopted (a candidate that failed its gates, or one a newer candidate replaced) stops
+// being served by its name: its stagedBuilds entry goes ([c5] on #1321). Nothing else in play.json moves; its bucket files
+// stay until they are retired by hand, as a retained build's do. null when the build is not staged (nothing to write).
+export function unstaged(play, id) {
+  if (!play.stagedBuilds || !Object.hasOwn(play.stagedBuilds, id)) return null;
+  const stagedBuilds = { ...play.stagedBuilds };
+  delete stagedBuilds[id];
+  return { ...play, stagedBuilds };
+}
+
 // (Cloudflare compresses what it calls text, the wasm and the JSON among it, on its own: 104 MB of engine reaches a
 // browser as 17. Not the rest, which is most of a build: 1.65 GB of textures, 0.3 GB of scene data.)
 export const ENCODINGS = 'bf2-play-encodings/1';

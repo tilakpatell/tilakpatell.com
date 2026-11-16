@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createHash } from 'node:crypto';
-import { CONTRACT, ENCODINGS, SHARED_UI, adopted, staged, compressible, encodingsOf, floorNeeds, programNeeds, contractProblems, hookProblems, levelProblems, missingFiles, newest, rulebookProblems, uiDataFor, uploadPlan } from './bf2web-site.mjs';
+import { CONTRACT, ENCODINGS, SHARED_UI, adopted, staged, unstaged, compressible, encodingsOf, floorNeeds, programNeeds, contractProblems, hookProblems, levelProblems, missingFiles, newest, rulebookProblems, uiDataFor, uploadPlan } from './bf2web-site.mjs';
 import BOOK from '../../src/data/bf2017/modes.json' with { type: 'json' };
 
 const sha = (c) => c.repeat(64);
@@ -132,6 +132,20 @@ describe('which build the site plays', () => {
     expect(Object.keys(promoted.stagedBuilds)).toEqual(['c']);
     expect(Object.keys(promoted.retainedBuilds)).toEqual(['z', 'a']);
     expect(promoted.retainedBuilds.a.uiData).toBe('sites/a/ui-data/');
+  });
+
+  it('unstages a staged build that will not be adopted, moving nothing else, and says when there is nothing to unstage', () => {
+    const a = { build: 'a', site: 'sites/a/', uiData: 'sites/a/ui-data/', export: 'web/', exportAllow: ['fonts/'], retainedBuilds: { z: { site: 'sites/z/' } } };
+    const s = staged(staged(a, 'b'), 'c');
+    const u = unstaged(s, 'b');
+    expect(Object.keys(u.stagedBuilds)).toEqual(['c']);
+    expect({ ...u, stagedBuilds: undefined }).toEqual({ ...s, stagedBuilds: undefined });
+    expect(s.stagedBuilds).toHaveProperty('b');
+    expect(unstaged(u, 'b')).toBeNull();
+    expect(unstaged(a, 'b')).toBeNull();
+    // (the current build and a retained one are not staged: unstage never touches them)
+    expect(unstaged(s, 'a')).toBeNull();
+    expect(unstaged(s, 'z')).toBeNull();
   });
 });
 

@@ -23,7 +23,7 @@ on:
         description: 'build, publish an already validated desktop build, upload (publish''s upload, then the build staged: served by its exact name, play.json''s build unmoved), stage (an uploaded build, by name), adopt, both, or compress'
         required: true
         type: choice
-        options: [both, build, publish, upload, stage, adopt, compress, copy-rate]
+        options: [both, build, publish, upload, stage, unstage, adopt, compress, copy-rate]
         default: both
       sha:
         description: 'build: the bf2-web commit (default its main)'
@@ -65,7 +65,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   build:
-    if: ${{ github.event_name != 'workflow_dispatch' || (inputs.stage != 'adopt' && inputs.stage != 'compress' && inputs.stage != 'stage') }}
+    if: ${{ github.event_name != 'workflow_dispatch' || (inputs.stage != 'adopt' && inputs.stage != 'compress' && inputs.stage != 'stage' && inputs.stage != 'unstage') }}
     runs-on: [self-hosted, gpu]
     timeout-minutes: 360
     # (the desktop's one GPU: one build at a time, queued behind another)
@@ -120,7 +120,7 @@ jobs:
     # (whatever the build's result: a desktop that can't build, or a build that failed, doesn't keep a good build already
     # in the bucket, one the desktop uploaded by hand among them, from Hoth; adopt takes only main builds that pass the
     # contract)
-    if: ${{ always() && !cancelled() && (github.event_name != 'workflow_dispatch' || (inputs.stage != 'build' && inputs.stage != 'compress' && inputs.stage != 'copy-rate' && inputs.stage != 'upload' && inputs.stage != 'stage')) && (inputs.stage != 'publish' || needs.build.result == 'success') }}
+    if: ${{ always() && !cancelled() && (github.event_name != 'workflow_dispatch' || (inputs.stage != 'build' && inputs.stage != 'compress' && inputs.stage != 'copy-rate' && inputs.stage != 'upload' && inputs.stage != 'stage' && inputs.stage != 'unstage')) && (inputs.stage != 'publish' || needs.build.result == 'success') }}
     runs-on: ubuntu-24.04  # Playwright has no chromium for ubuntu-latest (26.04) yet: run 41052884531
     timeout-minutes: 30
     env:
@@ -186,7 +186,7 @@ jobs:
   # play.json's build, what /battlefront/ opens, does not move; adopt later promotes the staged build.
   stage:
     needs: build
-    if: ${{ always() && !cancelled() && github.event_name == 'workflow_dispatch' && (inputs.stage == 'stage' || (inputs.stage == 'upload' && needs.build.result == 'success')) }}
+    if: ${{ always() && !cancelled() && github.event_name == 'workflow_dispatch' && (inputs.stage == 'stage' || inputs.stage == 'unstage' || (inputs.stage == 'upload' && needs.build.result == 'success')) }}
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     env:
@@ -203,26 +203,39 @@ jobs:
           cache: npm
       - run: npm ci
       - name: Hold the build to the contract, and stage it by name
+        if: ${{ inputs.stage != 'unstage' }}
         id: stage
         run: node scripts/bf2web-adopt.mjs --build "$BUILD" --stage
         env:
           BUILD: ${{ inputs.build || needs.build.outputs.build }}
+      # (stage unstage: a staged build that will not be adopted stops being served by its name)
+      - name: Unstage it
+        if: ${{ inputs.stage == 'unstage' }}
+        id: unstage
+        run: node scripts/bf2web-adopt.mjs --build "$BUILD" --unstage
+        env:
+          BUILD: ${{ inputs.build }}
       - name: The play site's tests
-        if: ${{ steps.stage.outputs.staged != '' }}
+        if: ${{ steps.stage.outputs.staged != '' || steps.unstage.outputs.unstaged != '' }}
         run: npx vitest run cloudflare scripts/lib/bf2web-site.test.mjs
       - name: Record it, and deploy the Worker
-        if: ${{ steps.stage.outputs.staged != '' }}
+        if: ${{ steps.stage.outputs.staged != '' || steps.unstage.outputs.unstaged != '' }}
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add src/data/bf2web/play.json
-          git commit -m "Stage bf2-web's $BUILD (served by its exact name; Hoth still plays the current build)" -m "Staged by the bf2-web workflow: the build held to the contract; /battlefront/ is unchanged."
+          if [ -n "$UNSTAGED" ]; then
+            git commit -m "Unstage bf2-web's $UNSTAGED (no longer served by its name)" -m "Unstaged by the bf2-web workflow; /battlefront/ is unchanged."
+          else
+            git commit -m "Stage bf2-web's $BUILD (served by its exact name; Hoth still plays the current build)" -m "Staged by the bf2-web workflow: the build held to the contract; /battlefront/ is unchanged."
+          fi
           git pull --rebase origin main
           git push origin HEAD:main
           gh workflow run deploy.yml --ref main
-          echo "- **$BUILD** staged: /battlefront/engine/$BUILD/ (noindex); Hoth still plays the current build; deploy.yml started" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **${BUILD:-$UNSTAGED}** ${UNSTAGED:+un}staged; Hoth still plays the current build; deploy.yml started" >> "$GITHUB_STEP_SUMMARY"
         env:
           BUILD: ${{ steps.stage.outputs.staged }}
+          UNSTAGED: ${{ steps.unstage.outputs.unstaged }}
           GH_TOKEN: ${{ github.token }}
   compress:
     if: ${{ github.event_name == 'workflow_dispatch' && inputs.stage == 'compress' }}
