@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { ENGINE, ISOLATED, TIMEOUTS, buildKind, contentType, playRoute, servePlay } from './play.js';
 import { RETURN_VERSION } from './playReturn.js';
 
@@ -163,6 +163,76 @@ describe('serving the play site', () => {
     expect(res.status).toBe(206);
     expect(res.headers.get('content-range')).toBe('bytes 0-3/10');
     expect(await res.text()).toBe('wasm');
+  });
+
+  // (R2 refuses a range that starts at or past the end: a 503 "try again" made the service worker and the page ask three more times)
+  it('answers 416 with the size for a range past the end; any other failed read stays a 503', async () => {
+    const r2 = (getFails) => {
+      const inner = bucket(files);
+      return {
+        gets: inner.gets,
+        head: async (key) => (key in files ? { size: new TextEncoder().encode(files[key]).length } : null),
+        get: async (key, opts = {}) => {
+          const start = /^bytes=(\d+)-/.exec(opts.range?.get?.('range') ?? '')?.[1];
+          if ((getFails && key.endsWith('original-frame-graph.wasm')) || (start !== undefined && Number(start) >= 10)) throw new Error(getFails ? 'R2 unavailable' : 'InvalidRange');
+          return inner.get(key, opts);
+        },
+      };
+    };
+    for (const range of ['bytes=10-', 'bytes=1048576-', 'bytes=12-20']) {
+      const past = await serve(`${ENGINE}b1/original-frame-graph.wasm`, { range }, { PLAY: r2(false) });
+      expect(past.status).toBe(416);
+      expect(past.headers.get('content-range')).toBe('bytes */10');
+      expect(past.headers.get('cross-origin-embedder-policy')).toBe('require-corp');
+      expect(past.headers.get('retry-after')).toBeNull();
+    }
+    // (a range inside the file whose read fails is an outage, not a bad range)
+    const down = await serve(`${ENGINE}b1/original-frame-graph.wasm`, { range: 'bytes=2-' }, { PLAY: r2(true) });
+    expect(down.status).toBe(503);
+    // (a binding with no head, or a head that fails: the 503 as before)
+    const noHead = r2(false); delete noHead.head;
+    expect((await serve(`${ENGINE}b1/original-frame-graph.wasm`, { range: 'bytes=10-' }, { PLAY: noHead })).status).toBe(503);
+    const headDown = { ...r2(false), head: async () => { throw new Error('R2 unavailable'); } };
+    expect((await serve(`${ENGINE}b1/original-frame-graph.wasm`, { range: 'bytes=10-' }, { PLAY: headDown })).status).toBe(503);
+  });
+
+  // (s-buildfast's review of #1324: the head is the same hang class as #1323's reads, so it has a time limit)
+  // (live r1074-b / staged 1075, s-classui: Chrome's WebM demuxer seeks at the end, Range: bytes=830825- on the 830,825-byte
+  // Tile_Light.webm; the 503 surfaced as MEDIA_ERR_NETWORK on seven menu tile films. A range that starts exactly at the size is 416.)
+  it('a range starting exactly at the size of an export file (a film seek at its end) is 416 with the size; its last byte is 206', async () => {
+    const inner = bucket(files), size = (key) => new TextEncoder().encode(files[key]).length;
+    const env = { PLAY: { gets: inner.gets, head: async (key) => (key in files ? { size: size(key) } : null),
+      get: async (key, opts = {}) => {
+        const start = /^bytes=(\d+)-/.exec(opts.range?.get?.('range') ?? '')?.[1];
+        if (start !== undefined && key in files && Number(start) >= size(key)) throw new Error('InvalidRange');
+        return inner.get(key, opts);
+      } } };
+    const end = await serve('/export/fonts/a.ttf', { range: 'bytes=4-' }, env);
+    expect(end.status).toBe(416);
+    expect(end.headers.get('content-range')).toBe('bytes */4');
+    expect(end.headers.get('retry-after')).toBeNull();
+    const last = await serve('/export/fonts/a.ttf', { range: 'bytes=3-3' }, env);
+    expect(last.status).toBe(206);
+    expect(last.headers.get('content-range')).toBe('bytes 3-3/4');
+    expect(await last.text()).toBe('t');
+  });
+
+  it('a head that never answers leaves the ranged read a 503 after TIMEOUTS.read, not a hang', async () => {
+    vi.useFakeTimers();
+    try {
+      const inner = bucket(files);
+      const env = { PLAY: { gets: inner.gets, head: () => new Promise(() => {}), get: async (key, opts = {}) => { if (opts.range?.get?.('range')) throw new Error('InvalidRange'); return inner.get(key, opts); } } };
+      let settled = null;
+      const pending = serve(`${ENGINE}b1/original-frame-graph.wasm`, { range: 'bytes=10-' }, env).then((res) => (settled = res));
+      await vi.advanceTimersByTimeAsync(TIMEOUTS.read - 1);
+      expect(settled).toBeNull();
+      await vi.advanceTimersByTimeAsync(1);
+      await pending;
+      expect(settled.status).toBe(503);
+      expect(settled.headers.get('retry-after')).toBe('1');
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('serves the front end and the export’s allowed folders, and leaves the rest to the site', async () => {
