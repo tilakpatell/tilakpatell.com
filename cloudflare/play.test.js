@@ -190,7 +190,7 @@ describe('serving the play site', () => {
     const down = await serve(`${ENGINE}b1/original-frame-graph.wasm`, { range: 'bytes=2-' }, { PLAY: r2(true) });
     expect(down.status).toBe(503);
     // (a binding with no head, or a head that fails: the 503 as before)
-    const { head, ...noHead } = r2(false);
+    const noHead = r2(false); delete noHead.head;
     expect((await serve(`${ENGINE}b1/original-frame-graph.wasm`, { range: 'bytes=10-' }, { PLAY: noHead })).status).toBe(503);
     const headDown = { ...r2(false), head: async () => { throw new Error('R2 unavailable'); } };
     expect((await serve(`${ENGINE}b1/original-frame-graph.wasm`, { range: 'bytes=10-' }, { PLAY: headDown })).status).toBe(503);
