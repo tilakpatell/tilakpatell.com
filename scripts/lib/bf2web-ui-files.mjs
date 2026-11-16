@@ -6,6 +6,7 @@
 // the fill print them.
 import { readdirSync } from 'node:fs';
 import { join } from 'node:path';
+import { attemptUpload } from './bf2web-upload-response.mjs';
 
 // (the kinds a build's ui-data holds for the page: the rulebooks and manifests, the stills, the tone data)
 export const UI_DATA_KINDS = ['json', 'png', 'bin'];
@@ -33,4 +34,15 @@ export function fillPlan(local, remote) {
   const have = new Map(remote.map((r) => [r.key, r.size]));
   const mismatched = local.filter((f) => have.has(f.path) && have.get(f.path) !== f.size);
   return { missing: local.filter((f) => !have.has(f.path)), mismatched };
+}
+
+// Each missing file put with attemptUpload's tries (three, 1 s then 4 s apart): the first live fill (16 Nov, run 43922315104) sent 14 of
+// 18 and ended on one connection reset ('other side closed'). put(file) resolves to a fetch Response; a non-2xx answer is tried again too.
+export async function sendEach(files, put, { sleep } = {}) {
+  for (const f of files) {
+    await attemptUpload(`put ${f.path}`, async () => {
+      const r = await put(f);
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    }, sleep ? { sleep } : undefined);
+  }
 }

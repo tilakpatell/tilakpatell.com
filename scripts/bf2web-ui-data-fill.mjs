@@ -9,7 +9,7 @@ import { existsSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { objectUrl } from './lib/bucket.mjs';
 import { BUCKET, open } from './lib/bf2web-r2.mjs';
-import { fillPlan, uiDataFiles, uiDataLeftOut } from './lib/bf2web-ui-files.mjs';
+import { fillPlan, sendEach, uiDataFiles, uiDataLeftOut } from './lib/bf2web-ui-files.mjs';
 
 const args = process.argv.slice(2);
 const option = (k) => (args.includes(k) ? args[args.indexOf(k) + 1] : null);
@@ -32,13 +32,13 @@ if (mismatched.length) {
 }
 for (const f of missing) console.log(`  ${dry ? 'would send' : 'send'} ${f.path} (${f.size} B)`);
 if (dry) process.exit(missing.length ? 1 : 0);
-for (const f of missing) {
+// (each put with attemptUpload's tries; a file that fails them ends the run, and a rerun sends only what is still missing)
+await sendEach(missing, (f) => {
   const body = readFileSync(join(dir, f.path));
-  const r = await r2.fetch(objectUrl(BUCKET, prefix + f.path), {
+  return r2.fetch(objectUrl(BUCKET, prefix + f.path), {
     method: 'PUT', body, headers: { 'content-type': 'application/octet-stream', 'content-md5': createHash('md5').update(body).digest('base64') },
   });
-  if (!r.ok) { console.error(`put ${prefix}${f.path}: HTTP ${r.status}`); process.exit(1); }
-}
+});
 const after = new Set((await r2.files(prefix)).map((f) => f.key.slice(prefix.length)));
 const still = local.filter((f) => !after.has(f.path));
 console.log(`${id}: sent ${missing.length}; ${still.length ? still.length + ' still missing' : 'every ui-data file is in the bucket'}`);

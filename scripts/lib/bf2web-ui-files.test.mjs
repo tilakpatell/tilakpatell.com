@@ -2,7 +2,7 @@ import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { fillPlan, uiDataFiles, uiDataLeftOut } from './bf2web-ui-files.mjs';
+import { fillPlan, sendEach, uiDataFiles, uiDataLeftOut } from './bf2web-ui-files.mjs';
 
 // a build's ui-data as the live r1074-a2d368b1's is laid out: rulebooks, the backdrop manifest, stills and their tone data, the wide set
 function folder(extra = []) {
@@ -41,5 +41,20 @@ describe('a build\'s ui-data files that go up', () => {
     expect(uiDataFiles(root)).not.toContain('notes.txt');
     expect(uiDataLeftOut(root)).toEqual(['backdrop/cam5-50mm.exr', 'notes.txt']);
     expect(uiDataLeftOut(folder())).toEqual([]);
+  });
+
+  it('a put whose connection is reset is tried again, not the end of the fill (16 Nov: run 43922315104 sent 14 of 18)', async () => {
+    const files = [{ path: 'backdrop/cam5-50mm.tone.bin' }, { path: 'backdrop/wide/cam5-50mm.tone.bin' }];
+    const sent = [];
+    let resets = 1, refusals = 1;
+    const put = async (f) => {
+      if (f.path.startsWith('backdrop/wide/') && resets-- > 0) throw new TypeError('fetch failed', { cause: new Error('other side closed') });
+      if (f.path.startsWith('backdrop/wide/') && refusals-- > 0) return { ok: false, status: 503 };
+      sent.push(f.path);
+      return { ok: true, status: 200 };
+    };
+    await sendEach(files, put, { sleep: async () => {} });
+    expect(sent).toEqual(['backdrop/cam5-50mm.tone.bin', 'backdrop/wide/cam5-50mm.tone.bin']);
+    await expect(sendEach(files, async () => ({ ok: false, status: 403 }), { sleep: async () => {} })).rejects.toThrow(/put backdrop\/cam5-50mm\.tone\.bin: HTTP 403/);
   });
 });
