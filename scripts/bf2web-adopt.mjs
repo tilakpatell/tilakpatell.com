@@ -14,6 +14,9 @@
 //     the pre-upload path: the build held to the same contract and recorded in play.json's stagedBuilds, so the Worker
 //     serves it by its exact name (noindex, its page no-store) for gates on the hosted path; play.json's build, what
 //     /battlefront/ opens, does not move (GITHUB_OUTPUT gets staged=<id>). Adopting it later promotes it.
+//   node scripts/bf2web-adopt.mjs --build <id> --unstage
+//     a staged build that will not be adopted: its stagedBuilds entry goes, so the Worker no longer serves it by name; nothing
+//     is read from the bucket (GITHUB_OUTPUT gets unstaged=<id>, empty when it was not staged)
 // Exit 0 when a build was adopted or nothing newer is there (GITHUB_OUTPUT gets adopted=<id>, empty for none),
 // 1 when the build asked for fails, or every newer one does.
 
@@ -21,7 +24,7 @@ import { appendFileSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { open } from './lib/bf2web-r2.mjs';
-import { MAIN_BUILD, SHARED_UI, adopted, contractProblems, staged, floorNeeds, hookProblems, levelProblems, missingFiles, newest, programNeeds, uiDataFor } from './lib/bf2web-site.mjs';
+import { MAIN_BUILD, SHARED_UI, adopted, contractProblems, staged, unstaged, floorNeeds, hookProblems, levelProblems, missingFiles, newest, programNeeds, uiDataFor } from './lib/bf2web-site.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const PLAY = join(ROOT, 'src/data/bf2web/play.json');
@@ -34,6 +37,19 @@ const check = args.includes('--check');
 const stage = args.includes('--stage');
 if (stage && !asked) throw new Error('--stage needs --build <id>: only a named build is staged');
 const output = (k, v) => process.env.GITHUB_OUTPUT && appendFileSync(process.env.GITHUB_OUTPUT, `${k}=${v}\n`);
+if (args.includes('--unstage')) {
+  if (!asked) throw new Error('--unstage needs --build <id>');
+  const now = JSON.parse(readFileSync(PLAY, 'utf8'));
+  const next = unstaged(now, asked);
+  if (!next) console.log(asked, 'is not staged: nothing to unstage');
+  else if (check) console.log('--check: play.json would unstage', asked);
+  else {
+    writeFileSync(PLAY, JSON.stringify(next, null, 2) + '\n');
+    console.log('play.json unstages', asked, `(its build stays ${now.build})`);
+  }
+  output('unstaged', next && !check ? asked : '');
+  process.exit(0);
+}
 
 const r2 = open();
 const play = JSON.parse(readFileSync(PLAY, 'utf8'));
