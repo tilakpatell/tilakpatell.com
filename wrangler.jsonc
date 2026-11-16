@@ -26,5 +26,7 @@
     "run_worker_first": ["/audio/*", "/battlefront", "/battlefront/", "/battlefront/engine", "/battlefront/engine/*", "/ui/*", "/export/*", "/ui-data/*"]
   },
   // (bf2-web's exported play sites, src/data/bf2web/play.json naming the one served)
-  "r2_buckets": [{ "binding": "PLAY", "bucket_name": "bf2017-assets" }]
+  "r2_buckets": [{ "binding": "PLAY", "bucket_name": "bf2017-assets" }],
+  // Workers Logs, one request in ten (PR: what it records, where, how long, the cost); merged only on the owner's yes.
+  "observability": { "enabled": true, "head_sampling_rate": 0.1 }
 }
