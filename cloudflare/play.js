@@ -216,12 +216,23 @@ async function answer(request, url, route, env, config, manifests, ctx, cache, p
   return new Response(response.body, { status: response.status, statusText: response.statusText, headers, ...(headers.get('content-encoding') === 'br' ? { encodeBody: 'manual' } : {}) });
 }
 
+// A build's own ui-data (play.json's uiData for it is sites/<build>/ui-data/), asked on its build-qualified path, is that build's
+// as much as its site files are: put once by the upload (the publish pins its digest) or added by the fill, never replaced. So it
+// is a year and immutable and kept at the edge like them, and an octet-stream file of it (the backdrop's *.tone.bin, 8.3 and 16.6
+// MB) is answered to a br client from its brotli copy <key>.br when the bucket has one (scripts/lib/bf2web-ui-files.mjs
+// uiDataBrotli: written by the uploader and the fill). Until 16 Nov every one went out whole, max-age=0, from R2 each view.
+// A uiData that is not the build's own prefix (an older play.json's shared folder) and the unqualified /ui-data/ path revalidate.
+export function buildUiData(route, url, config) {
+  return route.root === 'uiData' && url.pathname.startsWith(ENGINE) && config.uiData === `sites/${config.build}/ui-data/`;
+}
+
 async function answerBuild(request, url, route, env, config, manifests, ctx, cache) {
   if (request.method !== 'GET' && request.method !== 'HEAD') return new Response(null, { status: 405, headers: { ...ISOLATED, allow: 'GET, HEAD' } });
-  const immutable = route.root === 'site' && url.pathname.startsWith(ENGINE) && route.path !== 'index.html';
+  const uiData = buildUiData(route, url, config);
+  const immutable = (route.root === 'site' && url.pathname.startsWith(ENGINE) && route.path !== 'index.html') || uiData;
   const whole = !request.headers.has('range');
   // (the build's own list, unless the build has a file of that name)
-  if (immutable && route.path === FILES) {
+  if (immutable && route.root === 'site' && route.path === FILES) {
     const paths = await listed(env, config, manifests);
     if (!paths.has(FILES)) {
       const body = JSON.stringify({ build: config.build, files: [...paths] });
@@ -278,9 +289,10 @@ async function answerBuild(request, url, route, env, config, manifests, ctx, cac
     }
   }
   if (immutable && whole && takesBrotli) {
-    const listedPaths = await listed(env, config, manifests);
-    if (!listedPaths.has(route.path)) return isolatedNotFound();
-    if ((await brotliCopies(env, config, manifests)).has(route.path)) {
+    // (a site file: the manifest lists it and encodings.json its copy; a build's ui-data is in neither: an octet-stream file of
+    // it is asked for its copy, and with none there the file itself answers below)
+    if (!uiData && !(await listed(env, config, manifests)).has(route.path)) return isolatedNotFound();
+    if (uiData ? contentType(route.path) === 'application/octet-stream' : (await brotliCopies(env, config, manifests)).has(route.path)) {
       const copy = await read(env, route.key + '.br', { onlyIf: request.headers });
       if (copy) {
         if (!('body' in copy) || !copy.body) return brotli(null, copy.httpEtag, null, 'miss');

@@ -11,7 +11,7 @@
 
 import { createHash } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
-import { uiDataFiles, uiDataLeftOut } from './lib/bf2web-ui-files.mjs';
+import { brotliCopy, uiDataBrotli, uiDataFiles, uiDataLeftOut } from './lib/bf2web-ui-files.mjs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { encodePath, objectUrl } from './lib/bucket.mjs';
@@ -48,6 +48,9 @@ const uiDir = option('--ui-data');
 // (a ui-data file of a kind that does not go up is named, not dropped in silence: 16 Nov 2026, the backdrop tone data)
 if (uiDir && existsSync(uiDir)) for (const f of uiDataLeftOut(uiDir)) console.log(`ui-data left out (not a kind that goes up): ${f}`);
 if (uiDir && existsSync(uiDir)) for (const f of uiDataFiles(uiDir)) plan.splice(-1, 0, { action: 'put', key: `${prefix}ui-data/${f}`, file: join(uiDir, f) });
+// (and an octet-stream file's brotli copy <path>.br, made as it is sent, for the Worker to answer a br client with: cloudflare/play.js
+// buildUiData; 16 Nov, the backdrop tone data went out whole, 8.3 and 16.6 MB a view)
+if (uiDir && existsSync(uiDir)) for (const f of uiDataFiles(uiDir).filter(uiDataBrotli)) plan.splice(-1, 0, { action: 'put', key: `${prefix}ui-data/${f}.br`, file: join(uiDir, f), brotli: true });
 
 const count = (a) => plan.filter((p) => p.action === a).length;
 const bytesOf = (p) => manifest.entries.find((e) => e.path === p.path)?.bytes ?? 0;
@@ -97,6 +100,16 @@ async function sendMultipart(p) {
 async function send(p) {
   if (p.action === 'skip') return;
   const url = objectUrl(BUCKET, p.key);
+  if (p.brotli) {
+    // (a copy that would save less than a tenth is not put: the Worker then sends the file itself)
+    const body = await brotliCopy(readFileSync(p.file));
+    if (!body) return;
+    await attemptUpload(`put ${p.key}`, async () => {
+      const r = await r2.fetch(url, { method: 'PUT', body, headers: { 'content-md5': createHash('md5').update(body).digest('base64'), 'content-type': 'application/octet-stream' } });
+      await completeUploadResponse(r, { copy: false });
+    });
+    return;
+  }
   const init =
     p.action === 'copy'
       ? { method: 'PUT', headers: copyUploadHeaders(`/${BUCKET}/${encodePath(p.from)}`, p.replaceMetadata, shaOf(p)) }
