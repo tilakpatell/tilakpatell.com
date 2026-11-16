@@ -1,8 +1,10 @@
 import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { brotliDecompressSync } from 'node:zlib';
+import { randomBytes } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
-import { fillPlan, sendEach, uiDataFiles, uiDataLeftOut } from './bf2web-ui-files.mjs';
+import { brotliCopy, fillPlan, sendEach, uiDataBrotli, uiDataFiles, uiDataLeftOut } from './bf2web-ui-files.mjs';
 
 // a build's ui-data as the live r1074-a2d368b1's is laid out: rulebooks, the backdrop manifest, stills and their tone data, the wide set
 function folder(extra = []) {
@@ -56,5 +58,17 @@ describe('a build\'s ui-data files that go up', () => {
     await sendEach(files, put, { sleep: async () => {} });
     expect(sent).toEqual(['backdrop/cam5-50mm.tone.bin', 'backdrop/wide/cam5-50mm.tone.bin']);
     await expect(sendEach(files, async () => ({ ok: false, status: 403 }), { sleep: async () => {} })).rejects.toThrow(/put backdrop\/cam5-50mm\.tone\.bin: HTTP 403/);
+  });
+
+  it('makes a brotli copy of an octet-stream file only (the tone data), and none that would save less than a tenth', async () => {
+    expect(['backdrop/cam2-50mm.tone.bin', 'backdrop/wide/cam17-50mm.tone.bin'].every(uiDataBrotli)).toBe(true);
+    expect(['screens.json', 'backdrop/backdrop.json', 'backdrop/cam2-50mm.png'].some(uiDataBrotli)).toBe(false);
+    // (a grey R10G10B10A2 field, as the tone data is: 0x00300C03-style texels)
+    const tone = Buffer.alloc(1 << 18);
+    for (let i = 0; i < tone.length; i += 4) { const v = (i >> 10) & 1023; tone.writeUInt32LE(v | (v << 10) | (v << 20), i); }
+    const br = await brotliCopy(tone, 5);
+    expect(br.length).toBeLessThan(tone.length / 10);
+    expect(brotliDecompressSync(br).equals(tone)).toBe(true);
+    expect(await brotliCopy(randomBytes(1 << 16), 5)).toBeNull();
   });
 });

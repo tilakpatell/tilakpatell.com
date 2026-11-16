@@ -5,6 +5,8 @@
 // publish contract has it (scripts/desktop/bf2web-publish.test.mjs), but no longer in silence: uiDataLeftOut names each, and the uploader and
 // the fill print them.
 import { readdirSync } from 'node:fs';
+import { brotliCompress, constants } from 'node:zlib';
+import { promisify } from 'node:util';
 import { join } from 'node:path';
 import { attemptUpload } from './bf2web-upload-response.mjs';
 
@@ -45,4 +47,18 @@ export async function sendEach(files, put, { sleep } = {}) {
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
     }, sleep ? { sleep } : undefined);
   }
+}
+
+// A ui-data file the Worker answers a br client with from its brotli copy <path>.br (cloudflare/play.js buildUiData): one of an
+// octet-stream kind, which neither Cloudflare nor the Worker compresses (play.js contentType has no type for .bin), the backdrop's
+// *.tone.bin (R10G10B10A2 grey, 8.3 MB a camera, 16.6 MB wide: q11 makes 2.7 and 2.2 MB). The rulebooks (json) Cloudflare compresses;
+// the stills (png) are compressed already.
+export const uiDataBrotli = (path) => /\.bin$/i.test(path);
+
+// its brotli copy, at the quality a release uses (q11, a 16 MB window), or null when it would save less than a tenth (no copy
+// is then put, and the Worker sends the file itself), as scripts/bf2web-compress.mjs has it for the build's own files
+const brotli = promisify(brotliCompress);
+export async function brotliCopy(body, quality = 11) {
+  const br = await brotli(body, { params: { [constants.BROTLI_PARAM_QUALITY]: quality, [constants.BROTLI_PARAM_LGWIN]: 24, [constants.BROTLI_PARAM_SIZE_HINT]: body.length } });
+  return br.length <= body.length * 0.9 ? br : null;
 }
