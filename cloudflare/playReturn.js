@@ -41,15 +41,63 @@ export function watchReturn(win, back) {
   doc.head.append(style);
   doc.body.append(link);
   // A round that failed: the play page shows why for 15 s; this keeps it up, with the GPU the browser gave, and a
-  // button that copies both, for the visitor to send on
+  // button that copies both, for the visitor to send on. The visitor reads plain words for the cause first; the
+  // technical line sits under Details. The box closes by its X or Escape, and goes by itself when the next round
+  // starts, so it never stays over the menu (owner report 28, 16 Nov: "There is no way to x out the red box too").
+  const plainWords = (why) => {
+    if (/requestDevice|requestAdapter|GPUAdapter|GPUDevice|DXGI_ERROR|DEVICE_REMOVED|DEVICE_HUNG|device (was )?lost|gpu-?lost|graphics device|D3D12|Vulkan|WebGPU/i.test(why))
+      return 'The browser could not get the graphics card for the game: it was busy, reset or refused. Close other tabs or lower the quality, then choose PLAY to try again.';
+    if (/out of memory|Array buffer allocation failed|WebAssembly\.Memory|Cannot enlarge memory|RangeError: .*memory/i.test(why))
+      return 'This computer could not give the game the memory it needed. Close other tabs or programs, then choose PLAY to try again.';
+    if (/Failed to fetch|NetworkError|network|download|HTTP \d{3}/i.test(why))
+      return 'A download for the game was cut off. Check the connection, then choose PLAY to try again.';
+    return 'The game stopped unexpectedly. Choose PLAY to try again.';
+  };
+  let shown = null; // { box, delivery }: the box up now and the observer delivery that put it up
+  let delivery = 0;
+  const close = () => {
+    shown?.box.remove();
+    shown = null;
+  };
+  // Escape closes the box first and only (capture, so the page's own Escape does not also act on that press)
+  win.addEventListener(
+    'keydown',
+    (e) => {
+      if (e.key !== 'Escape' || !shown) return;
+      close();
+      e.preventDefault?.();
+      e.stopImmediatePropagation?.();
+    },
+    true,
+  );
   const failed = (s) => {
     const box = doc.createElement('div');
     box.className = 'tp-failed';
     box.setAttribute('role', 'alert');
-    box.style.cssText = 'position:fixed;left:20px;bottom:20px;z-index:2147483647;max-width:560px;padding:12px 14px;font:13px/1.4 system-ui,sans-serif;color:#fff;background:rgba(80,0,0,.85);border:1px solid rgba(255,120,120,.6)';
+    box.style.cssText = 'position:fixed;left:20px;bottom:20px;z-index:2147483647;max-width:440px;padding:12px 40px 12px 14px;font:13px/1.4 system-ui,sans-serif;color:#fff;background:rgba(80,0,0,.85);border:1px solid rgba(255,120,120,.6)';
     const why = String(s.error ?? s.endReason ?? 'unknown').split('\n')[0];
-    box.textContent = `The round stopped: ${why}`;
+    const words = doc.createElement('p');
+    words.className = 'tp-failed-words';
+    words.style.cssText = 'margin:0';
+    words.textContent = plainWords(why);
+    const x = doc.createElement('button');
+    x.className = 'tp-failed-close';
+    x.setAttribute('aria-label', 'Close');
+    x.setAttribute('title', 'Close (Esc)');
+    x.textContent = '×';
+    x.style.cssText = 'position:absolute;top:6px;right:6px;width:28px;height:28px;font:600 18px/1 system-ui,sans-serif;color:#fff;background:none;border:1px solid rgba(255,255,255,.5);cursor:pointer;padding:0';
+    x.onclick = close;
+    const details = doc.createElement('details');
+    details.style.cssText = 'margin-top:8px';
+    const summary = doc.createElement('summary');
+    summary.textContent = 'Details';
+    summary.style.cssText = 'cursor:pointer;opacity:.85';
+    const line = doc.createElement('div');
+    line.className = 'tp-failed-line';
+    line.style.cssText = 'margin-top:6px;font:12px/1.4 ui-monospace,monospace;opacity:.9;word-break:break-word';
+    line.textContent = `The round stopped: ${why}`;
     const copy = doc.createElement('button');
+    copy.className = 'tp-failed-copy';
     copy.textContent = 'Copy the details';
     copy.style.cssText = 'display:block;margin-top:8px;font:inherit;color:#fff;background:none;border:1px solid #fff;padding:4px 10px;cursor:pointer';
     copy.onclick = async () => {
@@ -59,12 +107,18 @@ export function watchReturn(win, back) {
       await win.navigator.clipboard?.writeText(text).catch(() => null);
       copy.textContent = 'Copied';
     };
-    box.append(copy);
+    details.append(summary, line, copy);
+    box.append(x, words, details);
+    close();
     doc.querySelector('.tp-failed')?.remove();
     doc.body.append(box);
+    shown = { box, delivery };
   };
   let seen = 0;
   new win.MutationObserver(() => {
+    delivery++;
+    // The next round has started (the body has left the menu after the delivery that showed the box): the box goes
+    if (shown && shown.delivery < delivery && !/(^|\s)play-menu(\s|$)/.test(doc.body.className)) close();
     // finish() appends only after the instance shuts down. Its menu -> preload/loading transitions can share a
     // MutationObserver delivery, so the completed record, not the transient current state, is the return signal.
     const sessions = win.__playFlow?.sessions ?? [];
