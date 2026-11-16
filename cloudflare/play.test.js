@@ -174,7 +174,7 @@ describe('serving the play site', () => {
         head: async (key) => (key in files ? { size: new TextEncoder().encode(files[key]).length } : null),
         get: async (key, opts = {}) => {
           const start = /^bytes=(\d+)-/.exec(opts.range?.get?.('range') ?? '')?.[1];
-          if (getFails || (start !== undefined && Number(start) >= 10)) throw new Error('InvalidRange');
+          if ((getFails && key.endsWith('original-frame-graph.wasm')) || (start !== undefined && Number(start) >= 10)) throw new Error(getFails ? 'R2 unavailable' : 'InvalidRange');
           return inner.get(key, opts);
         },
       };
