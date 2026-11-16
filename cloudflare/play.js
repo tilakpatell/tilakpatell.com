@@ -227,12 +227,23 @@ async function answer(request, url, route, env, config, manifests, ctx, cache, p
   return new Response(response.body, { status: response.status, statusText: response.statusText, headers, ...(headers.get('content-encoding') === 'br' ? { encodeBody: 'manual' } : {}) });
 }
 
+// A build's own ui-data (play.json's uiData for it is sites/<build>/ui-data/), asked on its build-qualified path, is that build's
+// as much as its site files are: put once by the upload (the publish pins its digest) or added by the fill, never replaced. So it
+// is a year and immutable and kept at the edge like them, and an octet-stream file of it (the backdrop's *.tone.bin, 8.3 and 16.6
+// MB) is answered to a br client from its brotli copy <key>.br when the bucket has one (scripts/lib/bf2web-ui-files.mjs
+// uiDataBrotli: written by the uploader and the fill). Until 16 Nov every one went out whole, max-age=0, from R2 each view.
+// A uiData that is not the build's own prefix (an older play.json's shared folder) and the unqualified /ui-data/ path revalidate.
+export function buildUiData(route, url, config) {
+  return route.root === 'uiData' && url.pathname.startsWith(ENGINE) && config.uiData === `sites/${config.build}/ui-data/`;
+}
+
 async function answerBuild(request, url, route, env, config, manifests, ctx, cache) {
   if (request.method !== 'GET' && request.method !== 'HEAD') return new Response(null, { status: 405, headers: { ...ISOLATED, allow: 'GET, HEAD' } });
-  const immutable = route.root === 'site' && url.pathname.startsWith(ENGINE) && route.path !== 'index.html';
+  const uiData = buildUiData(route, url, config);
+  const immutable = (route.root === 'site' && url.pathname.startsWith(ENGINE) && route.path !== 'index.html') || uiData;
   const whole = !request.headers.has('range');
   // (the build's own list, unless the build has a file of that name)
-  if (immutable && route.path === FILES) {
+  if (immutable && route.root === 'site' && route.path === FILES) {
     const paths = await listed(env, config, manifests);
     if (!paths.has(FILES)) {
       const body = JSON.stringify({ build: config.build, files: [...paths] });
@@ -242,33 +253,76 @@ async function answerBuild(request, url, route, env, config, manifests, ctx, cac
       });
     }
   }
-  if (immutable && whole && /\bbr\b/.test(request.headers.get('accept-encoding') ?? '')) {
-    const listedPaths = await listed(env, config, manifests);
-    if (!listedPaths.has(route.path)) return isolatedNotFound();
-    if ((await brotliCopies(env, config, manifests)).has(route.path)) {
+  const cacheable = cache && immutable && request.method === 'GET' && whole;
+  const takesBrotli = /\bbr\b/.test(request.headers.get('accept-encoding') ?? '');
+  const brotli = (body, etag, size, state) => {
+    const headers = new Headers({
+      ...ISOLATED,
+      'content-type': contentType(route.path),
+      'content-encoding': 'br',
+      vary: 'accept-encoding',
+      etag,
+      'cache-control': 'public, max-age=31536000, immutable',
+      'x-play-cache': state,
+    });
+    if (!body) return new Response(null, { status: 304, headers });
+    if (size != null) headers.set('content-length', String(size));
+    // (encodeBody manual: the bytes are brotli already, sent as they are)
+    return new Response(request.method === 'HEAD' ? null : body, { status: 200, headers, encodeBody: 'manual' });
+  };
+  const fromEdge = async () => {
+    const hit = await edgeMatch(cache, url, 'identity');
+    if (!hit) return null;
+    const headers = new Headers(hit.headers);
+    headers.set('vary', 'accept-encoding');
+    headers.set('x-play-cache', 'hit');
+    if (notModified(request, hit)) { headers.delete('content-length'); return new Response(null, { status: 304, headers }); }
+    return new Response(hit.body, { status: 200, headers });
+  };
+  // A build file the edge already holds is answered before any read of the bucket, the build's manifest and encodings list
+  // among them (16 Nov, boot hangs: after a deploy every isolate is cold, and a browser's first request, br, read the 5.4 MB
+  // manifest from R2 before the edge was asked; a client without br went straight to the edge). Safe without the manifest: a
+  // copy is put only after a manifest-checked whole read of a listed file, under its build's immutable path, and a build
+  // play.json does not name never reaches this function.
+  // Which entry: a browser that takes br gets the br copy of a file that can have one (only application/octet-stream files
+  // get one, scripts/bf2web-compress.mjs compressible, by this module's contentType), so for those only the br entry is taken
+  // edge-first; on its miss the brotli branch below reads and stores the copy. Every other file (the engine's .js and .wasm,
+  // the JSON) never has a br copy, and its own entry is the answer for any client ([c5] on abe9d8522: an identity entry put by a
+  // client without br must not be served, uncompressed, to a browser in place of a .res or .glb's br copy).
+  if (cacheable) {
+    const mayHaveCopy = contentType(route.path) === 'application/octet-stream';
+    if (takesBrotli && mayHaveCopy) {
+      const hit = await edgeMatch(cache, url, 'br');
+      if (hit) return brotli(notModified(request, hit) ? null : hit.body, hit.headers.get('etag'), hit.headers.get('content-length'), 'hit');
+    } else {
+      const plain = await fromEdge();
+      if (plain) return plain;
+    }
+  }
+  if (immutable && whole && takesBrotli) {
+    // (a site file: the manifest lists it and encodings.json its copy; a build's ui-data is in neither: an octet-stream file of
+    // it is asked for its copy, and with none there the file itself answers below)
+    if (!uiData && !(await listed(env, config, manifests)).has(route.path)) return isolatedNotFound();
+    if (uiData ? contentType(route.path) === 'application/octet-stream' : (await brotliCopies(env, config, manifests)).has(route.path)) {
       const copy = await read(env, route.key + '.br', { onlyIf: request.headers });
       if (copy) {
-        const headers = new Headers({
-          ...ISOLATED,
-          'content-type': contentType(route.path),
-          'content-encoding': 'br',
-          vary: 'accept-encoding',
-          etag: copy.httpEtag,
-          'cache-control': 'public, max-age=31536000, immutable',
-        });
-        if (!('body' in copy) || !copy.body) return new Response(null, { status: 304, headers });
-        headers.set('content-length', String(copy.size));
-        // (encodeBody manual: the bytes are brotli already, sent as they are)
-        return new Response(request.method === 'HEAD' ? null : copy.body, { status: 200, headers, encodeBody: 'manual' });
+        if (!('body' in copy) || !copy.body) return brotli(null, copy.httpEtag, null, 'miss');
+        let body = copy.body;
+        if (cacheable) {
+          const [sent, kept] = streamOf(body).tee();
+          body = sent;
+          await edgePut(cache, url, 'br', kept, {
+            'content-type': 'application/octet-stream', etag: copy.httpEtag, 'content-length': String(copy.size), 'cache-control': 'public, max-age=31536000, immutable',
+          }, ctx);
+        }
+        return brotli(body, copy.httpEtag, copy.size, cacheable ? 'miss' : 'off');
       }
     }
   }
-  const cacheable = cache && immutable && request.method === 'GET' && whole;
-  if (cacheable) {
-    try {
-      const hit = await timed(cache.match(request), TIMEOUTS.cacheMatch, 'edge cache');
-      if (hit) return hit;
-    } catch { /* The edge cache is optional (a lookup past its time is a miss); the manifest-checked R2 read still answers. */ }
+  // (a br client's octet-stream file that has no br copy: its own entry, as #1322 had it)
+  if (cacheable && takesBrotli && contentType(route.path) === 'application/octet-stream') {
+    const plain = await fromEdge();
+    if (plain) return plain;
   }
   if (route.root === 'site' && !(await listed(env, config, manifests)).has(route.path)) return isolatedNotFound();
   const page = route.root === 'site' && route.path === 'index.html';
@@ -312,18 +366,57 @@ async function answerBuild(request, url, route, env, config, manifests, ctx, cac
     return new Response(request.method === 'HEAD' ? null : object.body, { status: 206, headers });
   }
   headers.set('content-length', String(object.size));
-  const response = new Response(request.method === 'HEAD' ? null : object.body, { status: 200, headers });
-  if (cacheable) {
-    const copy = response.clone();
-    const put = (async () => {
-      try { await cache.put(request, copy); }
-      catch {
-        // Abandon the failed cache branch without awaiting the caller's still-unread body.
-        try { copy.body?.cancel().catch(() => {}); } catch { /* already consumed or locked */ }
-      }
-    })();
-    if (ctx) ctx.waitUntil(put);
-    else await put;
+  if (immutable) headers.set('x-play-cache', cacheable ? 'miss' : 'off');
+  let body = request.method === 'HEAD' ? null : object.body;
+  if (cacheable && body) {
+    const [sent, kept] = streamOf(body).tee();
+    body = sent;
+    const stored = new Headers(headers);
+    stored.delete('vary');
+    stored.delete('x-play-cache');
+    await edgePut(cache, url, 'identity', kept, stored, ctx);
   }
-  return response;
+  return new Response(body, { status: 200, headers });
+}
+
+// The edge cache (caches.default), keyed by the file's URL and its encoding variant, with no request header in the key.
+// A stored copy holds no Vary and no Content-Encoding (a brotli copy is kept as the bytes it is, octet-stream), so
+// neither the cache nor the runtime recodes or varies it; the response's encoding headers are put back on the way out.
+// x-play-cache on a build file says which: hit, miss (read from R2, put at the edge) or off (not cacheable).
+const edgeKey = (url, variant) => {
+  const key = new URL(url);
+  key.searchParams.append('play-encoding', variant);
+  return new Request(key.toString(), { method: 'GET' });
+};
+
+async function edgeMatch(cache, url, variant) {
+  try {
+    return (await timed(cache.match(edgeKey(url, variant)), TIMEOUTS.cacheMatch, 'edge cache')) ?? null;
+  } catch {
+    return null; // (the edge cache is optional, and a lookup past its time is a miss; the manifest-checked R2 read still answers)
+  }
+}
+
+async function edgePut(cache, url, variant, body, headers, ctx) {
+  const put = (async () => {
+    try { await cache.put(edgeKey(url, variant), new Response(body, { status: 200, headers })); }
+    catch {
+      // Abandon the failed cache branch without awaiting the caller's still-unread body.
+      try { body?.cancel().catch(() => {}); } catch { /* already consumed or locked */ }
+    }
+  })();
+  if (ctx) ctx.waitUntil(put);
+  else await put;
+}
+
+// (an R2 body is a stream; anything else, as a test's bucket gives, is made one so it can be split for the edge)
+const streamOf = (body) => (body instanceof ReadableStream ? body : new Response(body).body);
+
+// a conditional request the stored copy meets (If-None-Match, weak or strong, one of a list)
+function notModified(request, stored) {
+  const asked = request.headers.get('if-none-match');
+  const etag = stored.headers.get('etag');
+  if (!asked || !etag) return false;
+  const bare = (t) => t.trim().replace(/^W\//, '');
+  return asked.trim() === '*' || asked.split(',').some((t) => bare(t) === bare(etag));
 }

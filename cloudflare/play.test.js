@@ -238,6 +238,149 @@ describe('serving the play site', () => {
     expect(kept.has(`https://tilakpatell.com${ENGINE}b1/`)).toBe(false);
   });
 
+  it('answers a warmed build file on a cold isolate with no read of the bucket at all, the manifest included (16 Nov boot hangs)', async () => {
+    const env = { PLAY: bucket(files) };
+    const kept = new Map();
+    const cache = { match: async (r) => kept.get(r.url)?.clone() ?? null, put: async (r, res) => void kept.set(r.url, res) };
+    const browser = { 'accept-encoding': 'gzip, deflate, br, zstd' };
+    // (one isolate warms the edge: the engine's script, which has no brotli copy, and a scene file, which has one)
+    for (const p of ['original-frame-graph.wasm', 'scene-r-0.res']) await (await servePlay(ask(`${ENGINE}b1/${p}`, browser), env, config, new Map(), null, cache)).text();
+    // (a deploy: a new isolate, its manifests not read yet)
+    const reads = env.PLAY.gets.length;
+    const script = await servePlay(ask(`${ENGINE}b1/original-frame-graph.wasm`, browser), env, config, new Map(), null, cache);
+    expect(script.status).toBe(200);
+    expect(script.headers.get('x-play-cache')).toBe('hit');
+    expect(await script.text()).toBe('wasm-bytes');
+    const scene = await servePlay(ask(`${ENGINE}b1/scene-r-0.res`, browser), env, config, new Map(), null, cache);
+    expect(scene.headers.get('content-encoding')).toBe('br');
+    expect(await scene.text()).toBe('BR');
+    expect(env.PLAY.gets.slice(reads)).toEqual([]);
+    // (a file the edge does not hold still goes through the manifest: an unlisted one is refused as before)
+    expect((await servePlay(ask(`${ENGINE}b1/secret.bin`, browser), env, config, new Map(), null, cache)).status).toBe(404);
+    expect(env.PLAY.gets.slice(reads)).toContain('sites/b1/manifest.json');
+  });
+
+  it('never serves a br client the identity entry of a file that has a br copy, whoever came first ([c5] on abe9d8522)', async () => {
+    const env = { PLAY: bucket(files) };
+    const kept = new Map();
+    const cache = { match: async (r) => kept.get(r.url)?.clone() ?? null, put: async (r, res) => void kept.set(r.url, res) };
+    const path = `${ENGINE}b1/scene-r-0.res`, browser = { 'accept-encoding': 'gzip, deflate, br, zstd' };
+    // (a client without br first: the file itself goes to the edge)
+    expect(await (await servePlay(ask(path), env, config, new Map(), null, cache)).text()).toBe('scene bytes, whole');
+    // (then browsers: the br copy, read once and stored, then from the edge)
+    const first = await servePlay(ask(path, browser), env, config, new Map(), null, cache);
+    expect(first.headers.get('content-encoding')).toBe('br');
+    expect(first.headers.get('x-play-cache')).toBe('miss');
+    expect(await first.text()).toBe('BR');
+    const again = await servePlay(ask(path, browser), env, config, new Map(), null, cache);
+    expect(again.headers.get('content-encoding')).toBe('br');
+    expect(again.headers.get('x-play-cache')).toBe('hit');
+    expect([...kept.keys()].map((k) => new URL(k).searchParams.get('play-encoding')).sort()).toEqual(['br', 'identity']);
+    // (a file that can never have a br copy, the engine's .wasm: its own entry, edge-first, for a browser too)
+    await (await servePlay(ask(`${ENGINE}b1/original-frame-graph.wasm`), env, config, new Map(), null, cache)).text();
+    const reads = env.PLAY.gets.length;
+    const wasm = await servePlay(ask(`${ENGINE}b1/original-frame-graph.wasm`, browser), env, config, new Map(), null, cache);
+    expect(wasm.headers.get('x-play-cache')).toBe('hit');
+    expect(wasm.headers.has('content-encoding')).toBe(false);
+    expect(env.PLAY.gets.slice(reads)).toEqual([]);
+  });
+
+  it('answers a br client\'s octet-stream file that has no br copy from its own edge entry, not R2 ([c5] on 7457f2def)', async () => {
+    // (a file under 1 KB of scene data: the compress step makes it no br copy, so encodings.json does not list it)
+    const tinyManifest = { ...manifest, entries: [...manifest.entries, { path: 'scene-tiny.bin' }] };
+    const env = { PLAY: bucket({ ...files, 'sites/b1/manifest.json': JSON.stringify(tinyManifest), 'sites/b1/scene-tiny.bin': 'tiny' }) };
+    const kept = new Map();
+    const cache = { match: async (r) => kept.get(r.url)?.clone() ?? null, put: async (r, res) => void kept.set(r.url, res) };
+    const path = `${ENGINE}b1/scene-tiny.bin`, browser = { 'accept-encoding': 'gzip, deflate, br, zstd' };
+    const first = await servePlay(ask(path, browser), env, config, new Map(), null, cache);
+    expect(first.headers.get('x-play-cache')).toBe('miss');
+    expect(await first.text()).toBe('tiny');
+    const fileReads = () => env.PLAY.gets.filter((k) => k === 'sites/b1/scene-tiny.bin').length;
+    const before = fileReads();
+    const again = await servePlay(ask(path, browser), env, config, new Map(), null, cache);
+    expect(again.headers.get('x-play-cache')).toBe('hit');
+    expect(again.headers.has('content-encoding')).toBe(false);
+    expect(await again.text()).toBe('tiny');
+    expect(fileReads()).toBe(before);
+  });
+
+  it('keeps a brotli copy at the edge too, apart from the file itself, and serves both from there', async () => {
+    // (hosted 15 Nov, r1073: a look's .glb files, brotli copies, were a Worker-to-R2 read every time: first byte
+    // 163 ms median the first time, 188 ms the second; the cache was looked up only after the brotli branch returned)
+    const env = { PLAY: bucket(files) };
+    const kept = new Map();
+    const cache = { match: async (r) => kept.get(r.url)?.clone() ?? null, put: async (r, res) => void kept.set(r.url, res) };
+    const path = `${ENGINE}b1/scene-r-0.res`, br = { 'accept-encoding': 'gzip, br' };
+    const first = await servePlay(ask(path, br), env, config, new Map(), null, cache);
+    expect(first.headers.get('content-encoding')).toBe('br');
+    expect(first.headers.get('x-play-cache')).toBe('miss');
+    expect(await first.text()).toBe('BR');
+    const reads = env.PLAY.gets.length;
+    const second = await servePlay(ask(path, br), env, config, new Map(), null, cache);
+    expect(second.status).toBe(200);
+    expect(second.headers.get('x-play-cache')).toBe('hit');
+    expect(second.headers.get('content-encoding')).toBe('br');
+    expect(second.headers.get('vary')).toBe('accept-encoding');
+    expect(second.headers.get('cross-origin-embedder-policy')).toBe('require-corp');
+    expect(second.headers.get('etag')).toBe(first.headers.get('etag'));
+    expect(second.headers.get('content-length')).toBe('2');
+    expect(await second.text()).toBe('BR');
+    expect(env.PLAY.gets.slice(reads).filter((k) => k.endsWith('.br'))).toEqual([]);
+    // (a browser that doesn't take brotli gets the file itself, never the edge's brotli copy)
+    const plain = await servePlay(ask(path), env, config, new Map(), null, cache);
+    expect(plain.headers.has('content-encoding')).toBe(false);
+    expect(await plain.text()).toBe('scene bytes, whole');
+    const plainAgain = await servePlay(ask(path), env, config, new Map(), null, cache);
+    expect(plainAgain.headers.get('x-play-cache')).toBe('hit');
+    const isolatedTyped = (res, what) => {
+      for (const [k, v] of Object.entries(ISOLATED)) expect(res.headers.get(k), `${what} ${k}`).toBe(v);
+      expect(res.headers.get('content-type'), what).toBe('application/octet-stream');
+    };
+    isolatedTyped(plainAgain, 'identity hit');
+    expect(await plainAgain.text()).toBe('scene bytes, whole');
+    const plain304 = await servePlay(ask(path, { 'if-none-match': plainAgain.headers.get('etag') }), env, config, new Map(), null, cache);
+    expect(plain304.status).toBe(304);
+    isolatedTyped(plain304, 'identity 304');
+    // (a range is never answered from the edge's whole copy: R2's bytes, 206, whichever encoding the browser takes)
+    for (const headers of [{ range: 'bytes=0-4' }, { range: 'bytes=0-4', 'accept-encoding': 'br' }]) {
+      const ranged = await servePlay(ask(path, headers), env, config, new Map(), null, cache);
+      expect(ranged.status, JSON.stringify(headers)).toBe(206);
+      expect(ranged.headers.get('content-range')).toBe('bytes 0-4/18');
+      expect(ranged.headers.has('x-play-cache')).toBe(false);
+      expect(ranged.headers.has('content-encoding')).toBe(false);
+      expect(await ranged.text()).toBe('scene');
+    }
+    // (what is stored holds no Vary and no Content-Encoding, so neither the edge nor the runtime recodes it)
+    expect(kept.size).toBe(2);
+    for (const stored of kept.values()) {
+      expect(stored.headers.has('vary')).toBe(false);
+      expect(stored.headers.has('content-encoding')).toBe(false);
+      expect(stored.headers.has('x-play-cache')).toBe(false);
+    }
+  });
+
+  it('answers a conditional request a stored copy meets with a 304, either encoding', async () => {
+    const env = { PLAY: bucket(files) };
+    const kept = new Map();
+    const cache = { match: async (r) => kept.get(r.url)?.clone() ?? null, put: async (r, res) => void kept.set(r.url, res) };
+    const path = `${ENGINE}b1/scene-r-0.res`;
+    for (const encoding of [{ 'accept-encoding': 'br' }, {}]) {
+      const first = await servePlay(ask(path, encoding), env, config, new Map(), null, cache);
+      const etag = first.headers.get('etag');
+      await first.text();
+      const again = await servePlay(ask(path, { ...encoding, 'if-none-match': `W/${etag}` }), env, config, new Map(), null, cache);
+      expect(again.status).toBe(304);
+      expect(again.headers.get('x-play-cache')).toBe('hit');
+    }
+  });
+
+  it('says a build file was not cacheable when there is no edge cache, and never on the page', async () => {
+    const env = { PLAY: bucket(files) };
+    expect((await servePlay(ask(`${ENGINE}b1/original-frame-graph.wasm`), env, config, new Map())).headers.get('x-play-cache')).toBe('off');
+    expect((await servePlay(ask(`${ENGINE}b1/scene-r-0.res`, { 'accept-encoding': 'br' }), env, config, new Map())).headers.get('x-play-cache')).toBe('off');
+    expect((await servePlay(ask(`${ENGINE}b1/`), env, config, new Map())).headers.has('x-play-cache')).toBe(false);
+  });
+
   it('serves the R2 asset when the optional edge cache cannot read', async () => {
     const cache = { match: async () => { throw new Error('edge cache read unavailable'); }, put: async () => {} };
     const env = { PLAY: bucket(files) };
@@ -507,5 +650,112 @@ describe('the engine’s bare address', () => {
       expect(res.headers.get('cache-control')).toBe('no-store');
       expect(new URL('runtime/world-play.mjs', res.headers.get('location')).pathname).toBe('/battlefront/engine/b1/runtime/world-play.mjs');
     }
+  });
+});
+
+describe('a build’s own ui-data: immutable, kept at the edge, an octet-stream file from its brotli copy (16 Nov: the tone data)', () => {
+  const own = { ...config, uiData: 'sites/b1/ui-data/', retainedBuilds: { b0: { site: 'sites/b0/', export: 'extract/', uiData: 'sites/b0/ui-data/', exportAllow: ['fonts/'] } } };
+  const data = {
+    ...files,
+    'sites/b0/manifest.json': JSON.stringify(manifest),
+    'sites/b1/ui-data/screens.json': '{"rules":1}',
+    'sites/b1/ui-data/screens.json.br': 'JSON-BR-NEVER-SERVED',
+    'sites/b1/ui-data/backdrop/cam2.tone.bin': 'tone bytes, whole',
+    'sites/b1/ui-data/backdrop/cam2.tone.bin.br': 'TONE-BR',
+    'sites/b1/ui-data/backdrop/cam9.tone.bin': 'no copy, whole',
+    'sites/b0/ui-data/backdrop/cam2.tone.bin': 'b0 tone',
+    'sites/b0/ui-data/backdrop/cam2.tone.bin.br': 'B0-BR',
+  };
+  const browser = { 'accept-encoding': 'gzip, deflate, br, zstd' };
+  const edge = () => {
+    const kept = new Map();
+    return { kept, match: async (r) => kept.get(r.url)?.clone() ?? null, put: async (r, res) => void kept.set(r.url, res) };
+  };
+  const tone = `${ENGINE}b1/ui-data/backdrop/cam2.tone.bin`;
+
+  it('answers a br client with the brotli copy, a year and immutable, then from the edge with no read of the bucket', async () => {
+    const env = { PLAY: bucket(data) }, cache = edge();
+    const first = await servePlay(ask(tone, browser), env, own, new Map(), null, cache);
+    expect(first.status).toBe(200);
+    expect(first.headers.get('content-encoding')).toBe('br');
+    expect(first.headers.get('cache-control')).toBe('public, max-age=31536000, immutable');
+    expect(first.headers.get('x-play-cache')).toBe('miss');
+    expect(await first.text()).toBe('TONE-BR');
+    // (ui-data is not in the site's manifest: it is never read for it)
+    expect(env.PLAY.gets).toEqual(['sites/b1/ui-data/backdrop/cam2.tone.bin.br']);
+    const reads = env.PLAY.gets.length;
+    const again = await servePlay(ask(tone, browser), env, own, new Map(), null, cache);
+    expect(again.headers.get('x-play-cache')).toBe('hit');
+    expect(again.headers.get('content-encoding')).toBe('br');
+    expect(await again.text()).toBe('TONE-BR');
+    expect(env.PLAY.gets.length).toBe(reads);
+  });
+
+  it('never serves the brotli copy to a client without br, nor the file itself to a br client, whoever came first', async () => {
+    const env = { PLAY: bucket(data) }, cache = edge();
+    await (await servePlay(ask(tone, browser), env, own, new Map(), null, cache)).text();
+    const plain = await servePlay(ask(tone), env, own, new Map(), null, cache);
+    expect(plain.headers.has('content-encoding')).toBe(false);
+    expect(plain.headers.get('cache-control')).toBe('public, max-age=31536000, immutable');
+    expect(await plain.text()).toBe('tone bytes, whole');
+    const again = await servePlay(ask(tone), env, own, new Map(), null, cache);
+    expect(again.headers.get('x-play-cache')).toBe('hit');
+    expect(await again.text()).toBe('tone bytes, whole');
+    const br = await servePlay(ask(tone, browser), env, own, new Map(), null, cache);
+    expect(br.headers.get('content-encoding')).toBe('br');
+    expect(await br.text()).toBe('TONE-BR');
+    expect([...cache.kept.keys()].map((k) => new URL(k).searchParams.get('play-encoding')).sort()).toEqual(['br', 'identity']);
+  });
+
+  it('sends a typed file (the rulebooks) itself, never a .br beside it, and an octet-stream file with no copy itself, kept', async () => {
+    const env = { PLAY: bucket(data) }, cache = edge();
+    const rules = await servePlay(ask(`${ENGINE}b1/ui-data/screens.json`, browser), env, own, new Map(), null, cache);
+    expect(rules.headers.has('content-encoding')).toBe(false);
+    expect(rules.headers.get('cache-control')).toBe('public, max-age=31536000, immutable');
+    expect(await rules.text()).toBe('{"rules":1}');
+    expect(env.PLAY.gets).not.toContain('sites/b1/ui-data/screens.json.br');
+    const bare = await servePlay(ask(`${ENGINE}b1/ui-data/backdrop/cam9.tone.bin`, browser), env, own, new Map(), null, cache);
+    expect(bare.headers.has('content-encoding')).toBe(false);
+    expect(await bare.text()).toBe('no copy, whole');
+    const reads = env.PLAY.gets.length;
+    const kept = await servePlay(ask(`${ENGINE}b1/ui-data/backdrop/cam9.tone.bin`, browser), env, own, new Map(), null, cache);
+    expect(kept.headers.get('x-play-cache')).toBe('hit');
+    expect(await kept.text()).toBe('no copy, whole');
+    // (the file from the edge; its copy is asked for again each time, not remembered absent: the fill adds copies after a deploy)
+    expect(env.PLAY.gets.slice(reads)).toEqual(['sites/b1/ui-data/backdrop/cam9.tone.bin.br']);
+    // (a range is the file's own bytes, never kept)
+    const part = await servePlay(ask(tone, { ...browser, range: 'bytes=0-3' }), env, own, new Map(), null, cache);
+    expect(part.status).toBe(206);
+    expect(part.headers.has('content-encoding')).toBe(false);
+    expect(await part.text()).toBe('tone');
+  });
+
+  it('serves another build’s ui-data from that build only, and leaves a shared ui-data folder and the bare path revalidating', async () => {
+    const env = { PLAY: bucket(data) }, cache = edge();
+    await (await servePlay(ask(tone, browser), env, own, new Map(), null, cache)).text();
+    const old = await servePlay(ask(`${ENGINE}b0/ui-data/backdrop/cam2.tone.bin`, browser), env, own, new Map(), null, cache);
+    expect(old.headers.get('content-encoding')).toBe('br');
+    expect(await old.text()).toBe('B0-BR');
+    expect(await (await servePlay(ask(tone, browser), env, own, new Map(), null, cache)).text()).toBe('TONE-BR');
+    // (play.json's uiData not the build's own prefix: its files may change under one name, so they revalidate and are not kept)
+    const sharedEnv = { PLAY: bucket({ ...data, 'library/ui/frontend/backdrop/cam2.tone.bin': 'shared tone', 'library/ui/frontend/backdrop/cam2.tone.bin.br': 'SHARED-BR' }) };
+    const sharedCache = edge();
+    const s = await servePlay(ask(`${ENGINE}b1/ui-data/backdrop/cam2.tone.bin`, browser), sharedEnv, config, new Map(), null, sharedCache);
+    expect(s.headers.get('cache-control')).toBe('public, max-age=0, must-revalidate');
+    expect(s.headers.has('content-encoding')).toBe(false);
+    expect(await s.text()).toBe('shared tone');
+    expect(sharedCache.kept.size).toBe(0);
+    // (a build whose uiData names another build's folder is not its own ui-data: revalidated, not kept, no copy)
+    const borrowed = { ...own, stagedBuilds: { s2: { site: 'sites/b1/', export: 'extract/', uiData: 'sites/b1/ui-data/', exportAllow: ['fonts/'] } } };
+    const borrowedCache = edge();
+    const b = await servePlay(ask(`${ENGINE}s2/ui-data/backdrop/cam2.tone.bin`, browser), env, borrowed, new Map(), null, borrowedCache);
+    expect(b.headers.get('cache-control')).toBe('public, max-age=0, must-revalidate');
+    expect(b.headers.has('content-encoding')).toBe(false);
+    expect(await b.text()).toBe('tone bytes, whole');
+    expect(borrowedCache.kept.size).toBe(0);
+    // (the unqualified root, asked with no engine page behind it, revalidates as before)
+    const bare = await servePlay(ask('/ui-data/backdrop/cam2.tone.bin', browser), env, own, new Map(), null, edge());
+    expect(bare.headers.get('cache-control')).toBe('public, max-age=0, must-revalidate');
+    expect(await bare.text()).toBe('tone bytes, whole');
   });
 });
