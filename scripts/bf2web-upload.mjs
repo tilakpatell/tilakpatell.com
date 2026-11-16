@@ -11,7 +11,7 @@
 
 import { createHash } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
-import { uiDataFiles } from './lib/bf2web-ui-files.mjs';
+import { uiDataFiles, uiDataLeftOut } from './lib/bf2web-ui-files.mjs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { encodePath, objectUrl } from './lib/bucket.mjs';
@@ -45,6 +45,8 @@ const existing = await withRecordedShas(listed, bytesByKey, (key) => r2.fetch(ob
 if (existing.asked) console.log(`${id}: ${existing.asked} keys already there at their size, ${existing.failed} unread (sent again)`);
 const plan = uploadPlan(manifest, { prefix, previous, previousPrefix, existing, previousExisting });
 const uiDir = option('--ui-data');
+// (a ui-data file of a kind that does not go up is named, not dropped in silence: 16 Nov 2026, the backdrop tone data)
+if (uiDir && existsSync(uiDir)) for (const f of uiDataLeftOut(uiDir)) console.log(`ui-data left out (not a kind that goes up): ${f}`);
 if (uiDir && existsSync(uiDir)) for (const f of uiDataFiles(uiDir)) plan.splice(-1, 0, { action: 'put', key: `${prefix}ui-data/${f}`, file: join(uiDir, f) });
 
 const count = (a) => plan.filter((p) => p.action === a).length;

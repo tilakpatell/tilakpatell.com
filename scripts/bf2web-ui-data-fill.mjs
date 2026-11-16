@@ -9,7 +9,7 @@ import { existsSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { objectUrl } from './lib/bucket.mjs';
 import { BUCKET, open } from './lib/bf2web-r2.mjs';
-import { fillPlan, uiDataFiles } from './lib/bf2web-ui-files.mjs';
+import { fillPlan, uiDataFiles, uiDataLeftOut } from './lib/bf2web-ui-files.mjs';
 
 const args = process.argv.slice(2);
 const option = (k) => (args.includes(k) ? args[args.indexOf(k) + 1] : null);
@@ -21,6 +21,7 @@ if (!id || !/^[A-Za-z0-9._-]+$/.test(id) || !dir || !existsSync(dir)) {
 
 const prefix = `sites/${id}/ui-data/`;
 const r2 = open();
+for (const f of uiDataLeftOut(dir)) console.log(`ui-data left out (not a kind that goes up): ${f}`);
 const local = uiDataFiles(dir).map((path) => ({ path, size: statSync(join(dir, path)).size }));
 const remote = (await r2.files(prefix)).map((f) => ({ key: f.key.slice(prefix.length), size: f.size }));
 const { missing, mismatched } = fillPlan(local, remote);

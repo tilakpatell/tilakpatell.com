@@ -2,7 +2,7 @@ import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { fillPlan, uiDataFiles } from './bf2web-ui-files.mjs';
+import { fillPlan, uiDataFiles, uiDataLeftOut } from './bf2web-ui-files.mjs';
 
 // a build's ui-data as the live r1074-a2d368b1's is laid out: rulebooks, the backdrop manifest, stills and their tone data, the wide set
 function folder(extra = []) {
@@ -36,7 +36,10 @@ describe('a build\'s ui-data files that go up', () => {
     expect(fillPlan(local, local.map((f) => ({ key: f.path, size: f.size }))).missing).toEqual([]);
   });
 
-  it('refuses a file of a kind it does not send, by name, rather than leaving it behind', () => {
-    expect(() => uiDataFiles(folder(['backdrop/cam5-50mm.exr']))).toThrow(/ui-data file of a kind not uploaded: backdrop\/cam5-50mm\.exr/);
+  it('leaves out a file of another kind, as the publish contract has it, and names it', () => {
+    const root = folder(['notes.txt', 'backdrop/cam5-50mm.exr']);
+    expect(uiDataFiles(root)).not.toContain('notes.txt');
+    expect(uiDataLeftOut(root)).toEqual(['backdrop/cam5-50mm.exr', 'notes.txt']);
+    expect(uiDataLeftOut(folder())).toEqual([]);
   });
 });
