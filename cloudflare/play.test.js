@@ -197,6 +197,26 @@ describe('serving the play site', () => {
   });
 
   // (s-buildfast's review of #1324: the head is the same hang class as #1323's reads, so it has a time limit)
+  // (live r1074-b / staged 1075, s-classui: Chrome's WebM demuxer seeks at the end, Range: bytes=830825- on the 830,825-byte
+  // Tile_Light.webm; the 503 surfaced as MEDIA_ERR_NETWORK on seven menu tile films. A range that starts exactly at the size is 416.)
+  it('a range starting exactly at the size of an export file (a film seek at its end) is 416 with the size; its last byte is 206', async () => {
+    const inner = bucket(files), size = (key) => new TextEncoder().encode(files[key]).length;
+    const env = { PLAY: { gets: inner.gets, head: async (key) => (key in files ? { size: size(key) } : null),
+      get: async (key, opts = {}) => {
+        const start = /^bytes=(\d+)-/.exec(opts.range?.get?.('range') ?? '')?.[1];
+        if (start !== undefined && key in files && Number(start) >= size(key)) throw new Error('InvalidRange');
+        return inner.get(key, opts);
+      } } };
+    const end = await serve('/export/fonts/a.ttf', { range: 'bytes=4-' }, env);
+    expect(end.status).toBe(416);
+    expect(end.headers.get('content-range')).toBe('bytes */4');
+    expect(end.headers.get('retry-after')).toBeNull();
+    const last = await serve('/export/fonts/a.ttf', { range: 'bytes=3-3' }, env);
+    expect(last.status).toBe(206);
+    expect(last.headers.get('content-range')).toBe('bytes 3-3/4');
+    expect(await last.text()).toBe('t');
+  });
+
   it('a head that never answers leaves the ranged read a 503 after TIMEOUTS.read, not a hang', async () => {
     vi.useFakeTimers();
     try {
