@@ -367,6 +367,19 @@
         "movies/",
         "films/"
       ]
+    },
+    "r1075-d086e40f": {
+      "site": "sites/r1075-d086e40f/",
+      "export": "web/",
+      "uiData": "sites/r1075-d086e40f/ui-data/",
+      "exportAllow": [
+        "fonts/",
+        "strings/",
+        "svg/",
+        "textures/",
+        "movies/",
+        "films/"
+      ]
     }
   }
 }
