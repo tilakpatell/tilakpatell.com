@@ -23,7 +23,7 @@ on:
         description: 'build, publish an already validated desktop build, upload (publish''s upload, then the build staged: served by its exact name, play.json''s build unmoved), stage (an uploaded build, by name), adopt, both, or compress'
         required: true
         type: choice
-        options: [both, build, publish, upload, stage, adopt, compress, copy-rate]
+        options: [both, build, publish, upload, stage, adopt, compress, copy-rate, ui-data]
         default: both
       sha:
         description: 'build: the bf2-web commit (default its main)'
@@ -88,6 +88,11 @@ jobs:
         shell: powershell
         run: |
           $runnerSettings = Join-Path (Split-Path (Split-Path $env:RUNNER_WORKSPACE -Parent) -Parent) '.env'
+          if ($env:STAGE -eq 'ui-data') {
+            # (a published build's ui-data files its bucket prefix lacks, sent; nothing overwritten: scripts/bf2web-ui-data-fill.mjs)
+            node "--env-file-if-exists=$runnerSettings" scripts/bf2web-ui-data-fill.mjs --build $env:BUILD --ui-data $env:UI_DATA
+            exit $LASTEXITCODE
+          }
           if ($env:STAGE -eq 'copy-rate') {
             # (scripts/bf2web-copy-rate.mjs: copies of a released build's small objects into scratch/copy-rate-<run>/ at each count, checked, then removed)
             node "--env-file-if-exists=$runnerSettings" scripts/bf2web-copy-rate.mjs --from $env:BF2WEB_PREVIOUS --streams $(if ($env:COPY_STREAMS_INPUT) { $env:COPY_STREAMS_INPUT } else { '8,16,32' })
@@ -120,7 +125,7 @@ jobs:
     # (whatever the build's result: a desktop that can't build, or a build that failed, doesn't keep a good build already
     # in the bucket, one the desktop uploaded by hand among them, from Hoth; adopt takes only main builds that pass the
     # contract)
-    if: ${{ always() && !cancelled() && (github.event_name != 'workflow_dispatch' || (inputs.stage != 'build' && inputs.stage != 'compress' && inputs.stage != 'copy-rate' && inputs.stage != 'upload' && inputs.stage != 'stage')) && (inputs.stage != 'publish' || needs.build.result == 'success') }}
+    if: ${{ always() && !cancelled() && (github.event_name != 'workflow_dispatch' || (inputs.stage != 'build' && inputs.stage != 'compress' && inputs.stage != 'copy-rate' && inputs.stage != 'upload' && inputs.stage != 'stage' && inputs.stage != 'ui-data')) && (inputs.stage != 'publish' || needs.build.result == 'success') }}
     runs-on: ubuntu-24.04  # Playwright has no chromium for ubuntu-latest (26.04) yet: run 41052884531
     timeout-minutes: 30
     env:
