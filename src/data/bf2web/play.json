@@ -327,5 +327,20 @@
         "films/"
       ]
     }
+  },
+  "stagedBuilds": {
+    "r1074-63c4e4c3": {
+      "site": "sites/r1074-63c4e4c3/",
+      "export": "web/",
+      "uiData": "sites/r1074-63c4e4c3/ui-data/",
+      "exportAllow": [
+        "fonts/",
+        "strings/",
+        "svg/",
+        "textures/",
+        "movies/",
+        "films/"
+      ]
+    }
   }
 }
