@@ -188,6 +188,28 @@ describe('serving the play site', () => {
     expect(kept.has(`https://tilakpatell.com${ENGINE}b1/`)).toBe(false);
   });
 
+  it('answers a warmed build file on a cold isolate with no read of the bucket at all, the manifest included (16 Nov boot hangs)', async () => {
+    const env = { PLAY: bucket(files) };
+    const kept = new Map();
+    const cache = { match: async (r) => kept.get(r.url)?.clone() ?? null, put: async (r, res) => void kept.set(r.url, res) };
+    const browser = { 'accept-encoding': 'gzip, deflate, br, zstd' };
+    // (one isolate warms the edge: the engine's script, which has no brotli copy, and a scene file, which has one)
+    for (const p of ['original-frame-graph.wasm', 'scene-r-0.res']) await (await servePlay(ask(`${ENGINE}b1/${p}`, browser), env, config, new Map(), null, cache)).text();
+    // (a deploy: a new isolate, its manifests not read yet)
+    const reads = env.PLAY.gets.length;
+    const script = await servePlay(ask(`${ENGINE}b1/original-frame-graph.wasm`, browser), env, config, new Map(), null, cache);
+    expect(script.status).toBe(200);
+    expect(script.headers.get('x-play-cache')).toBe('hit');
+    expect(await script.text()).toBe('wasm-bytes');
+    const scene = await servePlay(ask(`${ENGINE}b1/scene-r-0.res`, browser), env, config, new Map(), null, cache);
+    expect(scene.headers.get('content-encoding')).toBe('br');
+    expect(await scene.text()).toBe('BR');
+    expect(env.PLAY.gets.slice(reads)).toEqual([]);
+    // (a file the edge does not hold still goes through the manifest: an unlisted one is refused as before)
+    expect((await servePlay(ask(`${ENGINE}b1/secret.bin`, browser), env, config, new Map(), null, cache)).status).toBe(404);
+    expect(env.PLAY.gets.slice(reads)).toContain('sites/b1/manifest.json');
+  });
+
   it('keeps a brotli copy at the edge too, apart from the file itself, and serves both from there', async () => {
     // (hosted 15 Nov, r1073: a look's .glb files, brotli copies, were a Worker-to-R2 read every time: first byte
     // 163 ms median the first time, 188 ms the second; the cache was looked up only after the brotli branch returned)
