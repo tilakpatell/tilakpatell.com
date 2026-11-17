@@ -195,7 +195,12 @@ export async function servePlay(request, env, config, manifests, ctx = null, cac
         status: 410, headers: { ...ISOLATED, 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'no-store' },
       });
       const target = `${ENGINE}${referringBuild}${url.pathname}`;
-      if (playRoute(target, config)) {
+      // (the export is one shared prefix, not a build's own: when the referring build reads /export/ from the same prefix with the same
+      // allowed folders as the unqualified path does, both name the same object, so the request is answered where it is, with no 302.
+      // s-collection, staged 1075-c: all 149 /export/ requests of a cold boot were redirected, 30-57 ms each, for every visitor)
+      const sameExport = url.pathname.startsWith('/export/') && selected.export === config.export
+        && JSON.stringify(selected.exportAllow ?? null) === JSON.stringify(config.exportAllow ?? null);
+      if (!sameExport && playRoute(target, config)) {
         if (request.method !== 'GET' && request.method !== 'HEAD') return new Response(null, { status: 405, headers: { ...ISOLATED, allow: 'GET, HEAD' } });
         return new Response(null, {
           status: 302, headers: { ...ISOLATED, location: new URL(target + url.search, url).toString(), 'cache-control': 'no-store' },

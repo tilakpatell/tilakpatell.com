@@ -78,6 +78,13 @@ describe('an open build across a deployment', () => {
     for (const path of ['/ui/main.js', '/ui-data/screens.json', '/export/fonts/a.ttf']) {
       for (const build of ['b0', 'b1']) {
         const res = await servePlay(ask(path + '?v=1', { referer: `https://tilakpatell.com${ENGINE}${build}/runtime/world-play.mjs` }), env, next, manifests);
+        // (an export read from the same shared prefix and folders as the unqualified path is answered there: b1 is the current build;
+        // b0 reads extract-old/ with other folders and is still sent to its own path)
+        if (path.startsWith('/export/') && build === 'b1') {
+          expect(res.status).toBe(200);
+          expect(await res.text()).toBe('font');
+          continue;
+        }
         expect(res.status).toBe(302);
         expect(res.headers.get('location')).toBe(`https://tilakpatell.com${ENGINE}${build}${path}?v=1`);
         expect(res.headers.get('cache-control')).toBe('no-store');
