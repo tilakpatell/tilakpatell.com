@@ -82,10 +82,12 @@ export function engineWorker(self, keep, follow, limits = { fetch: 15000, waitAh
     try {
       await cache.put(request, response);
       return true;
-    } catch {
+    } catch (error) {
       // A quota or disk error makes speculative downloads useless. Keep existing cache reads and demanded network
       // requests working, but stop trying to fill this worker's cache until a fresh worker can try again.
-      writable = false;
+      // (Only those: a body cut on the way in (a TypeError, an AbortError) loses that one file, and the next is kept as
+      // before; one dropped download used to stop every later fill for the worker's life, s-cdn 1075.)
+      if (['QuotaExceededError', 'UnknownError', 'InvalidStateError'].includes(error?.name)) writable = false;
       return false;
     }
   };

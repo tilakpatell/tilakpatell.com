@@ -279,6 +279,25 @@ describe('the engine’s build kept on the visitor’s disk', () => {
     expect(w.asked.slice(before)).toEqual([ORIGIN + dir + files[1]]);
   });
 
+  // (s-cdn: one download cut on the way into the cache stopped every later fill of the worker, as a full disk did)
+  it('a body cut on its way into the cache loses that file only; the next is still kept', async () => {
+    const dir = '/battlefront/engine/main-da7a51b3/';
+    const files = Array.from({ length: 3 }, (_, i) => `scene-m-${i}.res`);
+    const w = worker(undefined, files);
+    const kept = [];
+    let cutOnce = true;
+    w.self.caches.open = async () => ({
+      match: async () => null,
+      put: async (request) => {
+        if (cutOnce) { cutOnce = false; throw new TypeError('network error'); }
+        kept.push(urlOf(request));
+      },
+    });
+    expect((await w.get(dir + files[0], { headers: { 'x-tp-warm': '1' } })).status).toBe(502);
+    expect((await w.get(dir + files[1], { headers: { 'x-tp-warm': '1' } })).status).toBe(204);
+    expect(kept).toEqual([ORIGIN + dir + files[1]]);
+  });
+
   it.each(['quota', 'uncontrolled', 'network'])('stops page warming after %s failure instead of requesting the whole build', async (failure) => {
     const dir = '/battlefront/engine/main-da7a51b3/';
     const files = Array.from({ length: 12 }, (_, i) => `scene-m-${i}.res`);
