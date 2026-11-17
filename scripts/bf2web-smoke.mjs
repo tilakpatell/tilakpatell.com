@@ -16,7 +16,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright-core';
 import { ENGINE, servePlay } from '../cloudflare/play.js';
-import { open } from './lib/bf2web-r2.mjs';
+import { open, verifiedAtEdge } from './lib/bf2web-r2.mjs';
 import { optionalPlayPath } from './lib/bf2web-smoke.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -44,6 +44,15 @@ const binding = {
       if (Date.now() - t0 > 9000) readFailures.push(`R2 read ${key}: slow, ${((Date.now() - t0) / 1000).toFixed(1)} s`);
       return object;
     } catch (error) {
+      // (a read that died in transport on every try, fresh connections included: the visitor's file is checked at the build's
+      // public address instead, passed only on a 200 with the object's stored ETag; any S3 status, any other answer, fails as before)
+      if (error?.transport && !opts?.range?.get?.('range')) {
+        const edge = await verifiedAtEdge(key, { config, build, etagOf: r2.etagOf }).catch(() => null);
+        if (edge) {
+          console.log(`  R2 shim transport failure, verified at the edge: ${key} = ${edge.path} (${edge.httpEtag})`);
+          return edge;
+        }
+      }
       readFailures.push(`R2 read ${key}: ${String(error?.message ?? error).slice(0, 300)} (after ${((Date.now() - t0) / 1000).toFixed(1)} s)`);
       throw error;
     }
