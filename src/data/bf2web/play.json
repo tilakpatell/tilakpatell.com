@@ -380,6 +380,19 @@
         "movies/",
         "films/"
       ]
+    },
+    "r1075-2841c8fa": {
+      "site": "sites/r1075-2841c8fa/",
+      "export": "web/",
+      "uiData": "sites/r1075-2841c8fa/ui-data/",
+      "exportAllow": [
+        "fonts/",
+        "strings/",
+        "svg/",
+        "textures/",
+        "movies/",
+        "films/"
+      ]
     }
   }
 }
