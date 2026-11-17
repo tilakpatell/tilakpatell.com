@@ -32,7 +32,7 @@ const wait = Number(option('--wait', 240000));
 const r2 = open();
 // (the Worker answers any failed R2 read with its 503, whose cause it does not say: the read's own error, the S3 status the shim
 // refused or a time limit, is printed here, so a failed adopt names it; r1075-b88a2bd5's 503 on Class_Vehicle_Speeder.svg did not.
-// Nothing is retried or let through: the request still fails as before.)
+// Nothing is retried or let through, and nothing new fails the step: they are listed only beside a failure, else printed as recovered.)
 const readFailures = [];
 const binding = {
   ...r2.binding,
@@ -86,6 +86,9 @@ try {
   await browser.close();
   server.close();
 }
-problems.push(...failed, ...readFailures);
+problems.push(...failed);
+// (the R2 reads only explain a failure: one the Worker survived, by its retry or inside its time limit, never fails the step)
+if (problems.length) problems.push(...readFailures);
+else for (const r of readFailures) console.log(`  (recovered) ${r}`);
 console.log(`${build}: ${problems.length ? `failed\n  - ${problems.join('\n  - ')}` : `the front end is up in ${Math.round((Date.now() - t0) / 1000)} s, isolated, the way back in its corner`}`);
 process.exit(problems.length ? 1 : 0);
