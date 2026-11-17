@@ -308,8 +308,18 @@ export function warmEngineBuild(win, order) {
   const doc = win.document;
   const dir = win.location.pathname.replace(/[^/]*$/, '');
   let started = false;
+  // (not before the menu is complete: the page adds 'play-menu-ready' once its menu scene's prewarm settles, ready, failed or timed out,
+  // and the warm's four lanes no longer compete with it for the line; s-collection, staged 1075-c: 389-944 of the level's 1289 files
+  // were fetched before the menu scene was ready. Without that class, as on a direct start, the warm begins 30 s after 'play-menu'.)
+  const waitMs = win.__playWarmWaitMs ?? 30000;
+  let capped = false, cap = null;
   const start = async () => {
     if (started || !doc.body.classList?.contains('play-menu')) return;
+    if (!capped && !doc.body.classList.contains('play-menu-ready')) {
+      cap ??= setTimeout(() => { capped = true; start().catch(() => {}); }, waitMs);
+      return;
+    }
+    if (cap) clearTimeout(cap);
     started = true;
     if (!nav.serviceWorker.controller) await new Promise((r) => nav.serviceWorker.addEventListener('controllerchange', r, { once: true }));
     const list = await win.fetch(dir + 'tp-files.json').then((r) => (r.status === 200 ? r.json() : { files: [] }));
