@@ -321,6 +321,48 @@ describe('the engine’s build kept on the visitor’s disk', () => {
     expect(warmOrder(paths)).toEqual(['programs.json', 'cooked-programs.json', 'scene.json', 'scene-p-0.dbx', 'scene-p-1.dbx', 'scene-m-0.res']);
   });
 
+  // (s-collection, staged 1075-c: 389-944 of the level's 1289 files were fetched before the menu scene was ready)
+  it('starts warming once the menu is complete (play-menu-ready), or a set time after play-menu without it', async () => {
+    const dir = '/battlefront/engine/main-da7a51b3/';
+    const files = ['programs.json', 'scene-m-0.res'];
+    const page = (classes, waitMs) => {
+      const warmed = [], observers = [];
+      const win = {
+        __playWarmWaitMs: waitMs,
+        navigator: { serviceWorker: { controller: {}, addEventListener: () => {} }, connection: {} },
+        location: { pathname: dir },
+        document: { body: { classList: { contains: (c) => classes.has(c) } } },
+        MutationObserver: class { constructor(f) { observers.push(f); } observe() {} },
+        fetch: async (url, init) => {
+          const path = url.slice(dir.length);
+          if (path === 'tp-files.json') return { status: 200, json: async () => ({ files }) };
+          if (init?.headers?.['x-tp-warm']) warmed.push(path);
+          return { status: init?.headers?.['x-tp-warm'] ? 204 : 404 };
+        },
+      };
+      warmEngineBuild(win, warmOrder);
+      return { warmed, change: (c) => { classes.add(c); for (const f of observers) f(); } };
+    };
+    const settle = (ms = 20) => new Promise((r) => setTimeout(r, ms));
+    // (the menu shown, its scene not ready: nothing yet; ready: the warm begins)
+    const a = page(new Set(['play-menu']), 60000);
+    await settle();
+    expect(a.warmed).toEqual([]);
+    a.change('play-menu-ready');
+    await settle();
+    expect([...a.warmed].sort()).toEqual(['programs.json', 'scene-m-0.res']);
+    // (never ready, as on a direct start: the warm begins at the set time after play-menu)
+    const b = page(new Set(['play-menu']), 40);
+    await settle(10);
+    expect(b.warmed).toEqual([]);
+    await settle(80);
+    expect([...b.warmed].sort()).toEqual(['programs.json', 'scene-m-0.res']);
+    // (no menu at all: nothing, ever)
+    const c = page(new Set(), 10);
+    await settle(60);
+    expect(c.warmed).toEqual([]);
+  });
+
   it('warms only what every roll reads: not the packed files, not the root copies a lighting variant swaps', async () => {
     const dir = '/battlefront/engine/main-da7a51b3/';
     const files = ['programs.json', 'cooked-programs.json', 'scene-pack.json', 'scene-pack.bin', 'scene.json', 'scene-p-0.dbx', 'scene-p-1.dbx', 'scene-t-0.dbx', 'scene-m-0.res', 'scene-m-1.res', 'scene-collision.bfsw',
@@ -413,7 +455,9 @@ describe('the engine’s build kept on the visitor’s disk', () => {
     warmEngineBuild(win, warmOrder);
     await new Promise((r) => setTimeout(r, 5));
     expect(asked).toEqual([]);
+    // (the front end shows and its menu is complete: play-menu-ready; the wait without it is the test above)
     classes.add('play-menu');
+    classes.add('play-menu-ready');
     observers.forEach((fn) => fn());
     await new Promise((r) => setTimeout(r, 60));
     expect(asked.map(([u]) => u)).toEqual(files.map((f) => '/battlefront/engine/main-da7a51b3/' + f));
