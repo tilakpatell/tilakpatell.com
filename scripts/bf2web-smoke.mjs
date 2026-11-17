@@ -30,10 +30,29 @@ const port = Number(option('--port', 8622));
 const wait = Number(option('--wait', 240000));
 
 const r2 = open();
+// (the Worker answers any failed R2 read with its 503, whose cause it does not say: the read's own error, the S3 status the shim
+// refused or a time limit, is printed here, so a failed adopt names it; r1075-b88a2bd5's 503 on Class_Vehicle_Speeder.svg did not.
+// Nothing is retried or let through: the request still fails as before.)
+const readFailures = [];
+const binding = {
+  ...r2.binding,
+  async get(key, opts) {
+    const t0 = Date.now();
+    try {
+      const object = await r2.binding.get(key, opts);
+      // (a read past the Worker's time limit fails the request though the read itself ends well: its time is the cause)
+      if (Date.now() - t0 > 9000) readFailures.push(`R2 read ${key}: slow, ${((Date.now() - t0) / 1000).toFixed(1)} s`);
+      return object;
+    } catch (error) {
+      readFailures.push(`R2 read ${key}: ${String(error?.message ?? error).slice(0, 300)} (after ${((Date.now() - t0) / 1000).toFixed(1)} s)`);
+      throw error;
+    }
+  },
+};
 const manifests = new Map();
 const server = createServer(async (req, res) => {
   const request = new Request(`http://127.0.0.1:${port}${req.url}`, { method: req.method, headers: req.headers });
-  const out = await servePlay(request, { PLAY: r2.binding }, config, manifests).catch((e) => new Response(String(e), { status: 500 }));
+  const out = await servePlay(request, { PLAY: binding }, config, manifests).catch((e) => new Response(String(e), { status: 500 }));
   if (!out) {
     res.writeHead(404);
     res.end();
@@ -67,6 +86,6 @@ try {
   await browser.close();
   server.close();
 }
-problems.push(...failed);
+problems.push(...failed, ...readFailures);
 console.log(`${build}: ${problems.length ? `failed\n  - ${problems.join('\n  - ')}` : `the front end is up in ${Math.round((Date.now() - t0) / 1000)} s, isolated, the way back in its corner`}`);
 process.exit(problems.length ? 1 : 0);
