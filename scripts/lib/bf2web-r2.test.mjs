@@ -28,7 +28,10 @@ describe('the R2 shim: a transport end is asked again on a fresh connection, an 
   it('an S3 status fails at once, as before: no fresh connection', async () => {
     const fresh = [];
     const r2 = open(env, { fetchImpl: async () => answer(503, 'slow down'), fresh: async (url) => (fresh.push(url), answer(200)) });
-    await expect(r2.binding.get('web/x.svg')).rejects.toThrow('get web/x.svg: HTTP 503');
+    const error = await r2.binding.get('web/x.svg').catch((e) => e);
+    expect(error.message).toBe('get web/x.svg: HTTP 503');
+    // (never marked transport: only a transport end may reach the smoke's edge check, an S3 status never)
+    expect(error.transport).toBeFalsy();
     expect(fresh).toEqual([]);
   });
 
