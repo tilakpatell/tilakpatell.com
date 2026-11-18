@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { brotliDecompressSync } from 'node:zlib';
 import { randomBytes } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
-import { brotliCopy, fillPlan, sendEach, uiDataBrotli, uiDataFiles, uiDataLeftOut } from './bf2web-ui-files.mjs';
+import { brotliCopy, fillPlan, sendEach, uiDataBrotli, uiDataFiles, uiDataLeftOut, verifyUiData } from './bf2web-ui-files.mjs';
 
 // a build's ui-data as the live r1074-a2d368b1's is laid out: rulebooks, the backdrop manifest, stills and their tone data, the wide set
 function folder(extra = []) {
@@ -70,5 +70,33 @@ describe('a build\'s ui-data files that go up', () => {
     expect(br.length).toBeLessThan(tone.length / 10);
     expect(brotliDecompressSync(br).equals(tone)).toBe(true);
     expect(await brotliCopy(randomBytes(1 << 16), 5)).toBeNull();
+  });
+});
+
+// (after an upload, before its manifest: r1075-f943c314 went live with its 18 *.tone.bin absent and nothing said so)
+describe('verifyUiData: the uploaded ui-data is all in the bucket before the manifest', () => {
+  const prefix = 'sites/r1075-test/';
+  const local = [{ path: 'screens.json', size: 10 }, { path: 'backdrop/cam2-50mm.png', size: 20 }, { path: 'backdrop/cam2-50mm.tone.bin', size: 30 }, { path: 'backdrop/wide/cam2-50mm.tone.bin', size: 40 }];
+  const ok = async () => 200;
+  it('passes when every file is there at its size and one of each kind answers', async () => {
+    const asked = [];
+    const r = await verifyUiData(local, [...local.map((f) => ({ key: f.path, size: f.size })), { key: 'backdrop/cam2-50mm.tone.bin.br', size: 9 }], async (k) => (asked.push(k), 200), prefix);
+    expect(r.problems).toEqual([]);
+    expect([r.inBucket, r.local]).toEqual([4, 4]);
+    expect(r.probed).toEqual(['json', 'png', 'bin']);
+    expect(asked).toEqual(['sites/r1075-test/ui-data/screens.json', 'sites/r1075-test/ui-data/backdrop/cam2-50mm.png', 'sites/r1075-test/ui-data/backdrop/cam2-50mm.tone.bin']);
+  });
+  it('names every file the bucket lacks, as the json/png-only uploader left the tone data out', async () => {
+    const r = await verifyUiData(local, local.filter((f) => !f.path.endsWith('.bin')).map((f) => ({ key: f.path, size: f.size })), async (k) => (k.endsWith('.bin') ? 404 : 200), prefix);
+    expect(r.problems).toEqual(['missing backdrop/cam2-50mm.tone.bin', 'missing backdrop/wide/cam2-50mm.tone.bin', 'HEAD backdrop/cam2-50mm.tone.bin (the bin probe): 404']);
+    expect(r.inBucket).toBe(2);
+  });
+  it('names a file at another size, and a probe that does not answer 200', async () => {
+    const remote = local.map((f) => ({ key: f.path, size: f.path === 'screens.json' ? 11 : f.size }));
+    const r = await verifyUiData(local, remote, async (k) => (k.endsWith('.png') ? 503 : 200), prefix);
+    expect(r.problems).toEqual(['screens.json: 11 B in the bucket, 10 B here', 'HEAD backdrop/cam2-50mm.png (the png probe): 503']);
+  });
+  it('an empty folder checks nothing', async () => {
+    expect(await verifyUiData([], [], ok, prefix)).toEqual({ problems: [], inBucket: 0, local: 0, probed: [] });
   });
 });
