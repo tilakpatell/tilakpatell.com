@@ -34,6 +34,7 @@ import {
   writeOutfit,
 } from './outfit';
 import { WEAPONS } from './weapons';
+import { coreStats } from './ships/profiles';
 
 const SHIPS = CREWS.map((c) => c.id);
 const NONE = []; // (no achievements yet)
@@ -385,5 +386,40 @@ describe('the skill tree on the ship (hangar/skills’ fx)', () => {
     const plain = statsOf('xwing', STOCK_LOADOUT);
     expect(plain.armorGame).toBe(1);
     expect(plain.jump).toBe(1);
+  });
+});
+
+describe('the ship’s tiers on its stats', () => {
+  it('is today’s ship with no core, to the last number', () => {
+    const today = statsOf('falcon', STOCK_LOADOUT);
+    expect(statsOf('falcon', STOCK_LOADOUT, null, null, {}, null)).toEqual(today);
+    expect(today).not.toHaveProperty('core');
+    expect(today).toMatchObject({ armor: 1, jump: 1, capacity: 9, boost: 1, agility: 1 });
+  });
+
+  it('takes the shields, the recharge and the reactor from the core', () => {
+    const core = coreStats('falcon', { shields: 5, reactor: 5, hyperdrive: 5 });
+    const s = statsOf('falcon', STOCK_LOADOUT, null, null, {}, core);
+    expect(s.armor).toBeCloseTo(1 / (1.1 * 2), 9);
+    expect(s.capacity).toBe(15);
+    expect(s.jump).toBeCloseTo(0.9 * 0.6, 9);
+    expect(s.core).toEqual({ engines: core.engines, agility: core.agility });
+  });
+
+  it('lets a bigger reactor run what the plant alone could not', () => {
+    const hungry = { ...STOCK_LOADOUT, booster: 'portal', guns: 'fusion' };
+    expect(fits('rv', hungry)).toBe(false);
+    expect(fits('rv', hungry, null, null, coreStats('rv', { reactor: 5 }))).toBe(true);
+    expect(equip('rv', { ...STOCK_LOADOUT, booster: 'portal' }, 'guns', 'fusion', ['showmewhatyougot', 'onestand']).ok).toBe(false);
+    expect(equip('rv', { ...STOCK_LOADOUT, booster: 'portal' }, 'guns', 'fusion', ['showmewhatyougot', 'onestand'], null, null, coreStats('rv', { reactor: 5 })).ok).toBe(true);
+    const saved = { rv: hungry };
+    expect(loadoutOf(saved, 'rv', ['showmewhatyougot', 'onestand'], null, null, coreStats('rv', { reactor: 5 }))).toMatchObject({ booster: 'portal', guns: 'fusion' });
+  });
+
+  it('reads the engines and the agility into the read-out', () => {
+    const plain = Object.fromEntries(readout('xwing', STOCK_LOADOUT).map((r) => [r.id, r.value]));
+    const fast = Object.fromEntries(readout('xwing', STOCK_LOADOUT, null, null, coreStats('xwing', { engines: 5 })).map((r) => [r.id, r.value]));
+    expect(fast.speed).toBeCloseTo(plain.speed * 1.1 * 1.32, 9);
+    expect(fast.agility).toBeCloseTo(plain.agility * 1.12, 9);
   });
 });

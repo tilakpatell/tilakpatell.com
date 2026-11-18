@@ -416,6 +416,39 @@ export const OPEN_SPACE = {
 };
 const POCKET = SECTORS.rickmorty;
 
+// A ship's tiers (ships/profiles.js's coreStats). Its engines and its
+// agility come in on the tune (`input.tune.core`: { engines, agility }, 1
+// each as it comes), held to CORE_CAP, on top of what the parts do: the
+// boost, the cruise and the getting up to them times the engines, the turns
+// times the agility. Its pulse drive is the space's (pulsedSpace), so the
+// autopilot plans its stops on it too.
+export const CORE_CAP = { engines: [0.85, 1.5], agility: [0.85, 1.2] };
+const cored = (core) => ({
+  engines: clamp(Number.isFinite(core?.engines) ? core.engines : 1, ...CORE_CAP.engines),
+  agility: clamp(Number.isFinite(core?.agility) ? core.agility : 1, ...CORE_CAP.agility),
+});
+// The pulse drive a ship's tier gives, `k` times SHIP.pulse (held to
+// PULSE_CAP): a space whose open-space speed is that, and whose brakes and
+// coasting out in the open are k squared as hard, so it stops in about the
+// room it always did (the overdrive's rule). What the tier adds comes in by
+// the openness cubed, so where the drive's easing off for a place it's what
+// it always was there, and the ship still comes up on every place at the
+// speed it always did. The space itself for 1, or anything not a number.
+export const PULSE_CAP = [0.9, 4.5];
+export function pulsedSpace(space, k = 1) {
+  const m = Number.isFinite(k) ? clamp(k, ...PULSE_CAP) : 1;
+  if (m === 1) return space;
+  const pulse = SHIP.pulse * m;
+  const hard = (open) => 1 + (m * m - 1) * open;
+  return {
+    ...space,
+    pulse,
+    boostAt: (x, y, z, boost = SHIP.boost, open = space.driveAt(x, y, z)) => space.boostAt(x, y, z, boost, open) + (pulse - SHIP.pulse) * open ** 3,
+    brakeAt: (x, y, z, open = space.driveAt(x, y, z)) => space.brakeAt(x, y, z, open) * hard(open),
+    coastAt: (x, y, z, open = space.driveAt(x, y, z)) => space.coastAt(x, y, z, open) * hard(open),
+  };
+}
+
 // How far the ship carries on, boosting straight on, while hunters pull the
 // pulse drive down over `ramp` seconds (eased in, as the scene does it), till
 // it's down to the boost: where an ambush laid ahead of it has to be to
@@ -448,11 +481,14 @@ export function step(s, input, dt, solids = SOLIDS, space = SPACE) {
   const roll = clamp(input.roll || 0, -1, 1);
   // what's fitted (held to what any fit can do)
   const tune = tuned(input.tune);
+  const core = cored(input.tune?.core);
   const surge = clamp(input.surge ?? 1, 1, 2);
-  const boost = SHIP.boost * tune.boost * surge;
-  const cruise = SHIP.cruise * tune.cruise;
-  const accelK = tune.accel * surge;
-  const agileK = tune.agility;
+  const boost = SHIP.boost * tune.boost * surge * core.engines;
+  const cruise = SHIP.cruise * tune.cruise * core.engines;
+  const accelK = tune.accel * surge * core.engines;
+  const agileK = tune.agility * core.agility;
+  // (the pulse drive's top, its push and its fall back past it: the space's, a tier's)
+  const pulse = space.pulse ?? SHIP.pulse;
   const turnK = clamp(input.turnRate ?? 1, 0.25, 3) * agileK;
   const pitchK = clamp(input.pitchRate ?? 1, 0.25, 3) * agileK;
   const rollK = clamp(input.rollRate ?? 1, 0.25, 3) * agileK;
@@ -486,7 +522,7 @@ export function step(s, input, dt, solids = SOLIDS, space = SPACE) {
     // start, all of it once it's a third of the way open: a hop between two
     // stations gets going straight away. Boosters fitted push the boost, not
     // the pulse drive, which is the same for everyone)
-    accel = input.boost ? (SHIP.accel * 1.8 * (1 + space.homeAt(s.x, s.z, s.y)) * accelK + (want > boost + 1 ? SHIP.pulseAccel * Math.min(1, open * 3) : 0)) * odK : SHIP.accel * (1 + near) * accelK; // (and up to the approach quicker)
+    accel = input.boost ? (SHIP.accel * 1.8 * (1 + space.homeAt(s.x, s.z, s.y)) * accelK + (want > boost + 1 ? SHIP.pulseAccel * (pulse / SHIP.pulse) * Math.min(1, open * 3) : 0)) * odK : SHIP.accel * (1 + near) * accelK; // (and up to the approach quicker)
   } else {
     // slowing. What the drive takes off, past what it allows the way it's
     // going (coming up on a place at pulse speed, turning toward one, held
@@ -496,7 +532,7 @@ export function step(s, input, dt, solids = SOLIDS, space = SPACE) {
     // pilot's slowing takes off (the brakes, or coasting): never less, over
     // the limit or not
     const over = Math.max(0, s.speed - limit);
-    const past = Math.max(1, s.speed / SHIP.pulse) ** 2;
+    const past = Math.max(1, s.speed / pulse) ** 2;
     const closing = dt > 0 ? Math.max(0, limit - next) / dt : 0;
     const drive = over > 0 || want >= next ? Math.min(SHIP.drop * past, over * SHIP.settle * past + 20) + closing : 0;
     const own = want >= next ? 0 : (throttle === 0 ? space.coastAt(s.x, s.y, s.z, open) : space.brakeAt(s.x, s.y, s.z, open)) * odK;
