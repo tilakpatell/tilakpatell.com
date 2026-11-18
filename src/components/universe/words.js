@@ -85,6 +85,14 @@ export const THINGS = {
   thrown: (key) => `Through the wormhole. You’re in ${key}, a long way from where you were.`,
 };
 
+// the hold (market/): what mining and salvage put in it, and when there's no room
+export const HOLD = {
+  stowed: (list) => `Into the hold: ${list}.`,
+  full: 'The hold’s full. Sell at a station, or dump something.',
+  minedOut: 'This field is mined out for now. Come back in a couple of hours.',
+  stripped: (name) => `${name ?? 'This wreck'} has been stripped already.`,
+};
+
 export const PLACE = {
   star: { O: 'Blue giant', B: 'Blue giant', A: 'White star', F: 'Yellow-white star', G: 'Yellow star', K: 'Orange star', M: 'Red dwarf', 'white dwarf': 'White dwarf', neutron: 'Neutron star' },
   system: (star) => `${star} system`,
