@@ -108,8 +108,12 @@ export const WONDERS = [
     // on its far side: Shrey Pathak's portfolio, the Matrix (where Rick and Morty come out)
     beyond: { name: 'Shrey Pathak', what: 'the Matrix', url: 'https://shreyaanpathak.github.io/portfolio' },
   },
-  { id: 'veil', kind: 'nebula', name: 'The Veil', at: [-2230, 505, 4725], r: 700, colors: ['#5b3fd1', '#d14f9a', '#3fb7d1'], solid: false },
-  { id: 'cradle', kind: 'nebula', name: 'The Cradle', at: [4995, -505, 2230], r: 600, colors: ['#2f9e6b', '#c9d14f', '#2f6e9e'], solid: false },
+  // (a nebula's `r` is its reach, as every place's: where its name, its ramp
+  // and the generator's keep-out are reckoned from; `cloud` is how far its gas
+  // spreads, a place to fly through for a while, the owner's "vast and big":
+  // nebula/ draws it, and its edge stays clear of every other place's reach)
+  { id: 'veil', kind: 'nebula', name: 'The Veil', at: [-2230, 505, 4725], r: 700, cloud: 5500, colors: ['#5b3fd1', '#d14f9a', '#3fb7d1'], solid: false },
+  { id: 'cradle', kind: 'nebula', name: 'The Cradle', at: [4995, -505, 2230], r: 600, cloud: 6000, colors: ['#2f9e6b', '#c9d14f', '#2f6e9e'], solid: false },
   // the Rick and Morty sector (layout.js's SECTORS): the Citadel at its middle, and its own sun off to one side, past its worlds
   { id: 'citadel', kind: 'citadel', name: 'The Citadel', sector: 'rickmorty', at: inSector('rickmorty', [0, 0, 0]), r: 60, crew: 'rickmorty', world: 'rickmorty', page: '/c-137/citadel' }, // (as big as the biggest world: scale.js)
   { id: 'curvesun', kind: 'star', name: 'The Curve’s Sun', sector: 'rickmorty', at: inSector('rickmorty', [-2200, 450, 2000]), r: 80, color: '#e4ffb0', planets: [], light: { strength: 1.6, reach: 9000 } }, // (it lights the whole sector, out to its furthest world: lighting.js)
@@ -153,9 +157,17 @@ export function trenchBand(place) {
   return { half: t.width / 2 - 0.3, floor: place.r - t.depth + 0.45, home: t.home, arc: t.arc };
 }
 
-// where a sun's planet is, in the map's space
-export function planetAt(star, p) {
-  return [star.at[0] + Math.cos(p.angle) * p.orbit, star.at[1], star.at[2] + Math.sin(p.angle) * p.orbit];
+// A sun's worlds go round it, level with the disc, the inner ones faster:
+// Kepler's, the period as the orbit's size to the one and a half, once in
+// ORBIT_PERIOD seconds at ORBIT_AT out (a few units a second, as the Twins
+// swing). At t 0 each is at its `angle`. planetAt(star, p, t) is where it is
+// then, in the map's space; movePlanets(t) puts its solid there.
+export const ORBIT_PERIOD = 600;
+const ORBIT_AT = 320;
+export const orbitPeriod = (p) => ORBIT_PERIOD * (p.orbit / ORBIT_AT) ** 1.5;
+export function planetAt(star, p, t = 0) {
+  const a = p.angle + (t / orbitPeriod(p)) * Math.PI * 2;
+  return [star.at[0] + Math.cos(a) * p.orbit, star.at[1], star.at[2] + Math.sin(a) * p.orbit];
 }
 
 // how far a wonder's things reach out from its middle (its rings, its disk,
@@ -250,6 +262,17 @@ export function moveBinaries(t) {
       one.at[i] = a[i];
       two.at[i] = b[i];
     }
+  }
+}
+
+// (the scene calls this with moveBinaries, on the same clock)
+const ORBITERS = WONDERS.filter((w) => w.kind === 'star').flatMap((w) => w.planets.map((p, i) => ({ w, p, one: DEEP_SOLIDS.find((o) => o.id === `${w.id}-${i + 1}`) })).filter((o) => o.one));
+export function movePlanets(t) {
+  for (const { w, p, one } of ORBITERS) {
+    const a = p.angle + (t / orbitPeriod(p)) * Math.PI * 2;
+    one.at[0] = w.at[0] + Math.cos(a) * p.orbit;
+    one.at[1] = w.at[1];
+    one.at[2] = w.at[2] + Math.sin(a) * p.orbit;
   }
 }
 

@@ -264,7 +264,21 @@ const ready = (renderer, m) => {
 
 // (`target`: where the scene will be drawn when that isn't the canvas, a
 // composer's buffer, whose shaders differ: no tone mapping, linear colour)
-export async function compileSlices(renderer, roots, camera, scene, { sliceMs = 8, batch = null, onStep = null, frame = nextFrame, alive = yes, cap = 20000, target } = {}) {
+//
+// `gentle()`, asked before each batch: while it says so, a batch is
+// GENTLE_BATCH at most and the next waits for its links. A batch is
+// otherwise sized by the page's time, which is only the asking (the
+// compiling is the graphics process's, in the background), so it grew to 64
+// shaders, and the graphics process had all of them to get through before
+// it showed the page's next frame: a click on what's over a world being made
+// (the launch's tour, over the universe map) waited a second for its paint
+// in software GL. Measured there, two at a time held no click over half a
+// second in a dozen; batches let grow back with quick links (to 8, to 64)
+// held three to five. It's slower to the end (a couple of seconds in
+// software GL), so it's for while something over the world is being read or
+// used, not while someone waits on the world itself.
+export const GENTLE_BATCH = 2;
+export async function compileSlices(renderer, roots, camera, scene, { sliceMs = 8, batch = null, onStep = null, frame = nextFrame, alive = yes, cap = 20000, target, gentle = null } = {}) {
   const objects = drawables(roots);
   const lights = lightsOutside(roots, scene);
   const materials = new Set();
@@ -272,13 +286,18 @@ export async function compileSlices(renderer, roots, camera, scene, { sliceMs = 
   let i = 0;
   while (i < objects.length) {
     if (!alive() || lostContext(contextOf(renderer))) return materials;
-    const list = objects.slice(i, i + size);
+    const gently = Boolean(gentle?.());
+    const list = objects.slice(i, i + (gently ? Math.min(size, GENTLE_BATCH) : size));
     i += list.length;
     const t0 = clock();
     const keep = target !== undefined ? (renderer.getRenderTarget?.() ?? null) : null;
+    const these = [];
     try {
       if (target !== undefined) renderer.setRenderTarget(target);
-      for (const m of renderer.compile(batchRoot(list, lights), camera, scene)) materials.add(m);
+      for (const m of renderer.compile(batchRoot(list, lights), camera, scene)) {
+        materials.add(m);
+        these.push(m);
+      }
     } catch (err) {
       if (import.meta.env?.DEV) console.warn('[gpuWork] compile failed', err);
     } finally {
@@ -295,6 +314,11 @@ export async function compileSlices(renderer, roots, camera, scene, { sliceMs = 
     }
     onStep?.(0.8 * (i / objects.length));
     await fence(renderer, { frame });
+    // (gently: this batch linked before the next goes to the graphics process)
+    if (gently) {
+      const t1 = clock();
+      while (these.some((m) => !ready(renderer, m)) && alive() && !lostContext(contextOf(renderer)) && clock() - t1 < cap) await frame();
+    }
   }
   // linked yet? (asked only now the chip has caught up, so asking is free)
   const pending = [...materials];

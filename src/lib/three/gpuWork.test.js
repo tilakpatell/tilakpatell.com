@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
-import { compileSlices, drawables, fence, picturesIn, prepareScene, textureBytes, uploaded, uploadSlices } from './gpuWork';
+import { GENTLE_BATCH, compileSlices, drawables, fence, picturesIn, prepareScene, textureBytes, uploaded, uploadSlices } from './gpuWork';
 import { fakeGl, fakeRenderer, now } from './gpuFake.fixture';
 
 const picture = (w = 64, h = 64) => {
@@ -127,6 +127,63 @@ describe('compileSlices', () => {
     expect(gl.syncs).toBeGreaterThanOrEqual(3);
     expect(steps.at(-1)).toBe(1);
     for (const m of mats) expect(r.properties.get(m).currentProgram.isReady()).toBe(true);
+  });
+
+  it('gently, sends a small batch and waits for its links before the next, and only while asked to be', async () => {
+    const r = fakeRenderer({ linkAfter: 3 });
+    const scene = new THREE.Scene();
+    scene.add(...Array.from({ length: 9 }, () => mesh()));
+    let soft = true;
+    const seen = [];
+    const frame = () => {
+      seen.push(r.compiled.length);
+      return Promise.resolve();
+    };
+    // (each batch's compile finds every program before it linked)
+    const compile = r.compile.bind(r);
+    const unlinked = [];
+    r.compile = (...args) => {
+      unlinked.push(r.compiled.filter((m) => !r.properties.get(m).currentProgram.isReady()).length);
+      if (r.compiled.length >= 4) soft = false;
+      return compile(...args);
+    };
+    const mats = await compileSlices(r, [scene], new THREE.PerspectiveCamera(), scene, { batch: 4, frame, gentle: () => soft });
+    expect(mats.size).toBe(9);
+    // two gentle batches of GENTLE_BATCH, each sent with the one before linked; then the rest as before
+    expect(unlinked.slice(0, 3)).toEqual([0, 0, 0]);
+    expect(r.compiled.length).toBe(9);
+    expect(GENTLE_BATCH).toBe(2);
+    expect(seen.length).toBeGreaterThan(0);
+  });
+
+  it('gently, keeps every batch at GENTLE_BATCH, however quickly the links come', async () => {
+    const r = fakeRenderer({ linkAfter: 0 });
+    const scene = new THREE.Scene();
+    scene.add(...Array.from({ length: 9 }, () => mesh()));
+    const sizes = [];
+    const compile = r.compile.bind(r);
+    r.compile = (root, ...rest) => {
+      let n = 0;
+      root.traverse((o) => o.isMesh && (n += 1));
+      sizes.push(n);
+      return compile(root, ...rest);
+    };
+    await compileSlices(r, [scene], new THREE.PerspectiveCamera(), scene, { batch: 64, frame: now, gentle: () => true });
+    expect(sizes).toEqual([2, 2, 2, 2, 1]);
+  });
+
+  it('not gently, sends the next batch with the last one still linking', async () => {
+    const r = fakeRenderer({ linkAfter: 3 });
+    const scene = new THREE.Scene();
+    scene.add(...Array.from({ length: 9 }, () => mesh()));
+    const compile = r.compile.bind(r);
+    const unlinked = [];
+    r.compile = (...args) => {
+      unlinked.push(r.compiled.filter((m) => !r.properties.get(m).currentProgram.isReady()).length);
+      return compile(...args);
+    };
+    await compileSlices(r, [scene], new THREE.PerspectiveCamera(), scene, { batch: 4, frame: now, gentle: () => false });
+    expect(unlinked[1]).toBeGreaterThan(0);
   });
 
   it('stops when its world is gone', async () => {

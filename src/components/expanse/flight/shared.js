@@ -16,6 +16,13 @@
 // for the visit only, and says so once. A thing built on an older ground
 // (planetSpec.js's TERRAIN_VERSION) is drawn on the ground there is now.
 //
+// A world nothing may be built on (spec.buildable false: every generated
+// planet but the fifty) is read-only: no sign-in and no durable write, B says
+// so and builds nothing, X has nothing to take down, and a hit counts for
+// nothing. It still reads what is stored there, so a turret a visitor built
+// on it before it became read-only is drawn and stands (HANDOFF-universe's
+// rule: nothing a visitor did is lost); the room is as it is everywhere.
+//
 // createSharedWorld({ parent, spec, palette, groundAt, tell, respawn, durable,
 //   makeLoader, makeOnline, makeStructures, makePeers, makeBolts, signIn })
 //   → { join(name | null, hidden, ally, quip), step(dt, ship, snap), draw(at), build(ship),
@@ -60,6 +67,7 @@ export function createSharedWorld({
   signIn = durableSignIn,
 }) {
   const planetId = spec.id;
+  const readOnly = spec.buildable === false;
   const db = durable === undefined ? (devDurable() ?? durableClient()) : durable;
   const loader = db ? makeLoader({ client: db, planetId }) : null;
   const local = new Map(); // id → entity: this visit's own, with no durable layer
@@ -72,7 +80,7 @@ export function createSharedWorld({
   let name = 'Pilot';
   let allyOf = () => false; // (the roster's allies: join's `ally`)
   let quipOf = () => null; // (what each of them has just said: join's `quip`)
-  let owner = db ? null : 'me'; // the database's id for you (signed in), or the visit's
+  let owner = db || readOnly ? null : 'me'; // the database's id for you (signed in), or the visit's (none where nothing is yours)
   let signing = null;
   let busy = false; // a build or a take-down on its way
   let toldLocal = false;
@@ -108,7 +116,7 @@ export function createSharedWorld({
   const held = (id) => (loader ? loader.get(id) : local.get(id) ?? null);
 
   const signedIn = () => {
-    if (owner || !db) return Promise.resolve(owner);
+    if (owner || !db || readOnly) return Promise.resolve(owner);
     signing ??= Promise.resolve(signIn(db)).then((id) => {
       signing = null;
       owner = id ?? null;
@@ -117,7 +125,7 @@ export function createSharedWorld({
     return signing;
   };
   // (asked as you arrive, so B needn't wait on it)
-  if (db) signedIn();
+  if (db && !readOnly) signedIn();
 
   function onRoom(e) {
     if (e.type === 'shot') bolts.push({ id: `b${boltN++}`, p: e.p, v: e.v, life: BOLT.life, turret: false, mine: false });
@@ -132,6 +140,7 @@ export function createSharedWorld({
 
   async function build(ship) {
     if (busy) return;
+    if (readOnly) return toast('Nothing can be built on this world.');
     const ground = groundAt(ship.x, ship.z);
     // (a soft world's ground is cloud: the flight flies through it, nothing stands on it)
     if (spec.soft) return toast('Nothing stands on a cloud deck.');
@@ -161,7 +170,7 @@ export function createSharedWorld({
 
   async function unbuild(ship) {
     if (busy) return;
-    const mine = nearestOwn(all(), ship, owner);
+    const mine = readOnly ? null : nearestOwn(all(), ship, owner);
     if (!mine) return toast(`None of yours within ${BUILD.reach} m.`);
     if (!loader) {
       local.delete(mine.id);
@@ -181,6 +190,7 @@ export function createSharedWorld({
 
   // a hit on a turret: the database's to count, or this visit's own
   function damage(t) {
+    if (readOnly) return;
     if (loader) return void loader.damage(t.id, TURRET.damage);
     const e = local.get(t.id);
     if (!e) return;
@@ -221,7 +231,7 @@ export function createSharedWorld({
   function prompt(ship) {
     const can = canBuild(ship, groundAt(ship.x, ship.z), spec.pois);
     const near = online?.peers() ?? [];
-    return { build: can.ok && !spec.soft, unbuild: Boolean(nearestOwn(all(), ship, owner)), shield: Math.round(shield), others: near.length, allies: near.filter((p) => allyOf(p.id)).length, kept: Boolean(db) };
+    return { build: can.ok && !spec.soft && !readOnly, unbuild: !readOnly && Boolean(nearestOwn(all(), ship, owner)), shield: Math.round(shield), others: near.length, allies: near.filter((p) => allyOf(p.id)).length, kept: Boolean(db) && !readOnly };
   }
 
   return {

@@ -129,10 +129,12 @@
 }
 .cockpit-go:hover { transform: translateY(-1px); box-shadow: 0 0 0 1px rgb(255 255 255 / 0.6), 0 14px 46px rgb(0 0 0 / 0.5), 0 0 60px rgb(255 236 200 / 0.4); }
 .cockpit-go:active { transform: translateY(1px) scale(0.99); }
-.cockpit-go:disabled { opacity: 0.55; cursor: default; }
+/* boarding: dim, and still a press (Cockpit.jsx queues it: the launch goes once you're sat down) */
+.cockpit-go[aria-disabled='true'] { opacity: 0.55; cursor: progress; }
+.cockpit-go[data-queued] { opacity: 0.8; }
 .cockpit-go kbd { padding: 3px 7px; border-radius: 6px; background: rgb(0 0 0 / 0.1); font-family: var(--font-mono); font-size: 0.66rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; }
 .cockpit-go-ring { position: absolute; inset: -6px; border: 1.5px solid rgb(255 244 222 / 0.55); border-radius: 999px; pointer-events: none; animation: cockpit-ring 2.4s ease-out infinite; }
-.cockpit-go:disabled .cockpit-go-ring { display: none; }
+.cockpit-go[aria-disabled='true']:not([data-queued]) .cockpit-go-ring { display: none; }
 @keyframes cockpit-ring { 0% { opacity: 0.9; transform: scale(1); } 70%, 100% { opacity: 0; transform: scale(1.18, 1.5); } }
 
 .cockpit-hint { justify-self: end; margin-bottom: 10px; color: rgb(244 241 234 / 0.55); font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.04em; text-shadow: 0 1px 8px rgb(0 0 0 / 0.8); }

@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { planetField } from './field';
+import { fieldKey, planetField } from './field';
+import { sphereField } from './sphereField';
+import { roundSpec } from './fixtures/generated';
 import { TYPE_BIOMES } from './planetSpec';
 import { PLANETS, planetSpecOf } from './fixtures/expanse.js';
 import { WORLDS } from './planetTables';
@@ -83,5 +85,41 @@ describe('planetField', () => {
   it('digs the pits', () => {
     const g = planetField(planetSpecOf('tatooine'));
     expect(g.heightAt(2800, -1900)).toBeLessThan(g.heightAt(2800 + 120, -1900) - 25);
+  });
+});
+
+describe('planetField on a round planet', () => {
+  const spec = roundSpec({ type: 'ice', kind: 'ridges', radius: 18000 });
+  const g = planetField(spec);
+  const R = spec.round.radius;
+
+  it('reads the sphere through the chart: its middle is the spot', () => {
+    expect(g.heightAt(0, 0)).toBe(sphereField(spec).heightAt(spec.round.at));
+  });
+
+  it('comes round to the same ground after 2πR, any way it flies', () => {
+    for (const a of [0, 0.7, 2, 3.9, 5.5]) for (const d of [10, 2500, 41000]) {
+      const [ux, uz] = [Math.cos(a), Math.sin(a)];
+      const k = d + 2 * Math.PI * R;
+      expect(g.heightAt(ux * k, uz * k)).toBeCloseTo(g.heightAt(ux * d, uz * d), 6);
+    }
+  });
+
+  it('is finite and gentle out to three turns, the far side included', () => {
+    const rnd = seeded(13);
+    for (let i = 0; i < 1500; i++) {
+      const d = rnd() * 3 * Math.PI * R, a = rnd() * Math.PI * 2;
+      const [x, z] = [Math.cos(a) * d, Math.sin(a) * d];
+      const h = g.heightAt(x, z);
+      expect(Number.isFinite(h)).toBe(true);
+      const b = rnd() * Math.PI * 2;
+      expect(Math.abs(g.heightAt(x + Math.cos(b) * 4, z + Math.sin(b) * 4) - h)).toBeLessThanOrEqual(60);
+    }
+    for (let k = 0; k < 16; k++) expect(Number.isFinite(g.heightAt(Math.cos(k) * Math.PI * R, Math.sin(k) * Math.PI * R))).toBe(true);
+  });
+
+  it('keys a round field by its spot, a plane one by its id', () => {
+    expect(fieldKey(planetSpecOf('hoth'))).toBe('hoth');
+    expect(fieldKey(spec)).not.toBe(fieldKey({ ...spec, round: { ...spec.round, at: [0, 1, 0] } }));
   });
 });

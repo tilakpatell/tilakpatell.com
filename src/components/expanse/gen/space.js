@@ -3,28 +3,45 @@
 // resolver for any generated id. makeSector stays as it is; this composes it.
 // Pure (no React, DOM or three.js), so it runs in Node.
 //
-// fullSector(universe, sx, sy, sz, { things = true } = {}) → {
+// fullSector(universe, sx, sy, sz, { things = true, lattice = things, extras = SECTOR_EXTRAS } = {}) → {
 //   id: sectorKey, sx, sy, sz, seed, origin: [x, y, z],
 //   systems (addBodies'd; legacy first on sy 0, then appended; systems[i].i === i),
 //   wonders (today's on the middle layer, [] elsewhere),
+//   stations (stations.js's, one system in three; made whether or not things is),
 //   things (a ThingSet, empty when things is false), extras ({ [list]: rows }),
 //   beacons (today's on the middle layer, the same rule at the sector's height elsewhere),
 //   legacy: { systems, wonders } (where the appended part begins) }
-// placeOf(universe, id) → { kind: 'system' | 'planet' | 'moon' | 'wonder' | 'thing' | 'extra', row, sector } | null
+//   things: false makes neither the lattice nor any list; lattice: false (things true) makes the
+//   lists alone; extras is for tests. What appended systems keep out of holds whatever they are,
+//   so a system's id never depends on them. arrivals (for tests) is the arrival's gargantuan
+//   rows: ARRIVAL_GARGANTUANS in the shared universe's core, [] elsewhere; more than one throws.
+//   The sector's gargantuan (gargantuans.js) and the arrival's are the lists `gargantuan` (w3)
+//   and `arrival` (w4); appended systems keep their size + 2,000 off them, and the lattice and
+//   the lists keep off their solid parts (ctx.keeps).
+// wonderPlace(sector, n, extras = SECTOR_EXTRAS) → placeIn's answer for w<n>. The lists come
+//   first: a high list's numbers are past the stations' base too, and the station branch would
+//   read w20001 as station 10001. Then lane 3's stations, the lattice and the legacy wonders.
+// placeOf(universe, id) → { kind: 'system' | 'planet' | 'moon' | 'station' | 'wonder' | 'thing' | 'extra', row, sector } | null
 //   (keeps the last 8 sectors it built: its rows are shared with that cache, so treat them as
 //   read-only; a cache miss builds a whole sector synchronously)
+// placeIn(sector, parsed) → the same, on a sector already made (the one parseSpaceId's
+//   parsed id names); it builds nothing, and a part the sector hasn't got yet (a 2D
+//   sector's lattice and stations, a worker's moons before withMoons) is null, not a throw
 
 import { parseSpaceId, sectorCentre, sectorKey } from '../../../lib/space/address.js';
+import { CUBE_HALF } from './cube';
+import { ARRIVAL_GARGANTUANS, ARRIVAL_MAX, GARGANTUAN, gargantuanKeeps, gargantuanOf } from './gargantuans';
+import { SECTOR_EXTRAS } from './extras';
 import { clearOfKeepOuts, keepOutsNear } from './keepOuts';
-import { hash64, int, range, rngOf, sectorSeedOf, systemSeed } from './seed';
+import { UNIVERSE, hash64, int, range, rngOf, sectorSeedOf, systemSeed } from './seed';
 import { beaconsOf, makeSector } from './sector';
+import { STATION_BASE, stationsOf } from './stations';
 import { addBodies, localFactions, systemAt } from './systems';
 import { factionBand } from './tables';
-import { SECTOR_EXTRAS, THING_BASE, thingRow, thingsOf } from './things';
+import { THING_BASE, thingRow, thingsOf } from './things';
 
-// Appended systems stay this far from the middle, each way. Legacy systems sit at least 2,000
-// inside a sector face, so 4,000 more keeps the spec's 6,000 gap across a face (60,000 - 4,000).
-const CUBE_HALF = 56000;
+// (appended systems stay CUBE_HALF from the middle, each way: cube.js, a leaf, since lane 4a's
+// lists need it too and importing this file from them would be a cycle)
 const GAP = 6000; // between systems, in 3D
 const NEAR = 3000; // between a system and a wonder or beacon
 const TRIES = 60; // darts a system
@@ -109,7 +126,7 @@ function appendSystems(sector, outs) {
   }
 }
 
-export function fullSector(universe, sx, sy, sz, { things = true } = {}) {
+export function fullSector(universe, sx, sy, sz, { things = true, lattice = things, extras = SECTOR_EXTRAS, arrivals = null } = {}) {
   const id = sectorKey(sx, sy, sz);
   const seed = sectorSeedOf(universe, sx, sy, sz);
   const origin = sectorCentre(sx, sy, sz);
@@ -126,9 +143,19 @@ export function fullSector(universe, sx, sy, sz, { things = true } = {}) {
   }
   sector.legacy = { systems: sector.systems.length, wonders: sector.wonders.length };
   const outs = keepOutsNear(sx, sy, sz);
-  appendSystems(sector, outs);
+  // (the gargantuan comes before the appended systems: a system appended into a black hole's
+  // disc couldn't be moved after. The arrival's, lane 4c's, likewise in the shared core.)
+  const g = gargantuanOf(universe, sx, sy, sz, sector);
+  const core = !sx && !sy && !sz;
+  const came = arrivals ?? (core && universe === UNIVERSE ? ARRIVAL_GARGANTUANS : []);
+  if (came.length > ARRIVAL_MAX) throw new RangeError('at most one gargantuan a sector (spec C): the core holds the arrival’s one only');
+  const big = g ? [g, ...came] : [...came];
+  appendSystems(sector, big.length ? [...outs, ...big.map((b) => ({ id: 'gargantuan', at: b.at, r: b.size + GARGANTUAN.systems }))] : outs);
+  sector.stations = stationsOf(sector);
   if (things) {
-    const made = thingsOf({ sx, sy, sz, origin, seed, systems: sector.systems, wonders: sector.wonders, outs }, SECTOR_EXTRAS);
+    const d = Math.max(Math.abs(sx), Math.abs(sy), Math.abs(sz));
+    const ctx = { sx, sy, sz, origin, seed, universe, systems: sector.systems, wonders: sector.wonders, beacons: sector.beacons, stations: sector.stations, outs, d, core: !d, gargantuan: g, arrivals: came, keeps: big.flatMap(gargantuanKeeps) };
+    const made = thingsOf(ctx, extras, undefined, { lattice });
     sector.things = made.things;
     sector.extras = made.extras;
   } else {
@@ -149,45 +176,55 @@ function sectorFor(universe, p) {
   return s;
 }
 
-// the slot a lattice wonder number names, among the sorted slots that hold something
-function indexOfSlot(slots, slot) {
+// where key(list[i]) is k, in a list sorted by key: the slot a lattice wonder number
+// names among the slots that hold something, or the station a system's number names
+function indexOf(list, k, key = (v) => v) {
   let lo = 0;
-  let hi = slots.length - 1;
+  let hi = list.length - 1;
   while (lo <= hi) {
     const mid = (lo + hi) >> 1;
-    if (slots[mid] === slot) return mid;
-    if (slots[mid] < slot) lo = mid + 1;
+    const at = key(list[mid]);
+    if (at === k) return mid;
+    if (at < k) lo = mid + 1;
     else hi = mid - 1;
   }
   return -1;
 }
 
-function wonderPlace(sector, n) {
-  if (n >= THING_BASE) {
-    const i = indexOfSlot(sector.things.slot, n - THING_BASE);
-    return i < 0 ? null : { kind: 'thing', row: thingRow(sector, i), sector };
-  }
-  for (const e of SECTOR_EXTRAS) {
+export function wonderPlace(sector, n, extras = SECTOR_EXTRAS) {
+  for (const e of extras) {
     if (n >= e.base && n < e.base + e.max) {
-      const row = sector.extras[e.list]?.[n - e.base];
+      const row = sector.extras?.[e.list]?.[n - e.base];
       return row ? { kind: 'extra', row, sector } : null;
     }
   }
-  const row = sector.wonders[n];
+  if (n >= STATION_BASE) {
+    const list = sector.stations ?? [];
+    const i = indexOf(list, n - STATION_BASE, (st) => st.i);
+    return i < 0 ? null : { kind: 'station', row: list[i], sector };
+  }
+  if (n >= THING_BASE) {
+    const i = indexOf(sector.things?.slot ?? [], n - THING_BASE);
+    return i < 0 ? null : { kind: 'thing', row: thingRow(sector, i), sector };
+  }
+  const row = sector.wonders?.[n];
   return row ? { kind: 'wonder', row, sector } : null;
 }
 
 export function placeOf(universe, id) {
   const p = parseSpaceId(id);
+  return p ? placeIn(sectorFor(universe, p), p) : null;
+}
+
+export function placeIn(sector, p) {
   if (!p) return null;
-  const sector = sectorFor(universe, p);
   if (p.wonder !== undefined) return wonderPlace(sector, p.wonder);
-  const system = sector.systems[p.system];
+  const system = sector.systems?.[p.system];
   if (!system) return null;
   if (p.planet === undefined) return { kind: 'system', row: system, sector };
-  const planet = system.planets[p.planet];
+  const planet = system.planets?.[p.planet];
   if (!planet) return null;
   if (p.moon === undefined) return { kind: 'planet', row: planet, sector };
-  const moon = planet.moonList[p.moon];
+  const moon = planet.moonList?.[p.moon];
   return moon ? { kind: 'moon', row: moon, sector } : null;
 }

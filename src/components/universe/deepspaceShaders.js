@@ -4,6 +4,7 @@
 
 import { SWIRL_GLSL } from '../rickmorty/swirl';
 import { NOISE_GLSL } from './sun';
+import { UPRIGHT_GLSL } from '../../lib/three/upright';
 
 // ── GLSL shared by the shaders ──
 
@@ -40,20 +41,22 @@ vec4 globe(sampler2D map, vec3 p) {
 // a quad that always faces the camera, `position` its offset in world units
 // (the mesh's turn is ignored); vC is that offset in its radii, vSil how much
 // wider than its radius a sphere of that radius looks on the quad's plane
-// (from close in you see less than half of it), vDist how far off it is
+// (from close in you see less than half of it), vDist how far off it is.
+// Turned toward the eye's place and kept upright to the world
+// (lib/three/upright.js), so a corona's streamers don't spin as the ship banks
 export const BILLBOARD_VERT = `
 uniform float uR;
 varying vec2 vC;
 varying float vSil;
 varying float vDist;
+${UPRIGHT_GLSL}
 void main() {
-  vec4 mv = modelViewMatrix * vec4(0.0, 0.0, 0.0, 1.0);
-  float d = length(mv.xyz);
+  vec3 c = (modelMatrix * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
+  float d = distance(c, cameraPosition);
   vDist = d;
   vSil = d > uR * 1.02 ? d / sqrt(d * d - uR * uR) : 5.0;
   vC = position.xy / uR;
-  mv.xy += position.xy;
-  gl_Position = projectionMatrix * mv;
+  gl_Position = projectionMatrix * viewMatrix * vec4(upright(c, position.xy), 1.0);
 }`;
 
 // ── Planets: one shader, a look per kind ──
@@ -546,86 +549,6 @@ void main() {
   #include <colorspace_fragment>
 }`;
 
-// ── Nebulae ──
-
-export const PUFF_VERT = `
-attribute vec3 aCentre;
-attribute vec3 aTangent;
-attribute vec4 aShape;
-attribute vec4 aTint;
-attribute vec4 aMask;
-uniform float uTime;
-varying vec2 vUv;
-varying vec4 vTint;
-varying vec4 vMask;
-varying float vFade;
-varying vec2 vShift;
-void main() {
-  vec4 c = modelMatrix * vec4(aCentre, 1.0);
-  float size = aShape.x;
-  float dist = length(c.xyz - cameraPosition);
-  // gone as you come close to it, so flying through is never a wall
-  float fade = smoothstep(size * 0.5, size * 1.6, dist);
-  vFade = fade;
-  vTint = aTint;
-  vMask = aMask;
-  vUv = uv;
-  vShift = vec2(aShape.w, aShape.w * 1.37);
-  if (fade < 0.003) {
-    gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
-    return;
-  }
-  vec4 mv = viewMatrix * c;
-  // drawn out along its tangent as it lies on the screen
-  vec3 tv = mat3(viewMatrix) * mat3(modelMatrix) * aTangent;
-  float tl = length(tv.xy);
-  float ang = (tl > 1e-4 ? atan(tv.y, tv.x) : 0.0) + aShape.w * 6.2832 + uTime * aShape.z;
-  float stretch = mix(1.0, aShape.y, clamp(tl, 0.0, 1.0));
-  vec2 q = position.xy * vec2(stretch, 1.0 / sqrt(stretch)) * size * 2.0;
-  float cs = cos(ang);
-  float sn = sin(ang);
-  mv.xy += vec2(cs * q.x - sn * q.y, sn * q.x + cs * q.y);
-  gl_Position = projectionMatrix * mv;
-}`;
-export const PUFF_FRAG = `
-uniform sampler2D uPuff;
-varying vec2 vUv;
-varying vec4 vTint;
-varying vec4 vMask;
-varying float vFade;
-varying vec2 vShift;
-void main() {
-  float d = dot(texture2D(uPuff, vUv), vMask);
-  float fine = texture2D(uPuff, vUv * 1.8 + vShift).a;
-  d *= (0.5 + 0.95 * fine) * vFade;
-  // glowing gas adds its light; dust (alpha) dims what's behind it
-  gl_FragColor = vec4(vTint.rgb * d, vTint.a * d);
-  #include <colorspace_fragment>
-}`;
-
-export const SPARK_VERT = `
-attribute vec3 aColor;
-attribute float aSize;
-uniform float uScale;
-varying vec3 vColor;
-void main() {
-  vec4 mv = modelViewMatrix * vec4(position, 1.0);
-  float px = aSize * uScale / max(-mv.z, 0.1);
-  gl_PointSize = clamp(px, 2.0, 30.0);
-  vColor = aColor;
-  gl_Position = projectionMatrix * mv;
-}`;
-export const SPARK_FRAG = `
-varying vec3 vColor;
-void main() {
-  vec2 c = gl_PointCoord * 2.0 - 1.0;
-  float r2 = dot(c, c);
-  float a = exp(-r2 * 30.0) * 1.6 + exp(-r2 * 5.0) * 0.35;
-  a *= 1.0 - smoothstep(0.6, 1.0, r2);
-  gl_FragColor = vec4(vColor * a, 1.0);
-  #include <colorspace_fragment>
-}`;
-
 // ── The Death Star ──
 
 export const CITADEL_VERT = `
@@ -809,19 +732,32 @@ void main() {
 
 export const SKY_VERT = `
 attribute vec3 color;
+attribute vec3 aSpin;
 varying vec2 vUv;
 varying vec3 vColor;
+varying vec3 vSpin;
 void main() {
   vUv = uv;
   vColor = color;
+  vSpin = aSpin;
   gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
 }`;
+// each galaxy turning in its own plane: its picture turned about its
+// cell's middle (vSpin.xy) at its own rate (vSpin.z, radians a second),
+// nothing read from past the cell's round edge
 export const SKY_FRAG = `
 uniform sampler2D uMap;
+uniform float uTime;
 varying vec2 vUv;
 varying vec3 vColor;
+varying vec3 vSpin;
 void main() {
-  vec4 c = texture2D(uMap, vUv);
+  vec2 o = vUv - vSpin.xy;
+  float a = uTime * vSpin.z;
+  float cs = cos(a);
+  float sn = sin(a);
+  o = vec2(cs * o.x - sn * o.y, sn * o.x + cs * o.y);
+  vec4 c = texture2D(uMap, vSpin.xy + o) * smoothstep(0.25, 0.235, length(o));
   gl_FragColor = vec4(c.rgb * c.a * vColor, 1.0);
   #include <colorspace_fragment>
 }`;

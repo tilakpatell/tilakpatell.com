@@ -61,6 +61,10 @@ export default function Cockpit({ start, onPeak, onDone, onReveal }) {
   const [fallback, setFallback] = useState(() => !cockpitPossible());
   const [boarded, setBoarded] = useState(null); // the id on screen, once drawn
   const [launching, setLaunching] = useState(false);
+  // Space, or the button, while still boarding: kept, and the launch goes
+  // the moment you're sat down (boarding can take a while with the map
+  // still being made behind it, and a press then was simply lost)
+  const [queued, setQueued] = useState(false);
   const [line, setLine] = useState(null);
   const root = useRef(null);
   const veil = useRef(null);
@@ -212,17 +216,22 @@ export default function Cockpit({ start, onPeak, onDone, onReveal }) {
   const launch = useCallback(() => {
     audioContext(); // inside the click or key press, so the sound may play
     const c = ctl.current;
-    if (!c) return;
-    if (c.launching) {
+    if (c?.launching) {
       c.skip();
       return;
     }
-    if (c.go()) {
+    if (c?.go()) {
+      setQueued(false);
       setLaunching(true);
       local.set(KEY, id);
       say(vehicleById(id)?.lines.launch?.[0]);
-    }
+    } else setQueued(true);
   }, [id, say]);
+  // (sat down with a launch asked for: it goes now)
+  const ready = boarded === id;
+  useEffect(() => {
+    if (queued && ready && !launching) launch();
+  }, [queued, ready, launching, launch]);
 
   const skip = useCallback(() => {
     audioContext();
@@ -252,6 +261,7 @@ export default function Cockpit({ start, onPeak, onDone, onReveal }) {
   const pick = (to) => {
     if (launching || to === id) return;
     audioContext();
+    setQueued(false); // (another ride picked: it's a choice being made, not a launch)
     setId(to);
     setBoarded(null);
     setLine(null);
@@ -332,7 +342,6 @@ export default function Cockpit({ start, onPeak, onDone, onReveal }) {
 
   if (fallback) return <Hyperspace entry sound onPeak={() => cbs.current.onPeak?.()} onDone={() => cbs.current.onDone?.()} />;
 
-  const ready = boarded === id;
   return createPortal(
     <div
       ref={root}
@@ -396,9 +405,9 @@ export default function Cockpit({ start, onPeak, onDone, onReveal }) {
               </button>
             ))}
           </div>
-          <button ref={go} type="button" className="cockpit-go" onClick={launch} disabled={!ready && !launching}>
+          <button ref={go} type="button" className="cockpit-go" onClick={launch} aria-disabled={!ready && !launching ? 'true' : undefined} data-queued={queued || undefined}>
             <span className="cockpit-go-ring" aria-hidden="true" />
-            <span className="cockpit-go-text">{launching ? v.going : ready ? v.go : 'Boarding…'}</span>
+            <span className="cockpit-go-text">{launching ? v.going : ready ? v.go : queued ? 'Launching once seated…' : 'Boarding…'}</span>
             {!launching && <kbd aria-hidden="true">Space</kbd>}
           </button>
           <p className="cockpit-hint" aria-hidden="true">

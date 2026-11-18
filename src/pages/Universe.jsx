@@ -8,6 +8,8 @@ import { beyondPlan, crashPlan, enterPlan } from '../components/universe/flight'
 import { beyondOf, parseWonder } from '../components/universe/deep';
 import { DRIVE_KEY, destinationById, distanceTo, parseDrive, tourFrom } from '../components/universe/nav';
 import { FLY_PAST } from '../components/universe/words';
+import { canonicalPlace, isPlaceId } from '../components/universe/places/ids';
+import { cardRow } from '../components/universe/places/pageCard';
 import { SHIP_KEY, crewById, parseShip } from '../components/universe/crews';
 import { useShipyardPage } from '../components/universe/shipyard/useShipyardPage';
 import { useAchievements } from '../components/Achievements';
@@ -96,8 +98,15 @@ export default function Universe({ ask = false }) {
   // a link out to a wonder (/universe/aurelia): the ship starts parked beside it, and the panel shows it
   const wonder = parseWonder(param);
   const wonderDest = wonder ? destinationById(wonder) : null;
+  // a link out to a generated place (/universe/E:1,0:0:0): the scene finds it (the page never makes a sector), and the ship starts there
+  const place = wonder ? null : canonicalPlace(param);
+  const placeRef = useRef(place); // (for the scene's events, as selectedRef)
+  placeRef.current = place;
+  const [mapState, setMapState] = useState('loading'); // ('live', 'loading' or 'flat': whether a scene runs to find it)
+  const [found, setFound] = useState(null); // ({ id, dest }: what the scene found for a place, dest null for nothing there)
+  const [docked, setDocked] = useState(null); // (the station the ship's docked at)
   const reduced = useReducedMotion();
-  const map = useRef({ live: false, dive: () => 0, escape: () => false, whole: () => false, travel: () => false, where: () => null }); // the 3D map, while it's drawing
+  const map = useRef({ live: false, dive: () => 0, escape: () => false, whole: () => false, travel: () => false, where: () => null, place: () => null, fetchPlace: async () => null, nearby: () => [] }); // the 3D map, while it's drawing
   const comms = useRef(null);
   const [ship, setShip] = useState(() => parseShip(local.get(SHIP_KEY)));
   const crew = crewById(ship);
@@ -252,6 +261,15 @@ export default function Universe({ ask = false }) {
     },
     [navigate],
   );
+  // a link's place, asked of the scene once it's drawing (off the main thread; dropped if the link or the map changes first)
+  useEffect(() => {
+    if (!place || mapState !== 'live') return undefined;
+    let on = true;
+    map.current.fetchPlace(place).then((dest) => on && setFound({ id: place, dest: dest ?? null }));
+    return () => {
+      on = false;
+    };
+  }, [place, mapState]);
   // the Star Wars gate picked: the galaxy behind it fetched while you fly there
   const toGalaxy = Boolean(universe?.to?.startsWith('/galaxy'));
   useEffect(() => {
@@ -361,6 +379,20 @@ export default function Universe({ ask = false }) {
       pay(e.what, e.n, e.side);
       return;
     }
+    // a generated place: found, arrived at, left, docked at (the hangar opens for a trip that ended there)
+    if (e.type === 'place') {
+      if (e.what === 'found') setFound({ id: e.id, dest: e.dest ?? null });
+      else if (e.what === 'arrive') select(e.id);
+      else if (e.what === 'leave' && placeRef.current === e.id) select(null);
+      else if (e.what === 'dock') {
+        setDocked(e.id);
+        if (e.open) {
+          setHangarTab('shipyard');
+          setYard(true);
+        }
+      } else if (e.what === 'undock') setDocked(null);
+      return;
+    }
     // on a phone the panel folds away once the ship's flown: its buttons
     // wait for it, and the sheet hides half the map
     if (e.type === 'launch' && !tucked && window.matchMedia?.(PHONE_FLIGHT).matches) tuck(true);
@@ -451,7 +483,7 @@ export default function Universe({ ask = false }) {
     setCharting(false);
     audioContext(); // inside the press, so the jump and the engine can sound
     if (!onTour) stopTour();
-    const dest = destinationById(id);
+    const dest = destinationById(id, { place: map.current.place });
     const flies = Boolean(ship && map.current.live);
     // a star system: to the gate, and on through it once the ship's parked there (the camera: just the gate)
     onward.current = dest?.via && flies ? { via: dest.via, to: dest.to } : null;
@@ -459,11 +491,11 @@ export default function Universe({ ask = false }) {
     const u = byId(id);
     if (flies) {
       const going = map.current.travel(id, d);
-      select(u ? id : null); // (a wonder has no card: the panel goes back to the map's)
+      select(u || isPlaceId(id) ? id : null); // (a wonder has no card: the panel goes back to the map's; a generated place's stays up)
       if (!going) onward.current = null;
       return going;
     }
-    if (u) select(id);
+    if (u || isPlaceId(id)) select(id);
     return false;
   };
   // the grand tour: every station, world and wonder from here, nearest first
@@ -539,7 +571,8 @@ export default function Universe({ ask = false }) {
         onMap={() => setCharting((o) => !o)}
         onLand={enter}
         onCrash={crashInto}
-        startAt={wonder}
+        startAt={wonder ?? place}
+        onLive={setMapState}
       />
       {pocket.pocket && !leaving && (
         <p className="universe-pocket" role="status">
@@ -580,7 +613,8 @@ export default function Universe({ ask = false }) {
       {!asking && !leaving && <Online online={online} ship={ship} />}
       <UniversePanel
         universe={universe}
-        wonder={wonderDest}
+        wonder={wonderDest ?? cardRow(place, found, mapState)}
+        docked={docked}
         onFly={ship ? (id) => travel(id, drive) : null}
         onSelect={select}
         onEnter={enter}

@@ -4,7 +4,7 @@
 // three.js), so it runs in Node.
 //
 // UNIVERSE_SEED, UNIVERSE (the bigint from it)
-// hash64(...parts) → bigint: FNV-1a 64 over the parts joined by '\0'
+// hash64(...parts) → bigint: FNV-1a 64 over the parts joined by '\0'; hash64Big the same, in BigInt
 // universeOf(word = UNIVERSE_SEED) → bigint
 // sectorSeed(universe, sx, sz), systemSeed(sectorSeed, i), planetSeed(systemSeed, j) → bigint
 // rngOf(seed) → () => number in [0, 1) (splitmix64)
@@ -20,7 +20,35 @@ const OFFSET = 0xcbf29ce484222325n;
 const PRIME = 0x100000001b3n;
 const utf8 = new TextEncoder();
 
+// FNV-1a 64, worked in two 32-bit halves with plain numbers: the same hash
+// as the BigInt loop (hash64Big, kept for the test that holds them equal),
+// several times faster, and the generator calls it thousands of times a
+// sector. h × PRIME mod 2^64 is h × 0x1b3 + (h << 40); a byte goes into the
+// low half. An ASCII string's bytes are its char codes; anything else goes
+// through the encoder as before.
+const OFF_HI = 0xcbf29ce4;
+const OFF_LO = 0x84222325;
+const ascii = (str) => {
+  for (let i = 0; i < str.length; i++) if (str.charCodeAt(i) > 127) return false;
+  return true;
+};
 export function hash64(...parts) {
+  const str = parts.map(String).join("\0");
+  const bytes = ascii(str) ? null : utf8.encode(str);
+  const n = bytes ? bytes.length : str.length;
+  let hi = OFF_HI;
+  let lo = OFF_LO;
+  for (let i = 0; i < n; i++) {
+    lo = (lo ^ (bytes ? bytes[i] : str.charCodeAt(i))) >>> 0;
+    const l = lo * 0x1b3; // (< 2^41: exact)
+    const carry = Math.floor(l / 4294967296);
+    hi = (hi * 0x1b3 + carry + ((lo << 8) >>> 0)) % 4294967296;
+    lo = l >>> 0;
+  }
+  return (BigInt(hi) << 32n) | BigInt(lo);
+}
+
+export function hash64Big(...parts) {
   let h = OFFSET;
   for (const b of utf8.encode(parts.map(String).join("\0")))
     h = ((h ^ BigInt(b)) * PRIME) & MASK;

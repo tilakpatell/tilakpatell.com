@@ -1,7 +1,8 @@
 // Uploads an exported bf2-web play site to the private bucket as sites/<build>/ (docs/decisions/2026-10-28-bf2web-
 // pipeline.md). A file the previous build has byte for byte (the manifests' sha256) is copied inside R2, not sent
-// again: a new build of the engine is some 100 MB to send, not the whole 2.2 GB. A file already there at its size is
-// skipped, so an upload cut off is run again from where it stopped. The manifest goes last: its presence is what says
+// again: a new build of the engine is some 100 MB to send, not the whole 2.2 GB. A file already there with the manifest's
+// size and sha256 (its x-amz-meta-sha256, written by every PUT here and read back by HEAD) is skipped, so an upload cut off
+// is run again from where it stopped; one at that size with other or unrecorded bytes is sent again. The manifest goes last: its presence is what says
 // the build is whole (scripts/bf2web-adopt.mjs). The site's rulebooks, when the export has them beside it, go to
 // sites/<build>/ui-data/.
 //
@@ -10,13 +11,13 @@
 
 import { createHash } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
-import { uiDataFiles } from './lib/bf2web-ui-files.mjs';
+import { brotliCopy, uiDataBrotli, uiDataFiles, uiDataLeftOut } from './lib/bf2web-ui-files.mjs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { encodePath, objectUrl } from './lib/bucket.mjs';
 import { BUCKET, open } from './lib/bf2web-r2.mjs';
 import { contractProblems, uploadPlan } from './lib/bf2web-site.mjs';
-import { attemptUpload, completeUploadResponse, copyUploadHeaders } from './lib/bf2web-upload-response.mjs';
+import { attemptUpload, completeUploadResponse, copyUploadHeaders, shaHeader, withRecordedShas } from './lib/bf2web-upload-response.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const args = process.argv.slice(2);
@@ -36,13 +37,24 @@ const previousId = option('--previous') || process.env.BF2WEB_PREVIOUS || JSON.p
 const previous = previousId && previousId !== id ? await r2.json(`sites/${previousId}/manifest.json`) : null;
 const prefix = `sites/${id}/`;
 const previousPrefix = previous ? `sites/${previousId}/` : null;
-const [existing, previousExisting] = await Promise.all([r2.files(prefix), previousPrefix ? r2.files(previousPrefix) : []]);
+const [listed, previousExisting] = await Promise.all([r2.files(prefix), previousPrefix ? r2.files(previousPrefix) : []]);
+// A key already there at the manifest's size: its recorded sha256 (HEAD, eight at a time), so the plan skips it only when the bytes
+// are the same; a HEAD that fails leaves it unrecorded, and it is sent again.
+const bytesByKey = new Map(manifest.entries.map((e) => [prefix + e.path, e.bytes]));
+const existing = await withRecordedShas(listed, bytesByKey, (key) => r2.fetch(objectUrl(BUCKET, key), { method: 'HEAD' }));
+if (existing.asked) console.log(`${id}: ${existing.asked} keys already there at their size, ${existing.failed} unread (sent again)`);
 const plan = uploadPlan(manifest, { prefix, previous, previousPrefix, existing, previousExisting });
 const uiDir = option('--ui-data');
+// (a ui-data file of a kind that does not go up is named, not dropped in silence: 16 Nov 2026, the backdrop tone data)
+if (uiDir && existsSync(uiDir)) for (const f of uiDataLeftOut(uiDir)) console.log(`ui-data left out (not a kind that goes up): ${f}`);
 if (uiDir && existsSync(uiDir)) for (const f of uiDataFiles(uiDir)) plan.splice(-1, 0, { action: 'put', key: `${prefix}ui-data/${f}`, file: join(uiDir, f) });
+// (and an octet-stream file's brotli copy <path>.br, made as it is sent, for the Worker to answer a br client with: cloudflare/play.js
+// buildUiData; 16 Nov, the backdrop tone data went out whole, 8.3 and 16.6 MB a view)
+if (uiDir && existsSync(uiDir)) for (const f of uiDataFiles(uiDir).filter(uiDataBrotli)) plan.splice(-1, 0, { action: 'put', key: `${prefix}ui-data/${f}.br`, file: join(uiDir, f), brotli: true });
 
 const count = (a) => plan.filter((p) => p.action === a).length;
 const bytesOf = (p) => manifest.entries.find((e) => e.path === p.path)?.bytes ?? 0;
+const shaOf = (p) => manifest.entries.find((e) => e.path === p.path)?.sha256 ?? null;
 console.log(`${id}: ${count('put')} to send (${Math.round(plan.filter((p) => p.action === 'put').reduce((n, p) => n + bytesOf(p), 0) / 1e6)} MB), ${count('copy')} copied from ${previousId ?? 'none'}, ${count('skip')} already there`);
 if (dry) process.exit(0);
 
@@ -53,7 +65,7 @@ async function sendMultipart(p) {
   const url = objectUrl(BUCKET, p.key);
   const body = readFileSync(p.file ?? join(dir, p.path));
   const created = await attemptUpload(`create ${p.key}`, async () => {
-    const r = await r2.fetch(`${url}?uploads`, { method: 'POST', headers: { 'content-type': 'application/octet-stream' } });
+    const r = await r2.fetch(`${url}?uploads`, { method: 'POST', headers: { 'content-type': 'application/octet-stream', ...shaHeader(shaOf(p)) } });
     const text = await r.text();
     if (!r.ok) throw new Error(`HTTP ${r.status} ${text.slice(0, 200)}`);
     const uploadId = /<UploadId>([^<]+)<\/UploadId>/.exec(text)?.[1];
@@ -88,12 +100,22 @@ async function sendMultipart(p) {
 async function send(p) {
   if (p.action === 'skip') return;
   const url = objectUrl(BUCKET, p.key);
+  if (p.brotli) {
+    // (a copy that would save less than a tenth is not put: the Worker then sends the file itself)
+    const body = await brotliCopy(readFileSync(p.file));
+    if (!body) return;
+    await attemptUpload(`put ${p.key}`, async () => {
+      const r = await r2.fetch(url, { method: 'PUT', body, headers: { 'content-md5': createHash('md5').update(body).digest('base64'), 'content-type': 'application/octet-stream' } });
+      await completeUploadResponse(r, { copy: false });
+    });
+    return;
+  }
   const init =
     p.action === 'copy'
-      ? { method: 'PUT', headers: copyUploadHeaders(`/${BUCKET}/${encodePath(p.from)}`, p.replaceMetadata) }
+      ? { method: 'PUT', headers: copyUploadHeaders(`/${BUCKET}/${encodePath(p.from)}`, p.replaceMetadata, shaOf(p)) }
       : (() => {
           const body = readFileSync(p.file ?? join(dir, p.path));
-          return { method: 'PUT', body, headers: { 'content-md5': createHash('md5').update(body).digest('base64'), 'content-type': 'application/octet-stream' } };
+          return { method: 'PUT', body, headers: { 'content-md5': createHash('md5').update(body).digest('base64'), 'content-type': 'application/octet-stream', ...shaHeader(shaOf(p)) } };
         })();
   await attemptUpload(`${p.action} ${p.key}`, async () => {
     const r = await r2.fetch(url, init);

@@ -49,3 +49,111 @@ export const moonWay = (moon) =>
   moon.big
     ? 'It’s a whole world: the cruiser sets down and you climb out as Rick, Morty beside you; take off again and you’re back out in space.'
     : 'Land on it and you’re straight into it, on foot as Morty, with something to do there; its own portal brings you back out to space.';
+
+// A generated place's card (places/cards.js): what each star, planet, moon,
+// station and thing out in the endless universe is called, the line about it,
+// its facts and its buttons, and the card a link shows before the scene has
+// found the place, or with no scene to find it.
+const count = (n, word) => (n ? `${n} ${word}${n === 1 ? '' : 's'}` : `no ${word}s`);
+// Lane 4a's things in space: what E does there, and what's said when it does.
+const LORE = [
+  'The signs say the stars here were moved, once, by hand.',
+  'A map, cut in stone, of a sky that hasn’t been seen for a million years.',
+  'Names, thousands of them, and the last one left unfinished.',
+  'A warning, repeated in seven scripts: do not wake the deep one.',
+  'A count of days that stops at the day this slab was set here.',
+  'Instructions for building a gate. Half the stone is missing.',
+  'A poem about the cold between the galaxies. It rhymes in no tongue you know.',
+  'The same face, over and over, smaller each time.',
+  'A record of a trade: one star for one song.',
+  'A list of worlds. Three of them are ones you’ve been to.',
+  'A promise to come back. It’s signed with a handprint of six fingers.',
+  'Nothing but a spiral, worn smooth by hands.',
+];
+export const THINGS = {
+  verb: { mine: 'Mine', salvage: 'Salvage', scan: 'Scan', follow: 'Follow the signal', hail: 'Hail' },
+  prompt: (verb, name) => `E: ${THINGS.verb[verb]} · ${name}`,
+  did: ({ verb, pay, lore, leads, trap, name }) => {
+    if (verb === 'mine') return pay ? 'Ore aboard. Worth something at any station.' : 'You’ve taken all this field will give for now.';
+    if (verb === 'salvage') return !pay ? `Nothing left worth taking from ${name}.` : trap ? `Salvaged ${name}. Something on it has woken up.` : `Salvaged ${name}.`;
+    if (verb === 'scan') return lore !== undefined ? LORE[lore % LORE.length] : pay ? `Scanned ${name}: the logs are worth something.` : `Already scanned ${name}.`;
+    if (verb === 'follow') return leads === 'distress' ? 'A distress call. Somebody out here needs help.' : 'A signal with coordinates in it. Something’s hidden out there.';
+    return `${name} answers your hail.`;
+  },
+  tail: 'Through the comet’s tail: ice samples aboard.',
+  beam: (kind) => (kind === 'magnetar' ? 'A magnetar’s beam: your screens scramble.' : 'A pulsar’s beam sweeps over you: your screens scramble.'),
+  thrown: (key) => `Through the wormhole. You’re in ${key}, a long way from where you were.`,
+};
+
+export const PLACE = {
+  star: { O: 'Blue giant', B: 'Blue giant', A: 'White star', F: 'Yellow-white star', G: 'Yellow star', K: 'Orange star', M: 'Red dwarf', 'white dwarf': 'White dwarf', neutron: 'Neutron star' },
+  system: (star) => `${star} system`,
+  planet: { rock: 'Rocky world', ice: 'Ice world', gas: 'Gas giant', lava: 'Lava world', ocean: 'Ocean world', desert: 'Desert world', forest: 'Forest world', ringed: 'Ringed giant' },
+  moon: { rocky: 'Rocky moon', icy: 'Icy moon' },
+  station: 'Station',
+  thing: { rock: 'Asteroid', ice: 'Ice shard', derelict: 'Derelict', rogue: 'Rogue planet', nebula: 'Nebula', pulsar: 'Pulsar', outpost: 'Abandoned outpost', beacon: 'Beacon', relay: 'Relay array', monolith: 'Monolith', field: 'Asteroid field', icefield: 'Ice field', comet: 'Comet', rig: 'Mining rig', fleet: 'Fleet at anchor', shipyard: 'Shipyard', pocket: 'Nebula', remnant: 'Supernova remnant', storm: 'Ion storm', herd: 'Leviathan herd', swarm: 'Swarm', debris: 'Battle debris', magnetar: 'Magnetar', protostar: 'Forming star', wormhole: 'Wormhole', hole: 'Black hole', arc: 'Ringworld arc', hulk: 'Derelict hulk', giant: 'Supergiant', dyson: 'Dyson swarm', default: 'Something in space' },
+  about: {
+    system: ({ star, planets, station, held, companions = [] }) => `${/^[aeiou]/i.test(star) ? 'An' : 'A'} ${[star.toLowerCase(), ...companions.map((c) => `${/^[aeiou]/i.test(c) ? 'an' : 'a'} ${c}`)].join(', ').replace(/, ([^,]*)$/, ' and $1')} with ${count(planets, 'planet')}${station ? ' and a station' : ''}, held by ${held}.`,
+    planet: ({ type, system, moons, rings }) => `${type} round ${system}, with ${count(moons, 'moon')}${rings ? ' and rings' : ''}.`,
+    moon: ({ type, planet, system }) => `${type} of ${planet}, round ${system}.`,
+    station: ({ system, held }) => `A station over ${system}’s star, held by ${held}. Dock for the hangar and the shop.`,
+    rock: 'A drifting rock, pitted and slow.',
+    ice: 'A shard of ice, catching the light.',
+    derelict: 'A dead ship, drifting. Nobody aboard answers.',
+    rogue: 'A planet with no star of its own, dark and cold.',
+    nebula: 'A cloud of gas and dust. Not solid: fly right through it.',
+    pulsar: 'A dead star, spinning, its beams sweeping round.',
+    outpost: 'An outpost nobody runs any more. Some of it might still be worth taking.',
+    beacon: 'A beacon, blinking. Something out here is calling for someone.',
+    relay: 'A relay array, still listening. Worth a scan.',
+    monolith: 'A dark slab older than the stars round it, cut all over with signs.',
+    field: 'A drift of rock round the edge of a system. Shoot a rock for its ore.',
+    icefield: 'A drift of ice shards. Shoot one for what’s frozen inside.',
+    comet: 'A comet on its long way round, its tail pointing away from its star.',
+    rig: 'A mining rig on a big rock, its haulers coming and going.',
+    fleet: 'Ships at anchor, flying their colours. Hail them.',
+    shipyard: 'A hull going up in its scaffold, the cranes still working.',
+    pocket: 'A pocket of glowing gas. Fly in.',
+    remnant: 'The shell a star threw off when it blew. Fly through it.',
+    storm: 'An ion storm, drifting. Inside it the shields drain.',
+    herd: 'A herd of space leviathans going their own way.',
+    swarm: 'Glowing drifters that live in the nebula.',
+    debris: 'What’s left of an old battle. Salvage what you can.',
+    magnetar: 'A dead star with a field strong enough to scramble a ship’s screens.',
+    protostar: 'A star still forming in its disc of dust.',
+    wormhole: 'A tear in space. Fly in and it throws you far away, one way only.',
+    hole: 'A black hole, its disc burning round the dark.',
+    arc: 'A ringworld left unfinished: a band of land as wide as a world, curving round nothing.',
+    hulk: 'A dead ship the size of a moon.',
+    giant: 'A gas giant big enough to swallow a system, a storm turning on its face.',
+    dyson: 'A star wrapped in a swarm of collectors, most of its light caught.',
+    default: 'Out here between the stars.',
+  },
+  held: (name) => name.replace(/^The /, 'the '), // (a faction's name mid-sentence)
+  hazard: { storm: 'Ion storms', pirates: 'Pirates', minefield: 'A minefield' },
+  traffic: (k) => (k >= 0.66 ? 'Busy' : k >= 0.33 ? 'Some' : 'Quiet'),
+  facts: { system: 'System', planet: 'Planet', planets: 'Planets', moons: 'Moons', rings: 'Rings', held: 'Held by', traffic: 'Traffic', hazard: 'Hazard' },
+  yes: 'Yes',
+  fly: 'Fly here',
+  dock: 'Dock here',
+  hangar: 'Hangar and shop',
+  docked: (name) => `Docked at ${name} · H for the hangar and shop`,
+  plotting: 'Plotting a course…', // (a link's card while the scene finds the place)
+  flat: 'Out in the endless universe. Fly here in 3D.', // (a link's card with 3D off, failed or lost: no scene runs to find it)
+};
+
+// The nav map's chart: its tools, its readout of where the ship is (its
+// sector, lib/space/address.js, and how far above or below the disc the
+// hand-made places sit in), and its keys. ("3D view" is retired: the chart
+// tilts and turns, and looks straight down again.)
+export const CHART_WORDS = {
+  tools: 'Chart',
+  zoomIn: 'Zoom in',
+  zoomOut: 'Zoom out',
+  toShip: 'Back to the ship',
+  flat: 'Look straight down',
+  fit: 'Show everything',
+  sector: ([sx, sy, sz]) => `Sector ${[sx, sy, sz].map((n) => String(n).replace('-', '−')).join(', ')}`,
+  height: (far, side) => (side === 0 ? 'Level with the disc' : `${far} ${side > 0 ? 'above' : 'below'} the disc`),
+  keys: 'zoom in and out, 0 back to the ship',
+};

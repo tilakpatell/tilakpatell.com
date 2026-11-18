@@ -1,12 +1,9 @@
-import { useRef } from 'react';
-import { createPortal } from 'react-dom';
+import { useEffect, useRef } from 'react';
 import { RiPlayFill } from 'react-icons/ri';
 import { IconClassic, IconGo } from '../icons';
 import { audioContext } from '../../lib/audio';
-import { escapeWay, routeOf, wayLabel } from './rules';
-import { ReadyLine, Sky } from './parts';
-import { useFullPage } from './useLaunch';
-import './launch.css';
+import { routeOf, wayLabel } from './rules';
+import { ReadyLine } from './parts';
 
 // The front door's first screen, on every visit: a title card over the stars
 // saying whose site this is, and the ways in (rules.js's waysIn). A first
@@ -15,8 +12,8 @@ import './launch.css';
 // under them; a return goes back to whichever view it last picked, with the
 // intro beside it. While it's up the universe gets ready behind it, and the
 // line under the buttons says how it's getting on. Whichever is picked is the
-// front door's choice too (lib/view's saveStart, in Launch.jsx). Esc skips a
-// first visit to the universe, and takes a return's main way in.
+// front door's choice too (lib/view's saveStart, in Launch.jsx). It's drawn
+// in the launch's frame (Opening.jsx), which holds the sky, the modal and Esc.
 //
 // It fits the window whatever its size or zoom: the title and the gaps
 // follow the height as well as the width, the route's notes go on a short
@@ -24,7 +21,6 @@ import './launch.css';
 // title on the shortest, and anything still too tall scrolls from its top
 // (launch.css's safe centring). The buttons are in the first screenful down
 // to about 300 px of height (a laptop at 250%); under that, a scroll.
-// It's a modal dialog: the page behind it is inert while it's up.
 
 const ICONS = { intro: RiPlayFill, universe: IconGo, classic: IconClassic };
 const TEXT = {
@@ -40,13 +36,14 @@ export default function Welcome({ visit, ways, reduced = false, map, onPick }) {
     if (way === 'intro') audioContext(); // inside the click, so the crawl's music may play
     onPick(way);
   };
-  useFullPage({ focus: main, onEscape: () => onPick(escapeWay(visit, ways)) });
+  useEffect(() => {
+    main.current?.focus({ preventScroll: true });
+  }, []);
 
   const Main = ICONS[ways.main];
   const Second = ICONS[ways.second];
-  return createPortal(
-    <div className="welcome dark-scope" role="dialog" aria-modal="true" aria-labelledby="welcome-title" aria-describedby="welcome-text" data-visit={visit}>
-      <Sky />
+  return (
+    <>
       <div className="welcome-main">
         <p className="welcome-name">{visit === 'back' ? 'Welcome back' : 'Tilak Patel'}</p>
         <h1 id="welcome-title" className="welcome-title">
@@ -89,9 +86,9 @@ export default function Welcome({ visit, ways, reduced = false, map, onPick }) {
       </div>
 
       <p className="welcome-fine">
-        A fan-made tribute. Star Wars, Rick and Morty, Breaking Bad, Marvel, The Lord of the Rings, Transformers and The Office belong to their creators and studios. This is a personal, non-commercial portfolio, not affiliated with or endorsed by any of them. The characters are 3D models made for this site with Meshy AI; the audio clips are short excerpts.
+        A fan-made tribute. Star Wars, Rick and Morty, Breaking Bad, Marvel, The Lord of the Rings, Transformers and The Office belong to their creators and studios. This is a personal, non-commercial portfolio, not affiliated with or
+        endorsed by any of them. The characters are 3D models made for this site with Meshy AI; the audio clips are short excerpts.
       </p>
-    </div>,
-    document.body,
+    </>
   );
 }

@@ -16,7 +16,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright-core';
 import { ENGINE, servePlay } from '../cloudflare/play.js';
-import { open } from './lib/bf2web-r2.mjs';
+import { open, verifiedAtEdge } from './lib/bf2web-r2.mjs';
 import { optionalPlayPath } from './lib/bf2web-smoke.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -30,10 +30,38 @@ const port = Number(option('--port', 8622));
 const wait = Number(option('--wait', 240000));
 
 const r2 = open();
+// (the Worker answers any failed R2 read with its 503, whose cause it does not say: the read's own error, the S3 status the shim
+// refused or a time limit, is printed here, so a failed adopt names it; r1075-b88a2bd5's 503 on Class_Vehicle_Speeder.svg did not.
+// Nothing is retried or let through, and nothing new fails the step: they are listed only beside a failure, else printed as recovered.)
+const readFailures = [];
+const binding = {
+  ...r2.binding,
+  async get(key, opts) {
+    const t0 = Date.now();
+    try {
+      const object = await r2.binding.get(key, opts);
+      // (a read past the Worker's time limit fails the request though the read itself ends well: its time is the cause)
+      if (Date.now() - t0 > 9000) readFailures.push(`R2 read ${key}: slow, ${((Date.now() - t0) / 1000).toFixed(1)} s`);
+      return object;
+    } catch (error) {
+      // (a read that died in transport on every try, fresh connections included: the visitor's file is checked at the build's
+      // public address instead, passed only on a 200 with the object's stored ETag; any S3 status, any other answer, fails as before)
+      if (error?.transport && !opts?.range?.get?.('range')) {
+        const edge = await verifiedAtEdge(key, { config, build, etagOf: r2.etagOf }).catch(() => null);
+        if (edge) {
+          console.log(`  R2 shim transport failure, verified at the edge: ${key} = ${edge.path} (${edge.httpEtag})`);
+          return edge;
+        }
+      }
+      readFailures.push(`R2 read ${key}: ${String(error?.message ?? error).slice(0, 300)} (after ${((Date.now() - t0) / 1000).toFixed(1)} s)`);
+      throw error;
+    }
+  },
+};
 const manifests = new Map();
 const server = createServer(async (req, res) => {
   const request = new Request(`http://127.0.0.1:${port}${req.url}`, { method: req.method, headers: req.headers });
-  const out = await servePlay(request, { PLAY: r2.binding }, config, manifests).catch((e) => new Response(String(e), { status: 500 }));
+  const out = await servePlay(request, { PLAY: binding }, config, manifests).catch((e) => new Response(String(e), { status: 500 }));
   if (!out) {
     res.writeHead(404);
     res.end();
@@ -68,5 +96,8 @@ try {
   server.close();
 }
 problems.push(...failed);
+// (the R2 reads only explain a failure: one the Worker survived, by its retry or inside its time limit, never fails the step)
+if (problems.length) problems.push(...readFailures);
+else for (const r of readFailures) console.log(`  (recovered) ${r}`);
 console.log(`${build}: ${problems.length ? `failed\n  - ${problems.join('\n  - ')}` : `the front end is up in ${Math.round((Date.now() - t0) / 1000)} s, isolated, the way back in its corner`}`);
 process.exit(problems.length ? 1 : 0);

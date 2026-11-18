@@ -232,10 +232,14 @@ async function warm(path, ready) {
 if (universe || ride || party) await warm('/universe', () => typeof window.__universe === 'function' && Boolean(window.__universe().ship));
 else if (worlds[0]) await warm(worlds[0], () => Boolean(document.querySelector('canvas')));
 
-const a = await visitor('Alpha', universe || ride || party ? 'xwing' : null);
 // (on the map, Bravo's window small: software drawing is slow, and Bravo's
-// poses must come often enough not to go stale on Alpha's screen)
-const b = await visitor('Bravo', universe || ride || party ? 'falcon' : null, universe ? { width: 480, height: 320 } : undefined);
+// poses must come often enough not to go stale on Alpha's screen. The party's
+// two windows small too: at 1280 × 800 each of two map pages took about 1.25 s
+// a frame in CI's SwiftShader, 350 ms at 640 × 400, and every step of the
+// party's dialogs waits on a frame, so its 60 s waits were spent on frames)
+const PARTY_VIEW = { width: 640, height: 400 };
+const a = await visitor('Alpha', universe || ride || party ? 'xwing' : null, party ? PARTY_VIEW : undefined);
+const b = await visitor('Bravo', universe || ride || party ? 'falcon' : null, universe ? { width: 480, height: 320 } : party ? PARTY_VIEW : undefined);
 let failed = 0;
 const check = (ok, what) => {
   console.log(`${ok ? 'ok  ' : 'FAIL'} ${what}`);

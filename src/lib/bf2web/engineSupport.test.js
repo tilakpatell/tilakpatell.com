@@ -93,11 +93,14 @@ describe('whether a browser can run bf2-web’s engine', () => {
       for (const [k, v] of Object.entries(values)) Object.defineProperty(GPUSupportedLimits.prototype, k, { get: () => v });
       return new GPUSupportedLimits();
     };
-    // (the shape Dawn's Metal backend reports on Apple silicon, PhysicalDeviceMTL.mm; not a measured Mac)
+    // (the shape Dawn's Metal backend reports on Apple silicon, PhysicalDeviceMTL.mm; not a measured Mac. The compute workgroup
+    // limits: Apple 4-9 and Mac 2 families have maxThreadsPerThreadgroup 1024 and maxTotalThreadgroupMemory 32768, which
+    // Dawn's limit tiers, Limits.cpp, report as 1024 / 1024 / 64 and 32768)
     const m3 = {
       maxTextureDimension2D: 16384, maxBufferSize: 2 ** 32 - 4, maxStorageBufferBindingSize: 2 ** 32 - 4, maxBindGroups: 4, maxVertexAttributes: 30,
       maxInterStageShaderVariables: 28, maxSampledTexturesPerShaderStage: 16, maxSamplersPerShaderStage: 16, maxStorageBuffersPerShaderStage: 10,
       maxStorageTexturesPerShaderStage: 8, maxUniformBuffersPerShaderStage: 12, maxComputeInvocationsPerWorkgroup: 1024,
+      maxComputeWorkgroupSizeX: 1024, maxComputeWorkgroupSizeY: 1024, maxComputeWorkgroupSizeZ: 64, maxComputeWorkgroupStorageSize: 32768,
     };
     const gpu = (limits) => ({ requestAdapter: async () => ({ features: new Set(['texture-compression-bc', 'dual-source-blending']), limits: supportedLimits(limits), info: { vendor: 'apple', architecture: 'metal-3' } }) });
     const mac = { ...browser, deviceMemory: null, cores: 12 };

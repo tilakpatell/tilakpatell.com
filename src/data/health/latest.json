@@ -1,6 +1,6 @@
 {
-  "date": "2026-10-25",
-  "sha": "368c7af4",
+  "date": "2026-11-13",
+  "sha": "1f27cd627",
   "metrics": {
     "big-files": {
       "value": 22,
@@ -9,7 +9,7 @@
       "detail": [
         {
           "file": "src/components/universe/scene.js",
-          "n": 6320
+          "n": 6453
         },
         {
           "file": "src/components/galaxy/surface/scene.js",
@@ -17,7 +17,7 @@
         },
         {
           "file": "src/components/universe/footScene.js",
-          "n": 3531
+          "n": 3543
         },
         {
           "file": "src/components/middleearth/shire/build.js",
@@ -57,7 +57,7 @@
         },
         {
           "file": "src/components/rickmorty/world/RmWorld.jsx",
-          "n": 2416
+          "n": 2429
         },
         {
           "file": "src/components/middleearth/towns/marshes/props.js",
@@ -105,12 +105,12 @@
         },
         {
           "file": "src/components/universe/deepspace.js",
-          "n": 1485
+          "n": 1492
         }
       ]
     },
     "boundary-breaks": {
-      "value": 475,
+      "value": 479,
       "unit": "imports",
       "label": "imports across a line docs/health/RULES.md draws",
       "detail": [
@@ -255,21 +255,21 @@
           "n": 2
         },
         {
+          "file": "src/pages/Galaxy.jsx → src/pages/GalaxySurface.jsx",
+          "n": 2
+        },
+        {
           "file": "src/runtime/index.js → src/runtime/useWorld.js",
           "n": 2
         },
         {
           "file": "src/components/universe/footScene.js → src/components/universe/landings/furnish.js → src/components/universe/landings/people.js",
           "n": 3
-        },
-        {
-          "file": "src/pages/Galaxy.jsx → src/pages/GalaxyLanding.jsx → src/pages/GalaxySurface.jsx",
-          "n": 3
         }
       ]
     },
     "lint-disables": {
-      "value": 54,
+      "value": 55,
       "unit": "comments",
       "label": "eslint-disable comments",
       "detail": [
@@ -358,6 +358,10 @@
           "n": 1
         },
         {
+          "file": "src/components/expanse/gen/job.js",
+          "n": 1
+        },
+        {
           "file": "src/components/experience/OpeningCrawl.jsx",
           "n": 1
         },
@@ -367,10 +371,6 @@
         },
         {
           "file": "src/components/interests/cards.jsx",
-          "n": 1
-        },
-        {
-          "file": "src/components/middleearth/MapBackdrop.jsx",
           "n": 1
         }
       ]
@@ -501,7 +501,7 @@
       "detail": []
     },
     "glsl-sites": {
-      "value": 613,
+      "value": 612,
       "unit": "sites",
       "label": "GLSL sites a WebGPU port removes",
       "detail": [
@@ -608,16 +608,12 @@
       ]
     },
     "renderers": {
-      "value": 14,
+      "value": 13,
       "unit": "sites",
       "label": "renderer constructors outside the runtime",
       "detail": [
         {
           "file": "src/components/albuquerque/metherria/scene.js",
-          "n": 1
-        },
-        {
-          "file": "src/components/battlefront/backdrop/scene.js",
           "n": 1
         },
         {
@@ -671,14 +667,10 @@
       ]
     },
     "loops": {
-      "value": 58,
+      "value": 55,
       "unit": "files",
       "label": "frame loops outside the runtime",
       "detail": [
-        {
-          "file": "src/App.jsx",
-          "n": 1
-        },
         {
           "file": "src/components/CommandPalette.jsx",
           "n": 1
@@ -713,14 +705,6 @@
         },
         {
           "file": "src/components/avengers/ShieldThrow.jsx",
-          "n": 1
-        },
-        {
-          "file": "src/components/battlefront/backdrop/backdrop.worker.js",
-          "n": 1
-        },
-        {
-          "file": "src/components/battlefront/backdrop/host.js",
           "n": 1
         },
         {
@@ -774,29 +758,26 @@
         {
           "file": "src/components/hyperspace3d/scene.js",
           "n": 1
+        },
+        {
+          "file": "src/components/jumps/JumpCanvas.jsx",
+          "n": 1
+        },
+        {
+          "file": "src/components/middleearth/Doors.jsx",
+          "n": 1
+        },
+        {
+          "file": "src/components/middleearth/MapBackdrop.jsx",
+          "n": 1
         }
       ]
     },
     "client-json-kb": {
-      "value": 1256,
+      "value": 484,
       "unit": "kB",
       "label": "records over 64 KB parsed as JavaScript",
       "detail": [
-        {
-          "file": "src/data/bf2017/physics/soldier.json",
-          "n": 334,
-          "note": "src/components/battlefront/module.js"
-        },
-        {
-          "file": "src/data/bf2017/collection.json",
-          "n": 305,
-          "note": "src/lib/battlefront/cards.js"
-        },
-        {
-          "file": "src/data/bf2017/physics/bones.json",
-          "n": 133,
-          "note": "src/lib/battlefront/soldier.js"
-        },
         {
           "file": "src/data/bf2017/damage.json",
           "n": 127,
@@ -815,12 +796,12 @@
         {
           "file": "src/data/bf2017/strings.json",
           "n": 79,
-          "note": "src/lib/battlefront/rulebook.js"
+          "note": "src/lib/bf2017/strings.js"
         },
         {
           "file": "src/data/bf2017/ai.creatures.json",
           "n": 66,
-          "note": "src/lib/battlefront/ai/creature.js"
+          "note": "src/lib/bf2017/ai/creature.js"
         }
       ]
     },

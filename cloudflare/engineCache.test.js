@@ -6,7 +6,7 @@ const ORIGIN = 'https://tilakpatell.com';
 
 // a service worker's bones: its listeners, Cache Storage by name, the network counted (the build's list apart)
 const urlOf = (r) => (typeof r === 'string' ? r : r.url);
-function worker(network = (url) => ({ status: 200, body: `bytes of ${url}` }), files = null) {
+function worker(network = (url) => ({ status: 200, body: `bytes of ${url}` }), files = null, limits = undefined) {
   const on = {};
   const stores = new Map();
   const asked = [];
@@ -32,7 +32,7 @@ function worker(network = (url) => ({ status: 200, body: `bytes of ${url}` }), f
       delete: async (name) => stores.delete(name),
     },
   };
-  engineWorker(self, cacheKeep, following);
+  engineWorker(self, cacheKeep, following, limits);
   // one fetch event: what respondWith was given, once the waitUntil work is done
   const get = async (path, { mode = 'cors', method = 'GET', headers = {} } = {}) => {
     let answer = null;
@@ -144,9 +144,9 @@ describe('the engine’s build kept on the visitor’s disk', () => {
   it('reads the build’s numbered series, each file followed by the next few of its own', () => {
     const next = following(['scene.json', 'scene-t-0.dbx', 'scene-t-0.pixels', 'scene-t-1.dbx', 'scene-t-1.stored.pixels', 'scene-t-2.dbx', 'scene-t-2.pixels', 'scene-t-10.pixels', 'scene-terrain-tile-3_4.bfsw'], 2);
     expect(next.get('scene-t-0.dbx')).toEqual(['scene-t-1.dbx', 'scene-t-2.dbx']);
-    // (a stored texture is a series of its own; a number's order, not its text's)
-    expect(next.get('scene-t-0.pixels')).toEqual(['scene-t-2.pixels', 'scene-t-10.pixels']);
-    expect(next.get('scene-t-1.stored.pixels')).toEqual([]);
+    // Texture bytes are selected by the engine's mip plan, never read ahead as whole files.
+    expect(next.has('scene-t-0.pixels')).toBe(false);
+    expect(next.has('scene-t-1.stored.pixels')).toBe(false);
     expect(next.has('scene.json')).toBe(false);
     expect(next.has('scene-terrain-tile-3_4.bfsw')).toBe(false);
   });
@@ -203,6 +203,50 @@ describe('the engine’s build kept on the visitor’s disk', () => {
     }
   });
 
+  // (live r1073, 15 Nov: a boot's request pending 15+ minutes; nothing here had a time limit)
+  it('aborts a network ask that does not answer in time, and asks again', async () => {
+    let calls = 0;
+    const w = worker(async (url) => (++calls === 1 ? new Promise(() => {}) : { status: 200, body: `bytes of ${url}` }), null, { fetch: 40, waitAhead: 40 });
+    const path = '/battlefront/engine/main-da7a51b3/scene-r-0.res';
+    const res = await w.get(path);
+    expect(res.status).toBe(200);
+    expect(res.body).toBe(`bytes of ${ORIGIN}${path}`);
+    expect(calls).toBe(2);
+  });
+
+  it('does not keep a demand waiting on a read-ahead that has stalled: it asks for itself', async () => {
+    const dir = '/battlefront/engine/main-da7a51b3/';
+    let aheadCalls = 0;
+    const w = worker(async (url) => {
+      if (url.endsWith('scene-p-1.dbx') && ++aheadCalls === 1) return new Promise(() => {});
+      return { status: 200, body: `bytes of ${url}` };
+    }, ['scene-p-0.dbx', 'scene-p-1.dbx'], { fetch: 60_000, waitAhead: 40 });
+    w.get(dir + 'scene-p-0.dbx');
+    while (!w.asked.some((u) => u.endsWith('scene-p-1.dbx'))) await new Promise((r) => setTimeout(r, 0));
+    // (the read-ahead of scene-p-1 never answers within the test; the engine's own ask must not wait for it)
+    let answered = null;
+    w.on.fetch({ request: { url: ORIGIN + dir + 'scene-p-1.dbx', method: 'GET', mode: 'cors', headers: new Headers() }, respondWith: (p) => (answered = p), waitUntil: () => {} });
+    const res = await Promise.race([answered, new Promise((r) => setTimeout(() => r('still waiting'), 2000))]);
+    expect(res).not.toBe('still waiting');
+    expect(res.body).toBe(`bytes of ${ORIGIN}${dir}scene-p-1.dbx`);
+  });
+
+  it('waits for a healthy read-ahead whose download onto the disk is slow, fetching the file once ([c5] on #1323)', async () => {
+    const dir = '/battlefront/engine/main-da7a51b3/';
+    const w = worker(undefined, ['scene-p-0.dbx', 'scene-p-1.dbx'], { fetch: 60_000, waitAhead: 40 });
+    // (the read-ahead's answer comes at once; putting it on the disk takes 300 ms, far past waitAhead)
+    const open = w.self.caches.open;
+    w.self.caches.open = async (name) => {
+      const c = await open(name);
+      return { match: c.match, put: async (r, res) => { await new Promise((ok) => setTimeout(ok, 300)); return c.put(r, res); } };
+    };
+    w.get(dir + 'scene-p-0.dbx');
+    while (!w.asked.some((u) => u.endsWith('scene-p-1.dbx'))) await new Promise((r) => setTimeout(r, 0));
+    const res = await w.get(dir + 'scene-p-1.dbx');
+    expect(res.body).toBe(`bytes of ${ORIGIN}${dir}scene-p-1.dbx`);
+    expect(w.asked.filter((u) => u.endsWith('scene-p-1.dbx'))).toHaveLength(1);
+  });
+
   it('works as before without the build’s list', async () => {
     const w = worker();
     await w.get('/battlefront/engine/main-da7a51b3/scene-m-0.res');
@@ -235,6 +279,25 @@ describe('the engine’s build kept on the visitor’s disk', () => {
     expect(w.asked.slice(before)).toEqual([ORIGIN + dir + files[1]]);
   });
 
+  // (s-cdn: one download cut on the way into the cache stopped every later fill of the worker, as a full disk did)
+  it('a body cut on its way into the cache loses that file only; the next is still kept', async () => {
+    const dir = '/battlefront/engine/main-da7a51b3/';
+    const files = Array.from({ length: 3 }, (_, i) => `scene-m-${i}.res`);
+    const w = worker(undefined, files);
+    const kept = [];
+    let cutOnce = true;
+    w.self.caches.open = async () => ({
+      match: async () => null,
+      put: async (request) => {
+        if (cutOnce) { cutOnce = false; throw new TypeError('network error'); }
+        kept.push(urlOf(request));
+      },
+    });
+    expect((await w.get(dir + files[0], { headers: { 'x-tp-warm': '1' } })).status).toBe(502);
+    expect((await w.get(dir + files[1], { headers: { 'x-tp-warm': '1' } })).status).toBe(204);
+    expect(kept).toEqual([ORIGIN + dir + files[1]]);
+  });
+
   it.each(['quota', 'uncontrolled', 'network'])('stops page warming after %s failure instead of requesting the whole build', async (failure) => {
     const dir = '/battlefront/engine/main-da7a51b3/';
     const files = Array.from({ length: 12 }, (_, i) => `scene-m-${i}.res`);
@@ -263,7 +326,123 @@ describe('the engine’s build kept on the visitor’s disk', () => {
 
   it('orders a round’s files as the loader asks for them, the page’s own left out', () => {
     const paths = ['runtime/world-play.mjs', 'ui/main.js', 'index.html', 'scene-m-1.res', 'scene-collision.bfsw', 'scene-t-1.pixels', 'scene-t-10.dbx', 'scene-t-1.dbx', 'scene.json', 'system-0.xml', 'scene-tc-0.bin', 'scene-terrain-tiles.json', 'scene-terrain-tile-3_4.bfsw', 'scene-m-0.res', 'world-solutions.bin', 'programs.json'];
-    expect(warmOrder(paths)).toEqual(['system-0.xml', 'scene.json', 'world-solutions.bin', 'scene-t-1.dbx', 'scene-t-1.pixels', 'scene-t-10.dbx', 'scene-m-0.res', 'scene-m-1.res', 'scene-tc-0.bin', 'scene-collision.bfsw', 'scene-terrain-tile-3_4.bfsw', 'scene-terrain-tiles.json']);
+    expect(warmOrder(paths)).toEqual(['programs.json', 'system-0.xml', 'scene.json', 'world-solutions.bin', 'scene-t-1.dbx', 'scene-t-10.dbx', 'scene-m-0.res', 'scene-m-1.res', 'scene-tc-0.bin', 'scene-collision.bfsw', 'scene-terrain-tile-3_4.bfsw', 'scene-terrain-tiles.json']);
+  });
+
+  it('starts with the engine module and its program lists, as the loader reads them, then the scene pack', () => {
+    const paths = ['scene.json', 'scene-pack.bin', 'cooked-programs.json', 'original-frame-graph.js', 'original-frame-graph.wasm', 'pipelines.json', 'compute-programs.json', 'programs.json', 'compute-pipelines.json', 'scene-pack.json', 'system-0.pixels'];
+    expect(warmOrder(paths)).toEqual(['original-frame-graph.wasm', 'programs.json', 'compute-programs.json', 'cooked-programs.json', 'pipelines.json', 'compute-pipelines.json', 'scene-pack.json', 'scene-pack.bin', 'system-0.pixels', 'scene.json']);
+  });
+
+  it('skips the names it is told the round will not read from the root', () => {
+    const paths = ['scene.json', 'scene-p-0.dbx', 'scene-p-1.dbx', 'scene-m-0.res', 'cooked-programs.json', 'programs.json'];
+    expect(warmOrder(paths, new Set(['scene-p-0.dbx', 'scene-p-1.dbx', 'scene.json', 'cooked-programs.json']))).toEqual(['programs.json', 'scene-m-0.res']);
+    expect(warmOrder(paths)).toEqual(['programs.json', 'cooked-programs.json', 'scene.json', 'scene-p-0.dbx', 'scene-p-1.dbx', 'scene-m-0.res']);
+  });
+
+  // (s-collection, staged 1075-c: 389-944 of the level's 1289 files were fetched before the menu scene was ready)
+  it('starts warming once the menu is complete (play-menu-ready), or a set time after play-menu without it', async () => {
+    const dir = '/battlefront/engine/main-da7a51b3/';
+    const files = ['programs.json', 'scene-m-0.res'];
+    const page = (classes, waitMs) => {
+      const warmed = [], observers = [];
+      const win = {
+        __playWarmWaitMs: waitMs,
+        navigator: { serviceWorker: { controller: {}, addEventListener: () => {} }, connection: {} },
+        location: { pathname: dir },
+        document: { body: { classList: { contains: (c) => classes.has(c) } } },
+        MutationObserver: class { constructor(f) { observers.push(f); } observe() {} },
+        fetch: async (url, init) => {
+          const path = url.slice(dir.length);
+          if (path === 'tp-files.json') return { status: 200, json: async () => ({ files }) };
+          if (init?.headers?.['x-tp-warm']) warmed.push(path);
+          return { status: init?.headers?.['x-tp-warm'] ? 204 : 404 };
+        },
+      };
+      warmEngineBuild(win, warmOrder);
+      return { warmed, change: (c) => { classes.add(c); for (const f of observers) f(); } };
+    };
+    const settle = (ms = 20) => new Promise((r) => setTimeout(r, ms));
+    // (the menu shown, its scene not ready: nothing yet; ready: the warm begins)
+    const a = page(new Set(['play-menu']), 60000);
+    await settle();
+    expect(a.warmed).toEqual([]);
+    a.change('play-menu-ready');
+    await settle();
+    expect([...a.warmed].sort()).toEqual(['programs.json', 'scene-m-0.res']);
+    // (never ready, as on a direct start: the warm begins at the set time after play-menu)
+    const b = page(new Set(['play-menu']), 40);
+    await settle(10);
+    expect(b.warmed).toEqual([]);
+    await settle(80);
+    expect([...b.warmed].sort()).toEqual(['programs.json', 'scene-m-0.res']);
+    // (no menu at all: nothing, ever)
+    const c = page(new Set(), 10);
+    await settle(60);
+    expect(c.warmed).toEqual([]);
+  });
+
+  it('warms only what every roll reads: not the packed files, not the root copies a lighting variant swaps', async () => {
+    const dir = '/battlefront/engine/main-da7a51b3/';
+    const files = ['programs.json', 'cooked-programs.json', 'scene-pack.json', 'scene-pack.bin', 'scene.json', 'scene-p-0.dbx', 'scene-p-1.dbx', 'scene-t-0.dbx', 'scene-m-0.res', 'scene-m-1.res', 'scene-collision.bfsw',
+      'scene-cloudy/variant.json', 'scene-cloudy/scene.json', 'scene-cloudy/cooked-programs.json', 'scene-cloudy/scene-pack.json', 'scene-cloudy/scene-pack.bin'];
+    const docs = {
+      'scene-pack.json': { 'scene-p-0.dbx': [0, 10], 'scene-p-1.dbx': [10, 10], 'scene-t-0.dbx': [20, 4] },
+      'scene-cloudy/variant.json': { schema: 'bf2-play-site-variant/1', name: 'cloudy', files: ['scene.json', 'cooked-programs.json', 'scene-pack.json', 'scene-pack.bin'] },
+    };
+    const warmed = [], read = [];
+    const win = {
+      navigator: { serviceWorker: { controller: {}, addEventListener: () => {} }, connection: {} },
+      location: { pathname: dir },
+      document: { body: { classList: { contains: () => true } } },
+      MutationObserver: class { observe() {} },
+      fetch: async (url, init) => {
+        const path = url.slice(dir.length);
+        if (path === 'tp-files.json') return { status: 200, json: async () => ({ files }) };
+        if (!init?.headers?.['x-tp-warm']) { read.push(path); return docs[path] ? { status: 200, json: async () => docs[path] } : { status: 404 }; }
+        warmed.push(path);
+        return { status: 204 };
+      },
+    };
+    warmEngineBuild(win, warmOrder);
+    await new Promise((r) => setTimeout(r, 20));
+    expect(read).toEqual(['scene-pack.json', 'scene-cloudy/variant.json']);
+    expect([...warmed].sort()).toEqual(['programs.json', 'scene-collision.bfsw', 'scene-m-0.res', 'scene-m-1.res']);
+  });
+
+  it('skips nothing when the pack or a variant list cannot be read', async () => {
+    const dir = '/battlefront/engine/main-da7a51b3/';
+    const files = ['scene-pack.json', 'scene-p-0.dbx', 'scene-m-0.res', 'scene-cloudy/variant.json'];
+    const warmed = [];
+    const win = {
+      navigator: { serviceWorker: { controller: {}, addEventListener: () => {} }, connection: {} },
+      location: { pathname: dir },
+      document: { body: { classList: { contains: () => true } } },
+      MutationObserver: class { observe() {} },
+      fetch: async (url, init) => {
+        const path = url.slice(dir.length);
+        if (path === 'tp-files.json') return { status: 200, json: async () => ({ files }) };
+        if (!init?.headers?.['x-tp-warm']) { if (path === 'scene-pack.json') throw new TypeError('Failed to fetch'); return { status: 503 }; }
+        warmed.push(path);
+        return { status: 204 };
+      },
+    };
+    warmEngineBuild(win, warmOrder);
+    await new Promise((r) => setTimeout(r, 20));
+    expect([...warmed].sort()).toEqual(['scene-m-0.res', 'scene-p-0.dbx', 'scene-pack.json']);
+  });
+
+  it('leaves normal, stored and variant texture payloads to the engine mip requests', async () => {
+    const files = ['scene-t-0.pixels', 'scene-t-1.pixels', 'scene-t-1.stored.pixels', 'scene-cloudy/scene-t-2.pixels', 'scene-t-0.dbx', 'scene-t-1.dbx'];
+    expect(warmOrder(files)).toEqual(['scene-t-0.dbx', 'scene-t-1.dbx']);
+    expect([...following(files).keys()]).toEqual(['scene-t-0.dbx', 'scene-t-1.dbx']);
+    const dir = '/battlefront/engine/main-da7a51b3/';
+    const w = worker(undefined, files);
+    // An older tab can still send whole-payload warm requests: acknowledge without a download.
+    for (const path of files.slice(0, 4)) expect((await w.get(dir + path, { headers: { 'x-tp-warm': '1' } })).status).toBe(204);
+    expect(w.asked).toEqual([]);
+    expect((await w.get(dir + files[0])).body).toBe(`bytes of ${ORIGIN}${dir}${files[0]}`);
+    expect(w.asked).toEqual([ORIGIN + dir + files[0]]);
   });
 
   it('warms the round’s files once the front end shows and the worker answers, four at a time', async () => {
@@ -295,7 +474,9 @@ describe('the engine’s build kept on the visitor’s disk', () => {
     warmEngineBuild(win, warmOrder);
     await new Promise((r) => setTimeout(r, 5));
     expect(asked).toEqual([]);
+    // (the front end shows and its menu is complete: play-menu-ready; the wait without it is the test above)
     classes.add('play-menu');
+    classes.add('play-menu-ready');
     observers.forEach((fn) => fn());
     await new Promise((r) => setTimeout(r, 60));
     expect(asked.map(([u]) => u)).toEqual(files.map((f) => '/battlefront/engine/main-da7a51b3/' + f));
