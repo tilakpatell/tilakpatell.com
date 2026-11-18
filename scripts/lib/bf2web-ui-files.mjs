@@ -38,6 +38,29 @@ export function fillPlan(local, remote) {
   return { missing: local.filter((f) => !have.has(f.path)), mismatched };
 }
 
+// After an upload, before its manifest (scripts/bf2web-upload.mjs): every file the folder sends is in the bucket at its size, and one
+// file of each kind answers a HEAD 200. local [{ path, size }], remote [{ key, size }] both relative to <prefix>ui-data/ (a .br copy in the
+// bucket is not asked for: a copy saving under a tenth is never put); head(key) resolves to the HTTP status. r1075-f943c314 went live with
+// its 18 *.tone.bin absent (uploaded from a branch whose uploader sent only json and png) and nothing said so; this says so and stops.
+export async function verifyUiData(local, remote, head, prefix) {
+  const have = new Map(remote.map((r) => [r.key, r.size]));
+  const problems = [];
+  for (const f of local) {
+    if (!have.has(f.path)) problems.push(`missing ${f.path}`);
+    else if (have.get(f.path) !== f.size) problems.push(`${f.path}: ${have.get(f.path)} B in the bucket, ${f.size} B here`);
+  }
+  const kinds = new Map();
+  for (const f of local) {
+    const kind = /\.([a-z0-9]+)$/i.exec(f.path)?.[1]?.toLowerCase();
+    if (kind && !kinds.has(kind)) kinds.set(kind, f.path);
+  }
+  for (const [kind, path] of kinds) {
+    const status = await head(`${prefix}ui-data/${path}`);
+    if (status !== 200) problems.push(`HEAD ${path} (the ${kind} probe): ${status}`);
+  }
+  return { problems, inBucket: local.filter((f) => have.has(f.path)).length, local: local.length, probed: [...kinds.keys()] };
+}
+
 // Each missing file put with attemptUpload's tries (three, 1 s then 4 s apart): the first live fill (16 Nov, run 43922315104) sent 14 of
 // 18 and ended on one connection reset ('other side closed'). put(file) resolves to a fetch Response; a non-2xx answer is tried again too.
 export async function sendEach(files, put, { sleep } = {}) {
