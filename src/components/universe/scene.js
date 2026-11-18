@@ -1259,7 +1259,7 @@ export async function create(canvas, ctx) {
     stats: statsOf(null, STOCK_LOADOUT), // and what it does
     tiers: {}, // the crew's core systems, Mk I to V ({ system: tier }: ships/tiers.js's tiersOf, the page's)
     core: coreStats(null), // and what they do (ships/profiles.js's coreStats; setCores)
-    space: OPEN_SPACE, // where it flies: the open universe, at its pulse drive's tier (ship.js's pulsedSpace)
+    flySpace: OPEN_SPACE, // where it flies: the open universe, at its pulse drive's tier (ship.js's pulsedSpace)
     fx: {}, // the skill tree's effects (hangar/skills's; setSkills)
     picks: null, // and the powers picked for each crew
     lastShot: 0,
@@ -1965,7 +1965,7 @@ export async function create(canvas, ctx) {
   // its pulse drive's tier made again with the stats
   const restat = () => {
     state.core = coreStats(state.kind, state.tiers, { build: state.build });
-    state.space = pulsedSpace(OPEN_SPACE, state.core.pulse);
+    state.flySpace = pulsedSpace(OPEN_SPACE, state.core.pulse);
     state.stats = statsOf(state.kind, state.loadout, state.build, state.tune, state.fx, state.core);
   };
   // the hero's engines' glow (a garage build's where its own exhausts are),
@@ -3307,7 +3307,7 @@ export async function create(canvas, ctx) {
   // pulled the drive down, not where you are: at the pulse drive's speed
   // that's a few hundred units on)
   const travelling = (s) => openness(s.x, s.y, s.z) > 0.5 && Math.abs(s.speed) > 40;
-  const leadOf = (s) => holdReach(s, { ramp: INTERDICT_IN, solids: siegeSt.down ? SOLIDS_OPEN : SOLIDS, space: state.space });
+  const leadOf = (s) => holdReach(s, { ramp: INTERDICT_IN, solids: siegeSt.down ? SOLIDS_OPEN : SOLIDS, space: state.flySpace });
   const happen = (id, ship) => {
     const side = sideHere();
     if (!side) return;
@@ -4278,7 +4278,7 @@ export async function create(canvas, ctx) {
       const od = state.interdicted ? 1 : (state.auto.od ?? 1);
       // (and the battle's hold on the drive, so it plans its stop for it: front.js holdAt, as it would be coming straight in)
       const hold = front ? (x, y, z) => front.holdAt(x, y, z, null) : null;
-      const a = autopilot(state.ship, state.auto.id, state.auto.park, state.auto.space ?? (state.auto.id === 'front' && front ? frontSpace() : state.space), od, hold, moving);
+      const a = autopilot(state.ship, state.auto.id, state.auto.park, state.auto.space ?? (state.auto.id === 'front' && front ? frontSpace() : state.flySpace), od, hold, moving);
       input = a.input;
       if (a.done) endTrip(state.auto.id);
       // the crew's word on super speed, the first time it's past the pulse drive
@@ -4311,7 +4311,7 @@ export async function create(canvas, ctx) {
     if (state.keys.fire || state.fireBtn) fire(); // (the trigger held: at the guns' own pace)
     const before = state.ship;
     solidsNow = solidsWith(siegeSt.down ? SOLIDS_OPEN : SOLIDS, moving);
-    const { ship: steppedRaw, events } = step(state.ship, input, dt, solidsNow, state.space);
+    const { ship: steppedRaw, events } = step(state.ship, input, dt, solidsNow, state.flySpace);
     const stepped = powers.afterStep(steppedRaw, dt); // (Han's corkscrew: its sidestep)
     // the Maw's pull (maw.js): drawn in, and carried round with its disk
     const g = pullAt(stepped.x, stepped.y, stepped.z);
@@ -5834,7 +5834,7 @@ export async function create(canvas, ctx) {
 
   // in development, renderer counts and the ship, for checking from a browser
   if (import.meta.env.DEV) {
-    window.__universeDebug = { core: () => ({ tiers: { ...state.tiers }, core: { ...state.core }, pulse: state.space.pulse ?? SHIP.pulse, stats: { ...state.stats } }), powers, power: (slot) => power(slot), charge: () => powers.fill(), THREE, post, scene, expanse, farStars, teleport: (x, y, z, heading = state.ship?.heading ?? 0, pitch = 0) => state.ship && (state.ship = { ...state.ship, x, y, z, heading, pitch, speed: 0 }), renderer, camera, traffic, hunters, wingmen, skirmishes, npcs, NPCS, meetNpc: (id) => state.ship && npcs?.add(NPCS[id], skirmishSpot(state.ship) ?? { x: state.ship.x, y: state.ship.y + 5, z: state.ship.z - 40 }), director, pieces, leviathans, meteors, fleet, novae, pilots, standing, deed, wanted, law, wonders: WONDERS.map((w) => ({ id: w.id, name: w.name, at: w.at, reach: reachOf(w) })), state, foot, planets, startFoot: async (o) => (await footCode.want(), startFoot(o)), travel: (id, drive) => travel(id, drive), places: places.debug, diveAt, net: () => net, siege, citadelGeo, arms, readSiegeState, rockFields, smashed, front: () => front, happen: (id) => happen(id, state.ship), mines, escort: () => escort, eclipse: () => eclipse && { ...eclipse, k: eclipseK, key: key.intensity }, remover: () => remover, removerView, ram: (gap = 6, kind = 'tie') => {
+    window.__universeDebug = { core: () => ({ tiers: { ...state.tiers }, core: { ...state.core }, pulse: state.flySpace.pulse ?? SHIP.pulse, stats: { ...state.stats } }), powers, power: (slot) => power(slot), charge: () => powers.fill(), THREE, post, scene, expanse, farStars, teleport: (x, y, z, heading = state.ship?.heading ?? 0, pitch = 0) => state.ship && (state.ship = { ...state.ship, x, y, z, heading, pitch, speed: 0 }), renderer, camera, traffic, hunters, wingmen, skirmishes, npcs, NPCS, meetNpc: (id) => state.ship && npcs?.add(NPCS[id], skirmishSpot(state.ship) ?? { x: state.ship.x, y: state.ship.y + 5, z: state.ship.z - 40 }), director, pieces, leviathans, meteors, fleet, novae, pilots, standing, deed, wanted, law, wonders: WONDERS.map((w) => ({ id: w.id, name: w.name, at: w.at, reach: reachOf(w) })), state, foot, planets, startFoot: async (o) => (await footCode.want(), startFoot(o)), travel: (id, drive) => travel(id, drive), places: places.debug, diveAt, net: () => net, siege, citadelGeo, arms, readSiegeState, rockFields, smashed, front: () => front, happen: (id) => happen(id, state.ship), mines, escort: () => escort, eclipse: () => eclipse && { ...eclipse, k: eclipseK, key: key.intensity }, remover: () => remover, removerView, ram: (gap = 6, kind = 'tie') => {
       // a TIE (or `kind`) put `gap` dead ahead at your height, coming at you, for checking a ram from a browser
       const s = state.ship;
       if (!s || !hunters) return null;

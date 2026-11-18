@@ -2,6 +2,9 @@
 // Hangar's Systems tab (systemRows) and the GUI's pause menu and inventory
 // (shipSheet). Pure (no React, DOM or three.js).
 //
+// LIVE: the systems a tier does something for yet, in SYSTEMS' order (the
+//   scanner and the hold join with the exploring and the market; the
+//   hyperdrive's range is said once a jump is held to it): only these are sold
 // systemRows({ crew, build, economy }) → [{ id, label, tier, mk, value,
 //   nextValue (null at Mk V), item (the next tier's, or null), pill (shop.js's
 //   pillOf, or null with no wallet or at Mk V; a lock names only what's
@@ -20,6 +23,8 @@ import { readBuild } from '../shipyard/build';
 import { MAX_TIER, SYSTEMS, SYSTEM_LABEL, coreStats, profileOf } from './profiles';
 import { MK, tierItem, tiersOf } from './tiers';
 
+export const LIVE = Object.freeze(['engines', 'pulse', 'hyperdrive', 'shields', 'reactor']);
+const RANGED = false; // (lane 3: a jump held to the hyperdrive's range)
 const HYPER_RECHARGE = 5; // (nav.js's HYPER.recharge: the seconds the stock hyperdrive takes)
 const times = (v) => `×${v.toFixed(2)}`;
 const seconds = (v) => `${+v.toFixed(1)} s`;
@@ -28,7 +33,7 @@ const seconds = (v) => `${+v.toFixed(1)} s`;
 function valueOf(system, core, plant) {
   if (system === 'engines') return times(core.engines);
   if (system === 'pulse') return `${Math.round(SHIP.pulse * core.pulse).toLocaleString('en-GB')} a second`;
-  if (system === 'hyperdrive') return `${core.range} sectors, every ${seconds(HYPER_RECHARGE * core.recharge)}`;
+  if (system === 'hyperdrive') return RANGED ? `${core.range} sectors, every ${seconds(HYPER_RECHARGE * core.recharge)}` : `a jump every ${seconds(HYPER_RECHARGE * core.recharge)}`;
   if (system === 'shields') return times(core.shields);
   if (system === 'scanner') return core.scanReach === Infinity ? 'the whole sector' : `${Math.round(core.scanReach).toLocaleString('en-GB')} out`;
   if (system === 'hold') return `${core.hold} units`;
@@ -43,7 +48,7 @@ export function systemRows({ crew, build = null, economy = null }) {
   const tiers = tiersOf(owner(economy), crew);
   const core = coreStats(crew, tiers, { build: b });
   const plant = capacityOf(crew, b);
-  return SYSTEMS.map((id) => {
+  return SYSTEMS.filter((id) => LIVE.includes(id)).map((id) => {
     const tier = tiers[id];
     const top = tier >= MAX_TIER;
     const next = top ? null : coreStats(crew, { ...tiers, [id]: tier + 1 }, { build: b });

@@ -66,8 +66,8 @@ export default function UniverseMap({ selected, onSelect, onOpen, handle, frozen
   const touch = useMediaQuery('(pointer: coarse)');
   const { economy, version: walletVersion } = useEconomy({ ask: false }); // (the wallet a bounty's paid off from)
   // the crew's tiers, Mk I to V, as the wallet owns them (ships/tiers.js): Mk I everywhere till it's loaded
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- (the wallet's version is what says its owned changed)
-  const tiers = useMemo(() => (economy && ship ? tiersOf(economy.owns, ship) : null), [economy, walletVersion, ship]);
+  // (the wallet's version says what it owns changed: read here, as useYard reads it)
+  const tiers = useMemo(() => (walletVersion >= 0 && economy && ship ? tiersOf(economy.owns, ship) : null), [economy, walletVersion, ship]);
   const hud = useRef(null);
   const siegeEl = useRef(null); // the Citadel's siege (siege.js)
   const prompt = useRef(null);

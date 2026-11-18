@@ -11,8 +11,8 @@ import { useEconomy } from '../universe/shared/wallet';
 export default function SystemsTab({ ship, build = null }) {
   const { economy, version } = useEconomy();
   const [said, setSaid] = useState(null);
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- (the wallet's version says its credits or what it owns changed)
-  const rows = useMemo(() => systemRows({ crew: ship, build, economy }), [ship, build, economy, version]);
+  // (the wallet's version says its credits or what it owns changed: read here, as useYard reads it)
+  const rows = useMemo(() => (version >= 0 ? systemRows({ crew: ship, build, economy }) : []), [ship, build, economy, version]);
   const buy = (row) => {
     const r = economy?.checkout([row.item]);
     setSaid(r?.ok ? `${row.item.name} fitted` : null);

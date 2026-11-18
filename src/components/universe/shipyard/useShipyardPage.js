@@ -44,8 +44,8 @@ export function useShipyardPage({ ship, unlocked = [] }) {
   };
   const { economy, version: walletVersion } = useEconomy();
   // (the parts flown: as many as the plant runs, with the reactor's tier the wallet owns for this crew)
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- (the wallet's version says what it owns changed)
-  const loadout = useMemo(() => loadoutOf(loadouts, ship, unlocked, build, tune, coreOf(economy, ship, build)), [loadouts, ship, unlocked, build, tune, economy, walletVersion]);
+  // (the wallet's version says what it owns changed: read here, as useYard reads it)
+  const loadout = useMemo(() => loadoutOf(loadouts, ship, unlocked, build, tune, coreOf(walletVersion >= 0 ? economy : null, ship, build)), [loadouts, ship, unlocked, build, tune, economy, walletVersion]);
   const dropped = useMemo(() => (ship ? droppedParts(loadouts[ship], loadout) : []), [loadouts, ship, loadout]); // (what the plant can't run)
 
   const [yard, setYard] = useState(false);
