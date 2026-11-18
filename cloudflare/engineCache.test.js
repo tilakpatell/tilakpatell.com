@@ -572,7 +572,7 @@ describe('a body that stops: ended in an error, so the page asks again, never he
     expect(w.asked).toEqual([ORIGIN + path]);
   });
 
-  it('a page that does not read for longer than the limit is not cut: the limit runs only while the body is read', async () => {
+  it('a page that does not read for longer than the limit is not cut: the limit is the network’s silence', async () => {
     const w = worker(() => new Response(body(['x', 'y'], 5).stream, { status: 200 }), null, limits);
     const one = w.ask(path);
     const res = await one.answer;

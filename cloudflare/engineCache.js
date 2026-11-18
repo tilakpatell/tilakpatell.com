@@ -105,14 +105,14 @@ export function engineWorker(self, keep, follow, limits = { fetch: 15000, waitAh
     });
     return Promise.race([control ? self.fetch(request, { signal: control.signal }) : self.fetch(request), late]).finally(() => clearTimeout(timer));
   };
-  // A body that sends no byte for `stall` ms while it is being read ends in an error, its download cancelled (18 Nov, live
-  // r1075-f943c314, s-verify's cold boot: scene-frontend/scene.json's headers came through here at 24.4 s, its body never, Home
-  // without its model past 77 s; the page's own limit is 120 s). The page's loader asks again on the error (fetchBytes), and
-  // the next ask is a fresh download. Measured only while the body is read: a page busy elsewhere holds no timer.
+  // A body that sends no byte for `stall` ms ends in an error, its download cancelled (18 Nov, live r1075-f943c314, s-verify's
+  // cold boot: scene-frontend/scene.json's headers came through here at 24.4 s, its body never, Home without its model past
+  // 77 s; the page's own limit is 120 s). The page's loader asks again on the error (fetchBytes), and the next ask is a fresh
+  // download. The body is read on as it comes, whether or not the page reads yet (its bytes wait for it, as a tee's did): the
+  // limit is the network's silence, never a page busy elsewhere, and the file's copy for the disk never waits on the page.
   // guarded(response, keep): { answer, saved }: answer is the response with that body; saved resolves to the body's chunks once
-  // it is whole when keep (or 'big' past KEEP_MAX, or null when it failed), so a demanded file goes on the disk from the bytes
-  // the page got, with no tee (the page's copy no longer waits on the cache's). A body that is not a stream (the tests' fakes)
-  // goes as it is, saved 'clone'.
+  // it is whole when keep (or 'big' past KEEP_MAX, or null when it failed or was cancelled), so a demanded file goes on the disk
+  // from the same bytes, with no tee. A body that is not a stream (the tests' fakes) goes as it is, saved 'clone'.
   const STALL = {};
   const KEEP_MAX = 64 * 1048576;
   const stallMs = limits.stall ?? 10000;
@@ -121,48 +121,51 @@ export function engineWorker(self, keep, follow, limits = { fetch: 15000, waitAh
     if (!body || typeof body.getReader !== 'function' || typeof ReadableStream !== 'function')
       return { answer: response, saved: Promise.resolve(keep ? 'clone' : null) };
     const reader = body.getReader();
-    let chunks = keep ? [] : null, size = 0, settle;
+    let chunks = keep ? [] : null, size = 0, settle, cancelled = false;
     const saved = new Promise((r) => (settle = r));
-    const stream = new ReadableStream(
-      {
-        async pull(controller) {
-          let timer;
-          const late = new Promise((r) => (timer = setTimeout(() => r(STALL), stallMs)));
-          let step;
-          try {
-            step = await Promise.race([reader.read(), late]);
-          } catch (error) {
+    const stream = new ReadableStream({
+      start(controller) {
+        (async () => {
+          for (;;) {
+            let timer;
+            const late = new Promise((r) => (timer = setTimeout(() => r(STALL), stallMs)));
+            let step;
+            try {
+              step = await Promise.race([reader.read(), late]);
+            } catch (error) {
+              clearTimeout(timer);
+              settle(null);
+              if (!cancelled) controller.error(error);
+              return;
+            }
             clearTimeout(timer);
-            settle(null);
-            controller.error(error);
-            return;
+            if (cancelled) return void settle(null);
+            if (step === STALL) {
+              reader.cancel().catch(() => {});
+              settle(null);
+              controller.error(new TypeError('engine-cache: no byte in ' + stallMs + ' ms'));
+              return;
+            }
+            if (step.done) {
+              settle(chunks ?? (keep ? 'big' : null));
+              controller.close();
+              return;
+            }
+            if (chunks) {
+              size += step.value.byteLength;
+              if (size > KEEP_MAX) chunks = null;
+              else chunks.push(step.value);
+            }
+            controller.enqueue(step.value);
           }
-          clearTimeout(timer);
-          if (step === STALL) {
-            reader.cancel().catch(() => {});
-            settle(null);
-            controller.error(new TypeError('engine-cache: no byte in ' + stallMs + ' ms'));
-            return;
-          }
-          if (step.done) {
-            settle(chunks ?? (keep ? 'big' : null));
-            controller.close();
-            return;
-          }
-          if (chunks) {
-            size += step.value.byteLength;
-            if (size > KEEP_MAX) chunks = null;
-            else chunks.push(step.value);
-          }
-          controller.enqueue(step.value);
-        },
-        cancel(reason) {
-          settle(null);
-          return reader.cancel(reason);
-        },
+        })();
       },
-      { highWaterMark: 0 },
-    );
+      cancel(reason) {
+        cancelled = true;
+        settle(null);
+        return reader.cancel(reason);
+      },
+    });
     // (the bytes are the decoded body: its encoding and the encoded length no longer describe them)
     const headers = new Headers(response.headers ?? undefined);
     headers.delete('content-length');
