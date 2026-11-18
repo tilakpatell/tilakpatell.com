@@ -10,8 +10,8 @@
 //     --previous: the build to copy from (default: the one src/data/bf2web/play.json names)
 
 import { createHash } from 'node:crypto';
-import { existsSync, readFileSync } from 'node:fs';
-import { brotliCopy, uiDataBrotli, uiDataFiles, uiDataLeftOut } from './lib/bf2web-ui-files.mjs';
+import { existsSync, readFileSync, statSync } from 'node:fs';
+import { brotliCopy, uiDataBrotli, uiDataFiles, uiDataLeftOut, verifyUiData } from './lib/bf2web-ui-files.mjs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { encodePath, objectUrl } from './lib/bucket.mjs';
@@ -160,5 +160,15 @@ await Promise.all([
   ...Array.from({ length: 4 }, lane(rest)),
   ...Array.from({ length: copies.length ? COPY_STREAMS : 0 }, lane(copies)),
 ]);
+// (before the manifest: the build's ui-data is all in the bucket at its sizes, and one file of each kind answers; else no manifest is written,
+// and the build is not complete. lib/bf2web-ui-files.mjs verifyUiData)
+if (uiDir && existsSync(uiDir)) {
+  const local = uiDataFiles(uiDir).map((path) => ({ path, size: statSync(join(uiDir, path)).size }));
+  const at = `${prefix}ui-data/`;
+  const remote = (await r2.files(at)).map((f) => ({ key: f.key.slice(at.length), size: f.size }));
+  const check = await verifyUiData(local, remote, async (key) => (await r2.fetch(objectUrl(BUCKET, key), { method: 'HEAD' })).status, prefix);
+  console.log(`${id}: ui-data in the bucket: ${check.inBucket} of ${check.local}; HEAD of one ${check.probed.join(', ')}`);
+  if (check.problems.length) throw new Error(`${id}: ui-data incomplete, the manifest is not written: ${check.problems.join('; ')}`);
+}
 await send(last);
 console.log(`${id}: uploaded, its manifest last`);
