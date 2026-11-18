@@ -8,6 +8,7 @@ import { TABS, TAB_LABEL, tabForKey, wantsKey } from './hangarRules';
 import { headOf } from './hangarHead';
 import CrewTab from './CrewTab';
 import ArmsTab from './ArmsTab';
+import SystemsTab from './SystemsTab';
 import PowersTab from './PowersTab';
 import SkillsTab from './SkillsTab';
 import { useSkills } from './skills/useSkills';
@@ -148,6 +149,7 @@ export default function HangarPanel({ open, onOpen, tab, onTab, enabled = true, 
               onSkills={() => onTab('skills')}
             />
           )}
+          {tab === 'systems' && <SystemsTab ship={ship} build={live?.build ?? null} />}
           {tab === 'powers' && <PowersTab ship={ship} />}
           {tab === 'skills' && <SkillsTab />}
           {tab === 'shipyard' && (

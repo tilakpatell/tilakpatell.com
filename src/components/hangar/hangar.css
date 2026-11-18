@@ -104,6 +104,9 @@
 @media (pointer: coarse) {
   .hangar-lines button { min-height: 44px; }
 }
+/* the Systems: a tier short of credits or locked reads dimmed; its button says why */
+.hangar-systems .hangar-lines button:disabled { color: var(--muted); }
+.hangar-systems .hangar-lines button[data-pill='buy'] { border-color: var(--engine, #e8eefc); }
 /* the unique weapons: the hand's in green, a locked one's name dimmed, its button the way to the skill tree */
 .hangar-unique li[data-line='hand'] .hangar-line-name { color: #c9ff9a; }
 .hangar-unique li[data-open='false'] .hangar-line-name { color: var(--muted); }

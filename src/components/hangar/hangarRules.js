@@ -12,8 +12,8 @@
 //   wantsKey(e, { open, typing, otherDialog, door, crewKey }) → boolean
 //   (crewKey false: a world whose foot has C, a big planet's block, keeps it)
 
-export const TABS = ['crew', 'arms', 'powers', 'skills', 'shipyard'];
-export const TAB_LABEL = { crew: 'Crew', arms: 'Arms', powers: 'Powers', skills: 'Skills', shipyard: 'Shipyard' };
+export const TABS = ['crew', 'arms', 'systems', 'powers', 'skills', 'shipyard'];
+export const TAB_LABEL = { crew: 'Crew', arms: 'Arms', systems: 'Systems', powers: 'Powers', skills: 'Skills', shipyard: 'Shipyard' };
 export const TAB_KEY = 'tp-hangar-tab'; // (the visitor's own convenience: the tab last used, in this browser)
 
 export const readTab = (raw) => (TABS.includes(raw) ? raw : 'shipyard');

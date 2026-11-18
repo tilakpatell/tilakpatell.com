@@ -15,7 +15,8 @@ const calm = { open: false, typing: false, otherDialog: false, door: true };
 
 describe('the Hangar', () => {
   it('has the five tabs, the skills between the powers and the shipyard, each with its name', () => {
-    expect(TABS).toEqual(['crew', 'arms', 'powers', 'skills', 'shipyard']);
+    expect(TABS).toEqual(['crew', 'arms', 'systems', 'powers', 'skills', 'shipyard']);
+    expect(readTab('systems')).toBe('systems');
     for (const t of TABS) expect(typeof TAB_LABEL[t]).toBe('string');
   });
   it('opens on the tab last used, or the shipyard', () => {
