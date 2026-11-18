@@ -105,6 +105,70 @@ export function engineWorker(self, keep, follow, limits = { fetch: 15000, waitAh
     });
     return Promise.race([control ? self.fetch(request, { signal: control.signal }) : self.fetch(request), late]).finally(() => clearTimeout(timer));
   };
+  // A body that sends no byte for `stall` ms while it is being read ends in an error, its download cancelled (18 Nov, live
+  // r1075-f943c314, s-verify's cold boot: scene-frontend/scene.json's headers came through here at 24.4 s, its body never, Home
+  // without its model past 77 s; the page's own limit is 120 s). The page's loader asks again on the error (fetchBytes), and
+  // the next ask is a fresh download. Measured only while the body is read: a page busy elsewhere holds no timer.
+  // guarded(response, keep): { answer, saved }: answer is the response with that body; saved resolves to the body's chunks once
+  // it is whole when keep (or 'big' past KEEP_MAX, or null when it failed), so a demanded file goes on the disk from the bytes
+  // the page got, with no tee (the page's copy no longer waits on the cache's). A body that is not a stream (the tests' fakes)
+  // goes as it is, saved 'clone'.
+  const STALL = {};
+  const KEEP_MAX = 64 * 1048576;
+  const stallMs = limits.stall ?? 10000;
+  const guarded = (response, keep = false) => {
+    const body = response?.body;
+    if (!body || typeof body.getReader !== 'function' || typeof ReadableStream !== 'function')
+      return { answer: response, saved: Promise.resolve(keep ? 'clone' : null) };
+    const reader = body.getReader();
+    let chunks = keep ? [] : null, size = 0, settle;
+    const saved = new Promise((r) => (settle = r));
+    const stream = new ReadableStream(
+      {
+        async pull(controller) {
+          let timer;
+          const late = new Promise((r) => (timer = setTimeout(() => r(STALL), stallMs)));
+          let step;
+          try {
+            step = await Promise.race([reader.read(), late]);
+          } catch (error) {
+            clearTimeout(timer);
+            settle(null);
+            controller.error(error);
+            return;
+          }
+          clearTimeout(timer);
+          if (step === STALL) {
+            reader.cancel().catch(() => {});
+            settle(null);
+            controller.error(new TypeError('engine-cache: no byte in ' + stallMs + ' ms'));
+            return;
+          }
+          if (step.done) {
+            settle(chunks ?? (keep ? 'big' : null));
+            controller.close();
+            return;
+          }
+          if (chunks) {
+            size += step.value.byteLength;
+            if (size > KEEP_MAX) chunks = null;
+            else chunks.push(step.value);
+          }
+          controller.enqueue(step.value);
+        },
+        cancel(reason) {
+          settle(null);
+          return reader.cancel(reason);
+        },
+      },
+      { highWaterMark: 0 },
+    );
+    // (the bytes are the decoded body: its encoding and the encoded length no longer describe them)
+    const headers = new Headers(response.headers ?? undefined);
+    headers.delete('content-length');
+    headers.delete('content-encoding');
+    return { answer: new Response(stream, { status: response.status, statusText: response.statusText, headers }), saved };
+  };
   const network = async (request) => {
     let last = null;
     for (const wait of [0, 500, 1500, 4000]) {
@@ -176,7 +240,8 @@ export function engineWorker(self, keep, follow, limits = { fetch: 15000, waitAh
             const response = await network(url);
             heard();
             if (response.status !== 200) return false;
-            if (!(await put(cache, url, response))) return false;
+            // (a read-ahead's or a warm's body that stalls fails its put, so a demand waiting on it asks for itself)
+            if (!(await put(cache, url, guarded(response).answer))) return false;
             await prune(build);
           }
           onDisk.add(url);
@@ -249,15 +314,20 @@ export function engineWorker(self, keep, follow, limits = { fetch: 15000, waitAh
         }
         if (hit) return hit;
         const response = await network(request);
-        if (response.status === 200 && writable)
-          event.waitUntil(
-            (async () => {
-              if (!(await put(cache, request, response.clone()))) return;
-              onDisk.add(dir + kept.path);
-              await prune(kept.build);
-            })().catch(() => {}),
-          );
-        return response;
+        const { answer, saved } = guarded(response, response.status === 200 && writable);
+        event.waitUntil(
+          (async () => {
+            const chunks = await saved;
+            if (chunks === null) return;
+            // (past KEEP_MAX the bytes were not held: a fill puts it, from the browser's own cache as a rule)
+            if (chunks === 'big') return void (await fill(cache, kept.build, dir + kept.path));
+            const copy = chunks === 'clone' ? response.clone() : new Response(new Blob(chunks), { status: 200, headers: answer.headers });
+            if (!(await put(cache, request, copy))) return;
+            onDisk.add(dir + kept.path);
+            await prune(kept.build);
+          })().catch(() => {}),
+        );
+        return answer;
       })(),
     );
   });
