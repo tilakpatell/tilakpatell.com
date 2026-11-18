@@ -122,6 +122,18 @@ export function priceOf(keyOrId) {
   return found.length === 1 ? found[0].price : null;
 }
 
+// the rares a ship's Mk IV and Mk V need (ships/tiers.js's RARE_OF), with
+// where they're found: the market's goods (lane 2) are named the same
+const RARE_NAME = { exotic: 'exotic matter', voidcrystal: 'void crystal', relics: 'relics', silk: 'nebula silk' };
+export const GOOD_NAME = Object.freeze(
+  Object.fromEntries(
+    Object.entries(RARE_NAME).flatMap(([id, name]) => [
+      [id, `${name} (found 10 or more sectors out)`],
+      [`${id}-pure`, `pure ${name} (found 25 or more sectors out)`],
+    ]),
+  ),
+);
+
 // what being at each standing level is, as the start of a sentence
 const STANDING_VERB = { trusted: 'be trusted by', hero: 'be a hero to', friend: 'be a friend to', suspect: 'be a suspect to', wanted: 'be wanted by', feared: 'be feared by' };
 const an = (word) => (/^[aeiou]/i.test(word) ? 'an' : 'a');
@@ -142,6 +154,8 @@ function needSentences(needs) {
     out.push(rank && rank !== ladder[0] ? `fly as ${an(rank.name)} ${rank.name} for ${side}` : `swear to ${side} in the galaxy`);
   }
   if (needs.skill) out.push(`take “${SKILL_NODES[needs.skill] ?? 'its node'}” in the skill tree`);
+  if (needs.owns) out.push('fit the tier before it');
+  for (const [id, n] of Object.entries(needs.goods ?? {})) out.push(`bring ${n} ${GOOD_NAME[id] ?? 'of what it needs'}`);
   return out;
 }
 
