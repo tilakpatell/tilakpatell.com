@@ -105,6 +105,57 @@ export function engineWorker(self, keep, follow, limits = { fetch: 15000, waitAh
     });
     return Promise.race([control ? self.fetch(request, { signal: control.signal }) : self.fetch(request), late]).finally(() => clearTimeout(timer));
   };
+  // A body that sends no byte for `stall` ms ends in an error, its download cancelled (18 Nov, live r1075-f943c314, s-verify's
+  // cold boot: scene-frontend/scene.json's headers came through here at 24.4 s, its body never, Home without its model past
+  // 77 s; the page's own limit is 120 s). The page's loader asks again on the error (fetchBytes), and the next ask is a fresh
+  // download. The body is read on as it comes, whether or not the page reads yet (its bytes queue for it): the limit is the
+  // network's silence, never a page busy elsewhere. A copy for the disk is a clone of the guarded answer, downstream of the
+  // limit: a stalled body fails the page's read and the copy's put alike, and each file is downloaded once ([c4] on #1339).
+  // A body that is not a stream (the tests' fakes) goes as it is.
+  const STALL = {};
+  const stallMs = limits.stall ?? 10000;
+  const guarded = (response) => {
+    const body = response?.body;
+    if (!body || typeof body.getReader !== 'function' || typeof ReadableStream !== 'function') return response;
+    const reader = body.getReader();
+    let cancelled = false;
+    const stream = new ReadableStream({
+      start(controller) {
+        (async () => {
+          for (;;) {
+            let timer;
+            const late = new Promise((r) => (timer = setTimeout(() => r(STALL), stallMs)));
+            let step;
+            try {
+              step = await Promise.race([reader.read(), late]);
+            } catch (error) {
+              clearTimeout(timer);
+              if (!cancelled) controller.error(error);
+              return;
+            }
+            clearTimeout(timer);
+            if (cancelled) return;
+            if (step === STALL) {
+              reader.cancel().catch(() => {});
+              controller.error(new TypeError('engine-cache: no byte in ' + stallMs + ' ms'));
+              return;
+            }
+            if (step.done) return void controller.close();
+            controller.enqueue(step.value);
+          }
+        })();
+      },
+      cancel(reason) {
+        cancelled = true;
+        return reader.cancel(reason);
+      },
+    });
+    // (the bytes are the decoded body: its encoding and the encoded length no longer describe them)
+    const headers = new Headers(response.headers ?? undefined);
+    headers.delete('content-length');
+    headers.delete('content-encoding');
+    return new Response(stream, { status: response.status, statusText: response.statusText, headers });
+  };
   const network = async (request) => {
     let last = null;
     for (const wait of [0, 500, 1500, 4000]) {
@@ -176,7 +227,8 @@ export function engineWorker(self, keep, follow, limits = { fetch: 15000, waitAh
             const response = await network(url);
             heard();
             if (response.status !== 200) return false;
-            if (!(await put(cache, url, response))) return false;
+            // (a read-ahead's or a warm's body that stalls fails its put, so a demand waiting on it asks for itself)
+            if (!(await put(cache, url, guarded(response)))) return false;
             await prune(build);
           }
           onDisk.add(url);
@@ -249,15 +301,16 @@ export function engineWorker(self, keep, follow, limits = { fetch: 15000, waitAh
         }
         if (hit) return hit;
         const response = await network(request);
+        const answer = guarded(response);
         if (response.status === 200 && writable)
           event.waitUntil(
             (async () => {
-              if (!(await put(cache, request, response.clone()))) return;
+              if (!(await put(cache, request, answer.clone()))) return;
               onDisk.add(dir + kept.path);
               await prune(kept.build);
             })().catch(() => {}),
           );
-        return response;
+        return answer;
       })(),
     );
   });

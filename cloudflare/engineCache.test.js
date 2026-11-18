@@ -20,13 +20,19 @@ function worker(network = (url) => ({ status: 200, body: `bytes of ${url}` }), f
       const url = urlOf(request);
       if (url.endsWith('/' + FILES)) return files ? { status: 200, json: async () => ({ files }) } : { status: 404 };
       asked.push(url);
-      return response(await network(url));
+      const r = await network(url);
+      return r instanceof Response ? r : response(r);
     },
     caches: {
       open: async (name) => {
         if (!stores.has(name)) stores.set(name, new Map());
         const store = stores.get(name);
-        return { match: async (r) => store.get(urlOf(r)) ?? null, put: async (r, res) => void store.set(urlOf(r), res) };
+        // (as Cache Storage does: a put reads the body whole, and fails when the body does; each match a fresh response)
+        const fresh = (e) => (e?.bytes ? new Response(e.bytes, { status: e.status, headers: e.headers }) : e ?? null);
+        return {
+          match: async (r) => fresh(store.get(urlOf(r))),
+          put: async (r, res) => void store.set(urlOf(r), res instanceof Response ? { bytes: await res.arrayBuffer(), status: res.status, headers: res.headers } : res),
+        };
       },
       keys: async () => [...stores.keys()],
       delete: async (name) => stores.delete(name),
@@ -43,7 +49,14 @@ function worker(network = (url) => ({ status: 200, body: `bytes of ${url}` }), f
     await Promise.all(waits);
     return res;
   };
-  return { on, stores, asked, get, self };
+  // (the answer without waiting for the event's waitUntil work: a streamed body is read first, its copy put on the disk after)
+  const ask = (path, { headers = {} } = {}) => {
+    let answer = null;
+    const waits = [];
+    on.fetch({ request: { url: ORIGIN + path, method: 'GET', mode: 'cors', headers: new Headers(headers) }, respondWith: (p) => (answer = p), waitUntil: (p) => waits.push(p) });
+    return { answer, settled: () => Promise.all(waits) };
+  };
+  return { on, stores, asked, get, ask, self };
 }
 
 describe('the engine’s build kept on the visitor’s disk', () => {
@@ -502,5 +515,106 @@ describe('the engine’s build kept on the visitor’s disk', () => {
     const on = {};
     new Function('self', WORKER_SOURCE)({ location: { origin: ORIGIN }, addEventListener: (t, fn) => (on[t] = fn) });
     expect(Object.keys(on).sort()).toEqual(['activate', 'fetch', 'install']);
+  });
+});
+
+// (18 Nov, live r1075-f943c314: scene-frontend/scene.json's headers came through the worker at 24.4 s and its body never did)
+describe('a body that stops: ended in an error, so the page asks again, never held for ever', () => {
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  const enc = new TextEncoder();
+  // a body sent a chunk every gapMs; with stopAfter, nothing more after that many chunks (the stream left open)
+  const body = (chunks, gapMs, stopAfter = null) => {
+    const state = { cancelled: false };
+    let i = 0;
+    state.stream = new ReadableStream({
+      async pull(c) {
+        if (stopAfter != null && i >= stopAfter) return new Promise(() => {});
+        if (i >= chunks.length) return c.close();
+        await sleep(gapMs);
+        c.enqueue(enc.encode(chunks[i++]));
+      },
+      cancel() { state.cancelled = true; },
+    });
+    return state;
+  };
+  const limits = { fetch: 15000, waitAhead: 20000, stall: 250 };
+  const path = '/battlefront/engine/r1075-test/scene-frontend/scene.json';
+
+  it('a body that stops after its headers errors within the limit, its download cancelled; the next ask downloads it whole', async () => {
+    const bodies = [body(['{"a":'], 5, 1), body(['{"a":', '1}'], 5)];
+    let n = 0;
+    const w = worker(() => new Response(bodies[n++].stream, { status: 200, headers: { 'content-type': 'application/json', 'content-encoding': 'br', 'content-length': '9' } }), null, limits);
+    const first = w.ask(path);
+    const res = await first.answer;
+    expect(res.status).toBe(200);
+    expect(res.headers.get('content-encoding')).toBeNull();
+    expect(res.headers.get('content-length')).toBeNull();
+    const t0 = Date.now();
+    await expect(res.text()).rejects.toThrow(/no byte in 250 ms/);
+    expect(Date.now() - t0).toBeLessThan(2500);
+    expect(bodies[0].cancelled).toBe(true);
+    await first.settled();
+    expect(w.stores.get('tp-engine-r1075-test')?.size ?? 0).toBe(0);
+    const again = w.ask(path);
+    expect(await (await again.answer).text()).toBe('{"a":1}');
+    await again.settled();
+    expect(w.asked).toEqual([ORIGIN + path, ORIGIN + path]);
+    expect(await (await w.get(path)).text()).toBe('{"a":1}');
+    expect(w.asked.length).toBe(2);
+  });
+
+  it('a slow body that keeps coming is not cut, and goes on the disk from the same download, asked for once', async () => {
+    const w = worker(() => new Response(body(['a', 'b', 'c', 'd', 'e'], 30).stream, { status: 200 }), null, limits);
+    const one = w.ask(path);
+    expect(await (await one.answer).text()).toBe('abcde');
+    await one.settled();
+    expect(await (await w.get(path)).text()).toBe('abcde');
+    expect(w.asked).toEqual([ORIGIN + path]);
+  });
+
+  it('a page that does not read for longer than the limit is not cut: the limit is the network’s silence', async () => {
+    const w = worker(() => new Response(body(['x', 'y'], 5).stream, { status: 200 }), null, limits);
+    const one = w.ask(path);
+    const res = await one.answer;
+    await sleep(600);
+    expect(await res.text()).toBe('xy');
+  });
+
+  it('a big demanded file (past 64 MB) is downloaded once: the page and the disk copy both from that one download ([c4] on #1339)', async () => {
+    const MB = 1048576, parts = 70;
+    let n = 0;
+    const big = () => new ReadableStream({ pull(c) { if (n >= parts) return c.close(); c.enqueue(new Uint8Array(MB).fill(n++ % 251)); } });
+    const w = worker(() => new Response(big(), { status: 200 }), null, limits);
+    const one = w.ask(path);
+    const bytes = new Uint8Array(await (await one.answer).arrayBuffer());
+    await one.settled();
+    expect(bytes.length).toBe(parts * MB);
+    expect(w.asked).toEqual([ORIGIN + path]);
+    const kept = new Uint8Array(await (await w.get(path)).arrayBuffer());
+    expect(kept.length).toBe(parts * MB);
+    expect(kept[69 * MB]).toBe(69);
+    expect(w.asked).toEqual([ORIGIN + path]);
+  }, 20000);
+
+  it('a read-ahead whose body stops fails its put, so the demand waiting on it asks for itself', async () => {
+    const files = ['scene-m-1.res', 'scene-m-2.res'];
+    let ahead = 0;
+    const w = worker((url) => (url.endsWith('scene-m-2.res') && ahead++ === 0 ? new Response(body(['p'], 5, 1).stream, { status: 200 }) : new Response(body(['ok'], 5).stream, { status: 200 })), files, limits);
+    const dir = '/battlefront/engine/r1075-test/';
+    const first = w.ask(dir + 'scene-m-1.res');
+    expect(await (await first.answer).text()).toBe('ok');
+    const t0 = Date.now();
+    const second = w.ask(dir + 'scene-m-2.res');
+    expect(await (await second.answer).text()).toBe('ok');
+    expect(Date.now() - t0).toBeLessThan(2500);
+    await Promise.all([first.settled(), second.settled()]);
+    expect(w.asked.filter((u) => u.endsWith('scene-m-2.res')).length).toBe(2);
+  });
+
+  it('a warm whose body stops answers 502, so the warm lanes stop rather than hang', async () => {
+    const w = worker(() => new Response(body(['p'], 5, 1).stream, { status: 200 }), null, limits);
+    const t0 = Date.now();
+    expect((await w.get('/battlefront/engine/r1075-test/scene-m-9.res', { headers: { 'x-tp-warm': '1' } })).status).toBe(502);
+    expect(Date.now() - t0).toBeLessThan(2500);
   });
 });
