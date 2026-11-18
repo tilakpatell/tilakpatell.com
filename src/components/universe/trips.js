@@ -108,9 +108,9 @@ export function createTrips(deps) {
         state.note = { text: hyper.why === 'interdicted' ? JAMMED.long : `${jumpState(false, hyper.wait)}: super speed instead`, until: wall() + 3.5 };
       }
       state.auto = { id, park, od: driveById(hyper ? 'super' : drive).od };
-      if (place) Object.assign(state.auto, { place, space: placeSpace(OPEN_SPACE, place.dest) });
+      if (place) Object.assign(state.auto, { place, space: placeSpace(state.space ?? OPEN_SPACE, place.dest) });
       // (a pilot moves: where they'll be parked behind is worked out again every REAIM_MS, chasePilot)
-      if (pose) Object.assign(state.auto, { pilot: pid, name: pose.name, drive, space: pilotSpace(OPEN_SPACE, pid, pose), reaimAt: performance.now() + REAIM_MS });
+      if (pose) Object.assign(state.auto, { pilot: pid, name: pose.name, drive, space: pilotSpace(state.space ?? OPEN_SPACE, pid, pose), reaimAt: performance.now() + REAIM_MS });
     }
     deps.retarget(700);
     deps.invalidate();
@@ -175,7 +175,7 @@ export function createTrips(deps) {
     const l = Math.hypot(dx, dz) || 1;
     return { x: g.at[0] + (dx / l) * g.reach, y: g.at[1], z: g.at[2] + (dz / l) * g.reach, heading: headingTo(-dx / l, -dz / l) };
   };
-  const frontSpace = () => ({ ...OPEN_SPACE, goals: { ...OPEN_SPACE.goals, front: deps.front().goal() } });
+  const frontSpace = () => ({ ...(state.space ?? OPEN_SPACE), goals: { ...OPEN_SPACE.goals, front: deps.front().goal() } });
   // Flying to another pilot (travel's `pilot:<id>`): there once within reach
   // of them, the HUD says who you're with; gone (offline, hidden, down on a
   // planet, blocked, off to another page) and the trip ends, the autopilot
@@ -222,7 +222,7 @@ export function createTrips(deps) {
     }
     a.reaimAt = now + REAIM_MS;
     a.park = park;
-    a.space = pilotSpace(OPEN_SPACE, a.pilot, pose);
+    a.space = pilotSpace(state.space ?? OPEN_SPACE, a.pilot, pose);
   };
 
   // each frame of a trip to a generated place: its park where the place is

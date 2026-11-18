@@ -4,6 +4,7 @@ import universeModule from './module';
 import { local, useMediaQuery, useReducedMotion } from '../../lib/hooks';
 import { CONTROLS_KEY, readControls } from './controls';
 import { useEconomy } from './EconomyProvider';
+import { tiersOf } from './ships/tiers';
 import FlightSettings from './FlightSettings';
 import Hangar from './Hangar';
 import { UNIVERSES } from './universes';
@@ -63,7 +64,10 @@ export default function UniverseMap({ selected, onSelect, onOpen, handle, frozen
   const abilitiesEl = useRef(null); // the crew member's abilities on foot, as a touch screen's buttons (in the cluster on a desktop)
   const powers = useRef(null); // the crew's two powers' tiles in it (PowerBar.jsx; the scene writes them: powers.js)
   const touch = useMediaQuery('(pointer: coarse)');
-  const { economy } = useEconomy({ ask: false }); // (the wallet a bounty's paid off from)
+  const { economy, version: walletVersion } = useEconomy({ ask: false }); // (the wallet a bounty's paid off from)
+  // the crew's tiers, Mk I to V, as the wallet owns them (ships/tiers.js): Mk I everywhere till it's loaded
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- (the wallet's version is what says its owned changed)
+  const tiers = useMemo(() => (economy && ship ? tiersOf(economy.owns, ship) : null), [economy, walletVersion, ship]);
   const hud = useRef(null);
   const siegeEl = useRef(null); // the Citadel's siege (siege.js)
   const prompt = useRef(null);
@@ -114,6 +118,7 @@ export default function UniverseMap({ selected, onSelect, onOpen, handle, frozen
       loadout,
       build,
       tune,
+      tiers,
       skillFx, // (the skill tree's effects and the powers picked: hangar/skills's, the page's)
       powerPicks,
       controls,
