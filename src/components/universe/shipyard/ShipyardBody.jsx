@@ -7,6 +7,7 @@ import { readout } from '../outfit';
 import { castOfCrew } from '../../rickmorty/wardrobe/looks';
 import { ownedModules } from '../shop';
 import { buildCode } from './build';
+import { coreOf } from '../ships/tiers';
 import { draftKeys, hullName, pasteDraft, sellable, setModule, setPart } from '../yardRules';
 import { createShowroom } from './showroom';
 import YardCatalogue from './YardCatalogue';
@@ -33,7 +34,7 @@ export default function ShipyardBody({ ship, shipName = '', live, lastBuild = nu
   const [billOpen, setBillOpen] = useState(false);
   const [record, setRecord] = useState(false);
   const { unlocked } = useAchievements();
-  const { economy } = useEconomy();
+  const { economy, version: walletVersion } = useEconomy();
   const reduced = useMemo(() => prefersReducedMotion(), []);
   const { draft, checked, changes, looking, setLooking } = yard;
   // (what the showroom shows, for it to show the moment it's made)
@@ -69,13 +70,15 @@ export default function ShipyardBody({ ship, shipName = '', live, lastBuild = nu
     room.current?.focus(looking?.slot ?? slot);
   }, [looking, slot]);
 
-  const now = useMemo(() => (ship ? readout(ship, draft.loadout, draft.build, draft.tune) : []), [ship, draft]);
+  // (the stats as flown: with the crew's tiers, the wallet's, a version along so a tier bought shows)
+  const core = useMemo(() => (walletVersion >= 0 && ship ? coreOf(economy, ship, draft.build) : null), [economy, walletVersion, ship, draft.build]);
+  const now = useMemo(() => (ship ? readout(ship, draft.loadout, draft.build, draft.tune, core) : []), [ship, draft, core]);
   const then = useMemo(() => {
     if (!ship || !looking || looking.slot === 'paint') return null;
     // (the draft as it would be with what's pointed at staged: a build's module, a stock ship's tune, or a part)
     const next = looking.module ? setModule(draft, looking.slot, looking.id) : setPart(draft, looking.slot, looking.id);
-    return readout(ship, next.loadout, next.build, next.tune);
-  }, [ship, draft, looking]);
+    return readout(ship, next.loadout, next.build, next.tune, core);
+  }, [ship, draft, looking, core]);
   const toBuyKeys = useMemo(() => new Set(checked.toBuy.map((i) => i.key)), [checked]);
 
   const stage = (s, partId, module) => (module ? yard.setModule(s, partId) : yard.setPart(s, partId));
