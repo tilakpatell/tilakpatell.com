@@ -563,7 +563,7 @@ describe('a body that stops: ended in an error, so the page asks again, never he
     expect(w.asked.length).toBe(2);
   });
 
-  it('a slow body that keeps coming is not cut, and goes on the disk from the bytes the page read, asked for once', async () => {
+  it('a slow body that keeps coming is not cut, and goes on the disk from the same download, asked for once', async () => {
     const w = worker(() => new Response(body(['a', 'b', 'c', 'd', 'e'], 30).stream, { status: 200 }), null, limits);
     const one = w.ask(path);
     expect(await (await one.answer).text()).toBe('abcde');
@@ -579,6 +579,22 @@ describe('a body that stops: ended in an error, so the page asks again, never he
     await sleep(600);
     expect(await res.text()).toBe('xy');
   });
+
+  it('a big demanded file (past 64 MB) is downloaded once: the page and the disk copy both from that one download ([c4] on #1339)', async () => {
+    const MB = 1048576, parts = 70;
+    let n = 0;
+    const big = () => new ReadableStream({ pull(c) { if (n >= parts) return c.close(); c.enqueue(new Uint8Array(MB).fill(n++ % 251)); } });
+    const w = worker(() => new Response(big(), { status: 200 }), null, limits);
+    const one = w.ask(path);
+    const bytes = new Uint8Array(await (await one.answer).arrayBuffer());
+    await one.settled();
+    expect(bytes.length).toBe(parts * MB);
+    expect(w.asked).toEqual([ORIGIN + path]);
+    const kept = new Uint8Array(await (await w.get(path)).arrayBuffer());
+    expect(kept.length).toBe(parts * MB);
+    expect(kept[69 * MB]).toBe(69);
+    expect(w.asked).toEqual([ORIGIN + path]);
+  }, 20000);
 
   it('a read-ahead whose body stops fails its put, so the demand waiting on it asks for itself', async () => {
     const files = ['scene-m-1.res', 'scene-m-2.res'];
