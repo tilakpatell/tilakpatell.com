@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { SYSTEMS } from './profiles';
-import { MK, RARE_OF, TIER_PRICE, tierItem, tierKey, tierOf, tiersOf } from './tiers';
+import { MK, RARE_OF, TIER_PRICE, coreOf, tierItem, tierKey, tierOf, tiersOf } from './tiers';
 
 const owning = (...keys) => {
   const set = new Set(keys);
@@ -59,5 +59,14 @@ describe('a tier as an item', () => {
     expect(Object.keys(t)).toEqual(SYSTEMS);
     expect(t.hold).toBe(2);
     expect(t.engines).toBe(1);
+  });
+});
+
+describe('the core a wallet owns', () => {
+  it('is Mk I with no wallet, and the tiers owned with one', () => {
+    expect(coreOf(null, 'rv').reactor).toBe(0);
+    const wallet = { owns: (key) => ['tier:rv:reactor:2', 'tier:rv:reactor:3'].includes(key) };
+    expect(coreOf(wallet, 'rv').reactor).toBe(3);
+    expect(coreOf(wallet, 'rv', { hull: 'dart' }).reactor).toBe(2);
   });
 });

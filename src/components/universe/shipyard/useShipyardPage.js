@@ -19,6 +19,7 @@ import { local } from '../../../lib/hooks';
 import { useEconomy } from '../EconomyProvider';
 import { droppedParts, loadoutOf } from '../outfit';
 import { applyYardDraft, keepBuild, keepLoadouts, keepTune, readSaves } from './yardPage';
+import { coreOf } from '../ships/tiers';
 
 const NOTE_MS = 3200;
 const NO_TUNE = Object.freeze({}); // (one object for no tune, so what depends on it isn't rebuilt)
@@ -41,11 +42,13 @@ export function useShipyardPage({ ship, unlocked = [] }) {
   const setTune = (t) => {
     if (ship) setTunes(keepTune(local, tunes, ship, t));
   };
-  const loadout = useMemo(() => loadoutOf(loadouts, ship, unlocked, build, tune), [loadouts, ship, unlocked, build, tune]);
+  const { economy, version: walletVersion } = useEconomy();
+  // (the parts flown: as many as the plant runs, with the reactor's tier the wallet owns for this crew)
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- (the wallet's version says what it owns changed)
+  const loadout = useMemo(() => loadoutOf(loadouts, ship, unlocked, build, tune, coreOf(economy, ship, build)), [loadouts, ship, unlocked, build, tune, economy, walletVersion]);
   const dropped = useMemo(() => (ship ? droppedParts(loadouts[ship], loadout) : []), [loadouts, ship, loadout]); // (what the plant can't run)
 
   const [yard, setYard] = useState(false);
-  const { economy } = useEconomy();
   const [yardNote, setYardNote] = useState(null);
   const sayYard = (text) => setYardNote({ text, n: Date.now() });
   useEffect(() => {

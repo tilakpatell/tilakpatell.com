@@ -199,7 +199,7 @@ Today’s `EARN` stays, scaled by where it is earned: × (1 + 1.5 × danger). Th
 ### Charting and the scan
 
 - Entering a generated sector for the first time charts it: it pays, and the layout session’s nav map marks it (a `Mark` they take through `chart/marks.js`).
-- **C** sends the scan: a ring out to the scanner’s reach, again after the ship’s scan recharge. Everything it reaches is scanned: systems, planets, stations, things and gargantuans. The first scan of each pays into the data bank; scanned places show on the chart and their cards fill in by the scanner’s tier.
+- **Z** sends the scan (in flight; C opens the Hangar’s crew, and Z on foot is still the emote wheel): a ring out to the scanner’s reach, again after the ship’s scan recharge. Everything it reaches is scanned: systems, planets, stations, things and gargantuans. The first scan of each pays into the data bank; scanned places show on the chart and their cards fill in by the scanner’s tier.
 - A sector whose systems are all scanned is **Surveyed**: a bonus of ten systems’ worth, and a complete mark on the chart.
 
 ### What a find is worth
@@ -252,7 +252,7 @@ All through `runtime/saves.js`, each registered with a version; nothing generate
 
 | Key | What |
 | --- | --- |
-| `tp-pilot` (v2) | as now; the log takes two new kinds, `credit` and `tier` (an older page reading it drops them, as it drops any kind it doesn’t know) |
+| `tp-pilot` (v2) | as now: a tier is an owned item (`tier:<crew>:<system>:<n>`), bought on the log as `buy`; the log takes one new kind, `credit` (lane 2; an older page reading it drops it, as it drops any kind it doesn’t know) |
 | `tp-ships` (v1) | for each crew: its tiers and its hold |
 | `tp-market` (v1) | your selling and buying at each station (with when), the fields emptied, the wrecks salvaged, the pod |
 | `tp-explore` (v1) | the charted sectors and what in them is scanned, the unpaid data, the counts |

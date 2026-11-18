@@ -10,8 +10,10 @@
 // tierOf(owns, crew, system) → 1…5: the unbroken run from Mk II (owns is
 //   economy.owns)
 // tiersOf(owns, crew) → { [system]: tier }
+// coreOf(economy, crew, build) → coreStats at the tiers the wallet owns for the
+//   crew (Mk I everywhere with no wallet yet), for the shipyard's fit checks
 
-import { MAX_TIER, SYSTEMS, SYSTEM_LABEL } from './profiles';
+import { MAX_TIER, SYSTEMS, SYSTEM_LABEL, coreStats } from './profiles';
 
 export const TIER_PRICE = Object.freeze([0, 0, 600, 2000, 6000, 15000]);
 export const MK = Object.freeze(['', 'Mk I', 'Mk II', 'Mk III', 'Mk IV', 'Mk V']);
@@ -46,3 +48,5 @@ export function tierOf(owns, crew, system) {
 }
 
 export const tiersOf = (owns, crew) => Object.fromEntries(SYSTEMS.map((s) => [s, tierOf(owns, crew, s)]));
+
+export const coreOf = (economy, crew, build = null) => coreStats(crew, tiersOf(economy ? (key) => economy.owns(key) : null, crew), { build });
