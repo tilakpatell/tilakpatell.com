@@ -26,11 +26,11 @@
 //   (hyperspeed, J for the place picked), or the autopilot on super speed
 //   (the pulse drive pushed past itself) or cruising. The nav map can pull
 //   back to the whole map in 3D, too. ship.js has the physics. A new ship starts
-//   anywhere, unless a place is picked: at the edge of the home system, or
-//   out in deep space off a fandom's planet or a wonder (ship.js's startAt),
+//   in the Core, unless a place is picked: round the edge of the home system,
+//   facing the site's own stations, on a side of its own (ship.js's startAt),
 //   so pilots joining don't all turn up in one spot.
 //   Out past the home system is deep space (deep.js, deepspace.js), vast:
-//   the fandoms' planets are far out in it, thousands of units apart, each
+//   the fandoms' planets are out in their neighbourhoods (neighbourhoods.js), each
 //   only a star until you come near it (farStars.js), as the galaxy's other
 //   systems are, its name showing where you look, with
 //   wonders between them, all reached on the pulse drive (click a wonder
@@ -171,7 +171,7 @@ import { createTrench } from './trench';
 import { PHONE, createPhone } from './phone';
 import { SUPERNOVA_SITES, createSupernovae } from './supernova';
 import { DEEP, PLACES, WONDERS, moveBinaries, movePlanets, nearestStar, openness, reachOf, wonderById } from './deep';
-import { KEY as KEY_FULL, STARS as LIT_STARS, dayYaw, lightAt, sunFor } from './lighting';
+import { KEY as KEY_FULL, LIGHTS, STARS as LIT_STARS, dayYaw, lightAt, sunFor } from './lighting';
 import { createCrash } from './crash';
 import { createExplosions } from '../../lib/three/explosions';
 import { createInfall } from './infall';
@@ -771,7 +771,7 @@ export async function create(canvas, ctx) {
     workers: sectorPools(ctx.rt?.workers, spaceBudget),
     far: farStars,
     budget: spaceBudget,
-    stars: LIT_STARS, // (the hand-made stars, lighting.js's: the generated ones lit beside them)
+    stars: LIGHTS, // (the hand-made lights, lighting.js's: the generated stars lit beside them)
     drawNebula: expanseNebulae(deep.nebulae), // (its nebulae drawn by the map's one renderer: nebula/)
     prepare: (o) => sendAndWarm(o), // (declared further down)
     keyed: import.meta.env.DEV,
@@ -2178,8 +2178,8 @@ export async function create(canvas, ctx) {
       });
     }
     if (!state.ship) {
-      // a new pilot: at the universe picked, or anywhere (ship.js's STARTS),
-      // so those joining don't all turn up in the same place
+      // a new pilot: at the universe picked, or round the home system's edge
+      // (ship.js's STARTS), so those joining don't all turn up in one place
       // (a link out to a wonder, /universe/aurelia, starts parked beside it: props.startAt)
       // (never by the Maw, whose pull would have a new ship before it had flown)
       state.ship = spawn(state.sel, (!state.sel && props.startAt && props.startAt !== MAW.id && (isGoal(props.startAt) ? parkFor(props.startAt, [0, 0]) : places.park(props.startAt, [0, 0]))) || startAt());

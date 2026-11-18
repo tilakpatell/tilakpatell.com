@@ -48,144 +48,156 @@
   "place": null
  },
  {
-  "id": "beacon:graveyard",
+  "id": "beacon:rickmorty",
   "kind": "beacon",
   "at": [
-   -37541.423887,
-   250,
-   -9385.355972
+   -391990.953303,
+   -51.185584,
+   -54961.604841
   ],
-  "region": "graveyard",
-  "name": "Near The Graveyard",
+  "region": "rickmorty",
+  "name": "The Curve Rift",
   "place": null
  },
  {
   "id": "beacon:aurelia",
   "kind": "beacon",
   "at": [
-   -14071.924049,
-   -262.850392,
-   -11236.508652
+   -19244.259984,
+   -112.991386,
+   -19280.532498
   ],
   "region": "aurelia",
   "name": "Near Aurelia",
   "place": null
  },
  {
-  "id": "beacon:wanderer",
+  "id": "beacon:twins",
   "kind": "beacon",
   "at": [
-   -4814.601404,
-   -733.004989,
-   -33189.692471
+   -177016.208789,
+   367.543644,
+   -196146.34232
   ],
-  "region": "wanderer",
-  "name": "Near The Wanderer",
+  "region": "twins",
+  "name": "The Arcade Drift",
   "place": null
  },
  {
-  "id": "beacon:middleearth",
+  "id": "beacon:ember",
   "kind": "beacon",
   "at": [
-   6025.306439,
-   -610.354441,
-   -13956.946826
+   185856.483049,
+   -105.60881,
+   -151220.907979
   ],
-  "region": "middleearth",
-  "name": "Near Middle-earth",
+  "region": "ember",
+  "name": "Hero Reach",
   "place": null
  },
  {
   "id": "beacon:maw",
   "kind": "beacon",
   "at": [
-   28640.470482,
-   124.154479,
-   -17692.544281
+   25249.655172,
+   230,
+   -17373.103448
   ],
   "region": "maw",
-  "name": "Near The Maw",
+  "name": "Near the Maw",
   "place": null
  },
  {
-  "id": "beacon:cradle",
+  "id": "beacon:starwars",
   "kind": "beacon",
   "at": [
-   24132.437987,
-   -65.954049,
-   9546.660802
+   400081.86344,
+   -30,
+   53876.360663
   ],
-  "region": "cradle",
-  "name": "Near The Cradle",
-  "place": null
- },
- {
-  "id": "beacon:veil",
-  "kind": "beacon",
-  "at": [
-   -3922.028775,
-   573.661114,
-   26517.283684
-  ],
-  "region": "veil",
-  "name": "Near The Veil",
+  "region": "starwars",
+  "name": "The Maelstrom",
   "place": null
  },
  {
   "id": "beacon:halcyon",
   "kind": "beacon",
   "at": [
-   -29342.365979,
-   -355.812021,
-   10984.47712
+   124653.982233,
+   200.639488,
+   231666.720593
   ],
   "region": "halcyon",
-  "name": "Near Halcyon",
+  "name": "Earthside",
   "place": null
+ },
+ {
+  "id": "beacon:cradle",
+  "kind": "beacon",
+  "at": [
+   -56839.109982,
+   120.392988,
+   295212.35793
+  ],
+  "region": "cradle",
+  "name": "The Stage",
+  "place": null
+ },
+ {
+  "id": "beacon:veil",
+  "kind": "beacon",
+  "at": [
+   -274275.063252,
+   -143.819809,
+   127044.677569
+  ],
+  "region": "veil",
+  "name": "The Old Roads",
+  "place": null
+ },
+ {
+  "id": "ramp:rickmorty",
+  "kind": "ramp",
+  "at": [
+   -391964.861352,
+   -210,
+   -54850.867783
+  ],
+  "region": "rickmorty",
+  "name": "Dimension C-137",
+  "place": "rickmorty"
+ },
+ {
+  "id": "ramp:rmportal",
+  "kind": "ramp",
+  "at": [
+   -391882.686662,
+   -198,
+   -54817.031801
+  ],
+  "region": "rickmorty",
+  "name": "The Portal",
+  "place": "rmportal"
  },
  {
   "id": "ramp:graveyard",
   "kind": "ramp",
   "at": [
-   -38105.07668,
+   -38128.678267,
    160,
-   -9526.26917
+   -9737.114977
   ],
-  "region": "graveyard",
+  "region": "aurelia",
   "name": "The Graveyard",
   "place": "graveyard"
- },
- {
-  "id": "ramp:music",
-  "kind": "ramp",
-  "at": [
-   -12767.929958,
-   -286.206034,
-   5563.434706
-  ],
-  "region": "aurelia",
-  "name": "Music room",
-  "place": "music"
- },
- {
-  "id": "ramp:marvel",
-  "kind": "ramp",
-  "at": [
-   -17382.845501,
-   -1033.508472,
-   -9538.5231
-  ],
-  "region": "aurelia",
-  "name": "Avengers HQ",
-  "place": "marvel"
  },
  {
   "id": "ramp:aurelia",
   "kind": "ramp",
   "at": [
-   -13441.305452,
+   -13860.445392,
    135,
-   -16498.460479
+   -17196.019528
   ],
   "region": "aurelia",
   "name": "Aurelia",
@@ -195,252 +207,252 @@
   "id": "ramp:wanderer",
   "kind": "ramp",
   "at": [
-   -5381.593132,
+   -5513.963608,
    -700,
-   -39398.438726
+   -39432.733578
   ],
-  "region": "wanderer",
+  "region": "aurelia",
   "name": "The Wanderer",
   "place": "wanderer"
  },
  {
-  "id": "ramp:rickmorty",
+  "id": "ramp:gaming",
   "kind": "ramp",
   "at": [
-   -4109.211291,
-   -971.266441,
-   -25686.278611
+   -176141.541464,
+   365,
+   -196020.383121
   ],
-  "region": "wanderer",
-  "name": "Dimension C-137",
-  "place": "rickmorty"
+  "region": "twins",
+  "name": "Dot Matrix",
+  "place": "gaming"
  },
  {
-  "id": "ramp:rmportal",
+  "id": "ramp:lantern",
   "kind": "ramp",
   "at": [
-   -4221.622993,
-   -959.266441,
-   -25418.016326
+   -171432.9894,
+   440,
+   -192934.049914
   ],
-  "region": "wanderer",
-  "name": "The Portal",
-  "place": "rmportal"
- },
- {
-  "id": "ramp:potter",
-  "kind": "ramp",
-  "at": [
-   -23574.29878,
-   -1118.859622,
-   -26805.436439
-  ],
-  "region": "wanderer",
-  "name": "Hogwarts",
-  "place": "potter"
- },
- {
-  "id": "ramp:middleearth",
-  "kind": "ramp",
-  "at": [
-   6258.941266,
-   -520.354441,
-   -14498.135706
-  ],
-  "region": "middleearth",
-  "name": "Middle-earth",
-  "place": "middleearth"
+  "region": "twins",
+  "name": "The Lantern",
+  "place": "lantern"
  },
  {
   "id": "ramp:twins",
   "kind": "ramp",
   "at": [
-   36324.18766,
-   -220,
-   -9301.21265
+   -180840.434194,
+   140,
+   -198206.314847
   ],
-  "region": "maw",
+  "region": "twins",
   "name": "The Twins",
   "place": "twins"
  },
  {
-  "id": "ramp:caribbean",
+  "id": "ramp:transformers",
   "kind": "ramp",
   "at": [
-   21978.155269,
-   -148.23396,
-   -23001.718101
+   187163.160768,
+   750,
+   -157425.085311
+  ],
+  "region": "ember",
+  "name": "Cybertron",
+  "place": "transformers"
+ },
+ {
+  "id": "ramp:marvel",
+  "kind": "ramp",
+  "at": [
+   180955.629725,
+   600,
+   -149649.888719
+  ],
+  "region": "ember",
+  "name": "Avengers HQ",
+  "place": "marvel"
+ },
+ {
+  "id": "ramp:invincible",
+  "kind": "ramp",
+  "at": [
+   189676.54692,
+   50,
+   -147907.092636
+  ],
+  "region": "ember",
+  "name": "Invincible",
+  "place": "invincible"
+ },
+ {
+  "id": "ramp:ember",
+  "kind": "ramp",
+  "at": [
+   185831.881265,
+   300,
+   -151087.355441
+  ],
+  "region": "ember",
+  "name": "Ember",
+  "place": "ember"
+ },
+ {
+  "id": "ramp:glacia",
+  "kind": "ramp",
+  "at": [
+   21087.190587,
+   -235,
+   5520.451774
   ],
   "region": "maw",
-  "name": "The Caribbean",
-  "place": "caribbean"
+  "name": "Glacia",
+  "place": "glacia"
  },
  {
   "id": "ramp:maw",
   "kind": "ramp",
   "at": [
-   25840.869191,
+   25516.471555,
    200,
-   -20263.923173
+   -20369.228841
   ],
   "region": "maw",
   "name": "The Maw",
   "place": "maw"
  },
  {
-  "id": "ramp:gaming",
+  "id": "ramp:starwars",
   "kind": "ramp",
   "at": [
-   21859.931635,
-   1092.91898,
-   17154.501697
+   400654.933537,
+   60,
+   53953.498947
   ],
-  "region": "cradle",
-  "name": "Dot Matrix",
-  "place": "gaming"
- },
- {
-  "id": "ramp:cradle",
-  "kind": "ramp",
-  "at": [
-   29167.547839,
-   -505,
-   12853.055478
-  ],
-  "region": "cradle",
-  "name": "The Cradle",
-  "place": "cradle"
+  "region": "starwars",
+  "name": "A galaxy far, far away",
+  "place": "starwars"
  },
  {
   "id": "ramp:breakingbad",
   "kind": "ramp",
   "at": [
-   21266.960101,
-   470.587081,
-   -5194.602409
+   119341.483256,
+   75,
+   229458.801624
   ],
-  "region": "cradle",
+  "region": "halcyon",
   "name": "Albuquerque",
   "place": "breakingbad"
- },
- {
-  "id": "ramp:starwars",
-  "kind": "ramp",
-  "at": [
-   11247.152965,
-   942.447503,
-   4091.960443
-  ],
-  "region": "cradle",
-  "name": "A galaxy far, far away",
-  "place": "starwars"
- },
- {
-  "id": "ramp:glacia",
-  "kind": "ramp",
-  "at": [
-   21154.411339,
-   -235,
-   5789.123881
-  ],
-  "region": "cradle",
-  "name": "Glacia",
-  "place": "glacia"
  },
  {
   "id": "ramp:office",
   "kind": "ramp",
   "at": [
-   -13018.387075,
-   339.49256,
-   20026.49991
-  ],
-  "region": "veil",
-  "name": "Scranton",
-  "place": "office"
- },
- {
-  "id": "ramp:veil",
-  "kind": "ramp",
-  "at": [
-   -12280.453034,
-   505,
-   28136.935526
-  ],
-  "region": "veil",
-  "name": "The Veil",
-  "place": "veil"
- },
- {
-  "id": "ramp:invincible",
-  "kind": "ramp",
-  "at": [
-   -611.399533,
-   859.170315,
-   33627.487431
-  ],
-  "region": "veil",
-  "name": "Invincible",
-  "place": "invincible"
- },
- {
-  "id": "ramp:transformers",
-  "kind": "ramp",
-  "at": [
-   5754.807538,
-   1053.618223,
-   17072.920594
-  ],
-  "region": "veil",
-  "name": "Cybertron",
-  "place": "transformers"
- },
- {
-  "id": "ramp:ember",
-  "kind": "ramp",
-  "at": [
-   5553.526057,
-   305,
-   25973.198062
-  ],
-  "region": "veil",
-  "name": "Ember",
-  "place": "ember"
- },
- {
-  "id": "ramp:lantern",
-  "kind": "ramp",
-  "at": [
-   -36968.22686,
-   300,
-   15463.857972
+   122845.570816,
+   -425,
+   237259.0762
   ],
   "region": "halcyon",
-  "name": "The Lantern",
-  "place": "lantern"
+  "name": "Scranton",
+  "place": "office"
  },
  {
   "id": "ramp:travel",
   "kind": "ramp",
   "at": [
-   -29735.987277,
-   -640.556734,
-   2303.17086
+   126535.529089,
+   275,
+   226961.232808
   ],
   "region": "halcyon",
   "name": "Earth",
   "place": "travel"
  },
  {
+  "id": "ramp:caribbean",
+  "kind": "ramp",
+  "at": [
+   129454.622689,
+   25,
+   233737.296945
+  ],
+  "region": "halcyon",
+  "name": "The Caribbean",
+  "place": "caribbean"
+ },
+ {
   "id": "ramp:halcyon",
   "kind": "ramp",
   "at": [
-   -27557.571389,
-   -370,
-   11227.373911
+   124744.141576,
+   -125,
+   231620.774005
   ],
   "region": "halcyon",
   "name": "Halcyon",
   "place": "halcyon"
+ },
+ {
+  "id": "ramp:music",
+  "kind": "ramp",
+  "at": [
+   -49955.738955,
+   425,
+   296471.511167
+  ],
+  "region": "cradle",
+  "name": "Music room",
+  "place": "music"
+ },
+ {
+  "id": "ramp:cradle",
+  "kind": "ramp",
+  "at": [
+   -57055.66969,
+   175,
+   295172.743349
+  ],
+  "region": "cradle",
+  "name": "The Cradle",
+  "place": "cradle"
+ },
+ {
+  "id": "ramp:middleearth",
+  "kind": "ramp",
+  "at": [
+   -281634.951009,
+   -450,
+   128565.886172
+  ],
+  "region": "veil",
+  "name": "Middle-earth",
+  "place": "middleearth"
+ },
+ {
+  "id": "ramp:potter",
+  "kind": "ramp",
+  "at": [
+   -268518.748917,
+   100,
+   132487.713801
+  ],
+  "region": "veil",
+  "name": "Hogwarts",
+  "place": "potter"
+ },
+ {
+  "id": "ramp:veil",
+  "kind": "ramp",
+  "at": [
+   -274285.176095,
+   -250,
+   127083.085682
+  ],
+  "region": "veil",
+  "name": "The Veil",
+  "place": "veil"
  }
 ]

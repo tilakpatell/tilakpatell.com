@@ -34,11 +34,11 @@
 // those pages may grow by. A generated place is timed by places/trip.js's
 // formula, and a jump to one is a jump like any other.
 
-import { EDGE, GOALS, OVERDRIVE, SHIP, SOLIDS, autopilot, forward, goalAt, headingTo, isGoal, parkAt, step } from './ship';
+import { GOALS, OVERDRIVE, SHIP, SOLIDS, autopilot, forward, goalAt, headingTo, isGoal, parkAt, step } from './ship';
 import { PORTALS, portalById, portalHit, transit } from './portals';
 import { MAW, parkNear } from './maw';
 import { WONDERS, reachOf } from './deep';
-import { HOME_RADIUS, ORDER, POSITIONS, REACH, SECTORS, mapSectorOf, sectorOf } from './layout';
+import { HOME_RADIUS, ORDER, POSITIONS, REACH, SECTORS, UNIVERSE_RADIUS, mapSectorOf } from './layout';
 import { MOONS, byId } from './universes';
 import { moonWay } from './words';
 import { LENGTH } from './scale';
@@ -173,7 +173,7 @@ export const DESTINATIONS = [
     to: `/galaxy/${id}`,
     via: 'starwars',
   })),
-].map((d) => ({ ...d, sector: sectorOf(...d.at) })); // (which sector of the map it's in: layout.js)
+].map((d) => ({ ...d, sector: mapSectorOf(...d.at) })); // (which sector of the map it's in, the Curve's or the main map's: layout.js)
 const BY_ID = new Map(DESTINATIONS.map((d) => [d.id, d])); // (a Map: a word from a visitor is never a prototype's key here)
 // a generated place the caller's lookup finds, by its canonical id; null
 // for none, and with no lookup (this file never reaches the generator)
@@ -201,9 +201,9 @@ export const canGo = (id, { place } = {}) => isGoal(goalOf(id)) || generated(id,
 // map's: none is in the Curve, so from there it's gone to by the portal home)
 const sectorOfGoal = (id) => {
   const g = goalAt(goalOf(id));
-  return g ? sectorOf(...g.at) : isPlaceId(id) ? 'main' : null;
+  return g ? mapSectorOf(...g.at) : isPlaceId(id) ? 'main' : null;
 };
-export const portalBetween = (from, to) => PORTALS.find((p) => sectorOf(...p.at) === from && p.leadsTo.sector === to) ?? null;
+export const portalBetween = (from, to) => PORTALS.find((p) => mapSectorOf(...p.at) === from && p.leadsTo.sector === to) ?? null;
 export function legOf(ship, id, pose = null) {
   const goal = goalOf(id);
   const there = pilotId(goal) ? (pose ? mapSectorOf(pose.x, pose.y ?? 0, pose.z) : null) : sectorOfGoal(goal);
@@ -303,7 +303,7 @@ export function parkFor(id, from, { park } = {}) {
 // layout.js; somewhere you haven't been, from `saw`, while there's anywhere left)
 const RIFT_EXITS = Object.keys(GOALS).filter((id) => id !== MAW.id && !id.includes('-') && !portalById(id));
 export function riftExit(fromId = null, rand = Math.random, sector = 'main', saw = null) {
-  const exits = RIFT_EXITS.filter((id) => id !== fromId && sectorOf(...GOALS[id].at) === sector);
+  const exits = RIFT_EXITS.filter((id) => id !== fromId && mapSectorOf(...GOALS[id].at) === sector);
   const fresh = saw ? exits.filter((id) => !saw.has(id)) : exits;
   const pool = fresh.length ? fresh : exits;
   return pool[Math.min(pool.length - 1, Math.floor(rand() * pool.length))];
@@ -440,7 +440,8 @@ export function formatDistance(units) {
 // (and a third, the Rick and Morty sector, round its own middle: each view's
 // `sector`, and its `origin`, the point at its middle)
 export const CHART_VIEWS = {
-  all: { id: 'all', name: 'Universe', r: EDGE, scale: 'root', power: 0.375, sector: 'main', origin: [0, 0, 0] },
+  // (out to the furthest neighbourhood, neighbourhoods.js: on a 0.3 power, so the home system still opens up)
+  all: { id: 'all', name: 'Universe', r: UNIVERSE_RADIUS * 1.08, scale: 'root', power: 0.3, sector: 'main', origin: [0, 0, 0] },
   home: { id: 'home', name: 'Home system', r: HOME_RADIUS * 1.15, scale: 'linear', sector: 'main', origin: [0, 0, 0] },
   rickmorty: { id: 'rickmorty', name: 'The Curve', r: SECTORS.rickmorty.edge, scale: 'root', power: 0.5, sector: 'rickmorty', origin: SECTORS.rickmorty.origin },
 };

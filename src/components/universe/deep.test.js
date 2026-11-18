@@ -3,10 +3,12 @@ import { DEEP, DEEP_SOLIDS, ORBIT_PERIOD, PLACES, STARS, WONDERS, beyondOf, bina
 import { GOALS } from './ship';
 import { HOME_RADIUS, ORDER, POSITIONS, REACH, SECTORS, SECTOR_OF, inSector, sectorOf } from './layout';
 import { MOONS, byId } from './universes';
+import { NEIGHBOURHOOD_OF } from './neighbourhoods';
 
 describe('deep space', () => {
   it('puts every wonder well out past the home system and inside the edge, within the ceiling', () => {
-    for (const w of WONDERS) {
+    // (a neighbourhood's landmarks are out in the Expanse: neighbourhoods.test.js)
+    for (const w of WONDERS.filter((x) => !NEIGHBOURHOOD_OF[x.id] && x.id !== 'rmportal')) {
       const sec = SECTORS[sectorOf(...w.at)];
       expect(sec.id, w.id).toBe(w.sector ?? 'main');
       const r = Math.hypot(w.at[0] - sec.origin[0], w.at[2] - sec.origin[2]);
@@ -232,7 +234,7 @@ describe('deep space', () => {
 });
 
 describe('deep space, spread (scale.js’s SPREAD)', () => {
-  const main = WONDERS.filter((w) => !w.sector);
+  const main = WONDERS.filter((w) => !w.sector && !NEIGHBOURHOOD_OF[w.id] && w.id !== 'rmportal'); // (the Core's)
   it('puts every main-sector wonder between 12,000 and 45,000 out', () => {
     for (const w of main) {
       const r = Math.hypot(w.at[0], w.at[2]);

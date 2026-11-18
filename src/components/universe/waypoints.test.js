@@ -5,8 +5,9 @@ import FIXTURE from './__fixtures__/nodes.json';
 // The places the fleet war's fronts and the far fights are at: the lane
 // nodes as they were (__fixtures__/nodes.json, taken from hyperlanes.js
 // before the lanes went; their places moved out with the spread to six on
-// 2026-10-09, scale.js's SPREAD), ids and all, since online the fronts are
-// shared by these ids
+// 2026-10-09, scale.js's SPREAD, and again with the worlds when they moved
+// out to their neighbourhoods on 2026-11-18, neighbourhoods.js, the regions
+// with them), ids and all, since online the fronts are shared by these ids
 describe('the waypoints', () => {
   it('are the lane nodes as they were', () => {
     expect(NODES.map((n) => n.id)).toEqual(FIXTURE.map((n) => n.id));

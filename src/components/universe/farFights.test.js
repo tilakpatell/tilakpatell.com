@@ -4,6 +4,7 @@ import { FAR, MIN_ANGLE, SKY, createFarFights, fightLabel, impostorFor, isFar, p
 import { NODES } from './waypoints';
 import { REGIONS, regionAt } from './regions';
 import { POSITIONS } from './layout';
+import { WONDERS } from './deep';
 
 // a seeded random, so a pick is the same every run; the seed is mixed
 // first, so neighbouring seeds don’t start alike
@@ -43,9 +44,11 @@ describe('far fights', () => {
 
   it('names the region a fight is in, or the void', () => {
     const me = POSITIONS.middleearth;
-    expect(regionAt(...me).name).toBe('Near Middle-earth');
-    expect(fightLabel(me)).toBe('Fighting near Middle-earth');
-    expect(fightLabel({ x: me[0], y: me[1], z: me[2] })).toBe('Fighting near Middle-earth');
+    expect(regionAt(...me).name).toBe('The Old Roads');
+    expect(fightLabel(me)).toBe('Fighting in the Old Roads');
+    expect(fightLabel({ x: me[0], y: me[1], z: me[2] })).toBe('Fighting in the Old Roads');
+    expect(fightLabel(POSITIONS.office)).toBe('Fighting in Earthside');
+    expect(fightLabel(WONDERS.find((w) => w.id === 'maw').at)).toBe('Fighting near the Maw');
     expect(fightLabel([0, 0, 0])).toBe('Fighting in the home system');
     // (a point a long way from everything)
     const voidAt = [0, 0, 200000];
@@ -108,7 +111,7 @@ describe('pickFightNode', () => {
 
   it('never picks one within FAR, falling back to a beacon, and gives null when there’s none', () => {
     // sitting on Middle-earth’s beacon, headed there: its own nodes are all near
-    const b = NODES.find((n) => n.id === 'beacon:middleearth');
+    const b = NODES.find((n) => n.id === 'beacon:veil'); // (the Old Roads': its biggest member is the Veil)
     const here = { x: b.at[0], y: b.at[1], z: b.at[2] };
     for (let s = 1; s < 20; s++) {
       const n = pickFightNode({ ship: here, headedFor: 'middleearth', rand: seeded(s) });

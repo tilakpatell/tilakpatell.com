@@ -58,13 +58,12 @@
 // anywhere it's eased down onto it (SHIP.settle), never braked at a flat
 // rate into a wall.
 
-import { DEEP, DEEP_SOLIDS, WONDERS, driveOpen, easeOpen, gapAlong, openness, reachOf, trenchBand } from './deep';
+import { DEEP, DEEP_SOLIDS, WONDERS, driveOpen, easeOpen, gapAlong, openness, trenchBand } from './deep';
 import { BODIES, HOME_RADIUS, POSITIONS, REACH, SECTORS, SECTOR_RADIUS, SUN, sectorById, sectorOf, sectorOut } from './layout';
 import { MAW } from './maw';
 import { NOSE, UP, axisAngle, conj, forward, fromAngles, mul, normalize, rotate, toAngles, turnToward } from './orient';
 import { byId } from './universes';
 import { sunFor } from './lighting';
-import { REGIONS } from './regions';
 import { springStep } from '../../lib/spring';
 
 // (the speeds as they were till October 2026, cruise 5.5, boost 20 and the
@@ -326,25 +325,16 @@ export function parkAt(id, from = [0, HOME_RADIUS]) {
   return { x: best.x, y: p.at[1] + (deep ? 0 : SHIP.height), z: best.z, heading: best.heading };
 }
 
-// Where a new ship can start with nowhere picked, so the pilots joining
-// don't all turn up in one spot (online, on top of each other): round the
-// edge of the home system facing its middle, or out in deep space a way off
-// one of the fandoms' planets or one of the wonders, facing it. Never by the
-// Maw, whose pull would have a new ship before it had flown. Each is { id,
-// at, y, d }: what it starts off, the height it starts at, and how far from
-// its middle: out past its reach (so it isn't at it yet), and far enough
-// back from a big one to see all of it
-const startOff = (reach, r) => Math.max(reach * 1.15 + 12, r * 2.4);
+// Where a new ship can start with nowhere picked: round the edge of the
+// home system, in the Core, facing its middle (the sun, and the site's own
+// stations round it: a first-time visitor sees the résumé, the projects and
+// the rest before anything else), on a side of its own, so the pilots
+// joining online don't all turn up in one spot. The fandoms are out in
+// their neighbourhoods (neighbourhoods.js), a jump away. Each is { id, at,
+// y, d }: what it starts off, the height it starts at, and how far from
+// its middle.
 export const STARTS = [
   { id: 'sun', at: SUN.at, y: SHIP.height, d: HOME_RADIUS + 1.5 }, // (the home system's middle)
-  // (all in the main sector: the Rick and Morty sector is through its portal)
-  ...PLANETS.filter((p) => byId(p.id).kind !== 'core' && sectorOf(...p.at) === 'main').map((p) => ({ id: p.id, at: p.at, y: p.at[1] + SHIP.height, d: startOff(p.reach, p.r) })),
-  // (off a wonder: clear of its solid, which can reach past the wonder's own radius: a pulsar's glare)
-  ...WONDERS.filter((w) => w.id !== MAW.id && w.kind !== 'portal' && sectorOf(...w.at) === 'main').map((w) => ({ id: w.id, at: w.at, y: w.at[1], d: startOff(reachOf(w), w.solid === false ? 0 : (DEEP_SOLIDS.find((o) => o.id === w.id)?.r ?? w.r)) })),
-  // (and 60 off each region's beacon, regions.js, out among the places:
-  // since the spread they're a long way apart, and a new pilot starts out
-  // where the waypoints are, so the universe is peopled, not crowded)
-  ...REGIONS.slice(1).map((r) => ({ id: `beacon:${r.id}`, at: r.hub, y: r.hub[1], d: 60 })),
 ];
 // the near edge of the home system, facing its middle: where a ship starts
 // unless told otherwise

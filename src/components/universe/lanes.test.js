@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { bezier, clearance, dockScale, dockable, flybyLane, laneBetween, laneDock, laneLength, meteorLane, tangent } from './lanes';
 import { SHIP, parkAt, spawn } from './ship';
-import { MAP_RADIUS, ORDER } from './layout';
+import { MAP_RADIUS, ORDER, UNIVERSE_RADIUS } from './layout';
 
 // the same "random" every run
 const seeded = (seed = 1) => () => {
@@ -44,7 +44,7 @@ describe('everyday traffic', () => {
     const rand = seeded(3);
     for (let n = 0; n < 50; n++) {
       const pts = laneBetween(rand);
-      if (pts) for (const p of [pts[0], pts[2]]) expect(Math.hypot(p[0], p[2])).toBeLessThan(MAP_RADIUS + 24);
+      if (pts) for (const p of [pts[0], pts[2]]) expect(Math.hypot(p[0], p[2])).toBeLessThan(UNIVERSE_RADIUS + 24); // (the worlds are out in their neighbourhoods)
       const big = laneBetween(rand, { high: true });
       if (big) expect(laneLength(big)).toBeGreaterThan(MAP_RADIUS);
     }

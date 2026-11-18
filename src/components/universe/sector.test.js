@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { BODIES, MAP_RADIUS, ORDER, POSITIONS, REACH, SECTORS, SECTOR_OF, SECTOR_RADIUS, inSector, sectorOf, sectorOut } from './layout';
 import { WONDERS, reachOf } from './deep';
+import { NEIGHBOURHOOD_OF } from './neighbourhoods';
 import { OPEN_SPACE, SPACE, spawn, step } from './ship';
 
 describe('the sectors', () => {
@@ -29,7 +30,8 @@ describe('the sectors', () => {
   });
 
   it('puts every wonder in the sector it says, inside that sector’s edge', () => {
-    for (const w of WONDERS) {
+    // (a neighbourhood's landmarks are out in the Expanse: neighbourhoods.test.js)
+    for (const w of WONDERS.filter((x) => !NEIGHBOURHOOD_OF[x.id] && x.id !== 'rmportal')) {
       const sec = SECTORS[w.sector ?? 'main'];
       expect(sectorOf(...w.at), w.id).toBe(sec.id);
       expect(Math.hypot(w.at[0] - sec.origin[0], w.at[2] - sec.origin[2]) + reachOf(w), w.id).toBeLessThan(sec.edge);
