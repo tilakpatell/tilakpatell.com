@@ -3,6 +3,7 @@ import {
   UNIVERSE,
   UNIVERSE_SEED,
   hash64,
+  hash64Big,
   int,
   pick,
   planetSeed,
@@ -77,5 +78,13 @@ describe("rngOf", () => {
       expect([2, 3, 4]).toContain(n);
       expect(["a", "b"]).toContain(pick(r, ["a", "b"]));
     }
+  });
+});
+
+describe('hash64 in two halves', () => {
+  it('is the BigInt FNV-1a, byte for byte, ASCII or not', () => {
+    const words = [[''], ['tilakverse'], [UNIVERSE, 'sector', 3, -2], [123456789n, 'planet', 7], ['ü', 'ünïcødé ✓'], ['a'.repeat(300)], [0xffffffffffffffffn, 'x']];
+    for (const w of words) expect(hash64(...w), String(w)).toBe(hash64Big(...w));
+    for (let i = 0; i < 2000; i++) expect(hash64(UNIVERSE, 'thing', i)).toBe(hash64Big(UNIVERSE, 'thing', i));
   });
 });

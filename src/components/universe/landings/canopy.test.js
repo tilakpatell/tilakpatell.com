@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
 import { houseShader } from '../../../lib/three/house';
 import { METRE } from '../foot';
-import { aimCanopy, bakeCanopy, canopy, canopyShader, cardGroups, crownMaterial, familyOf, seeCanopy, sunCanopy, tickCanopy } from './canopy';
+import { aimCanopy, bakeCanopy, canopy, canopyShader, cardGroups, crownMaterial, familyOf, placeCanopy, seeCanopy, sunCanopy, tickCanopy } from './canopy';
 
 // (a crown as the GLBs have one: cards of 4 vertices in a shell, quantized,
 // a third of them facing in; and a card at its middle)
@@ -195,6 +195,24 @@ describe('the page’s one canopy', () => {
     seeCanopy(new THREE.Vector3(1, 2, 3));
     expect(u.uCanopySee.value.toArray()).toEqual([1, 2, 3, 1]);
     seeCanopy(null);
+    expect(u.uCanopySee.value.w).toBe(0);
+  });
+
+  it('opens round you where you are as a crown is drawn, round the camera (relative.js)', () => {
+    const u = canopy().uniforms;
+    const map = new THREE.Group();
+    const root = new THREE.Group(); // (the landing's, at the planet's middle)
+    root.position.set(6326, -520, -14653);
+    map.add(root);
+    map.updateMatrixWorld();
+    seeCanopy(new THREE.Vector3(1, 2, 3), root);
+    // drawn(): the map moved by minus the camera, for the draw alone
+    map.position.set(-6000, 500, 14000);
+    map.updateMatrixWorld();
+    placeCanopy();
+    expect(u.uCanopySee.value.toArray()).toEqual([327, -18, -650, 1]);
+    seeCanopy(null, root);
+    placeCanopy();
     expect(u.uCanopySee.value.w).toBe(0);
   });
 });

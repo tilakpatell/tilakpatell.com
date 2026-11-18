@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createHash } from 'node:crypto';
-import { CONTRACT, ENCODINGS, SHARED_UI, adopted, compressible, encodingsOf, floorNeeds, programNeeds, contractProblems, hookProblems, levelProblems, missingFiles, newest, rulebookProblems, uiDataFor, uploadPlan } from './bf2web-site.mjs';
+import { CONTRACT, ENCODINGS, SHARED_UI, adopted, staged, compressible, encodingsOf, floorNeeds, programNeeds, contractProblems, hookProblems, levelProblems, missingFiles, newest, rulebookProblems, uiDataFor, uploadPlan } from './bf2web-site.mjs';
 import BOOK from '../../src/data/bf2017/modes.json' with { type: 'json' };
 
 const sha = (c) => c.repeat(64);
@@ -113,6 +113,26 @@ describe('which build the site plays', () => {
     expect(rollback.retainedBuilds.c.uiData).toBe('sites/c/ui-data/');
     expect(adopted({ ...a, build: null }, 'b', m).retainedBuilds).toEqual({});
   });
+
+  it('stages a pre-uploaded build by name without moving the build, and promotes it on adoption', () => {
+    const a = { build: 'a', site: 'sites/a/', uiData: 'sites/a/ui-data/', export: 'web/', exportAllow: ['fonts/'], retainedBuilds: { z: { site: 'sites/z/' } } };
+    const s = staged(staged(a, 'b', 'sites/b/ui-data/'), 'c', 'sites/c/ui-data/');
+    expect(s.build).toBe('a');
+    expect(s.site).toBe('sites/a/');
+    expect(s.retainedBuilds).toEqual(a.retainedBuilds);
+    expect(s.stagedBuilds).toEqual({
+      b: { site: 'sites/b/', export: 'web/', uiData: 'sites/b/ui-data/', exportAllow: ['fonts/'] },
+      c: { site: 'sites/c/', export: 'web/', uiData: 'sites/c/ui-data/', exportAllow: ['fonts/'] },
+    });
+    expect(a).not.toHaveProperty('stagedBuilds');
+    // (the current build is never staged)
+    expect(staged(a, 'a')).toBe(a);
+    const promoted = adopted(s, 'b', manifest([]), 'sites/b/ui-data/');
+    expect(promoted.build).toBe('b');
+    expect(Object.keys(promoted.stagedBuilds)).toEqual(['c']);
+    expect(Object.keys(promoted.retainedBuilds)).toEqual(['z', 'a']);
+    expect(promoted.retainedBuilds.a.uiData).toBe('sites/a/ui-data/');
+  });
 });
 
 describe('what a build asks of the visitor’s GPU', () => {
@@ -190,15 +210,28 @@ describe('uploading a build', () => {
   it('keeps target skips and same-path copies ahead of moved copies without changing their metadata', () => {
     const next = entry('new.pixels', 5, sha('b')), old = [entry('a.pixels', 5, sha('b')), next];
     const options = {prefix, previousPrefix, previous: {entries: old}, previousExisting: old.map(e => ({key: previousPrefix + e.path, size: e.bytes}))};
-    expect(uploadPlan({entries: [next]}, {...options, existing: [{key: prefix + next.path, size: 5}]})[0]).toEqual({action: 'skip', key: prefix + next.path});
+    expect(uploadPlan({entries: [next]}, {...options, existing: [{key: prefix + next.path, size: 5, sha256: sha('b')}]})[0]).toEqual({action: 'skip', key: prefix + next.path});
     expect(uploadPlan({entries: [next]}, {...options, existing: [{key: prefix + next.path, size: 4}]})[0]).toEqual({action: 'copy', key: prefix + next.path, from: previousPrefix + next.path});
     expect(uploadPlan({entries: [next]}, {prefix, previousPrefix, previous: {entries: [next]}})[0]).toEqual({action: 'copy', key: prefix + next.path, from: previousPrefix + next.path});
+  });
+
+  it('skips a key already there only when its recorded sha256 matches the manifest, not on its size alone', () => {
+    // 13 Nov 2026: a rebuilt site uploaded under a build id already used kept the old bytes of every same-size key.
+    const m = manifest([entry('cooked-programs.json', 7, sha('c'))]), key = 'sites/n/cooked-programs.json';
+    const at = (existing) => uploadPlan(m, { prefix: 'sites/n/', existing }).find((p) => p.key === key);
+    expect(at([{ key, size: 7, sha256: sha('c') }])).toEqual({ action: 'skip', key });
+    expect(at([{ key, size: 7, sha256: sha('d') }])).toEqual({ action: 'put', key, path: 'cooked-programs.json' });
+    expect(at([{ key, size: 7 }])).toEqual({ action: 'put', key, path: 'cooked-programs.json' });
+    expect(at([{ key, size: 7, sha256: null }])).toEqual({ action: 'put', key, path: 'cooked-programs.json' });
+    expect(at([{ key, size: 6, sha256: sha('c') }])).toEqual({ action: 'put', key, path: 'cooked-programs.json' });
+    const bad = manifest([{ ...entry('x.bin', 3, ''), sha256: undefined }]);
+    expect(uploadPlan(bad, { prefix: 'sites/n/', existing: [{ key: 'sites/n/x.bin', size: 3, sha256: undefined }] }).find((p) => p.key === 'sites/n/x.bin').action).toBe('put');
   });
 
   it('copies what the last build has byte for byte, skips what is up already, puts the rest and the manifest last', () => {
     const m = manifest([entry('scene.res', 5, sha('b')), entry('new.res', 6, sha('c'))]);
     const previous = manifest([entry('scene.res', 5, sha('b')), entry('new.res', 6, sha('d'))]);
-    const plan = uploadPlan(m, { prefix: 'sites/n/', previous, previousPrefix: 'sites/o/', existing: [{ key: 'sites/n/index.html', size: 10 }] });
+    const plan = uploadPlan(m, { prefix: 'sites/n/', previous, previousPrefix: 'sites/o/', existing: [{ key: 'sites/n/index.html', size: 10, sha256: sha('a') }] });
     expect(plan.find((p) => p.key === 'sites/n/index.html')).toEqual({ action: 'skip', key: 'sites/n/index.html' });
     expect(plan.find((p) => p.key === 'sites/n/scene.res')).toEqual({ action: 'copy', key: 'sites/n/scene.res', from: 'sites/o/scene.res' });
     expect(plan.find((p) => p.key === 'sites/n/new.res')).toEqual({ action: 'put', key: 'sites/n/new.res', path: 'new.res' });

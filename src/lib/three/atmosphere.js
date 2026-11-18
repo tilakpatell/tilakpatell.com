@@ -150,6 +150,11 @@ export function createAtmosphere({ radius, top = DEFAULTS.top, colour = '#000000
   const geo = new THREE.SphereGeometry(radius * top, segments[0], segments[1]);
   const mat = new THREE.ShaderMaterial({ vertexShader: SHELL_VERT, fragmentShader: flat ? `#define FLAT\n${SHELL_FRAG}` : SHELL_FRAG, uniforms: u, defines: { STEPS: steps }, side: THREE.BackSide, blending: THREE.AdditiveBlending, transparent: true, depthWrite: false });
   const mesh = new THREE.Mesh(geo, mat);
+  // (where the middle is as it's drawn, which a map drawn round the camera
+  // has moved since update(): the shell sits on its planet's middle)
+  mesh.onBeforeRender = () => {
+    u.uCenter.value.setFromMatrixPosition(mesh.matrixWorld);
+  };
   const set = ({ suns: list = null, strength = null } = {}) => {
     if (list) {
       for (let i = 0; i < 2; i++) {

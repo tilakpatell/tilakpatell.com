@@ -22,13 +22,17 @@
 //   planetsOf(rows) → { id, name, type, seed }[]: the named worlds, then the rows'
 //   TYPE_BIOMES[type] → an Expanse planet's biomes
 //   TERRAIN_VERSION → the ground's version (what's built is put back on a newer one)
+//   ROSTER_EXTRA → what the fifty carry beside their seventeen fields
 //   planetSpecOf(id, { expanse }) → { id, name, seed, type, climate, biomes, pois, pits,
-//     palette, clutter, step, soft, ground, water, fog, landmarks, hero } | null
+//     palette, clutter, step, soft, ground, water, fog, landmarks, hero, and ROSTER_EXTRA's keys:
+//     kind, parent, buildable, round, character, sky, weather, flora, fauna, exotic } | null
+//     (an id in either case, its sector with or without its height; a moon is 'e:sx,sz:i:j:k')
 
 import { fold } from './fnl.js';
-import { expanseLookup } from './expanse.js';
+import { canonicalId, expanseLookup } from './expanse.js';
 import { hash64 } from './hash.js';
-import { TYPE_BIOMES, TYPE_LOOK, WORLDS, expand } from './planetTables.js';
+import { generatedSpecOf } from './generated.js';
+import { PLANE_CLIMATE, SEEDED_EXPANSE, TYPE_BIOMES, TYPE_LOOK, WORLDS, expand, familyOf } from './planetTables.js';
 
 // The ground's version, for what's built on it (the shared world's
 // terrain_version): bumped by hand whenever this file or ./planetTables.js
@@ -40,7 +44,12 @@ export const TERRAIN_VERSION = 2;
 
 export { TYPE_BIOMES };
 
-const CLIMATE = { frequency: 0.00025, warp: 400 };
+const CLIMATE = PLANE_CLIMATE;
+
+// what the fifty carry beside their own fields: nothing new, and they may be built on
+export const ROSTER_EXTRA = { kind: 'planet', parent: null, buildable: true, round: null, character: null, sky: null, weather: null, flora: null, fauna: null, exotic: null };
+
+const SEEDED = new Set(SEEDED_EXPANSE.map(([id]) => id));
 
 // a named world's seed is its own where it has one (Hoth's), else its id hashed
 const seedOf = (w) => w.seed ?? fold(hash64('fly', w.id));
@@ -73,16 +82,24 @@ const specOf = ({ id, name, type, seed }, w) => ({
   hero: w.hero ?? null,
 });
 
-const EXPANSE_ID = /^e:(-?\d+),(-?\d+):(\d+):(\d+)$/;
+// an Expanse row through its type's template: the seeded thirteen's ground, as it always was
+const templateSpec = (id, p, type) => {
+  const look = TYPE_LOOK[type];
+  return specOf({ id, name: p.name, type, seed: expanseSeed(p) }, { biomes: TYPE_BIOMES[type], palette: look.palette, clutter: look.clutter, soft: look.soft, ground: look.ground, water: look.water });
+};
 
 export function planetSpecOf(planetId, { expanse = null } = {}) {
   if (typeof planetId !== 'string') return null;
-  const id = planetId.toLowerCase();
-  const w = WORLDS.find((x) => x.id === id);
-  if (w) return specOf({ id, name: w.name, type: w.type, seed: seedOf(w) }, w);
-  if (!EXPANSE_ID.test(id)) return null;
+  const named = planetId.toLowerCase();
+  const w = WORLDS.find((x) => x.id === named);
+  if (w) return { ...specOf({ id: named, name: w.name, type: w.type, seed: seedOf(w) }, w), ...ROSTER_EXTRA };
+  const id = canonicalId(planetId);
+  if (!id) return null;
   const p = expanseLookup(expanse)(id);
-  if (!p || !TYPE_BIOMES[p.type]) return null;
-  const look = TYPE_LOOK[p.type];
-  return specOf({ id, name: p.name, type: p.type, seed: expanseSeed(p) }, { biomes: TYPE_BIOMES[p.type], palette: look.palette, clutter: look.clutter, soft: look.soft, ground: look.ground, water: look.water });
+  if (!p) return null;
+  if (SEEDED.has(id)) return TYPE_BIOMES[p.type] ? { ...templateSpec(id, p, p.type), ...ROSTER_EXTRA } : null;
+  const family = familyOf(p.type);
+  if (!TYPE_BIOMES[family]) return null;
+  const moon = id.split(':').length === 5;
+  return generatedSpecOf({ ...p, id, parent: moon ? (p.parent ?? id.slice(0, id.lastIndexOf(':'))) : null }, family);
 }

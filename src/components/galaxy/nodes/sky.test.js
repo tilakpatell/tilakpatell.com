@@ -38,6 +38,21 @@ const bakeOf = (sky) => {
 };
 
 describe('galaxy/nodes/sky, the twin of galaxy/sky', () => {
+  it('goes deep as the sky does: off unless asked, held to 0…1', () => {
+    const a = glsl.createSky();
+    const n = nodes.createSky();
+    const deep = (s) => s.group.children[0].material.uniforms.uDeep.value;
+    expect(deep(n)).toBe(deep(a));
+    expect(deep(a)).toBe(0);
+    for (const k of [1, 0.4, 3, -1]) {
+      a.setDeep(k);
+      n.setDeep(k);
+      expect(deep(n)).toBe(deep(a));
+    }
+    expect(deep(a)).toBe(0);
+    a.dispose();
+    n.dispose();
+  });
   it('exports what sky exports, and its numbers are the same', () => {
     expect(Object.keys(nodes).sort()).toEqual(Object.keys(glsl).sort());
     for (const s of SYSTEMS) expect(nodes.nebulaeOf(s)).toEqual(glsl.nebulaeOf(s));
@@ -80,6 +95,17 @@ describe('galaxy/nodes/sky, the twin of galaxy/sky', () => {
       a.dispose();
       n.dispose();
     }
+    // and without the clouds (the universe map's sky), the same again
+    const a = glsl.createSky({ level: 'high', clouds: false });
+    const n = nodes.createSky({ level: 'high', clouds: false });
+    a.setSystem(systemById('kashyyyk'));
+    n.setSystem(systemById('kashyyyk'));
+    const ma = bakeOf(a);
+    const mn = bakeOf(n);
+    for (const k of Object.keys(ma.uniforms)) expect(plain(mn.uniforms[k].value), `clouds off ${k}`).toEqual(plain(ma.uniforms[k].value));
+    expect(plain(ma.uniforms.uNebCol.value)).toEqual([[0, 0, 0], [0, 0, 0], [0, 0, 0]]);
+    a.dispose();
+    n.dispose();
   });
 
   it('places the same stars, suns and beacons for a system, and writes the frame’s uniforms by name', () => {

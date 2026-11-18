@@ -18,6 +18,10 @@
 //
 //   WORLDS → worlds, in the roster's order (galaxy, sector, fandom)
 //   TYPE_BIOMES[type] → an Expanse planet's biomes; TYPE_LOOK[type] → { palette, clutter, soft }
+//   SEEDED_EXPANSE → the roster's thirteen [id, type]; familyOf(type) → a moon's type as a family
+//   WATER_LOOKS[kind] → { color, roughness, opacity, glow? }
+//   PLANE_CLIMATE → the plane planets' climate noise
+//   ROUND_ROUGH[family][biome] → a round biome's roughness; roundBiomes(family) → its biomes on a sphere
 //   expand(biomes, seed) → biomes with each scatter made island layers
 
 import { seeded } from '../../seeded.js';
@@ -615,6 +619,45 @@ export const TYPE_LOOK = {
   ringed: look('bespin'),
   rock: look('geonosis', { clutter: clutter(['rock', 60], ['debris', 15]) }),
 };
+
+// the thirteen Expanse planets the roster flies (fixtures/expanse.json's, in order): their
+// ground is a plane of their type's template, held as it was (the endless universe's spec, E)
+export const SEEDED_EXPANSE = [
+  ['e:1,0:0:0', 'gas'], ['e:1,0:0:1', 'forest'], ['e:1,0:0:2', 'lava'], ['e:1,0:0:3', 'ice'], ['e:1,0:0:4', 'rock'], ['e:1,0:0:5', 'ice'], ['e:1,0:0:6', 'desert'],
+  ['e:1,0:1:0', 'desert'], ['e:1,0:1:1', 'ocean'], ['e:1,0:1:2', 'rock'],
+  ['e:1,0:2:0', 'gas'], ['e:1,0:2:1', 'ocean'], ['e:1,0:2:2', 'rock'],
+];
+
+// a moon's type (the generator's) as the family its ground is made from
+export const MOON_FAMILY = { rocky: 'rock', icy: 'ice' };
+export const familyOf = (type) => MOON_FAMILY[type] ?? type;
+
+// the plane planets' climate: two low, warped noises over (x, z)
+export const PLANE_CLIMATE = { frequency: 0.00025, warp: 400 };
+
+// a planet's water as the flight draws it (expanse/flight/water.js) and its orbit map bakes it
+export const WATER_LOOKS = {
+  sea: { color: '#1f5a6e', roughness: 0.12, opacity: 0.86 },
+  lake: { color: '#2a4f5a', roughness: 0.16, opacity: 0.9 },
+  swamp: { color: '#2e3322', roughness: 0.35, opacity: 0.95 },
+  lava: { color: '#3a0c02', roughness: 0.6, opacity: 1, glow: '#ff4a0a' },
+};
+
+// ── a generated planet's round ground (sphereField.js): each template biome's roughness, how
+// much of the shared hills it wears, keyed by the ids TYPE_BIOMES gives ──
+export const ROUND_ROUGH = {
+  ice: { plains: 0.7, shelf: 0.3, range: 2.2, glacier: 0.8, valley: 0.6 },
+  desert: { jundland: 1.2, dunesea: 0.8, plateau: 0.6, chott: 0.25, wastes: 0.9 },
+  forest: { redwoods: 1, savannah: 0.6, range: 2.2, lakes: 0.4, desert: 0.7 },
+  lava: { fields: 1, volcanoes: 2, ash: 0.6, glass: 0.3 },
+  ocean: { islands: 1, volcano: 1.6, reef: 0.3, deep: 0.5 },
+  rock: { plains: 0.6, mesas: 1.2, badlands: 1.6, craters: 1 },
+};
+
+// a family's biomes on a sphere: where each sits in the climate, its base and roughness; no
+// plane relief and no scatter (the character makes the land)
+export const roundBiomes = (family) =>
+  (TYPE_BIOMES[family] ?? []).map((b) => ({ id: b.id, at: b.at, reach: b.reach, base: b.base ?? 0, rough: ROUND_ROUGH[family]?.[b.id] ?? 1, relief: [] }));
 
 const between = (rnd, [a, b]) => a + rnd() * (b - a);
 

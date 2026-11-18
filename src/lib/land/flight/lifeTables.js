@@ -27,7 +27,7 @@
 //     from its system's faction, traffic and hazard; nothing for an unknown id)
 //   kindAt(life, biomeId) → the kind of that biome
 
-import { expanseLookup } from './expanse.js';
+import { canonicalId, expanseLookup } from './expanse.js';
 
 export const KINDS = ['wild', 'settled', 'city', 'hostile', 'dead'];
 export const DENSITY = { low: 0.5, mid: 1, high: 1, ultra: 1.2 };
@@ -366,14 +366,17 @@ const FAUNA = { ice: 'tauntaun', desert: 'bantha', forest: 'nerf', ocean: 'seabi
 const PATROL = { empire: 'tie', federation: 'gunship', dea: 'deachopper' };
 const TRAFFIC = { empire: ['shuttle', 'transport'], federation: ['hauler', 'saucer'], dea: ['deachopper', 'freighter'] };
 
-export function expanseLife(type, biomes, system) {
+// a generated planet's fauna (lib/land/flight/variety.js): its body plans, each as a row
+const BODY_MODEL = { beast: 'grazer', flyer: 'skimmer', walker: 'strider' };
+
+export function expanseLife(type, biomes, system, fauna = null) {
   // gas and ringed giants have no ground, so nothing lives on them
   if (type === 'gas' || type === 'ringed' || !system) return NONE;
   const held = system.faction?.id && system.faction.id !== 'independent';
-  const fauna = FAUNA[type];
-  if (!held && !fauna && system.hazard !== 'pirates') return NONE;
+  const wild = fauna ? fauna.density > 0 && fauna.plans.length > 0 : Boolean(FAUNA[type]);
+  if (!held && !wild && system.hazard !== 'pirates') return NONE;
   const ids = biomes.map((b) => b.id);
-  const kinds = { default: fauna ? 'wild' : 'dead' };
+  const kinds = { default: wild ? 'wild' : 'dead' };
   if (held) kinds[ids[0]] = 'settled';
   if (system.hazard === 'pirates') kinds[ids[ids.length - 1]] = 'hostile';
   const out = { kinds, air: [], ground: [] };
@@ -388,22 +391,27 @@ export function expanseLife(type, biomes, system) {
     out.air.push(air('gunboat', 0.04, [120, 300], 170, 'patrol', { kind: 'hostile', scramble: { r: 2500, n: 2 }, hostile: fights(700, 3, 6) }));
     out.ground.push(gnd('pirate', 'hostile', 0.1, [3, 5], { model: 'mercenary', kind: 'hostile', hostile: fights(240) }));
   }
-  if (fauna === 'seabird') out.ground.push(gnd('seabird', 'flock', 0.3, [4, 8], { body: 'flyer', tint: '#e8e8e0', alt: [6, 50] }));
-  else if (fauna) out.ground.push(gnd(fauna, 'herd', 0.3, [4, 8], { spread: 35, kind: 'wild' }));
+  if (fauna) {
+    if (fauna.density > 0) for (const p of fauna.plans) out.ground.push(gnd(BODY_MODEL[p.body], p.role, 0.3 * fauna.density, p.group, { body: p.body, tint: p.tint, kind: 'wild', ...(p.body === 'flyer' ? { alt: [6, 50] } : {}) }));
+    return out;
+  }
+  const named = FAUNA[type];
+  if (named === 'seabird') out.ground.push(gnd('seabird', 'flock', 0.3, [4, 8], { body: 'flyer', tint: '#e8e8e0', alt: [6, 50] }));
+  else if (named) out.ground.push(gnd(named, 'herd', 0.3, [4, 8], { spread: 35, kind: 'wild' }));
   return out;
 }
 
-const EXPANSE_ID = /^e:(-?\d+),(-?\d+):(\d+):(\d+)$/i;
-
 // the system an Expanse planet id names (its faction, traffic and hazard), or
 // null: on its row, given as planetSpecOf is given it
-export const systemOf = (planetId, { expanse = null } = {}) =>
-  EXPANSE_ID.test(String(planetId)) ? (expanseLookup(expanse)(String(planetId).toLowerCase())?.system ?? null) : null;
+export function systemOf(planetId, { expanse = null } = {}) {
+  const id = canonicalId(planetId);
+  return id ? (expanseLookup(expanse)(id)?.system ?? null) : null;
+}
 
 export function lifeFor(spec, { expanse = null } = {}) {
   if (!spec?.id) return NONE;
   const named = LIFE[spec.id];
-  const life = named ?? (EXPANSE_ID.test(spec.id) ? expanseLife(spec.type, spec.biomes ?? [], systemOf(spec.id, { expanse })) : NONE);
+  const life = named ?? (canonicalId(spec.id) ? expanseLife(spec.type, spec.biomes ?? [], systemOf(spec.id, { expanse }), spec.fauna ?? null) : NONE);
   return { kinds: life.kinds, air: life.air, ground: life.ground };
 }
 

@@ -2,8 +2,12 @@ import { describe, expect, it } from 'vitest';
 import { BELT, POSITIONS, REACH, SUN } from './layout';
 import { MAW } from './maw';
 import { SHIP } from './ship';
-import { POSE_NAMES, poseFor } from './poses';
+import { ENDLESS_POSE_NAMES, POSE_NAMES, poseFor } from './poses';
+import { RIM } from './layout';
+import { UNIVERSE, fullSector } from '../expanse/shared/gen';
 import { HOME_RADIUS } from './layout';
+import { WONDERS } from './deep';
+import { insideOf } from './nebula/rules';
 
 const sub = (a, b) => a.map((v, i) => v - b[i]);
 const len = (a) => Math.hypot(...a);
@@ -12,7 +16,7 @@ const dot = (a, b) => a.reduce((s, v, i) => s + v * b[i], 0);
 
 describe('the fixed poses', () => {
   it('knows every pose the spec names', () => {
-    expect(POSE_NAMES).toEqual(['overview', 'falcon-sun', 'middleearth-limb', 'rickmorty', 'gaming', 'caribbean', 'middleearth', 'breakingbad', 'office', 'belt', 'maw', 'landing-middleearth', 'station', 'far-rim']);
+    expect(POSE_NAMES).toEqual(['overview', 'falcon-sun', 'middleearth-limb', 'rickmorty', 'gaming', 'caribbean', 'middleearth', 'breakingbad', 'office', 'belt', 'maw', 'landing-middleearth', 'station', 'far-rim', 'in-nebula', 'veil-side']);
     for (const name of POSE_NAMES) expect(poseFor(name)).toBeTruthy();
     expect(poseFor('nowhere')).toBeNull();
   });
@@ -94,5 +98,62 @@ describe('the fixed poses', () => {
     const to = norm(sub(POSITIONS[rim.toward], rim.at));
     expect(Math.hypot(...POSITIONS[rim.toward])).toBeGreaterThan(20000);
     expect(-Math.sin(rim.heading) * to[0] - Math.cos(rim.heading) * to[2]).toBeGreaterThan(0.99);
+  });
+});
+
+describe('the nebula poses', () => {
+  it('puts in-nebula inside the Cradle’s gas, the eye too', () => {
+    const p = poseFor('in-nebula');
+    const w = WONDERS.find((x) => x.id === 'cradle');
+    const cradle = { id: 'cradle', at: w.at, r: w.cloud, form: 'nursery' };
+    expect(insideOf([cradle], p.at).depth).toBeGreaterThan(0.5);
+    expect(insideOf([cradle], p.eye)).not.toBeNull();
+    expect(p.look).toEqual(w.at);
+  });
+  it('puts veil-side 20,000 off, the Veil right of the middle, still in view 5,000 to the right', () => {
+    const p = poseFor('veil-side');
+    const veil = WONDERS.find((w) => w.id === 'veil').at;
+    const view = norm(sub(p.look, p.eye));
+    const off = Math.acos(dot(view, norm(sub(veil, p.eye))));
+    expect(off).toBeGreaterThan(0.08);
+    expect(off).toBeLessThan(0.13);
+    // (right of the middle: the Veil on the view's right-hand side)
+    const right = norm([-view[2], 0, view[0]]);
+    expect(dot(right, norm(sub(veil, p.eye)))).toBeGreaterThan(0);
+    const moved = p.eye.map((v, i) => v + right[i] * 5000);
+    expect(Math.acos(dot(view, norm(sub(veil, moved))))).toBeLessThan(0.45); // (inside the lens's half-width at 16:9)
+  });
+});
+
+describe('the endless space’s poses', () => {
+  it('are measured on their own, the baseline’s fourteen left as they were', () => {
+    expect(ENDLESS_POSE_NAMES).toEqual(['old-rim', 'above-core', 'expanse-system', 'expanse-station']);
+    for (const n of ENDLESS_POSE_NAMES) expect(POSE_NAMES).not.toContain(n);
+  });
+
+  it('is past where the rim was, heading out; 50,000 above the core; in the first generated system past it', () => {
+    expect(poseFor('old-rim').at[0]).toBe(RIM.outer + 500);
+    expect(poseFor('above-core').at).toEqual([0, 50000, 0]);
+    const p = poseFor('expanse-system');
+    const s = fullSector(UNIVERSE, 1, 0, 0).systems[0];
+    expect(p.system).toBe(s.id);
+    expect(Math.hypot(...sub(p.at, s.at))).toBeLessThan(s.reach);
+  });
+});
+
+describe('the generated station’s pose (lane 3)', () => {
+  it('is parked at E:1,0’s first station, facing it, the same each time, and holds no sector', async () => {
+    const { UNIVERSE, fullSector, stationsOf } = await import('../expanse/shared/gen');
+    const { ENDLESS_POSES } = await import('./poses');
+    const st = stationsOf(fullSector(UNIVERSE, 1, 0, 0, { things: false }))[0];
+    const p = poseFor('expanse-station');
+    expect(p.station).toBe(st.id);
+    expect(Math.hypot(p.at[0] - st.at[0], p.at[2] - st.at[2])).toBeLessThanOrEqual(1.5 * st.size + 4 + 1e-6); // (level: the park is a ship's height above its middle)
+    const to = [st.at[0] - p.at[0], st.at[2] - p.at[2]];
+    const l = Math.hypot(...to);
+    expect((-Math.sin(p.heading) * to[0] - Math.cos(p.heading) * to[1]) / l).toBeGreaterThan(0.99);
+    expect(poseFor('expanse-station')).toEqual(p);
+    expect(Object.values(ENDLESS_POSES['expanse-station']).every((v) => !Array.isArray(v) || v.length === 3)).toBe(true);
+    expect(JSON.stringify(ENDLESS_POSES['expanse-station'])).not.toMatch(/systems|stations|planets/);
   });
 });

@@ -46,6 +46,21 @@ describe('the aim', () => {
     expect(aimFrom([0, 0, 0], nose, targets, 'b')?.id).toBe('b');
   });
 
+  it('takes a hand-made place in the cone over any generated one, then the nearer generated one', () => {
+    const nose = [0, 0, -1];
+    const home = { id: 'home', at: [Math.tan(0.04) * 30000, 0, -30000] };
+    const far = { id: 'E:1,0:0', at: [0, 0, -120000], gen: true };
+    const near = { id: 'E:0,0:5', at: [Math.tan(0.03) * 60000, 0, -60000], gen: true };
+    // (the generated star is dead ahead and home is off to the side, but still in the cone)
+    expect(aimFrom([0, 0, 0], nose, [far, home])?.id).toBe('home');
+    expect(aimFrom([0, 0, 0], nose, [far, near, home])?.id).toBe('home');
+    // (no hand-made place in the cone: the nearer generated one, not the one nearer the nose)
+    expect(aimFrom([0, 0, 0], nose, [far, near])?.id).toBe('E:0,0:5');
+    // (one it had stays while it's in the cone)
+    expect(aimFrom([0, 0, 0], nose, [far, near], 'E:1,0:0')?.id).toBe('E:1,0:0');
+    expect(aimFrom([0, 0, 0], [0, 1, 0], [far, near])).toBe(null);
+  });
+
   it('never aims at where you are, nor the other sector', () => {
     expect(aimTargets('main', 'middleearth').some((t) => t.id === 'middleearth')).toBe(false);
     expect(aimTargets('main', null).some((t) => t.id === 'gazorpazorp')).toBe(false);

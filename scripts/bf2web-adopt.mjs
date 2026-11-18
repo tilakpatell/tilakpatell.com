@@ -10,6 +10,10 @@
 //   node --env-file=.env.local scripts/bf2web-adopt.mjs [--build <id>] [--check]
 //     (no --build: the newest good build of bf2-web's main, main-<sha8>, newer than play.json's; a build from a
 //     branch or a worktree is only ever played by name)   --check: say, write nothing
+//   node --env-file=.env.local scripts/bf2web-adopt.mjs --build <id> --stage
+//     the pre-upload path: the build held to the same contract and recorded in play.json's stagedBuilds, so the Worker
+//     serves it by its exact name (noindex, its page no-store) for gates on the hosted path; play.json's build, what
+//     /battlefront/ opens, does not move (GITHUB_OUTPUT gets staged=<id>). Adopting it later promotes it.
 // Exit 0 when a build was adopted or nothing newer is there (GITHUB_OUTPUT gets adopted=<id>, empty for none),
 // 1 when the build asked for fails, or every newer one does.
 
@@ -17,7 +21,7 @@ import { appendFileSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { open } from './lib/bf2web-r2.mjs';
-import { MAIN_BUILD, SHARED_UI, adopted, contractProblems, floorNeeds, hookProblems, levelProblems, missingFiles, newest, programNeeds, uiDataFor } from './lib/bf2web-site.mjs';
+import { MAIN_BUILD, SHARED_UI, adopted, contractProblems, staged, floorNeeds, hookProblems, levelProblems, missingFiles, newest, programNeeds, uiDataFor } from './lib/bf2web-site.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const PLAY = join(ROOT, 'src/data/bf2web/play.json');
@@ -27,6 +31,8 @@ const args = process.argv.slice(2);
 const option = (k) => (args.includes(k) ? args[args.indexOf(k) + 1] : null);
 const asked = option('--build');
 const check = args.includes('--check');
+const stage = args.includes('--stage');
+if (stage && !asked) throw new Error('--stage needs --build <id>: only a named build is staged');
 const output = (k, v) => process.env.GITHUB_OUTPUT && appendFileSync(process.env.GITHUB_OUTPUT, `${k}=${v}\n`);
 
 const r2 = open();
@@ -96,6 +102,17 @@ if (asked) {
     process.exit(newer.length ? 1 : 0);
   }
   chosen = examined.find((b) => b.id === id);
+}
+
+if (stage) {
+  const next = staged(play, chosen.id, chosen.uiData);
+  if (check) console.log('--check: play.json would stage', chosen.id, `(rulebooks ${chosen.uiData}); its build stays ${play.build}`);
+  else {
+    writeFileSync(PLAY, JSON.stringify(next, null, 2) + '\n');
+    console.log('play.json stages', chosen.id, `(rulebooks ${chosen.uiData}); its build stays ${play.build}`);
+  }
+  output('staged', check || chosen.id === play.build ? '' : chosen.id);
+  process.exit(0);
 }
 
 const needs = await needsOf(chosen.id, chosen.config);

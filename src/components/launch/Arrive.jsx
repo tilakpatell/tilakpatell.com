@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import LoadingVeil from '../worlds/LoadingVeil';
 import { WAIT_SKIP } from '../worlds/loadingSteps';
-import { Sky } from './parts';
+import { Horizon, Sky } from './parts';
 import './launch.css';
 
 // The arrival: the launch's last cover, for a visitor who came out of the
@@ -38,6 +38,7 @@ export default function Arrive({ shown, map, onSkip }) {
     <div className={`launch-arrive dark-scope${shown ? '' : ' is-done'}`} aria-busy={shown ? 'true' : undefined}>
       <Sky />
       <LoadingVeil className="launch-arrive-veil" shown progress={done ? 1 : (map?.value ?? 0)} step={done || map?.state === 'ready' ? 'first draw' : (map?.step ?? 'load')} title="Charting the universe" onSkip={held && shown ? onSkip : null} />
+      <Horizon />
     </div>,
     document.body,
   );

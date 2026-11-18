@@ -12,8 +12,12 @@
 // (turned `off` radians round from the line to the sun, so a limb shows
 // its terminator), facing the planet, the camera just behind it: the day
 // side toward the camera, which is how a visitor should arrive.
-import { BELT, HOME_RADIUS, ORDER, POSITIONS, REACH, SUN } from './layout';
+import { BELT, HOME_RADIUS, ORDER, POSITIONS, REACH, RIM, SUN } from './layout';
+import { UNIVERSE, fullSector, stationsOf } from '../expanse/shared/gen';
+import { resolvePlace } from './places/resolve';
+import { parkPlace } from './places/park';
 import { MAW } from './maw';
+import { WONDERS } from './deep';
 import { SHIP, parkAt } from './ship';
 import { byId } from './universes';
 
@@ -43,8 +47,27 @@ export const POSES = {
   // out at the furthest world, every world past where it's real a star
   // (farStars.js)
   'far-rim': { rim: 60, back: 1.6, rise: 0.3 },
+  // in the Cradle's gas, `inside` of its radius in from its middle on the
+  // home side, facing its heart: the fog round the ship (nebula/fog.js)
+  'in-nebula': { nebula: 'cradle', inside: 0.45, back: 1.6, rise: 0.3 },
+  // the Veil `out` off, on the home side, looking `aside` of it as the
+  // Maw's pose does: the cloud a little right of the middle, for the
+  // parallax and roll the nebula check measures (scripts/nebula-check.mjs)
+  'veil-side': { nebula: 'veil', out: 20000, aside: 0.105, back: 1.6, rise: 0.3 },
 };
 export const POSE_NAMES = Object.keys(POSES);
+// and the endless space's, measured on their own (scripts/universe-endless-check.mjs,
+// universe-check's --poses): past where the rim was, heading out; 50,000 straight
+// above the core; parked in the first generated system past it, its orbits at t = 0;
+// parked at that sector's first station (lane 3's), its sector made the first time it's asked for
+export const ENDLESS_POSES = {
+  'old-rim': { out: RIM.outer + 500 },
+  'above-core': { up: 50000 },
+  'expanse-system': { sector: [1, 0, 0], system: 0, out: 0.8 },
+  'expanse-station': { sector: [1, 0, 0], back: 1.6, rise: 0.3 },
+};
+let stationPose = null; // (made once, when asked: never at import, which every scene load pays for)
+export const ENDLESS_POSE_NAMES = Object.keys(ENDLESS_POSES);
 
 const sub = (a, b) => a.map((v, i) => v - b[i]);
 const add = (a, b, k = 1) => a.map((v, i) => v + b[i] * k);
@@ -64,7 +87,33 @@ const chase = (at, heading, { back = 1.6, rise = 0.3, look = null } = {}) => {
   return { eye: add(add(at, f, -back), UP, rise), look: look ?? add(at, f, 40) };
 };
 
+function endlessPose(name, p) {
+  if (name === 'old-rim') {
+    const at = [p.out, SHIP.height, 0];
+    const heading = headingOf([1, 0, 0]);
+    return { name, at, heading, ...chase(at, heading) };
+  }
+  if (name === 'above-core') {
+    const at = [0, p.up, 0];
+    return { name, at, heading: 0, ...chase(at, 0) };
+  }
+  if (name === 'expanse-station') {
+    if (!stationPose) {
+      const st = stationsOf(fullSector(UNIVERSE, ...p.sector, { things: false }))[0];
+      const k = parkPlace(resolvePlace(st.id, { t: 0 }), [st.at[0], st.at[2] + 1000], 0);
+      const at = [k.x, k.y, k.z];
+      stationPose = { name, station: st.id, at, heading: k.heading, ...chase(at, k.heading, { back: p.back, rise: p.rise, look: st.at }) };
+    }
+    return { ...stationPose, at: [...stationPose.at], eye: [...stationPose.eye], look: [...stationPose.look] };
+  }
+  const s = fullSector(UNIVERSE, ...p.sector, { things: false }).systems[p.system];
+  const at = add(s.at, unit([0.6, 0.15, 0.8]), s.reach * p.out);
+  const heading = headingOf(unit(sub([s.at[0], 0, s.at[2]], [at[0], 0, at[2]])));
+  return { name, system: s.id, at, heading, ...chase(at, heading, { look: s.at }) };
+}
+
 export function poseFor(name, { positions = POSITIONS, sun = SUN.at, reach = REACH } = {}) {
+  if (ENDLESS_POSES[name]) return endlessPose(name, ENDLESS_POSES[name]);
   const p = POSES[name];
   if (!p) return null;
   if (p.planet) {
@@ -103,6 +152,19 @@ export function poseFor(name, { positions = POSITIONS, sun = SUN.at, reach = REA
     // along the ring, the way the rocks go round
     const heading = headingOf([-Math.sin(p.angle), 0, Math.cos(p.angle)]);
     return { name, at, heading, ...chase(at, heading, p) };
+  }
+  if (p.nebula) {
+    const w = WONDERS.find((x) => x.id === p.nebula);
+    const home = unit([sun[0] - w.at[0], 0, sun[2] - w.at[2]]);
+    if (p.inside) {
+      const at = add(w.at, home, p.inside * (w.cloud ?? w.r)); // (in its gas)
+      const heading = headingOf(unit([w.at[0] - at[0], 0, w.at[2] - at[2]]));
+      return { name, nebula: w.id, at, heading, ...chase(at, heading, { back: p.back, rise: p.rise, look: w.at }) };
+    }
+    const at = add(w.at, home, p.out);
+    const look = add(w.at, turnY(home, -Math.PI / 2), p.out * p.aside);
+    const heading = headingOf(unit(sub(look, at)));
+    return { name, nebula: w.id, at, heading, ...chase(at, heading, { back: p.back, rise: p.rise, look }) };
   }
   // the Maw: out on the home side of it, level, facing a point to its left
   const home = unit([sun[0] - MAW.at[0], 0, sun[2] - MAW.at[2]]);

@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { describe, expect, it, vi } from 'vitest';
+import { seeded } from '../../lib/seeded';
 import { createSkirmishes } from './skirmishes';
 
 // a fleet as glbFleet.js is one, its models only groups (wingmen.test.js's)
@@ -10,8 +11,11 @@ const fakeFleet = () => ({
 });
 const at = { x: 400, y: 30, z: -900 }; // (out in the open, nothing solid near)
 
-const started = () => {
-  const s = createSkirmishes(new THREE.Group(), { fleet: fakeFleet() });
+// (seeded: the skirmish is already going when it starts, its pre-roll a fight,
+// and about one start in 3,000 lost an escort in it, so a test of what each
+// body answers wants the same start every time)
+const started = (seed = 7) => {
+  const s = createSkirmishes(new THREE.Group(), { fleet: fakeFleet(), rand: seeded(seed) });
   s.start({ at, heading: 0.4, faction: 'empire', escort: 'xwing', civil: 'freighter', size: 3 });
   s.update(1 / 60, 0, null);
   return s;

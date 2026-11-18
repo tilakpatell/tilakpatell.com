@@ -31,12 +31,14 @@
 // up at its sharpest level with the seam's wrap (no line where it joins). It
 // loads after the system's first bake, and the sky is baked again with it.
 //
-// createSky({ small, renderer, beacons }) → { group, setSystem(system), bake(renderer),
+// createSky({ small, renderer, beacons, clouds }) → { group, setSystem(system), bake(renderer),
 //   prepare(renderer) → Promise, update(camera, t), focus(id), beacons, sunDirs,
-//   setRatio(r), dispose() };
+//   setRatio(r), setDeep(k), dispose() };
 //   setSystem then bake (with the renderer it was made with, unless given
 //   another); beacons: [{ id, dir }] (unit vectors), the other systems' stars
 //   (drawn unless `beacons: false`, for a sky borrowed where there's no jumping)
+//   clouds: false bakes it without its nebulae (the universe map's: its
+//   nebulae are places, universe/nebula/); the galaxy keeps them
 
 import * as THREE from 'three';
 import { precompile } from '../../lib/three/renderer';
@@ -103,6 +105,7 @@ void main() {
 const LOOK_FRAG = /* glsl */ `
 uniform samplerCube uSky;
 uniform sampler2D uGrain;
+uniform float uDeep;
 varying vec3 vDir;
 float grain(vec3 d, float f) {
   vec3 w = pow(abs(d), vec3(4.0));
@@ -116,6 +119,13 @@ void main() {
   if (lit > 0.0) {
     float g = grain(d, 40.0) * 0.55 + grain(d, 110.0) * 0.45;
     c *= 1.0 + clamp((g - 0.5) * 1.6, -1.0, 1.0) * 0.2 * lit;
+  }
+  // deep (setDeep, off unless asked: the universe map's): the faint glow
+  // between taken down faster than the bright, so the band's star clouds
+  // and the nebulae keep their light and the dark between goes to black
+  if (uDeep > 0.0) {
+    float l = dot(c, vec3(0.2126, 0.7152, 0.0722));
+    c *= mix(1.0, clamp(pow(max(l, 1e-6) / 0.25, 0.9), 0.25, 1.0), uDeep);
   }
   float n = fract(sin(dot(gl_FragCoord.xy, vec2(12.9898, 78.233))) * 43758.5453) - 0.5;
   c = sRGBTransferOETF(vec4(c, 1.0)).rgb + n / 255.0;
@@ -373,7 +383,7 @@ export const bakeSize = ({ small = false, level = null } = {}) => (small ? 512 :
 const STAR_COUNT = { ultra: 12000, high: 12000, mid: 7000, low: 3000 };
 export const starCount = ({ small = false, level = null } = {}) => (small ? 3000 : (STAR_COUNT[level] ?? TODAY));
 
-export function createSky({ small = false, level = null, renderer = null, beacons: showBeacons = true } = {}) {
+export function createSky({ small = false, level = null, renderer = null, beacons: showBeacons = true, clouds = true } = {}) {
   const group = new THREE.Group();
   group.renderOrder = -20;
   const made = [];
@@ -381,7 +391,7 @@ export function createSky({ small = false, level = null, renderer = null, beacon
 
   // the sphere you see: it looks the baked cube up (black till there is one)
   const skyGeo = new THREE.SphereGeometry(SKY_R, 64, 32);
-  const lookMat = new THREE.ShaderMaterial({ vertexShader: SKY_VERT, fragmentShader: LOOK_FRAG, uniforms: { uSky: { value: null }, uGrain: { value: grainMap() } }, side: THREE.BackSide, depthWrite: false });
+  const lookMat = new THREE.ShaderMaterial({ vertexShader: SKY_VERT, fragmentShader: LOOK_FRAG, uniforms: { uSky: { value: null }, uGrain: { value: grainMap() }, uDeep: { value: 0 } }, side: THREE.BackSide, depthWrite: false });
   const sky = new THREE.Mesh(skyGeo, lookMat);
   sky.renderOrder = -20;
   sky.frustumCulled = false;
@@ -510,7 +520,7 @@ export function createSky({ small = false, level = null, renderer = null, beacon
       u.uSeed.value = rand() * 40;
       nebulaeFrom(sys, rand, showBeacons).forEach((nb, i) => {
         u.uNebDir.value[i].set(...nb.dir);
-        u.uNebCol.value[i].set(nb.color);
+        u.uNebCol.value[i].set(clouds ? nb.color : 0x000000); // (drawn all the same, so the stars after land where they did)
         u.uNebShape.value[i].set(nb.size, nb.warp);
       });
       // the stars: half anywhere, the rest along the band, thickest toward the core
@@ -600,6 +610,11 @@ export function createSky({ small = false, level = null, renderer = null, beacon
     setRatio(dpr) {
       starMat.uniforms.uDpr.value = dpr;
       beaconMat.uniforms.uDpr.value = dpr;
+    },
+    // how deep the dark between is, 0 (as baked, the galaxy's) to 1 (the
+    // faint glow taken down toward black, the bright kept: the universe map's)
+    setDeep(k) {
+      lookMat.uniforms.uDeep.value = Math.max(0, Math.min(1, k));
     },
     // the bake's shader made and linking now, as the bake will draw it (to the
     // cube, so no tone mapping); resolves once it has. The first bake is then a

@@ -75,6 +75,14 @@
   .universe-page:not(.galaxy-page) .universe-jump { bottom: max(150px, calc(var(--hud-pad-b, 12px) + 98px + var(--hud-cluster-h, 0px))); }
   /* (the first-flight line and the keys on foot share its band: over it too) */
   .universe-page:not(.galaxy-page) .universe-hint { bottom: max(24px, calc(var(--hud-pad-b, 12px) + 20px + var(--hud-cluster-h, 0px))); }
+  /* flying, all of it where it is with the panel put away, the panel open
+     or not: the panel stops above it instead (universe.css) */
+  .universe-page:not(.galaxy-page):has(.universe-map[data-ship]) { --hud-cluster-right: 24px; }
+  .universe-page:not(.galaxy-page):has(.universe-map[data-ship]) :is(.universe-prompt, .universe-wayin, .universe-jump, .universe-earn) { translate: calc(-50% - 12px) 0; }
+  .universe-page:not(.galaxy-page):has(.universe-map[data-ship]) .universe-hint { right: 36px; }
+  /* (what you've just earned, over the prompt as it says, so over the cluster too: at 112px it lay in the cluster's middle; the
+     cluster's height is on the page, FlightHud's) */
+  .universe-page:not(.galaxy-page) .universe-earn { bottom: max(112px, calc(var(--hud-pad-b, 12px) + 60px + var(--hud-cluster-h, 0px))); }
 }
 
 /* A sentence over the map: the first-flight hint. (A multiplayer note wears
@@ -118,3 +126,28 @@
 
 /* The X on a sheet: the colour's pill, as multiplayer's card has it. */
 .universe-settings-close { border-radius: var(--r-btn); }
+
+/* a generated place's name tag (places/placeTags.js): the pilots' tag's
+   pill and face, in the nav map's blue, its top-left set by transform */
+.universe-place-tag {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: none;
+  flex-direction: column;
+  gap: 1px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgb(3 4 10 / 0.6);
+  color: #9fd8ff;
+  font-family: var(--font-mono);
+  font-size: max(0.8rem, 12px);
+  line-height: 1.2;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  pointer-events: auto;
+  cursor: pointer;
+}
+.universe-place-tag[data-on] { display: flex; }
+.universe-place-tag b { font-weight: 500; }
+.universe-place-tag small { font-size: 1em; opacity: 0.8; }

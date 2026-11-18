@@ -7,8 +7,9 @@
 // served from the build. Everything is cross-origin isolated, as the engine's threads need (COOP, COEP require-corp:
 // the page loads nothing from another origin). A build's files are a year and immutable under its id; the roots,
 // whose paths don't carry it, redirect to the requesting engine build's qualified path. Requests outside an engine
-// page still use the current roots and revalidate. Previously published roots are explicitly retained by adoption;
-// unpublished bucket builds are never discovered or served. The page itself is served with the site's
+// page still use the current roots and revalidate. Previously published roots are explicitly retained by adoption,
+// and a pre-uploaded build is explicitly staged (play.json's retainedBuilds / stagedBuilds): each is opened by its
+// exact name, its page noindex and no-store; any other bucket build is never discovered or served. The page itself is served with the site's
 // way back added (playReturn.js), under an ETag of its object's and the script's, so a new script is a new page.
 //
 //   playRoute(pathname, config) → { key, root, path } | null   (null: not the play site's, the site's files answer)
@@ -39,11 +40,21 @@ export const contentType = (path) => TYPES[/\.([a-z0-9]+)$/i.exec(path)?.[1]?.to
 
 const safe = (rest) => !rest.split('/').some((part) => part === '..' || part === '.' || part === '');
 
-// Retention is an explicit publication record, not permission to read any build found in the bucket.
+// Retention and staging are explicit publication records, not permission to read any build found in the bucket:
+// stagedBuilds (a build uploaded ahead of adoption, scripts/bf2web-adopt.mjs --stage) and retainedBuilds (the builds
+// adoption moved off, the rollback among them) are served by their exact names; play.json's build stays the current one.
+export function buildKind(config, build) {
+  if (!build || !config?.build) return null;
+  if (build === config.build) return 'current';
+  if (config.stagedBuilds && Object.hasOwn(config.stagedBuilds, build)) return 'staged';
+  if (config.retainedBuilds && Object.hasOwn(config.retainedBuilds, build)) return 'retained';
+  return null;
+}
+
 function configForBuild(config, build) {
-  if (build === config?.build) return config;
-  const retained = config?.retainedBuilds;
-  return retained && Object.hasOwn(retained, build) ? { ...config, ...retained[build], build } : null;
+  const kind = buildKind(config, build);
+  if (kind === 'current') return config;
+  return kind ? { ...config, ...config[kind === 'staged' ? 'stagedBuilds' : 'retainedBuilds'][build], build } : null;
 }
 
 function externalRoute(pathname, config) {
@@ -75,49 +86,73 @@ export function playRoute(pathname, config) {
   return externalRoute(pathname, config);
 }
 
-// an R2 read, asked once again when it throws; null for a key the bucket hasn't got
+// Nothing the Worker waits on may wait forever (live r1073, 15 Nov 22:07Z and 22:32Z: a boot's first script request
+// pending 15+ minutes with 0 bytes on a fresh profile, while the same file from the edge answered in under a second;
+// tilak-06's query-busted probes stalled 2 of 40 past 20 s through the Worker, during a Cloudflare "Partially Degraded").
+// A read that has not answered in time is a failure: asked once again, then a 503 with Retry-After, which the page's
+// and the service worker's loaders already ask again. A cached manifest that has not arrived in time is dropped, so
+// one stuck read cannot hold every later request of the isolate. The edge cache is optional: a lookup that does not
+// answer in time is a miss. (TIMEOUTS is exported for the tests.)
+export const TIMEOUTS = { read: 10_000, manifest: 15_000, cacheMatch: 3_000 };
+
+class PlayTimeout extends Error {}
+function timed(promise, ms, what) {
+  let timer;
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => { timer = setTimeout(() => reject(new PlayTimeout(`play-timeout ${ms} ms: ${what}`)), ms); }),
+  ]).finally(() => clearTimeout(timer));
+}
+
+// an R2 read, asked once again when it throws or does not answer in time; null for a key the bucket hasn't got
 async function read(env, key, opts) {
   try {
-    return await env.PLAY.get(key, opts);
+    return await timed(env.PLAY.get(key, opts), TIMEOUTS.read, key);
   } catch {
-    return env.PLAY.get(key, opts);
+    return timed(env.PLAY.get(key, opts), TIMEOUTS.read, key);
+  }
+}
+
+// a 416 for a single byte range whose start is at or past the object's end, or null (no range, a range R2 can answer, or no head).
+// The head is timed like every read (TIMEOUTS.read): a head that fails or does not answer in time is null, so the request stays
+// the 503 it was, never a hang.
+async function unsatisfiableRange(env, key, range) {
+  const start = /^bytes=(\d+)-\d*$/.exec(range ?? '')?.[1];
+  if (start === undefined || typeof env.PLAY.head !== 'function') return null;
+  const head = await timed(Promise.resolve().then(() => env.PLAY.head(key)), TIMEOUTS.read, key + ' (head)').catch(() => null);
+  if (!head || Number(start) < head.size) return null;
+  return new Response(null, { status: 416, headers: { ...ISOLATED, 'content-range': `bytes */${head.size}`, 'cache-control': 'no-store' } });
+}
+
+// one value per isolate, read once and kept; a failure or a read past its time is not kept (only the promise this call
+// waited on is dropped: a newer one another request put there stays)
+async function kept(manifests, key, load) {
+  if (!manifests.has(key)) manifests.set(key, timed(load(), TIMEOUTS.manifest, key));
+  const pending = manifests.get(key);
+  try {
+    return await pending;
+  } catch (error) {
+    if (manifests.get(key) === pending) manifests.delete(key);
+    throw error;
   }
 }
 
 // the build's manifest, read once an isolate and kept: the paths it lists
-async function listed(env, config, manifests) {
-  if (!manifests.has(config.build)) {
-    manifests.set(config.build, (async () => {
-      const object = await read(env, config.site + 'manifest.json');
-      if (!object) throw new Error('play-manifest-missing');
-      return new Set((await object.json()).entries.map((e) => e.path));
-    })());
-  }
-  try {
-    return await manifests.get(config.build);
-  } catch (error) {
-    // (a failure isn't kept: the next request asks again)
-    manifests.delete(config.build);
-    throw error;
-  }
+function listed(env, config, manifests) {
+  return kept(manifests, config.build, async () => {
+    const object = await read(env, config.site + 'manifest.json');
+    if (!object) throw new Error('play-manifest-missing');
+    return new Set((await object.json()).entries.map((e) => e.path));
+  });
 }
 
 // the build's brotli copies (encodings.json, written last by scripts/bf2web-compress.mjs), read once an isolate and
 // kept: the paths that have one; none without the file
-async function brotliCopies(env, config, manifests) {
-  const key = `${config.build}#br`;
-  if (!manifests.has(key)) {
-    manifests.set(key, (async () => {
-      const object = await read(env, config.site + 'encodings.json');
-      return new Set(Object.keys(object ? (await object.json()).br ?? {} : {}));
-    })());
-  }
-  try {
-    return await manifests.get(key);
-  } catch (error) {
-    manifests.delete(key);
-    throw error;
-  }
+function brotliCopies(env, config, manifests) {
+  return kept(manifests, `${config.build}#br`, async () => {
+    const object = await read(env, config.site + 'encodings.json');
+    return new Set(Object.keys(object ? (await object.json()).br ?? {} : {}));
+  });
 }
 
 const isolatedNotFound = () => new Response('Not found', { status: 404, headers: { ...ISOLATED, 'content-type': 'text/plain; charset=utf-8' } });
@@ -132,14 +167,18 @@ const engineWorkerScript = () =>
 export async function servePlay(request, env, config, manifests, ctx = null, cache = null) {
   const url = new URL(request.url);
   if (url.pathname === ENGINE + 'sw.js' && config?.build) return engineWorkerScript();
-  // Public entry addresses and an older build's page lead to the current build, with the query intact. The build
-  // directory needs its trailing slash: otherwise the page's relative modules and assets resolve outside it.
-  // These redirects name a moving build, so they are never cached. Explicitly retained files remain available
-  // to already-open pages; fresh navigation to a build directory still starts the current version.
+  // Public entry addresses lead to the current build, with the query intact, and so does a build directory that
+  // names no build play.json knows. A build play.json names (current, staged or retained) is opened by its exact
+  // name: a staged build can be gated on the hosted path before adoption and the rollback opened as a control.
+  // The build directory needs its trailing slash: otherwise the page's relative modules and assets resolve outside it.
+  // These redirects are never cached.
   const entry = url.pathname === '/battlefront' || url.pathname === '/battlefront/';
   const named = /^\/battlefront\/engine(?:\/([^/]+))?(?:\/(index\.html))?\/?$/.exec(url.pathname);
-  if (config?.build && (entry || (named && named[1] !== 'sw.js' && (named[1] !== config.build || (!url.pathname.endsWith('/') && !named[2])))))
-    return new Response(null, { status: 302, headers: { location: new URL(`${ENGINE}${config.build}/${url.search}`, url).toString(), 'cache-control': 'no-store' } });
+  if (config?.build && (entry || (named && named[1] !== 'sw.js'))) {
+    const known = !entry && buildKind(config, named[1]) ? named[1] : null;
+    if (!known || (!url.pathname.endsWith('/') && !named[2]))
+      return new Response(null, { status: 302, headers: { location: new URL(`${ENGINE}${known ?? config.build}/${url.search}`, url).toString(), 'cache-control': 'no-store' } });
+  }
 
   // Older exports request these roots by absolute URL. Redirect each request to the build that initiated it,
   // so relative imports use the final versioned module URL and HTTP caches cannot mix two generations at /ui/.
@@ -156,7 +195,12 @@ export async function servePlay(request, env, config, manifests, ctx = null, cac
         status: 410, headers: { ...ISOLATED, 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'no-store' },
       });
       const target = `${ENGINE}${referringBuild}${url.pathname}`;
-      if (playRoute(target, config)) {
+      // (the export is one shared prefix, not a build's own: when the referring build reads /export/ from the same prefix with the same
+      // allowed folders as the unqualified path does, both name the same object, so the request is answered where it is, with no 302.
+      // s-collection, staged 1075-c: all 149 /export/ requests of a cold boot were redirected, 30-57 ms each, for every visitor)
+      const sameExport = url.pathname.startsWith('/export/') && selected.export === config.export
+        && JSON.stringify(selected.exportAllow ?? null) === JSON.stringify(config.exportAllow ?? null);
+      if (!sameExport && playRoute(target, config)) {
         if (request.method !== 'GET' && request.method !== 'HEAD') return new Response(null, { status: 405, headers: { ...ISOLATED, allow: 'GET, HEAD' } });
         return new Response(null, {
           status: 302, headers: { ...ISOLATED, location: new URL(target + url.search, url).toString(), 'cache-control': 'no-store' },
@@ -167,20 +211,44 @@ export async function servePlay(request, env, config, manifests, ctx = null, cac
   const route = playRoute(url.pathname, config);
   if (!route) return null;
   if (!env.PLAY) return null;
-  const selected = url.pathname.startsWith(ENGINE) ? configForBuild(config, url.pathname.slice(ENGINE.length).split('/')[0]) : config;
+  const build = url.pathname.startsWith(ENGINE) ? url.pathname.slice(ENGINE.length).split('/')[0] : config.build;
+  const selected = configForBuild(config, build);
+  // (a staged or retained build is not the site: never indexed, and its page never kept by a cache)
+  const preview = buildKind(config, build) !== 'current';
   try {
-    return await answer(request, url, route, env, selected, manifests, ctx, cache);
+    return await answer(request, url, route, env, selected, manifests, ctx, cache, preview);
   } catch {
     return unavailable();
   }
 }
 
-async function answer(request, url, route, env, config, manifests, ctx, cache) {
+async function answer(request, url, route, env, config, manifests, ctx, cache, preview = false) {
+  const response = await answerBuild(request, url, route, env, config, manifests, ctx, cache);
+  if (!preview || !response) return response;
+  // (headers of a Response read from the edge cache are immutable: copied onto a new one)
+  const headers = new Headers(response.headers);
+  headers.set('x-robots-tag', 'noindex');
+  if (route.root === 'site' && route.path === 'index.html') headers.set('cache-control', 'no-store');
+  return new Response(response.body, { status: response.status, statusText: response.statusText, headers, ...(headers.get('content-encoding') === 'br' ? { encodeBody: 'manual' } : {}) });
+}
+
+// A build's own ui-data (play.json's uiData for it is sites/<build>/ui-data/), asked on its build-qualified path, is that build's
+// as much as its site files are: put once by the upload (the publish pins its digest) or added by the fill, never replaced. So it
+// is a year and immutable and kept at the edge like them, and an octet-stream file of it (the backdrop's *.tone.bin, 8.3 and 16.6
+// MB) is answered to a br client from its brotli copy <key>.br when the bucket has one (scripts/lib/bf2web-ui-files.mjs
+// uiDataBrotli: written by the uploader and the fill). Until 16 Nov every one went out whole, max-age=0, from R2 each view.
+// A uiData that is not the build's own prefix (an older play.json's shared folder) and the unqualified /ui-data/ path revalidate.
+export function buildUiData(route, url, config) {
+  return route.root === 'uiData' && url.pathname.startsWith(ENGINE) && config.uiData === `sites/${config.build}/ui-data/`;
+}
+
+async function answerBuild(request, url, route, env, config, manifests, ctx, cache) {
   if (request.method !== 'GET' && request.method !== 'HEAD') return new Response(null, { status: 405, headers: { ...ISOLATED, allow: 'GET, HEAD' } });
-  const immutable = route.root === 'site' && url.pathname.startsWith(ENGINE) && route.path !== 'index.html';
+  const uiData = buildUiData(route, url, config);
+  const immutable = (route.root === 'site' && url.pathname.startsWith(ENGINE) && route.path !== 'index.html') || uiData;
   const whole = !request.headers.has('range');
   // (the build's own list, unless the build has a file of that name)
-  if (immutable && route.path === FILES) {
+  if (immutable && route.root === 'site' && route.path === FILES) {
     const paths = await listed(env, config, manifests);
     if (!paths.has(FILES)) {
       const body = JSON.stringify({ build: config.build, files: [...paths] });
@@ -190,38 +258,90 @@ async function answer(request, url, route, env, config, manifests, ctx, cache) {
       });
     }
   }
-  if (immutable && whole && /\bbr\b/.test(request.headers.get('accept-encoding') ?? '')) {
-    const listedPaths = await listed(env, config, manifests);
-    if (!listedPaths.has(route.path)) return isolatedNotFound();
-    if ((await brotliCopies(env, config, manifests)).has(route.path)) {
+  const cacheable = cache && immutable && request.method === 'GET' && whole;
+  const takesBrotli = /\bbr\b/.test(request.headers.get('accept-encoding') ?? '');
+  const brotli = (body, etag, size, state) => {
+    const headers = new Headers({
+      ...ISOLATED,
+      'content-type': contentType(route.path),
+      'content-encoding': 'br',
+      vary: 'accept-encoding',
+      etag,
+      'cache-control': 'public, max-age=31536000, immutable',
+      'x-play-cache': state,
+    });
+    if (!body) return new Response(null, { status: 304, headers });
+    if (size != null) headers.set('content-length', String(size));
+    // (encodeBody manual: the bytes are brotli already, sent as they are)
+    return new Response(request.method === 'HEAD' ? null : body, { status: 200, headers, encodeBody: 'manual' });
+  };
+  const fromEdge = async () => {
+    const hit = await edgeMatch(cache, url, 'identity');
+    if (!hit) return null;
+    const headers = new Headers(hit.headers);
+    headers.set('vary', 'accept-encoding');
+    headers.set('x-play-cache', 'hit');
+    if (notModified(request, hit)) { headers.delete('content-length'); return new Response(null, { status: 304, headers }); }
+    return new Response(hit.body, { status: 200, headers });
+  };
+  // A build file the edge already holds is answered before any read of the bucket, the build's manifest and encodings list
+  // among them (16 Nov, boot hangs: after a deploy every isolate is cold, and a browser's first request, br, read the 5.4 MB
+  // manifest from R2 before the edge was asked; a client without br went straight to the edge). Safe without the manifest: a
+  // copy is put only after a manifest-checked whole read of a listed file, under its build's immutable path, and a build
+  // play.json does not name never reaches this function.
+  // Which entry: a browser that takes br gets the br copy of a file that can have one (only application/octet-stream files
+  // get one, scripts/bf2web-compress.mjs compressible, by this module's contentType), so for those only the br entry is taken
+  // edge-first; on its miss the brotli branch below reads and stores the copy. Every other file (the engine's .js and .wasm,
+  // the JSON) never has a br copy, and its own entry is the answer for any client ([c5] on abe9d8522: an identity entry put by a
+  // client without br must not be served, uncompressed, to a browser in place of a .res or .glb's br copy).
+  if (cacheable) {
+    const mayHaveCopy = contentType(route.path) === 'application/octet-stream';
+    if (takesBrotli && mayHaveCopy) {
+      const hit = await edgeMatch(cache, url, 'br');
+      if (hit) return brotli(notModified(request, hit) ? null : hit.body, hit.headers.get('etag'), hit.headers.get('content-length'), 'hit');
+    } else {
+      const plain = await fromEdge();
+      if (plain) return plain;
+    }
+  }
+  if (immutable && whole && takesBrotli) {
+    // (a site file: the manifest lists it and encodings.json its copy; a build's ui-data is in neither: an octet-stream file of
+    // it is asked for its copy, and with none there the file itself answers below)
+    if (!uiData && !(await listed(env, config, manifests)).has(route.path)) return isolatedNotFound();
+    if (uiData ? contentType(route.path) === 'application/octet-stream' : (await brotliCopies(env, config, manifests)).has(route.path)) {
       const copy = await read(env, route.key + '.br', { onlyIf: request.headers });
       if (copy) {
-        const headers = new Headers({
-          ...ISOLATED,
-          'content-type': contentType(route.path),
-          'content-encoding': 'br',
-          vary: 'accept-encoding',
-          etag: copy.httpEtag,
-          'cache-control': 'public, max-age=31536000, immutable',
-        });
-        if (!('body' in copy) || !copy.body) return new Response(null, { status: 304, headers });
-        headers.set('content-length', String(copy.size));
-        // (encodeBody manual: the bytes are brotli already, sent as they are)
-        return new Response(request.method === 'HEAD' ? null : copy.body, { status: 200, headers, encodeBody: 'manual' });
+        if (!('body' in copy) || !copy.body) return brotli(null, copy.httpEtag, null, 'miss');
+        let body = copy.body;
+        if (cacheable) {
+          const [sent, kept] = streamOf(body).tee();
+          body = sent;
+          await edgePut(cache, url, 'br', kept, {
+            'content-type': 'application/octet-stream', etag: copy.httpEtag, 'content-length': String(copy.size), 'cache-control': 'public, max-age=31536000, immutable',
+          }, ctx);
+        }
+        return brotli(body, copy.httpEtag, copy.size, cacheable ? 'miss' : 'off');
       }
     }
   }
-  const cacheable = cache && immutable && request.method === 'GET' && whole;
-  if (cacheable) {
-    try {
-      const hit = await cache.match(request);
-      if (hit) return hit;
-    } catch { /* The edge cache is optional; the manifest-checked R2 read still answers. */ }
+  // (a br client's octet-stream file that has no br copy: its own entry, as #1322 had it)
+  if (cacheable && takesBrotli && contentType(route.path) === 'application/octet-stream') {
+    const plain = await fromEdge();
+    if (plain) return plain;
   }
   if (route.root === 'site' && !(await listed(env, config, manifests)).has(route.path)) return isolatedNotFound();
   const page = route.root === 'site' && route.path === 'index.html';
   // (the page whole, and its precondition the Worker's: its ETag isn't the object's)
-  const object = await read(env, route.key, page ? {} : { range: request.headers, onlyIf: request.headers });
+  let object;
+  try {
+    object = await read(env, route.key, page ? {} : { range: request.headers, onlyIf: request.headers });
+  } catch (error) {
+    // (a range that starts at or past the end: R2 refuses it, and the 503 "try again" it became made the service worker and the
+    // page ask again three times for bytes that will never exist. It is answered 416 with the size; any other failure stays a 503.)
+    const unsatisfiable = !page && (await unsatisfiableRange(env, route.key, request.headers.get('range')));
+    if (unsatisfiable) return unsatisfiable;
+    throw error;
+  }
   if (!object) return isolatedNotFound();
   const headers = new Headers({
     ...ISOLATED,
@@ -251,18 +371,57 @@ async function answer(request, url, route, env, config, manifests, ctx, cache) {
     return new Response(request.method === 'HEAD' ? null : object.body, { status: 206, headers });
   }
   headers.set('content-length', String(object.size));
-  const response = new Response(request.method === 'HEAD' ? null : object.body, { status: 200, headers });
-  if (cacheable) {
-    const copy = response.clone();
-    const put = (async () => {
-      try { await cache.put(request, copy); }
-      catch {
-        // Abandon the failed cache branch without awaiting the caller's still-unread body.
-        try { copy.body?.cancel().catch(() => {}); } catch { /* already consumed or locked */ }
-      }
-    })();
-    if (ctx) ctx.waitUntil(put);
-    else await put;
+  if (immutable) headers.set('x-play-cache', cacheable ? 'miss' : 'off');
+  let body = request.method === 'HEAD' ? null : object.body;
+  if (cacheable && body) {
+    const [sent, kept] = streamOf(body).tee();
+    body = sent;
+    const stored = new Headers(headers);
+    stored.delete('vary');
+    stored.delete('x-play-cache');
+    await edgePut(cache, url, 'identity', kept, stored, ctx);
   }
-  return response;
+  return new Response(body, { status: 200, headers });
+}
+
+// The edge cache (caches.default), keyed by the file's URL and its encoding variant, with no request header in the key.
+// A stored copy holds no Vary and no Content-Encoding (a brotli copy is kept as the bytes it is, octet-stream), so
+// neither the cache nor the runtime recodes or varies it; the response's encoding headers are put back on the way out.
+// x-play-cache on a build file says which: hit, miss (read from R2, put at the edge) or off (not cacheable).
+const edgeKey = (url, variant) => {
+  const key = new URL(url);
+  key.searchParams.append('play-encoding', variant);
+  return new Request(key.toString(), { method: 'GET' });
+};
+
+async function edgeMatch(cache, url, variant) {
+  try {
+    return (await timed(cache.match(edgeKey(url, variant)), TIMEOUTS.cacheMatch, 'edge cache')) ?? null;
+  } catch {
+    return null; // (the edge cache is optional, and a lookup past its time is a miss; the manifest-checked R2 read still answers)
+  }
+}
+
+async function edgePut(cache, url, variant, body, headers, ctx) {
+  const put = (async () => {
+    try { await cache.put(edgeKey(url, variant), new Response(body, { status: 200, headers })); }
+    catch {
+      // Abandon the failed cache branch without awaiting the caller's still-unread body.
+      try { body?.cancel().catch(() => {}); } catch { /* already consumed or locked */ }
+    }
+  })();
+  if (ctx) ctx.waitUntil(put);
+  else await put;
+}
+
+// (an R2 body is a stream; anything else, as a test's bucket gives, is made one so it can be split for the edge)
+const streamOf = (body) => (body instanceof ReadableStream ? body : new Response(body).body);
+
+// a conditional request the stored copy meets (If-None-Match, weak or strong, one of a list)
+function notModified(request, stored) {
+  const asked = request.headers.get('if-none-match');
+  const etag = stored.headers.get('etag');
+  if (!asked || !etag) return false;
+  const bare = (t) => t.trim().replace(/^W\//, '');
+  return asked.trim() === '*' || asked.split(',').some((t) => bare(t) === bare(etag));
 }

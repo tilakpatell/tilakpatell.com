@@ -21,8 +21,8 @@ import { createSkirmish } from './skirmish';
 const CIVIL_SIZE = { transport: 1.8, freighter: 0.7, saucer: 0.45, hauler: 0.9 };
 const BOLT = { xwing: [5.5, 0.6, 0.5], birdperson: [0.7, 5.5, 1.2] };
 
-export function createSkirmishes(parent, { fleet = createFleet(), solids = [] } = {}) {
-  const sk = createSkirmish({ solids });
+export function createSkirmishes(parent, { fleet = createFleet(), solids = [], rand = Math.random } = {}) {
+  const sk = createSkirmish({ solids, rand }); // (rand: a test's seeded one)
   const pool = {}; // kind → models not in use
   const shown = new Map(); // a thing (a hunter, a wingman, the freighter) → its model
   const look = new THREE.Vector3();

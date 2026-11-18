@@ -17,6 +17,19 @@ describe('the atmosphere shell', () => {
     expect(d.uSunset.getHexString()).toBe(new THREE.Color('#ffa070').getHexString());
   });
 
+  it('marches from the planet’s middle where it is drawn, wherever update() last put it', () => {
+    const a = createAtmosphere({ radius: 10 });
+    const planet = new THREE.Group();
+    planet.position.set(4e5, -20, 7);
+    planet.add(a.mesh);
+    a.update(new THREE.Vector3(4e5, -20, 7));
+    planet.position.x -= 4e5; // (moved round the camera for the draw: universe/relative.js)
+    planet.updateMatrixWorld(true);
+    a.mesh.onBeforeRender();
+    expect(a.mesh.material.uniforms.uCenter.value.toArray()).toEqual([0, -20, 7]);
+    a.dispose();
+  });
+
   it('a shell with one sun has a black second slot', () => {
     const a = createAtmosphere({ radius: 10, colour: '#9fc4ff', suns: [{ dir: [0, 1, 0], colour: '#ffffff' }] });
     const u = a.mesh.material.uniforms;

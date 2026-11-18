@@ -4,14 +4,19 @@
 // sits in it, so any one cell can be rebuilt alone, in any order, and give
 // what the whole list gives. Pure (no three.js), so it runs in Node.
 //
-// THING_BASE (wonder ids from here up are lattice slots), THING_CELLS, THING_JITTER, THING_NEAR
+// THING_BASE (wonder ids from here up are lattice slots), THING_CELLS, THING_JITTER, THING_NEAR, THING_CLEAR
 // THING_KINDS: the table of kinds, { kind, weight, size: [least, most], look: { color, lit }, place?(site, ctx) }
 //   (place may return a new [x, y, z] in absolute space or null to drop the site; it runs before the clearance checks)
-// SECTOR_EXTRAS: whole-sector lists { list, base, max, make(ctx) → [{ kind, at, size, ... }] }
-// thingsOf(ctx, extras = SECTOR_EXTRAS, kinds = THING_KINDS) → { things: ThingSet, extras: { [list]: Row[] } }
-//   ctx is { sx, sy, sz, origin, seed, systems, outs, wonders? } (wonders: the legacy ones; absent means none).
+// Whole-sector lists { list, base, max, make(ctx, made) → [{ kind, at, size, ... }] } live in
+//   extras/index.js (SECTOR_EXTRAS), lane 4a's; this file imports none of them. `made` is the
+//   lists made before it, { [list]: rows }, ids already on their rows. A list is low (3 ≤ base,
+//   base + max ≤ THING_BASE) or high (base ≥ EXTRA_HIGH, a multiple of 10,000, max ≤ 9,999).
+// thingsOf(ctx, extras = [], kinds = THING_KINDS, { lattice = true } = {}) → { things: ThingSet, extras: { [list]: Row[] } }
+//   ctx is { sx, sy, sz, origin, seed, systems, outs, wonders? } (wonders: the legacy ones; absent means none),
+//   and for the lists also { universe, beacons, stations, d, core, gargantuan, arrivals, keeps }
+//   (keeps: a gargantuan's solid parts, [{ at, r }], which the lattice keeps off as it does outs). lattice: false leaves the lattice empty.
 //   A ctx is treated as immutable: the per-ctx cache snapshots its systems and wonders.
-//   A wonder's size is its radius (tables.js WONDERS says so; scene/sectors.js draws a nebula as a cloud of
+//   A wonder's size is its radius (tables.js WONDERS says so; universe/nebula/ draws a nebula as a cloud of
 //   about that size and the others as a ball of size * 0.15 to 0.5, so the table radius is the safe reach).
 //   Every wonder but a nebula (a soft cloud a rock can sit in) keeps lattice things its size plus the thing's away.
 //   ThingSet is { count, slot: Uint16Array, kind: Uint8Array (index into kinds), at: Float32Array (xyz from the origin), size: Float32Array }
@@ -21,10 +26,11 @@
 // thingRow(sector, i) → { id, n, kind (name), at (absolute), size, seed, name }
 //   (sector carries { sx, sy, sz, origin, seed, things })
 // An extras row's make() output must be plain data (numbers, strings, arrays, plain objects), because
-// sectors cross to a worker later. Extras rows must have base >= 3 (w0-w2 are the middle layer's wonders)
-// and not overlap each other's [base, base + max).
+// sectors cross to a worker. Lists must not overlap each other's [base, base + max).
+// EXTRA_HIGH: where the high lists start (w20000)
 
 import { SECTOR, spaceId } from '../../../lib/space/address.js';
+import { KINDS } from './catalogue';
 import { clearOfKeepOuts } from './keepOuts';
 import { nameOf } from './names';
 import { hash64, rngOf } from './seed';
@@ -34,15 +40,28 @@ export const THING_BASE = 64;
 export const THING_CELLS = 20;
 export const THING_JITTER = 0.8;
 export const THING_NEAR = 8;
+// How many of its sizes a lattice thing keeps off a hand-made place's keep-out: one more than
+// the near layer's mesh hand-over (scene/nearThings.js's MESH_NEAR, 30), so a camera anywhere
+// inside a keep-out (every baseline pose is) never has a lattice thing built near it, and the
+// hand-made core keeps its draw calls whatever the lattice's kinds and sizes are.
+export const THING_CLEAR = 31;
 
+// (lane 2's four first, in their order; the four after them are lane 4a's: an
+// outpost, a beacon, a relay and a monolith, every one solid at its size and
+// staying put. Each look is the catalogue's.)
+const kindRow = (kind, weight, size) => ({ kind, weight, size, look: { color: KINDS[kind].color, lit: KINDS[kind].lit } });
 export const THING_KINDS = [
-  { kind: 'rock', weight: 6, size: [20, 120], look: { color: '#8a8178', lit: true } },
-  { kind: 'ice', weight: 2, size: [15, 90], look: { color: '#cfe3ee', lit: true } },
-  { kind: 'derelict', weight: 1, size: [30, 140], look: { color: '#6d727c', lit: true } },
-  { kind: 'rogue', weight: 0.4, size: [100, 260], look: { color: '#4a3f38', lit: true } },
+  kindRow('rock', 6, [20, 120]),
+  kindRow('ice', 2, [15, 90]),
+  kindRow('derelict', 1, [30, 140]),
+  kindRow('rogue', 0.4, [100, 260]),
+  kindRow('outpost', 0.35, [40, 160]),
+  kindRow('beacon', 0.5, [12, 30]),
+  kindRow('relay', 0.5, [12, 45]),
+  kindRow('monolith', 0.25, [15, 60]),
 ];
 
-export const SECTOR_EXTRAS = [];
+export const EXTRA_HIGH = 20000;
 
 const CELL = SECTOR / THING_CELLS;
 const HALF = CELL / 2;
@@ -98,6 +117,8 @@ function prepare(ctx, kinds) {
     .filter((w) => w.kind !== 'nebula')
     .map((w) => ({ at: w.at, r: w.size }));
   p = {
+    outs: ctx.outs ?? [],
+    keeps: ctx.keeps ?? [], // (a gargantuan's solid parts)
     wonders,
     h0: Number(seed & 0xffffffffn) | 0,
     h1: Number((seed >> 32n) & 0xffffffffn) | 0,
@@ -133,7 +154,8 @@ function cell(ctx, p, kinds, slot) {
     at = place({ slot, kind: kinds[ki].kind, at, size }, ctx);
     if (!at) return null;
   }
-  if (!clearOfKeepOuts(at, (THING_NEAR + 1) * size, ctx.outs ?? [])) return null;
+  if (!clearOfKeepOuts(at, THING_CLEAR * size, p.outs)) return null;
+  if (p.keeps.length && !clearOfKeepOuts(at, (THING_NEAR + 1) * size, p.keeps)) return null;
   const near = p.grid.get(
     key(
       Math.floor((at[0] - ctx.origin[0]) / BUCKET),
@@ -168,41 +190,56 @@ export function thingInCell(ctx, slot, kinds = THING_KINDS) {
   return cell(ctx, prepare(ctx, kinds), kinds, slot);
 }
 
-export function thingsOf(ctx, extras = SECTOR_EXTRAS, kinds = THING_KINDS) {
-  const p = prepare(ctx, kinds);
-  const slot = new Uint16Array(SLOTS);
-  const kind = new Uint8Array(SLOTS);
-  const at = new Float32Array(SLOTS * 3);
-  const size = new Float32Array(SLOTS);
-  let count = 0;
-  for (let s = 0; s < SLOTS; s++) {
-    const t = cell(ctx, p, kinds, s);
-    if (!t) continue;
-    slot[count] = s;
-    kind[count] = t.kind;
-    at.set(t.at, count * 3);
-    size[count] = t.size;
-    count++;
+const EMPTY = { count: 0, slot: new Uint16Array(0), kind: new Uint8Array(0), at: new Float32Array(0), size: new Float32Array(0) };
+
+function checkList(e, ranges) {
+  const low = e.base >= 3 && e.base + e.max <= THING_BASE;
+  const high = e.base >= EXTRA_HIGH && e.base % 10000 === 0 && e.max <= 9999;
+  if (e.base < 3) throw new Error(`extra ${e.list} starts inside the middle layer's wonder ids`);
+  if (!low && e.base < THING_BASE) throw new Error(`extra ${e.list} reaches into the lattice's ids`);
+  if (!low && !high) throw new Error(`extra ${e.list} is neither a low list nor a high one`);
+  for (const [list, lo, hi] of ranges)
+    if (e.base < hi && lo < e.base + e.max) throw new Error(`extras ${list} and ${e.list} share ids`);
+  ranges.push([e.list, e.base, e.base + e.max]);
+}
+
+export function thingsOf(ctx, extras = [], kinds = THING_KINDS, { lattice = true } = {}) {
+  let things = EMPTY;
+  if (lattice) {
+    const p = prepare(ctx, kinds);
+    const slot = new Uint16Array(SLOTS);
+    const kind = new Uint8Array(SLOTS);
+    const at = new Float32Array(SLOTS * 3);
+    const size = new Float32Array(SLOTS);
+    let count = 0;
+    for (let s = 0; s < SLOTS; s++) {
+      const t = cell(ctx, p, kinds, s);
+      if (!t) continue;
+      slot[count] = s;
+      kind[count] = t.kind;
+      at.set(t.at, count * 3);
+      size[count] = t.size;
+      count++;
+    }
+    things = {
+      count,
+      slot: slot.slice(0, count),
+      kind: kind.slice(0, count),
+      at: at.slice(0, count * 3),
+      size: size.slice(0, count),
+    };
   }
-  const things = {
-    count,
-    slot: slot.slice(0, count),
-    kind: kind.slice(0, count),
-    at: at.slice(0, count * 3),
-    size: size.slice(0, count),
-  };
   const lists = {};
   const ranges = [];
+  for (const e of extras) checkList(e, ranges);
+  // (the id's sector part made once: spaceId for every row of some 270 cost more than the copy)
+  const w0 = spaceId([ctx.sx, ctx.sy, ctx.sz], { wonder: 0 });
+  const prefix = w0.slice(0, -1);
   for (const e of extras) {
-    if (e.base < 3) throw new Error(`extra ${e.list} starts inside the middle layer's wonder ids`);
-    for (const [list, lo, hi] of ranges)
-      if (e.base < hi && lo < e.base + e.max) throw new Error(`extras ${list} and ${e.list} share ids`);
-    ranges.push([e.list, e.base, e.base + e.max]);
-    if (e.base + e.max > THING_BASE) throw new Error(`extra ${e.list} reaches into the lattice's ids`);
     lists[e.list] = e
-      .make(ctx)
+      .make(ctx, lists)
       .slice(0, e.max)
-      .map((row, k) => ({ ...row, id: spaceId([ctx.sx, ctx.sy, ctx.sz], { wonder: e.base + k }) }));
+      .map((row, k) => ({ ...row, id: prefix + (e.base + k) }));
   }
   return { things, extras: lists };
 }

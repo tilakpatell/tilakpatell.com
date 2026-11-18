@@ -1,0 +1,73 @@
+import { readFileSync } from 'node:fs';
+import { describe, expect, it } from 'vitest';
+import { FROM, SIDE_EFFECT, uncomment } from '../../../../scripts/health/graph.mjs';
+import * as gen from './gen';
+import { FAR } from '../scene/levels';
+import * as orbits from './orbits';
+import * as catalogue from '../gen/catalogue';
+import * as companions from '../gen/companions';
+import * as extras from '../gen/extras';
+import * as extrasSystems from '../gen/extras/systems';
+import * as paths from '../gen/paths';
+import * as extrasStars from '../gen/extras/stars';
+import * as gargantuans from '../gen/gargantuans';
+import * as finder from '../gen/finder';
+import * as extent from '../gen/extent';
+import * as job from '../gen/job';
+import * as genOrbits from '../gen/orbits';
+import * as seed from '../gen/seed';
+import * as space from '../gen/space';
+import * as stations from '../gen/stations';
+import * as systems from '../gen/systems';
+import * as tables from '../gen/tables';
+import * as things from '../gen/things';
+
+// The universe's two faces on the expanse's generator: exactly these names,
+// each its source's own. (A file apart from shared.test.js, which pins the
+// levels' face.)
+const GEN = [
+  'UNIVERSE', 'universeOf', 'fullSector', 'placeOf', 'placeIn', 'orbitAt', 'moonAt', 'bodiesAt', 'spaceTime',
+  'systemReach', 'THING_BASE', 'THING_CELLS', 'THING_NEAR', 'THING_KINDS', 'SECTOR_EXTRAS', 'thingRow', 'WONDER_KINDS',
+  'STATION_BASE', 'stationsOf', 'extentOf', 'KINDS', 'lookOf', 'traitsOf',
+  'COMET_PERIOD', 'pathAt', 'pathSpeed', 'rowAt', 'tailOf', 'companionsOf', 'companionAt', 'NEBULA_SHOW', 'wormholeExit',
+  'GARGANTUAN_FORMS', 'GARGANTUAN', 'gargantuanSectors', 'formOf', 'gargantuanKeeps', 'ARRIVAL_BASE', 'ARRIVAL_MAX', 'ARRIVAL_GARGANTUANS', 'checkGargantuan',
+  'CATALOGUE', 'solidOf', 'rowSolids', 'fleetLayout', 'discRadius', 'PLANET_SIZE', 'EXTRA_HIGH', 'EXTRA_LISTS', 'kindsIn', 'nearestOfKind',
+  'sectorJob', 'withMoons',
+];
+const LIGHT = ['orbitAt', 'moonAt', 'spaceTime', 'extentOf'];
+const FACE = [
+  [gen, [space, seed, genOrbits, systems, things, tables, stations, extent, catalogue, extras, paths, extrasSystems, companions, extrasStars, gargantuans, finder, job], GEN],
+  [orbits, [genOrbits, extent], LIGHT],
+];
+
+const source = (p) => uncomment(readFileSync(new URL(p, import.meta.url), 'utf8'));
+// every module a file names in an import or export … from, or imports for its side effects
+const importsOf = (p) => {
+  const code = source(p);
+  return [...code.matchAll(FROM), ...code.matchAll(SIDE_EFFECT)].map((m) => m[2]).sort();
+};
+
+describe('expanse/shared, the universe’s faces', () => {
+  it.each(FACE.map(([mod, from, names], i) => [i, mod, from, names]))('face %i lends exactly its names, as they are', (_, mod, from, names) => {
+    expect(Object.keys(mod).sort()).toEqual([...names].sort());
+    for (const n of names) {
+      const own = from.filter((src) => n in src);
+      expect(own.length, n).toBeGreaterThan(0);
+      for (const src of own) expect(mod[n], n).toBe(src[n]);
+    }
+  });
+  it('keeps the light face light: two sources, neither of which imports anything', () => {
+    expect([...new Set(importsOf('./orbits.js'))]).toEqual(['../gen/extent', '../gen/orbits']);
+    expect(importsOf('../gen/orbits.js')).toEqual([]);
+    expect(importsOf('../gen/extent.js')).toEqual([]);
+  });
+  it('lends the generator from its own files only, never the drawn Expanse, three.js or React', () => {
+    const from = importsOf('./gen.js');
+    expect(from.length).toBeGreaterThan(0);
+    expect(from.filter((p) => !p.startsWith('../gen/'))).toEqual([]);
+    expect(from.filter((p) => /scene|three|react/.test(p))).toEqual([]);
+  });
+  it('restates the far plane as the gargantuans’ own, the same number', () => {
+    expect(gen.GARGANTUAN.far).toBe(FAR);
+  });
+});

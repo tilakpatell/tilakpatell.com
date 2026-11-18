@@ -46,10 +46,12 @@ const insideCircle = (b, cx, cy, R) => [b.x0, b.x1].every((x) => [b.y0, b.y1].ev
 // dot's middle in the chart's pixels; `label: false` (a place filtered out)
 // is never placed, only given a spot for its hover. size: the chart's width
 // (it's square); its circle is `size / 2 - inset` round the middle.
-// obstacles: [{ x0, y0, x1, y1 }], boxes no name may cover.
+// obstacles: [{ x0, y0, x1, y1 }], boxes no name may cover. box: a frame
+// that's a box rather than the circle ({ x0, y0, x1, y1 }: the mini-map's);
+// sides: the sides to try, in order (SIDES unless given).
 // Returns a Map of id → { side, dx, dy, w, h, off }: the box's top-left from
 // the dot's middle, its size, and whether it's left off.
-export function placeLabels(items, { size, measure, height = 18, gap = 3, dot = 6, inset = 2, room = 2, obstacles = [] } = {}) {
+export function placeLabels(items, { size, measure, height = 18, gap = 3, dot = 6, inset = 2, room = 2, obstacles = [], box = null, sides = SIDES } = {}) {
   const cx = size / 2;
   const cy = size / 2;
   const R = size / 2 - inset;
@@ -61,10 +63,10 @@ export function placeLabels(items, { size, measure, height = 18, gap = 3, dot = 
     const r = it.r ?? dot;
     let first = null; // (the first side inside the circle: where a name left off shows)
     let best = null;
-    for (const side of SIDES) {
+    for (const side of sides) {
       const [dx, dy] = boxAt(side, w, h, r, gap);
       const b = { x0: it.x + dx, y0: it.y + dy, x1: it.x + dx + w, y1: it.y + dy + h };
-      if (!insideCircle(b, cx, cy, R)) continue;
+      if (box ? b.x0 < box.x0 || b.x1 > box.x1 || b.y0 < box.y0 || b.y1 > box.y1 : !insideCircle(b, cx, cy, R)) continue;
       first ??= { side, dx, dy };
       if (it.label === false) break;
       const grown = { x0: b.x0 - room, y0: b.y0 - room, x1: b.x1 + room, y1: b.y1 + room };

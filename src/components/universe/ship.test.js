@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { EDGE, GOALS, OPEN_SPACE, OVERDRIVE, PLANETS, SHIP, SOLIDS, SPACE, STARTS, autopilot, boostAt, brakeAt, ceilingAt, clearPark, crashLoud, driveAt, forward, holdReach, inTrench, noseOf, orbiting, parkAt, spawn, startAt, step, turnAt } from './ship';
+import { EDGE, GOALS, OPEN_SPACE, OVERDRIVE, PLANETS, SHIP, SOLIDS, SPACE, STARTS, autopilot, boostAt, brakeAt, ceilingAt, clearPark, crashLoud, driveAt, forward, holdReach, inTrench, isGoal, noseOf, orbiting, parkAt, spawn, startAt, step, turnAt } from './ship';
 import { DEEP, WONDERS, easeOpen, gapAlong, trenchBand } from './deep';
 import { MAW } from './maw';
 import { NOSE, UP, fromAngles, rotate } from './orient';
@@ -950,6 +950,11 @@ describe('autopilot', () => {
   it('has nowhere to go for anything that is not a place', () => {
     expect(parkAt('nope')).toBeNull();
     expect(autopilot(spawn(null), 'nope').done).toBe(true);
+    // (GOALS is a plain object: a word on its prototype is no goal)
+    for (const id of ['constructor', 'toString', 'hasOwnProperty', '__proto__']) {
+      expect([isGoal(id), parkAt(id), autopilot(spawn(null), id).done], id).toEqual([false, null, true]);
+    }
+    expect(isGoal('marvel')).toBe(true);
   }, LONG);
 
   it('flies from one universe to the next all the way round', () => {
