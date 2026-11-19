@@ -6,7 +6,7 @@
 
 **Tilak Patel’s portfolio. A résumé on the surface, and underneath it a universe you can fly through.**
 
-A 3D map of the whole site with a starfighter to fly it, thirteen fan-made worlds to land on and walk (one of them a whole Star Wars galaxy), games and online multiplayer. All of it runs on a static site.
+A 3D map of the whole site with a starfighter to fly it, an endless generated universe past its rim, thirteen fan-made worlds to land on and walk (one of them a whole Star Wars galaxy), games and online multiplayer. All of it runs on a static site, and almost all of it was written by AI coding agents: a for-fun experiment in how far frontier AI coding can go ([how it’s built](#built-by-ai-on-purpose)).
 
 [**Visit tilakpatell.com →**](https://tilakpatell.com)&nbsp;&nbsp;·&nbsp;&nbsp;[Résumé (PDF)](public/Resume.pdf)&nbsp;&nbsp;·&nbsp;&nbsp;[LinkedIn](https://www.linkedin.com/in/tilakpatell)&nbsp;&nbsp;·&nbsp;&nbsp;[Email](mailto:tilakny@gmail.com)
 
@@ -15,6 +15,7 @@ A 3D map of the whole site with a starfighter to fly it, thirteen fan-made world
 ![Vite 8](https://img.shields.io/badge/Vite-8-646CFF?logo=vite&logoColor=white)
 ![Three.js](https://img.shields.io/badge/Three.js-r186-000000?logo=threedotjs&logoColor=white)
 ![Multiplayer over Nostr](https://img.shields.io/badge/Multiplayer-Nostr-8E44AD)
+![Built with Claude Code](https://img.shields.io/badge/Built%20with-Claude%20Code-D97757?logo=claude&logoColor=white)
 
 </div>
 
@@ -22,7 +23,7 @@ A 3D map of the whole site with a starfighter to fly it, thirteen fan-made world
 
 <img align="right" width="220" src="public/portrait.webp" alt="Tilak Patel smiling in a black rain jacket in front of a waterfall">
 
-I plan technical programs and build the software behind them. I study computer science at Northeastern University (B.S., May 2027) and I’m a Technical Infrastructure Program Manager Intern at AWS, building data-center planning tools for generative-AI capacity. Off the clock: Game Boy emulators, open source and an unreasonable amount of Star Wars. This site is where those meet.
+I plan technical programs and build the software behind them. I study computer science at Northeastern University (B.S., May 2027) and I’m a Technical Infrastructure Program Manager Intern at AWS, building data-center planning tools for generative-AI capacity. Off the clock: Game Boy emulators, open source and an unreasonable amount of Star Wars. This site is where those meet, and where I find out how far AI agents can take a codebase.
 
 **Open to technical program manager and software engineer roles.** [Say hello](mailto:tilakny@gmail.com).
 
@@ -56,13 +57,28 @@ The switch at the top of every page moves between the two and lands on the same 
 
 The front door is a map of the site: the portfolio’s pages are stations round a sun and each fandom is a planet out in the dark, between a black hole, two nebulae, a rogue planet and two other suns. A first visit puts you in a cockpit (the Millennium Falcon, an X-wing, Rick’s space cruiser or Walt and Jesse’s RV) and launches you. Hunters come after you, Star Destroyers drop out of hyperspace, convoys pass and other pilots online share the sky. Fly down into a planet’s air to land in its world.
 
+**Ships you can feel.** The four crews’ ships each fly with a character of their own: the X-wing a fighter, the Falcon a smuggler, Rick’s cruiser an explorer, the RV a hauler. Seven core systems (engines, pulse drive, hyperdrive, shields, scanner, cargo hold and reactor) go from Mk I to Mk V, bought ship by ship in the hangar. A Mk V pulse drive crosses a sector four times as fast as a Mk I, the engines glow hotter with every tier, and the top tiers need rare goods found far out past the rim.
+
+**A market that holds together.** Goods differ by where you are: each neighbourhood and region has its specialties, cheap at home and worth more the further you haul them. Mining and salvage fill your hold, prices drift through the day, and every station you dock at has a market to buy and sell in.
+
 `W` `S` throttle · `A` `D` roll · arrows steer · `F` fire · `J` jump to the star on your nose · `M` nav map · `H` hangar · `V` cockpit view
 
 <table>
 <tr>
 <td width="33%" valign="top"><img src="docs/readme/welcome.webp" alt="Han’s seat in the Millennium Falcon’s cockpit, Chewie beside it, with a choice of ship"><p><b>The welcome</b>: Han’s seat, then punch it.</p></td>
-<td width="33%" valign="top"><img src="docs/readme/navmap.webp" alt="The nav computer: every place on the site on one chart, with drives to pick"><p><b>The nav map</b>: everywhere on one chart.</p></td>
-<td width="33%" valign="top"><img src="docs/readme/hangar.webp" alt="The hangar panel open beside a red star: paint jobs and the ship’s stats"><p><b>The hangar</b>: paint, parts, skills and a shipyard.</p></td>
+<td width="33%" valign="top"><img src="docs/readme/navmap.webp" alt="The nav map: a 3D chart centred on the ship, with places on stems and drives to pick"><p><b>The nav map</b>: a 3D chart that follows you out.</p></td>
+<td width="33%" valign="top"><img src="docs/readme/hangar.webp" alt="The hangar’s Systems tab: the ship’s core systems, each with its Mk tier and the next one to buy"><p><b>The hangar</b>: tiers, paint, parts, skills and a shipyard.</p></td>
+</tr>
+</table>
+
+### Past the rim
+
+Fly far enough and the map never ends. Space goes on in every direction, generated as you fly. There are sectors of star systems with stations to dock at and planets of their own, derelicts to salvage, ion storms that drain your shields, and nebulae that stay put while you fly through them. One sector in every twenty-seven holds a gargantuan, between 20 and 200 planets across and visible from a sector away: a black hole, a ring arc, a Dyson sphere or a derelict hulk. Every generated place has a link of its own, so you can send someone a planet nobody made by hand.
+
+<table>
+<tr>
+<td width="50%" valign="top"><img src="docs/readme/endless.webp" alt="A generated planet past the rim, with its card naming it"><p><b>A generated world</b>, reached by its own link.</p></td>
+<td width="50%" valign="top"><img src="docs/readme/gargantuan.webp" alt="A gargantuan seen from across its sector"><p><b>A gargantuan</b>, a sector away.</p></td>
 </tr>
 </table>
 
@@ -97,6 +113,31 @@ The front door is a map of the site: the portfolio’s pages are stations round 
 </table>
 
 **Easter eggs.** ↑ ↑ ↓ ↓ ← → ← → B A jumps to lightspeed and ⌘K / Ctrl+K opens a command palette. The eggs unlock fan colour schemes, each with a live background of its own, and there are dozens of achievements to win.
+
+## Built by AI, on purpose
+
+Confession: I’m not a huge fan of web development. I am a big fan of finding out how far frontier AI coding can go, so this repo is the experiment, and the site is the fun excuse for it. Almost every line here was written by [Claude Code](https://claude.com/claude-code) agents. My part is the one I do at work, the program manager’s: decide what gets built, answer the design questions, and say what ships. The interesting engineering is everything that lets agents ship to a live site every day without breaking it.
+
+**1,156 pull requests merged since the first on 4 October 2026**, about 25 a day.
+
+- **Every feature starts as a conversation.** I say what I want, in my own words (“something gargantuan or make it really cool”, “I don’t like how it’s like a ceiling or whatever”). A session asks me what it can’t decide, writes the design down in [`docs/superpowers/specs/`](docs/superpowers/specs) (128 of them so far) and a plan, builds it test-first on a branch, checks it in a real browser, and merges once CI is green.
+- **Agents work in parallel lanes.** A big feature gets an orchestrator session that splits the design into lanes and starts one cloud session per lane, each on its own branch. The endless universe was built that way, with nebulae, generated places, things in space, generated planets and the 3D chart all in flight at once. Every lane leaves a hand-off note ([`docs/superpowers/HANDOFF-*.md`](docs/superpowers)) and the numbers behind its claims ([`evidence/`](docs/superpowers/evidence)). Sessions also message each other: this README was refreshed by a session that asked the live ones what they were shipping.
+- **Skills over prompts.** About fifty skills in [`.claude/skills/`](.claude/skills) hold how work gets done here: brainstorm → spec → plan → test-driven build → verify before claiming done, three.js know-how, and the house’s own skills (the autopilot, jobs for the GPU at home).
+- **Guardrails that don’t trust the author.** [`docs/health/RULES.md`](docs/health/RULES.md) sets the layers and what may import what. [`scripts/health.mjs`](docs/health/README.md) measures the codebase against budgets that only ever go down, a ratchet, and CI fails any pull request that goes over one. There are over 1,750 test files, plus dozens of headless-browser checks (`scripts/*-check.mjs`) that fly the ship, open the nav map, buy a tier, walk the tour and take screenshots, because a passing test isn’t a working page.
+- **An autopilot.** Every four hours a scheduled session picks one improvement off [the backlog](docs/autopilot/backlog.md), builds it, checks it in a browser, merges it and logs it on [`/changes`](https://tilakpatell.com/changes). Telling any session “Revert change 12” takes that change back out ([how it works](docs/autopilot/README.md)).
+- **A GPU at home, on call.** Agents in the cloud can’t run a 3D-model generator, so they ask my desktop. The `gen3d`, `voices` and `motion` workflows file a request as an issue, and a self-hosted runner on my GPU makes the model, the voice lines or the animation clip from a prompt. An AI judge checks each model against what was asked before it lands. Every night the same machine renders every model and grades the judges against labelled sets.
+
+The same setup drives a sister project, a browser port of a real game engine, which is what Hoth plays on.
+
+### CI/CD
+
+| When | What runs |
+| --- | --- |
+| Every pull request | [`ci.yml`](.github/workflows/ci.yml): lint, the Vitest suite, the build and the health check; three Star Wars worlds booted in software GL; the AI pipelines’ contract tests and renders of any changed model; and multiplayer, with two browsers meeting on a stand-in relay |
+| Every push to `main` | [`deploy.yml`](.github/workflows/deploy.yml): the same gates, then `dist/` to the Cloudflare Worker that serves tilakpatell.com ([`wrangler.jsonc`](wrangler.jsonc), [the page](docs/stack/cloudflare.md)), the heavy assets to a storage bucket by hash, and a prerendered page for each route with its own title and preview card |
+| Every night | [`worlds.yml`](.github/workflows/worlds.yml): all seventeen Star Wars worlds booted, each checked to come up without an error; [`ai-health.yml`](.github/workflows/ai-health.yml): the models and the judges, on the GPU at home |
+| Every four hours | The autopilot’s session |
+| When an agent asks | [`gen3d`](.github/workflows/gen3d.yml), [`voices`](.github/workflows/voices.yml) and [`motion`](.github/workflows/motion.yml), on the GPU at home |
 
 ## Under the hood
 
@@ -151,10 +192,7 @@ public/            models, textures, audio and photos
 - **Rules apart from drawing.** A game’s rules live in a pure, tested `rules.js`; the scene only draws.
 - **Multiplayer without a server.** Pilots meet in rooms on public Nostr relays, each event signed with a per-visit key in a worker; pilots never see each other’s IP addresses.
 - **No runtime calls to asset services.** Every model and texture is made or fetched ahead and committed or published, so the site loads only its own files.
-
-**Deployment.** Every push to `main` runs [`deploy.yml`](.github/workflows/deploy.yml): lint, tests and the build, then `dist/` to the Cloudflare Worker that serves tilakpatell.com ([`wrangler.jsonc`](wrangler.jsonc), [the page](docs/stack/cloudflare.md)), with the heavy assets on a storage bucket by hash. Each route also gets a prerendered page with its own title and preview card (`scripts/prerender.mjs`).
-
-**The autopilot.** A scheduled Claude Code session makes one improvement at a time, checks it in a browser (`scripts/autopilot-check.mjs`), merges it once CI is green and logs it on [`/changes`](https://tilakpatell.com/changes), where any change can be undone. The protocol is [`.claude/skills/autopilot/SKILL.md`](.claude/skills/autopilot/SKILL.md); the queue and switches are in [`docs/autopilot/`](docs/autopilot/README.md).
+- **An endless universe from a seed.** Past the rim, every sector is generated from the universe’s seed and its coordinates, in workers, so the same place is in the same spot for every pilot and has a link that always leads back to it.
 
 ## Credits
 
