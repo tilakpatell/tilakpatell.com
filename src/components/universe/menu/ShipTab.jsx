@@ -12,9 +12,9 @@ import Face from '../Faces';
 // for this crew with this loadout, weapons.js), its two powers (the pair
 // carried, shipPowers.js) and what's fitted in the shipyard (outfit.js), the
 // one picked or pointed at said in full beside them, and its systems' tiers
-// (`systems`: ships/sheet.js's systemRows, Mk I to V). A slot opens the
-// Hangar on its page (`onHangar(tab)`: the Arms, the Systems, the Powers, the Shipyard),
-// and so does each of the Hangar's pages under them. Change ship lists the
+// (`systems`: ships/sheet.js's systemRows, Mk I to V). A slot goes to the
+// Hangar's page for it (`onHangar(tab)`: the Arms, the Systems, the Powers,
+// the Shipyard, along the tab's top: FlightMenu.jsx). Change ship lists the
 // four (`onShip`, where the page lets the ship change).
 
 // (the guide's words for the three lines: blaster, secondary, heavy ordnance)
@@ -31,14 +31,6 @@ const GUN_ICON = [
     <circle cx="19" cy="19.5" r="1.2" />
   </g>,
   <path key="2" d="M5 17 15 7c1.6-1.6 3.6-2.2 4.3-1.5s.1 2.7-1.5 4.3L8 19.8zM6.5 15.5l-3 .6 2.4 3M9 18l-.6 3 3-2.4" />,
-];
-const HANGAR = [
-  ['crew', 'Crew'],
-  ['arms', 'Arms'],
-  ['systems', 'Systems'],
-  ['powers', 'Powers'],
-  ['skills', 'Skills'],
-  ['shipyard', 'Shipyard'],
 ];
 // (each system's mark: ships/profiles.js's SYSTEMS that are live)
 const SYSTEM_ICON = {
@@ -171,16 +163,6 @@ export default function ShipTab({ ship, loadout = null, picks = null, carry = nu
             </section>
           ) : null,
         )}
-        <div className="fm-hangar" role="group" aria-label="The Hangar">
-          <span className="fm-muted">
-            The Hangar <kbd className="hud-cap">H</kbd>
-          </span>
-          {HANGAR.map(([tab, word]) => (
-            <button key={tab} type="button" className="fm-chip" onClick={() => onHangar?.(tab)}>
-              {word}
-            </button>
-          ))}
-        </div>
       </div>
 
       <aside className="fm-detail" aria-live="polite">

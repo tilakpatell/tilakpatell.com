@@ -171,7 +171,7 @@ export default function Universe({ ask = false }) {
   const menu = useFlightMenu({ enabled: menuOk });
   const menuOn = useRef(false); // (for Escape's listener, made once a change of what it reads)
   menuOn.current = menuOk;
-  const { openMenu, closeMenu } = menu;
+  const { openMenu, closeMenu, openShip } = menu;
   useFlightMode(quiet && !leaving);
   const timer = useRef(0);
   const trip = useRef(null); // a jump out (jumps/jumpOut.js): this page gone first, its dark coming late changes nothing
@@ -400,7 +400,8 @@ export default function Universe({ ask = false }) {
       else if (e.what === 'leave' && placeRef.current === e.id) select(null);
       else if (e.what === 'dock') {
         setDocked(e.id);
-        if (e.open) {
+        if (e.open && quiet) openShip('shipyard'); // (flying, the Hangar is the menu's: its Shipyard page)
+        else if (e.open) {
           setHangarTab('shipyard');
           setYard(true);
         }
@@ -576,10 +577,14 @@ export default function Universe({ ask = false }) {
         loadout={loadout}
         build={build}
         onShip={shut(pickShip)}
-        onHangar={shut(() => {
-          setHangarTab('shipyard');
-          setYard(true);
-        })}
+        onHangar={
+          inMenu
+            ? () => openShip('shipyard')
+            : () => {
+                setHangarTab('shipyard');
+                setYard(true);
+              }
+        }
         onClassic={shut(() => switchTo('classic'))}
         tucked={inMenu ? false : tucked}
         onTuck={inMenu ? null : tuck}
@@ -644,7 +649,7 @@ export default function Universe({ ask = false }) {
       )}
       {crew && <Comms control={comms} crew={crew} reduced={reduced} />}
       {!leaving && <EarnNote note={yardNote ?? earned} />}
-      {ship && !leaving && (
+      {ship && !leaving && !quiet && (
         <Suspense fallback={null}>
           <HangarPanel
             open={yard}
@@ -683,10 +688,17 @@ export default function Universe({ ask = false }) {
           map={panelOf(true)}
           controls={controls}
           onControls={setControls}
-          onHangar={(t) => {
-            setHangarTab(t);
-            setYard(true);
-          }}
+          shipName={crew?.ship ?? ''}
+          page={menu.page}
+          onPage={menu.setPage}
+          hangarTab={hangarTab}
+          onHangarTab={setHangarTab}
+          live={live}
+          lastBuild={garage[ship] || null}
+          saves={yardSaves}
+          dropped={dropped}
+          onApply={applyDraft}
+          onSell={sellPart}
           onShip={pickShip}
           online={online}
           onOnline={() => window.dispatchEvent(new CustomEvent('tp:pilot'))}

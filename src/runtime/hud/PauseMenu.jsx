@@ -16,25 +16,27 @@ import { menuKey, stepTab } from './pause.js';
 // world's lines over and under the body), `dress` (the world's skin, on
 // data-dress), and the open tab's body as children.
 //
-//   <PauseMenu open tab tabs onTab onOpen onClose dress head foot keys enabled chip label resume>{body}</PauseMenu>
-//     onOpen(tab?): open it (on a tab); onClose(): shut it; enabled: its keys are heard (not under a world's own dialog)
+//   <PauseMenu open tab tabs onTab onOpen onClose dress head foot keys enabled chip label resume ownEscape>{body}</PauseMenu>
+//     onOpen(tab?): open it (on a tab); onClose(): shut it; enabled: its keys are heard (not under a world's own dialog);
+//     ownEscape: a selector for what inside it answers Escape itself while it's there (a record over a tab's body)
 
 const FOCUSABLE = 'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), summary, [tabindex]:not([tabindex="-1"])';
 
 const typingIn = (el) => el instanceof HTMLElement && (el.isContentEditable || (/^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName) && el.type !== 'range' && el.type !== 'checkbox'));
 
-export default function PauseMenu({ open = false, tab, tabs, onTab, onOpen, onClose, dress = 'house', head = null, foot = null, keys = {}, enabled = true, chip = true, label = 'Menu', resume = 'Back to flying', className = '', children = null }) {
+export default function PauseMenu({ open = false, tab, tabs, onTab, onOpen, onClose, dress = 'house', head = null, foot = null, keys = {}, enabled = true, chip = true, label = 'Menu', resume = 'Back to flying', ownEscape = null, className = '', children = null }) {
   const id = useId();
   const root = useRef(null);
   const ids = tabs.map((t) => t.id);
   // (read inside the listener as they are now: it's made once a change of `open`)
   const now = useRef({});
-  now.current = { tab, ids, keys, onTab, onOpen, onClose };
+  now.current = { tab, ids, keys, onTab, onOpen, onClose, ownEscape };
 
   useEffect(() => {
     if (!enabled && !open) return undefined;
     const onKey = (e) => {
-      const { tab: at, ids: list, keys: k, onTab: toTab, onOpen: opening, onClose: closing } = now.current;
+      const { tab: at, ids: list, keys: k, onTab: toTab, onOpen: opening, onClose: closing, ownEscape: own } = now.current;
+      if (open && e.key === 'Escape' && own && root.current?.querySelector(own)) return; // (it's that one's Escape)
       const other = document.querySelector('[aria-modal="true"]');
       const act = menuKey(e, {
         open,

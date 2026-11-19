@@ -35,11 +35,11 @@ The owner asked for the same treatment on a phone, heavily simplified. The touch
 
 ## The menu
 
-`Esc` opens it (after the page's own Esc: a tour, the autopilot, the scene's escape), and closes it; `I` opens it on Cargo, `O` on Settings; `1`–`6` and the arrows change tab inside. `H` (the Hangar), `M` (the map) and `?` (the guide) keep their doors; each also has its button in a tab. Offline the world freezes behind it, as the Hangar does; online it carries on (the scene hears no key while the menu, a dialog, is open). A dialog: focus goes in, Tab stays in it, Esc gives it back.
+`Esc` opens it (after the page's own Esc: a tour, the autopilot, the scene's escape), and closes it; `I` opens it on Cargo, `O` on Settings, `H` on the Hangar's page last used and `C` on its crew (the Hangar's own panel isn't mounted while a ship flies on the maps: the menu is the Hangar); `1`–`6` and the arrows change tab inside. `M` (the map) and `?` (the guide) keep their doors; each also has its button in a tab. Offline the world freezes behind it, as the Hangar does; online it carries on (the scene hears no key while the menu, a dialog, is open). A dialog: focus goes in, Tab stays in it, Esc gives it back.
 
 | Tab | Holds |
 | --- | --- |
-| Ship | the crew and the ship, what it's fitted with, its three guns, two powers and its systems' tiers (`ships/sheet.js`'s `systemRows`) as slots; each slot opens the Hangar on its page; Change ship |
+| Ship | the Hangar, folded in (the owner's ask): its Overview (the crew and the ship, its three guns, two powers and systems' tiers, `ships/sheet.js`'s `systemRows`, and what's fitted, as slots) and the Hangar's own pages, Crew, Arms, Systems, Powers, Skills and the Shipyard (`hangar/HangarPage.jsx`, which the Hangar's own panel draws too); H opens it on the Hangar's page last used and C on the crew; the shipyard's draft is kept by the menu, which stays mounted while flying |
 | Cargo | the credits, the level, the flight record, and the hold (`shipSheet`'s: its goods as slots, used of room; empty until the market's lane) |
 | Map | what the side panel said (the place picked or near, the way in, the landings), the drive, and the full map's button |
 | Settings | the flight settings (FlightSettings's controls, inline), sound and the crew's voices, the site's picture settings, multiplayer |

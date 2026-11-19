@@ -280,7 +280,7 @@ export default function Galaxy() {
   const [controls, setControls] = useControls();
   const menuOk = quiet && !leaving && !mapOpen && !jumping && !intro && !yard;
   const menu = useFlightMenu({ enabled: menuOk });
-  const { openMenu, closeMenu } = menu;
+  const { openMenu, closeMenu, openShip } = menu;
   const menuOn = useRef(false);
   menuOn.current = menuOk;
   useFlightMode(quiet && !leaving);
@@ -553,10 +553,12 @@ export default function Galaxy() {
             onShip={shut(pickShip)}
             onHangar={
               ship && !jumping
-                ? shut(() => {
-                    setHangarTab('shipyard'); // (the panel's link says the shipyard: the Hangar opens on it)
-                    openYard(true);
-                  })
+                ? inMenu
+                  ? () => openShip('shipyard') // (in the menu, the Hangar is its Ship tab)
+                  : () => {
+                      setHangarTab('shipyard'); // (the panel's link says the shipyard: the Hangar opens on it)
+                      openYard(true);
+                    }
                 : null
             }
             onMap={shut(() => setMapOpen(true))}
@@ -617,7 +619,7 @@ export default function Galaxy() {
       />
       {crew && <Comms control={comms} crew={galaxyCrew(crew)} reduced={reduced} />}
       <EarnNote note={yardNote ?? earned} />
-      {ship && !leaving && (
+      {ship && !leaving && !quiet && (
         <Suspense fallback={null}>
           <HangarPanel
             open={yard}
@@ -666,10 +668,17 @@ export default function Galaxy() {
           map={galaxyPanel(true)}
           controls={controls}
           onControls={setControls}
-          onHangar={(t) => {
-            setHangarTab(t);
-            openYard(true);
-          }}
+          shipName={crew?.ship ?? ''}
+          page={menu.page}
+          onPage={menu.setPage}
+          hangarTab={hangarTab}
+          onHangarTab={setHangarTab}
+          live={live}
+          lastBuild={garage[ship] || null}
+          saves={yardSaves}
+          dropped={dropped}
+          onApply={applyDraft}
+          onSell={sellPart}
           onShip={pickShip}
           online={online}
           onOnline={() => window.dispatchEvent(new CustomEvent('tp:pilot'))}

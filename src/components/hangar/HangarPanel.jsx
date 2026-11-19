@@ -2,15 +2,11 @@ import { useEffect, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useAchievements } from '../Achievements';
 import { focusBack, wrapFocus } from '../../lib/focus';
-import { ShipyardBody, useYard } from '../universe/shared/hangar';
+import { useYard } from '../universe/shared/hangar';
 import { useEconomy } from '../universe/shared/wallet';
 import { TABS, TAB_LABEL, tabForKey, wantsKey } from './hangarRules';
 import { headOf } from './hangarHead';
-import CrewTab from './CrewTab';
-import ArmsTab from './ArmsTab';
-import SystemsTab from './SystemsTab';
-import PowersTab from './PowersTab';
-import SkillsTab from './SkillsTab';
+import HangarPage from './HangarPage';
 import { useSkills } from './skills/useSkills';
 import './hangar.css';
 
@@ -137,26 +133,8 @@ export default function HangarPanel({ open, onOpen, tab, onTab, enabled = true, 
           ))}
         </div>
         <div className="hangar-body" role="tabpanel" id={`${id}-panel`} aria-labelledby={`${id}-tab-${tab}`} data-tab={tab}>
-          {tab === 'crew' && <CrewTab ship={ship} />}
-          {tab === 'arms' && (
-            <ArmsTab
-              ship={ship}
-              loadout={live?.loadout}
-              onShipyard={(s) => {
-                setSlot(s);
-                onTab('shipyard');
-              }}
-              onSkills={() => onTab('skills')}
-            />
-          )}
-          {tab === 'systems' && <SystemsTab ship={ship} build={live?.build ?? null} />}
-          {tab === 'powers' && <PowersTab ship={ship} />}
-          {tab === 'skills' && <SkillsTab />}
-          {tab === 'shipyard' && (
-            <div className="yard-panel hangar-yard">
-              <ShipyardBody ship={ship} shipName={shipName} live={live} lastBuild={lastBuild} saves={saves} dropped={dropped} onSell={onSell} hint={hint} yard={yard} slot={slot} onSlot={setSlot} onApplied={() => onOpen(false)} onCrew={() => onTab('crew')} />
-            </div>
-          )}
+          {/* (each page's body: HangarPage.jsx, which the flight menu's Ship tab draws too) */}
+          <HangarPage tab={tab} onTab={onTab} ship={ship} shipName={shipName} live={live} lastBuild={lastBuild} saves={saves} dropped={dropped} onSell={onSell} hint={hint} yard={yard} slot={slot} onSlot={setSlot} onApplied={() => onOpen(false)} />
         </div>
       </section>
     </div>,

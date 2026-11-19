@@ -118,8 +118,6 @@ body:has(.hud-pause) .guide-btn { display: none; }
 .fm-slots { display: grid; align-content: start; gap: 1.05rem; min-width: 0; }
 .fm-slot-row .fm-h { margin-bottom: 0.5rem; }
 .fm-slot-line { display: flex; flex-wrap: wrap; gap: 0.6rem; }
-.fm-hangar { display: flex; flex-wrap: wrap; align-items: center; gap: 0.45rem; padding-top: 0.3rem; font-size: 0.86rem; }
-.fm-hangar > .fm-muted:first-child { margin-right: 0.2rem; }
 .fm-detail { display: grid; align-content: start; gap: 0.35rem; padding-left: 1.4rem; border-left: 1px solid var(--pause-line); }
 .fm-detail-icon { width: 46px; height: 46px; color: var(--pause-accent); }
 .fm-detail-title { font-size: 1.3rem; }
@@ -175,6 +173,30 @@ body:has(.hud-pause) .guide-btn { display: none; }
 .fm-site-row { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-top: 1.2rem; }
 .fm-credits { margin-top: 1.4rem; color: var(--pause-muted); font-size: 0.86rem; }
 .fm-credits > summary { cursor: pointer; font-weight: 600; }
+
+/* Ship: its pages, the overview and the Hangar's, along its top */
+.fm-shiptab { display: flex; flex-direction: column; gap: 1rem; min-height: 100%; }
+.fm-pages-strip { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.fm-page-tab[aria-selected='true'] { border-color: var(--pause-accent); background: var(--pause-accent); color: var(--pause-accent-ink); }
+.fm-points { margin-left: auto; border-color: var(--pause-accent); color: var(--pause-accent); }
+/* the Hangar's page in the menu: the shipyard's tokens (shipyard.css has them on
+   .yard, which is the full page's box), no box of its own, the dress's ink;
+   the shipyard's three panes get the tab's height and scroll in themselves */
+.fm-hangar {
+  --yard-bg: transparent;
+  --yard-line: var(--pause-line);
+  --yard-pane: var(--pause-slot);
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  color: var(--pause-ink);
+}
+.fm-hangar .hangar-body { flex: 1; min-height: 0; overflow: visible; }
+/* (flex: none: in the column, flex: 1 would have it take the catalogue's whole height and the showroom's canvas grow with it) */
+.fm-hangar .hangar-body[data-tab='shipyard'] { display: flex; flex: none; height: max(420px, calc(min(720px, 100dvh - 120px) - 230px)); overflow: hidden; }
+.fm-hangar .hangar-page { max-width: none; padding: 0; }
+.fm-hangar :is(button, input):focus-visible { outline: 2px solid var(--pause-accent); outline-offset: 1px; }
 
 /* the Map tab holds the page's side panel: in the menu, not beside the map */
 .fm .hud-pause-body .universe-panel {
