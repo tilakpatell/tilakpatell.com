@@ -13,7 +13,7 @@
 // fitted in the hangar (outfit.js), bolted on by modules.js.
 //
 // buildShip(kind, textures, { build }) → { group, setThrottle(0…1),
-//   paint(paint), rim({ colour, dir, key }), outfit(loadout) → modules, modules, engines, drive(dt,
+//   paint(paint), rim({ colour, dir, key }), outfit(loadout, tiers) → modules, modules, engines, drive(dt,
 //   motion), dress(model, { clone }), mount(model, extra), update(t),
 //   dispose() }
 // With a build (shipyard/build.js), the ship is that garage build, put
@@ -250,6 +250,7 @@ export function buildShipWith(createLivery, kind, T = {}, { build = null } = {})
   let coat = null; // the paint it wears
   let modules = null; // the parts bolted on
   let fitted = null; // and the loadout they're from
+  let fittedTiers = null; // (and the tiers that show, as last fitted)
   let lights = []; // the model's own engine glow, once it's mounted
   let parked = false;
   const glow = () => {
@@ -285,15 +286,18 @@ export function buildShipWith(createLivery, kind, T = {}, { build = null } = {})
     },
     // the parts fitted (outfit.js's loadout): the old ones off, these on, in
     // the ship's paint
-    outfit(loadout) {
-      // (the parts just fitted swing into place; a ship's first fit is just there)
+    outfit(loadout, tiers = null) {
+      // (the parts just fitted swing into place, and the tiers that show just bought; a ship's first fit is just there)
       const fresh = fitted ? Object.keys(loadout).filter((slot) => loadout[slot] !== fitted[slot]) : [];
+      if (fittedTiers && (tiers?.hold ?? 1) !== (fittedTiers.hold ?? 1)) fresh.push('cargo');
+      if (fittedTiers && (tiers?.scanner ?? 1) !== (fittedTiers.scanner ?? 1)) fresh.push('scanner');
       fitted = { ...loadout };
+      fittedTiers = { ...(tiers ?? {}) };
       if (modules) {
         modules.group.removeFromParent();
         modules.dispose();
       }
-      modules = buildModules(kind, loadout, engines, { fresh, mounts: ship.mounts ?? null });
+      modules = buildModules(kind, loadout, engines, { fresh, mounts: ship.mounts ?? null, tiers });
       livery.apply(modules.group, FIT.built);
       ship.group.add(modules.group);
       return modules;
