@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { WorldHost, useWorld } from '../../runtime';
 import universeModule from './module';
-import { local, useMediaQuery, useReducedMotion } from '../../lib/hooks';
-import { CONTROLS_KEY, readControls } from './controls';
+import { useMediaQuery, useReducedMotion } from '../../lib/hooks';
 import { useEconomy } from './EconomyProvider';
 import FlightSettings from './FlightSettings';
 import Hangar from './Hangar';
@@ -56,7 +55,7 @@ const FOOT_ABILITIES = [
   { slot: 'second', key: 'V' },
 ];
 
-export default function UniverseMap({ selected, onSelect, onOpen, handle, frozen, ship, loadout, build = null, tune = null, canFit = false, hangar = false, onHangar, net = null, onEvent, onLand, onCrash, drive = 'super', charting = false, onMap, startAt = null, universe = null, skillFx = null, powerPicks = null, onLive = null }) {
+export default function UniverseMap({ selected, onSelect, onOpen, handle, frozen, quiet = false, controls, onControls, ship, loadout, build = null, tune = null, canFit = false, hangar = false, onHangar, net = null, onEvent, onLand, onCrash, drive = 'super', charting = false, onMap, startAt = null, universe = null, skillFx = null, powerPicks = null, onLive = null }) {
   const labels = useRef({});
   const tags = useRef(null);
   const stick = useRef(null);
@@ -78,14 +77,10 @@ export default function UniverseMap({ selected, onSelect, onOpen, handle, frozen
   const [footHint, setFootHint] = useState(false);
   // the place's name as you come down on a planet (landings.js)
   const [arrive, setArrive] = useState(null);
-  const [controls, setControlsState] = useState(() => readControls(local.get(CONTROLS_KEY)));
+  // (the flight settings are the page's, kept there: the flight menu's Settings tab changes them too)
+  const setControls = onControls;
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [aim, setAim] = useState(null); // (the star the nose is on: the scene's word, aim.js; { id, name })
-  const setControls = (c) => {
-    const next = readControls(c);
-    setControlsState(next);
-    local.set(CONTROLS_KEY, next);
-  };
   // (the settings and the hangar sit in the same place: one at a time)
   const openSettings = useCallback(
     (on) => {
@@ -317,8 +312,9 @@ export default function UniverseMap({ selected, onSelect, onOpen, handle, frozen
           {/* the corner's tools: the flight settings, the Hangar's door and
               the nav map (no box of its own on a desktop, where each keeps
               its place; on a phone, flying, a row along the top) */}
-          <div className="universe-tools">
-            {ship && on && !onFoot && <FlightSettings controls={controls} onChange={setControls} open={settingsOpen} onOpen={openSettings} />}
+          {/* (quiet, flying: put away, the flight menu has them; the Hangar's door stays in the page as H's, hidden: HangarPanel's doorAt) */}
+          <div className="universe-tools" data-quiet={quiet || undefined}>
+            {ship && on && !onFoot && !quiet && <FlightSettings controls={controls} onChange={setControls} open={settingsOpen} onOpen={openSettings} />}
             {ship && on && !onFoot && canFit && <Hangar open={hangar} onOpen={openHangar} />}
             {on && onMap && (
               <button type="button" className="universe-navmap-btn" data-ship={ship ? '' : undefined} onClick={onMap} aria-label="Nav map" title="Nav map (M)" aria-keyshortcuts="M">
@@ -342,6 +338,7 @@ export default function UniverseMap({ selected, onSelect, onOpen, handle, frozen
                 crosshair={<Reticle className="universe-foot-reticle" state={onFoot ? reticle : null} />}
                 stickRef={stick}
                 className="universe-cluster"
+                quiet={quiet}
                 foot={onFoot}
                 vitalsIcon={<RiShieldLine aria-hidden="true" />}
                 armsKeys
@@ -416,7 +413,7 @@ export default function UniverseMap({ selected, onSelect, onOpen, handle, frozen
                 <p className="universe-hint universe-hint-fly">
                   <span className="universe-hint-keys">
                     {/* the five keys that matter in the first minute; the guide has the rest */}
-                    <kbd>W</kbd> <kbd>S</kbd> throttle, arrows steer, <kbd>Space</kbd> boost, <kbd>F</kbd> fire, fly down into a planet’s air to go into its world
+                    <kbd>W</kbd> <kbd>S</kbd> throttle, arrows steer, <kbd>Space</kbd> boost, <kbd>F</kbd> fire, fly down into a planet’s air to go into its world{quiet ? <>, <kbd>Esc</kbd> the menu</> : null}
                     <GuideCue />
                   </span>
                   {/* (a phone held upright is told it flies better on its side: the page can't turn it) */}

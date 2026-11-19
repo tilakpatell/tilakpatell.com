@@ -37,6 +37,9 @@ import { pocketOf, registerPocket } from '../components/expanse/pocket';
 import { createRegistry } from '../components/worlds/registry';
 import { useTouring } from '../components/tour/useTouring';
 import { worldStore } from '../runtime';
+import FlightMenu from '../components/universe/menu/FlightMenu';
+import { useFlightMenu, useFlightMode } from '../components/universe/menu/useFlightMenu';
+import { useControls } from '../components/universe/useControls';
 
 const PORTAL = '#97ce4c';
 // the phone out past the belt (universe/phone.js): its lock screen, fetched
@@ -158,7 +161,18 @@ export default function Universe({ ask = false }) {
   // (a site tour brings the panel out, put away or not, and the page makes
   // room for it as the panel does: UniversePanel.jsx)
   const siteTour = useTouring();
-  const tuckedNow = tucked && !siteTour;
+  // the quiet HUD (spec: docs/superpowers/specs/2026-11-18-quiet-hud-design.md): with a ship flying on the
+  // drawn map, the side panel, the site's nav and the corner's tools go, and the flight menu (Esc) has them
+  const quiet = Boolean(ship) && mapState === 'live';
+  const tuckedNow = (tucked || quiet) && !siteTour;
+  const [controls, setControls] = useControls(); // (the flight settings: the scene's, and the menu's Settings tab)
+  // the menu: over the flying, not over the nav map, the Hangar, the phone or the front door's choice
+  const menuOk = quiet && !leaving && !charting && !phone && !yard && !asking;
+  const menu = useFlightMenu({ enabled: menuOk });
+  const menuOn = useRef(false); // (for Escape's listener, made once a change of what it reads)
+  menuOn.current = menuOk;
+  const { openMenu, closeMenu } = menu;
+  useFlightMode(quiet && !leaving);
   const timer = useRef(0);
   const trip = useRef(null); // a jump out (jumps/jumpOut.js): this page gone first, its dark coming late changes nothing
   useEffect(
@@ -530,19 +544,55 @@ export default function Universe({ ask = false }) {
         e.preventDefault();
         return;
       }
+      // (flying: the menu, which has the place picked on its Map tab; with no ship, the place let go, as before)
+      if (menuOn.current) {
+        e.preventDefault();
+        openMenu();
+        return;
+      }
       if (!selected) return;
       e.preventDefault();
       select(null);
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [leaving, selected, select, stopTour]);
+  }, [leaving, selected, select, stopTour, openMenu]);
+
+  // the side panel (UniversePanel.jsx): beside the map, or, flying, the flight menu's Map tab, whose
+  // buttons shut the menu as they go (`inMenu`: no tuck, it isn't beside anything)
+  const panelOf = (inMenu) => {
+    const shut = (fn) => (fn && inMenu ? (...a) => (closeMenu(), fn(...a)) : fn);
+    return (
+      <UniversePanel
+        universe={universe}
+        wonder={wonderDest ?? cardRow(place, found, mapState)}
+        docked={docked}
+        onFly={shut(ship ? (id) => travel(id, drive) : null)}
+        onSelect={select}
+        onEnter={shut(enter)}
+        onWhole={shut(whole)}
+        leaving={Boolean(leaving)}
+        ship={ship}
+        loadout={loadout}
+        build={build}
+        onShip={shut(pickShip)}
+        onHangar={shut(() => {
+          setHangarTab('shipyard');
+          setYard(true);
+        })}
+        onClassic={shut(() => switchTo('classic'))}
+        tucked={inMenu ? false : tucked}
+        onTuck={inMenu ? null : tuck}
+        onNav={shut(() => setCharting(true))}
+      />
+    );
+  };
 
   const accent = universe ? { '--accent': universe.accent, '--accent-text': universe.accent, '--btn-bg': universe.accent } : undefined;
   const fade = leaving?.mode === 'phone' ? SAFFRON : leaving?.mode === 'portal' ? PORTAL : leaving?.mode === 'beyond' ? '#000' : leaving?.mode === 'dive' || leaving?.mode === 'crash' ? byId(leaving.id).palette.base : undefined;
 
   return (
-    <div className="dark-scope universe-page" style={accent} data-leaving={leaving?.mode} data-card={universe ? '' : undefined} data-tucked={tuckedNow ? '' : undefined}>
+    <div className="dark-scope universe-page" style={accent} data-leaving={leaving?.mode} data-card={universe ? '' : undefined} data-tucked={tuckedNow ? '' : undefined} data-quiet={quiet ? '' : undefined}>
       <h1 className="sr-only">Tilak Patel: the whole site as a universe</h1>
       <p className="sr-only" aria-live="polite">
         {universe ? `${universe.label}: selected` : ''}
@@ -554,7 +604,10 @@ export default function Universe({ ask = false }) {
         onSelect={select}
         onOpen={(id) => go(byId(id))}
         handle={map}
-        frozen={Boolean(leaving)}
+        frozen={Boolean(leaving) || (menu.open && !online.on)}
+        quiet={quiet}
+        controls={controls}
+        onControls={setControls}
         ship={ship}
         loadout={loadout}
         build={build}
@@ -611,28 +664,34 @@ export default function Universe({ ask = false }) {
         </Suspense>
       )}
       {!asking && !leaving && <Online online={online} ship={ship} />}
-      <UniversePanel
-        universe={universe}
-        wonder={wonderDest ?? cardRow(place, found, mapState)}
-        docked={docked}
-        onFly={ship ? (id) => travel(id, drive) : null}
-        onSelect={select}
-        onEnter={enter}
-        onWhole={whole}
-        leaving={Boolean(leaving)}
-        ship={ship}
-        loadout={loadout}
-        build={build}
-        onShip={pickShip}
-        onHangar={() => {
-          setHangarTab('shipyard');
-          setYard(true);
-        }}
-        onClassic={() => switchTo('classic')}
-        tucked={tucked}
-        onTuck={tuck}
-        onNav={() => setCharting(true)}
-      />
+      {quiet && !leaving && (
+        <FlightMenu
+          open={menu.open}
+          tab={menu.tab}
+          onTab={menu.setTab}
+          onOpen={openMenu}
+          onClose={closeMenu}
+          enabled={menuOk}
+          ship={ship}
+          loadout={loadout}
+          picks={powerPicks}
+          carry={skillFx?.carry}
+          fx={skillFx}
+          route="/universe"
+          where="universe"
+          map={panelOf(true)}
+          controls={controls}
+          onControls={setControls}
+          onHangar={(t) => {
+            setHangarTab(t);
+            setYard(true);
+          }}
+          onShip={pickShip}
+          online={online}
+          onOnline={() => window.dispatchEvent(new CustomEvent('tp:pilot'))}
+        />
+      )}
+      {(!quiet || siteTour) && panelOf(false)}
       {charting && !leaving && (
         <Suspense fallback={null}>
           <NavMap

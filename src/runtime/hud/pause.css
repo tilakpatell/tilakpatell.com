@@ -1,0 +1,129 @@
+/* The pause menu (PauseMenu.jsx): the chip in the top corner while it's
+   shut, and, open, the tabs over one panel (its head, the tab's body, its
+   foot) on a scrim over the world. Every look is a token, so a world's dress
+   ([data-dress], its own sheet) changes the material and never the layout.
+   No blur behind it: the world under it may still be drawn every frame. */
+
+:where(.hud-pause, .hud-pause-chip):not(hud-none) {
+  --pause-bg: rgba(10, 14, 22, 0.96);
+  --pause-tab: rgba(10, 14, 22, 0.82);
+  --pause-ink: var(--hud-ink, #f6f3ea);
+  --pause-muted: #bdb7a8;
+  --pause-line: rgba(255, 255, 255, 0.18);
+  --pause-accent: var(--hud-accent, #f0c040);
+  --pause-accent-ink: var(--hud-accent-ink, #1d160a);
+  --pause-slot: rgba(255, 255, 255, 0.045);
+  --pause-radius: 12px;
+  --pause-slot-radius: 10px;
+  --pause-body: var(--font-sans);
+  --pause-display: var(--font-sans);
+  --pause-face: var(--font-sans); /* the tabs' */
+  --pause-num: var(--font-mono);
+  --pause-shadow: 0 30px 80px rgba(0, 0, 0, 0.55);
+}
+
+/* shut: the chip, faint till it's wanted */
+:where(.hud-pause-chip):not(hud-none) {
+  position: fixed;
+  z-index: var(--z-float);
+  top: calc(env(safe-area-inset-top, 0px) + 14px);
+  left: calc(env(safe-area-inset-left, 0px) + 14px);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-height: 36px;
+  padding: 0.35rem 0.8rem 0.35rem 0.45rem;
+  border: 1px solid var(--pause-line);
+  border-radius: 999px;
+  background: rgba(8, 12, 20, 0.78);
+  color: var(--pause-ink);
+  font: 600 0.84rem/1 var(--pause-body);
+  cursor: pointer;
+  opacity: 0.72;
+  transition: opacity var(--t-fast, 0.15s) ease, border-color var(--t-fast, 0.15s) ease;
+}
+:where(.hud-pause-chip):not(hud-none):hover,
+:where(.hud-pause-chip):not(hud-none):focus-visible { opacity: 1; border-color: var(--pause-accent); }
+@media (pointer: coarse) {
+  :where(.hud-pause-chip):not(hud-none) { min-height: 44px; }
+}
+
+/* open: the scrim, and the tabs over the panel in the middle of it */
+:where(.hud-pause):not(hud-none) {
+  position: fixed;
+  z-index: var(--z-sheet);
+  inset: 0;
+  display: grid;
+  grid-template-rows: auto auto;
+  align-content: center;
+  justify-content: center;
+  padding: calc(env(safe-area-inset-top, 0px) + 16px) max(16px, env(safe-area-inset-right, 0px)) calc(env(safe-area-inset-bottom, 0px) + 16px) max(16px, env(safe-area-inset-left, 0px));
+  background: rgba(3, 5, 9, 0.72);
+  color: var(--pause-ink);
+  font-family: var(--pause-body);
+}
+:where(.hud-pause-tabs):not(hud-none) { position: relative; z-index: 1; display: flex; gap: 6px; padding-inline: 24px; overflow-x: auto; scrollbar-width: none; }
+:where(.hud-pause-tab):not(hud-none) {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 46px;
+  margin: 0 0 -1px;
+  padding: 0.75rem 1.1rem 0.7rem;
+  border: 1px solid var(--pause-line);
+  border-bottom: 0;
+  border-radius: var(--pause-radius) var(--pause-radius) 0 0;
+  background: var(--pause-tab);
+  color: var(--pause-muted);
+  font: 600 0.92rem/1 var(--pause-face);
+  white-space: nowrap;
+  cursor: pointer;
+}
+:where(.hud-pause-tab):not(hud-none)[aria-selected='true'] { background: var(--pause-bg); color: var(--pause-ink); }
+:where(.hud-pause-tab):not(hud-none):focus-visible { outline: 2px solid var(--pause-accent); outline-offset: -4px; }
+:where(.hud-pause-tab-n):not(hud-none) { font: 600 0.72rem/1 var(--pause-num); opacity: 0.7; }
+:where(.hud-pause-tab-mark):not(hud-none) { display: none; }
+
+:where(.hud-pause-panel):not(hud-none) {
+  position: relative;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  width: min(1120px, calc(100vw - 32px));
+  height: min(720px, calc(100dvh - 120px));
+  overflow: hidden;
+  border: 1px solid var(--pause-line);
+  border-radius: var(--pause-radius);
+  background: var(--pause-bg);
+  box-shadow: var(--pause-shadow);
+}
+:where(.hud-pause-head):not(hud-none) { display: flex; align-items: center; justify-content: space-between; gap: 1.25rem; padding: 1rem 1.6rem; border-bottom: 1px solid var(--pause-line); }
+:where(.hud-pause-body):not(hud-none) { min-height: 0; overflow: auto; overscroll-behavior: contain; padding: 1.4rem 1.6rem; }
+:where(.hud-pause-foot):not(hud-none) { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.75rem 1.5rem; padding: 0.85rem 1.6rem; border-top: 1px solid var(--pause-line); color: var(--pause-muted); font-size: 0.86rem; }
+:where(.hud-pause-resume):not(hud-none) {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-height: 40px;
+  padding: 0.55rem 1rem;
+  border: 1px solid var(--pause-accent);
+  border-radius: var(--pause-radius);
+  background: var(--pause-accent);
+  color: var(--pause-accent-ink);
+  font: 700 0.95rem/1 var(--pause-body);
+  cursor: pointer;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  :where(.hud-pause):not(hud-none) { animation: hud-pause-in var(--t-base, 0.22s) ease-out; }
+}
+@keyframes hud-pause-in { from { opacity: 0; } }
+
+/* a phone: the panel fills the screen, its tabs a row along the bottom */
+@media (max-width: 640px), (max-height: 520px) {
+  :where(.hud-pause):not(hud-none) { grid-template-rows: minmax(0, 1fr) auto; align-content: stretch; padding: calc(env(safe-area-inset-top, 0px) + 8px) 8px calc(env(safe-area-inset-bottom, 0px) + 8px); }
+  :where(.hud-pause-tabs):not(hud-none) { order: 2; padding: 6px 4px 0; }
+  :where(.hud-pause-tab):not(hud-none) { margin: 0; border: 1px solid var(--pause-line); border-radius: var(--pause-radius); min-height: 44px; }
+  :where(.hud-pause-panel):not(hud-none) { width: calc(100vw - 16px); height: auto; min-height: 0; }
+  :where(.hud-pause-head):not(hud-none), :where(.hud-pause-body):not(hud-none), :where(.hud-pause-foot):not(hud-none) { padding-inline: 1rem; }
+}

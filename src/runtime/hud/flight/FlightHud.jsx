@@ -37,11 +37,44 @@ import Cluster from '../Cluster.jsx';
 import Vitals from '../Vitals.jsx';
 import HeldButton from './HeldButton.jsx';
 import { clusterHeight } from './thumbs.js';
+import { pokeHud } from './flightHud.js';
 import './flight.css'; // (its looks, under :where(.universe-hud): the map tints them)
+import './quiet.css'; // (the quiet HUD's: `quiet`)
 
-export function FlightOverlay({ hudRef = null, crosshair = null }) {
+// the keys that start a fight's worth of HUD (presence.js): fire, the guns, the powers, the targets
+const FIGHT_KEYS = new Set(['f', 'r', '1', '2', '3', 'g', 'x', 't', 'q']);
+const typingIn = (el) => el instanceof HTMLElement && (el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName));
+
+// the jump's mark at the strip's end (the quiet HUD's, a keyboard's): J and a
+// lightspeed glyph, dim with nowhere to go, lit and named with a star on the
+// nose or a course plotted, and a press jumps as J does
+function JumpMark({ jump }) {
   return (
-    <div ref={hudRef} className="universe-hud" aria-hidden="true">
+    <button
+      type="button"
+      className="fc-jump"
+      data-on={jump ? '' : undefined}
+      data-course={jump?.course ? '' : undefined}
+      disabled={!jump}
+      style={jump?.accent ? { '--star': jump.accent } : undefined}
+      onClick={jump?.onPress}
+      aria-label={jump ? `Jump to ${jump.name}` : 'Jump: put the nose on a star'}
+      aria-keyshortcuts="J"
+    >
+      <kbd className="hud-cap" aria-hidden="true">
+        J
+      </kbd>
+      <svg className="fc-jump-glyph" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+        <path d="M3 12h7M5 7.5l6 2.5M5 16.5l6-2.5M13 12h8M17.5 8l3.5 4-3.5 4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+      <span className="fc-jump-name">{jump ? jump.name : 'Jump'}</span>
+    </button>
+  );
+}
+
+export function FlightOverlay({ hudRef = null, crosshair = null, quiet = false }) {
+  return (
+    <div ref={hudRef} className="universe-hud" data-quiet={quiet ? '' : undefined} aria-hidden="true">
       <span className="universe-reticle" />
       {/* on foot, the kit's crosshair in the middle: the shot goes down the camera's ray (footAim.js) */}
       {crosshair}
@@ -88,12 +121,26 @@ const climbIcon = (way) => (
 const pressed = (fn) => (e) => (e.preventDefault(), fn());
 const noMenu = (e) => e.preventDefault();
 
-export default function FlightHud({ hudRef = null, crosshair = null, flying = true, foot = false, className = '', vitalsIcon = null, speedIcon = null, armsKeys = false, powers = null, row = null, over = null, overlay = null, after = null, stickRef = null, jump = null, controls = null, thumbs = null, onThumbsFit = null }) {
+export default function FlightHud({ hudRef = null, crosshair = null, flying = true, foot = false, quiet = false, className = '', vitalsIcon = null, speedIcon = null, armsKeys = false, powers = null, row = null, over = null, overlay = null, after = null, stickRef = null, jump = null, controls = null, thumbs = null, onThumbsFit = null }) {
   const clusterEl = useRef(null);
   const thumbsEl = useRef(null);
   const fitted = useRef(onThumbsFit);
   fitted.current = onThumbsFit;
   const touchy = Boolean(controls);
+  // the quiet HUD's fight keys: a press brings the guns and powers out (the writer's presence holds them out after)
+  useEffect(() => {
+    if (!quiet || !flying || foot) return undefined;
+    const onKey = (e) => {
+      if (e.metaKey || e.ctrlKey || e.altKey || typingIn(e.target)) return;
+      if (FIGHT_KEYS.has(e.key.toLowerCase())) pokeHud(hudRef?.current ?? null);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [quiet, flying, foot, hudRef]);
+  // (and the touch buttons' Fire and Weapon, the same)
+  const poked = (fn) => (quiet && fn ? (x) => (pokeHud(hudRef?.current ?? null), fn(x)) : fn);
+  const fire = poked(controls?.fire);
+  const weapon = poked(controls?.weapon);
   // the cluster's height on the map (--hud-cluster-h), for what sits over it (the jump button, the prompt, the keys card): it grows
   // when the row wraps in a narrow window, or the strip over it fills. (On a touch screen the row has no box of its own: 0.) And on
   // the page round the map, for what's beside it rather than in it: the side panel stops short of the cluster (universe.css)
@@ -151,7 +198,7 @@ export default function FlightHud({ hudRef = null, crosshair = null, flying = tr
           <div className="universe-alt" aria-hidden="true">
             <span className="universe-alt-mark" />
           </div>
-          <Cluster rootRef={clusterEl} className={`fc ${className}`.trim()} label={foot ? 'On foot' : 'Flight'} over={over}>
+          <Cluster rootRef={clusterEl} className={`fc ${quiet ? 'fc-quiet' : ''} ${foot ? 'fc-foot' : ''} ${className}`.replace(/\s+/g, ' ').trim()} label={foot ? 'On foot' : 'Flight'} over={over}>
             {!foot && <canvas className="fc-radar" width="264" height="264" aria-hidden="true" />}
             <Vitals className="fc-ship" label={foot ? 'Health' : 'Shields'} icon={vitalsIcon}>
               {!foot && (
@@ -193,6 +240,8 @@ export default function FlightHud({ hudRef = null, crosshair = null, flying = tr
             )}
             {powers}
             {row}
+            {/* (the quiet HUD's jump, at the strip's end: a keyboard's; a touch screen keeps its button, below) */}
+            {quiet && !foot && <JumpMark jump={jump} />}
           </Cluster>
           {/* the law: stars, the word for what it's doing, the bounty on you */}
           <div className="universe-wanted" aria-hidden="true">
@@ -206,7 +255,7 @@ export default function FlightHud({ hudRef = null, crosshair = null, flying = tr
             <b className="universe-wanted-word" />
             <b className="universe-wanted-bounty" />
           </div>
-          <FlightOverlay hudRef={hudRef} crosshair={crosshair} />
+          <FlightOverlay hudRef={hudRef} crosshair={crosshair} quiet={quiet} />
         </>
       )}
       {overlay}
@@ -215,7 +264,7 @@ export default function FlightHud({ hudRef = null, crosshair = null, flying = tr
           {after}
           {/* the star the nose is on, to jump to (or the course plotted, on a touch screen): J, or this */}
           {jump && (
-            <button type="button" className={jump.className} data-course={jump.course ? '' : undefined} style={jump.accent ? { '--star': jump.accent } : undefined} onClick={jump.onPress}>
+            <button type="button" className={`${jump.className}${quiet ? ' fc-jump-touch' : ''}`} data-course={jump.course ? '' : undefined} style={jump.accent ? { '--star': jump.accent } : undefined} onClick={jump.onPress}>
               <kbd className="hud-cap" aria-hidden="true">
                 J
               </kbd>
@@ -240,12 +289,12 @@ export default function FlightHud({ hudRef = null, crosshair = null, flying = tr
               <button type="button" className="universe-view" onPointerDown={pressed(controls.view)} onContextMenu={noMenu}>
                 {foot ? 'Switch' : 'View'}
               </button>
-              {controls.weapon && (
-                <button type="button" className="universe-weapon" onPointerDown={pressed(controls.weapon)} onContextMenu={noMenu}>
+              {weapon && (
+                <button type="button" className="universe-weapon" onPointerDown={pressed(weapon)} onContextMenu={noMenu}>
                   Weapon
                 </button>
               )}
-              <HeldButton className="universe-fire" onHold={controls.fire}>
+              <HeldButton className="universe-fire" onHold={fire}>
                 Fire
               </HeldButton>
               <HeldButton size={76} className="universe-boost" onHold={controls.boost}>

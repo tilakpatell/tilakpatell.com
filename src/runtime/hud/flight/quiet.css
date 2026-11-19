@@ -1,0 +1,86 @@
+/* The quiet HUD (FlightHud.jsx's `quiet`: the universe map's and the
+   galaxy's, the same on both). The thin core is always there: the radar, the
+   shields and the speed in one strip bottom centre, the jump's mark at its
+   end. The guns and the powers come out at its sides for a fight and go six
+   seconds after it (the writer's data-fight, from ../presence.js), the kills
+   with them; the shields' bar turns red under 35 % (data-low, the kit's own
+   blink). The target's card is the lock's own labels, on glass at their
+   bracket; the cluster's card and the speed's bar aren't drawn. A keyboard's:
+   a touch screen keeps its own HUD and its thumbs (flight.css), with the jump
+   as its button. The design: docs/superpowers/specs/2026-11-18-quiet-hud-design.md. */
+
+.fc-jump { display: none; }
+
+@media (pointer: fine) and (min-width: 768px) {
+  /* the strip: one pill of glass round the core */
+  .fc-quiet:not(.fc-foot) .hud-cluster-row {
+    position: relative;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 14px;
+    padding: 6px 6px 6px 6px;
+    border: 1px solid var(--hud-cluster-line, rgb(127 214 255 / 0.28));
+    border-radius: 999px;
+    background: var(--hud-cluster-glass, rgb(3 6 14 / 0.8));
+    pointer-events: none;
+  }
+  .fc-quiet:not(.fc-foot) .fc-radar { flex: none; width: 66px; height: 66px; }
+  .fc-quiet:not(.fc-foot) .fc-ship { min-width: 188px; padding: 2px 4px; border: 0; background: none; }
+  .fc-quiet:not(.fc-foot) :is(.fc-target, .fc-speed) { display: none; }
+  .fc-quiet:not(.fc-foot):not([data-fight]) .fc-sub > .hud-label { visibility: hidden; }
+
+  /* the guns at the left of it and the powers at the right, out for a fight */
+  .fc-quiet:not(.fc-foot) :is(.hud-arms, .hud-powers) {
+    position: absolute;
+    bottom: 0;
+    transition: opacity var(--t-base, 0.22s) ease, translate var(--t-base, 0.22s) ease, visibility 0s;
+  }
+  .fc-quiet:not(.fc-foot) .hud-arms { right: calc(100% + 10px); width: max-content; min-height: 100%; align-content: center; white-space: nowrap; }
+  .fc-quiet:not(.fc-foot) .hud-arms .hud-keys-lines { display: inline-flex; align-items: center; gap: 3px; }
+  .fc-quiet:not(.fc-foot) .hud-powers { left: calc(100% + 10px); top: auto; }
+  .fc-quiet:not(.fc-foot):not([data-fight]) :is(.hud-arms, .hud-powers) {
+    visibility: hidden;
+    opacity: 0;
+    transition: opacity var(--t-base, 0.22s) ease, translate var(--t-base, 0.22s) ease, visibility 0s var(--t-base, 0.22s);
+  }
+  .fc-quiet:not(.fc-foot):not([data-fight]) .hud-arms { translate: 14px 0; }
+  .fc-quiet:not(.fc-foot):not([data-fight]) .hud-powers { translate: -14px 0; }
+
+  /* the jump's mark: dim with nowhere to go, lit in the star's colour and named with one */
+  .fc-quiet .fc-jump {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    min-height: 44px;
+    padding: 0 14px 0 9px;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    background: none;
+    color: rgb(217 243 255 / 0.62);
+    font: 600 0.74rem/1 var(--hud-flight-face, var(--font-mono));
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    pointer-events: auto;
+    transition: color var(--t-fast, 0.15s), border-color var(--t-fast, 0.15s), background var(--t-fast, 0.15s);
+  }
+  .fc-quiet .fc-jump[data-on] {
+    border-color: color-mix(in srgb, var(--star, #9ef3ff) 55%, transparent);
+    background: color-mix(in srgb, var(--star, #9ef3ff) 14%, transparent);
+    color: var(--star, #9ef3ff);
+    cursor: pointer;
+  }
+  .fc-quiet .fc-jump:disabled { cursor: default; }
+  .fc-jump-name { overflow: hidden; max-width: 150px; text-overflow: ellipsis; white-space: nowrap; }
+  /* (the button the jump was, over the strip: a touch screen's alone now) */
+  :is(.universe-jump, .galaxy-jumpbtn).fc-jump-touch { display: none; }
+
+  /* the target's card: the lock's labels, on glass at the bracket */
+  .universe-hud[data-quiet] :is(.universe-lock-name, .universe-lock-dist) {
+    padding: 3px 7px;
+    border-radius: 4px;
+    background: rgb(3 6 14 / 0.8);
+    text-shadow: none;
+  }
+  .universe-hud[data-quiet] .universe-lock-name { font-weight: 600; }
+  .universe-hud[data-quiet] .universe-lock-dist { top: calc(100% + 27px); opacity: 1; color: rgb(217 243 255 / 0.85); }
+}

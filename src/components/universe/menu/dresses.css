@@ -1,0 +1,352 @@
+/* The flight menu's dresses (the kit's PauseMenu [data-dress], dress.js's
+   dressFor): the crew's own material for one layout, on both maps. The tabs,
+   the words, the keys and where everything sits are menu.css's and the
+   kit's; a dress sets the tokens, the faces (ones the site already ships:
+   Battlefront's, Luckiest Guy, Courier Prime) and its few details, and how
+   it opens (none with reduced motion).
+     falcon   the smuggler's hold: gunmetal plates, rivets and seams, amber lamps, stencils
+     xwing    Artoo's readout: a blue display, scanlines, corner ticks, Aurebesh
+     cruiser  the garage: portal green, wobbly edges, masking tape, Morty's sticky notes
+     rv       the lab: graph paper, element tiles, trays, the crystal's blue, a typewriter
+     house    the HUD's glass and the site's gold (on foot, or with no ship) */
+@import '../../../lib/bf2017/fonts.css';
+@import '@fontsource/luckiest-guy/400.css';
+@import '@fontsource/courier-prime/400.css';
+@import '@fontsource/courier-prime/700.css';
+
+/* ── the Falcon: the smuggler's hold ─────────────────────────────── */
+.fm[data-dress='falcon'] {
+  --pause-bg: #212428;
+  --pause-tab: #17191c;
+  --pause-ink: #efe6d4;
+  --pause-muted: #b6ab96;
+  --pause-line: rgb(255 179 71 / 0.26);
+  --pause-accent: #ffb347;
+  --pause-accent-ink: #1e1408;
+  --pause-slot: #131518;
+  --pause-radius: 3px;
+  --pause-slot-radius: 2px;
+  --pause-body: 'BF Univers', 'Archivo Variable', var(--font-sans);
+  --pause-display: 'BF Univers Condensed', 'Archivo Variable', var(--font-sans);
+  --pause-face: 'BF Univers Condensed', 'Archivo Variable', var(--font-sans);
+  --pause-num: 'BF Univers Condensed', var(--font-mono); /* (not RaxusPrime: its letters are glyphs, its zero a ring) */
+  --hud-key-radius: 2px;
+}
+.fm[data-dress='falcon'] .hud-pause-panel {
+  background:
+    radial-gradient(circle at 14px 14px, #74777c 2.4px, #2a2c30 3px, transparent 3.6px),
+    radial-gradient(circle at calc(100% - 14px) 14px, #74777c 2.4px, #2a2c30 3px, transparent 3.6px),
+    radial-gradient(circle at 14px calc(100% - 14px), #74777c 2.4px, #2a2c30 3px, transparent 3.6px),
+    radial-gradient(circle at calc(100% - 14px) calc(100% - 14px), #74777c 2.4px, #2a2c30 3px, transparent 3.6px),
+    /* a plate's seam under the head and over the foot, a dark line and its lit edge */
+    linear-gradient(180deg, transparent 0 calc(100% - 66px), rgb(0 0 0 / 0.35) calc(100% - 66px) calc(100% - 65px), rgb(255 255 255 / 0.035) calc(100% - 65px) calc(100% - 64px), transparent calc(100% - 64px)),
+    /* wear: fine scratches across the metal */
+    repeating-linear-gradient(115deg, rgb(255 255 255 / 0.012) 0 1px, transparent 1px 7px),
+    linear-gradient(180deg, #2a2d32, #1d1f23 70%, #191b1e);
+  border-color: rgb(255 179 71 / 0.3);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.06), inset 0 0 0 1px rgb(0 0 0 / 0.5), 0 30px 80px rgb(0 0 0 / 0.6);
+}
+/* (a stencil on the bulkhead, and the hold's lamps) */
+.fm[data-dress='falcon'] .hud-pause-panel::after {
+  content: 'HOLD 2 · KEEP CLEAR · NO PASSENGERS';
+  position: absolute;
+  right: 26px;
+  bottom: 70px;
+  color: rgb(255 179 71 / 0.12);
+  font: 900 0.95rem/1 'BF Univers Condensed', var(--font-sans);
+  letter-spacing: 0.32em;
+  pointer-events: none;
+}
+.fm[data-dress='falcon'] .hud-pause-head { background: linear-gradient(180deg, rgb(0 0 0 / 0.22), transparent); border-bottom: 1px solid rgb(0 0 0 / 0.55); box-shadow: 0 1px 0 rgb(255 255 255 / 0.04); }
+.fm[data-dress='falcon'] .hud-pause-head::after {
+  content: '';
+  flex: none;
+  width: 46px;
+  height: 10px;
+  background:
+    radial-gradient(circle at 5px 5px, #ffb347 3px, transparent 3.6px),
+    radial-gradient(circle at 23px 5px, rgb(255 179 71 / 0.35) 3px, transparent 3.6px),
+    radial-gradient(circle at 41px 5px, #7cff8a 3px, transparent 3.6px);
+  filter: drop-shadow(0 0 4px rgb(255 179 71 / 0.6));
+}
+.fm[data-dress='falcon'] .hud-pause-tab {
+  clip-path: polygon(14px 0, calc(100% - 14px) 0, 100% 100%, 0 100%);
+  padding-inline: 1.6rem;
+  border: 0;
+  background: linear-gradient(180deg, #2a2d31, #1c1e21);
+  font-size: 1.02rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.fm[data-dress='falcon'] .hud-pause-tab[aria-selected='true'] { background: linear-gradient(180deg, #32363b, #2a2d32); color: var(--pause-accent); box-shadow: inset 0 3px 0 var(--pause-accent); }
+.fm[data-dress='falcon'] :is(.fm-title, .fm-crew-ship, .fm-page .fm-title) { font-weight: 900; letter-spacing: 0.04em; text-transform: uppercase; }
+.fm[data-dress='falcon'] .fm-title { font-size: 1.7rem; }
+.fm[data-dress='falcon'] .fm-h { color: var(--pause-accent); font-weight: 700; letter-spacing: 0.22em; }
+/* the slots: the compartments under the deck, four screws each and a pull */
+.fm[data-dress='falcon'] .fm-slot {
+  border-color: rgb(0 0 0 / 0.6);
+  background:
+    radial-gradient(circle at 7px 7px, #565a60 1.6px, transparent 2.2px),
+    radial-gradient(circle at calc(100% - 7px) 7px, #565a60 1.6px, transparent 2.2px),
+    radial-gradient(circle at 7px calc(100% - 7px), #565a60 1.6px, transparent 2.2px),
+    radial-gradient(circle at calc(100% - 7px) calc(100% - 7px), #565a60 1.6px, transparent 2.2px),
+    linear-gradient(90deg, transparent 38%, rgb(255 255 255 / 0.08) 38% 62%, transparent 62%) center bottom 9px / 100% 2px no-repeat,
+    #121417;
+  box-shadow: inset 0 3px 8px rgb(0 0 0 / 0.75), 0 1px 0 rgb(255 255 255 / 0.05);
+}
+.fm[data-dress='falcon'] .fm-slot-key { left: 14px; top: 10px; color: var(--pause-accent); }
+.fm[data-dress='falcon'] :is(.hud-pause-resume, .fm-primary) { border-radius: 2px; box-shadow: inset 0 -2px 0 rgb(0 0 0 / 0.3); text-transform: uppercase; letter-spacing: 0.06em; font-family: 'BF Univers Condensed', var(--font-sans); }
+.fm[data-dress='falcon'] .fm-big { font: 900 3.1rem/1 'BF Univers Condensed', var(--font-sans); letter-spacing: 0.02em; text-shadow: 0 0 14px rgb(255 179 71 / 0.35); }
+
+/* ── the X-wing: Artoo's readout ──────────────────────────────────── */
+.fm[data-dress='xwing'] {
+  --pause-bg: rgb(3 13 28 / 0.96);
+  --pause-tab: transparent;
+  --pause-ink: #d9eaff;
+  --pause-muted: #8eb0d8;
+  --pause-line: rgb(127 178 255 / 0.32);
+  --pause-accent: #7fb2ff;
+  --pause-accent-ink: #03101f;
+  --pause-slot: rgb(127 178 255 / 0.05);
+  --pause-radius: 0px;
+  --pause-slot-radius: 0px;
+  --pause-body: 'BF Univers', 'Archivo Variable', var(--font-sans);
+  --pause-display: 'BF Univers Condensed', 'Archivo Variable', var(--font-sans);
+  --pause-face: 'BF Univers Condensed', 'Archivo Variable', var(--font-sans);
+  --pause-num: 'BF Univers Condensed', var(--font-mono);
+  --pause-shadow: 0 0 0 1px rgb(127 178 255 / 0.12), 0 0 46px rgb(127 178 255 / 0.14), 0 30px 80px rgb(0 0 0 / 0.6);
+  --hud-key-radius: 0;
+}
+.fm[data-dress='xwing'] .hud-pause-panel {
+  background:
+    /* the corner ticks */
+    linear-gradient(var(--pause-accent), var(--pause-accent)) left 8px top 8px / 18px 2px no-repeat,
+    linear-gradient(var(--pause-accent), var(--pause-accent)) left 8px top 8px / 2px 18px no-repeat,
+    linear-gradient(var(--pause-accent), var(--pause-accent)) right 8px top 8px / 18px 2px no-repeat,
+    linear-gradient(var(--pause-accent), var(--pause-accent)) right 8px top 8px / 2px 18px no-repeat,
+    linear-gradient(var(--pause-accent), var(--pause-accent)) left 8px bottom 8px / 18px 2px no-repeat,
+    linear-gradient(var(--pause-accent), var(--pause-accent)) left 8px bottom 8px / 2px 18px no-repeat,
+    linear-gradient(var(--pause-accent), var(--pause-accent)) right 8px bottom 8px / 18px 2px no-repeat,
+    linear-gradient(var(--pause-accent), var(--pause-accent)) right 8px bottom 8px / 2px 18px no-repeat,
+    /* the display's grid */
+    linear-gradient(rgb(127 178 255 / 0.05) 1px, transparent 1px) 0 0 / 32px 32px,
+    linear-gradient(90deg, rgb(127 178 255 / 0.05) 1px, transparent 1px) 0 0 / 32px 32px,
+    radial-gradient(ellipse at 50% 0%, rgb(127 178 255 / 0.1), transparent 60%),
+    rgb(3 13 28 / 0.96);
+}
+/* the scanlines, and Artoo's readout line in Aurebesh */
+.fm[data-dress='xwing'] .hud-pause-panel::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(0deg, rgb(127 178 255 / 0.045) 0 1px, transparent 1px 3px);
+  pointer-events: none;
+}
+.fm[data-dress='xwing'] .hud-pause-head::after {
+  content: 'astromech diagnostic r2';
+  color: rgb(127 178 255 / 0.5);
+  font: 400 0.8rem/1 'BF Aurebesh', var(--font-mono);
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+}
+.fm[data-dress='xwing'] .hud-pause-tab { border: 0; font-size: 0.92rem; font-weight: 600; letter-spacing: 0.24em; text-transform: uppercase; }
+.fm[data-dress='xwing'] .hud-pause-tab::before { content: '['; color: var(--pause-line); }
+.fm[data-dress='xwing'] .hud-pause-tab::after { content: ']'; color: var(--pause-line); }
+.fm[data-dress='xwing'] .hud-pause-tab[aria-selected='true'] { background: transparent; color: #fff; text-shadow: 0 0 10px rgb(127 178 255 / 0.9); }
+.fm[data-dress='xwing'] .hud-pause-tab[aria-selected='true']::before,
+.fm[data-dress='xwing'] .hud-pause-tab[aria-selected='true']::after { color: #ff9f4a; text-shadow: 0 0 8px rgb(255 159 74 / 0.8); }
+.fm[data-dress='xwing'] :is(.fm-title, .fm-crew-ship) { font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; }
+.fm[data-dress='xwing'] .fm-h { color: #ff9f4a; letter-spacing: 0.28em; }
+.fm[data-dress='xwing'] .fm-h::before { content: '› '; color: var(--pause-accent); }
+.fm[data-dress='xwing'] .fm-slot {
+  border-color: rgb(127 178 255 / 0.18);
+  background:
+    linear-gradient(var(--pause-accent), var(--pause-accent)) left top / 10px 1.5px no-repeat,
+    linear-gradient(var(--pause-accent), var(--pause-accent)) left top / 1.5px 10px no-repeat,
+    linear-gradient(var(--pause-accent), var(--pause-accent)) right bottom / 10px 1.5px no-repeat,
+    linear-gradient(var(--pause-accent), var(--pause-accent)) right bottom / 1.5px 10px no-repeat,
+    rgb(127 178 255 / 0.05);
+}
+.fm[data-dress='xwing'] .fm-slot[aria-pressed='true'] { box-shadow: inset 0 0 18px rgb(127 178 255 / 0.25); }
+.fm[data-dress='xwing'] .fm-portrait { background: linear-gradient(rgb(127 178 255 / 0.07) 1px, transparent 1px) 0 0 / 16px 16px, linear-gradient(90deg, rgb(127 178 255 / 0.07) 1px, transparent 1px) 0 0 / 16px 16px; }
+.fm[data-dress='xwing'] :is(.hud-pause-resume, .fm-primary) { text-transform: uppercase; letter-spacing: 0.16em; font-family: 'BF Univers Condensed', var(--font-sans); }
+
+/* ── the space cruiser: the garage ────────────────────────────────── */
+.fm[data-dress='cruiser'] {
+  --pause-bg: #10180f;
+  --pause-tab: #e9ddb6;
+  --pause-ink: #ecffd9;
+  --pause-muted: #afca94;
+  --pause-line: rgb(151 206 76 / 0.42);
+  --pause-accent: #97ce4c;
+  --pause-accent-ink: #0b1406;
+  --pause-slot: rgb(151 206 76 / 0.07);
+  --pause-radius: 14px;
+  --pause-slot-radius: 20px 9px 17px 12px / 12px 18px 9px 20px;
+  --pause-display: 'Luckiest Guy', 'Archivo Variable', var(--font-sans);
+  --pause-face: 'Luckiest Guy', 'Archivo Variable', var(--font-sans);
+  --hud-key-radius: 6px;
+}
+.fm[data-dress='cruiser'] .hud-pause-panel {
+  border: 3px solid var(--pause-accent);
+  border-radius: 30px 12px 32px 18px / 18px 32px 12px 28px;
+  background:
+    /* a ring where a mug stood */
+    radial-gradient(circle at calc(100% - 120px) 92px, transparent 26px, rgb(140 100 60 / 0.22) 27px 29px, transparent 31px),
+    /* the portal's glow on the bench */
+    radial-gradient(ellipse at 12% 0%, rgb(151 206 76 / 0.18), transparent 52%),
+    radial-gradient(ellipse at 100% 100%, rgb(151 206 76 / 0.1), transparent 46%),
+    repeating-linear-gradient(90deg, rgb(255 255 255 / 0.015) 0 2px, transparent 2px 22px),
+    #10180f;
+  box-shadow: 0 0 56px rgb(151 206 76 / 0.24), inset 0 0 30px rgb(151 206 76 / 0.08), 0 30px 80px rgb(0 0 0 / 0.6);
+}
+/* the drips off its top edge */
+.fm[data-dress='cruiser'] .hud-pause-panel::after {
+  content: '';
+  position: absolute;
+  top: -3px;
+  left: 40px;
+  width: 260px;
+  height: 26px;
+  background:
+    radial-gradient(circle at 20px 0, var(--pause-accent) 9px, transparent 9.5px),
+    radial-gradient(ellipse 4px 12px at 20px 10px, var(--pause-accent) 98%, transparent),
+    radial-gradient(circle at 20px 21px, var(--pause-accent) 4px, transparent 4.5px),
+    radial-gradient(circle at 120px 0, var(--pause-accent) 7px, transparent 7.5px),
+    radial-gradient(ellipse 3px 8px at 120px 7px, var(--pause-accent) 98%, transparent),
+    radial-gradient(circle at 210px 0, var(--pause-accent) 11px, transparent 11.5px),
+    radial-gradient(ellipse 5px 14px at 210px 11px, var(--pause-accent) 98%, transparent);
+  pointer-events: none;
+}
+.fm[data-dress='cruiser'] .hud-pause-tabs { gap: 10px; padding-bottom: 4px; }
+.fm[data-dress='cruiser'] .hud-pause-tab {
+  margin: 0;
+  padding: 0.7rem 1.15rem 0.6rem;
+  border: 0;
+  border-radius: 2px;
+  color: #2a281d;
+  font-size: 1.12rem;
+  letter-spacing: 0.03em;
+  transform: rotate(calc((var(--i) - 2.5) * -1.3deg));
+  box-shadow: 0 2px 4px rgb(0 0 0 / 0.35);
+  /* masking tape: torn ends */
+  clip-path: polygon(0 6%, 4% 0, 96% 3%, 100% 0, 98% 52%, 100% 100%, 94% 96%, 4% 100%, 0 94%, 3% 50%);
+}
+.fm[data-dress='cruiser'] .hud-pause-tab-n { opacity: 0.55; }
+.fm[data-dress='cruiser'] .hud-pause-tab[aria-selected='true'] { background: var(--pause-accent); color: #0b1406; }
+.fm[data-dress='cruiser'] :is(.fm-title, .fm-crew-ship, .fm-page .fm-title) { color: var(--pause-accent); font-weight: 400; letter-spacing: 0.02em; text-shadow: 2px 2px 0 rgb(0 0 0 / 0.45); }
+.fm[data-dress='cruiser'] .fm-title { font-size: 1.85rem; }
+.fm[data-dress='cruiser'] .fm-h { font-family: 'Luckiest Guy', var(--font-sans); font-weight: 400; font-size: 0.98rem; letter-spacing: 0.04em; text-transform: none; color: #f5d33f; }
+.fm[data-dress='cruiser'] .fm-slot { border: 2px dashed rgb(151 206 76 / 0.5); }
+.fm[data-dress='cruiser'] .fm-slot[aria-pressed='true'] { border-style: solid; box-shadow: 0 0 14px rgb(151 206 76 / 0.4); }
+/* the questions: Morty's sticky notes, taped up */
+.fm[data-dress='cruiser'] .fm-q {
+  position: relative;
+  padding: 0.85rem 1rem 0.8rem;
+  border: 0;
+  border-radius: 2px;
+  background: linear-gradient(180deg, #f8dc4c, #f1cf30);
+  color: #2b2716;
+  transform: rotate(var(--r, 0deg));
+  box-shadow: 0 6px 12px rgb(0 0 0 / 0.4), inset 0 -10px 18px rgb(0 0 0 / 0.06);
+}
+.fm[data-dress='cruiser'] .fm-q::before { content: ''; position: absolute; top: -7px; left: 50%; width: 58px; height: 16px; translate: -50% 0; rotate: -3deg; background: rgb(233 221 182 / 0.85); box-shadow: 0 1px 2px rgb(0 0 0 / 0.2); }
+.fm[data-dress='cruiser'] .fm-q > summary { color: #2b2716; font-family: 'Luckiest Guy', var(--font-sans); font-weight: 400; font-size: 1.05rem; letter-spacing: 0.02em; }
+.fm[data-dress='cruiser'] .fm-q > summary::after { color: #6d5600; }
+.fm[data-dress='cruiser'] .fm-q .fm-text { color: #2b2716; }
+.fm[data-dress='cruiser'] :is(.hud-pause-resume, .fm-primary) { border-radius: 999px; font-family: 'Luckiest Guy', var(--font-sans); font-weight: 400; letter-spacing: 0.04em; }
+
+/* ── the RV: the lab ──────────────────────────────────────────────── */
+.fm[data-dress='rv'] {
+  --pause-bg: #12201a;
+  --pause-tab: transparent;
+  --pause-ink: #eaf5ec;
+  --pause-muted: #a2c0ac;
+  --pause-line: rgb(127 214 255 / 0.24);
+  --pause-accent: #7fd6ff;
+  --pause-accent-ink: #05202e;
+  --pause-slot: #0b140f;
+  --pause-radius: 6px;
+  --pause-slot-radius: 12px;
+  --pause-body: 'Courier Prime', var(--font-mono);
+  --pause-display: 'Archivo Variable', var(--font-sans);
+  --pause-face: 'Archivo Variable', var(--font-sans);
+  --pause-num: 'Courier Prime', var(--font-mono);
+}
+.fm[data-dress='rv'] .hud-pause-panel {
+  border-top: 0;
+  background:
+    /* the hazard tape along its top */
+    repeating-linear-gradient(-45deg, #f2c94c 0 12px, #1a1a14 12px 24px) top / 100% 7px no-repeat,
+    /* graph paper: a fine grid, and every fifth line stronger */
+    linear-gradient(rgb(127 214 255 / 0.1) 1px, transparent 1px) 0 7px / 120px 120px,
+    linear-gradient(90deg, rgb(127 214 255 / 0.1) 1px, transparent 1px) 0 0 / 120px 120px,
+    linear-gradient(rgb(127 214 255 / 0.045) 1px, transparent 1px) 0 7px / 24px 24px,
+    linear-gradient(90deg, rgb(127 214 255 / 0.045) 1px, transparent 1px) 0 0 / 24px 24px,
+    #12201a;
+}
+.fm[data-dress='rv'] .hud-pause-head { padding-top: 1.35rem; }
+.fm[data-dress='rv'] .hud-pause-panel::after {
+  content: 'LAB NOTES · LOT 62 · HANDLE WITH CARE';
+  position: absolute;
+  right: 24px;
+  bottom: 72px;
+  padding: 0.2rem 0.5rem;
+  border: 1.5px solid rgb(242 201 76 / 0.28);
+  color: rgb(242 201 76 / 0.3);
+  font: 700 0.74rem/1 'Courier Prime', var(--font-mono);
+  letter-spacing: 0.18em;
+  rotate: -2deg;
+  pointer-events: none;
+}
+/* the tabs: element tiles, the number on each the key */
+.fm[data-dress='rv'] .hud-pause-tabs { gap: 8px; padding-bottom: 8px; }
+.fm[data-dress='rv'] .hud-pause-tab {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  justify-items: center;
+  gap: 0;
+  width: 76px;
+  height: 76px;
+  margin: 0;
+  padding: 6px 6px 7px;
+  border: 1px solid rgb(255 255 255 / 0.28);
+  border-radius: 3px;
+  background: linear-gradient(160deg, #3d9a5d, #1f5b37);
+  color: #fff;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.2), 0 4px 10px rgb(0 0 0 / 0.35);
+}
+.fm[data-dress='rv'] .hud-pause-tab-n { justify-self: start; font: 700 0.72rem/1 'Courier Prime', var(--font-mono); opacity: 0.9; }
+.fm[data-dress='rv'] .hud-pause-tab-mark { display: block; align-self: center; font: 800 1.85rem/1 'Archivo Variable', var(--font-sans); letter-spacing: -0.02em; }
+.fm[data-dress='rv'] .hud-pause-tab-word { font: 600 0.7rem/1 'Archivo Variable', var(--font-sans); opacity: 0.92; }
+.fm[data-dress='rv'] .hud-pause-tab[aria-selected='true'] { background: linear-gradient(160deg, #4fb373, #276c43); box-shadow: 0 0 0 2px var(--pause-accent), 0 0 20px rgb(127 214 255 / 0.5); }
+.fm[data-dress='rv'] :is(.fm-title, .fm-crew-ship) { font-weight: 800; letter-spacing: -0.01em; }
+.fm[data-dress='rv'] .fm-h { font-family: 'Courier Prime', var(--font-mono); letter-spacing: 0.2em; color: #f2c94c; }
+.fm[data-dress='rv'] .fm-slot { border-color: rgb(127 214 255 / 0.16); box-shadow: inset 0 3px 10px rgb(0 0 0 / 0.6), inset 0 0 0 4px rgb(255 255 255 / 0.02); }
+.fm[data-dress='rv'] .fm-slot[aria-pressed='true'] { box-shadow: inset 0 0 0 1px var(--pause-accent), 0 0 16px rgb(127 214 255 / 0.35); }
+.fm[data-dress='rv'] .fm-big { font-weight: 700; }
+
+/* ── the house: on foot, or with no ship ──────────────────────────── */
+.fm[data-dress='house'] { --pause-accent: #f0c040; }
+
+/* the chip in each dress */
+.hud-pause-chip.fm[data-dress='falcon'] { border-radius: 3px; border-color: rgb(255 179 71 / 0.4); font-family: 'BF Univers Condensed', var(--font-sans); letter-spacing: 0.08em; text-transform: uppercase; }
+.hud-pause-chip.fm[data-dress='xwing'] { border-radius: 0; border-color: rgb(127 178 255 / 0.45); font-family: 'BF Univers Condensed', var(--font-sans); letter-spacing: 0.18em; text-transform: uppercase; }
+.hud-pause-chip.fm[data-dress='cruiser'] { border-color: rgb(151 206 76 / 0.6); font-family: 'Luckiest Guy', var(--font-sans); font-weight: 400; letter-spacing: 0.03em; }
+.hud-pause-chip.fm[data-dress='rv'] { border-radius: 4px; border-color: rgb(127 214 255 / 0.4); font-family: 'Courier Prime', var(--font-mono); }
+
+/* how each opens */
+@media (prefers-reduced-motion: no-preference) {
+  .fm[data-dress='falcon'] .hud-pause-panel { animation: fm-plates 0.5s cubic-bezier(0.2, 0.9, 0.3, 1.25) both; }
+  .fm[data-dress='falcon'] .hud-pause-tabs { animation: fm-plates 0.5s 0.06s cubic-bezier(0.2, 0.9, 0.3, 1.25) both; }
+  .fm[data-dress='xwing'] .hud-pause-panel { animation: fm-flicker 0.6s steps(1) both; }
+  .fm[data-dress='xwing'] .hud-pause-panel::after { animation: fm-scan 0.9s ease-out both; }
+  .fm[data-dress='cruiser'] .hud-pause-panel { animation: fm-portal 0.55s cubic-bezier(0.3, 0.8, 0.3, 1) both; }
+  .fm[data-dress='rv'] .hud-pause-tab { animation: fm-flip 0.42s cubic-bezier(0.3, 0.8, 0.3, 1) both; animation-delay: calc(var(--i) * 70ms); }
+}
+@keyframes fm-plates { 0% { transform: translateY(70px); opacity: 0; } 70% { transform: translateY(-5px); opacity: 1; } 100% { transform: none; } }
+@keyframes fm-flicker { 0% { opacity: 0; } 12% { opacity: 0.8; } 20% { opacity: 0.15; } 30% { opacity: 1; } 42% { opacity: 0.55; } 52%, 100% { opacity: 1; } }
+@keyframes fm-scan { from { background-position: 0 -100%; filter: brightness(2.2); } to { background-position: 0 0; filter: none; } }
+@keyframes fm-portal { 0% { clip-path: circle(0% at 50% 50%); filter: hue-rotate(40deg) brightness(1.6); } 100% { clip-path: circle(80% at 50% 50%); filter: none; } }
+@keyframes fm-flip { from { transform: perspective(300px) rotateX(90deg); opacity: 0; } to { transform: none; opacity: 1; } }

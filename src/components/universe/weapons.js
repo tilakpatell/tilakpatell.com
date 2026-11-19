@@ -43,6 +43,9 @@ export const arsenalOf = (kind) => ARSENAL[kind] ?? DEFAULT;
 // its weapon (an unknown one is stock's), and a stock line keeps the
 // crew's own name for it. A unique weapon fires only while the skill tree
 // has it open (fx.arms): its node reset, the line is stock's again.
+export function linesFor(kind, loadout, fx) {
+  return linesOf(kind, loadout, fx);
+}
 function linesOf(kind, loadout, fx) {
   const names = arsenalOf(kind).names;
   return LINES.map((line, i) => {
