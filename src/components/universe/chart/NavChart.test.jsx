@@ -15,9 +15,11 @@ const draw = (props) => renderToStaticMarkup(<NavChart view={view} marks={HAND_M
 
 describe('the nav map’s chart', () => {
   it('puts each place where the projection says', () => {
-    const html = draw({});
+    // (wide enough for the neighbourhoods, out in the Expanse: neighbourhoods.js)
+    const wide = createView({ range: 500000 });
+    const html = draw({ view: wide });
     for (const id of ['marvel', 'aurelia', 'veil']) {
-      const p = project(view, markById(id).at);
+      const p = project(wide, markById(id).at);
       const { x, y } = toFrame(FRAMES.nav, [p.u, p.v]);
       expect(at(html, id)[0]).toBeCloseTo((x / 1000) * 100, 6);
       expect(at(html, id)[1]).toBeCloseTo((y / 1000) * 100, 6);

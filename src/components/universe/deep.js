@@ -18,6 +18,7 @@
 
 import { BODIES, HOME_RADIUS, POSITIONS, REACH, SECTORS, SUN, inSector } from './layout';
 import { byId } from './universes';
+import { memberAt } from './neighbourhoods';
 import { HOLE_SCALE, SPREAD, STAR_SCALE } from './scale';
 
 export const DEEP = {
@@ -69,7 +70,10 @@ function besideRickAndMorty() {
 // numbers below are where they were before the spread; their own sizes and
 // reaches stay. The Rick and Morty sector's keep their own layout, and the
 // portal sits by its planet, already spread.)
-const spread = (w) => (w.sector || w.kind === 'portal' ? w : { ...w, at: [w.at[0] * SPREAD, w.at[1], w.at[2] * SPREAD] });
+// A wonder that's a neighbourhood's landmark (neighbourhoods.js) sits there
+// instead, by its fandoms, out in the Expanse; its `at` below is where it
+// was in the Core.
+const spread = (w) => (memberAt(w.id) ? { ...w, at: memberAt(w.id) } : w.sector || w.kind === 'portal' ? w : { ...w, at: [w.at[0] * SPREAD, w.at[1], w.at[2] * SPREAD] });
 
 export const WONDERS = [
   { id: 'aurelia', kind: 'gas-giant', name: 'Aurelia', at: [-2230, 135, -2835], r: 140, ring: true, colors: ['#e9c592', '#b9814d', '#f5e6c8', '#8f5a35'] },

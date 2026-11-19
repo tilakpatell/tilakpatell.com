@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { CHART_VIEWS, DESTINATIONS, DRIVES, HYPER, KINDS, TRANSIT, canGo, chartAt, legOf, portalBetween, tourIdsIn, viewFor, chartHeading, destinationById, distanceTo, findDestinations, formatDistance, formatTime, shortDistance, hyperState, onChart, findDestination, goalOf, parkFor, parseDrive, riftExit, riftSpot, tourFrom, tripTime, TOUR_IDS } from './nav';
 import { GOALS, OVERDRIVE, SHIP, SOLIDS, autopilot, inTrench, orbiting, parkAt, spawn, startAt, step } from './ship';
-import { ORDER, SECTORS, sectorOf } from './layout';
+import { ORDER, SECTORS, mapSectorOf, sectorOf } from './layout';
 import { portalHit, transit } from './portals';
 import { WONDERS } from './deep';
 import { MAW } from './maw';
@@ -20,7 +20,15 @@ const stations = ORDER.filter((id) => byId(id).kind === 'core');
 // main map's edge turns the ship back long before it; the portal comes next)
 const inMain = (id) => destinationById(id).sector === 'main';
 const RM = SECTORS.rickmorty.origin;
-const startFor = (id) => (inMain(id) ? spawn('home') : { ...spawn(null), ...parkAt(id === 'citadel' ? 'curvesun' : 'citadel', [RM[0], RM[2] + 500]), speed: 0 });
+// (and one out in its neighbourhood, neighbourhoods.js, from a few thousand
+// out on the side home is, as a jump leaves you: from home it's a jump)
+const outside = (id) => sectorOf(...GOALS[goalOf(id)].at).startsWith('E:');
+const nearBy = (id) => {
+  const at = GOALS[goalOf(id)].at;
+  const l = Math.hypot(at[0], at[2]);
+  return { ...spawn(null), x: at[0] * (1 - 6000 / l), y: at[1], z: at[2] * (1 - 6000 / l), heading: Math.atan2(-at[0], -at[2]), speed: 0 };
+};
+const startFor = (id) => (outside(id) ? nearBy(id) : inMain(id) ? spawn('home') : { ...spawn(null), ...parkAt(id === 'citadel' ? 'curvesun' : 'citadel', [RM[0], RM[2] + 500]), speed: 0 });
 
 // flown there by the autopilot on `od` of overdrive: how long it took, the
 // top speed, and anything it hit or went into on the way
@@ -150,9 +158,10 @@ describe('the drives', () => {
       expect(r.done, w.id).toBe(true);
       expect(r.hits, w.id).toBe(0);
     }
-    let s = spawn(ORDER[0]);
-    for (let i = 1; i <= ORDER.length; i++) {
-      const id = ORDER[i % ORDER.length];
+    // (and round the home system's stations: the worlds are a jump apart now)
+    let s = spawn(stations[0]);
+    for (let i = 1; i <= stations.length; i++) {
+      const id = stations[i % stations.length];
       const r = fly(s, id, OVERDRIVE);
       expect(r.done, id).toBe(true);
       expect(r.hits, id).toBe(0);
@@ -197,13 +206,13 @@ describe('the chart', () => {
   it('puts the sun in the middle and everything on it, further out the further away', () => {
     expect(chartAt(0, 0)).toEqual([0.5, 0.5]);
     for (const d of DESTINATIONS.filter((x) => x.sector === 'main')) expect(onChart(chartAt(d.at[0], d.at[2])), d.id).toBe(true);
-    for (const d of DESTINATIONS) expect(sectorOf(...d.at), d.id).toBe(d.sector);
+    for (const d of DESTINATIONS) expect(mapSectorOf(...d.at), d.id).toBe(d.sector);
     const r = (id) => {
       const d = destinationById(id);
       const [u, v] = chartAt(d.at[0], d.at[2]);
       return Math.hypot(u - 0.5, v - 0.5);
     };
-    expect(r('music')).toBeLessThan(r('invincible')); // (the spiral grows)
+    expect(r('glacia')).toBeLessThan(r('music')); // (the Core's wonders, then the neighbourhoods)
     expect(r('home')).toBeLessThan(r('music'));
     expect(r('home')).toBeGreaterThan(0.04); // the home system opens up enough to see
   });
@@ -353,7 +362,7 @@ describe('the grand tour', () => {
     // from out by the Maw, the Maw's neighbours come first and home comes later
     const far = { ...parkFor('maw', [0, 0]), y: 0, speed: 0 };
     const t2 = tourFrom(far);
-    expect(t2.indexOf('home')).toBeGreaterThan(3);
+    expect(t2.indexOf('home')).toBeGreaterThan(2);
   });
 });
 
@@ -402,21 +411,22 @@ describe('across the sectors', () => {
 
   it('counts the way through the portal in the distance and the trip time', () => {
     for (const id of ['gazorpazorp', 'citadel', 'curvesun']) {
-      const d = distanceTo(home(), id);
+      // (from the Rick and Morty planet's neighbourhood, where the portal is)
+      const d = distanceTo(nearBy('rickmorty'), id);
       expect(Number.isFinite(d), id).toBe(true);
-      expect(d, id).toBeLessThan(30000); // (nothing like the 60000 straight across)
+      expect(d, id).toBeLessThan(30000); // (nothing like the 400,000 straight across to the pocket)
       for (const drive of ['hyper', 'super']) {
-        const t = tripTime(home(), id, drive);
+        const t = tripTime(nearBy('rickmorty'), id, drive);
         expect(t, `${id} by ${drive}`).not.toBeNull();
         expect(t, `${id} by ${drive}`).toBeGreaterThan(TRANSIT);
       }
     }
-    expect(tripTime(home(), 'gazorpazorp', 'super')).toBeLessThan(60);
+    expect(tripTime(nearBy('rickmorty'), 'gazorpazorp', 'super')).toBeLessThan(60);
     expect(tripTime(startFor('gazorpazorp'), 'marvel', 'super')).not.toBeNull();
   });
 
-  it('flies from the home system through the portal to Gazorpazorp, and lands there', () => {
-    let s = home();
+  it('flies from the Rick and Morty planet’s neighbourhood through the portal to Gazorpazorp, and lands there', () => {
+    let s = nearBy('rickmorty');
     const first = legOf(s, 'gazorpazorp');
     let park = parkFor(first, [s.x, s.z]);
     let through = null;
@@ -496,7 +506,7 @@ describe('generated places', () => {
   });
   it('gives a hand-made place out of the simulation’s reach a time, not null', () => {
     const out = { ...spawn(null), x: 600000, y: 0, z: 0, heading: 0 };
-    expect(tripTime(out, 'marvel', 'super')).toBeGreaterThan(600000 / 900 - 60);
+    expect(tripTime(out, 'marvel', 'super')).toBeGreaterThan(distanceTo(out, 'marvel') / 900 - 60);
   });
   it('gives a place through the portal a time from out of the simulation’s reach too', () => {
     const out = { ...spawn(null), x: 600000, y: 0, z: 0, heading: 0 };

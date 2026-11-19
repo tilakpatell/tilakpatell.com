@@ -1,22 +1,24 @@
 import { describe, expect, it } from 'vitest';
 import { HUB_LIFT, LINK, REGIONS, REGION_COUNT, regionAt, regionById } from './regions';
 import { PLACES } from './deep';
-import { HOME_RADIUS, ORDER, POSITIONS, sectorOf } from './layout';
+import { HOME_RADIUS, ORDER, POSITIONS, mapSectorOf as sectorOf } from './layout'; // (the Curve's or the main map's)
 import { SOLIDS } from './ship';
 import { byId } from './universes';
+import { NEIGHBOURHOODS } from './neighbourhoods';
 
 const main = PLACES.filter((p) => p.kind !== 'station' && sectorOf(...p.at) === 'main');
 const dist = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
 
 describe('the regions (regions.js)', () => {
-  it('has the home system first, then between 6 and 10 neighbourhoods', () => {
+  it('has the home system first, then a region per neighbourhood, then the Core’s', () => {
     expect(REGIONS[0].id).toBe('home');
     expect(REGIONS[0].name).toBe('The home system');
     const rest = REGIONS.slice(1);
     expect(rest.length).toBe(REGION_COUNT);
     expect(rest.length).toBeGreaterThanOrEqual(6);
     expect(rest.length).toBeLessThanOrEqual(10);
-    for (const r of rest) expect(r.name.startsWith('Near ')).toBe(true);
+    for (const n of NEIGHBOURHOODS) expect(rest.filter((r) => r.neighbourhood === n.id).map((r) => r.name), n.id).toEqual([n.name]);
+    for (const r of rest.filter((x) => !x.neighbourhood)) expect(r.name.startsWith('Near ')).toBe(true);
   });
 
   it('puts every planet and wonder of the main sector in exactly one, and the stations in the home system', () => {

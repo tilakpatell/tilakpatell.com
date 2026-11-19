@@ -144,14 +144,20 @@ const cartel = {
 
 // seven sectors in a line from `a` to `b`, named in order from the first
 // side's home to the second's. The numbers are where the lines were before
-// the spread (scale.js's SPREAD), beside their planets; the line moves as far
-// as its planet, `by`, moved (the planet's place now, less where it
-// was: x and z by SPREAD, its height twice what it was, as the spread to
-// four made it and the spread to six left it: layout.js's HEIGHT), so a war
-// is still fought round its own world and keeps its length
+// the spread (scale.js's SPREAD), beside their planets, where the planets
+// were then (the places the spread to six had them at, BEFORE, less the
+// spread: x and z by SPREAD, the height by half); the line moves as far as
+// its planet has moved since (out to its neighbourhood: neighbourhoods.js),
+// so a war is still fought round its own world and keeps its length
+const BEFORE = {
+  starwars: [11390.82501698929, 942.447502984844, 3774.798727393413],
+  rickmorty: [-4094.8708028094215, -971.266441023851, -25533.73519695657],
+  breakingbad: [21237.72445493696, 470.58708124583785, -5345.003271857984],
+};
 const moved = (id, p) => {
   const [x, y, z] = POSITIONS[id];
-  return [p[0] + x - x / SPREAD, p[1] + y - y / 2, p[2] + z - z / SPREAD];
+  const [bx, by, bz] = BEFORE[id];
+  return [p[0] + x - bx / SPREAD, p[1] + y - by / 2, p[2] + z - bz / SPREAD];
 };
 const line = (a, b, names, by) => {
   const [from, to] = [moved(by, a), moved(by, b)];

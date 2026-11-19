@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { HOME_RADIUS, MAP_RADIUS, ORDER, POSITIONS, REACH, RIM, SECTORS, SUN, keyStep, mapSectorOf, next, nextWorld, parseId, prev, sectorById, sectorOf, sectorOut } from './layout';
+import { HOME_RADIUS, MAP_RADIUS, ORDER, POSITIONS, REACH, RIM, SECTORS, SUN, UNIVERSE_RADIUS, keyStep, mapSectorOf, next, nextWorld, parseId, prev, sectorById, sectorOf, sectorOut } from './layout';
 import { byId } from './universes';
 import { DEEP, WONDERS } from './deep';
 
@@ -15,8 +15,10 @@ describe('the map layout', () => {
     }
   });
 
-  it('keeps every universe inside the map radius', () => {
-    for (const id of ORDER) expect(Math.hypot(POSITIONS[id][0], POSITIONS[id][2]) + REACH[id]).toBeLessThanOrEqual(MAP_RADIUS + 1e-9);
+  it('keeps every universe inside the universe’s radius, and the stations inside the Core’s', () => {
+    for (const id of ORDER) expect(Math.hypot(POSITIONS[id][0], POSITIONS[id][2]) + REACH[id]).toBeLessThanOrEqual(UNIVERSE_RADIUS + 1e-9);
+    for (const id of ORDER.filter((u) => byId(u).kind === 'core')) expect(Math.hypot(POSITIONS[id][0], POSITIONS[id][2]) + REACH[id]).toBeLessThan(MAP_RADIUS);
+    expect(MAP_RADIUS).toBe(35862.144); // (frozen: the Expanse's old middle layer keeps clear of it)
   });
 
   it('keeps the stations in the home system and sends the fandoms far out, well apart, with a journey between any two', () => {
@@ -101,8 +103,8 @@ describe('the asteroid belt', () => {
 describe('the spread', () => {
   const fandoms = ORDER.filter((id) => byId(id).kind !== 'core');
   const far = (id) => Math.hypot(POSITIONS[id][0], POSITIONS[id][2]);
-  it('puts the nearest fandom 12,000 out and the main edge at 54,000', () => {
-    expect(Math.min(...fandoms.map(far))).toBeCloseTo(12000, 0);
+  it('puts the nearest fandom a sector and more out, in its neighbourhood, and the main edge at 54,000', () => {
+    expect(Math.min(...fandoms.map(far))).toBeGreaterThan(120000);
     expect(SECTORS.main.edge).toBe(54000);
     expect(RIM.inner).toBe(48000);
     expect(RIM.outer).toBe(51600);

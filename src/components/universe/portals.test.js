@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { PORTALS, exitSpot, portalById, portalHit, transit } from './portals';
-import { GOALS, SHIP, SOLIDS, autopilot, spawn, step } from './ship';
-import { POSITIONS, REACH, SECTORS, sectorOf } from './layout';
+import { GOALS, SHIP, SOLIDS, autopilot, parkAt, spawn, step } from './ship';
+import { POSITIONS, REACH, SECTORS, mapSectorOf as sectorOf } from './layout'; // (the Curve's or the main map's: the Rick and Morty planet is out in the Expanse, in its neighbourhood)
 import { WONDERS, reachOf, wonderById } from './deep';
 import { parkFor, riftExit } from './nav';
 
@@ -78,11 +78,11 @@ describe('the portals between the sectors', () => {
     expect(transit(spawn(null), 'citadel')).toBeNull();
   });
 
-  it('flies the autopilot from the home system into the portal, and through', () => {
-    let s = spawn('home');
+  it('flies the autopilot from the Rick and Morty planet into the portal, and through', () => {
+    // (the planet is in its neighbourhood, the Curve Rift, a jump from home: neighbourhoods.js)
+    let s = { ...spawn(null), ...parkAt('rickmorty'), speed: 0 };
     const park = parkFor('rmportal', [s.x, s.z]);
     let through = null;
-    // (the Rick and Morty planet is about two minutes out at cruise since the spread to six, scale.js's SPREAD)
     for (let t = 0; t < 150 && !through; t += 1 / 60) {
       const a = autopilot(s, 'rmportal', park, undefined, 1);
       const next = step(s, a.input, 1 / 60).ship;

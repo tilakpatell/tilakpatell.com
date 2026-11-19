@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { SIDES, boxAt, placeLabels } from './chartLabels';
 import { CHART_VIEWS, DESTINATIONS, chartAt, onChart } from './nav';
+import { NEIGHBOURHOODS, NEIGHBOURHOOD_OF } from './neighbourhoods';
 
 // a name's width, near enough the chart's 11 px type
 const measure = (t) => t.length * 6.3 + 10;
@@ -99,9 +100,13 @@ describe('placeLabels', () => {
     });
   }
 
-  it('names every world and wonder on the universe chart at a desktop’s size', () => {
+  it('names every place round the Core on the universe chart at a desktop’s size, and some of every neighbourhood', () => {
+    // (a neighbourhood's places bunch up that far out: the rest are named on
+    // hover, and the chart zooms in on them, chart/)
     const items = chartItems('all', 760);
     const at = placeLabels(items, { size: 760, measure, height: H });
-    expect(items.filter((it) => at.get(it.id).off).map((it) => it.id)).toEqual([]);
+    const off = new Set(items.filter((it) => at.get(it.id).off).map((it) => it.id));
+    expect([...off].filter((id) => !NEIGHBOURHOOD_OF[id] && id !== 'rmportal')).toEqual([]);
+    for (const n of NEIGHBOURHOODS) expect([...Object.keys(n.members), ...Object.keys(n.landmarks)].some((id) => !off.has(id)), n.id).toBe(true);
   });
 });
