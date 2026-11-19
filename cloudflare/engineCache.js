@@ -93,17 +93,58 @@ export function engineWorker(self, keep, follow, limits = { fetch: 15000, waitAh
   };
   // (the engine's loader asks again for nothing: a dropped answer, or the Worker's 503, is asked again here, after
   // half a second, then one and a half, then four; a 404 is the answer)
+  // A timer that fires is the thread's word, not the network's: silence is cut only once it has held while the worker could hear
+  // (19 Nov, staged r1076: the worker's thread was held tens of seconds while the page compiled its GPU pipelines; when it woke,
+  // every limit's timer fired at once, before the answers and bytes already come could be read, and some 20 healthy downloads
+  // were cancelled in 10 ms, two of them the engine's pthread workers' scripts, and the boot hung). quiet(ms, mark, settled, cut):
+  // when its timer fires, two more turns of the event loop are given to whatever already came; then nothing is done if the wait
+  // has settled, the timer is armed again if progress came since it was armed (mark(): a count, and when it last moved) or if it
+  // fired late (the thread was held: what it missed is unknown, so a whole limit is heard again), and only a silence of `ms`
+  // since the last progress, by a fresh clock, is cut.
+  const turn = () => new Promise((r) => setTimeout(r, 0));
+  const quiet = (ms, mark, settled, cut) => {
+    const slack = Math.min(1000, ms / 4);
+    let timer = null;
+    let stopped = false;
+    const arm = (wait) => {
+      const seen = mark().count;
+      const armed = Date.now();
+      timer = setTimeout(async () => {
+        timer = null;
+        if (stopped || settled()) return;
+        const late = Date.now() - armed - wait > slack;
+        await turn();
+        await turn();
+        if (stopped || settled()) return;
+        const { count, at } = mark();
+        const heard = Date.now() - at;
+        if (late) return arm(ms);
+        if (count !== seen) return arm(Math.max(1, ms - heard));
+        if (heard < ms) return arm(ms - heard);
+        cut();
+      }, wait);
+    };
+    arm(ms);
+    return () => {
+      stopped = true;
+      clearTimeout(timer);
+    };
+  };
   // (one network ask, aborted and failed when it has not answered in time: a stalled answer is then asked again like a dropped one)
   const timedFetch = (request) => {
     const control = typeof AbortController === 'function' ? new AbortController() : null;
-    let timer;
+    const started = Date.now();
+    let answered = false;
+    const asked = control ? self.fetch(request, { signal: control.signal }) : self.fetch(request);
+    Promise.resolve(asked).then(() => (answered = true), () => (answered = true));
+    let stop;
     const late = new Promise((_, reject) => {
-      timer = setTimeout(() => {
+      stop = quiet(limits.fetch, () => ({ count: 0, at: started }), () => answered, () => {
         try { control?.abort(); } catch { /* already settled */ }
         reject(new Error('engine-cache: no answer in ' + limits.fetch + ' ms'));
-      }, limits.fetch);
+      });
     });
-    return Promise.race([control ? self.fetch(request, { signal: control.signal }) : self.fetch(request), late]).finally(() => clearTimeout(timer));
+    return Promise.race([asked, late]).finally(() => stop());
   };
   // A body that sends no byte for `stall` ms ends in an error, its download cancelled (18 Nov, live r1075-f943c314, s-verify's
   // cold boot: scene-frontend/scene.json's headers came through here at 24.4 s, its body never, Home without its model past
@@ -111,42 +152,52 @@ export function engineWorker(self, keep, follow, limits = { fetch: 15000, waitAh
   // download. The body is read on as it comes, whether or not the page reads yet (its bytes queue for it): the limit is the
   // network's silence, never a page busy elsewhere. A copy for the disk is a clone of the guarded answer, downstream of the
   // limit: a stalled body fails the page's read and the copy's put alike, and each file is downloaded once ([c4] on #1339).
-  // A body that is not a stream (the tests' fakes) goes as it is.
-  const STALL = {};
+  // A body that is not a stream (the tests' fakes) goes as it is. (19 Nov, staged r1076: the silence is the time since the last
+  // chunk came, heard by quiet above; a chunk that came while the thread was held is read before anything is cut.)
   const stallMs = limits.stall ?? 10000;
   const guarded = (response) => {
     const body = response?.body;
     if (!body || typeof body.getReader !== 'function' || typeof ReadableStream !== 'function') return response;
     const reader = body.getReader();
     let cancelled = false;
+    let ended = false;
+    let stalled = false;
+    let chunks = 0;
+    let last = Date.now();
+    let stop = () => {};
     const stream = new ReadableStream({
       start(controller) {
+        stop = quiet(stallMs, () => ({ count: chunks, at: last }), () => ended || cancelled, () => {
+          stalled = true;
+          reader.cancel().catch(() => {});
+          controller.error(new TypeError('engine-cache: no byte in ' + stallMs + ' ms'));
+        });
         (async () => {
           for (;;) {
-            let timer;
-            const late = new Promise((r) => (timer = setTimeout(() => r(STALL), stallMs)));
             let step;
             try {
-              step = await Promise.race([reader.read(), late]);
+              step = await reader.read();
             } catch (error) {
-              clearTimeout(timer);
-              if (!cancelled) controller.error(error);
+              ended = true;
+              stop();
+              if (!cancelled && !stalled) controller.error(error);
               return;
             }
-            clearTimeout(timer);
-            if (cancelled) return;
-            if (step === STALL) {
-              reader.cancel().catch(() => {});
-              controller.error(new TypeError('engine-cache: no byte in ' + stallMs + ' ms'));
-              return;
+            if (cancelled || stalled) return;
+            if (step.done) {
+              ended = true;
+              stop();
+              return void controller.close();
             }
-            if (step.done) return void controller.close();
+            chunks++;
+            last = Date.now();
             controller.enqueue(step.value);
           }
         })();
       },
       cancel(reason) {
         cancelled = true;
+        stop();
         return reader.cancel(reason);
       },
     });
