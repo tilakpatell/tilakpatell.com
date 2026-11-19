@@ -134,9 +134,14 @@ import { LEAN, OPEN_SPACE, PLANETS, SHIP, SOLIDS, autopilot, crashLoud, forward,
 import { coreStats } from './ships/profiles';
 import { engineList } from './ships/looks';
 import { areaOf } from './market/areas';
-import { HOLD } from './words';
+import { EXPLORE, HOLD } from './words';
 import { GOODS } from './market/goods';
 import { MINED_OUT, WORKS, yieldOf } from './market/yields';
+import { sweep as scanSweep } from './explore/scan';
+import { worthOf } from './explore/values';
+import { stationFor } from './market/trade';
+import { parseSectorKey, parseSpaceId } from '../../lib/space/address.js';
+import { rowAt } from '../expanse/shared/gen';
 import { HYPER, destinationById, hyperState, parkFor, riftExit } from './nav';
 import { pilotId } from './pilotGoal';
 import { FACTIONS, HUNTER_KINDS, NAMES, createHunters } from './hunters';
@@ -245,7 +250,7 @@ import { createThingDrawers } from './things/drawers';
 import { createThingPlay } from './things';
 import { CABS, CAB_HFOV, CAB_VFOV, EYE, SEAT_KEY } from './cabs';
 import { runtime } from '../../runtime';
-import { deedToEarn } from './economy';
+import { EARN, deedToEarn } from './economy';
 import { createPayLedger, hunterEarn } from './earnRules';
 import { contact, keptSpeed } from '../../lib/combat/contact';
 import { createShipHits, ramNote, solidsWith } from './shipHits';
@@ -782,11 +787,42 @@ export async function create(canvas, ctx) {
     prepare: (o) => sendAndWarm(o), // (declared further down)
     keyed: import.meta.env.DEV,
     onSector: (id) => {
-      if (inExpanse(id) && id !== 'E:0,0') state.note = { text: `The Expanse · ${id}`, until: wall() + 3 };
+      if (inExpanse(id) && id !== 'E:0,0') state.note = { text: chartSector(id) ?? `The Expanse · ${id}`, until: wall() + 3.5 };
     },
   });
   const places = createScenePlaces({ group: map, universe, expanse, workers: ctx.rt?.workers ?? null, startAt: props.startAt, toScreen: (...a) => toScreen(...a), prepare: (o) => warm(o), emit: (e) => emit(e), note: (text) => (state.note = { text, until: wall() + 3 }), device: device(), tags: () => props.tags?.current ?? null, onPick: (id) => navTo(id), frame: () => size });
   // lane 4a's things in space played: E at one, a storm's drain, a pulsar's beam, a wormhole's throw (things/index.js)
+  // the explorer's record (props.record, made beside the wallet): a generated sector charted the first time
+  // it's entered, the scan, and the data bank sold at a dock. Each says its note, or null
+  const chartSector = (id) => {
+    const cube = parseSectorKey(id);
+    if (!props.record || !cube) return null;
+    const area = areaOf(cube);
+    const n = props.record.chart(cube, worthOf('sector', area.d, area.richness));
+    return n ? EXPLORE.charted(id, n) : null;
+  };
+  const scan = () => {
+    if (!props.record || !state.ship || onFoot()) return;
+    const every = state.core?.scanEvery ?? 8;
+    const wait = (state.scanAt ?? -Infinity) + every - state.clock;
+    if (wait > 0) {
+      state.note = { text: EXPLORE.charging(wait), until: wall() + 1.5 };
+      return;
+    }
+    state.scanAt = state.clock;
+    const r = scanSweep({ sectors: expanse.sectors().values(), at: [state.ship.x, state.ship.y, state.ship.z], reach: state.core?.scanReach ?? 10000, t: state.spaceT, record: props.record, rowAt, areaOf });
+    state.note = { text: EXPLORE.scanned(r), until: wall() + 3.5 };
+    emit({ type: 'scan', reach: state.core?.scanReach ?? 10000, every, ...r });
+  };
+  const sellData = (stationId) => {
+    const wallet = props.wallet;
+    if (!props.record || !wallet || !(props.record.data > 0)) return;
+    const cube = parseSpaceId(stationId);
+    const research = stationFor({ id: stationId, cube: cube ? [cube.sx, cube.sy, cube.sz] : [0, 0, 0] }).type === 'research';
+    const n = Math.round((props.record.payOut() * (research ? 1.5 : 1)) / EARN.data.credits);
+    const got = wallet.earn('data', n);
+    if (got.credits) state.note = { text: EXPLORE.paid(got.credits), until: wall() + 4 };
+  };
   // what mining and salvage put in the crew's hold (the market's: props.market), a field emptied for a
   // while once worked out and a wreck stripped for good; null for a thing that doesn't fill a hold
   const worked = new Map(); // (each field's presses, this visit)
@@ -1844,6 +1880,7 @@ export async function create(canvas, ctx) {
       camQOn = false;
     },
     resolve: (id) => places.resolve(id), fetch: (id) => places.fetch(id), missing: (id) => places.missing(id),
+    range: () => state.core?.range ?? Infinity, // (the hyperdrive's reach into generated space: explore/route.js)
   });
 
   // ── The ship ──
@@ -5272,6 +5309,18 @@ export async function create(canvas, ctx) {
     const nowMs = state.held || reduced ? 0 : Date.now();
     state.spaceT = spaceTime(nowMs);
     expanse.update({ camera, ship: state.ship, t, dt, now: nowMs, hidden: onFoot() || Boolean(state.dive) || skySector === 'rickmorty' });
+    // docked at a station: the data bank sold (explore/record.js; half as much again at a research station)
+    const dockedNow = places.docked();
+    if (dockedNow !== state.dockedAt) {
+      state.dockedAt = dockedNow;
+      if (dockedNow) sellData(dockedNow);
+    }
+    // a long jump's next hop, once the hyperdrive's charged and the ship's still where the last one left it
+    if (state.hop && !state.jump && !state.auto && !state.pending && state.ship) {
+      const left = Math.hypot(state.ship.x - state.hop.at[0], state.ship.y - state.hop.at[1], state.ship.z - state.hop.at[2]) > 60;
+      if (left) state.hop = null;
+      else if (hyperState({ last: state.hyperAt, now: wall(), interdicted: state.interdicted, recharge: HYPER.recharge * (state.stats.jump ?? 1) }).ready) travel(state.hop.id, 'hyper');
+    }
     places.update({ ship: state.ship, camera, t: state.spaceT, flying: flying() && !onFoot() && !state.dive && !props.frozen, nose: state.ship ? noseOf(state.ship) : null, going: state.jump?.id ?? state.auto?.id ?? state.pending?.id ?? null, arrived: state.arrived, held: state.held, aim: state.aim, picked: state.sel });
     sectorPortals.update(t, camera);
     curve.update(t, sectorOf(camLocal.x, camLocal.y, camLocal.z) === 'rickmorty');
@@ -5385,6 +5434,12 @@ export async function create(canvas, ctx) {
         retarget(900);
         ctx.invalidate();
       } else emit({ type: 'map' });
+      return;
+    }
+    if (key === 'z') {
+      // the scan: a pulse out to the scanner's reach (explore/scan.js)
+      e.preventDefault();
+      scan();
       return;
     }
     if (key === 'j') {

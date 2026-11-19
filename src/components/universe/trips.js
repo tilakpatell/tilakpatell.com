@@ -27,7 +27,9 @@ import { OPEN_SPACE, headingTo, isGoal } from './ship';
 import { atTime, canonicalPlace } from './places/ids';
 import { followPark, parkPlace, placeSpace } from './places/park';
 import { REAIM_MS, parkBehind, pilotId, pilotSpace, reached } from './pilotGoal';
-import { JAMMED, jumpState } from './words';
+import { HOPS, JAMMED, jumpState } from './words';
+import { hopPoint, hyperRoute, isGenerated } from './explore/route';
+import { sectorAt } from '../../lib/space/address.js';
 
 export function createTrips(deps) {
   const { state, emit, pilots, reduced, onFoot, wall } = deps;
@@ -36,6 +38,7 @@ export function createTrips(deps) {
   const dropAuto = () => {
     state.then = null; // (and a trip on through a portal with it)
     state.arrived = state.pending = null;
+    state.hop = null; // (and the hops of a long jump)
     if (!state.auto) return;
     const id = state.auto.id;
     state.auto = null;
@@ -43,6 +46,7 @@ export function createTrips(deps) {
   };
   const travel = (id, drive = deps.props().drive) => {
     state.arrived = state.pending = null;
+    if (state.hop && canonicalPlace(id) !== state.hop.id) state.hop = null; // (somewhere else: the hops called off)
     const placeId = canonicalPlace(id);
     if (placeId) return toPlace(placeId, drive);
     const s = state.ship;
@@ -155,6 +159,22 @@ export function createTrips(deps) {
     state.then = null;
     const park = parkPlace(dest, [s.x, s.z], state.spaceT);
     if (!park) return false;
+    // (past the hyperdrive's range: a hop that share of the way, and on from
+    // there once it's charged again, the scene's; never refused, never for a
+    // hand-made place: explore/route.js)
+    if (drive === 'hyper' && !reduced && isGenerated(id) && hyperState({ last: state.hyperAt, now: wall(), interdicted: state.interdicted, recharge: HYPER.recharge * (state.stats.jump ?? 1) }).ready) {
+      const at = [park.x, park.y ?? s.y, park.z];
+      const hops = hyperRoute(sectorAt(s.x, s.y, s.z), sectorAt(...at), deps.range?.() ?? Infinity);
+      if (hops.length > 1) {
+        const k = state.hop?.id === id ? state.hop.k + 1 : 1;
+        const [x, y, z] = hopPoint([s.x, s.y, s.z], at, 1, hops.length);
+        state.hop = { id, k, n: k - 1 + hops.length, at: [x, y, z] };
+        state.note = { text: HOPS.going(k, state.hop.n, dest.name ?? null), until: wall() + 4 };
+        return setOff(`hop:${id}`, { x, y, z, heading: headingTo(at[0] - s.x, at[2] - s.z) }, drive, null, null, null);
+      }
+    }
+    if (state.hop?.id === id && state.hop.k > 0) state.note = { text: HOPS.last(state.hop.k + 1, state.hop.n), until: wall() + 4 };
+    state.hop = null;
     return setOff(id, park, drive, null, null, { dest, park });
   };
   // the ship put straight down at a parking spot, still, level and facing
