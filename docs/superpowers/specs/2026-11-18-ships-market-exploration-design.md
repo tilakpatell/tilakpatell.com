@@ -172,7 +172,7 @@ buy  = sell × 1.12
 
 - **type:** what it makes 0.6, what it needs 1.5, the rest 1.
 - **area:** its specialties 0.5 at home; rares 1.
-- **haul:** a specialty or a pocket’s good, sold away from where it is made, 1 + 0.2 a sector to 3 at 10 sectors. A pocket’s good sold outside its pocket takes the 10.
+- **haul:** a specialty or a pocket’s good, sold away from where it is made, 1 + 0.2 a sector to 3 at 10 sectors. A pocket’s good sold outside its pocket takes the 10. (Lane 2 starts it at 1 + 0.1 a sector to 2: at 3, one hold of a mid specialty hauled ten sectors paid several times the pacing targets’ minute. Lane 4’s pacing test settles it.)
 - **drift:** two slow waves for each station and good, periods 2 to 8 hours, ±25 % together, from the seed and the clock (`Date.now()`), so every pilot sees the same price at the same moment, with no server.
 - **shock:** an event’s `marketShock(stationId, good, mul, untilMs)`, 1 when none.
 - **yours:** each unit you sell there takes 1.5 % off, each you buy adds it, back to nothing with a half-life of 15 minutes; never under 0.5 or over 1.5.
