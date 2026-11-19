@@ -4,8 +4,10 @@
 // them, staggered ring to ring), over a wraparound console of switches,
 // little screens and dials, the two yokes, and the hyperdrive levers between
 // the seats (click them to go). Out of the glass, a desert planet under two
-// suns. Going: the levers go forward, Chewie roars, the stars stretch into
-// lines, the blue tunnel, and the flash.
+// suns. You're Han: the game's own (./pilot.js), your hands on the yoke.
+// Going: you lean in and push the levers home, Chewie's hand on them with
+// yours, he roars, the stars stretch into lines, the blue tunnel, the jump
+// presses you back into the seat, and the flash.
 //
 // The cockpit's floor is y = 0; the canopy's axis runs down −z at x = 0,
 // between the seats. Units are metres.
@@ -15,7 +17,11 @@ import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js
 import { blinkers, consoleMaps, consoleMat, glassMat, glowSprite, plated, platingMaps, rng, roundedBox, screen, tubeAlong } from '../kit';
 import { hyperspace, planet, sky } from '../space';
 import { loadCrew, loadGameCrew, nudge, nudgeWorld, prefetchGameCrew } from '../crew';
-import { clamp01, smooth } from '../timeline';
+import { clamp01, plan as planOf, smooth } from '../timeline';
+import { loadPilot } from '../pilot';
+import { falconHands } from '../hands';
+import { falconDetail } from './falconDetail';
+import { reach } from '../../../lib/three/ik';
 import { shadowRadius } from '../levels';
 import { dimmer } from '../dim';
 import { loadTexture } from '../../../lib/three/textures';
@@ -35,6 +41,14 @@ const SUNS = [
 
 // the launch: the stars stretch until SNAP (ms), then the tunnel
 const SNAP = 2150;
+// how far ahead of the seats the hyperdrive levers' pedestal stands, and your
+// yoke's handles: in reach of the game's Han, sat back, and leaning in
+const LEVER_Z = -0.3;
+const YOKE_Z = -0.24;
+// a palm over a knob, not in it
+const PAW_LIFT = new THREE.Vector3(0.012, 0.035, 0);
+const PALM_LIFT = new THREE.Vector3(-0.02, 0.03, 0);
+const PLAN = planOf('falcon');
 
 const coneR = (u) => R0 + (R1 - R0) * u;
 const coneZ = (u) => Z0 + (Z1 - Z0) * u;
@@ -46,6 +60,7 @@ const conePoint = (u, a, inset = 0) => {
 
 export function prefetch() {
   prefetchGameCrew('chewie');
+  prefetchGameCrew('han');
 }
 
 // a box from a to b, `w` wide and `d` deep, its width lying along `side`
@@ -234,24 +249,28 @@ function numbers(g, w, h, t) {
   g.globalAlpha = 1;
 }
 
-export async function build({ rich, level, coarse, renderer }) {
+export async function build({ rich, level, coarse, renderer, reduced = false, pilot: seated = false }) {
   const inside = new THREE.Group();
   const outside = new THREE.Group();
   const r = rng(7);
+  // you, as the game's Han (./pilot.js), fetched beside everything else; not
+  // at the lowest level, which has the cockpit as it was
+  const pilotLoad = seated && level?.id !== 'low' ? loadPilot('han', { eye: EYE, hips: [-0.42, 0.56, 0.36] }).catch(() => null) : null;
 
   // ── materials ──
   const hullMaps = platingMaps({ base: '#8f8b82', cols: 5, rows: 4, seed: 12, grime: 0.45, scuffs: 70 });
   const darkMaps = platingMaps({ base: '#4a4b4d', cols: 3, rows: 2, seed: 4, grime: 0.3, rivets: false });
   const hull = plated(hullMaps, { rx: 3, ry: 2, metalness: 0.3 });
   const darkHull = plated(darkMaps, { rx: 2, ry: 2, metalness: 0.45, color: 0xd8d8d8 });
-  const frameMat = plated(darkMaps, { rx: 6, ry: 6, metalness: 0.7, color: 0xc4c6ca, bump: 0.3 });
+  const frameMat = plated(darkMaps, { rx: 6, ry: 6, metalness: 0.6, color: 0xb8babd, bump: 0.3 });
   const trim = new THREE.MeshStandardMaterial({ color: 0x2b2c2f, roughness: 0.5, metalness: 0.7 });
   const black = new THREE.MeshStandardMaterial({ color: 0x141416, roughness: 0.7, metalness: 0.3 });
-  const chrome = new THREE.MeshStandardMaterial({ color: 0xd9dce0, roughness: 0.2, metalness: 1 });
+  // (brushed, not a mirror: a polished one caught the jump's light as a white bar)
+  const chrome = new THREE.MeshStandardMaterial({ color: 0xb9bcc0, roughness: 0.34, metalness: 1 });
   const rubber = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.9, metalness: 0 });
   const redPlastic = new THREE.MeshStandardMaterial({ color: 0x9c2219, roughness: 0.35, metalness: 0 });
   const leather = new THREE.MeshStandardMaterial({ color: 0x5b4636, roughness: 0.72, metalness: 0 });
-  const faces = [0, 1, 2, 3, 4].map((k) => consoleMat(consoleMaps({ w: 512, h: 320, seed: 30 + k, base: k % 2 ? '#2c2d30' : '#34322e', lit: 0.3 + k * 0.04 }), { glow: 1.5 }));
+  const faces = [0, 1, 2, 3, 4].map((k) => consoleMat(consoleMaps({ w: 512, h: 320, seed: 30 + k, base: k % 2 ? '#2c2d30' : '#34322e', lit: 0.3 + k * 0.04 }), { glow: 1.25 }));
 
   // ── the canopy ──
   const frame = new THREE.Mesh(canopyFrame(), frameMat);
@@ -356,6 +375,11 @@ export async function build({ rich, level, coarse, renderer }) {
       togs.push(new THREE.Matrix4().compose(onFace(k, u0 + (i - (n - 1) / 2) * 0.021, v, 0.004), q.clone().multiply(flip), new THREE.Vector3(1, 1, 1)));
     }
   }
+  // the finer things (./falconDetail.js): rivets, conduit, knobs, and the
+  // overhead banks' switches, drawn with these
+  const detail = falconDetail({ cone: { point: conePoint, z: coneZ, r: coneR, glass: GLASS, r0: R0, z0: Z0 }, onFace, faceQuat, overhead: over.children, mats: { trim, black } });
+  inside.add(detail.group);
+  togs.push(...detail.toggles);
   const toggles = new THREE.InstancedMesh(togGeo, chrome, togs.length);
   togs.forEach((m, i) => toggles.setMatrixAt(i, m));
   inside.add(toggles);
@@ -373,46 +397,56 @@ export async function build({ rich, level, coarse, renderer }) {
   inside.add(lights.mesh);
 
   // ── the yokes ──
+  // (yours out on a long column, its handles where Han's hands are, sat back:
+  // his seat is further back than Chewie's)
   const yokes = new THREE.Group();
+  const grips = { left: new THREE.Vector3(), right: new THREE.Vector3() };
   for (const sx of [-0.42, 0.42]) {
+    const z = sx < 0 ? YOKE_Z : -0.48;
     const col = tubeAlong(
       [
         [sx, 0.84, -0.6],
-        [sx, 0.85, -0.5],
+        [sx, 0.85, z - 0.02],
       ],
       0.018,
       { segs: 2, radial: 12 },
     );
     const bar = tubeAlong(
       [
-        [sx - 0.13, 0.96, -0.48],
-        [sx - 0.13, 0.88, -0.49],
-        [sx - 0.08, 0.85, -0.5],
-        [sx + 0.08, 0.85, -0.5],
-        [sx + 0.13, 0.88, -0.49],
-        [sx + 0.13, 0.96, -0.48],
+        [sx - 0.13, 0.96, z],
+        [sx - 0.13, 0.88, z - 0.01],
+        [sx - 0.08, 0.85, z - 0.02],
+        [sx + 0.08, 0.85, z - 0.02],
+        [sx + 0.13, 0.88, z - 0.01],
+        [sx + 0.13, 0.96, z],
       ],
       0.012,
       { segs: 40, radial: 10 },
     );
-    yokes.add(new THREE.Mesh(col, trim), new THREE.Mesh(bar, black));
+    // (a collar where the column meets the console, and a hub at the bar)
+    const collar = new THREE.Mesh(new THREE.CylinderGeometry(0.034, 0.04, 0.05, 16).rotateX(Math.PI / 2), black);
+    collar.position.set(sx, 0.84, -0.6);
+    const hub = new THREE.Mesh(roundedBox(0.07, 0.05, 0.05, 0.012), trim);
+    hub.position.set(sx, 0.855, z - 0.02);
+    yokes.add(new THREE.Mesh(col, trim), new THREE.Mesh(bar, black), collar, hub);
     for (const gx of [-0.13, 0.13]) {
       const grip = new THREE.Mesh(new THREE.CylinderGeometry(0.016, 0.016, 0.07, 12), rubber);
-      grip.position.set(sx + gx, 0.93, -0.48);
+      grip.position.set(sx + gx, 0.93, z);
       const button = new THREE.Mesh(new THREE.CylinderGeometry(0.006, 0.006, 0.01, 8), redPlastic);
-      button.position.set(sx + gx, 0.968, -0.48);
+      button.position.set(sx + gx, 0.968, z);
       yokes.add(grip, button);
+      if (sx < 0) grips[gx < 0 ? 'left' : 'right'].set(sx + gx, 0.925, z + 0.005);
     }
   }
   inside.add(yokes);
 
   // ── the hyperdrive levers, between the seats ──
   const pedestal = new THREE.Mesh(roundedBox(0.22, 0.86, 0.3, 0.03), darkHull);
-  pedestal.position.set(0, 0.43, -0.5);
+  pedestal.position.set(0, 0.43, LEVER_Z);
   inside.add(pedestal);
   const pedTop = new THREE.Mesh(new THREE.PlaneGeometry(0.2, 0.28), faces[2]);
   pedTop.rotation.x = -Math.PI / 2 + 0.3;
-  pedTop.position.set(0, 0.87, -0.5);
+  pedTop.position.set(0, 0.87, LEVER_Z);
   inside.add(pedTop);
   const slotMat = new THREE.MeshStandardMaterial({ color: 0x050505, roughness: 1 });
   const levers = [];
@@ -420,11 +454,11 @@ export async function build({ rich, level, coarse, renderer }) {
   for (let i = 0; i < 3; i++) {
     const x = -0.045 + i * 0.045;
     const slot = new THREE.Mesh(new THREE.BoxGeometry(0.012, 0.004, 0.12), slotMat);
-    slot.position.set(x, 0.875, -0.5);
+    slot.position.set(x, 0.875, LEVER_Z);
     slot.rotation.x = 0.3;
     inside.add(slot);
     const pivot = new THREE.Group();
-    pivot.position.set(x, 0.86, -0.5);
+    pivot.position.set(x, 0.86, LEVER_Z);
     const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.0055, 0.007, 0.15, 10), chrome);
     arm.position.y = 0.075;
     const knob = new THREE.Mesh(new THREE.CylinderGeometry(0.011, 0.011, 0.034, 14), i === 1 ? redPlastic : black);
@@ -437,12 +471,12 @@ export async function build({ rich, level, coarse, renderer }) {
   }
   // an easy thing to hit: a box round all three
   const hitBox = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.22, 0.24), new THREE.MeshBasicMaterial({ visible: false }));
-  hitBox.position.set(0, 0.97, -0.44);
+  hitBox.position.set(0, 0.97, LEVER_Z + 0.06);
   inside.add(hitBox);
   // a ring of light round their base, so the eye finds them
   const leverRing = new THREE.Mesh(new THREE.RingGeometry(0.08, 0.084, 48), new THREE.MeshBasicMaterial({ color: '#ffb35c', toneMapped: false, transparent: true, opacity: 0.6, side: THREE.DoubleSide }));
   leverRing.rotation.x = -Math.PI / 2 + 0.3;
-  leverRing.position.set(0, 0.879, -0.5);
+  leverRing.position.set(0, 0.879, LEVER_Z);
   leverRing.scale.set(1.25, 1.6, 1);
   inside.add(leverRing);
 
@@ -492,6 +526,16 @@ export async function build({ rich, level, coarse, renderer }) {
   const across = new THREE.Vector3(1, 0, 0); // (to his right: he faces −z)
   const up = new THREE.Vector3(0, 1, 0);
   const seatAt = { height: 2.28, hips: [0.52, 0.6, 0.06] };
+  // a lever's knob, where it is now (its pivot's turn this frame)
+  const knobAt = (i, out) => {
+    levers[i].updateWorldMatrix(true, false);
+    return out.set(0, 0.16, 0).applyMatrix4(levers[i].matrixWorld);
+  };
+  // (his hand on the right-hand lever, yours on the other two: his palm over
+  // its knob, the wrist short of it back along his arm)
+  const paw = new THREE.Vector3();
+  const pawShoulder = new THREE.Vector3();
+  const PAW_POLE = new THREE.Vector3(-0.5, -1, 0.3);
   const chewie =
     (await loadGameCrew('chewie', {
       ...seatAt,
@@ -509,11 +553,14 @@ export async function build({ rich, level, coarse, renderer }) {
         nudgeWorld(b.Spine2, across, -(k * 0.1));
         nudgeWorld(b.Head, up, 0.12 - k * 0.3);
         nudgeWorld(b.Head, across, 0.4 - k * 0.12);
-        // the left arm (toward the middle of the console) forward and down to the levers
-        // (his hand on them at the full reach, measured: within 6 cm of their knobs)
-        nudgeWorld(b.LeftArm, across, k * 0.8);
-        nudgeWorld(b.LeftArm, up, k * 0.7);
-        nudgeWorld(b.LeftForeArm, across, k * 0.5);
+        // the left arm (toward the middle of the console) out to the levers,
+        // his palm on the right-hand knob as they go home (two-bone IK)
+        if (k > 0.001 && b.LeftArm) {
+          knobAt(2, paw).add(PAW_LIFT);
+          b.LeftArm.getWorldPosition(pawShoulder);
+          paw.add(pawShoulder.sub(paw).setLength(0.1));
+          reach(b.LeftArm, b.LeftForeArm, b.LeftHand, paw, PAW_POLE, k);
+        }
       },
     })) ??
     (await loadCrew('chewie', {
@@ -531,6 +578,9 @@ export async function build({ rich, level, coarse, renderer }) {
       },
     }));
   if (chewie) inside.add(chewie.group);
+  // and you: Han, his hands on your yoke
+  const pilot = await pilotLoad;
+  if (pilot) inside.add(pilot.group);
 
   // ── light ──
   const hemi = new THREE.HemisphereLight(0x8fa4c8, 0x2a2018, 0.35);
@@ -563,9 +613,9 @@ export async function build({ rich, level, coarse, renderer }) {
       if (o.isMesh && o !== glass && o !== nose) o.receiveShadow = true;
     });
     // he throws a shadow on the console, but takes none (fur and shadow maps
-    // make speckles)
-    if (chewie)
-      chewie.group.traverse((o) => {
+    // make speckles); and so do your arms
+    for (const who of [chewie, pilot])
+      who?.group.traverse((o) => {
         if (!o.isMesh) return;
         o.castShadow = true;
         o.receiveShadow = false;
@@ -613,6 +663,10 @@ export async function build({ rich, level, coarse, renderer }) {
 
   // the cockpit, as it stands still
   let leverK = 0;
+  const palmA = new THREE.Vector3();
+  const palmB = new THREE.Vector3();
+  const leftHand = { at: grips.left, w: 1 };
+  const rightHand = { at: new THREE.Vector3().copy(grips.right), w: 1 };
   const jumpColor = new THREE.Color();
   const glassLight = new THREE.Color();
   const blue = new THREE.Color(0.55, 0.75, 1.3);
@@ -626,14 +680,14 @@ export async function build({ rich, level, coarse, renderer }) {
     hfov: 88,
     vmin: 56,
     vmax: 96,
-    exposure: 1.05,
     envIntensity: 0.6,
-    bloom: [0.6, 0.45, 0.8],
     flash: '#eef5ff',
     glance: -0.75, // over at Chewie
     rumble: 1,
     glare,
     triggers: [hitBox, ...leverHit],
+    // (out of Han's eyes, where he's sat: scene.js)
+    ...(pilot ? { eyeAt: (out) => pilot.eyeAt(out) } : {}),
     resize(w, h, px) {
       hyper.resize(w, h, px);
       space.set({ px });
@@ -643,14 +697,25 @@ export async function build({ rich, level, coarse, renderer }) {
       // (the screens drawn again till the jump's light washes them out)
       if (!launching || throttle < 0.3) for (const s of screens) s.tick(t);
       lights.tick(t);
-      // the levers: pushed forward in the first moments of the launch
-      const want = launching ? smooth(lt / 380) : 0;
+      // the levers: your hand on them, then pushed home (../hands.js)
+      const moves = falconHands(PLAN, lt, { launching });
+      leverK += (moves.push - leverK) * Math.min(1, dt * 18);
+      levers.forEach((l, i) => (l.rotation.x = 0.45 - leverK * (0.95 + i * 0.04)));
       // (Chewie in over them a moment ahead of you, and easing back once the ship's away)
       launch.k += ((launching ? smooth((lt + 500) / 900) * (1 - smooth((lt - 6000) / 3000)) : 0) - launch.k) * Math.min(1, dt * 3);
       chewie?.update(dt);
+      // you: both hands on the yoke, the right off it to the levers and back,
+      // over the console in an arc; leaning in with it (not with reduced motion)
+      if (pilot) {
+        const k = moves.reach;
+        knobAt(0, palmA);
+        knobAt(1, palmB);
+        palmA.add(palmB).multiplyScalar(0.5).add(PALM_LIFT);
+        rightHand.at.lerpVectors(grips.right, palmA, k).y += 0.07 * Math.sin(Math.PI * k);
+        pilot.set({ lean: reduced ? 0 : moves.lean, left: leftHand, right: rightHand });
+        pilot.update(dt);
+      }
       world.spin(dt);
-      leverK += (want - leverK) * Math.min(1, dt * 18);
-      levers.forEach((l, i) => (l.rotation.x = 0.45 - leverK * (0.95 + i * 0.04)));
       leverRing.material.opacity = launching ? Math.max(0, leverRing.material.opacity - dt * 3) : 0.18 + 0.14 * Math.sin(t * 2.4);
 
       // the jump: stars, the tunnel, its light on everything inside
@@ -667,7 +732,9 @@ export async function build({ rich, level, coarse, renderer }) {
       glare.k = pre;
       const k = hyper.light(jumpColor, { throttle: launching ? throttle : 0, tunnel });
       jump.color.copy(jumpColor);
-      jump.intensity = (k > 0 ? 1.6 : 0) + snap * 6;
+      // (the jump's light on everything inside: enough to turn it blue, not
+      // so much that the brushed metal goes white)
+      jump.intensity = (k > 0 ? 1.1 : 0) + snap * 3.5;
       key.intensity = 2.4 * (0.3 + 0.7 * pre);
       glassLight.setRGB(1, 0.95, 0.88).lerp(blue, clamp01(tunnel + throttle * 0.3));
       glassM.userData.setLight?.(glassLight);
@@ -675,6 +742,7 @@ export async function build({ rich, level, coarse, renderer }) {
     },
     dispose() {
       chewie?.dispose();
+      pilot?.dispose();
       renderer.shadowMap.enabled = false;
       tex?.dispose();
       togGeo.dispose();

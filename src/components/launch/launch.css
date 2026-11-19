@@ -22,11 +22,29 @@
    keep clear of it. */
 .welcome,
 .launch-arrive {
+  /* The frame's scale: a laptop's 1280 by 720 is 12.8 px of it, a 1080p
+     screen's 19.2, and its sizes grow between them, a phone's held at the
+     house's own (the min of each clamp below). The lesser of the width and
+     the height as a 16:9 screen's width, so a wide short window or a tall
+     narrow one is sized by its shorter side. */
+  --u: min(1vw, 1.78svh);
+  /* the house's type tokens (src/index.css) at the frame's scale: the same
+     at a laptop's size and under it, a quarter more at 1080p, capped */
+  --fs-xs: clamp(0.8125rem, 8px + 0.39 * var(--u), 1.0625rem);
+  --fs-sm: clamp(0.875rem, 9px + 0.39 * var(--u), 1.125rem);
+  --fs-md: clamp(0.9375rem, 9px + 0.47 * var(--u), 1.25rem);
+  --fs-base: clamp(1rem, 10px + 0.47 * var(--u), 1.3125rem);
+  --fs-lead: clamp(1.0625rem, 11px + 0.625 * var(--u), 1.5625rem);
+  --fs-display-3: clamp(1.8rem, 20px + 1.67 * var(--u), 4rem);
+  /* the column: 1080 px to a laptop, wider on a bigger screen */
+  --col-w: clamp(1080px, 84 * var(--u), 1560px);
   --pad-l: max(20px, env(safe-area-inset-left));
   --col-pad: clamp(0px, 4vw, 48px);
   --rim-in: 32.3vmax;
-  --clear: calc(100vw - var(--rim-in) - var(--pad-l) - max(0px, (100vw - 2 * var(--pad-l) - 1080px) / 2) - var(--col-pad) - 48px);
+  --clear: calc(100vw - var(--rim-in) - var(--pad-l) - max(0px, (100vw - 2 * var(--pad-l) - var(--col-w)) / 2) - var(--col-pad) - 48px);
   --horizon-h: clamp(96px, 22vmax, 240px);
+  /* (with the planet at the foot: how much of it shows under its rim) */
+  --band: clamp(56px, 9vmax, 112px);
   --room: var(--clear); /* (a length, for the title's size: --clear is a percentage with the planet at the foot) */
 }
 .welcome {
@@ -71,7 +89,7 @@
 
 .welcome-main {
   position: relative;
-  width: min(1080px, 100%);
+  width: min(var(--col-w), 100%);
   margin: auto;
   padding: clamp(8px, 5vh, 56px) var(--col-pad);
 }
@@ -92,7 +110,7 @@
   max-width: min(12ch, var(--clear));
   margin-top: clamp(0.5rem, 2.2vh, 1.1rem);
   /* (two lines where the room allows: its longer line, “can fly through”, is about 8.3 of its size wide) */
-  font-size: min(clamp(2.2rem, min(7vw, 10.5vh), 5.2rem), calc(var(--room) / 8.5));
+  font-size: min(clamp(2.2rem, min(7vw, 10.5vh), max(5.2rem, 5.4 * var(--u))), calc(var(--room) / 8.5));
   font-stretch: 125%;
   font-weight: 680;
   letter-spacing: -0.035em;
@@ -102,7 +120,7 @@
 .welcome-text { max-width: min(48ch, var(--clear)); margin-top: clamp(0.75rem, 2.6vh, 1.4rem); color: var(--text-body); font-size: var(--fs-lead); line-height: 1.55; }
 
 /* the intro's parts, a hairline with a mark at each */
-.welcome-route { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); max-width: min(780px, var(--clear)); margin-top: clamp(1rem, 4vh, 2.25rem); list-style: none; }
+.welcome-route { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); max-width: min(max(780px, 61 * var(--u)), var(--clear)); margin-top: clamp(1rem, 4vh, 2.25rem); list-style: none; }
 .welcome-route li { position: relative; display: grid; align-content: start; gap: 0.2rem; padding: 1rem 1.25rem 0 0; border-top: 1px solid var(--border-strong); }
 .welcome-route li::before { content: ''; position: absolute; top: -4px; left: 0; width: 7px; height: 7px; border-radius: 50%; background: #04050a; box-shadow: 0 0 0 1.5px var(--border-strong); }
 .welcome-route li:first-child::before { background: var(--saber); box-shadow: 0 0 0 4px color-mix(in srgb, var(--saber) 22%, transparent); }
@@ -110,6 +128,10 @@
 .welcome-route-text { color: var(--muted); font-size: var(--fs-xs); line-height: 1.45; }
 
 .welcome-buttons { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-top: clamp(1.25rem, 4.5vh, 2.5rem); }
+/* (the big buttons at the frame's scale, where they're .btn-lg's size at all) */
+@media (min-width: 640px) {
+  .welcome .btn-lg { min-height: clamp(50px, 3.9 * var(--u), 64px); padding-inline: clamp(1.45rem, 1.8 * var(--u), 2.1rem); }
+}
 .welcome-alt { margin-top: clamp(0.75rem, 2vh, 1.1rem); color: var(--muted); font-size: var(--fs-sm); }
 .welcome-alt .link { position: relative; color: var(--text); font-weight: 600; }
 /* a thumb gets 44 px round the one-line link, as the house's controls do */
@@ -118,7 +140,7 @@
 
 /* whose worlds these are: the foot of the window, quiet, read by whoever
    wants it (and by a screen reader in its place after the buttons) */
-.welcome-fine { --pad: var(--col-pad); position: relative; width: min(calc(min(1080px, 100%) - 2 * var(--pad)), var(--clear)); margin: 0 auto 0 calc((100% - min(1080px, 100%)) / 2 + var(--pad)); padding-top: 0.9rem; border-top: 1px solid var(--border); color: var(--muted); font-size: 0.75rem; line-height: 1.55; animation: welcome-rise 0.7s 420ms var(--ease-out) both; } /* (0.75 rem: under the shell's floor on purpose, the small print it is) */
+.welcome-fine { --pad: var(--col-pad); position: relative; width: min(calc(min(var(--col-w), 100%) - 2 * var(--pad)), var(--clear)); margin: 0 auto 0 calc((100% - min(var(--col-w), 100%)) / 2 + var(--pad)); padding-top: 0.9rem; border-top: 1px solid var(--border); color: var(--muted); font-size: 0.75rem; line-height: 1.55; animation: welcome-rise 0.7s 420ms var(--ease-out) both; } /* (0.75 rem: under the shell's floor on purpose, the small print it is) */
 
 .welcome-on-touch { display: none; }
 @media (pointer: coarse) {
@@ -127,18 +149,22 @@
   .welcome-on-touch { display: inline; }
 }
 
-/* a phone, or a narrow window: the sun rises at the foot instead, the route's
-   notes go (the sentence above keeps the sound; the cockpit shows its own
-   keys) and the buttons take the width */
 /* A phone, or a window taller than it's wide (a tablet held upright): the
    planet rises at the foot instead, in the flow after everything else, so
-   the words never sit over it (a column that scrolls ends on it); its rim
-   at about 40% down its strip. The column takes its width. */
+   the words never sit over it (a column that scrolls ends on it). Its strip
+   takes whatever height the words leave, never less than its band and the
+   glow over the rim, so it never makes the page scroll where the words
+   alone would fit; the rim stays a band above the strip's foot, however
+   tall it grows, and the strip's top fades in rather than cutting the glow.
+   The column takes its width and the words sit in the middle of the room
+   they're given. */
 @media (max-width: 640px), (max-aspect-ratio: 9/10) {
   .welcome,
   .launch-arrive { --clear: 100%; --room: calc(100vw - 2 * var(--pad-l)); }
-  .welcome-horizon { position: relative; z-index: auto; inset: auto; flex: none; height: var(--horizon-h); margin: 12px calc(-1 * max(20px, env(safe-area-inset-right))) calc(-1 * max(16px, env(safe-area-inset-bottom))) calc(-1 * var(--pad-l)); }
-  .welcome-sun { top: calc(var(--horizon-h) * 0.4 - 11.7vmax); right: auto; left: 50%; translate: -50% 0; }
+  .welcome-main { flex: 1 0 auto; display: flex; flex-direction: column; justify-content: center; }
+  .welcome-horizon { position: relative; z-index: auto; inset: auto; flex: 1 0 calc(var(--band) + 28px); margin: 12px calc(-1 * max(20px, env(safe-area-inset-right))) calc(-1 * max(16px, env(safe-area-inset-bottom))) calc(-1 * var(--pad-l)); mask-image: linear-gradient(to bottom, transparent, #000 24px); }
+  /* (the disc's top is 11.7vmax under the sun's, its foot 66.3vmax over the sun's own) */
+  .welcome-sun { top: auto; bottom: calc(var(--band) - 66.3vmax); right: auto; left: 50%; translate: -50% 0; }
   .welcome-sun::after { box-shadow: inset 0 2px 0 color-mix(in srgb, var(--saber) 55%, transparent), inset 0 14px 40px -18px color-mix(in srgb, var(--saber) 70%, transparent); }
   @keyframes welcome-sun { from { opacity: 0; transform: translateY(4vmax); } }
 }
@@ -146,13 +172,37 @@
   /* a phone: the planet between the column and the small print, so the
      first screenful has it (the small print, read by whoever wants it,
      under it), its strip fading out at its foot rather than cut */
-  .welcome-horizon { order: 1; margin-bottom: 8px; mask-image: linear-gradient(to bottom, #000 72%, transparent); }
+  .welcome-horizon { order: 1; margin-bottom: 8px; mask-image: linear-gradient(to bottom, transparent, #000 24px, #000 72%, transparent); }
   .welcome-fine { order: 2; }
-  .welcome-route li { padding-right: 0.75rem; }
-  .welcome-route-title { font-size: var(--fs-sm); }
+  .welcome-main { padding-block: clamp(4px, 2.5svh, 24px); }
+  .welcome-title { margin-top: 0.6rem; }
+  .welcome-text { margin-top: 0.75rem; font-size: var(--fs-md); line-height: 1.5; }
+  .welcome-route { margin-top: clamp(0.9rem, 3svh, 1.5rem); }
+  .welcome-route li { padding: 0.75rem 0.75rem 0 0; }
+  .welcome-route-title { font-size: var(--fs-sm); line-height: 1.3; }
   .welcome-route-text { display: none; }
+  .welcome-buttons { gap: 0.6rem; margin-top: clamp(1rem, 3.5svh, 1.75rem); }
   .welcome-buttons .btn { flex: 1 1 100%; }
   .welcome-alt { text-align: center; }
+  .welcome .launch-ready { justify-content: center; margin-top: clamp(0.75rem, 2.5svh, 1.25rem); }
+}
+/* a small phone (an iPhone SE, 320 by 568 less its bars): a little tighter
+   still, so the ways in and the line under them are in the first screenful */
+@media (max-width: 640px) and (max-height: 640px) {
+  .welcome-text { font-size: var(--fs-sm); }
+  .welcome-buttons .btn { min-height: 44px; }
+  .launch-tour-art { width: min(80px, 24vw, 13svh); }
+  .launch-tour-title { font-size: 1.65rem; }
+}
+/* (the line under the buttons on one line on a phone: a shorter bar, and
+   shorter still on the narrowest) */
+@media (max-width: 640px) {
+  .welcome .launch-ready-bar { width: 64px; }
+  .welcome .launch-ready-text { white-space: nowrap; }
+}
+@media (max-width: 359px) {
+  .welcome .launch-ready { gap: 0.5rem; }
+  .welcome .launch-ready-bar { width: 32px; }
 }
 /* a laptop's window (1280 by 720): the column a little tighter top and
    bottom, so the small print is in the first screenful too */
@@ -160,7 +210,7 @@
   .welcome-main { padding-block: clamp(8px, 3vh, 28px); }
 }
 /* a short window (a laptop at 125% or 150%): tighter, and the notes go */
-@media (max-height: 600px) {
+@media (max-height: 600px) and (min-width: 641px) {
   .welcome-route-text { display: none; }
   .welcome-route li { padding-top: 0.75rem; }
 }
@@ -168,8 +218,10 @@
    and the buttons sit side by side where they fit */
 @media (max-height: 420px) {
   .welcome-route { display: none; }
-  .welcome-text { font-size: var(--fs-md); }
+  .welcome-text { margin-top: 0.6rem; font-size: var(--fs-md); line-height: 1.45; }
+  .welcome-buttons { margin-top: 1rem; }
   .welcome-buttons .btn { flex: 0 1 auto; }
+  .welcome .btn-lg { min-height: 44px; }
 }
 /* the shortest (a laptop at 250% or more): the title on one line and the
    sentence gone, so the ways in stay in the first screenful down to about
@@ -195,10 +247,16 @@
 .launch-ready[data-ready] .launch-ready-text { color: var(--text-body); }
 
 /* The quick tour (QuickTour.jsx): the welcome's frame, a card at a time; the
-   drawing beside the words on a wide window, over them on a narrow one. */
+   drawing beside the words on a wide window, over them on a narrow one.
+   The cards are dealt into one cell of a grid (the deck), so it's as tall
+   as the tallest and the buttons under it don't move as the cards change;
+   the one shown rises in each time it's dealt. */
+.launch-tour-main { --tour-w: min(max(780px, 61 * var(--u)), var(--clear)); }
 .launch-tour-count { margin-left: auto; padding-left: 1rem; color: var(--muted); font-weight: 500; font-variant-numeric: tabular-nums; }
-.launch-tour-main .welcome-name { max-width: min(780px, var(--clear)); }
-.launch-tour-card { display: grid; grid-template-columns: minmax(120px, 200px) minmax(0, 1fr); align-items: center; gap: clamp(1.25rem, 4vw, 3rem); max-width: min(780px, var(--clear)); margin-top: clamp(1rem, 4vh, 2.5rem); animation: welcome-rise 0.5s var(--ease-out) both; }
+.launch-tour-main .welcome-name { max-width: var(--tour-w); }
+.launch-tour-deck { display: grid; max-width: var(--tour-w); margin-top: clamp(1rem, 4vh, 2.5rem); }
+.launch-tour-card { display: grid; grid-area: 1 / 1; grid-template-columns: minmax(120px, max(200px, 15.6 * var(--u))) minmax(0, 1fr); align-content: center; align-items: center; gap: clamp(1.25rem, 4vw, 3rem); visibility: hidden; }
+.launch-tour-card[data-on] { visibility: visible; animation: welcome-rise 0.5s var(--ease-out) both; }
 .launch-tour-art { width: 100%; height: auto; color: var(--text); }
 .launch-tour-art .art-line { fill: none; stroke: color-mix(in srgb, var(--text) 38%, transparent); stroke-width: 1.5; }
 .launch-tour-art .art-faint { opacity: 0.55; }
@@ -211,7 +269,7 @@
 .launch-tour-text { max-width: 48ch; margin-top: 0.75rem; color: var(--text-body); font-size: var(--fs-lead); line-height: 1.55; }
 .launch-tour-keys { display: grid; gap: 0.5rem; margin-top: 1rem; color: var(--text-body); font-size: var(--fs-md); list-style: none; }
 .launch-tour-keys li { display: flex; align-items: center; gap: 0.75rem; }
-.launch-tour-caps { display: inline-flex; flex: none; gap: 0.25rem; min-width: 7.5rem; }
+.launch-tour-caps { display: inline-flex; flex: none; gap: 0.25rem; min-width: 8em; }
 .launch-tour-after { max-width: 48ch; margin-top: 1rem; color: var(--muted); font-size: var(--fs-sm); line-height: 1.5; }
 .launch-tour-dots { display: flex; gap: 0.5rem; margin-top: clamp(1.25rem, 4vh, 2.25rem); }
 .launch-tour-dots span { width: 24px; height: 3px; border-radius: 2px; background: color-mix(in srgb, var(--text) 18%, transparent); transition: background-color var(--t-base) ease; }
@@ -219,19 +277,43 @@
 .launch-tour-dots span[data-on] { background: var(--saber); }
 .launch-tour-buttons { margin-top: clamp(0.75rem, 2.5vh, 1.25rem); }
 .launch-tour-skips { display: flex; flex-wrap: wrap; gap: 0.5rem 1.5rem; }
+/* a phone: the drawing small over the words, the words a step down, Next
+   and Back side by side (Next the wider) */
 @media (max-width: 640px) {
-  .launch-tour-card { grid-template-columns: 1fr; gap: 1rem; }
-  .launch-tour-art { width: min(132px, 36vw); }
+  .launch-tour-deck { margin-top: clamp(0.75rem, 3svh, 1.5rem); }
+  .launch-tour-card { grid-template-columns: 1fr; align-content: start; align-items: start; gap: 0.75rem; }
+  .launch-tour-art { width: min(104px, 28vw, 15svh); }
+  .launch-tour-text { margin-top: 0.5rem; font-size: var(--fs-md); line-height: 1.5; }
+  .launch-tour-keys { margin-top: 0.75rem; }
   .launch-tour-caps { min-width: 6rem; }
+  .launch-tour-after { margin-top: 0.75rem; }
+  .launch-tour-dots { margin-top: clamp(0.9rem, 3svh, 1.5rem); }
+  /* (Back drops under Next only where Next's words need the row: a 320 px phone's last card) */
+  .welcome-buttons.launch-tour-buttons .btn-primary { flex: 1 1 auto; }
+  .welcome-buttons.launch-tour-buttons .btn-ghost { flex: 0 0 auto; }
   .launch-tour-skips { justify-content: center; }
 }
-@media (max-height: 600px) {
+/* a short laptop's window: the drawing smaller, still beside the words */
+@media (max-height: 600px) and (min-width: 641px) {
   .launch-tour-art { width: min(120px, 22vh); }
   .launch-tour-card { grid-template-columns: auto minmax(0, 1fr); }
 }
+/* very short (a phone on its side, a laptop at 200%): no drawing, the title
+   and the words a step down, and the skips on the buttons' line */
 @media (max-height: 420px) {
   .launch-tour-art { display: none; }
+  .launch-tour-deck { margin-top: 0.5rem; }
   .launch-tour-card { grid-template-columns: 1fr; }
+  .launch-tour-title { font-size: min(var(--fs-display-3), 9svh); }
+  .launch-tour-text { margin-top: 0.4rem; font-size: var(--fs-md); line-height: 1.45; }
+  .launch-tour-keys { gap: 0.25rem; margin-top: 0.5rem; }
+  .launch-tour-after { margin-top: 0.5rem; }
+  .launch-tour-dots { margin-top: 0.75rem; }
+  .launch-tour-buttons,
+  .launch-tour-skips { display: inline-flex; vertical-align: middle; }
+  .launch-tour-buttons { margin-top: 0.6rem; }
+  .welcome-alt.launch-tour-skips { margin: 0.6rem 0 0 1.25rem; }
+  .welcome .launch-ready { margin-top: 0.6rem; }
 }
 @media (prefers-reduced-motion: reduce) {
   .launch-tour-card { animation: none; }

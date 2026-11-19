@@ -17,7 +17,8 @@ export const cockpitPossible = () => typeof window !== 'undefined' && resolve3D(
 
 // `crew`: the vehicle's crew too (Chewie's 4 MB, the game's light cut and
 // the drivers' clips; 0.8 when he was Meshy's, and on a desktop his full cut
-// comes after him, 11.5 MB more, put on as he sits): not while the welcome's
+// comes after him, 11.5 MB more, put on as he sits; and the game's Han, the
+// pilot you are, 3 MB, his light cut only): not while the welcome's
 // still asking whether you want the intro at all, only once it's begun
 export function preloadCockpit(first = 'falcon', { crew = true } = {}) {
   if (!mod && !pending) {

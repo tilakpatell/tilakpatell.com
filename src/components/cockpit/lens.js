@@ -20,7 +20,9 @@
 //   vignette   and grain, the film's
 //
 // It is still the one pass it was (one GLSL site): what three's own does,
-// plus this, in a shader of the same shape.
+// plus this, in a shader of the same shape; but where three's would draw its
+// Neutral curve it draws the universe map's shoulder (`shoulder`, below:
+// the same curve without its toe), the launches' grade (./grade.js).
 //
 // lensPass(lens, { dirt }) → { pass, set(state), resize(w, h), dispose() }
 //   lens: a level's `lens` row; dirt: false for none (a test, or a level without)
@@ -74,6 +76,18 @@ varying vec2 vUv;
 // 1 where only the world outside the glass was drawn
 float outside(vec2 p) {
   return step(0.99999, texture2D(tDepth, clamp(p, vec2(0.0005), vec2(0.9995))).r);
+}
+
+// The universe map's curve (universe/post.js), so the flash clears onto a
+// map drawn the same way: Khronos' Neutral without its toe, everything under
+// 0.8 left as it was drawn and only what's brighter rounded off towards
+// white, its hue kept (a blue tunnel stays blue; three's ACES took it white)
+vec3 shoulder(vec3 c) {
+  float peak = max(c.r, max(c.g, c.b));
+  if (peak < 0.8) return c;
+  float top = 1.0 - 0.04 / (peak - 0.6);
+  c *= top / peak;
+  return mix(c, vec3(top), 1.0 - 1.0 / (0.15 * (peak - top) + 1.0));
 }
 
 float hash(vec2 p) {
@@ -163,7 +177,7 @@ ${
   #elif defined(AGX_TONE_MAPPING)
     gl_FragColor.rgb = AgXToneMapping(gl_FragColor.rgb);
   #elif defined(NEUTRAL_TONE_MAPPING)
-    gl_FragColor.rgb = NeutralToneMapping(gl_FragColor.rgb);
+    gl_FragColor.rgb = shoulder(gl_FragColor.rgb * toneMappingExposure);
   #elif defined(CUSTOM_TONE_MAPPING)
     gl_FragColor.rgb = CustomToneMapping(gl_FragColor.rgb);
   #endif

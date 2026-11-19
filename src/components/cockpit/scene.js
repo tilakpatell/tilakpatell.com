@@ -7,7 +7,10 @@
 // chain, multisampled, with bloom and the lens (./lens.js: at the top, the
 // speed blur at the jump, a sun's glare, the glass's dirt); low, phones and
 // software WebGL one pass straight to the screen. The nebula is baked to a
-// cube once a vehicle is built (./bake.js).
+// cube once a vehicle is built (./bake.js). Each launch's picture is graded
+// as ./grade.js says (the map's hue-keeping curve, and the lens's mip-chain
+// bloom, lib/three/bloomChain), and its metal reflects a probe of its own
+// cabin (./cabin.js), not a white studio.
 //
 // A vehicle can turn your head itself during the launch (the RV looks out at
 // its wings): its aim(t, plan) is a [yaw, pitch] added to wherever you're
@@ -25,8 +28,7 @@
 import * as THREE from 'three';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
-import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
-import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
+import { ChainBloomPass } from '../../lib/three/bloomChain';
 import { createRenderer, disposeTree, maxRatio, precompile, precompilePasses, revealAll, texturesUnder, uploadTextures } from '../../lib/three/renderer';
 import { createLoop } from '../../lib/three/loop';
 import { fence, uploadSlices } from '../../lib/three/gpuWork';
@@ -40,6 +42,8 @@ import { cockpitSound } from './sounds';
 import { levelOf, ratioFor } from './levels';
 import { lensAt, lensPass } from './lens';
 import { bakeSkies } from './bake';
+import { bloomSize, gradeOf, whiteOutAt } from './grade';
+import { cabinEnvironment } from './cabin';
 
 const BUILD = {
   falcon: () => import('./vehicles/falcon'),
@@ -102,8 +106,8 @@ export function run(canvas, opts) {
     alpha: false,
     antialias: !rich,
     ratio: ratioFor(row, window.innerWidth, window.innerHeight),
-    toneMapping: THREE.ACESFilmicToneMapping,
-    exposure: 1,
+    toneMapping: THREE.NeutralToneMapping,
+    exposure: gradeOf(opts.vehicle).exposure,
     onLost: () => fail('context lost'),
     onSlow: () => lower(),
   });
@@ -115,10 +119,9 @@ export function run(canvas, opts) {
   const front = inFront('drawing');
   let launchHold = null;
 
+  // (what a vehicle without a sky of its own reflects: a dim cabin, ./cabin.js)
   const pmrem = new THREE.PMREMGenerator(renderer);
-  const room = new RoomEnvironment();
-  const roomEnv = pmrem.fromScene(room, 0.04).texture;
-  room.dispose?.();
+  const roomEnv = cabinEnvironment(pmrem);
 
   const inside = new THREE.Scene();
   const outside = new THREE.Scene();
@@ -150,7 +153,7 @@ export function run(canvas, opts) {
     composer = new EffectComposer(renderer, target);
     composer.addPass(passOut);
     composer.addPass(passIn);
-    bloom = new UnrealBloomPass(new THREE.Vector2(256, 256), 0.55, 0.42, 0.82);
+    bloom = new ChainBloomPass(new THREE.Vector2(256, 256), gradeOf(opts.vehicle).bloom);
     composer.addPass(bloom);
     lens = lensPass(row.lens);
     // (drawn to the screen, it leaves the buffers where they are: every pass
@@ -171,6 +174,14 @@ export function run(canvas, opts) {
     trailsOff = true;
     if (bloom) bloom.enabled = false;
   }
+  const setBloom = (b) => {
+    bloom.threshold = b.threshold;
+    bloom.knee = b.knee;
+    bloom.strength = b.strength;
+    bloom.veil = b.veil;
+    bloom.radius = 1 - b.sharpness;
+    bloom.scale = 1;
+  };
 
   // ── the vehicle ──
   let v = null; // the built vehicle
@@ -203,6 +214,8 @@ export function run(canvas, opts) {
     if (!composer) return;
     composer.setPixelRatio(drawnRatio);
     composer.setSize(size.w, size.h);
+    // (the chain's first level at half the frame, not the whole of it the composer gives every pass)
+    bloom?.setSize(...bloomSize(view.x, view.y));
     lens?.resize(view.x, view.y);
   }
   // A horizontal field of view the cockpit is framed for, kept within sane
@@ -310,7 +323,6 @@ export function run(canvas, opts) {
   const flashColor = new THREE.Color();
   const shake = new THREE.Vector2();
   let drawn = 0; // frames drawn, for the shadows' pace
-  const base = { bloom: 0.55 }; // the vehicle's own, for the white-out
   let whiteOut = true; // (its flash a light one: the RV's is the night)
   let casters = []; // the vehicle's lights that throw shadows: { light, want }
   let boarded = false; // sat down: drawn, warmed, faded in
@@ -439,6 +451,9 @@ export function run(canvas, opts) {
       frameLens();
 
       v.update(dt, clock, { launching: L.on, t: L.t, phase: ph, throttle, plan: L.plan, look });
+      // (a vehicle you see out of its pilot's eyes: the eye rides the pilot's
+      // head, so a lean in takes the view with it; ./pilot.js)
+      if (v.eyeAt) v.eyeAt(rig.position);
       sky?.update();
       sound?.set({ throttle, t: L.t, launching: L.on });
 
@@ -457,9 +472,9 @@ export function run(canvas, opts) {
       // (pushed up in the lens, its bloom too), so the jump burns into the
       // white rather than a veil fading over it; the RV's goes to night
       if (lens && L.on && whiteOut) {
-        const f = flashAt(L.plan, L.t);
-        lens.set({ lift: 1 + 2.5 * f * f });
-        if (bloom) bloom.strength = base.bloom * (1 + 2.5 * f);
+        const w = whiteOutAt(flashAt(L.plan, L.t));
+        lens.set({ lift: w.lift });
+        if (bloom) bloom.scale = w.glow;
       }
       // The shadows at the vehicle's pace (SHADOWS), where the vehicle wants
       // them at all: one that turns a light's shadow off itself (the RV's,
@@ -613,7 +628,9 @@ export function run(canvas, opts) {
     try {
       const mod = await BUILD[id]();
       if (building !== mine || stopped) return;
-      const built = await mod.build({ renderer, pmrem, rich, level: row, reduced, coarse: coarse(), say: (line) => cb.onLine?.(line), added });
+      // (`pilot`: you're sat as the game's own figure, its hands on the controls,
+      // here in the launch; the universe map's cockpit view goes without)
+      const built = await mod.build({ renderer, pmrem, rich, level: row, reduced, coarse: coarse(), say: (line) => cb.onLine?.(line), added, pilot: true });
       if (building !== mine || stopped) {
         built.dispose?.();
         disposeTree(built.inside);
@@ -628,17 +645,15 @@ export function run(canvas, opts) {
         inside.environment = v.environment;
         inside.environmentIntensity = v.envIntensity ?? 0.35;
       } else inside.environmentIntensity = v.envIntensity ?? 0.35;
-      renderer.toneMapping = v.toneMapping ?? THREE.ACESFilmicToneMapping;
-      renderer.toneMappingExposure = v.exposure ?? 1;
+      // the launch's grade (./grade.js): its curve, its exposure, its bloom
+      const grade = gradeOf(id);
+      renderer.toneMapping = grade.tone === 'none' ? THREE.NoToneMapping : THREE.NeutralToneMapping;
+      renderer.toneMappingExposure = grade.exposure;
       flashColor.set(v.flash ?? '#eaf3ff');
       // (linear: the cruiser's green sums to 1.5, the RV's night to 0.01)
       whiteOut = flashColor.r + flashColor.g + flashColor.b > 0.5;
       lens?.set({ lift: 1 });
-      if (bloom) {
-        bloom.strength = base.bloom = v.bloom?.[0] ?? 0.55;
-        bloom.radius = v.bloom?.[1] ?? 0.42;
-        bloom.threshold = v.bloom?.[2] ?? 0.82;
-      }
+      if (bloom) setBloom(grade.bloom);
       rig.position.set(...v.eye);
       look.rest = [...(v.rest ?? [0, 0])];
       look.range = [...(v.range ?? [1, 0.4])];
@@ -778,6 +793,17 @@ export function run(canvas, opts) {
     info() {
       if (!import.meta.env.DEV) return null;
       return { t: L.t, programs: renderer.info.programs?.length ?? 0, textures: renderer.info.memory.textures, geometries: renderer.info.memory.geometries, ...stats };
+    },
+    // (development: a grade tried on the one drawn, for screenshots:
+    // { tone: 'neutral' | 'none' | 'aces' | 'agx', exposure, env, bloom: {…} }, any part)
+    tune(p = {}) {
+      if (!import.meta.env.DEV) return;
+      const TONES = { neutral: THREE.NeutralToneMapping, none: THREE.NoToneMapping, aces: THREE.ACESFilmicToneMapping, agx: THREE.AgXToneMapping };
+      if (p.tone) renderer.toneMapping = TONES[p.tone] ?? THREE.NeutralToneMapping;
+      if (p.exposure != null) renderer.toneMappingExposure = p.exposure;
+      if (p.env != null) inside.environmentIntensity = p.env;
+      if (p.bloom && bloom) setBloom({ ...gradeOf(vid).bloom, ...p.bloom });
+      kick();
     },
     // (development: jump to a moment of the launch, for screenshots)
     seek(ms) {

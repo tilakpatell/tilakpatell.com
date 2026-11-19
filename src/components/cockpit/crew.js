@@ -166,9 +166,11 @@ export function prefetchGameCrew(kind) {
 // light cut first, the level's put on the same bones as it lands
 // (lib/three/walrus.js's swapBody): a hero's full cut is 10 to 45 MB, and
 // nobody waits that long in the seat. Its materials are the game's own, as
-// they are, each the copy's, freed with it.
-export async function loadGameCrew(kind, { clip = 'ride.landspeeder', height = bodyOf(kind)?.tall, hips = [0, 0.5, 0], face = 0, pose = null } = {}) {
-  const [first, next] = cutsOfKind(kind);
+// they are, each the copy's, freed with it. `full: false` keeps the light cut
+// (the pilot, seen as two arms and a lap: ./pilot.js).
+export async function loadGameCrew(kind, { clip = 'ride.landspeeder', height = bodyOf(kind)?.tall, hips = [0, 0.5, 0], face = 0, pose = null, full = true } = {}) {
+  const [first, more] = cutsOfKind(kind);
+  const next = full ? more : null;
   if (!first) return null;
   const url = bodyOf(kind).url;
   const body = await loadWalrusBody(first, { packs: SEAT_PACKS })
