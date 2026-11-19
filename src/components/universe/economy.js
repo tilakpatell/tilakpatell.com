@@ -76,6 +76,7 @@ export const EARN = {
   found: { credits: 30, xp: 6 },
   standingUp: { credits: 100, xp: 25 }, // a good standing level reached
   allyMade: { credits: 25, xp: 10 },
+  data: { credits: 5, xp: 1 }, // (exploration data sold at a dock, in fives: a credit of data a credit, and a fifth as much xp; explore/record.js)
 };
 // What a deed (standing.js's, as the scene notes it) pays, as an EARN key,
 // or null. Only the deeds that help pay: hurting the law, the ordinary ships
