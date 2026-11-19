@@ -2,13 +2,14 @@
 // the 3D scene, the SVG mini-map and the world pages' links all use it.
 //
 // A sun sits in the middle of the disc (x, z) with the site's own pages as
-// stations on a ring round it: the home system, HOME_RADIUS across. The
-// fandoms are planets far out in deep space, scattered on a golden-angle
-// spiral that grows with their order, a thousand and more map units apart, each at
-// its own height: getting between them is a journey (ship.js's pulse
-// drive), and a fight (hunters.js). deep.js keeps them clear of its wonders.
+// stations on a ring round it: the home system, HOME_RADIUS across, in the
+// Core (sector 0, 0, 0), where every new pilot starts. The fandoms are
+// planets out in the Expanse, in neighbourhoods one to three and a half
+// sectors away (neighbourhoods.js), each at its neighbourhood's centre plus
+// its own offset: getting there is a jump (trips.js), and a fight
+// (hunters.js).
 //
-// The map has sectors: the main one (all of the above, round the origin)
+// The map has sectors: the main one (the Core and everything round it)
 // and the Rick and Morty sector, a region of space of its own far past the
 // main map's rim (SECTORS.rickmorty.origin), with the Citadel at its middle
 // (deep.js) and the show's worlds (universes.js's MOONS) on a spiral of its
@@ -18,17 +19,12 @@
 // per-sector is the edge the ship's turned back at (ship.js) and the chart.
 
 import { MOONS, UNIVERSES, byId } from './universes';
+import { memberAt } from './neighbourhoods';
 import { HOME_SPREAD, SPREAD } from './scale';
 import { parseSectorKey, sectorAt, sectorCentre, sectorKey } from '../../lib/space/address';
 
 const GOLDEN = Math.PI * (3 - Math.sqrt(5)); // ≈ 137.5°
-// (the first two by scale.js's SPREAD; the height stays as it was at the
-// spread to four, 1,120, so the highest world stays under deep space's
-// ceiling, deep.js's 1,400, and the disc only gets flatter as it widens)
-const FIRST = 2000 * SPREAD; // how far out the nearest fandom is
-const STEP = 330 * SPREAD; // and how much further each one after it
-const HEIGHT = 1120; // how far above or below the disc they go
-// (and the Rick and Morty sector's worlds round its middle, the same way)
+// the Rick and Morty sector's worlds round its middle, on a golden-angle spiral
 const SECTOR_FIRST = 900;
 const SECTOR_STEP = 450;
 const SECTOR_HEIGHT = 300;
@@ -113,11 +109,8 @@ export const POSITIONS = Object.fromEntries([
     const a = (i / core.length) * Math.PI * 2 + Math.PI / 2; // Home nearest the camera
     return [u.id, [RING * Math.cos(a), 3 * Math.sin(i * 2.1), RING * Math.sin(a)]];
   }),
-  ...fandoms.map((u, i) => {
-    const r = FIRST + STEP * i;
-    const a = i * GOLDEN + 0.32;
-    return [u.id, [r * Math.cos(a), HEIGHT * Math.sin(i * 2.4 + 1), r * Math.sin(a)]];
-  }),
+  // (each in its neighbourhood: neighbourhoods.js, which has every one)
+  ...fandoms.map((u) => [u.id, memberAt(u.id)]),
   // the Rick and Morty sector's worlds, on its own spiral round the Citadel
   ...MOONS.map((m, i) => {
     const r = SECTOR_FIRST + SECTOR_STEP * i;
@@ -131,8 +124,15 @@ export const BODIES = [...ORDER, ...MOONS.map((m) => m.id)];
 // which sector each body is in
 export const SECTOR_OF = Object.fromEntries(BODIES.map((id) => [id, byId(id).sector ?? 'main']));
 
-// how far out the furthest fandom reaches (the main sector's: the mini-map's scale)
-export const MAP_RADIUS = Math.max(...ORDER.map((id) => Math.hypot(POSITIONS[id][0], POSITIONS[id][2]) + REACH[id]));
+// The Core's extent: how far out the hand-made map reached before the
+// fandoms moved out to their neighbourhoods (the furthest fandom, then).
+// Frozen as a number: the Expanse's old middle layer keeps clear of it
+// (expanse/gen/sector.js, fingerprinted), and the mini-map, the lanes and
+// the chart's home view keep their scale. The wonders left round the Core
+// are inside it.
+export const MAP_RADIUS = 35862.144;
+// and how far out the furthest hand-made place reaches, for what frames them all
+export const UNIVERSE_RADIUS = Math.max(...ORDER.map((id) => Math.hypot(POSITIONS[id][0], POSITIONS[id][2]) + REACH[id]));
 // and each sector's, round its own middle (the chart's scale in it)
 export const SECTOR_RADIUS = Object.fromEntries(
   Object.values(SECTORS).map((sec) => [sec.id, sec.id === 'main' ? MAP_RADIUS : Math.max(...BODIES.filter((id) => SECTOR_OF[id] === sec.id).map((id) => Math.hypot(POSITIONS[id][0] - sec.origin[0], POSITIONS[id][2] - sec.origin[2]) + REACH[id]))]),

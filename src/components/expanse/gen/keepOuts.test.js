@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { PLACES, SECTORS, SECTOR_RADIUS, sectorOf } from '../../universe/shared/space';
+import { PLACES, SECTORS, SECTOR_RADIUS, mapSectorOf as sectorOf } from '../../universe/shared/space'; // (the Curve's or the main map's: a neighbourhood's places are out in the Expanse)
 import { HOME_KEEP, KEEP_OUTS, clearOfKeepOuts, keepOutsNear } from './keepOuts';
 
 const ids = (rows) => rows.map((r) => r.id);

@@ -74,7 +74,7 @@ export function fightLabel(at) {
   const r = regionAt(...xyz(at));
   if (!r) return 'Fighting in the void';
   if (r.name.startsWith('Near ')) return `Fighting near ${r.name.slice(5)}`;
-  return `Fighting in ${r.name[0].toLowerCase()}${r.name.slice(1)}`;
+  return `Fighting in ${r.name.replace(/^The /, 'the ')}`; // (“in the home system”, “in Earthside”)
 }
 
 // where the next skirmish is: a node (a ramp or a beacon) of the region

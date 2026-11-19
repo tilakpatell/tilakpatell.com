@@ -1,16 +1,13 @@
-// The universe map's neighbourhoods. Pure numbers, tested in Node:
-// waypoints.js sits its beacons at their hubs, the director (where you are)
-// and the roster (“Universe · Near Middle-earth”) read them.
+// The universe map's regions. Pure numbers, tested in Node: waypoints.js
+// sits its beacons at their hubs, the director (where you are) and the
+// roster (“Universe · Hero Reach”) read them.
 //
-// Since the spread (scale.js's SPREAD) the places sit 3,000 to 10,000 apart,
-// evenly over the disc: the fandoms on a golden-angle spiral and the wonders
-// between them. There are no natural clusters in that, so linking places
-// closer than a distance (single linkage) gives a region per place at any
-// distance short of one that chains half the map together. Instead the
-// places are grouped by complete linkage: the two groups whose furthest
-// members are nearest merge, again and again, until REGION_COUNT are left.
-// That keeps each region compact (nothing in it far from the rest) and the
-// count fixed, whatever moves on the map.
+// The fandoms live in neighbourhoods out in the Expanse (neighbourhoods.js),
+// and each neighbourhood is a region, named for it. The wonders left round
+// the Core (the Maw, Aurelia, Glacia, the Wanderer, the Graveyard) are
+// grouped by complete linkage, the two groups whose furthest members are
+// nearest merging again and again until CORE_GROUPS are left, each named
+// for its biggest member (“Near the Maw”).
 //
 // Each region has a hub, its beacon: the middle of its members weighted by
 // how far each reaches (the big ones pull it), lifted HUB_LIFT off the disc
@@ -23,13 +20,13 @@
 // nearest member within LINK of it (past that member's own reach), or null
 // out in the void between them.
 
-import { HOME_RADIUS, ORDER, POSITIONS, REACH, SUN, sectorOf } from './layout';
+import { HOME_RADIUS, ORDER, POSITIONS, REACH, SUN, mapSectorOf } from './layout';
 import { DEEP_SOLIDS, PLACES, wonderById } from './deep';
 import { byId } from './universes';
+import { NEIGHBOURHOODS, NEIGHBOURHOOD_OF } from './neighbourhoods';
 
 export const LINK = 2600;
 export const HUB_LIFT = 90;
-export const REGION_COUNT = 8;
 const CLEAR = 1.5; // a hub stays this many of a place's reaches from its middle
 
 const dist = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
@@ -37,7 +34,7 @@ const dist = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
 // the main sector's places out past the home system: the fandoms' planets
 // (the Star Wars gate one of them) and the wonders (the portal and the Maw
 // among them); the Rick and Morty sector is through its portal
-const FAR = PLACES.filter((p) => p.kind !== 'station' && sectorOf(...p.at) === 'main');
+const FAR = PLACES.filter((p) => p.kind !== 'station' && mapSectorOf(...p.at) === 'main');
 const STATIONS = ORDER.filter((id) => byId(id).kind === 'core');
 
 // what a hub must stay out of: every place by CLEAR of its reach, and
@@ -105,34 +102,32 @@ function clearOf(at) {
 // a world by its world's name (Middle-earth, not The Lord of the Rings), a wonder by its own
 const nameOf = (id) => byId(id)?.world ?? byId(id)?.label ?? wonderById(id)?.name ?? id;
 
-// The places put on the map after the regions were drawn (Hogwarts, on
-// 2026-10-21): left out of the clustering, so the regions, their hubs and
-// the beacons the fleet war's fronts are shared at stay where they were,
-// and each joins the region whose furthest member is nearest it (complete
-// linkage's own measure) as a member.
-export const LATE = new Set(['potter']);
+// The regions: the home system first, then a region per neighbourhood
+// (neighbourhoods.js: its members and its landmarks, named for it), then the
+// places left round the Core grouped by complete linkage. A region's id is
+// its biggest member's, as it always was (the fleet war's fronts and the far
+// fights are shared online by the beacons' ids: waypoints.js); its hub is
+// its members' middle, lifted and pushed clear (a region of one: out from
+// its place toward home).
+const CORE_GROUPS = 2; // how many regions the places left round the Core make
+export const REGION_COUNT = NEIGHBOURHOODS.length + CORE_GROUPS; // (besides the home system's)
+
+function regionOf(g, name, i) {
+  const biggest = g.reduce((a, b) => (b.reach > a.reach ? b : a));
+  const at = g.length > 1 ? centroid(g) : toward(g[0], ALONE);
+  const lifted = [at[0], at[1] + (i % 2 ? -HUB_LIFT : HUB_LIFT), at[2]];
+  return { id: biggest.id, name: name ?? `Near ${nameOf(biggest.id).replace(/^The /, 'the ')}`, members: g.map((p) => p.id), hub: clearOf(lifted) };
+}
 
 function build() {
-  const groups = cluster(
-    FAR.filter((p) => !LATE.has(p.id)),
-    REGION_COUNT,
-  )
-    .map((g) => ({ g, mid: centroid(g) }))
-    .sort((a, b) => Math.atan2(a.mid[2], a.mid[0]) - Math.atan2(b.mid[2], b.mid[0]));
-  const rest = groups.map(({ g, mid }, i) => {
-    const biggest = g.reduce((a, b) => (b.reach > a.reach ? b : a));
-    // (a region of one: its middle is the place itself, and pushed out of it
-    // straight up or down the hub would sit over it; instead it's out from it
-    // toward home, where its lanes come in from)
-    const at = g.length > 1 ? mid : toward(g[0], ALONE);
-    const lifted = [at[0], at[1] + (i % 2 ? -HUB_LIFT : HUB_LIFT), at[2]];
-    return { id: biggest.id, name: `Near ${nameOf(biggest.id)}`, members: g.map((p) => p.id), hub: clearOf(lifted) };
-  });
-  for (const p of FAR.filter((q) => LATE.has(q.id))) {
-    const span = (r) => Math.max(...r.members.map((id) => dist(p.at, FAR.find((q) => q.id === id).at)));
-    rest.reduce((a, b) => (span(b) < span(a) ? b : a)).members.push(p.id);
-  }
-  const home = { id: 'home', name: 'The home system', members: STATIONS, hub: [0, 0, HOME_RADIUS + 240] };
+  const rows = NEIGHBOURHOODS.map((n) => ({ name: n.name, neighbourhood: n.id, g: FAR.filter((p) => NEIGHBOURHOOD_OF[p.id] === n.id || (p.id === 'rmportal' && n.id === 'rift')) }));
+  const left = FAR.filter((p) => !rows.some((r) => r.g.includes(p)));
+  rows.push(...cluster(left, CORE_GROUPS).map((g) => ({ name: null, neighbourhood: null, g })));
+  const rest = rows
+    .map((r) => ({ ...r, mid: centroid(r.g) }))
+    .sort((a, b) => Math.atan2(a.mid[2], a.mid[0]) - Math.atan2(b.mid[2], b.mid[0]))
+    .map((r, i) => ({ ...regionOf(r.g, r.name, i), neighbourhood: r.neighbourhood }));
+  const home = { id: 'home', name: 'The home system', members: STATIONS, hub: [0, 0, HOME_RADIUS + 240], neighbourhood: null };
   return [home, ...rest];
 }
 

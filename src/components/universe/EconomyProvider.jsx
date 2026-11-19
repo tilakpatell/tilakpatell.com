@@ -23,7 +23,7 @@ import { skillTaken } from './skillsTaken';
 // oath: { war, side, rank } } or null }
 
 const SIDES = ['starwars', 'rickmorty', 'breakingbad'];
-const EconomyContext = createContext({ economy: null, version: 0, want: () => {}, marks: () => null });
+const EconomyContext = createContext({ economy: null, market: null, record: null, version: 0, want: () => {}, marks: () => null });
 
 // One for the page visit, whoever asks first (and StrictMode's second mount
 // finds it made, rather than a second wallet writing over the first).
@@ -31,7 +31,7 @@ let made = null;
 let unlockedNow = [];
 
 function load() {
-  made ??= Promise.all([import('../../runtime'), import('./economy'), import('./pilotMarks'), import('../galaxy/warState'), import('../galaxy/allegiance')]).then(([rt, eco, pm, war, oath]) => {
+  made ??= Promise.all([import('../../runtime'), import('./economy'), import('./pilotMarks'), import('../galaxy/warState'), import('../galaxy/allegiance'), import('./market/store'), import('./explore/record')]).then(([rt, eco, pm, war, oath, mk, ex]) => {
     const allegiance = () => local.get(oath.SIDE_KEY, null);
     const points = (w) => war.mine(w).points;
     const economy = eco.createEconomy({
@@ -42,9 +42,13 @@ function load() {
       skillOf: skillTaken,
     });
     // (a buy just before the tab closes is kept, not lost to the debounce)
-    window.addEventListener('pagehide', () => economy.flush());
+    // (the market beside it, on the same saves: each crew's hold, your trade at the stations, the fields emptied; market/store.js)
+    const market = mk.createMarket({ saves: rt.runtime().saves });
+    // (and the explorer's record: the sectors charted, what's scanned, the data not yet sold; explore/record.js)
+    const record = ex.createRecord({ saves: rt.runtime().saves });
+    window.addEventListener('pagehide', () => (economy.flush(), market.flush(), record.flush()));
     const marks = () => ({ standing: Object.fromEntries(SIDES.map((s) => [s, pm.standingLevels(local, s)])), oath: pm.oathAndRank(allegiance(), points) });
-    return { economy, marks };
+    return { economy, market, record, marks };
   });
   return made;
 }
@@ -73,7 +77,10 @@ export default function EconomyProvider({ children }) {
         if (gone) return;
         loaded.current = true;
         setHeld(h);
-        off = h.economy.on(() => setVersion((v) => v + 1));
+        const offWallet = h.economy.on(() => setVersion((v) => v + 1));
+        const offMarket = h.market.on(() => setVersion((v) => v + 1));
+        const offRecord = h.record.on(() => setVersion((v) => v + 1));
+        off = () => (offWallet(), offMarket(), offRecord());
       },
       () => {
         made = null; // (so the next ask, want()'s, imports it afresh)
@@ -87,7 +94,7 @@ export default function EconomyProvider({ children }) {
 
   // (an achievement can open a lock: what the shop shows changes with it)
   const value = useMemo(
-    () => ({ economy: held?.economy ?? null, version: version + unlocked.length, want, marks: () => held?.marks() ?? null }),
+    () => ({ economy: held?.economy ?? null, market: held?.market ?? null, record: held?.record ?? null, version: version + unlocked.length, want, marks: () => held?.marks() ?? null }),
     [held, version, unlocked.length, want],
   );
   return <EconomyContext.Provider value={value}>{children}</EconomyContext.Provider>;

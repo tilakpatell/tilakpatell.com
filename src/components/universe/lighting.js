@@ -12,7 +12,8 @@
 // key and below, as the map always had one. Deep space between the stars is never black: the key
 // is floored. Inside a nebula the ambient takes a quarter of its colour.
 //
-// STARS → [{ id, at, r, colour, strength, reach }]
+// STARS → [{ id, at, r, colour, strength, reach }]: the stars drawn
+// GLOWS → the same, for a neighbourhood's glow (`glow: true`); LIGHTS → both
 // weightOf(star, point) → its weight there
 // lightAt(point, { stars, nova }) → { key, fill: { id, dir (from the star
 //   toward the point, unit), colour (linear [r, g, b]), strength }, ambient }
@@ -29,6 +30,7 @@
 import { POSITIONS, SUN } from './layout';
 import { DEEP_SOLIDS, WONDERS } from './deep';
 import { SPREAD } from './scale';
+import { NEIGHBOURHOODS, offsetFrom } from './neighbourhoods';
 
 const solidAt = (id) => DEEP_SOLIDS.find((o) => o.id === id)?.at;
 
@@ -47,6 +49,10 @@ export const STARS = [
   ...WONDERS.filter((w) => w.kind === 'pulsar').map((w) => ({ id: w.id, at: w.at, r: w.r, colour: '#cfe6ff', strength: 0.3, reach: 3000 * SPREAD })),
   ...WONDERS.filter((w) => w.kind === 'graveyard').map((w) => ({ id: w.id, at: w.at, r: w.r, colour: w.color, strength: 0.25, reach: 2500 * SPREAD })),
 ];
+// a neighbourhood with no star of its own is lit by its glow (neighbourhoods.js):
+// a light alone, no star to flare or be eclipsed; LIGHTS is both, what lights a point
+export const GLOWS = NEIGHBOURHOODS.filter((n) => n.light).map((n) => ({ id: `glow:${n.id}`, at: offsetFrom(n, n.light.at), r: 50, colour: n.light.colour, strength: 0.8, reach: 7000 * SPREAD, glow: true }));
+export const LIGHTS = [...STARS, ...GLOWS];
 const HOME = STARS[0];
 const NEBULAE = WONDERS.filter((w) => w.kind === 'nebula');
 
@@ -94,7 +100,7 @@ function ranked(point, stars) {
   return list.sort((a, b) => b.w - a.w);
 }
 
-export function lightAt(point, { stars = STARS, nova = null } = {}) {
+export function lightAt(point, { stars = LIGHTS, nova = null } = {}) {
   const all = nova ? [...stars, { id: 'nova', at: nova.at, r: 1, colour: nova.colour, strength: nova.strength, reach: 4000 * SPREAD }] : stars;
   const [first, second] = ranked(point, all);
   const key = {
@@ -118,7 +124,7 @@ export function lightAt(point, { stars = STARS, nova = null } = {}) {
   return { key, fill, ambient };
 }
 
-export function sunFor(id, { positions = POSITIONS, stars = STARS } = {}) {
+export function sunFor(id, { positions = POSITIONS, stars = LIGHTS } = {}) {
   const p = positions[id];
   const [first] = ranked(p, stars);
   return unit(sub(first.s.at, p));

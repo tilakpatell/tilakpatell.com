@@ -22,7 +22,7 @@ const LOOK = 0.25; // seconds between looks for what's near enough to act on
 const LATTICE_ACTS = new Set(THING_KINDS.map((k, i) => (actionOf(k.kind) ? i : -1)).filter((i) => i >= 0));
 const len = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
 
-export function createThingPlay({ sectors, pay, say = () => {}, travelling = () => false, universe, reduced = false } = {}) {
+export function createThingPlay({ sectors, pay, say = () => {}, travelling = () => false, universe, reduced = false, stow = null } = {}) {
   const ledger = createLedger();
   let looked = 0;
   let near = null; // { id, kind, row, reach }
@@ -43,7 +43,7 @@ export function createThingPlay({ sectors, pay, say = () => {}, travelling = () 
           const d = len(rowAt(r, 0), ship) - r.size * a.near;
           if (d < 0 && d < best) {
             best = d;
-            near = { id: r.id, kind: r.kind, row: r };
+            near = { id: r.id, kind: r.kind, row: r, sector: s };
           }
         }
       const th = s.things;
@@ -133,8 +133,16 @@ export function createThingPlay({ sectors, pay, say = () => {}, travelling = () 
       const traits = traitsOf(near.row);
       const r = act(ledger, { kind: near.kind, id: near.id, traits });
       if (!r) return false;
+      // (mining and salvage go into the hold, the market's, when there is one;
+      // its own line said: what it took, the hold full, or the field worked out)
+      const id = near.id ?? `${near.sector?.id}:t${near.i}`;
+      const stowed = stow?.({ kind: near.kind, id, sector: near.sector, worked: r.pay > 0, name: near.row?.name ?? null }) ?? null;
+      if (stowed) {
+        say(stowed);
+        return true;
+      }
       if (r.pay) pay('found', r.pay);
-      say(THINGS.did({ ...r, kind: near.kind, name: near.row.name }));
+      say(THINGS.did({ ...r, kind: near.kind, name: near.row?.name }));
       return true;
     },
   };

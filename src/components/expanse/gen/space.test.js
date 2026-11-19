@@ -124,7 +124,7 @@ describe('determinism', () => {
       a.systems.slice(a.legacy.systems).map((s) => s.at),
     );
     const core = fullSector(other, 0, 0, 0, { things: false });
-    expect(keepOutsNear(0, 0, 0)).toHaveLength(KEEP_OUTS.length);
+    expect(keepOutsNear(0, 0, 0).map((o) => o.id)).toContain('home');
     for (const s of core.systems) for (const o of KEEP_OUTS) expect(dist(s.at, o.at)).toBeGreaterThanOrEqual(o.r + s.reach);
   });
 });

@@ -6,7 +6,22 @@ import { NOSE, UP, fromAngles, rotate } from './orient';
 import { HOME_RADIUS, ORDER, POSITIONS, REACH, SECTORS, SUN, sectorOf } from './layout';
 
 const inMain = (at) => sectorOf(...at) === 'main';
+// where a trip to a place starts: from the home system's edge for one in the
+// Core, and for one out in its neighbourhood (neighbourhoods.js), the way a
+// jump leaves you, a few thousand out from it on the side home is, facing it
+// (from home it's a jump, nav.js: free flight there is minutes)
+const NEAR_OUT = 6000;
+const outside = (at) => sectorOf(...at).startsWith('E:'); // (out in the Expanse: a neighbourhood)
+const startFor = (id, ship = spawn(null)) => {
+  const at = GOALS[id]?.at;
+  if (!at || !outside(at)) return ship;
+  const l = Math.hypot(at[0], at[2]);
+  const x = at[0] - (at[0] / l) * NEAR_OUT;
+  const z = at[2] - (at[2] / l) * NEAR_OUT;
+  return { ...ship, x, y: at[1] + (ship.y - SHIP.height), z, heading: Math.atan2(-(at[0] - x), -(at[2] - z)) };
+};
 import { byId } from './universes';
+import { NEIGHBOURHOODS } from './neighbourhoods';
 import { ENTRY, LANDABLE, airTop } from './entry';
 import { sunFor } from './lighting';
 
@@ -374,7 +389,7 @@ describe('the pulse drive near a place: no wall to hit', () => {
   it('flies in on super speed from deep space and parks at a station, as it did', () => {
     for (const [from, to] of [
       ['glacia', 'contact'],
-      ['twins', 'home'],
+      ['wanderer', 'home'],
       ['aurelia', 'contact'],
     ]) {
       let s = { ...spawn(null), ...parkAt(from) };
@@ -416,8 +431,8 @@ describe('the pulse drive near a place: no wall to hit', () => {
 
   it('parks in a nebula at a low frame rate too', () => {
     for (const dt of [1 / 30, 1 / 45]) {
-      let s = { ...spawn(null), x: 0, z: 2600, heading: Math.PI };
       const id = 'veil';
+      let s = startFor(id);
       const park = parkAt(id, [s.x, s.z]);
       let done = false;
       for (let t = 0; t < 120 && !done; t += dt) {
@@ -750,12 +765,8 @@ describe('where a new ship starts', () => {
   // each start, from sides all the way round it
   const every = STARTS.flatMap((s, i) => Array.from({ length: 16 }, (_, k) => ({ s, at: startAt(draws((i + 0.5) / STARTS.length, k / 16)) })));
 
-  it('can be at the home system, or off any fandom planet or any wonder but the Maw', () => {
-    const ids = STARTS.map((s) => s.id);
-    expect(ids).toContain('sun');
-    for (const id of ORDER) expect(ids.includes(id), id).toBe(byId(id).kind !== 'core');
-    // (the Rick and Morty sector's are through its portal: nobody starts there; nor in a portal)
-    for (const w of WONDERS) expect(ids.includes(w.id), w.id).toBe(w.id !== MAW.id && w.kind !== 'portal' && inMain(w.at));
+  it('is round the home system, in the Core, where the site’s own stations are', () => {
+    expect(STARTS.map((s) => s.id)).toEqual(['sun']);
   });
 
   it('is clear of everything, at no universe yet, out of the Maw’s pull and facing what it starts by', () => {
@@ -854,7 +865,7 @@ describe('autopilot', () => {
 
   it('flies from the edge to every universe without hitting anything', () => {
     for (const id of ORDER) {
-      let s = spawn(null);
+      let s = startFor(id);
       const park = parkAt(id, [s.x, s.z]);
       let done = false;
       let bumps = 0;
@@ -874,7 +885,7 @@ describe('autopilot', () => {
   it('flies down (or up) to a universe from high above (or below) the map, level with it', () => {
     for (const id of ORDER) {
       for (const y of [12, -12]) {
-        let s = { ...spawn(null), y };
+        let s = startFor(id, { ...spawn(null), y });
         const park = parkAt(id, [s.x, s.z]);
         let done = false;
         for (let t = 0; t < 150 && !done; t += 1 / 60) {
@@ -913,7 +924,7 @@ describe('autopilot', () => {
     // (a wonder in the Rick and Morty sector flown to from its Citadel, the Citadel from its sun)
     for (const w of WONDERS) {
       const o = SECTORS.rickmorty.origin;
-      const from = inMain(w.at) ? spawn(ORDER[0]) : { ...spawn(null), ...parkAt(w.id === 'citadel' ? 'curvesun' : 'citadel', [o[0], o[2] + 500]), speed: 0 };
+      const from = outside(w.at) ? startFor(w.id) : inMain(w.at) ? spawn(ORDER[0]) : { ...spawn(null), ...parkAt(w.id === 'citadel' ? 'curvesun' : 'citadel', [o[0], o[2] + 500]), speed: 0 };
       const { s, top } = trip(from, w.id, 200);
       expect(top, w.id).toBeGreaterThan(SHIP.boost * 2); // on the pulse drive out there
       const g = GOALS[w.id];
@@ -931,7 +942,7 @@ describe('autopilot', () => {
 
   it('takes over from upside down and nose down, and parks the right way up', () => {
     for (const id of [ORDER[0], ORDER.at(-1)]) {
-      let s = { ...spawn(null), pitch: -1.2, bank: Math.PI - 0.2, speed: SHIP.cruise };
+      let s = startFor(id, { ...spawn(null), pitch: -1.2, bank: Math.PI - 0.2, speed: SHIP.cruise });
       const park = parkAt(id, [s.x, s.z]);
       let done = false;
       for (let t = 0; t < 150 && !done; t += 1 / 60) {
@@ -957,20 +968,23 @@ describe('autopilot', () => {
     expect(isGoal('marvel')).toBe(true);
   }, LONG);
 
-  it('flies from one universe to the next all the way round', () => {
-    let s = spawn(ORDER[0]);
-    for (let i = 1; i <= ORDER.length; i++) {
-      const id = ORDER[i % ORDER.length];
-      const park = parkAt(id, [s.x, s.z]);
-      let done = false;
-      // (the longest leg, from the Caribbean out to Invincible at the end of the spiral, takes the best part of 225 seconds of free flight on the map spread to six, scale.js's SPREAD: the jump, nav.js, is the quick way)
-      for (let t = 0; t < 255 && !done; t += 1 / 60) {
-        const a = autopilot(s, id, park);
-        done = a.done;
-        s = step(s, a.input, 1 / 60).ship;
-        expect(inside(s), `${id} at ${t.toFixed(2)}s`).toBe(false);
+  it('flies from one place to the next all the way round the Core, and round each neighbourhood', () => {
+    // (between neighbourhoods it's the jump, nav.js: hundreds of thousands apart)
+    const rounds = [ORDER.filter((id) => byId(id).kind === 'core'), ...NEIGHBOURHOODS.map((n) => [...Object.keys(n.members), ...Object.keys(n.landmarks)])].filter((r) => r.length > 1);
+    for (const round of rounds) {
+      let s = { ...spawn(null), ...parkAt(round[0]), speed: 0 };
+      for (let i = 1; i <= round.length; i++) {
+        const id = round[i % round.length];
+        const park = parkAt(id, [s.x, s.z]);
+        let done = false;
+        for (let t = 0; t < 120 && !done; t += 1 / 60) {
+          const a = autopilot(s, id, park);
+          done = a.done;
+          s = step(s, a.input, 1 / 60).ship;
+          expect(inside(s), `${id} at ${t.toFixed(2)}s`).toBe(false);
+        }
+        expect(done, id).toBe(true);
       }
-      expect(done, id).toBe(true);
     }
   }, LONG);
 });
@@ -1019,7 +1033,7 @@ describe('open space', () => {
     expect(Math.abs(s.y - 30000)).toBeLessThan(5);
   });
   it('flies the autopilot’s trips in the open universe too: from the edge to a universe, and the takeover from upside down', () => {
-    for (const [id, from] of [[ORDER[0], spawn(null)], [ORDER.at(-1), { ...spawn(null), pitch: -1.2, bank: Math.PI - 0.2, speed: SHIP.cruise }]]) {
+    for (const [id, from] of [[ORDER[0], spawn(null)], [ORDER.at(-1), startFor(ORDER.at(-1), { ...spawn(null), pitch: -1.2, bank: Math.PI - 0.2, speed: SHIP.cruise })]]) {
       let s = from;
       const park = parkAt(id, [s.x, s.z]);
       let done = false;

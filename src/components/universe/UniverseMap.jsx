@@ -3,7 +3,7 @@ import { WorldHost, useWorld } from '../../runtime';
 import universeModule from './module';
 import { useMediaQuery, useReducedMotion } from '../../lib/hooks';
 import { useEconomy } from './EconomyProvider';
-import { tiersOf } from './ships/tiers';
+import { coreOf, tiersOf } from './ships/tiers';
 import FlightSettings from './FlightSettings';
 import Hangar from './Hangar';
 import { UNIVERSES } from './universes';
@@ -63,10 +63,16 @@ export default function UniverseMap({ selected, onSelect, onOpen, handle, frozen
   const abilitiesEl = useRef(null); // the crew member's abilities on foot, as a touch screen's buttons (in the cluster on a desktop)
   const powers = useRef(null); // the crew's two powers' tiles in it (PowerBar.jsx; the scene writes them: powers.js)
   const touch = useMediaQuery('(pointer: coarse)');
-  const { economy, version: walletVersion } = useEconomy({ ask: false }); // (the wallet a bounty's paid off from)
+  const { economy, market, record, version: walletVersion } = useEconomy({ ask: false }); // (the wallet a bounty's paid off from, and the market beside it)
   // the crew's tiers, Mk I to V, as the wallet owns them (ships/tiers.js): Mk I everywhere till it's loaded
   // (the wallet's version says what it owns changed: read here, as useYard reads it)
   const tiers = useMemo(() => (walletVersion >= 0 && economy && ship ? tiersOf(economy.owns, ship) : null), [economy, walletVersion, ship]);
+  // the crew's hold is the wallet's cargo, so a Mk IV or Mk V takes its rares from it
+  useEffect(() => {
+    if (!economy) return undefined;
+    economy.setCargo(market && ship ? market.cargo(ship, coreOf(economy, ship).hold) : null);
+    return () => economy.setCargo(null);
+  }, [economy, market, ship, tiers]);
   const hud = useRef(null);
   const siegeEl = useRef(null); // the Citadel's siege (siege.js)
   const prompt = useRef(null);
@@ -122,6 +128,8 @@ export default function UniverseMap({ selected, onSelect, onOpen, handle, frozen
       abilities: abilitiesEl,
       powers,
       wallet: economy,
+      market,
+      record,
       hud,
       siege: siegeEl,
       net,

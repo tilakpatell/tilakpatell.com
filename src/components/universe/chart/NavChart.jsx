@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { destinationById } from '../nav';
 import { FRAMES, levelOf, project, ringsFor, toFrame } from './projection';
 import { placeMarks, placeShip, ringOn, sectorGrid } from './place';
-import { REGIONS } from './marks';
+import { REGIONS, REGION_OF } from './marks';
 import ChartTools from './ChartTools';
 import { CHART_WORDS } from '../words';
 
@@ -55,7 +55,6 @@ function paintStars(canvas) {
 const pts = (list) => list.map(([u, v]) => `${(V / 2 + u * FRAMES.nav.r).toFixed(1)},${(V / 2 + v * FRAMES.nav.r).toFixed(1)}`).join(' ');
 const pct = (x, y) => ({ left: `${(x / V) * 100}%`, top: `${(y / V) * 100}%` });
 const at = (view, p) => toFrame(FRAMES.nav, [project(view, p).u, project(view, p).v]);
-const REGION_OF = { 'chart:home': 'home', 'chart:curve': 'rickmorty' };
 
 // a wonder's or the sun's glyph, as the chart has always drawn them
 function Glyph({ p }) {

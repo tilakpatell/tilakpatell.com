@@ -128,7 +128,7 @@ describe('frontAt', () => {
     const b = frontAt(war);
     expect(b.kind).toBe('beacon');
     for (const o of BEACONS) expect(d(b.at, m)).toBeLessThanOrEqual(d(o.at, m));
-    expect(b.id).toBe('beacon:wanderer'); // (the sectors run past Rick and Morty’s world, in the Wanderer’s region)
+    expect(b.id).toBe('beacon:rickmorty'); // (the sectors run past Rick and Morty’s world, in the Curve Rift)
   });
 
   it('takes the beacons it’s given', () => {

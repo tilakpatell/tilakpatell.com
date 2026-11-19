@@ -10,18 +10,20 @@
 // clearOfKeepOuts(at, extent, outs = KEEP_OUTS) → true when a body of that extent at `at` touches none
 
 import { SECTOR, sectorCentre } from '../../../lib/space/address.js';
-import { PLACES, SECTORS, SECTOR_RADIUS, sectorOf } from '../../universe/shared/space';
+import { PLACES, SECTORS, SECTOR_RADIUS, mapSectorOf } from '../../universe/shared/space';
 
 export const HOME_KEEP = 8000;
 
-// A place keeps three of its own reaches clear; a station rides with its
-// planet, and what sits inside the pocket is covered by the pocket's sphere.
+// A place keeps three of its own reaches clear, wherever it is (the Core,
+// or a neighbourhood out in the Expanse: neighbourhoods.js); a station rides
+// with its planet, and what sits inside the pocket is covered by the
+// pocket's sphere.
 const PLACE_KEEP = 3;
 const POCKET_MARGIN = 4000;
 
 export const KEEP_OUTS = [
   { id: 'home', at: [0, 0, 0], r: HOME_KEEP },
-  ...PLACES.filter((p) => p.kind !== 'station' && sectorOf(...p.at) === 'main').map((p) => ({
+  ...PLACES.filter((p) => p.kind !== 'station' && mapSectorOf(...p.at) === 'main').map((p) => ({
     id: p.id,
     at: [...p.at],
     r: PLACE_KEEP * p.reach,

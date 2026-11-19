@@ -4,5 +4,5 @@
 // more for it.
 
 export { PLACES } from '../deep';
-export { SECTORS, SECTOR_RADIUS, sectorOf } from '../layout';
+export { SECTORS, SECTOR_RADIUS, mapSectorOf, sectorOf } from '../layout';
 export { PALETTE, tint } from '../palette';

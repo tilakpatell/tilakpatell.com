@@ -17,9 +17,11 @@ describe('the aim', () => {
   const main = aimTargets('main', null);
 
   it('aims at the place nearest the nose within the cone', () => {
-    const nose = toward(from, POSITIONS.middleearth);
-    expect(aimFrom(from, nose, main)?.id).toBe('middleearth');
-    expect(aimFrom(from, turned(nose, 0.02), main)?.id).toBe('middleearth');
+    // (the Star Wars gate, alone in the Maelstrom: in a neighbourhood a little off one world is its neighbour)
+    const nose = toward(from, POSITIONS.starwars);
+    expect(aimFrom(from, nose, main)?.id).toBe('starwars');
+    expect(aimFrom(from, turned(nose, 0.02), main)?.id).toBe('starwars');
+    expect(aimFrom(from, toward(from, POSITIONS.middleearth), main)?.id).toBe('middleearth');
   });
 
   it('aims at nothing with nothing in the cone', () => {
