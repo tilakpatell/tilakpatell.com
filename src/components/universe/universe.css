@@ -283,6 +283,14 @@ body:has(.universe-panel) .guide-btn { display: none; }
   .universe-page:not(.galaxy-page):has(.universe-map[data-ship]) .universe-arrive { translate: calc(-50% - (var(--panel-width) + 24px) / 2) 0; max-width: min(36rem, calc(100% - var(--panel-width) - 64px)); }
 }
 .universe-title { margin-top: 0.4rem; color: var(--text); font-size: 1.5rem; font-weight: 600; }
+/* a docked station's market (places/MarketTab.jsx): a row a good, its buttons the house chips */
+.universe-market-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.25rem 0.75rem; }
+.universe-market-head h3 { margin: 0; color: var(--text); font-size: 1rem; font-weight: 600; }
+.universe-market-head span { color: var(--muted); font-size: 0.8rem; }
+.universe-market-rows { display: grid; gap: 0.4rem; margin: 0.6rem 0 0; padding: 0; list-style: none; }
+.universe-market-rows li { display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem; }
+.universe-market-name { flex: 1 1 9rem; color: var(--text); font-size: 0.85rem; }
+.universe-market-name b { color: var(--muted); font-weight: 500; }
 /* a generated place's facts (places/PlaceCard.jsx): label and value in two columns */
 .universe-facts { display: grid; grid-template-columns: auto 1fr; gap: 0.2rem 0.9rem; font-size: 0.85rem; }
 .universe-facts div { display: contents; }
