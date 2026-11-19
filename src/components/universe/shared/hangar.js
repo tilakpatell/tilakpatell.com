@@ -13,4 +13,4 @@ export { LINES, armsView, arsenalOf, createArmory } from '../weapons';
 export { WEAPONS as SHIP_WEAPONS } from '../weaponTable';
 export { POWERS, POWER_KEYS, picksFor, powersOf } from '../shipPowers';
 export { POWER_ICONS } from '../powerIcons';
-export { shipSheet, systemRows } from '../ships/sheet';
+export { shipSheet, signatureLine, systemRows } from '../ships/sheet';

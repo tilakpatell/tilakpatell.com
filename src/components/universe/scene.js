@@ -134,10 +134,13 @@ import { LEAN, OPEN_SPACE, PLANETS, SHIP, SOLIDS, autopilot, crashLoud, forward,
 import { coreStats } from './ships/profiles';
 import { engineList } from './ships/looks';
 import { areaOf } from './market/areas';
-import { EXPLORE, HOLD } from './words';
+import { EXPLORE, HOLD, SIGNS } from './words';
 import { GOODS } from './market/goods';
 import { MINED_OUT, WORKS, yieldOf } from './market/yields';
 import { sweep as scanSweep } from './explore/scan';
+import { inspect, labEvery, labStep, portalReady, r2Patch, rangeOf } from './signatures';
+import { dropPod, nearPod, recoverInto } from './signatures/pod';
+import { hot } from '../../lib/three/canvasTexture';
 import { worthOf } from './explore/values';
 import { stationFor } from './market/trade';
 import { parseSectorKey, parseSpaceId } from '../../lib/space/address.js';
@@ -792,6 +795,63 @@ export async function create(canvas, ctx) {
   });
   const places = createScenePlaces({ group: map, universe, expanse, workers: ctx.rt?.workers ?? null, startAt: props.startAt, toScreen: (...a) => toScreen(...a), prepare: (o) => warm(o), emit: (e) => emit(e), note: (text) => (state.note = { text, until: wall() + 3 }), device: device(), tags: () => props.tags?.current ?? null, onPick: (id) => navTo(id), frame: () => size });
   // lane 4a's things in space played: E at one, a storm's drain, a pulsar's beam, a wormhole's throw (things/index.js)
+  // the signatures and the pod (signatures/): the RV's lab, a military station's check, the cargo pod
+  const crewHold = () => (props.market && state.kind ? props.market.hold(state.kind, state.core.hold) : null);
+  const labTick = (dt) => {
+    if (state.core?.signature !== 'rv' || !props.market || state.crash) return;
+    state.labT = (state.labT ?? 0) + dt;
+    if (state.labT < labEvery(state.tiers.reactor ?? 1)) return;
+    state.labT = 0;
+    const hold = crewHold();
+    const r = hold && labStep(hold.lots);
+    if (!r) return;
+    hold.lots.splice(0, hold.lots.length, ...r.lots);
+    props.market.changed();
+    state.note = { text: SIGNS.lab(GOODS[r.out].name), until: wall() + 2.5 };
+  };
+  const checkHold = (stationId) => {
+    const hold = crewHold();
+    if (!hold) return;
+    const cube = parseSpaceId(stationId);
+    const { type } = stationFor({ id: stationId, cube: cube ? [cube.sx, cube.sy, cube.sz] : [0, 0, 0] });
+    const r = inspect({ crew: state.kind, room: state.core.hold, lots: hold.lots, type });
+    if (!r.seized.length) return;
+    for (const g of r.seized) hold.remove(g.good, g.n);
+    const wallet = props.wallet;
+    const paid = wallet ? Math.min(r.fine, wallet.credits) : 0;
+    if (paid) wallet.spend(paid);
+    state.note = { text: SIGNS.seized(paid), until: wall() + 4 };
+  };
+  // the pod: dropped where the ship went down, drawn as a beacon there, taken aboard with E close to
+  const podMark = new THREE.Mesh(new THREE.OctahedronGeometry(1.2), new THREE.MeshBasicMaterial({ color: hot('#ffcf6a', 2.2), toneMapped: false }));
+  podMark.visible = false;
+  podMark.name = 'cargo-pod';
+  map.add(podMark);
+  const showPod = () => {
+    const pod = props.market?.pod();
+    podMark.visible = Boolean(pod && pod.crew === state.kind);
+    if (podMark.visible) podMark.position.set(...pod.at);
+  };
+  const podDrop = () => {
+    const hold = crewHold();
+    if (!hold || !state.ship) return;
+    const lots = hold.lots.map((l) => ({ ...l, from: { ...l.from } }));
+    const { pod, keep } = dropPod({ crew: state.kind, room: state.core.hold, lots, at: [state.ship.x, state.ship.y, state.ship.z], sector: null, t: Date.now() });
+    if (!pod) return;
+    hold.lots.splice(0, hold.lots.length, ...keep);
+    props.market.setPod(pod);
+    showPod();
+    emit({ type: 'pod', at: pod.at });
+  };
+  const podTake = () => {
+    const pod = props.market?.pod();
+    if (!pod || pod.crew !== state.kind || !nearPod(pod, state.ship)) return false;
+    const r = recoverInto(pod, crewHold());
+    props.market.setPod(r.pod);
+    showPod();
+    state.note = { text: r.got ? SIGNS.podTaken(r.got, Boolean(r.pod)) : HOLD.full, until: wall() + 3 };
+    return true;
+  };
   // the explorer's record (props.record, made beside the wallet): a generated sector charted the first time
   // it's entered, the scan, and the data bank sold at a dock. Each says its note, or null
   const chartSector = (id) => {
@@ -1880,7 +1940,14 @@ export async function create(canvas, ctx) {
       camQOn = false;
     },
     resolve: (id) => places.resolve(id), fetch: (id) => places.fetch(id), missing: (id) => places.missing(id),
-    range: () => state.core?.range ?? Infinity, // (the hyperdrive's reach into generated space: explore/route.js)
+    range: () => rangeOf(state.core), // (the hyperdrive's reach into generated space, R2's sector more: explore/route.js, signatures/)
+    // (the cruiser's portal gun: straight to a charted sector past the range, every few minutes)
+    portal: (sector) => {
+      if (state.core?.signature !== 'cruiser' || !props.record?.isCharted(sector) || !portalReady(state.portalGunAt, wall(), state.tiers.hyperdrive ?? 1)) return false;
+      state.portalGunAt = wall();
+      state.note = { text: SIGNS.portal, until: wall() + 3.5 };
+      return true;
+    },
   });
 
   // ── The ship ──
@@ -3088,6 +3155,7 @@ export async function create(canvas, ctx) {
     engine?.set({ speed: 0, boost: false, on: false });
     if (by) net?.down(by, rammed); // everyone hears who got you
     law?.down(); // (the chase is over; the bounty isn't)
+    podDrop();
     emit({ type: 'destroyed' });
     retarget(650);
   };
@@ -3955,6 +4023,9 @@ export async function create(canvas, ctx) {
       // shields come back once you've been out of trouble a while
       thingPlay.update(state, dt, Date.now() / 1000);
       if (state.clock - state.hitAt > state.stats.delay && state.shield < 100) state.shield = Math.min(100, state.shield + dt * 12 * state.stats.regen * diff().regen);
+      // (the X-wing's R2 patches them under fire: signatures/)
+      else if (state.core?.signature === 'xwing' && state.shield > 0 && state.shield < 100) state.shield = Math.min(100, state.shield + dt * r2Patch({ tier: state.tiers.shields ?? 1, since: state.clock - state.hitAt, clock: state.clock }));
+      labTick(dt);
       if (state.shield > 70) state.lowSaid = false;
       state.heat = Math.max(0, state.heat - dt / 45);
       if (hunters) {
@@ -4157,6 +4228,7 @@ export async function create(canvas, ctx) {
       m.pivot.rotation.set(0, 0, 0);
       crashFx.arrive({ point: new THREE.Vector3(at.x, state.ship.y, at.z), kind: state.kind, heading: at.heading });
       emit({ type: 'respawn' });
+      if (props.market?.pod()?.crew === state.kind) state.note = { text: SIGNS.podLeft, until: wall() + 5 };
       retarget(900);
     }
     if (c.back) {
@@ -5313,7 +5385,7 @@ export async function create(canvas, ctx) {
     const dockedNow = places.docked();
     if (dockedNow !== state.dockedAt) {
       state.dockedAt = dockedNow;
-      if (dockedNow) sellData(dockedNow);
+      if (dockedNow) (sellData(dockedNow), checkHold(dockedNow));
     }
     // a long jump's next hop, once the hyperdrive's charged and the ship's still where the last one left it
     if (state.hop && !state.jump && !state.auto && !state.pending && state.ship) {
@@ -5489,6 +5561,7 @@ export async function create(canvas, ctx) {
       emit({ type: 'siege', what: 'closed' });
       return;
     }
+    if ((key === 'e' || (key === 'enter' && !onControl)) && !state.at && podTake()) return e.preventDefault();
     if ((key === 'e' || (key === 'enter' && !onControl)) && !state.at && thingPlay.press(state)) return e.preventDefault();
     if ((key === 'e' || (key === 'enter' && !onControl)) && state.at) {
       e.preventDefault();
@@ -6150,6 +6223,7 @@ export async function create(canvas, ctx) {
       setLoadout(next.loadout);
       setTune(next.tune);
       setCores(next.tiers);
+      showPod();
       setSkills(next.skillFx, next.powerPicks);
       setNet(next.net);
       // the page's pick, only when it changes. The router moves the address
@@ -6428,6 +6502,8 @@ export async function create(canvas, ctx) {
       burst.dispose();
       traffic?.dispose();
       engines.dispose();
+      podMark.geometry.dispose();
+      podMark.material.dispose();
       for (const f of flares) f.dispose();
       disposeTree(scene);
       post.dispose();

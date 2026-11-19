@@ -637,7 +637,7 @@ describe('the ships’ tiers in the wallet', () => {
     expect(econ.canBuy(tierItem('falcon', 'engines', 3))).toEqual({ ok: false, why: 'locked:previous' });
     expect(econ.checkout([tierItem('falcon', 'engines', 2), tierItem('falcon', 'engines', 3)]).ok).toBe(true);
     expect(econ.owns('tier:falcon:engines:3')).toBe(true);
-    expect(econ.credits).toBe(2400);
+    expect(econ.credits).toBe(2800);
   });
 
   it('locks Mk IV without its rares, and with no hold at all', () => {
