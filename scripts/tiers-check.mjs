@@ -7,8 +7,8 @@
 // It starts the dev server (the wallet's dev hook, __universeDebug.economy,
 // is a DEV hook) unless --url names one, opens /universe flying the X-wing,
 // reads its Mk I pulse drive off __universeDebug.core() (285: its own 0.95 of
-// the old 300), earns credits, presses H and opens the Systems tab: five
-// rows (the scanner and the hold come with their lanes), Pulse drive Mk II for 600 credits, bought, and the scene's pulse
+// the old 300), earns credits, presses H and opens the Systems tab: six
+// rows (the scanner comes with the exploring), Pulse drive Mk II for 600 credits, bought, and the scene's pulse
 // drive is then 399 and tp-pilot owns tier:xwing:pulse:2. At 390 × 844 the
 // tab's rows fit the phone's width. Shots in lab/tiers. Exit 1 on any miss.
 import { spawn } from 'node:child_process';
@@ -114,7 +114,7 @@ try {
     await page.evaluate(() => window.__universeDebug.economy.earn('warWin', 4));
     const dialog = await hangar(page);
     const rows = await dialog.locator('.hangar-systems li').count();
-    if (rows === 5) pass('the Systems tab lists the five systems a tier does something for');
+    if (rows === 6) pass('the Systems tab lists the six systems a tier does something for');
     else fail(`the Systems tab lists ${rows} systems`);
     await page.screenshot({ path: join(OUT, 'desk.png') });
     const buy = dialog.locator('li[data-system="pulse"] button');

@@ -16,7 +16,7 @@ describe('the Systems tab’s rows', () => {
   it('lists the systems a tier does something for, at Mk I, each with its next tier for sale', () => {
     const rows = systemRows({ crew: 'falcon', economy: wallet(600) });
     expect(rows.map((r) => r.id)).toEqual(SYSTEMS.filter((s) => LIVE.includes(s)));
-    expect(LIVE).toEqual(['engines', 'pulse', 'hyperdrive', 'shields', 'reactor']);
+    expect(LIVE).toEqual(['engines', 'pulse', 'hyperdrive', 'shields', 'hold', 'reactor']);
     const pulse = rows.find((r) => r.id === 'pulse');
     expect(pulse).toMatchObject({ label: 'Pulse drive', tier: 1, mk: 'Mk I', value: '330 a second', nextValue: '462 a second' });
     expect(pulse.item.key).toBe('tier:falcon:pulse:2');
@@ -30,7 +30,8 @@ describe('the Systems tab’s rows', () => {
     expect(rows.hyperdrive.nextValue).toBe('a jump every 4.1 s');
     expect(rows.shields.value).toBe('×1.10');
     expect(rows.scanner).toBe(undefined); // (with the exploring)
-    expect(rows.hold).toBe(undefined); // (with the market)
+    expect(rows.hold.value).toBe('12 units');
+    expect(rows.hold.nextValue).toBe('19 units');
     expect(rows.reactor.value).toBe('9 MW');
     expect(rows.reactor.nextValue).toBe('10 MW');
     expect(rows.engines.pill).toBe(null); // (no wallet yet: nothing for sale)

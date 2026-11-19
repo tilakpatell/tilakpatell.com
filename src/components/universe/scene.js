@@ -133,6 +133,10 @@ import { debugOn, debugPanel } from '../../lib/debugPanel';
 import { LEAN, OPEN_SPACE, PLANETS, SHIP, SOLIDS, autopilot, crashLoud, forward, headingTo, holdReach, isGoal, isPlace, noseOf, orbiting, parkAt, pulsedSpace, spawn, startAt, step } from './ship';
 import { coreStats } from './ships/profiles';
 import { engineList } from './ships/looks';
+import { areaOf } from './market/areas';
+import { HOLD } from './words';
+import { GOODS } from './market/goods';
+import { MINED_OUT, WORKS, yieldOf } from './market/yields';
 import { HYPER, destinationById, hyperState, parkFor, riftExit } from './nav';
 import { pilotId } from './pilotGoal';
 import { FACTIONS, HUNTER_KINDS, NAMES, createHunters } from './hunters';
@@ -783,7 +787,32 @@ export async function create(canvas, ctx) {
   });
   const places = createScenePlaces({ group: map, universe, expanse, workers: ctx.rt?.workers ?? null, startAt: props.startAt, toScreen: (...a) => toScreen(...a), prepare: (o) => warm(o), emit: (e) => emit(e), note: (text) => (state.note = { text, until: wall() + 3 }), device: device(), tags: () => props.tags?.current ?? null, onPick: (id) => navTo(id), frame: () => size });
   // lane 4a's things in space played: E at one, a storm's drain, a pulsar's beam, a wormhole's throw (things/index.js)
-  const thingPlay = createThingPlay({ sectors: () => expanse.sectors().values(), pay: (what, n) => pay(what, n), say: (text) => (state.note = { text, until: wall() + 3.5 }), travelling: () => Boolean(state.auto || state.jump), universe, reduced });
+  // what mining and salvage put in the crew's hold (the market's: props.market), a field emptied for a
+  // while once worked out and a wreck stripped for good; null for a thing that doesn't fill a hold
+  const worked = new Map(); // (each field's presses, this visit)
+  const stow = ({ kind, id, sector, worked: paid, name }) => {
+    const market = props.market;
+    if (!market || !state.kind || !WORKS.includes(kind)) return null;
+    const field = kind === 'field' || kind === 'icefield';
+    if (field ? market.isEmpty(id) : market.salvaged(id)) return field ? HOLD.minedOut : HOLD.stripped(name);
+    if (!paid) {
+      if (field) market.empty(id);
+      return field ? HOLD.minedOut : HOLD.stripped(name);
+    }
+    const cube = [sector?.sx ?? 0, sector?.sy ?? 0, sector?.sz ?? 0];
+    const area = areaOf(cube);
+    const press = worked.get(id) ?? 0;
+    const hold = market.hold(state.kind, state.core.hold);
+    const got = yieldOf({ kind, id, press, area, d: area.d })
+      .map((g) => ({ ...g, n: hold.add(g.good, g.n, { sector: cube, pocket: null }) }))
+      .filter((g) => g.n > 0);
+    if (!got.length) return HOLD.full;
+    worked.set(id, press + 1);
+    if (!field) market.salvage(id);
+    else if (press + 1 >= MINED_OUT) market.empty(id);
+    return HOLD.stowed(got.map((g) => `${g.n} ${GOODS[g.good].name.toLowerCase()}`).join(', '));
+  };
+  const thingPlay = createThingPlay({ sectors: () => expanse.sectors().values(), pay: (what, n) => pay(what, n), say: (text) => (state.note = { text, until: wall() + 3.5 }), travelling: () => Boolean(state.auto || state.jump), universe, reduced, stow });
   // and the big things, the Maw and the big stars, as landmarks on the sky, upright in the world (landmarks.js)
   const landmarks = createLandmarks(map, { skyFar: SKY_FAR });
   await breathe();
