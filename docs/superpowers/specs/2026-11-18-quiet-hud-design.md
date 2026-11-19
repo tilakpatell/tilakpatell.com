@@ -24,14 +24,23 @@ The prompt, the crew's lines, the toast, the war's strip, the arrival title and 
 
 Moved off the screen while flying: the site's nav (`html[data-flight]`), the side panel (UniversePanel, GalaxyPanel), the corner's tools (the flight settings, the Shipyard's door, the nav map button), the galaxy's Keys chip, keys card and Galaxy map chip, and the Multiplayer pill (its card and feed stay). With no ship, or while the site's tour runs, the panel is where it was.
 
+## On a touch screen
+
+The owner asked for the same treatment on a phone, heavily simplified. The touch layout keeps its places (thumbs.css), so nothing under a thumb moves; what goes is faded in place:
+
+- Always: the Menu button (three lines, no Esc), the shields, the radar, Fire, Boost and the nose's two buttons, and the jump's button while a star is on the nose.
+- Out for a fight (the cluster's data-fight, presence.js's): the weapon and the crew's two powers.
+- After a touch, gone four seconds after the last (FlightHud's data-awake): the view and Rick's portal gun.
+- Off the screen, in the menu: the nav map's button (the Map tab), the corner's tools, the guide's corner (Help), the Multiplayer pill (Settings).
+
 ## The menu
 
-`Esc` opens it (after the page's own Esc: a tour, the autopilot, the scene's escape), and closes it; `I` opens it on Cargo, `O` on Settings; `1`–`6` and the arrows change tab inside. `H` (the Hangar), `M` (the map) and `?` (the guide) keep their doors; each also has its button in a tab. Offline the world freezes behind it, as the Hangar does; online it carries on. A dialog: focus goes in, Tab stays in it, Esc gives it back.
+`Esc` opens it (after the page's own Esc: a tour, the autopilot, the scene's escape), and closes it; `I` opens it on Cargo, `O` on Settings; `1`–`6` and the arrows change tab inside. `H` (the Hangar), `M` (the map) and `?` (the guide) keep their doors; each also has its button in a tab. Offline the world freezes behind it, as the Hangar does; online it carries on (the scene hears no key while the menu, a dialog, is open). A dialog: focus goes in, Tab stays in it, Esc gives it back.
 
 | Tab | Holds |
 | --- | --- |
-| Ship | the crew and the ship, what it's fitted with, its three guns and two powers as slots; each slot opens the Hangar on its page; Change ship |
-| Cargo | the credits, the level, and the hold once the ships session's `shipSheet` lands (its goods as slots, used of room, unsold data) |
+| Ship | the crew and the ship, what it's fitted with, its three guns, two powers and its systems' tiers (`ships/sheet.js`'s `systemRows`) as slots; each slot opens the Hangar on its page; Change ship |
+| Cargo | the credits, the level, the flight record, and the hold (`shipSheet`'s: its goods as slots, used of room; empty until the market's lane) |
 | Map | what the side panel said (the place picked or near, the way in, the landings), the drive, and the full map's button |
 | Settings | the flight settings (FlightSettings's controls, inline), sound and the crew's voices, the site's picture settings, multiplayer |
 | Help | the questions (the guide's tips for the page), the keys (the guide's), the site tour's starts, all the controls |

@@ -43,6 +43,8 @@ import './quiet.css'; // (the quiet HUD's: `quiet`)
 
 // the keys that start a fight's worth of HUD (presence.js): fire, the guns, the powers, the targets
 const FIGHT_KEYS = new Set(['f', 'r', '1', '2', '3', 'g', 'x', 't', 'q']);
+// (a touch screen's quiet: the view and the portal gun's buttons go this long after the last touch, and a touch brings them back)
+const AWAKE_MS = 4000;
 const typingIn = (el) => el instanceof HTMLElement && (el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName));
 
 // the jump's mark at the strip's end (the quiet HUD's, a keyboard's): J and a
@@ -137,6 +139,23 @@ export default function FlightHud({ hudRef = null, crosshair = null, flying = tr
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [quiet, flying, foot, hudRef]);
+  // a touch screen's quiet: the thumbs awake (data-awake) for a while after each touch, quiet.css's
+  useEffect(() => {
+    const deck = thumbsEl.current;
+    if (!quiet || !flying || !deck) return undefined;
+    let t = 0;
+    const wake = () => {
+      clearTimeout(t);
+      deck.toggleAttribute('data-awake', true);
+      t = setTimeout(() => deck.toggleAttribute('data-awake', false), AWAKE_MS);
+    };
+    wake();
+    window.addEventListener('pointerdown', wake, { passive: true });
+    return () => {
+      clearTimeout(t);
+      window.removeEventListener('pointerdown', wake);
+    };
+  }, [quiet, flying, touchy]);
   // (and the touch buttons' Fire and Weapon, the same)
   const poked = (fn) => (quiet && fn ? (x) => (pokeHud(hudRef?.current ?? null), fn(x)) : fn);
   const fire = poked(controls?.fire);
@@ -274,7 +293,7 @@ export default function FlightHud({ hudRef = null, crosshair = null, flying = tr
           {/* the thumbs: every touch button in one grid in the right thumb's corner (thumbs.css lays it out, wider and lower with
               the phone on its side), the left of the screen free to drag the ship about; no box of its own on a desktop */}
           {controls && (
-            <div ref={thumbsEl} className="universe-thumbs">
+            <div ref={thumbsEl} className="universe-thumbs" data-quiet={quiet ? '' : undefined}>
               {thumbs}
               <div className="universe-climbs">
                 <HeldButton size={52} className="universe-climb" aria-label={foot ? 'Jump' : 'Nose up'} on={1} off={0} onHold={controls.climb}>

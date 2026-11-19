@@ -81,7 +81,11 @@ export default function PauseMenu({ open = false, tab, tabs, onTab, onOpen, onCl
     if (!chip) return null;
     return (
       <button type="button" className={`hud-pause-chip ${className}`.trim()} data-dress={dress} onClick={() => onOpen?.()} aria-haspopup="dialog" aria-keyshortcuts="Escape">
-        <kbd className="hud-cap">Esc</kbd>
+        <kbd className="hud-cap hud-pause-chip-key">Esc</kbd>
+        {/* (a touch screen has no Esc: three lines instead) */}
+        <svg className="hud-pause-chip-icon" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+          <path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+        </svg>
         <span>{label}</span>
       </button>
     );
@@ -123,7 +127,7 @@ export default function PauseMenu({ open = false, tab, tabs, onTab, onOpen, onCl
         </div>
         <div className="hud-pause-foot">
           <button type="button" className="hud-pause-resume" onClick={() => onClose?.()}>
-            <kbd className="hud-cap">Esc</kbd> {resume}
+            <kbd className="hud-cap hud-pause-resume-key">Esc</kbd> {resume}
           </button>
           {foot}
         </div>

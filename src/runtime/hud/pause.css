@@ -44,8 +44,12 @@
 }
 :where(.hud-pause-chip):not(hud-none):hover,
 :where(.hud-pause-chip):not(hud-none):focus-visible { opacity: 1; border-color: var(--pause-accent); }
+:where(.hud-pause-chip-icon):not(hud-none) { display: none; }
 @media (pointer: coarse) {
-  :where(.hud-pause-chip):not(hud-none) { min-height: 44px; }
+  :where(.hud-pause-chip):not(hud-none) { min-height: 44px; padding-left: 0.7rem; }
+  /* (no Esc on a touch screen: the chip's three lines, and the way back says no key) */
+  :where(.hud-pause-chip-key, .hud-pause-resume-key):not(hud-none) { display: none; }
+  :where(.hud-pause-chip-icon):not(hud-none) { display: block; }
 }
 
 /* open: the scrim, and the tabs over the panel in the middle of it */

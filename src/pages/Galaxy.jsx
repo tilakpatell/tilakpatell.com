@@ -657,6 +657,7 @@ export default function Galaxy() {
           enabled={menuOk}
           ship={ship}
           loadout={loadout}
+          build={build}
           picks={powerPicks}
           carry={skillFx?.carry}
           fx={skillFx}

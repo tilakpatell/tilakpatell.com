@@ -5,9 +5,9 @@
    seconds after it (the writer's data-fight, from ../presence.js), the kills
    with them; the shields' bar turns red under 35 % (data-low, the kit's own
    blink). The target's card is the lock's own labels, on glass at their
-   bracket; the cluster's card and the speed's bar aren't drawn. A keyboard's:
-   a touch screen keeps its own HUD and its thumbs (flight.css), with the jump
-   as its button. The design: docs/superpowers/specs/2026-11-18-quiet-hud-design.md. */
+   bracket; the cluster's card and the speed's bar aren't drawn. That's a
+   keyboard's; a touch screen keeps its own layout (flight.css, thumbs.css)
+   and goes quiet in its own way, at the end of this sheet. The design: docs/superpowers/specs/2026-11-18-quiet-hud-design.md. */
 
 .fc-jump { display: none; }
 
@@ -83,4 +83,16 @@
   }
   .universe-hud[data-quiet] .universe-lock-name { font-weight: 600; }
   .universe-hud[data-quiet] .universe-lock-dist { top: calc(100% + 27px); opacity: 1; color: rgb(217 243 255 / 0.85); }
+}
+
+/* a touch screen's quiet: Fire, Boost and the nose's two always; the weapon
+   and the crew's powers out for a fight (the cluster's data-fight, as above);
+   the view and Rick's portal gun after a touch, gone four seconds after the
+   last (FlightHud's data-awake). Each keeps its place in the grid, hidden, so
+   nothing under the thumb moves */
+@media (pointer: coarse), (max-width: 767px) {
+  .universe-thumbs[data-quiet] :is(.universe-weapon, .hud-power, .universe-view, .universe-portalgun) { transition: opacity var(--t-base, 0.22s) ease; }
+  /* (each power's own button: the bar's box is display: contents in the grid, so it can't be faded itself) */
+  .universe-map:has(.fc-quiet:not([data-fight])) .universe-thumbs[data-quiet] :is(.universe-weapon, .hud-power) { opacity: 0; pointer-events: none; }
+  .universe-thumbs[data-quiet]:not([data-awake]) :is(.universe-view, .universe-portalgun) { opacity: 0; pointer-events: none; }
 }

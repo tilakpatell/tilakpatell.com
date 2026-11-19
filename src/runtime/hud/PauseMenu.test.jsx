@@ -14,6 +14,8 @@ describe('PauseMenu', () => {
     const out = html({ open: false, dress: 'falcon' });
     expect(out).toMatch(/^<button[^>]*class="hud-pause-chip"[^>]*data-dress="falcon"/);
     expect(out.replace(/<[^>]+>/g, '')).toBe('EscMenu');
+    // (and a touch screen's three lines in place of the key, hidden by the sheet where there's a keyboard)
+    expect(out).toContain('class="hud-pause-chip-icon"');
     expect(out).toContain('aria-haspopup="dialog"');
   });
 
@@ -42,6 +44,6 @@ describe('PauseMenu', () => {
 
   it('says the way back, its key first', () => {
     const out = html({ open: true, resume: 'Back to the walk' });
-    expect(out).toMatch(/class="hud-pause-resume"[^>]*><kbd class="hud-cap">Esc<\/kbd> Back to the walk<\/button>/);
+    expect(out).toMatch(/class="hud-pause-resume"[^>]*><kbd class="hud-cap hud-pause-resume-key">Esc<\/kbd> Back to the walk<\/button>/);
   });
 });

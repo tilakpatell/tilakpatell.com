@@ -11,8 +11,9 @@ import Face from '../Faces';
 // a row of slots each (an inventory's): its three guns (the armoury's names
 // for this crew with this loadout, weapons.js), its two powers (the pair
 // carried, shipPowers.js) and what's fitted in the shipyard (outfit.js), the
-// one picked or pointed at said in full beside them. A slot opens the
-// Hangar on its page (`onHangar(tab)`: the Arms, the Powers, the Shipyard),
+// one picked or pointed at said in full beside them, and its systems' tiers
+// (`systems`: ships/sheet.js's systemRows, Mk I to V). A slot opens the
+// Hangar on its page (`onHangar(tab)`: the Arms, the Systems, the Powers, the Shipyard),
 // and so does each of the Hangar's pages under them. Change ship lists the
 // four (`onShip`, where the page lets the ship change).
 
@@ -34,10 +35,24 @@ const GUN_ICON = [
 const HANGAR = [
   ['crew', 'Crew'],
   ['arms', 'Arms'],
+  ['systems', 'Systems'],
   ['powers', 'Powers'],
   ['skills', 'Skills'],
   ['shipyard', 'Shipyard'],
 ];
+// (each system's mark: ships/profiles.js's SYSTEMS that are live)
+const SYSTEM_ICON = {
+  engines: <path d="M12 3c3.5 4.5 6 8 6 12a6 6 0 0 1-12 0c0-2.6 1.3-4.4 2.6-6 .4 2.6 1.7 3.5 2.6 3.5-.9-3.5 0-7 .8-9.5z" />,
+  pulse: <path d="M3 12h4l2-5 4 10 2-5h6" />,
+  hyperdrive: <path d="M3 12h7M5 7.5l6 2.5M5 16.5l6-2.5M13 12h8M17.5 8l3.5 4-3.5 4" />,
+  shields: <path d="M12 3 5 6v6c0 4.6 3 7.8 7 9 4-1.2 7-4.4 7-9V6z" />,
+  reactor: (
+    <g>
+      <circle cx="12" cy="12" r="3" />
+      <path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.2 2.2M16.2 16.2l2.2 2.2M5.6 18.4l2.2-2.2M16.2 7.8l2.2-2.2" />
+    </g>
+  ),
+};
 const and = (names) => (names.length < 2 ? names[0] : `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`);
 
 function Slot({ slot, picked, onPick, onOpen }) {
@@ -61,11 +76,18 @@ function Slot({ slot, picked, onPick, onOpen }) {
         {slot.icon}
       </svg>
       <span className="fm-slot-name">{slot.name}</span>
+      {slot.tier ? (
+        <span className="fm-tier" aria-hidden="true">
+          {[1, 2, 3, 4, 5].map((n) => (
+            <i key={n} data-on={n <= slot.tier ? '' : undefined} />
+          ))}
+        </span>
+      ) : null}
     </button>
   );
 }
 
-export default function ShipTab({ ship, loadout = null, picks = null, carry = null, fx = null, onHangar, onShip = null }) {
+export default function ShipTab({ ship, loadout = null, picks = null, carry = null, fx = null, systems = [], onHangar, onShip = null }) {
   const crew = crewById(ship);
   const [pick, setPick] = useState('g0');
   const [changing, setChanging] = useState(false);
@@ -85,11 +107,23 @@ export default function ShipTab({ ship, loadout = null, picks = null, carry = nu
     ...parts.map((p, i) => ({ id: `f${i}`, name: p.name, title: p.name, line: 'Fitted', icon: <path d="M14.7 6.3a4 4 0 0 0-5.4 5.1L4 16.7 7.3 20l5.3-5.3a4 4 0 0 0 5.1-5.4l-2.4 2.4-2.4-.6-.6-2.4z" />, page: 'Shipyard', tab: 'shipyard', about: p.about ?? `${p.name}, bolted on in the shipyard.` })),
     ...(parts.length ? [] : [{ id: 'f-none', name: 'Nothing bolted on', empty: true, icon: <path d="M12 8v8M8 12h8" opacity="0.5" /> }]),
   ];
-  const all = [...guns, ...powers, ...fitted];
+  const tiers = systems.map((r) => ({
+    id: `s-${r.id}`,
+    name: r.label,
+    title: `${r.label} · ${r.mk}`,
+    line: `Tier ${r.tier} of 5`,
+    tier: r.tier, // (its pips say the tier; the corner is for a key, and a system has none)
+    icon: SYSTEM_ICON[r.id] ?? SYSTEM_ICON.reactor,
+    page: 'Systems',
+    tab: 'systems',
+    about: r.nextValue ? `${r.value} now; ${r.nextValue} at the next tier.` : `${r.value}: as good as it gets.`,
+  }));
+  const all = [...guns, ...powers, ...tiers, ...fitted];
   const shown = all.find((s) => s.id === pick && !s.empty) ?? guns[0];
   const rows = [
     ['Guns', guns],
     ['Powers', powers],
+    ['Systems', tiers],
     ['Fitted in the shipyard', fitted],
   ];
   const names = Object.keys(crew.speakers).slice(0, 2);

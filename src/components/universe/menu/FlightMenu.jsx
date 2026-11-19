@@ -3,6 +3,7 @@ import '../../../runtime/hud/pause.css'; // (the kit's parts by their files, as 
 import { crewById } from '../crews';
 import { useEconomy } from '../EconomyProvider';
 import { headOf } from '../../hangar/hangarHead';
+import { shipSheet } from '../ships/sheet';
 import Face from '../Faces';
 import { MENU_KEYS, MENU_TABS, dressFor } from './dress';
 import ShipTab from './ShipTab';
@@ -21,15 +22,17 @@ import './dresses.css';
 // page's, once it has nothing else to back out of), I and O on their tabs.
 // The design: docs/superpowers/specs/2026-11-18-quiet-hud-design.md.
 //
-//   <FlightMenu open tab onTab onOpen onClose enabled ship loadout picks carry fx route where map
+//   <FlightMenu open tab onTab onOpen onClose enabled ship loadout build picks carry fx route where map
 //     controls onControls onHangar onShip online onOnline hold />
 //   onHangar(tab): the Hangar on that page (the menu shuts first); onShip(id) | null: change ship;
 //   online: useOnline()'s; onOnline(): the multiplayer card (Online.jsx's, by its tp:pilot); hold: the ships session's sheet's hold, or null
 
-export default function FlightMenu({ open, tab, onTab, onOpen, onClose, enabled = true, ship, loadout = null, picks = null, carry = null, fx = null, route, where = 'universe', map = null, controls = null, onControls = null, onHangar, onShip = null, online = null, onOnline = null, hold = null }) {
+export default function FlightMenu({ open, tab, onTab, onOpen, onClose, enabled = true, ship, loadout = null, build = null, picks = null, carry = null, fx = null, route, where = 'universe', map = null, controls = null, onControls = null, onHangar, onShip = null, online = null, onOnline = null, hold = null }) {
   const crew = crewById(ship);
   const { economy } = useEconomy({ ask: open });
   const head = headOf(economy?.record?.() ?? null);
+  // the ship as words and numbers (the ships session's read-out, ships/sheet.js): its systems' tiers for the Ship tab, the hold for the Cargo
+  const sheet = open && crew ? shipSheet({ crew: ship, build, economy, hold }) : null;
   const pilots = online?.on ? (online.room?.peers ?? []).filter((x) => !x.blocked).length + 1 : null; // (as the corner counts them: you too)
   const away = () => onClose?.();
   const hangar = (t) => {
@@ -37,8 +40,8 @@ export default function FlightMenu({ open, tab, onTab, onOpen, onClose, enabled 
     onHangar?.(t);
   };
   const body = {
-    ship: <ShipTab ship={ship} loadout={loadout} picks={picks} carry={carry} fx={fx} onHangar={hangar} onShip={onShip} />,
-    cargo: <CargoTab hold={hold} />,
+    ship: <ShipTab ship={ship} loadout={loadout} picks={picks} carry={carry} fx={fx} systems={sheet?.systems ?? []} onHangar={hangar} onShip={onShip} />,
+    cargo: <CargoTab hold={sheet?.hold ?? null} />,
     map,
     settings: <SettingsTab controls={controls} onControls={onControls} online={online} onOnline={onOnline} onLeave={away} />,
     help: <HelpTab route={route} onLeave={away} />,

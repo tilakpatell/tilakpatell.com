@@ -674,6 +674,7 @@ export default function Universe({ ask = false }) {
           enabled={menuOk}
           ship={ship}
           loadout={loadout}
+          build={build}
           picks={powerPicks}
           carry={skillFx?.carry}
           fx={skillFx}

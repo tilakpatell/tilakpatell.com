@@ -14,11 +14,16 @@ html[data-flight] .universe-online-pill { display: none; }
    nav map's button): their keys open the menu's tabs, or are still heard (H,
    M); the Hangar's button stays in the page, as H's door */
 .universe-page[data-quiet] :is(.universe-tools, .universe-hangar-btn) { display: none; }
+/* (a touch screen's tools row is laid out by thumbs.css, at its weight: this outweighs it) */
+:root .universe-page[data-quiet] .universe-map[data-ship] .universe-tools { display: none; }
+/* the guide's corner: its key (?) and the Help tab's button have it */
+html[data-flight] .guide-btn { display: none; }
+/* (the guide's corner sits over the menu's tabs on a phone: put away while it's open, the Help tab has it) */
+body:has(.hud-pause) .guide-btn { display: none; }
 /* with a mouse, Rick's portal gun is its key (P, on the Help tab) and the
    guide's corner its key (?, and Help's button); a touch screen keeps both */
 @media (pointer: fine) {
   .universe-page[data-quiet] .universe-portalgun { display: none; }
-  html[data-flight] .guide-btn { display: none; }
 }
 
 .fm {
@@ -71,6 +76,9 @@ html[data-flight] .universe-online-pill { display: none; }
 .fm-bar { position: relative; display: block; height: 6px; margin-top: 0.6rem; overflow: hidden; border-radius: 3px; background: var(--pause-slot); }
 .fm-bar > span { position: absolute; inset: 0; transform-origin: left; scale: var(--v, 0) 1; background: var(--pause-accent); }
 .fm-foot-keys { font: 500 0.78rem/1 var(--pause-num); }
+@media (pointer: coarse) {
+  .fm-foot-keys { display: none; } /* (keys a touch screen hasn't got) */
+}
 
 /* a slot: an inventory's square, its key in the corner */
 .fm-slot {
@@ -94,6 +102,9 @@ html[data-flight] .universe-online-pill { display: none; }
 .fm-slot-icon { width: 30px; height: 30px; color: var(--pause-accent); }
 .fm-slot-name { max-width: 82px; overflow: hidden; font: 600 0.72rem/1.15 var(--pause-body); text-align: center; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
 .fm-slot[data-empty] .fm-slot-name { color: var(--pause-muted); font-weight: 500; }
+.fm-tier { display: flex; gap: 2px; }
+.fm-tier > i { width: 9px; height: 3px; border-radius: 1px; background: var(--pause-line); }
+.fm-tier > i[data-on] { background: var(--pause-accent); }
 .fm-slot-key { position: absolute; left: 6px; top: 5px; color: var(--pause-muted); font: 600 0.7rem/1 var(--pause-num); }
 
 /* Ship */
