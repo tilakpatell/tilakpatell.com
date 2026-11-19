@@ -45,7 +45,7 @@ Things I’ve built: a [Game Boy emulator](https://github.com/tilakpatell/gamebo
 <table>
 <tr>
 <td width="50%" valign="top"><a href="https://tilakpatell.com/home"><img src="docs/readme/classic.webp" alt="The classic portfolio home page: Tilak Patel’s name, a short introduction and a portrait"></a><p><b>Classic</b>: the portfolio as plain, fast pages (home, experience, projects, résumé, travel, contact), one scroll for a recruiter.</p></td>
-<td width="50%" valign="top"><a href="https://tilakpatell.com/universe"><img src="docs/readme/universe.webp" alt="The universe map: the Millennium Falcon in flight beside a planet, with the site’s navigation and the flight controls"></a><p><b>Universe</b>: the same site as places in space. Fly to a planet to open its page.</p></td>
+<td width="50%" valign="top"><a href="https://tilakpatell.com/universe"><img src="docs/readme/universe.webp" alt="The universe map: the Millennium Falcon in the Core, the home sun ringed by asteroids and the portfolio’s stations, with the flight HUD and the site’s navigation"></a><p><b>Universe</b>: the same site as places in space. Fly to a planet to open its page.</p></td>
 </tr>
 </table>
 
@@ -66,7 +66,7 @@ The front door is a map of the site. You start in the Core, where the portfolio�
 <table>
 <tr>
 <td width="33%" valign="top"><img src="docs/readme/welcome.webp" alt="The welcome page, “A portfolio you can fly through”: a quick tour, the opening crawl, a cockpit and the universe, with a skip and a way to the classic site"><p><b>The welcome</b>: a quick tour, a crawl, a cockpit, then punch it.</p></td>
-<td width="33%" valign="top"><img src="docs/readme/navmap.webp" alt="The nav map: the site’s worlds, wonders and stations on a chart centred on the ship, with three drives to pick"><p><b>The nav map</b>: a chart that follows you out.</p></td>
+<td width="33%" valign="top"><img src="docs/readme/navmap.webp" alt="The nav map: the home system in the middle, the fandoms’ worlds in named neighbourhoods round it, and three drives to pick"><p><b>The nav map</b>: a chart that follows you out.</p></td>
 <td width="33%" valign="top"><img src="docs/readme/hangar.webp" alt="The hangar’s Systems tab: the ship’s core systems, each with its Mk tier and the next one to buy"><p><b>The hangar</b>: tiers, paint, parts, skills and a shipyard.</p></td>
 </tr>
 </table>
@@ -118,7 +118,7 @@ Fly far enough and the map never ends. Space goes on in every direction, generat
 
 Confession: I’m not a huge fan of web development. I am a big fan of finding out how far frontier AI coding can go, so this repo is the experiment, and the site is the fun excuse for it. Almost every line here was written by [Claude Code](https://claude.com/claude-code) agents. My part is the one I do at work, the program manager’s: decide what gets built, answer the design questions, and say what ships. The interesting engineering is everything that lets agents ship to a live site every day without breaking it.
 
-**1,156 pull requests merged since the first on 4 October 2026**, about 25 a day.
+**Over 1,150 pull requests merged since the first on 4 October 2026**, about 25 a day.
 
 - **Every feature starts as a conversation.** I say what I want, in my own words (“something gargantuan or make it really cool”, “I don’t like how it’s like a ceiling or whatever”). A session asks me what it can’t decide, writes the design down in [`docs/superpowers/specs/`](docs/superpowers/specs) (128 of them so far) and a plan, builds it test-first on a branch, checks it in a real browser, and merges once CI is green.
 - **Agents work in parallel lanes.** A big feature gets an orchestrator session that splits the design into lanes and starts one cloud session per lane, each on its own branch. The endless universe was built that way, with nebulae, generated places, things in space, generated planets and the 3D chart all in flight at once. Every lane leaves a hand-off note ([`docs/superpowers/HANDOFF-*.md`](docs/superpowers)) and the numbers behind its claims ([`evidence/`](docs/superpowers/evidence)). Sessions also message each other: this README was refreshed by a session that asked the live ones what they were shipping.
