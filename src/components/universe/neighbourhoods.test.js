@@ -4,10 +4,7 @@ import { HOME_RADIUS, MAP_RADIUS, POSITIONS, REACH, RIM, SECTORS, UNIVERSE_RADIU
 import { PLACES, WONDERS, reachOf } from './deep';
 import { UNIVERSES } from './universes';
 import { SECTOR } from '../../lib/space/address';
-import { makeSector } from '../expanse/gen/sector';
-import { addBodies } from '../expanse/gen/systems';
-import { UNIVERSE } from '../expanse/gen/seed';
-import { fullSector } from '../expanse/gen/space';
+import { UNIVERSE, fullSector } from '../expanse/shared/gen';
 import { sectorAt } from '../../lib/space/address';
 import { STARTS, startAt } from './ship';
 
@@ -80,8 +77,9 @@ describe('neighbourhoods', () => {
     const near = (sx, sz) => {
       const k = `${sx},${sz}`;
       if (!made.has(k)) {
-        const s = addBodies(makeSector(UNIVERSE, sx, sz));
-        made.set(k, [...s.systems.map((y) => ({ at: y.at, r: y.reach })), ...s.wonders.map((w) => ({ at: w.at, r: w.size }))]);
+        // (the middle layer's old sector, with its bodies: fullSector's first `legacy` systems and wonders, before what it appends)
+        const s = fullSector(UNIVERSE, sx, 0, sz, { things: false });
+        made.set(k, [...s.systems.slice(0, s.legacy.systems).map((y) => ({ at: y.at, r: y.reach })), ...s.wonders.slice(0, s.legacy.wonders).map((w) => ({ at: w.at, r: w.size }))]);
       }
       return made.get(k);
     };
