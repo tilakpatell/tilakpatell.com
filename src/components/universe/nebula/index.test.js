@@ -104,7 +104,7 @@ it('refuses what can’t be drawn, at add', () => {
 });
 it('takes its forms’ numbers from rules.js, and names nothing reserved', () => {
   const m = clouds(made().n).material;
-  expect(m.uniforms.uForms.value.map((v) => v.toArray())).toEqual(['cloud', 'shell', 'nursery'].map((f) => [FORMS[f].inner, FORMS[f].peak, FORMS[f].outer, FORMS[f].flat]));
+  expect(m.uniforms.uForms.value.map((v) => v.toArray())).toEqual(['cloud', 'shell', 'nursery', 'vortex', 'rift'].map((f) => [FORMS[f].inner, FORMS[f].peak, FORMS[f].outer, FORMS[f].flat]));
   expect(reservedIn(m.vertexShader + m.fragmentShader)).toEqual([]);
 });
 it('fogs you inside, and starts the cloud’s march past the fog', () => {

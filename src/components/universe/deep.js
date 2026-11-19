@@ -124,7 +124,9 @@ export const WONDERS = [
   // the portals between the two (portals.js): one beside the Rick and Morty
   // planet, off to the side of the way in from home, and its other end
   // beside the Citadel. Not solid: flown into, they take the ship through
-  { id: 'rmportal', kind: 'portal', name: 'The Portal', at: besideRickAndMorty(), r: 10, color: '#7dff9a', solid: false, leadsTo: { sector: 'rickmorty', exit: 'rmportal-back' } },
+  // (the Curve Rift's: drawn big and lopsided as the show's are, `show` its radius as drawn, sectorPortals.js; its
+  // `r`, where it takes you through, stays: its grab, pull.js, carries you round and into it)
+  { id: 'rmportal', kind: 'portal', name: 'The Portal', at: besideRickAndMorty(), r: 10, show: 55, color: '#7dff9a', solid: false, leadsTo: { sector: 'rickmorty', exit: 'rmportal-back' } },
   { id: 'rmportal-back', kind: 'portal', name: 'The Portal Home', sector: 'rickmorty', at: inSector('rickmorty', [0, 20, 420]), r: 10, color: '#7dff9a', solid: false, leadsTo: { sector: 'main', exit: 'rmportal' } },
   { id: 'lantern', kind: 'pulsar', name: 'The Lantern', at: [-6200, 300, 2600], r: 12, color: '#bfe0ff' },
   { id: 'twins', kind: 'binary', name: 'The Twins', at: [6100, -220, -1500], r: 60, color: '#ffd27a', pair: { r: 42, color: '#f4f6ff', apart: 230, period: 300 } }, // (at: the point the two go round, once in period seconds)
