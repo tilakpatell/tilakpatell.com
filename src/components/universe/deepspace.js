@@ -62,6 +62,7 @@ import { sharpen } from '../../lib/three/textures';
 import { rockHook } from '../../lib/three/rock';
 import { citadelModel } from './citadelModel';
 import { NEBULAE } from './landmarks';
+import { SPIRALS } from './pull';
 import { createNebulae } from './nebula';
 import { BILLBOARD_VERT, CITADEL_FRAG, CITADEL_GLASS_FRAG, CITADEL_VERT, DISK_FRAG, DISK_VERT, GLOW_FRAG, HALO_FRAG, HALO_VERT, JET_FRAG, JET_VERT, LABEL_FRAG, LABEL_VERT, PHOTON_FRAG, PHOTON_VERT, PORTAL_FRAG, RING_FRAG, RING_VERT, SKY_FRAG, SKY_VERT, STAR_FRAG, WORLD_FRAG, WORLD_VERT } from './deepspaceShaders';
 
@@ -686,6 +687,7 @@ export function buildDeepSpace({ small = false, tier = 'high', renderer = null }
   // ── the nebulae: one renderer for the map (./nebula/), every one a place ──
   const nebulae = createNebulae({ renderer, tier });
   group.add(nebulae.group);
+  for (const s of SPIRALS) nebulae.add(s); // (the spirals round the two great portals: pull.js)
   const nebula = (w) => {
     place(w); // (its group: the place its name, aim and far star read)
     const d = NEBULAE.find((x) => x.id === w.id);

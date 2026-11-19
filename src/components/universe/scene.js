@@ -181,7 +181,8 @@ import { KEY as KEY_FULL, LIGHTS, STARS as LIT_STARS, dayYaw, lightAt, sunFor } 
 import { createCrash } from './crash';
 import { createExplosions } from '../../lib/three/explosions';
 import { createInfall } from './infall';
-import { DISK_N, MAW, captured, fallAt, plungeAt, pullAt, startFall } from './maw';
+import { DISK_N, MAW, captured, fallAt, plungeAt, startFall } from './maw';
+import { createPulls } from './pullScene';
 import { createTraffic } from './traffic';
 import { createWingmen } from './wingmen';
 import { createSkirmishes } from './skirmishes';
@@ -718,6 +719,7 @@ export async function create(canvas, ctx) {
   map.add(deep.group);
   // the portals between the map's sectors (sectorPortals.js; flown through below: portalThrough)
   const sectorPortals = createSectorPortals(map);
+  const pulls = createPulls(map, { model: () => state.model, note: (text) => (state.note = { text, until: wall() + 3 }), emit: (e) => emit(e), through: (id) => cross(() => portalThrough(id)), reduced });
   // and Rick's portal gun's, fired from the cruiser in flight (gunPortal.js; flown through below: gunThrough)
   const gunPortal = createGunPortal(map);
   let gunAt = -Infinity;
@@ -4342,12 +4344,10 @@ export async function create(canvas, ctx) {
     solidsNow = solidsWith(siegeSt.down ? SOLIDS_OPEN : SOLIDS, moving);
     const { ship: steppedRaw, events } = step(state.ship, input, dt, solidsNow, state.flySpace);
     const stepped = powers.afterStep(steppedRaw, dt); // (Han's corkscrew: its sidestep)
-    // the Maw's pull (maw.js): drawn in, and carried round with its disk
-    const g = pullAt(stepped.x, stepped.y, stepped.z);
-    const ship = g ? { ...stepped, x: stepped.x + g.v[0] * dt, y: stepped.y + g.v[1] * dt, z: stepped.z + g.v[2] * dt } : stepped;
-    // (held at a pose: still, and out of the Maw's pull, so every frame measured is the same picture)
+    // what pulls it (pullScene.js: the Maw, the Maelstrom's beam, the Rift's grab); held at a pose, nothing: every frame measured the same
+    const ship = pulls.step(stepped, { boost: Boolean(input.boost), dt, now: state.clock, off: state.held || Boolean(state.jump || crossing) });
     if (!state.held) state.ship = ship;
-    state.pull = state.held ? 0 : (g?.k ?? 0);
+    state.pull = pulls.k;
     // into a rock (rockHits.js): a bump at the boost or under, the shields
     // past it
     if (!state.jump && !state.held) rocksHit(before, ship, t);
@@ -4392,15 +4392,15 @@ export async function create(canvas, ctx) {
         state.note = { text: `Too fast to fly into ${placeName(air.id)}: ease off the boost`, until: wall() + 2.5 };
       }
     }
-    if (g) {
-      if (!state.pullSaid && g.k > 0.3) {
+    if (pulls.maw) {
+      if (!state.pullSaid && pulls.maw.k > 0.3) {
         state.pullSaid = true;
         emit({ type: 'pulled' });
       }
       // the hum of it, and the ship shaking in its grip
       if (!well && engine) well = wellSound();
-      well?.set(g.k);
-      if (!reduced) state.shake = Math.max(state.shake, Math.max(0, g.k - 0.2) * 0.55);
+      well?.set(pulls.maw.k);
+      if (!reduced) state.shake = Math.max(state.shake, Math.max(0, pulls.maw.k - 0.2) * 0.55);
       // past the point of no return: the fall
       if (captured(ship.x, ship.y, ship.z)) {
         startCrash({ id: MAW.id, swallowed: true, speed: ship.speed });
@@ -4488,7 +4488,7 @@ export async function create(canvas, ctx) {
     }
     return Boolean(
       state.auto ||
-        g ||
+        pulls.maw ||
         m.modules?.easing || // (a part just fitted, swinging into place)
         input.throttle ||
         input.turn ||

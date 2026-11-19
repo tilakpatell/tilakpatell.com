@@ -27,13 +27,13 @@
 //
 // createSky({ small, level, renderer, beacons, clouds }) → { group, setSystem(system), bake(renderer),
 //   prepare(renderer) → Promise, update(camera, t), focus(id), beacons, sunDirs,
-//   setRatio(r), setDeep(k), dispose() }; nebulaeOf(sys), bakeSize({ small, level }), starCount({ small, level })
+//   setRatio(r), setDeep(k) (0 … 2, as ../sky.js's), dispose() }; nebulaeOf(sys), bakeSize({ small, level }), starCount({ small, level })
 //   clouds: false bakes it without its nebulae, as galaxy/sky.js does
 
 import * as THREE from 'three';
 import { CubeRenderTarget, MeshBasicNodeMaterial } from 'three/webgpu';
 import {
-  Fn, If, abs, acos, asin, atan, attribute, cameraProjectionMatrix, clamp, cos, cubeTexture, dot, exp, float, floor, fract, length, max, mix,
+  Fn, If, abs, acos, asin, atan, attribute, cameraProjectionMatrix, clamp, cos, cubeTexture, dot, exp, float, floor, fract, length, max, min, mix,
   modelViewMatrix, modelWorldMatrix, normalize, positionLocal, pow, sRGBTransferEOTF, sRGBTransferOETF, screenCoordinate, sin, smoothstep,
   sqrt, texture, uniform, uv, vec2, vec3, vec4, viewportSize,
 } from 'three/tsl';
@@ -139,7 +139,9 @@ function lookMaterial(cube) {
     c.mulAssign(clamp(g.sub(0.5).mul(1.6), -1, 1).mul(0.2).mul(bright).add(1));
     // deep: the faint glow between taken toward black, the bright kept (LOOK_FRAG's)
     const l = dot(c, vec3(0.2126, 0.7152, 0.0722));
-    c.mulAssign(mix(float(1), clamp(pow(max(l, 1e-6).div(0.25), 0.9), 0.25, 1), uDeep));
+    c.mulAssign(mix(float(1), clamp(pow(max(l, 1e-6).div(0.25), 0.9), 0.25, 1), min(uDeep, 1)));
+    // (past one, the whole dimmed too: the universe map's dark, as LOOK_FRAG's)
+    c.mulAssign(mix(float(1), float(0.45), clamp(uDeep.sub(1), 0, 1)));
     const n = fract(sin(dot(screenCoordinate.xy, vec2(12.9898, 78.233))).mul(43758.5453)).sub(0.5);
     return sRGBTransferEOTF(max(sRGBTransferOETF(c).add(n.div(255)), 0));
   })();
@@ -596,9 +598,9 @@ export function createSky({ small = false, level = null, renderer = null, beacon
       starMat.uniforms.uDpr.value = dpr;
       beaconMat.uniforms.uDpr.value = dpr;
     },
-    // how deep the dark between is, 0 (as baked) to 1 (../sky.js's setDeep)
+    // how deep the dark between is, 0 (as baked) to 1, and to 2 the whole dimmed too (../sky.js's setDeep)
     setDeep(k) {
-      lookMat.uniforms.uDeep.value = Math.max(0, Math.min(1, k));
+      lookMat.uniforms.uDeep.value = Math.max(0, Math.min(2, k));
     },
     // the bake's shader made now, as the bake will draw it (into the cube:
     // the node renderer's pipeline is the target's); resolves once it has
