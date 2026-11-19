@@ -19,6 +19,7 @@ import { shadowRadius } from '../levels';
 import { dimmer } from '../dim';
 import { loadTexture } from '../../../lib/three/textures';
 import { gasGiantMap } from '../gasGiant';
+import { conduit, knobs } from '../greebles';
 
 const EYE = [0, 1.02, 0.18];
 const SNAP = 1950; // ms into the launch: the stars stretched, the tunnel
@@ -115,7 +116,7 @@ export async function build({ rich, level, coarse, renderer }) {
   const frameMat = new THREE.MeshStandardMaterial({ color: 0x30343b, roughness: 0.62, metalness: 0.28 });
   const black = new THREE.MeshStandardMaterial({ color: 0x151518, roughness: 0.7, metalness: 0.3 });
   const red = new THREE.MeshStandardMaterial({ color: 0xa62a1f, roughness: 0.55, metalness: 0.1 });
-  const chrome = new THREE.MeshStandardMaterial({ color: 0xc9ccd1, roughness: 0.25, metalness: 1 });
+  const chrome = new THREE.MeshStandardMaterial({ color: 0xb9bcc0, roughness: 0.34, metalness: 1 });
   // (their lit buttons a glow, not white squares the bloom spreads over the panel)
   const panelMats = [0, 1, 2].map((k) => consoleMat(consoleMaps({ w: 512, h: 320, seed: 60 + k, base: '#2a2b2e', lit: 0.28 }), { glow: 1.05 }));
 
@@ -146,7 +147,9 @@ export async function build({ rich, level, coarse, renderer }) {
   glass.renderOrder = 10;
   inside.add(glass);
 
-  // the tub: walls to the sills, the floor, the seat's edge
+  // the tub: walls to the sills, the floor, the seat's edge; knobs along each
+  // side console and conduit clamped down each wall (../greebles.js)
+  const knobSpots = [];
   for (const sx of [-1, 1]) {
     const wall = new THREE.Mesh(new THREE.PlaneGeometry(1.1, 0.82), hullGrey);
     wall.position.set(sx * 0.4, 0.41, 0.08);
@@ -159,7 +162,13 @@ export async function build({ rich, level, coarse, renderer }) {
     con.rotation.y = -sx * Math.PI / 2;
     con.rotation.x = -0.9;
     inside.add(con);
+    con.updateMatrixWorld(true);
+    const out = new THREE.Vector3(0, 0, 1).transformDirection(con.matrixWorld);
+    for (let i = 0; i < 6; i++) knobSpots.push({ at: new THREE.Vector3(-0.27 + i * 0.03 + (sx > 0 ? 0.36 : 0), 0.05, 0.001).applyMatrix4(con.matrixWorld), n: out, spin: i * 1.9 + sx });
+    const wallRun = [0.58, 0.3, 0.0, -0.22].map((z, i) => [sx * 0.385, 0.5 - i * 0.02, z]);
+    inside.add(conduit(wallRun, hullGrey, { count: 3, radius: 0.007, gap: 0.019, clampMat: black, every: 0.24, seed: sx > 0 ? 5 : 8 }));
   }
+  inside.add(knobs(knobSpots, black, { radius: 0.008, height: 0.01 }));
   const floor = new THREE.Mesh(new THREE.PlaneGeometry(0.8, 1.6), black);
   floor.rotation.x = -Math.PI / 2;
   floor.position.set(0, 0.05, 0.1);
@@ -479,11 +488,7 @@ export async function build({ rich, level, coarse, renderer }) {
     hfov: 90,
     vmin: 58,
     vmax: 98,
-    exposure: 1.0,
     envIntensity: 0.55,
-    // (strength, radius, threshold: over 1, so it's the lights, the sun and
-    // the jump that bloom, not the sunlit white of the nose)
-    bloom: [0.5, 0.38, 1.0],
     flash: '#eef5ff',
     rumble: 0.9,
     glare,
@@ -523,7 +528,7 @@ export async function build({ rich, level, coarse, renderer }) {
       sunHalo.material.opacity = 0.16 * pre;
       const k = hyper.light(jumpColor, { throttle: launching ? thr : 0, tunnel });
       jump.color.copy(jumpColor);
-      jump.intensity = (k > 0 ? 1.6 : 0) + snap * 6;
+      jump.intensity = (k > 0 ? 1.1 : 0) + snap * 3.5;
       sun.intensity = 2.6 * (0.3 + 0.7 * pre);
       glassLight.setRGB(1, 0.95, 0.88).lerp(blue, clamp01(tunnel + thr * 0.3));
       glassM.userData.setLight?.(glassLight);

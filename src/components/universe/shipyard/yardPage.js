@@ -15,6 +15,7 @@ import { CREWS } from '../crews';
 import { LOADOUT_KEY, readLoadout, readLoadouts } from '../outfit';
 import { fitDraft } from '../yardRules';
 import { GARAGE_KEY, HULL_KEY, TUNE_KEY, readHulls, readTune, readTunes } from './build';
+import { coreOf } from '../ships/tiers';
 
 const CREW_IDS = CREWS.map((c) => c.id);
 
@@ -47,7 +48,7 @@ export function keepTune(store, tunes, ship, tune) {
 // (every fit tried first on a copy, fitDraft; then everything unowned paid for in one checkout; a refusal at any step changes nothing)
 export function applyYardDraft({ ship, economy, loadouts, tunes = {}, unlocked }, { diff, toBuy, draft }) {
   if (!ship || !economy) return { result: { ok: false, why: 'shop', text: 'The shop’s still opening.' } };
-  const fitted = fitDraft(ship, draft, diff, { saved: readLoadout(loadouts[ship]), unlocked });
+  const fitted = fitDraft(ship, draft, diff, { saved: readLoadout(loadouts[ship]), unlocked, core: coreOf(economy, ship, draft.build) }); // (the reactor's tier counts)
   if (!fitted.ok) return { result: { ok: false, why: fitted.why, text: fitted.why === 'power' ? 'Not enough power for that any more: the yard has opened again on what’s flown.' : 'Something there isn’t yours any more: the yard has opened again on what’s flown.' } };
   const paid = economy.checkout(toBuy);
   if (!paid.ok) return { result: { ok: false, why: paid.why, text: paid.why === 'credits' ? `Short ${(paid.total - economy.credits).toLocaleString('en-GB')} ¢.` : `The ${paid.item?.name ?? 'part'} can’t be bought.` } };

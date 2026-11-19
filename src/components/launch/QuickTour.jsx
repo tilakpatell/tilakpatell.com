@@ -12,6 +12,9 @@ import { ReadyLine } from './parts';
 // the intro" and Esc (the frame's, Opening.jsx) straight to the universe.
 // `onCard` hears each card as it's shown (the flying card stands in for the
 // map's first-flight brief). Drawn in the launch's frame, after the welcome.
+// Every card is laid in the same place, the ones not shown hidden (and
+// inert), so the deck is as tall as its tallest card and Next stays under
+// the thumb or the pointer from one card to the next.
 //
 // <QuickTour next="crawl" | "arrive" map={…} onDone={() => …} onSkipIntro={() => …} onCard={(card) => …} />
 
@@ -57,32 +60,10 @@ export default function QuickTour({ next = 'crawl', map, onDone, onSkipIntro, on
           {i + 1} of {cards.length}
         </span>
       </p>
-      <div className="launch-tour-card" key={card.id} aria-live="polite">
-        <Art kind={card.art} />
-        <div className="launch-tour-words">
-          <h2 id="launch-tour-title" className="launch-tour-title">
-            {card.title}
-          </h2>
-          {card.text && <p className="launch-tour-text">{card.text}</p>}
-          {card.rows && !touch && (
-            <ul className="launch-tour-keys">
-              {card.rows.map((r) => (
-                <li key={r.text}>
-                  <span className="launch-tour-caps">
-                    {r.keys.map((k) => (
-                      <kbd key={k} className="kbd">
-                        {k}
-                      </kbd>
-                    ))}
-                  </span>
-                  {r.text}
-                </li>
-              ))}
-            </ul>
-          )}
-          {card.rows && touch && card.touch && <p className="launch-tour-text">{card.touch}</p>}
-          {card.after && <p className="launch-tour-after">{card.after}</p>}
-        </div>
+      <div className="launch-tour-deck" aria-live="polite">
+        {cards.map((c, n) => (
+          <Card key={c.id} card={c} shown={n === i} touch={touch} />
+        ))}
       </div>
 
       <div className="launch-tour-dots" aria-hidden="true">
@@ -113,6 +94,40 @@ export default function QuickTour({ next = 'crawl', map, onDone, onSkipIntro, on
         )}
       </p>
       <ReadyLine map={map} />
+    </div>
+  );
+}
+
+// One card: its drawing beside its words (over them on a phone). The one
+// shown is the dialog's title; the rest hold their place, unseen.
+function Card({ card, shown, touch }) {
+  return (
+    <div className="launch-tour-card" data-on={shown ? '' : undefined} aria-hidden={shown ? undefined : true} inert={!shown}>
+      <Art kind={card.art} />
+      <div className="launch-tour-words">
+        <h2 id={shown ? 'launch-tour-title' : undefined} className="launch-tour-title">
+          {card.title}
+        </h2>
+        {card.text && <p className="launch-tour-text">{card.text}</p>}
+        {card.rows && !touch && (
+          <ul className="launch-tour-keys">
+            {card.rows.map((r) => (
+              <li key={r.text}>
+                <span className="launch-tour-caps">
+                  {r.keys.map((k) => (
+                    <kbd key={k} className="kbd">
+                      {k}
+                    </kbd>
+                  ))}
+                </span>
+                {r.text}
+              </li>
+            ))}
+          </ul>
+        )}
+        {card.rows && touch && card.touch && <p className="launch-tour-text">{card.touch}</p>}
+        {card.after && <p className="launch-tour-after">{card.after}</p>}
+      </div>
     </div>
   );
 }

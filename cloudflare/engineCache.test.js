@@ -618,3 +618,158 @@ describe('a body that stops: ended in an error, so the page asks again, never he
     expect(Date.now() - t0).toBeLessThan(2500);
   });
 });
+
+// (19 Nov, staged r1076: the worker's thread held tens of seconds while the page compiled its GPU pipelines; on waking, every
+// limit's timer fired at once and some 20 healthy downloads were cancelled in 10 ms, two engine pthread workers' scripts among them)
+describe('a timer that fires late is not silence: nothing is cut on a thread that was held', () => {
+  const enc = new TextEncoder();
+  const limits = { fetch: 15000, waitAhead: 20000, stall: 10000 };
+  const path = '/battlefront/engine/r1076-test/engine.worker.js';
+  // a body the test sends by hand
+  const open = () => {
+    const state = { cancelled: false };
+    state.stream = new ReadableStream({
+      start(c) {
+        state.send = (s) => c.enqueue(enc.encode(s));
+        state.end = () => c.close();
+      },
+      cancel() { state.cancelled = true; },
+    });
+    return state;
+  };
+  // the network asks' abort signals (the build's list's ask apart)
+  const signalled = (w) => {
+    const signals = [];
+    const fetch = w.self.fetch;
+    w.self.fetch = (request, init) => {
+      if (!urlOf(request).endsWith('/' + FILES)) signals.push(init?.signal ?? null);
+      return fetch(request, init);
+    };
+    return signals;
+  };
+
+  it('a chunk already come when the thread wakes is read, not cut: the body comes whole', async () => {
+    vi.useFakeTimers();
+    try {
+      const b = open();
+      const w = worker(() => new Response(b.stream, { status: 200 }), null, limits);
+      const one = w.ask(path);
+      const text = (await one.answer).text();
+      b.send('a');
+      await vi.advanceTimersByTimeAsync(10);
+      // (the thread held past the limit: the guard's timer and the next chunk's arrival fall in one step, the timer first)
+      setTimeout(() => (b.send('b'), b.end()), limits.stall);
+      vi.advanceTimersByTime(limits.stall + 5000);
+      await vi.runAllTimersAsync();
+      expect(await text).toBe('ab');
+      expect(b.cancelled).toBe(false);
+      await one.settled();
+      expect(w.asked).toEqual([ORIGIN + path]);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('an answer already come when the thread wakes is taken, not aborted and asked again', async () => {
+    vi.useFakeTimers();
+    try {
+      const w = worker(() => new Promise((ok) => setTimeout(() => ok({ status: 200, body: 'engine' }), limits.fetch + 5)), null, limits);
+      const signals = signalled(w);
+      const one = w.ask(path);
+      await vi.advanceTimersByTimeAsync(0);
+      expect(w.asked).toEqual([ORIGIN + path]);
+      // (the fetch's limit and its answer in one step, the limit first)
+      vi.advanceTimersByTime(limits.fetch + 5000);
+      await vi.runAllTimersAsync();
+      expect((await one.answer).body).toBe('engine');
+      expect(w.asked).toEqual([ORIGIN + path]);
+      expect(signals.map((s) => s?.aborted)).toEqual([false]);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('a body truly silent past the limit, its timers on time, is still cut with the TypeError', async () => {
+    vi.useFakeTimers();
+    try {
+      const b = open();
+      const w = worker(() => new Response(b.stream, { status: 200 }), null, limits);
+      const one = w.ask(path);
+      let failed = null;
+      const text = (await one.answer).text().catch((error) => (failed = error));
+      b.send('a');
+      await vi.advanceTimersByTimeAsync(limits.stall - 10);
+      expect(failed).toBeNull();
+      expect(b.cancelled).toBe(false);
+      await vi.advanceTimersByTimeAsync(100);
+      await text;
+      expect(failed).toBeInstanceOf(TypeError);
+      expect(failed.message).toMatch(/no byte in 10000 ms/);
+      expect(b.cancelled).toBe(true);
+      await one.settled();
+      expect(w.stores.get('tp-engine-r1076-test')?.size ?? 0).toBe(0);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('an ask truly unanswered past the limit, its timers on time, is still aborted and asked again', async () => {
+    vi.useFakeTimers();
+    try {
+      let calls = 0;
+      const w = worker(() => (++calls === 1 ? new Promise(() => {}) : { status: 200, body: 'engine' }), null, limits);
+      const signals = signalled(w);
+      const one = w.ask(path);
+      await vi.advanceTimersByTimeAsync(limits.fetch - 10);
+      expect(signals.map((s) => s?.aborted)).toEqual([false]);
+      await vi.advanceTimersByTimeAsync(100);
+      expect(signals[0].aborted).toBe(true);
+      await vi.runAllTimersAsync();
+      expect((await one.answer).body).toBe('engine');
+      expect(calls).toBe(2);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('a chunk that comes after the timer was armed keeps the body: before the timer fires, or between its firing and its cut', async () => {
+    vi.useFakeTimers();
+    try {
+      const b = open();
+      const w = worker(() => new Response(b.stream, { status: 200 }), null, limits);
+      const one = w.ask(path);
+      const text = (await one.answer).text();
+      b.send('a');
+      await vi.advanceTimersByTimeAsync(6000);
+      b.send('b');
+      // (past the limit since the first chunk, not since the last)
+      await vi.advanceTimersByTimeAsync(limits.stall - 1);
+      expect(b.cancelled).toBe(false);
+      // (the limit since 'b' fires, and 'c' comes in the same turn)
+      vi.advanceTimersByTime(1);
+      b.send('c');
+      b.end();
+      await vi.runAllTimersAsync();
+      expect(await text).toBe('abc');
+      expect(b.cancelled).toBe(false);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('a timer that fires late, the thread truly held, hears a whole limit again before it cuts', async () => {
+    // (real timers, the thread held by a busy loop as the worker's was by the page; the next chunk comes after the two turns)
+    const b = open();
+    const w = worker(() => new Response(b.stream, { status: 200 }), null, { ...limits, stall: 200 });
+    const one = w.ask(path);
+    const text = (await one.answer).text();
+    b.send('a');
+    await new Promise((r) => setTimeout(r, 20));
+    const until = Date.now() + 600;
+    while (Date.now() < until) { /* held */ }
+    setTimeout(() => (b.send('b'), b.end()), 60);
+    expect(await text).toBe('ab');
+    expect(b.cancelled).toBe(false);
+    await one.settled();
+  });
+});

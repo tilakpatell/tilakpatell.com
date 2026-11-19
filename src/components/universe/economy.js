@@ -25,10 +25,17 @@
 // owned, so nobody loses what they had. Pure (no three.js, no DOM), so it's
 // tested in Node.
 //
-// createEconomy({ saves, achievements, standingOf, rankOf, skillOf, later, cancel })
+// A ship's tier (ships/tiers.js) is an item too: it needs the tier before it
+// (`needs.owns`, a key owned) and, from Mk IV, goods from the hold
+// (`needs.goods`, { id: n }), which the wallet asks its cargo for ({ has(goods),
+// take(goods) }: the hold's, set with setCargo once the hold is made; with
+// none, a need for goods is never met). checkout takes the goods only once
+// everything in the list can be bought. A tier is never sold back.
+//
+// createEconomy({ saves, achievements, standingOf, rankOf, skillOf, cargo, later, cancel })
 //   → { credits, xp, level, owned, spent, earned, earn(what, n, { side }),
 //   canBuy(item), buy(item), checkout(items), canSell(item), sell(item), log,
-//   spend(n), owns(id), grant(ids), record(), on(fn) → off, flush() }
+//   spend(n), owns(id), grant(ids), setCargo(cargo), record(), on(fn) → off, flush() }
 // deedToEarn(deed) → an EARN key or null; earnNote(earned) → { text, level }
 // or null; goodStanding(level) → boolean
 
@@ -197,6 +204,7 @@ export function createEconomy({
   standingOf = () => null,
   rankOf = () => null,
   skillOf = () => false,
+  cargo: cargoIn = null,
   later = (fn, ms) => setTimeout(fn, ms),
   cancel = (h) => clearTimeout(h),
   now = () => Date.now(),
@@ -218,6 +226,7 @@ export function createEconomy({
   };
   const listeners = new Set();
   let pending = null;
+  let cargo = cargoIn;
 
   const write = () => {
     pending = null;
@@ -264,8 +273,17 @@ export function createEconomy({
   const isItem = (item) => isObject(item) && isId(item.id) && Number.isInteger(item.price) && item.price >= 0;
   // what an item is owned as: its key, or its id when it has none
   const idOf = (item) => (isId(item.key) ? item.key : item.id);
-  // the first need not met, or null
-  const lock = (needs) => {
+  // whether the hold has these goods ({ id: n }, whole counts), by its own say
+  const hasGoods = (goods) => isObject(goods) && Boolean(cargo) && cargo.has(goods) === true;
+  // goods needed by a list, summed (two tiers each needing a rare need both)
+  const goodsOf = (items) => {
+    const sum = {};
+    for (const item of items) for (const [id, n] of Object.entries(item?.needs?.goods ?? {})) sum[id] = (sum[id] ?? 0) + count(n);
+    return sum;
+  };
+  // the first need not met, or null (`coming`: what's earlier in the same
+  // checkout, owned by the time this is: Mk II and Mk III bought together)
+  const lock = (needs, coming = null) => {
     if (!isObject(needs)) return null;
     if (needs.achievement != null) {
       const have = achievements();
@@ -282,16 +300,18 @@ export function createEconomy({
       if (!rankMet(side, rankOf(side), id)) return 'rank';
     }
     if (needs.skill != null && skillOf(needs.skill) !== true) return 'skill';
+    if (needs.owns != null && !owned.has(needs.owns) && !coming?.has(needs.owns)) return 'previous';
+    if (needs.goods != null && !hasGoods(needs.goods)) return 'goods';
     return null;
   };
 
   // A lock comes before the price: there's no saving up for what you
   // can't have yet, so the hangar says what it needs first. (A plain
   // function, not a method, so buy works handed about on its own.)
-  const canBuy = (item) => {
+  const canBuy = (item, coming = null) => {
     if (!isItem(item)) return { ok: false, why: 'invalid' };
     if (item.stock === true || owns(idOf(item))) return { ok: false, why: 'owned' };
-    const locked = lock(item.needs);
+    const locked = lock(item.needs, coming);
     if (locked) return { ok: false, why: `locked:${locked}` };
     if (credits < item.price) return { ok: false, why: 'credits' };
     return { ok: true, why: null };
@@ -307,7 +327,7 @@ export function createEconomy({
     const seen = new Set();
     let running = 0;
     for (const item of items) {
-      const can = canBuy(item);
+      const can = canBuy(item, seen);
       if (!can.ok) return { ok: false, why: can.why, item, total };
       if (seen.has(idOf(item))) return { ok: false, why: 'owned', item, total };
       seen.add(idOf(item));
@@ -315,6 +335,9 @@ export function createEconomy({
       if (running > credits) return { ok: false, why: 'credits', item, total };
     }
     if (!items.length) return { ok: true, why: null, item: null, total: 0 };
+    const goods = goodsOf(items);
+    if (Object.keys(goods).length && !hasGoods(goods)) return { ok: false, why: 'locked:goods', item: items.find((i) => i?.needs?.goods), total };
+    for (const item of items) if (isObject(item.needs?.goods)) cargo.take(item.needs.goods);
     for (const item of items) {
       credits -= item.price;
       spent += item.price;
@@ -330,6 +353,7 @@ export function createEconomy({
   const canSell = (item) => {
     if (!isItem(item)) return { ok: false, why: 'invalid' };
     if (item.stock === true || idOf(item) === STOCK) return { ok: false, why: 'stock' };
+    if (item.kind === 'tier') return { ok: false, why: 'tier' };
     if (!owned.has(idOf(item))) return { ok: false, why: 'notOwned' };
     return { ok: true, why: null };
   };
@@ -389,7 +413,7 @@ export function createEconomy({
       changed();
       return { ...got, levelUp: now > was ? now : null };
     },
-    canBuy,
+    canBuy: (item) => canBuy(item), // (one argument: handed to a map, its index is no checkout)
     buy: (item) => checkout([item]).ok,
     checkout,
     canSell,
@@ -417,6 +441,9 @@ export function createEconomy({
       return true;
     },
     owns,
+    setCargo(next) {
+      cargo = next ?? null;
+    },
     grant(ids) {
       if (!Array.isArray(ids)) return;
       const before = owned.size;

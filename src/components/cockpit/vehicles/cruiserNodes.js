@@ -533,11 +533,7 @@ export async function build({ rich, coarse }) {
     hfov: 90,
     vmin: 56,
     vmax: 98,
-    exposure: 1.0,
-    // flat colours as painted: no filmic curve
-    toneMapping: THREE.NoToneMapping,
     envIntensity: 0.15,
-    bloom: [0.5, 0.4, 0.97], // only the portal's green and the lights
     flash: '#b4f36c',
     glance: -0.8, // over at Morty
     rumble: 0.6,
