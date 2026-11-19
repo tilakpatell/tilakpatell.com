@@ -31,6 +31,7 @@ const fly = () => [
   ['hold F', 'Fire'],
   ...ARMS,
   ['T / Q', 'Next / previous target'],
+  ['Z', 'Scan: what’s in your scanner’s reach, charted and paid for at the next station (the universe map)'],
   ['V', 'Cockpit or chase camera'],
   ['Drag', 'Fly like a stick'],
 ];

@@ -85,6 +85,19 @@ export const THINGS = {
   thrown: (key) => `Through the wormhole. You’re in ${key}, a long way from where you were.`,
 };
 
+// a long jump into generated space, in hops (explore/route.js): the HUD's note
+export const HOPS = {
+  going: (k, n, name) => `Hop ${k} of ${n}${name ? ` · ${name}` : ''}: past the hyperdrive’s range, it goes in hops.`,
+  last: (k, n) => `Hop ${k} of ${n}: the last.`,
+};
+// the scan, charting and the data bank (explore/): the HUD's notes
+export const EXPLORE = {
+  charted: (id, n) => `Sector charted · ${id} · +${n} data`,
+  scanned: ({ systems, things, surveyed, paid }) =>
+    paid ? `Scanned ${systems} system${systems === 1 ? '' : 's'} and ${things} thing${things === 1 ? '' : 's'}${surveyed ? ' · sector surveyed' : ''} · +${paid} data` : 'Scanned: nothing new in reach.',
+  charging: (s) => `Scanner charging · ${Math.ceil(s)} s`,
+  paid: (n) => `Exploration data sold · +${n.toLocaleString('en-GB')} ¢`,
+};
 // a docked station's market (places/MarketTab.jsx)
 const credits = (n) => `${n.toLocaleString('en-GB')} ¢`;
 export const MARKET = {
