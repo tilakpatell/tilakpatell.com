@@ -18,8 +18,8 @@ html[data-flight] .universe-online-pill { display: none; }
 :root .universe-page[data-quiet] .universe-map[data-ship] .universe-tools { display: none; }
 /* the guide's corner: its key (?) and the Help tab's button have it */
 html[data-flight] .guide-btn { display: none; }
-/* (the guide's corner sits over the menu's tabs on a phone: put away while it's open, the Help tab has it) */
-body:has(.hud-pause) .guide-btn { display: none; }
+/* (the guide's corner sits over the menu's tabs on a phone, and the tour's offer over its foot: put away while it's open, the Help tab has both) */
+body:has(.hud-pause) :is(.guide-btn, .tour-offer) { display: none; }
 /* with a mouse, Rick's portal gun is its key (P, on the Help tab) and the
    guide's corner its key (?, and Help's button); a touch screen keeps both */
 @media (pointer: fine) {
@@ -193,8 +193,22 @@ body:has(.hud-pause) .guide-btn { display: none; }
   color: var(--pause-ink);
 }
 .fm-hangar .hangar-body { flex: 1; min-height: 0; overflow: visible; }
-/* (flex: none: in the column, flex: 1 would have it take the catalogue's whole height and the showroom's canvas grow with it) */
-.fm-hangar .hangar-body[data-tab='shipyard'] { display: flex; flex: none; height: max(420px, calc(min(720px, 100dvh - 120px) - 230px)); overflow: hidden; }
+/* the shipyard, a garage's whole screen: the panel near the window's size,
+   and the yard the rest of its tab's height, by the column's flex (a page
+   whose height came from its content took the catalogue's 3,200 px, and the
+   showroom's canvas grew with it) */
+@media (min-width: 900px) {
+  .fm .hud-pause-panel:has(.hangar-body[data-tab='shipyard']) { width: calc(100vw - 32px); height: calc(100dvh - 96px); }
+  .fm .hud-pause-body:has(.hangar-body[data-tab='shipyard']) { display: flex; flex-direction: column; overflow: hidden; padding-block: 0.9rem; }
+  .fm .hud-pause-body:has(.hangar-body[data-tab='shipyard']) .fm-shiptab { flex: 1; min-height: 0; gap: 0.7rem; }
+  .fm-hangar .hangar-body[data-tab='shipyard'] { display: flex; flex: 1; min-height: 0; overflow: hidden; }
+}
+/* (narrower, the yard stacks, showroom over list over card, and the menu's
+   body scrolls it as one page, the bar along its foot while there's a bill) */
+@media (max-width: 899px) {
+  .fm-hangar .hangar-body[data-tab='shipyard'] { display: block; overflow: visible; }
+  .fm-hangar .yz { height: auto; min-height: 0; overflow: visible; }
+}
 .fm-hangar .hangar-page { max-width: none; padding: 0; }
 .fm-hangar :is(button, input):focus-visible { outline: 2px solid var(--pause-accent); outline-offset: 1px; }
 

@@ -31,7 +31,7 @@ const FOCUSABLE = 'button:not([disabled]), a[href], input:not([disabled]), [tabi
 export default function HangarPanel({ open, onOpen, tab, onTab, enabled = true, ship, shipName = '', live, lastBuild = null, saves, dropped = null, onApply, onSell, doorAt = '.universe-hangar-btn', returnTo = doorAt, crewKey = true, hint = null }) {
   const id = useId();
   const panel = useRef(null);
-  const [slot, setSlot] = useState('paint');
+  const [slot, setSlot] = useState(null); // (the shipyard's category open: null, its front door)
   const { unlocked } = useAchievements();
   const { economy, version } = useEconomy();
   const { points } = useSkills();

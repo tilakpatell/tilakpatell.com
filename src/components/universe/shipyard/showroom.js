@@ -8,9 +8,14 @@
 // new ship. Pointing at a slot pulses what's bolted there. It draws at
 // most FPS frames a second, only while the tab is visible and the canvas
 // in view, and stops on dispose. After rickmorty/wardrobe/preview.js.
+// The camera goes to the part being shopped (showroomViews.js: the tail for
+// fins, the flank for boosters), easing there, and turns slowly at the
+// yard's front door; a drag has the ship till the next part is picked. The
+// ship is framed close, and `shift` moves it right of the middle, out from
+// under a list over the left of the canvas.
 //
-// createShowroom(canvas, { reduced }) → { show({ kind, build, loadout }),
-//   focus(slot | null), dispose() } | null (no WebGL)
+// createShowroom(canvas, { reduced, shift }) → { show({ kind, build, loadout }),
+//   focus(slot | null), frame({ shift }), dispose() } | null (no WebGL)
 
 import * as THREE from 'three';
 import { pixelRatio } from '../../../lib/device';
@@ -23,11 +28,13 @@ import { paintById } from '../paint';
 import { writeBuild } from './build';
 import { BUILD_SLOTS } from './parts';
 import { FPS, createFling, fitDistance, glowCopy, heroOf, pulseAt, yawFromDrag } from './showroomRules';
+import { HOME_VIEW, easeAngle, easeTo, viewFor } from './showroomViews';
 
 const FOV = 30;
+const FRAME = 0.8; // (closer than showroomRules' fit, a garage's framing: the views' `near` brings it nearer still)
 const PULSE_COLOR = new THREE.Color('#7cc8ff');
 
-export function createShowroom(canvas, { reduced = false } = {}) {
+export function createShowroom(canvas, { reduced = false, shift: shiftAt = 0 } = {}) {
   let renderer;
   try {
     renderer = quiet(new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: 'high-performance' }));
@@ -62,15 +69,24 @@ export function createShowroom(canvas, { reduced = false } = {}) {
   let shownKey = null; // the kind and build the model is
   let focused = null; // { slot, swaps: [[mesh, material]] }
 
+  // the camera where the view has it: `cam` eased toward the view each frame, `zoom` the wheel's
+  const cam = { lift: HOME_VIEW.lift, near: HOME_VIEW.near };
+  let shift = shiftAt;
+  const place = () => {
+    const d = fitDistance(camera.aspect, LENGTH, FOV) * FRAME * cam.near * zoom;
+    camera.position.set(0, d * cam.lift, d * Math.sqrt(Math.max(0.2, 1 - cam.lift * cam.lift * 0.5)));
+    camera.lookAt(0, 0, 0);
+  };
   const fit = () => {
     const w = canvas.clientWidth || 320;
     const h = canvas.clientHeight || 240;
     renderer.setPixelRatio(pixelRatio(2));
     renderer.setSize(w, h, false);
     camera.aspect = w / h;
-    const d = fitDistance(camera.aspect, LENGTH, FOV) * zoom;
-    camera.position.set(0, d * 0.42, d);
-    camera.lookAt(0, 0, 0);
+    // (the ship right of the middle by `shift` of the width: the frame's own window, moved)
+    if (shift) camera.setViewOffset(w, h, -shift * w, 0, w, h);
+    else camera.clearViewOffset();
+    place();
     camera.updateProjectionMatrix();
     dirty = true;
   };
@@ -143,7 +159,8 @@ export function createShowroom(canvas, { reduced = false } = {}) {
 
   // turning: slowly on its own (unless motion's reduced), by a drag, by
   // the arrow keys; a wheel or a pinch brings it a little nearer
-  let yaw = 0.6;
+  let yaw = HOME_VIEW.yaw;
+  let held = false;
   const spin = reduced ? 0 : 0.3;
   let drag = null;
   // a drag let go at speed keeps it turning, slowing (showroomRules' fling); not with reduced motion
@@ -155,6 +172,7 @@ export function createShowroom(canvas, { reduced = false } = {}) {
     fling.grab();
     movedAt = performance.now();
     if (pointers.size === 1) drag = { x: e.clientX, yaw };
+    held = true; // (the pilot's turn now: the view leaves the yaw alone till another part's picked)
     canvas.setPointerCapture?.(e.pointerId);
   };
   const move = (e) => {
@@ -221,8 +239,21 @@ export function createShowroom(canvas, { reduced = false } = {}) {
       yaw += fling.coast(dt);
       dirty = true;
     }
-    if (spin || dirty || focused) {
-      yaw += spin * dt;
+    // the view: a slot's, eased to, or the front door's, turning slowly (a drag's yaw holds till the slot changes)
+    const view = viewFor(wantFocus);
+    let settling = false;
+    if (wantFocus && !drag && !fling.moving && !held) {
+      const was = yaw;
+      yaw = reduced ? view.yaw : easeAngle(yaw, view.yaw, dt);
+      settling = Math.abs(yaw - was) > 1e-4;
+    } else if (!wantFocus && !drag && !fling.moving) yaw += spin * dt;
+    const lift = reduced ? view.lift : easeTo(cam.lift, view.lift, dt);
+    const near = reduced ? view.near : easeTo(cam.near, view.near, dt);
+    if (Math.abs(lift - cam.lift) > 1e-4 || Math.abs(near - cam.near) > 1e-4) settling = true;
+    cam.lift = lift;
+    cam.near = near;
+    if (spin || dirty || focused || settling) {
+      place();
       turn.rotation.y = yaw;
       if (focused) {
         const k = pulseAt((now - t0) / 1000);
@@ -259,9 +290,16 @@ export function createShowroom(canvas, { reduced = false } = {}) {
       dirty = true;
     },
     focus(slot) {
-      wantFocus = slot ?? null;
+      const next = slot ?? null;
+      if (next !== wantFocus) held = false;
+      wantFocus = next;
       applyFocus(wantFocus);
       dirty = true;
+    },
+    frame({ shift: s = 0 } = {}) {
+      if (s === shift) return;
+      shift = s;
+      fit();
     },
     dispose() {
       gone = true;

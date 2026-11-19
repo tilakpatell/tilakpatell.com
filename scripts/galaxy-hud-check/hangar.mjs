@@ -22,6 +22,11 @@ const box = (page, sel) =>
   }, sel);
 const meet = (a, b) => a && b && a.l < b.r - 0.5 && b.l < a.r - 0.5 && a.t < b.b - 0.5 && b.t < a.b - 0.5;
 const yardOpen = (page) => page.evaluate(() => Boolean(document.querySelector('.yard-panel')));
+// (the shipyard's list: back to its front door if a category's open, then into one)
+const openSlot = async (page, slot) => {
+  await page.evaluate(() => document.querySelector('.yl-back')?.click());
+  await page.locator(`.yl-cat[data-slot="${slot}"]`).click();
+};
 const press = async (page, key) => {
   await page.evaluate(() => document.activeElement?.blur?.());
   await page.keyboard.press(key);
@@ -68,20 +73,20 @@ export async function hangar() {
     await page.screenshot({ path: `${out}/hangar-open.png` });
 
     // the secondary line says where it fires
-    await page.getByRole('tab', { name: 'Secondary' }).click();
+    await openSlot(page, 'secondary');
     await settle(page, 300);
     const hint = await G(() => document.querySelector('.yard-hint')?.textContent ?? '');
     say(/universe map/.test(hint) && /crew/.test(hint), `the secondary line says it fires on the universe map only (${hint.slice(0, 60)}…)`);
     await page.screenshot({ path: `${out}/hangar-secondary.png` });
-    await page.getByRole('tab', { name: 'Primary' }).click();
+    await openSlot(page, 'guns');
     await settle(page, 300);
     say((await G(() => document.querySelector('.yard-hint')?.textContent ?? '')) === '', 'and the primary line doesn’t');
 
     // twin-linked cannons on
-    await page.locator('.yard-row', { hasText: 'Twin-linked cannons' }).click();
+    await page.locator('.yl-row', { hasText: 'Twin-linked cannons' }).click();
     await settle(page, 400);
     await page.screenshot({ path: `${out}/hangar-staged.png` });
-    await page.locator('.yard-apply').click();
+    await page.locator('.yc-apply').click();
     await settle(page, 900);
     say(!(await yardOpen(page)), 'Apply fits it and closes the yard');
     const after = await G(() => ({ ...window.__galaxyDebug.state.stats }));
@@ -95,10 +100,10 @@ export async function hangar() {
     // a module on the crew's own ship is tuning: the hull stays stock, and the galaxy's ship flies on its numbers
     await G(() => window.__galaxyDebug.economy.earn('killAce', 6));
     await press(page, 'h');
-    await page.getByRole('tab', { name: 'Engines' }).click();
-    await page.locator('.yard-row', { hasText: 'Quad' }).click();
+    await openSlot(page, 'engines');
+    await page.locator('.yl-row', { hasText: 'Quad' }).click();
     await settle(page, 300);
-    await page.locator('.yard-apply').click();
+    await page.locator('.yc-apply').click();
     await settle(page, 900);
     const tuned = await G(() => ({ stats: { ...window.__galaxyDebug.state.stats }, build: window.__galaxyDebug.state.build, tune: JSON.parse(localStorage.getItem('tp-universe-tune') ?? 'null'), hull: JSON.parse(localStorage.getItem('tp-universe-hull') ?? 'null') }));
     say(tuned.stats.accel > after.accel && !tuned.build, `a Quad tuned onto the X-wing quickens it, on its own hull (acceleration ${after.accel} → ${tuned.stats.accel})`);

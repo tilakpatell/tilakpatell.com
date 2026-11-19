@@ -51,7 +51,7 @@ export default function FlightMenu({ open, tab, onTab, onOpen, onClose, enabled 
   const head = headOf(economy?.record?.() ?? null, points);
   // the shipyard's draft and the slot it's on: here, mounted while the ship flies, so a draft outlives the menu shut (as the Hangar's did)
   const yard = useYard({ live, kind: ship, unlocked, economy, version, onApply });
-  const [slot, setSlot] = useState('paint');
+  const [slot, setSlot] = useState(null); // (the shipyard's category open: null, its front door)
   // the ship as words and numbers (the ships session's read-out, ships/sheet.js): its systems' tiers for the Ship tab, the hold for the Cargo
   const sheet = open && crew ? shipSheet({ crew: ship, build, economy, hold }) : null;
   const pilots = online?.on ? (online.room?.peers ?? []).filter((x) => !x.blocked).length + 1 : null; // (as the corner counts them: you too)

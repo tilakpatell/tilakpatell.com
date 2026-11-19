@@ -58,10 +58,21 @@ The tabs, words, keys and layout are one; the material is the crew's (`data-skin
 - **The RV, the lab:** graph paper and lab trays, the crystal's blue, element tiles for tabs whose number is the key, a notebook's typewriter (Courier Prime). The tiles flip in.
 - **On foot or with no ship:** the house glass and the site's gold.
 
+## The shipyard, a game's garage
+
+The owner asked for the shipyard to be designed as a game garage is ("think GTA 6 customization and UI simplicity"). It opens on the menu's whole panel: the ship on its turntable fills the screen, and three panes of glass sit over it.
+
+- **The list, on the left** (`YardList.jsx`): a game menu's column. Its front door groups the slots into Looks, Performance, Weapons and Frame (`yardRows.js`'s `GROUPS`). Each row names what's fitted, with a dot where a change is staged. Enter opens a category; its rows each say what they are to you: Fitted, a price, Owned, Staged, Flying or Locked. Then come More (sell parts, the flight record, dress the crew). ↑↓, Enter, → and ← work it as a pad would.
+- **The card, on the right** (`YardStats.jsx`): what's pointed at (its name, what it does, its draw and weight, or why it's locked), then the ship's performance as bars. Each bar is the ship as staged, with what's pointed at drawn over it, more in green and less in red, one line a stat. The plant's power cells sit under it.
+- **The bar, along the foot** (`YardCart.jsx`): each staged change as a chip with its price or "owned", the total and how short you'd be, what's in the way, then Revert and Apply and launch. Nothing's bought until Apply.
+- **The camera** (`showroomViews.js`): it swings to the part being shopped, as a garage's does. Boosters go to the flank, fins to the tail, guns low under the nose, shields from above. It turns at the front door and frames the ship in the gap between the list and the card (`setViewOffset`). A drag still turns it by hand.
+
+Narrower than 900 px, the yard stacks into the menu's scroll. The showroom stays pinned up top and the list scrolls under it, so what you pick, you see on the ship. The bar rides along the foot only while it has something on it.
+
 ## Others' work
 
 The ships, economy and exploration session owns the data (`shipSheet`); the menu draws it when it lands. The universe layout session owns the map's layout and the nav map; the Map tab opens it rather than drawing a chart of its own.
 
 ## Checks
 
-Unit: `presence.test.js`, `pause.test.js`, `PauseMenu.test.jsx`, and the tests the move touches. Browser: `/universe` and `/galaxy` at 1440×900 and a phone, before and after; CI's multiplayer checks reach the Multiplayer card as before.
+Unit: `presence.test.js`, `pause.test.js`, `PauseMenu.test.jsx`, `showroomViews.test.js`, `yardRows.test.js`, and the tests the move touches. `scripts/shipyard-check.mjs` buys, applies and tunes through the menu's shipyard, at a desk and on a touch phone. Browser: `/universe` and `/galaxy` at 1440×900 and a phone, before and after; CI's multiplayer checks reach the Multiplayer card as before.
