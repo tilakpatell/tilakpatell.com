@@ -166,3 +166,12 @@ describe('the weapon lines', () => {
     expect(itemFor('part', 'ordnance', 'mk2').needs).toEqual({ achievement: 'trench' });
   });
 });
+
+describe('what a tier’s lock says', () => {
+  it('names the tier before it, and the rares with where they’re found', () => {
+    expect(needText({ owns: 'tier:falcon:engines:2' })).toBe('Fit the tier before it');
+    expect(needText({ goods: { exotic: 2 } })).toBe('Bring 2 exotic matter (found 10 or more sectors out)');
+    expect(needText({ goods: { 'voidcrystal-pure': 4 } })).toBe('Bring 4 pure void crystal (found 25 or more sectors out)');
+    expect(needText({ owns: 'tier:rv:hold:3', goods: { silk: 2 } })).toBe('Fit the tier before it and bring 2 nebula silk (found 10 or more sectors out)');
+  });
+});

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { EDGE, GOALS, OPEN_SPACE, OVERDRIVE, PLANETS, SHIP, SOLIDS, SPACE, STARTS, autopilot, boostAt, brakeAt, ceilingAt, clearPark, crashLoud, driveAt, forward, holdReach, inTrench, isGoal, noseOf, orbiting, parkAt, spawn, startAt, step, turnAt } from './ship';
+import { CORE_CAP, EDGE, GOALS, OPEN_SPACE, PULSE_CAP, pulsedSpace, OVERDRIVE, PLANETS, SHIP, SOLIDS, SPACE, STARTS, autopilot, boostAt, brakeAt, ceilingAt, clearPark, crashLoud, driveAt, forward, holdReach, inTrench, isGoal, noseOf, orbiting, parkAt, spawn, startAt, step, turnAt } from './ship';
 import { DEEP, WONDERS, easeOpen, gapAlong, trenchBand } from './deep';
 import { MAW } from './maw';
 import { NOSE, UP, fromAngles, rotate } from './orient';
@@ -1092,5 +1092,75 @@ describe('open space', () => {
       expect(fromMiddle(s)).toBeGreaterThanOrEqual(RM.edge + 2 - 1e-6);
     }
     expect(edge).toBe(1); // (one word of the wall, not one a frame while it slides off the ball)
+  });
+});
+
+describe('the ship’s tiers in flight', () => {
+  // far out in the open universe, nothing near, the drive all the way open
+  const far = { ...spawn(null), x: 4e6, y: 3e5, z: -4e6, heading: 0, speed: 0 };
+  const flat = (k, seconds, input = {}) => {
+    let ship = far;
+    const space = pulsedSpace(OPEN_SPACE, k);
+    for (let t = 0; t < seconds; t += 1 / 30) ship = step(ship, { throttle: 1, boost: true, ...input }, 1 / 30, [], space).ship;
+    return ship;
+  };
+
+  it('flies the pulse drive at 300 as it comes, and four times that at Mk V, as quickly', () => {
+    expect(pulsedSpace(OPEN_SPACE, 1)).toBe(OPEN_SPACE);
+    expect(flat(1, 20).speed).toBeCloseTo(SHIP.pulse, 0);
+    expect(flat(4, 20).speed).toBeCloseTo(SHIP.pulse * 4, 0);
+  });
+
+  it('holds a pulse past what any ship has to its cap', () => {
+    expect(PULSE_CAP).toEqual([0.9, 4.5]);
+    expect(flat(99, 30).speed).toBeCloseTo(SHIP.pulse * 4.5, 0);
+    expect(flat(Number.NaN, 20).speed).toBeCloseTo(SHIP.pulse, 0);
+  });
+
+  it('stops in about the room it always did, let go of the boost', () => {
+    const room = (k) => {
+      let ship = flat(k, 30);
+      const from = ship.z;
+      const space = pulsedSpace(OPEN_SPACE, k);
+      for (let t = 0; t < 30 && ship.speed > 1; t += 1 / 30) ship = step(ship, { throttle: -1 }, 1 / 30, [], space).ship;
+      return Math.abs(ship.z - from);
+    };
+    expect(room(4)).toBeLessThan(room(1) * 1.6);
+  });
+
+  it('comes up on a place at Mk V as it does at Mk I', () => {
+    // flat out at a planet from far off: as fast, within half again, at each
+    // distance in from 200 to the surface (full throttle into one is a crash
+    // at any tier; what matters is that the tier is all spent out in the open)
+    const p = PLANETS[0];
+    const speedsIn = (k) => {
+      let ship = { ...spawn(null), x: p.at[0], y: p.at[1], z: p.at[2] + p.reach + 20000, heading: 0, speed: SHIP.pulse * k };
+      const space = pulsedSpace(OPEN_SPACE, k);
+      const at = {};
+      for (let t = 0; t < 200; t += 1 / 60) {
+        const d = Math.hypot(ship.x - p.at[0], ship.y - p.at[1], ship.z - p.at[2]) - p.reach;
+        for (const mark of [200, 100, 50, 20]) if (d < mark && !(mark in at)) at[mark] = ship.speed;
+        if (d < 20) break;
+        ship = step(ship, { throttle: 1, boost: true }, 1 / 60, [], space).ship;
+      }
+      return at;
+    };
+    const mk1 = speedsIn(1);
+    const mk5 = speedsIn(4);
+    for (const mark of [200, 100, 50, 20]) expect(mk5[mark], `at ${mark}`).toBeLessThan(mk1[mark] * 1.5 + 2);
+  });
+
+  it('boosts harder on better engines, in a fight as well as out', () => {
+    const s = { ...spawn(null), y: SHIP.ceiling - 6 };
+    expect(fly(s, { throttle: 1, boost: true, interdicted: true, tune: { core: { engines: 1.32 } } }, 5, []).ship.speed).toBeCloseTo(SHIP.boost * 1.32, 1);
+    expect(fly(s, { throttle: 1, tune: { core: { engines: 1.32 } } }, 4, []).ship.speed).toBeCloseTo(SHIP.cruise * 1.32, 1);
+    expect(fly(s, { throttle: 1, boost: true, interdicted: true, tune: { core: { engines: 9 } } }, 5, []).ship.speed).toBeCloseTo(SHIP.boost * CORE_CAP.engines[1], 1);
+  });
+
+  it('flies as it always did with no core', () => {
+    const s = { ...spawn(null), y: SHIP.ceiling - 6 };
+    const a = fly(s, { throttle: 1, boost: true, turn: 0.5 }, 3, []).ship;
+    const b = fly(s, { throttle: 1, boost: true, turn: 0.5, tune: { core: { engines: 1, agility: 1 } } }, 3, []).ship;
+    expect(b).toEqual(a);
   });
 });

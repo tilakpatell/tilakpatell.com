@@ -23,6 +23,7 @@ import { migrateOwned, refundOf } from './economy';
 import { SLOTS, STOCK, equip, isOpen, parsePart, partById, statsOf } from './outfit';
 import { STOCK_BUILD, TUNE_SLOTS, buildCode, parseBuildCode, readTune, rollBuild } from './shipyard/build';
 import { BUILD_SLOTS, isModuleOpen, moduleById } from './shipyard/parts';
+import { coreOf } from './ships/tiers';
 
 // The catalogue's item for a part or paint, and for a module (so the view
 // never builds a key).
@@ -103,7 +104,7 @@ export function check(draft, { kind, unlocked = [], economy = null } = {}) {
     const p = partById(slot, id);
     consider(slot, id, p, isOpen(p, unlocked), itemOfPart(slot, id));
   }
-  const s = statsOf(kind, loadout, build, tune);
+  const s = statsOf(kind, loadout, build, tune, undefined, coreOf(economy, kind, build)); // (with the reactor's tier the wallet owns)
   if (s.power > s.capacity) issues.push({ slot: null, id: null, why: 'power', text: `Not enough power: ${Math.round((s.power - s.capacity) * 10) / 10} MW short.` });
   const total = toBuy.reduce((n, item) => n + item.price, 0);
   const short = economy ? Math.max(0, total - economy.credits) : 0;
@@ -169,7 +170,7 @@ export function sellable({ loadouts = {}, hulls = {}, garage = {}, tune = {}, ke
 // loadout (flown), saved (what to keep: `saved` with each change in, so a
 // part a smaller plant took off still comes back on a bigger one) } or
 // { ok: false, why, slot }: the first refusal, and nothing's to be kept.
-export function fitDraft(kind, draft, changes, { saved = {}, unlocked = [] } = {}) {
+export function fitDraft(kind, draft, changes, { saved = {}, unlocked = [], core = null } = {}) {
   let loadout = { ...draft.loadout };
   for (const slot of SLOTS) loadout[slot] = STOCK; // (from bare, so only what equip allows goes on)
   const keep = { ...saved };
@@ -178,7 +179,7 @@ export function fitDraft(kind, draft, changes, { saved = {}, unlocked = [] } = {
   const order = [...SLOTS.filter((slot) => !parts.some((c) => c.slot === slot)).map((slot) => ({ slot, to: draft.loadout[slot] ?? STOCK })), ...parts];
   for (const { slot, to } of order) {
     if (to === STOCK) continue;
-    const r = equip(kind, loadout, slot, to, unlocked, draft.build, draft.tune);
+    const r = equip(kind, loadout, slot, to, unlocked, draft.build, draft.tune, core);
     if (!r.ok) return { ok: false, why: r.reason, slot };
     loadout = r.loadout;
   }

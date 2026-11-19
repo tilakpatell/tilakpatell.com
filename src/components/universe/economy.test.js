@@ -18,6 +18,7 @@ import {
 } from './economy';
 import { CATALOG } from './catalog';
 import { LOADOUT_KEY } from './outfit';
+import { tierItem } from './ships/tiers';
 import { GARAGE_KEY, HULL_KEY } from './shipyard/build';
 
 // a localStorage in memory, the shape saves.js reads and writes
@@ -616,5 +617,54 @@ describe('selling, checking out and the log (save v2)', () => {
   it('reads a log back, dropping junk entries', () => {
     const { econ } = fresh({ [PILOT_KEY]: { v: 2, data: { log: [{ t: 1, kind: 'buy', what: 'part:booster:srb', n: 400 }, { kind: 'steal', n: 9 }, 'x', null] } } });
     expect(econ.log).toEqual([{ t: 1, kind: 'buy', what: 'part:booster:srb', n: 400 }]);
+  });
+});
+
+describe('the ships’ tiers in the wallet', () => {
+  // (a hold, as lane 2's: what it has, and what's taken from it)
+  const hold = (have) => {
+    const took = [];
+    return {
+      took,
+      has: (goods) => Object.entries(goods).every(([id, n]) => (have[id] ?? 0) >= n),
+      take: (goods) => took.push(goods),
+    };
+  };
+  const rich = (credits, opts) => fresh({ [PILOT_KEY]: { v: 2, data: { credits } } }, opts);
+
+  it('needs the tier before it', () => {
+    const { econ } = rich(5000);
+    expect(econ.canBuy(tierItem('falcon', 'engines', 3))).toEqual({ ok: false, why: 'locked:previous' });
+    expect(econ.checkout([tierItem('falcon', 'engines', 2), tierItem('falcon', 'engines', 3)]).ok).toBe(true);
+    expect(econ.owns('tier:falcon:engines:3')).toBe(true);
+    expect(econ.credits).toBe(2400);
+  });
+
+  it('locks Mk IV without its rares, and with no hold at all', () => {
+    const { econ } = rich(20000);
+    econ.checkout([tierItem('rv', 'pulse', 2), tierItem('rv', 'pulse', 3)]);
+    expect(econ.canBuy(tierItem('rv', 'pulse', 4))).toEqual({ ok: false, why: 'locked:goods' });
+    econ.setCargo(hold({ exotic: 1 }));
+    expect(econ.canBuy(tierItem('rv', 'pulse', 4))).toEqual({ ok: false, why: 'locked:goods' });
+  });
+
+  it('takes the rares from the hold as it buys, once, and only if it all goes through', () => {
+    const cargo = hold({ exotic: 2 });
+    const { econ } = rich(20000, { cargo });
+    econ.checkout([tierItem('rv', 'pulse', 2), tierItem('rv', 'pulse', 3)]);
+    expect(econ.checkout([tierItem('rv', 'pulse', 4), tierItem('rv', 'pulse', 5)]).ok).toBe(false);
+    expect(cargo.took).toEqual([]);
+    expect(econ.checkout([tierItem('rv', 'pulse', 4)]).ok).toBe(true);
+    expect(cargo.took).toEqual([{ exotic: 2 }]);
+    expect(econ.owns('tier:rv:pulse:4')).toBe(true);
+  });
+
+  it('never sells a tier back', () => {
+    const { econ } = rich(600);
+    econ.buy(tierItem('xwing', 'hold', 2));
+    expect(econ.canSell(tierItem('xwing', 'hold', 2))).toEqual({ ok: false, why: 'tier' });
+    expect(econ.sell(tierItem('xwing', 'hold', 2))).toBe(false);
+    expect(econ.owns('tier:xwing:hold:2')).toBe(true);
+    expect(econ.credits).toBe(0);
   });
 });
