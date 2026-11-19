@@ -55,30 +55,30 @@ The switch at the top of every page moves between the two and lands on the same 
 
 <a href="https://tilakpatell.com/universe"><img src="docs/readme/home-system.webp" alt="The home system from above: a blazing sun inside a ring of asteroids, with the portfolio’s pages as small stations orbiting it" width="100%"></a>
 
-The front door is a map of the site: the portfolio’s pages are stations round a sun and each fandom is a planet out in the dark, between a black hole, two nebulae, a rogue planet and two other suns. A first visit puts you in a cockpit (the Millennium Falcon, an X-wing, Rick’s space cruiser or Walt and Jesse’s RV) and launches you. Hunters come after you, Star Destroyers drop out of hyperspace, convoys pass and other pilots online share the sky. Fly down into a planet’s air to land in its world.
+The front door is a map of the site. You start in the Core, where the portfolio’s pages are stations round a sun. The fandoms’ worlds live a jump or two away in seven themed neighbourhoods: Hero Reach, the Old Roads, Earthside, the Stage, the Arcade Drift, the Curve Rift and the Maelstrom. A first visit puts you in a cockpit (the Millennium Falcon, an X-wing, Rick’s space cruiser or Walt and Jesse’s RV) and launches you. Hunters come after you, Star Destroyers drop out of hyperspace, convoys pass and other pilots online share the sky. Fly down into a planet’s air to land in its world.
 
 **Ships you can feel.** The four crews’ ships each fly with a character of their own: the X-wing a fighter, the Falcon a smuggler, Rick’s cruiser an explorer, the RV a hauler. Seven core systems (engines, pulse drive, hyperdrive, shields, scanner, cargo hold and reactor) go from Mk I to Mk V, bought ship by ship in the hangar. A Mk V pulse drive crosses a sector four times as fast as a Mk I, the engines glow hotter with every tier, and the top tiers need rare goods found far out past the rim.
 
 **A market that holds together.** Goods differ by where you are: each neighbourhood and region has its specialties, cheap at home and worth more the further you haul them. Mining and salvage fill your hold, prices drift through the day, and every station you dock at has a market to buy and sell in.
 
-`W` `S` throttle · `A` `D` roll · arrows steer · `F` fire · `J` jump to the star on your nose · `M` nav map · `H` hangar · `V` cockpit view
+`W` `S` throttle · `A` `D` roll · arrows steer · `F` fire · `J` jump to the star on your nose · `M` nav map · `H` hangar · `Z` scan · `V` cockpit view
 
 <table>
 <tr>
-<td width="33%" valign="top"><img src="docs/readme/welcome.webp" alt="Han’s seat in the Millennium Falcon’s cockpit, Chewie beside it, with a choice of ship"><p><b>The welcome</b>: Han’s seat, then punch it.</p></td>
-<td width="33%" valign="top"><img src="docs/readme/navmap.webp" alt="The nav map: a 3D chart centred on the ship, with places on stems and drives to pick"><p><b>The nav map</b>: a 3D chart that follows you out.</p></td>
+<td width="33%" valign="top"><img src="docs/readme/welcome.webp" alt="The welcome page, “A portfolio you can fly through”: a quick tour, the opening crawl, a cockpit and the universe, with a skip and a way to the classic site"><p><b>The welcome</b>: a quick tour, a crawl, a cockpit, then punch it.</p></td>
+<td width="33%" valign="top"><img src="docs/readme/navmap.webp" alt="The nav map: the site’s worlds, wonders and stations on a chart centred on the ship, with three drives to pick"><p><b>The nav map</b>: a chart that follows you out.</p></td>
 <td width="33%" valign="top"><img src="docs/readme/hangar.webp" alt="The hangar’s Systems tab: the ship’s core systems, each with its Mk tier and the next one to buy"><p><b>The hangar</b>: tiers, paint, parts, skills and a shipyard.</p></td>
 </tr>
 </table>
 
 ### Past the rim
 
-Fly far enough and the map never ends. Space goes on in every direction, generated as you fly. There are sectors of star systems with stations to dock at and planets of their own, derelicts to salvage, ion storms that drain your shields, and nebulae that stay put while you fly through them. One sector in every twenty-seven holds a gargantuan, between 20 and 200 planets across and visible from a sector away: a black hole, a ring arc, a Dyson sphere or a derelict hulk. Every generated place has a link of its own, so you can send someone a planet nobody made by hand.
+Fly far enough and the map never ends. Space goes on in every direction, generated as you fly. There are sectors of star systems with stations to dock at and planets of their own, derelicts to salvage, ion storms that drain your shields, and nebulae that stay put while you fly through them. One sector in every twenty-seven holds a gargantuan, between 20 and 200 planets across and visible from a sector away: a black hole, a ring arc, a Dyson sphere or a derelict hulk. Fly into a new sector to chart it, press `Z` to scan what’s in reach, and sell the data at any station. A long jump into generated space goes in hops past your hyperdrive’s range, so a better hyperdrive gets you there in fewer. Every generated place has a link of its own, so you can send someone a planet nobody made by hand.
 
 <table>
 <tr>
-<td width="50%" valign="top"><img src="docs/readme/endless.webp" alt="A generated planet past the rim, with its card naming it"><p><b>A generated world</b>, reached by its own link.</p></td>
-<td width="50%" valign="top"><img src="docs/readme/gargantuan.webp" alt="A gargantuan seen from across its sector"><p><b>A gargantuan</b>, a sector away.</p></td>
+<td width="50%" valign="top"><img src="docs/readme/endless.webp" alt="The Millennium Falcon parked at Lithialsur, a generated gas giant with three moons, its card open beside it"><p><b>A generated world</b>, reached by its own link.</p></td>
+<td width="50%" valign="top"><img src="docs/readme/gargantuan.webp" alt="The Millennium Falcon beneath a gargantuan ring arc curving across the sky, generated worlds and moons around it"><p><b>A gargantuan</b>: a ring arc across the sky.</p></td>
 </tr>
 </table>
 
