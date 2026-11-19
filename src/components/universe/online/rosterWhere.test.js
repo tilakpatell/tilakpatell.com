@@ -6,11 +6,17 @@ import { fullSector } from '../../expanse/gen/space';
 import { UNIVERSE as SHARED } from '../../expanse/gen/seed';
 
 import { POSITIONS } from '../layout';
+import { WONDERS } from '../deep';
 
 describe('rosterWhere', () => {
   it('names the region a pilot in the universe is in, after its place', () => {
     const [x, y, z] = POSITIONS.middleearth;
-    expect(rosterWhere(UNIVERSE, { x: x + 300, y, z })).toBe('Universe · Near Middle-earth');
+    expect(rosterWhere(UNIVERSE, { x: x + 300, y, z })).toBe('Universe · the Old Roads');
+    // (out in the Expanse, as its pose says, still by its neighbourhood's name)
+    const [ex, ey, ez] = POSITIONS.office;
+    expect(rosterWhere(UNIVERSE, { x: ex + 300, y: ey, z: ez, sec: 'E:1,2' })).toBe('Universe · Earthside');
+    const [gx, gy, gz] = WONDERS.find((w) => w.id === 'glacia').at;
+    expect(rosterWhere(UNIVERSE, { x: gx + 300, y: gy, z: gz })).toBe('Universe · Near the Maw');
   });
   it('says so when they are out in the void between the regions', () => {
     expect(rosterWhere(UNIVERSE, { x: 40000, y: 0, z: 40000 })).toBe('Universe · the void');

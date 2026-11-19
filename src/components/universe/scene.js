@@ -26,11 +26,11 @@
 //   (hyperspeed, J for the place picked), or the autopilot on super speed
 //   (the pulse drive pushed past itself) or cruising. The nav map can pull
 //   back to the whole map in 3D, too. ship.js has the physics. A new ship starts
-//   anywhere, unless a place is picked: at the edge of the home system, or
-//   out in deep space off a fandom's planet or a wonder (ship.js's startAt),
+//   in the Core, unless a place is picked: round the edge of the home system,
+//   facing the site's own stations, on a side of its own (ship.js's startAt),
 //   so pilots joining don't all turn up in one spot.
 //   Out past the home system is deep space (deep.js, deepspace.js), vast:
-//   the fandoms' planets are far out in it, thousands of units apart, each
+//   the fandoms' planets are out in their neighbourhoods (neighbourhoods.js), each
 //   only a star until you come near it (farStars.js), as the galaxy's other
 //   systems are, its name showing where you look, with
 //   wonders between them, all reached on the pulse drive (click a wonder
@@ -133,6 +133,15 @@ import { debugOn, debugPanel } from '../../lib/debugPanel';
 import { LEAN, OPEN_SPACE, PLANETS, SHIP, SOLIDS, autopilot, crashLoud, forward, headingTo, holdReach, isGoal, isPlace, noseOf, orbiting, parkAt, pulsedSpace, spawn, startAt, step } from './ship';
 import { coreStats } from './ships/profiles';
 import { engineList } from './ships/looks';
+import { areaOf } from './market/areas';
+import { EXPLORE, HOLD } from './words';
+import { GOODS } from './market/goods';
+import { MINED_OUT, WORKS, yieldOf } from './market/yields';
+import { sweep as scanSweep } from './explore/scan';
+import { worthOf } from './explore/values';
+import { stationFor } from './market/trade';
+import { parseSectorKey, parseSpaceId } from '../../lib/space/address.js';
+import { rowAt } from '../expanse/shared/gen';
 import { HYPER, destinationById, hyperState, parkFor, riftExit } from './nav';
 import { pilotId } from './pilotGoal';
 import { FACTIONS, HUNTER_KINDS, NAMES, createHunters } from './hunters';
@@ -173,7 +182,7 @@ import { createTrench } from './trench';
 import { PHONE, createPhone } from './phone';
 import { SUPERNOVA_SITES, createSupernovae } from './supernova';
 import { DEEP, PLACES, WONDERS, moveBinaries, movePlanets, nearestStar, openness, reachOf, wonderById } from './deep';
-import { KEY as KEY_FULL, STARS as LIT_STARS, dayYaw, lightAt, sunFor } from './lighting';
+import { KEY as KEY_FULL, LIGHTS, STARS as LIT_STARS, dayYaw, lightAt, sunFor } from './lighting';
 import { createCrash } from './crash';
 import { createExplosions } from '../../lib/three/explosions';
 import { createInfall } from './infall';
@@ -241,7 +250,7 @@ import { createThingDrawers } from './things/drawers';
 import { createThingPlay } from './things';
 import { CABS, CAB_HFOV, CAB_VFOV, EYE, SEAT_KEY } from './cabs';
 import { runtime } from '../../runtime';
-import { deedToEarn } from './economy';
+import { EARN, deedToEarn } from './economy';
 import { createPayLedger, hunterEarn } from './earnRules';
 import { contact, keptSpeed } from '../../lib/combat/contact';
 import { createShipHits, ramNote, solidsWith } from './shipHits';
@@ -773,17 +782,73 @@ export async function create(canvas, ctx) {
     workers: sectorPools(ctx.rt?.workers, spaceBudget),
     far: farStars,
     budget: spaceBudget,
-    stars: LIT_STARS, // (the hand-made stars, lighting.js's: the generated ones lit beside them)
+    stars: LIGHTS, // (the hand-made lights, lighting.js's: the generated stars lit beside them)
     drawNebula: expanseNebulae(deep.nebulae), // (its nebulae drawn by the map's one renderer: nebula/)
     prepare: (o) => sendAndWarm(o), // (declared further down)
     keyed: import.meta.env.DEV,
     onSector: (id) => {
-      if (inExpanse(id) && id !== 'E:0,0') state.note = { text: `The Expanse · ${id}`, until: wall() + 3 };
+      if (inExpanse(id) && id !== 'E:0,0') state.note = { text: chartSector(id) ?? `The Expanse · ${id}`, until: wall() + 3.5 };
     },
   });
   const places = createScenePlaces({ group: map, universe, expanse, workers: ctx.rt?.workers ?? null, startAt: props.startAt, toScreen: (...a) => toScreen(...a), prepare: (o) => warm(o), emit: (e) => emit(e), note: (text) => (state.note = { text, until: wall() + 3 }), device: device(), tags: () => props.tags?.current ?? null, onPick: (id) => navTo(id), frame: () => size });
   // lane 4a's things in space played: E at one, a storm's drain, a pulsar's beam, a wormhole's throw (things/index.js)
-  const thingPlay = createThingPlay({ sectors: () => expanse.sectors().values(), pay: (what, n) => pay(what, n), say: (text) => (state.note = { text, until: wall() + 3.5 }), travelling: () => Boolean(state.auto || state.jump), universe, reduced });
+  // the explorer's record (props.record, made beside the wallet): a generated sector charted the first time
+  // it's entered, the scan, and the data bank sold at a dock. Each says its note, or null
+  const chartSector = (id) => {
+    const cube = parseSectorKey(id);
+    if (!props.record || !cube) return null;
+    const area = areaOf(cube);
+    const n = props.record.chart(cube, worthOf('sector', area.d, area.richness));
+    return n ? EXPLORE.charted(id, n) : null;
+  };
+  const scan = () => {
+    if (!props.record || !state.ship || onFoot()) return;
+    const every = state.core?.scanEvery ?? 8;
+    const wait = (state.scanAt ?? -Infinity) + every - state.clock;
+    if (wait > 0) {
+      state.note = { text: EXPLORE.charging(wait), until: wall() + 1.5 };
+      return;
+    }
+    state.scanAt = state.clock;
+    const r = scanSweep({ sectors: expanse.sectors().values(), at: [state.ship.x, state.ship.y, state.ship.z], reach: state.core?.scanReach ?? 10000, t: state.spaceT, record: props.record, rowAt, areaOf });
+    state.note = { text: EXPLORE.scanned(r), until: wall() + 3.5 };
+    emit({ type: 'scan', reach: state.core?.scanReach ?? 10000, every, ...r });
+  };
+  const sellData = (stationId) => {
+    const wallet = props.wallet;
+    if (!props.record || !wallet || !(props.record.data > 0)) return;
+    const cube = parseSpaceId(stationId);
+    const research = stationFor({ id: stationId, cube: cube ? [cube.sx, cube.sy, cube.sz] : [0, 0, 0] }).type === 'research';
+    const n = Math.round((props.record.payOut() * (research ? 1.5 : 1)) / EARN.data.credits);
+    const got = wallet.earn('data', n);
+    if (got.credits) state.note = { text: EXPLORE.paid(got.credits), until: wall() + 4 };
+  };
+  // what mining and salvage put in the crew's hold (the market's: props.market), a field emptied for a
+  // while once worked out and a wreck stripped for good; null for a thing that doesn't fill a hold
+  const worked = new Map(); // (each field's presses, this visit)
+  const stow = ({ kind, id, sector, worked: paid, name }) => {
+    const market = props.market;
+    if (!market || !state.kind || !WORKS.includes(kind)) return null;
+    const field = kind === 'field' || kind === 'icefield';
+    if (field ? market.isEmpty(id) : market.salvaged(id)) return field ? HOLD.minedOut : HOLD.stripped(name);
+    if (!paid) {
+      if (field) market.empty(id);
+      return field ? HOLD.minedOut : HOLD.stripped(name);
+    }
+    const cube = [sector?.sx ?? 0, sector?.sy ?? 0, sector?.sz ?? 0];
+    const area = areaOf(cube);
+    const press = worked.get(id) ?? 0;
+    const hold = market.hold(state.kind, state.core.hold);
+    const got = yieldOf({ kind, id, press, area, d: area.d })
+      .map((g) => ({ ...g, n: hold.add(g.good, g.n, { sector: cube, pocket: null }) }))
+      .filter((g) => g.n > 0);
+    if (!got.length) return HOLD.full;
+    worked.set(id, press + 1);
+    if (!field) market.salvage(id);
+    else if (press + 1 >= MINED_OUT) market.empty(id);
+    return HOLD.stowed(got.map((g) => `${g.n} ${GOODS[g.good].name.toLowerCase()}`).join(', '));
+  };
+  const thingPlay = createThingPlay({ sectors: () => expanse.sectors().values(), pay: (what, n) => pay(what, n), say: (text) => (state.note = { text, until: wall() + 3.5 }), travelling: () => Boolean(state.auto || state.jump), universe, reduced, stow });
   // and the big things, the Maw and the big stars, as landmarks on the sky, upright in the world (landmarks.js)
   const landmarks = createLandmarks(map, { skyFar: SKY_FAR });
   await breathe();
@@ -1815,6 +1880,7 @@ export async function create(canvas, ctx) {
       camQOn = false;
     },
     resolve: (id) => places.resolve(id), fetch: (id) => places.fetch(id), missing: (id) => places.missing(id),
+    range: () => state.core?.range ?? Infinity, // (the hyperdrive's reach into generated space: explore/route.js)
   });
 
   // ── The ship ──
@@ -2209,8 +2275,8 @@ export async function create(canvas, ctx) {
       });
     }
     if (!state.ship) {
-      // a new pilot: at the universe picked, or anywhere (ship.js's STARTS),
-      // so those joining don't all turn up in the same place
+      // a new pilot: at the universe picked, or round the home system's edge
+      // (ship.js's STARTS), so those joining don't all turn up in one place
       // (a link out to a wonder, /universe/aurelia, starts parked beside it: props.startAt)
       // (never by the Maw, whose pull would have a new ship before it had flown)
       state.ship = spawn(state.sel, (!state.sel && props.startAt && props.startAt !== MAW.id && (isGoal(props.startAt) ? parkFor(props.startAt, [0, 0]) : places.park(props.startAt, [0, 0]))) || startAt());
@@ -5243,6 +5309,18 @@ export async function create(canvas, ctx) {
     const nowMs = state.held || reduced ? 0 : Date.now();
     state.spaceT = spaceTime(nowMs);
     expanse.update({ camera, ship: state.ship, t, dt, now: nowMs, hidden: onFoot() || Boolean(state.dive) || skySector === 'rickmorty' });
+    // docked at a station: the data bank sold (explore/record.js; half as much again at a research station)
+    const dockedNow = places.docked();
+    if (dockedNow !== state.dockedAt) {
+      state.dockedAt = dockedNow;
+      if (dockedNow) sellData(dockedNow);
+    }
+    // a long jump's next hop, once the hyperdrive's charged and the ship's still where the last one left it
+    if (state.hop && !state.jump && !state.auto && !state.pending && state.ship) {
+      const left = Math.hypot(state.ship.x - state.hop.at[0], state.ship.y - state.hop.at[1], state.ship.z - state.hop.at[2]) > 60;
+      if (left) state.hop = null;
+      else if (hyperState({ last: state.hyperAt, now: wall(), interdicted: state.interdicted, recharge: HYPER.recharge * (state.stats.jump ?? 1) }).ready) travel(state.hop.id, 'hyper');
+    }
     places.update({ ship: state.ship, camera, t: state.spaceT, flying: flying() && !onFoot() && !state.dive && !props.frozen, nose: state.ship ? noseOf(state.ship) : null, going: state.jump?.id ?? state.auto?.id ?? state.pending?.id ?? null, arrived: state.arrived, held: state.held, aim: state.aim, picked: state.sel });
     sectorPortals.update(t, camera);
     curve.update(t, sectorOf(camLocal.x, camLocal.y, camLocal.z) === 'rickmorty');
@@ -5356,6 +5434,12 @@ export async function create(canvas, ctx) {
         retarget(900);
         ctx.invalidate();
       } else emit({ type: 'map' });
+      return;
+    }
+    if (key === 'z') {
+      // the scan: a pulse out to the scanner's reach (explore/scan.js)
+      e.preventDefault();
+      scan();
       return;
     }
     if (key === 'j') {

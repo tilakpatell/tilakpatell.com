@@ -216,7 +216,7 @@ export default function UniversePanel({ universe, wonder = null, docked = null, 
         </div>
         {wonder.generated ? (
           // (a generated place: its card, found by the scene, or waiting on it)
-          <PlaceCard dest={wonder} docked={docked === wonder.id} onFly={onFly} onHangar={onHangar} leaving={leaving} />
+          <PlaceCard dest={wonder} docked={docked === wonder.id} onFly={onFly} onHangar={onHangar} leaving={leaving} crew={ship} />
         ) : (
           <>
             <p className="eyebrow mt-3" style={{ color: wonder.color }}>

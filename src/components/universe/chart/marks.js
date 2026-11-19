@@ -14,6 +14,7 @@
 import { CHART_VIEWS, DESTINATIONS } from '../nav';
 import { BELT, HOME_RADIUS, SECTORS, SUN } from '../layout';
 import { byId } from '../universes';
+import { NEIGHBOURHOODS, neighbourhoodById } from '../neighbourhoods';
 import { CHART, createView, levelOf } from './projection';
 
 const ALL = ['system', 'neighbourhood', 'universe'];
@@ -47,6 +48,8 @@ export const HAND_MARKS = Object.freeze([
   // (prefixed: 'home' is already a station's id)
   Object.freeze({ id: 'chart:sun', kind: 'sun', name: '', at: SUN.at, priority: 95, color: '#ffbf5e', levels: ALL, shape: 'sun', reach: SUN.r, pickable: false }),
   Object.freeze({ id: 'chart:home', kind: 'region', name: CHART_VIEWS.home.name, at: [0, 0, 0], priority: 90, color: '#9fd8ff', levels: ['neighbourhood', 'universe'], shape: 'dot', pickable: false }),
+  // (each neighbourhood's name over its middle, from far enough out to see it whole)
+  ...NEIGHBOURHOODS.map((n) => Object.freeze({ id: `chart:${n.id}`, kind: 'region', name: n.name, at: n.centre, priority: 80, color: '#9fd8ff', levels: ['neighbourhood', 'universe'], shape: 'dot', pickable: false })),
   Object.freeze({ id: 'chart:curve', kind: 'region', name: CHART_VIEWS.rickmorty.name, at: SECTORS.rickmorty.origin, priority: 85, color: '#9fd8ff', levels: ['neighbourhood', 'universe'], shape: 'dot', pickable: false }),
 ]);
 const BY_ID = new Map(HAND_MARKS.map((m) => [m.id, m]));
@@ -73,7 +76,14 @@ export function liveMarks(now) {
   ];
 }
 
+// the chart's region names, each a button: the mark's id → the view it opens
+// (CHART_VIEWS' own, or a neighbourhood's, zoomed in on it)
+export const REGION_OF = Object.freeze({ 'chart:home': 'home', 'chart:curve': 'rickmorty', ...Object.fromEntries(NEIGHBOURHOODS.map((n) => [`chart:${n.id}`, n.id])) });
+const NEIGHBOURHOOD_RANGE = 30000; // (a neighbourhood's places a few thousand apart, all on the chart, its names apart)
+
 export function presetView(id, ship) {
+  const n = neighbourhoodById(id);
+  if (n) return createView({ focus: [...n.centre], range: NEIGHBOURHOOD_RANGE, follow: false });
   const c = CHART_VIEWS[id] ?? CHART_VIEWS.all;
   const y = Number.isFinite(ship?.y) ? ship.y : 0;
   return createView({ focus: [c.origin[0], y, c.origin[2]], range: c.r, follow: false });
@@ -91,5 +101,6 @@ export function presetOf(view) {
 export function openView(ship) {
   if (!ship || !Number.isFinite(ship.x) || !Number.isFinite(ship.z)) return presetView('all', null);
   const focus = [ship.x, Number.isFinite(ship.y) ? ship.y : 0, ship.z];
-  return createView({ focus, range: curveFrom(focus) <= SECTORS.rickmorty.edge ? CHART_VIEWS.rickmorty.r : CHART.range.open, follow: true });
+  // (out wide enough to see every neighbourhood from anywhere near the Core: nav.js's Universe view)
+  return createView({ focus, range: curveFrom(focus) <= SECTORS.rickmorty.edge ? CHART_VIEWS.rickmorty.r : Math.max(CHART.range.open, CHART_VIEWS.all.r), follow: true });
 }

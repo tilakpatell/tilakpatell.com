@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { SYSTEMS } from '../galaxy/systems';
 import { WONDERS, reachOf } from './deep';
-import { HOME_RADIUS, POSITIONS, RIM, sectorOf } from './layout';
+import { HOME_RADIUS, POSITIONS, RIM, mapSectorOf } from './layout';
 import { FIGHTERS, HULLS, SUBSYSTEMS, TURRETS, WARS, warFor } from './wars';
 
 const all = Object.values(WARS);
@@ -64,7 +64,8 @@ describe('the wars', () => {
       for (const s of w.sectors) {
         const [x, y, z] = s.at;
         expect(Math.hypot(x, z), `${w.id} ${s.id} home`).toBeGreaterThan(HOME_RADIUS + 300);
-        expect(Math.hypot(x, z), `${w.id} ${s.id} rim`).toBeLessThan(RIM.inner - 800);
+        // (round its own world, out in its neighbourhood: neighbourhoods.js)
+        expect(Math.hypot(x - POSITIONS[w.id][0], z - POSITIONS[w.id][2]), `${w.id} ${s.id} near its world`).toBeLessThan(RIM.inner / 4);
         for (const o of WONDERS) expect(Math.hypot(x - o.at[0], y - o.at[1], z - o.at[2]) - reachOf(o), `${w.id} ${s.id} by ${o.id}`).toBeGreaterThan(400);
         for (const [id, at] of Object.entries(POSITIONS)) expect(Math.hypot(x - at[0], y - at[1], z - at[2]), `${w.id} ${s.id} by ${id}`).toBeGreaterThan(600);
       }
@@ -83,7 +84,7 @@ describe('the wars', () => {
     const [first, last] = [w.sectors[0], w.sectors[w.sectors.length - 1]];
     expect(first.id).toBe('picket');
     // (the Citadel is through the portal, in the Rick and Morty sector: the war stays this side)
-    for (const s of w.sectors) expect(sectorOf(...s.at), s.id).toBe('main');
+    for (const s of w.sectors) expect(mapSectorOf(...s.at), s.id).toBe('main');
     expect(last.id).toBe('c137');
     expect(Math.hypot(...last.at.map((v, i) => v - POSITIONS.rickmorty[i]))).toBeLessThan(900);
     // (the Council's end is the Citadel's, the Federation's the Earth it took)

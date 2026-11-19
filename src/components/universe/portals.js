@@ -19,7 +19,7 @@
 
 import { WONDERS } from './deep';
 import { SHIP, SOLIDS, forward } from './ship';
-import { sectorOf } from './layout';
+import { mapSectorOf } from './layout';
 
 export const PORTALS = WONDERS.filter((w) => w.kind === 'portal');
 const BY_ID = new Map(PORTALS.map((p) => [p.id, p]));
@@ -72,7 +72,7 @@ export function transit(ship, id) {
   if (!p || !at) return null;
   return {
     ship: { ...ship, ...at, speed: Math.min(ship.speed * 0.5, SHIP.boost), vy: 0, lift: 0, pitch: 0, bank: 0, rate: 0, tipRate: 0, rollRate: 0, edge: false },
-    sector: sectorOf(at.x, at.y, at.z),
+    sector: mapSectorOf(at.x, at.y, at.z), // (the Curve's or the main map's, out in the Expanse too)
     exit: p.leadsTo.exit,
   };
 }

@@ -22,11 +22,13 @@ const small = (name) => name.replace(/^The /, 'the ');
 export function rosterWhere(where, pose) {
   if (where !== UNIVERSE || !pose) return placeName(where);
   const { x, y, z } = pose;
-  if (inExpanse(pose.sec)) return `Universe · ${pose.sec}${nearest(pose.sec, x, y, z)}`;
+  // (a neighbourhood is out in the Expanse too: named for itself, “Universe · Hero Reach”)
+  const region = regionAt(x, y, z);
+  if (inExpanse(pose.sec) && !region) return `Universe · ${pose.sec}${nearest(pose.sec, x, y, z)}`;
   // (the Rick and Morty sector is through its portal: none of the regions reach it;
   // a pose without a sector is the authored map's, wherever it says)
   const sector = mapSectorOf(x, y, z);
-  const area = sector !== 'main' ? SECTORS[sector].name : (regionAt(x, y, z)?.name ?? 'the void');
+  const area = sector !== 'main' ? SECTORS[sector].name : (region?.name ?? 'the void');
   return `Universe · ${small(area)}`;
 }
 

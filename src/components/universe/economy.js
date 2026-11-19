@@ -35,7 +35,7 @@
 // createEconomy({ saves, achievements, standingOf, rankOf, skillOf, cargo, later, cancel })
 //   → { credits, xp, level, owned, spent, earned, earn(what, n, { side }),
 //   canBuy(item), buy(item), checkout(items), canSell(item), sell(item), log,
-//   spend(n), owns(id), grant(ids), setCargo(cargo), record(), on(fn) → off, flush() }
+//   spend(n), credit(n, why), owns(id), grant(ids), setCargo(cargo), record(), on(fn) → off, flush() }
 // deedToEarn(deed) → an EARN key or null; earnNote(earned) → { text, level }
 // or null; goodStanding(level) → boolean
 
@@ -50,7 +50,7 @@ export const PILOT_KEY = 'tp-pilot';
 const VERSION = 2; // (1 → 2: the log, empty to start)
 export const SELL_BACK = 0.6; // what a part sold back pays, of its price
 export const LOG_MAX = 30;
-const LOG_KINDS = ['earn', 'buy', 'sell', 'spend'];
+const LOG_KINDS = ['earn', 'buy', 'sell', 'spend', 'credit'];
 // What selling an item pays back: three fifths of its price, in whole credits.
 export const refundOf = (item) => Math.floor((Number.isInteger(item?.price) && item.price > 0 ? item.price : 0) * SELL_BACK);
 // a v1 save is the same shape, with no log yet (v0 or junk isn't migrated:
@@ -76,6 +76,7 @@ export const EARN = {
   found: { credits: 30, xp: 6 },
   standingUp: { credits: 100, xp: 25 }, // a good standing level reached
   allyMade: { credits: 25, xp: 10 },
+  data: { credits: 5, xp: 1 }, // (exploration data sold at a dock, in fives: a credit of data a credit, and a fifth as much xp; explore/record.js)
 };
 // What a deed (standing.js's, as the scene notes it) pays, as an EARN key,
 // or null. Only the deeds that help pay: hurting the law, the ordinary ships
@@ -429,6 +430,17 @@ export function createEconomy({
     // (a copy, newest last)
     get log() {
       return log.map((e) => ({ ...e }));
+    },
+    // credits in for something sold that the wallet never owned (goods at a
+    // station, market/trade.js): whole credits, earned but no xp, `why` on
+    // the log
+    credit(n, why = 'credits') {
+      if (!Number.isInteger(n) || n <= 0) return false;
+      credits += n;
+      earned += n;
+      note('credit', typeof why === 'string' && why ? why : 'credits', n);
+      changed();
+      return true;
     },
     // credits spent on something that isn't kept (a bounty paid off,
     // wanted.js): whole credits, and only what you have

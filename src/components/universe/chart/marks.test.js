@@ -2,8 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { CHART_VIEWS, DESTINATIONS } from '../nav';
 import { MOONS } from '../universes';
 import { SECTORS } from '../layout';
-import { CHART, levelOf } from './projection';
-import { HAND_MARKS, liveMarks, markById, openView, presetOf, presetView } from './marks';
+import { levelOf } from './projection';
+import { HAND_MARKS, liveMarks, markById, openView, presetOf, presetView, REGION_OF } from './marks';
+import { NEIGHBOURHOODS } from '../neighbourhoods';
 
 const places = DESTINATIONS.filter((d) => d.kind !== 'system');
 
@@ -31,11 +32,19 @@ describe('the chart’s marks', () => {
     ]);
     expect(liveMarks(null)).toEqual([]);
   });
+  it('names every neighbourhood, and zooms in on it when its name is picked', () => {
+    for (const n of NEIGHBOURHOODS) {
+      expect(markById(`chart:${n.id}`)).toMatchObject({ name: n.name, at: n.centre, pickable: false });
+      expect(REGION_OF[`chart:${n.id}`]).toBe(n.id);
+      expect(presetView(n.id, null)).toMatchObject({ focus: n.centre, follow: false });
+      expect(levelOf(presetView(n.id, null).range)).toBe('neighbourhood');
+    }
+  });
   it('opens on the ship, or the universe without one, and says which part it’s looking at', () => {
     expect(openView(null)).toMatchObject({ focus: [0, 0, 0], range: CHART_VIEWS.all.r, follow: false });
     const [x, y, z] = markById('marvel').at;
     const open = openView({ x, y, z });
-    expect(open).toMatchObject({ focus: [x, y, z], range: CHART.range.open, follow: true });
+    expect(open).toMatchObject({ focus: [x, y, z], range: CHART_VIEWS.all.r, follow: true }); // (wide enough for every neighbourhood)
     expect(presetOf(open)).toBe('all');
     const o = SECTORS.rickmorty.origin;
     const curve = openView({ x: o[0] + 900, y: 0, z: o[2] });
