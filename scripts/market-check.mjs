@@ -9,7 +9,8 @@
 // for a station, jumps to it and docks, shuts the Hangar the dock opens, and
 // on the place card's Market: earns credits, buys one of the first good, reads
 // tp-ships for it in the RV's hold, sells it back, and checks the credits came
-// back short of what it cost. Shots in lab/market. Exit 1 on any miss.
+// back short of what it cost; then parks at Home and finds the Core's
+// exchange on its card. Shots in lab/market. Exit 1 on any miss.
 import { spawn } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { mkdir, readdir } from 'node:fs/promises';
@@ -119,6 +120,27 @@ try {
   if (after > before - paid && after < before) pass(`sold back: paid ${paid}, got ${after - (before - paid)}`);
   else fail(`credits ${before} → ${before - paid} → ${after}`);
   await page.screenshot({ path: join(OUT, 'sold.png') });
+  // the Core's exchange, on the Home station's card while the ship's there
+  // (picked through the page, as a pilot picks it: its address, then flown to)
+  await page.evaluate(() => {
+    window.location.hash = '#/universe/home';
+  });
+  await page.waitForTimeout(3000);
+  await page.evaluate(() => {
+    const d = window.__universeDebug;
+    if (d.state.at !== 'home' && !d.state.jump && !d.state.auto) d.travel('home', 'hyper');
+  });
+  if (await until(page, () => window.__universeDebug.state.at === 'home', null, 300000)) {
+    // (the jump's overlay plays out first, and the page picks Home after it: a while, in software)
+    await until(page, () => window.location.hash.endsWith('/home'), null, 180000);
+    const card = page.locator('.universe-market');
+    if (await card.waitFor({ timeout: 120000 }).then(() => true, () => false)) {
+      const head = await card.locator('.universe-market-head').innerText();
+      if (/Core’s exchange/.test(head)) pass(`at Home: ${head.replace(/\s+/g, ' ')}`);
+      else fail(`Home's market head: ${head}`);
+    } else fail(`no market on the Home station’s card: ${JSON.stringify(await page.evaluate(() => ({ hash: window.location.hash, at: window.__universeDebug.state.at, sel: window.__universeDebug.state.sel, panel: document.querySelector('.universe-panel')?.getAttribute('aria-label') })))}`);
+    await page.screenshot({ path: join(OUT, 'home.png') });
+  } else fail('never parked at Home');
   if (errors.length) fail(`page errors: ${errors.join(' | ')}`);
   else pass('no page errors');
   await ctx.close();
