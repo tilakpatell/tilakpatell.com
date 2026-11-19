@@ -98,6 +98,14 @@ export const EXPLORE = {
   charging: (s) => `Scanner charging · ${Math.ceil(s)} s`,
   paid: (n) => `Exploration data sold · +${n.toLocaleString('en-GB')} ¢`,
 };
+// the ships' signatures and the cargo pod (signatures/): the HUD's notes
+export const SIGNS = {
+  portal: 'Portal gun: straight there.',
+  lab: (name) => `The lab: one more ${name.toLowerCase()}.`,
+  seized: (fine) => `Contraband found in the open and taken${fine ? `, and a fine of ${fine.toLocaleString('en-GB')} ¢` : ''}.`,
+  podTaken: (n, more) => `Cargo pod: ${n} aboard${more ? '; the hold’s full, the rest left in it' : ''}.`,
+  podLeft: 'Your cargo’s in a pod where you went down. Fly back to it and press E.',
+};
 // a docked station's market (places/MarketTab.jsx)
 const credits = (n) => `${n.toLocaleString('en-GB')} ¢`;
 export const MARKET = {

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createEconomy } from '../economy';
 import { SYSTEMS } from './profiles';
-import { LIVE, shipSheet, systemRows } from './sheet';
+import { LIVE, shipSheet, signatureLine, systemRows } from './sheet';
 import { tierItem } from './tiers';
 
 // a wallet in memory with this many credits (economy.js's, no saves)
@@ -76,5 +76,13 @@ describe('the read-out of an explorer', () => {
     const counts = { sectors: 4, systems: 11, surveyed: 1, furthest: 3, data: 120 };
     expect(shipSheet({ crew: 'cruiser', economy: null, record: { record: () => counts } })).toMatchObject({ data: 120, explored: { sectors: 4, systems: 11, surveyed: 1, furthest: 3 } });
     expect(shipSheet({ crew: 'cruiser', economy: null, record: counts }).data).toBe(120);
+  });
+});
+
+describe('the Systems tab’s head', () => {
+  it('names the ship’s role and its signature', () => {
+    expect(signatureLine('falcon')).toMatchObject({ role: 'Smuggler and runner' });
+    expect(signatureLine('falcon').line).toMatch(/compartments/);
+    expect(signatureLine('falcon', { hull: 'dart' })).toEqual({ role: 'Garage build', line: 'A garage build: no signature of its own.' });
   });
 });
