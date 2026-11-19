@@ -1,5 +1,6 @@
 import { RiArrowRightLine } from 'react-icons/ri';
 import { CHART_WORDS, PICK_A_SHIP, PLACE } from '../words';
+import MarketTab from './MarketTab';
 
 // A generated place's card in the universe's panel: what it is and in which
 // sector, its name, a line about it, its facts and the one way there (fly,
@@ -7,7 +8,7 @@ import { CHART_WORDS, PICK_A_SHIP, PLACE } from '../words';
 // sector and the plotting line; with no scene to find it, its id and how to
 // get there. It takes a row the scene made (places/cards.js's words, already
 // in it), never the generator.
-export default function PlaceCard({ dest, docked = false, onFly = null, onHangar = null, leaving = false }) {
+export default function PlaceCard({ dest, docked = false, onFly = null, onHangar = null, leaving = false, crew = null }) {
   const sector = CHART_WORDS.sector(dest.cube ?? [0, 0, 0]);
   if (dest.pending || dest.flat) {
     return (
@@ -47,6 +48,7 @@ export default function PlaceCard({ dest, docked = false, onFly = null, onHangar
       ) : (
         <p className="mt-4 text-sm text-muted">{PICK_A_SHIP}</p>
       )}
+      {docked && station && <MarketTab dest={dest} crew={crew} />}
     </>
   );
 }

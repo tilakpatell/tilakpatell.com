@@ -668,3 +668,17 @@ describe('the ships’ tiers in the wallet', () => {
     expect(econ.credits).toBe(0);
   });
 });
+
+describe('credits in for goods sold', () => {
+  it('pays whole credits, counts them earned, gives no xp and logs why', () => {
+    const { econ } = fresh();
+    expect(econ.credit(120, 'spice')).toBe(true);
+    expect(econ.credits).toBe(120);
+    expect(econ.earned).toBe(120);
+    expect(econ.xp).toBe(0);
+    expect(econ.log.at(-1)).toMatchObject({ kind: 'credit', what: 'spice', n: 120 });
+    expect(econ.credit(0)).toBe(false);
+    expect(econ.credit(1.5)).toBe(false);
+    expect(econ.credits).toBe(120);
+  });
+});

@@ -23,7 +23,7 @@ import { readBuild } from '../shipyard/build';
 import { MAX_TIER, SYSTEMS, SYSTEM_LABEL, coreStats, profileOf } from './profiles';
 import { MK, tierItem, tiersOf } from './tiers';
 
-export const LIVE = Object.freeze(['engines', 'pulse', 'hyperdrive', 'shields', 'reactor']);
+export const LIVE = Object.freeze(['engines', 'pulse', 'hyperdrive', 'shields', 'hold', 'reactor']);
 const RANGED = false; // (lane 3: a jump held to the hyperdrive's range)
 const HYPER_RECHARGE = 5; // (nav.js's HYPER.recharge: the seconds the stock hyperdrive takes)
 const times = (v) => `×${v.toFixed(2)}`;
