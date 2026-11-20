@@ -72,10 +72,16 @@ const NEW = {
   'paint:paint:citadel': { price: 500, from: 'rickmorty', needs: { standing: { side: 'rickmorty', axis: 'law', level: 'trusted' } } },
   'paint:paint:pollos': { price: 500, from: 'breakingbad', needs: { standing: { side: 'breakingbad', axis: 'civil', level: 'hero' } } },
   'paint:paint:huttgold': { price: 1200, from: 'galaxy', needs: { level: 8 } },
-  'part:guns:incom': { price: 900, from: 'starwars', needs: { achievement: 'rebels' } },
+  'part:guns:incom': { price: 900, from: 'starwars' },
   'part:fins:council': { price: 700, from: 'rickmorty', needs: { level: 5 } },
   'part:thrusters:vamonos': { price: 450, from: 'breakingbad', needs: { level: 3 } },
   'part:secondary:flak': { needs: { level: 4 } },
+  // (the parts anyone can buy from early on: a side-grade in each slot)
+  'part:booster:iondrive': { needs: { level: 2 } },
+  'part:thrusters:gyro': { needs: { level: 2 } },
+  'part:guns:burst': { needs: { level: 3 } },
+  'part:shields:ablative': { needs: { level: 2 } },
+  'part:fins:canards': { needs: { level: 2 } },
   'part:ordnance:missiles': { needs: { level: 3 } },
   // (the ion burst lands no more a second than the scatter, and the Mk II
   // less than the stock rack: what they're worth is the harder hit, so
@@ -95,10 +101,30 @@ export const SKILL_NODES = { 'u-seismic': 'Seismic charge', 'u-darkmatter': 'Con
 
 export const keyOf = (kind, slot, id) => `${kind}:${slot}:${id}`;
 
+// A part an achievement gives is sold too, at a pilot level (the achievement
+// still gives it free: grantsFor): the best of them later, so they're still
+// something to work toward. A module's or a paint's achievement stays its lock.
+export const PART_LEVEL = Object.freeze({
+  'part:booster:afterburner': 4,
+  'part:booster:repulsor': 5,
+  'part:booster:portal': 7,
+  'part:thrusters:racing': 3,
+  'part:thrusters:vector': 5,
+  'part:guns:fusion': 6,
+  'part:guns:incom': 5,
+  'part:shields:fastcharge': 4,
+  'part:shields:vibranium': 6,
+  'part:secondary:ion': 4,
+  'part:ordnance:mk2': 5,
+});
+// The parts these achievements give (their keys), for the wallet to grant.
+export const grantsFor = (unlocked) => (Array.isArray(unlocked) ? PARTS.filter((p) => p.achievement && unlocked.includes(p.achievement)).map((p) => keyOf('part', p.slot, p.id)) : []);
+
 const entry = (kind, slot, it, stock, price) => {
   const key = keyOf(kind, slot, it.id);
   const own = NEW[key];
-  const needs = { ...(it.achievement ? { achievement: it.achievement } : {}), ...(own?.needs ?? {}) };
+  const lockOf = it.achievement ? (kind === 'part' ? { level: PART_LEVEL[key] ?? 5 } : { achievement: it.achievement }) : {};
+  const needs = { ...lockOf, ...(own?.needs ?? {}) };
   return { key, id: it.id, kind, slot, name: it.name, price: stock ? 0 : (own?.price ?? price), needs: stock ? {} : needs, from: own?.from ?? null, stock };
 };
 

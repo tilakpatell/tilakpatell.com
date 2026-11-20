@@ -79,12 +79,27 @@ export function pasteDraft(draft, code, { unlocked = [], economy = null } = {}) 
 // module is an issue whatever the wallet says; the plant must run it all;
 // every unowned item is in toBuy, their sum the total, and what the credits
 // don't cover is short (an issue of its own). ok: no issues.
+// A part there to stage: open as ever (no achievement, or it's earned), bought,
+// or for sale at the pilot's level (catalog.js's PART_LEVEL), its price the
+// shop's. lockOf says what a part that isn't needs: the level, or the
+// achievement that gives it free.
+export function partOpen(p, unlocked = [], economy = null) {
+  if (isOpen(p, unlocked, economy ? (k) => economy.owns(k) : null)) return true;
+  const item = p ? itemFor('part', p.slot, p.id) : null;
+  return Boolean(economy && item) && !economy.canBuy(item).why?.startsWith('locked:');
+}
+const lower = (s) => (s ? s[0].toLowerCase() + s.slice(1) : s);
+export function lockOf(p, item) {
+  if (p?.achievement && item?.needs?.level) return `Locked. ${needText(item.needs)}, or ${lower(p.hint ?? 'earn its achievement')} for it free.`;
+  return `Locked. ${p?.hint ?? needText(item?.needs)}.`;
+}
+
 export function check(draft, { kind, unlocked = [], economy = null } = {}) {
   const { loadout, build } = draft;
   const tune = draft.tune ?? {};
   const issues = [];
   const toBuy = [];
-  const lockText = (thing, item) => `Locked. ${thing.hint ?? needText(item?.needs)}.`;
+  const lockText = (thing, item) => lockOf(thing, item);
   const consider = (slot, id, thing, open, item) => {
     if (!item || item.stock) return;
     if (!open) return issues.push({ slot, id, why: 'locked', text: lockText(thing, item) });
@@ -102,7 +117,7 @@ export function check(draft, { kind, unlocked = [], economy = null } = {}) {
     const id = loadout[slot] ?? STOCK;
     if (id === STOCK) continue;
     const p = partById(slot, id);
-    consider(slot, id, p, isOpen(p, unlocked), itemOfPart(slot, id));
+    consider(slot, id, p, partOpen(p, unlocked, economy), itemOfPart(slot, id));
   }
   const s = statsOf(kind, loadout, build, tune, undefined, coreOf(economy, kind, build)); // (with the reactor's tier the wallet owns)
   if (s.power > s.capacity) issues.push({ slot: null, id: null, why: 'power', text: `Not enough power: ${Math.round((s.power - s.capacity) * 10) / 10} MW short.` });
@@ -170,7 +185,7 @@ export function sellable({ loadouts = {}, hulls = {}, garage = {}, tune = {}, ke
 // loadout (flown), saved (what to keep: `saved` with each change in, so a
 // part a smaller plant took off still comes back on a bigger one) } or
 // { ok: false, why, slot }: the first refusal, and nothing's to be kept.
-export function fitDraft(kind, draft, changes, { saved = {}, unlocked = [], core = null } = {}) {
+export function fitDraft(kind, draft, changes, { saved = {}, unlocked = [], core = null, owned = null } = {}) {
   let loadout = { ...draft.loadout };
   for (const slot of SLOTS) loadout[slot] = STOCK; // (from bare, so only what equip allows goes on)
   const keep = { ...saved };
@@ -179,7 +194,7 @@ export function fitDraft(kind, draft, changes, { saved = {}, unlocked = [], core
   const order = [...SLOTS.filter((slot) => !parts.some((c) => c.slot === slot)).map((slot) => ({ slot, to: draft.loadout[slot] ?? STOCK })), ...parts];
   for (const { slot, to } of order) {
     if (to === STOCK) continue;
-    const r = equip(kind, loadout, slot, to, unlocked, draft.build, draft.tune, core);
+    const r = equip(kind, loadout, slot, to, unlocked, draft.build, draft.tune, core, owned);
     if (!r.ok) return { ok: false, why: r.reason, slot };
     loadout = r.loadout;
   }
