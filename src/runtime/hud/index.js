@@ -3,9 +3,13 @@
 // kit's tokens and looks (./hud.css) with it.
 import './hud.css';
 import './cluster.css';
+import './pause.css';
 
 export { default as Hud } from './Hud.jsx'; // (named in full: ./hud.js is beside it)
 export { default as Menu, MenuItem } from './Menu';
+export { default as PauseMenu } from './PauseMenu.jsx';
+export { menuKey, readTab as readMenuTab, stepTab } from './pause.js';
+export { createPresence, FIGHT_MS, LOCK_MS } from './presence.js';
 export { default as Prompt } from './Prompt';
 export { default as Exit } from './Exit';
 export { default as Objective } from './Objective';

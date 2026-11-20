@@ -1,21 +1,22 @@
-/* global window, document, getComputedStyle */
+/* global window, document */
 // The Shipyard in a browser, at a desk's width and a phone's:
 //
 //   node scripts/shipyard-check.mjs [--url http://127.0.0.1:5173] [--out lab/shipyard] [--chromium /path]
 //
 // It starts the dev server (the wallet's dev hook, __universeDebug.economy,
 // is a DEV hook) unless --url names one, opens /universe flying the X-wing,
-// presses H and waits for the Shipyard. At 1280 × 720 it shoots desk.webp,
-// checks the showroom drew a ship (the stage with its canvas against the
-// stage without it, and the canvas inspector's colour entropy), earns
-// credits through the dev hook, stages the Flak burst on the Secondary
-// line, reads the bill's total, applies, and reads tp-pilot and
-// tp-universe-loadout back; then, on the X-wing's own hull, picks a Quad on
-// the Engines tab: the hull stays Stock ("Stock hull · tuned"), the stats
-// change, Apply keeps the X-wing's model and keeps the tune under
-// tp-universe-tune (and no garage hull). At 390 × 844 it opens the bill's sheet, shoots
-// phone.webp and checks Apply is on screen, under the nav and inside the
-// safe area. Exit 1 on any miss.
+// presses H and waits for the Shipyard (the flight menu's Ship tab, on the
+// Hangar's page last used: the Shipyard, as tp-hangar-tab says). At
+// 1280 × 720 it shoots desk.webp, checks the showroom drew a ship (the stage
+// with its canvas against the stage without it, and the canvas inspector's
+// colour entropy), earns credits through the dev hook, stages the Flak burst
+// in the list's Secondary, reads the purchase bar's total, applies, and reads
+// tp-pilot and tp-universe-loadout back; then, on the X-wing's own hull,
+// picks a Quad in Engines: the hull stays Stock ("Stock hull · tuned"), the
+// stats change, Apply keeps the X-wing's model and keeps the tune under
+// tp-universe-tune (and no garage hull). At 390 × 844, a touch phone, it
+// stages a booster, shoots phone.webp and checks Apply is on screen, a
+// finger's height, and clear of the menu's tabs. Exit 1 on any miss.
 import { spawn } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { mkdir, readdir, writeFile } from 'node:fs/promises';
@@ -107,6 +108,12 @@ const fail = (what) => {
 const pass = (what) => console.log(`ok   ${what}`);
 const report = {};
 
+// (the shipyard's list: back to its front door if a category's open, then into one)
+async function openSlot(yard, slot) {
+  if (await yard.locator('.yl-back').count()) await yard.locator('.yl-back').click();
+  await yard.locator(`.yl-cat[data-slot="${slot}"]`).click();
+}
+
 async function open(viewport, { mobile = false } = {}) {
   const ctx = await browser.newContext({ viewport, deviceScaleFactor: 1, isMobile: mobile, hasTouch: mobile });
   await ctx.addInitScript(() => {
@@ -114,6 +121,7 @@ async function open(viewport, { mobile = false } = {}) {
     localStorage.setItem('tp-start', '"universe"');
     localStorage.setItem('tp-quality', 'low');
     localStorage.setItem('tp-universe-ship', '"xwing"');
+    localStorage.setItem('tp-hangar-tab', '"shipyard"');
     window.__tpKeepFrames = true;
   });
   const page = await ctx.newPage();
@@ -123,10 +131,13 @@ async function open(viewport, { mobile = false } = {}) {
   await page.waitForFunction(() => window.__universeDebug?.state?.model, null, { timeout: 300000, polling: 250 });
   await page.waitForTimeout(1500);
   await page.locator('canvas').first().click({ position: { x: 5, y: 5 }, force: true }).catch(() => {});
-  // (H opens it only while its door, the corner button, is on screen)
-  await page.locator('.universe-hangar-btn').waitFor({ timeout: 60000 });
-  await page.keyboard.press('h');
-  const yard = page.getByRole('dialog', { name: 'Shipyard' });
+  // (H opens the flight menu on the Hangar's page, once the HUD that listens for it is up: a moment after the ship)
+  const yard = page.locator('.yz');
+  for (let i = 0; i < 8 && !(await yard.count()); i++) {
+    await page.evaluate(() => document.activeElement?.blur?.());
+    await page.keyboard.press('h');
+    await page.waitForTimeout(2000);
+  }
   await yard.waitFor({ timeout: 60000 });
   await page.waitForTimeout(8000); // (the showroom's first frames, in software, and the real ship's model over its stand-in)
   return { ctx, page, yard, errors };
@@ -151,15 +162,15 @@ try {
 
     // credits, then the Flak burst staged (level 4: ten war wins' xp)
     await page.evaluate(() => window.__universeDebug.economy.earn('warWin', 10));
-    await yard.getByRole('tab', { name: 'Secondary' }).click();
-    await yard.getByRole('button', { name: /Flak burst/ }).click();
-    const total = await yard.locator('.yard-total b').innerText();
+    await openSlot(yard, 'secondary');
+    await yard.locator('.yl-row', { hasText: 'Flak burst' }).click();
+    const total = await yard.locator('.yc-total b').innerText();
     report.total = total;
-    if (/\d[\d,]* ¢/.test(total) && !/^0 ¢$/.test(total)) pass(`the bill says ${total}`);
-    else fail(`the bill's total reads "${total}"`);
+    if (/\d[\d,]* ¢/.test(total) && !/^0 ¢$/.test(total)) pass(`the bar says ${total}`);
+    else fail(`the bar's total reads "${total}"`);
     const apply = yard.getByRole('button', { name: 'Apply and launch' });
     if (await apply.isEnabled()) pass('Apply is ready');
-    else fail(`Apply is disabled: ${await yard.locator('.yard-issues').innerText().catch(() => '')}`);
+    else fail(`Apply is disabled: ${await yard.locator('.yc-issue').innerText().catch(() => '')}`);
     await apply.click();
     // (the wallet writes half a second after a change: economy.js's SAVE_AFTER)
     await page
@@ -187,11 +198,11 @@ try {
     const was = await page.evaluate(() => ({ ...window.__universeDebug.state.stats }));
     await page.keyboard.press('h');
     await yard.waitFor({ timeout: 60000 });
-    await yard.getByRole('tab', { name: 'Engines' }).click();
-    const hint = await yard.locator('.yard-quiet').first().innerText();
-    if (/tunes it: its numbers, not its looks/.test(hint)) pass('the Engines tab says a module tunes the crew’s own ship');
-    else fail(`the Engines tab's hint reads "${hint}"`);
-    await yard.getByRole('button', { name: /Quad/ }).click();
+    await openSlot(yard, 'engines');
+    const hint = await yard.locator('.yl-quiet').first().innerText();
+    if (/tunes it: its numbers, not its looks/.test(hint)) pass('Engines says a module tunes the crew’s own ship');
+    else fail(`Engines' hint reads "${hint}"`);
+    await yard.locator('.yl-row', { hasText: 'Quad' }).click();
     const caption = await yard.locator('.yard-caption').innerText();
     if (/Stock hull · tuned/.test(caption)) pass(`the caption reads "${caption.split(' · ').slice(1).join(' · ')}"`);
     else fail(`the caption reads "${caption}"`);
@@ -222,20 +233,19 @@ try {
   // ── the phone ──
   {
     const { ctx, page, yard, errors } = await open({ width: 390, height: 844 }, { mobile: true });
-    await yard.getByRole('button', { name: 'Show the bill' }).click();
+    // (staged, the bar rides along the foot of the menu's scroll)
+    await openSlot(yard, 'booster');
+    await yard.locator('.yl-row', { hasText: 'Twin solid boosters' }).click();
     await page.waitForTimeout(500);
     await sharp(await page.screenshot()).webp({ quality: 82 }).toFile(join(OUT, 'phone.webp'));
-    const nav = await page.evaluate(() => parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--nav-h')) || 68);
+    const tabs = await page.evaluate(() => document.querySelector('.hud-pause-tabs')?.getBoundingClientRect().top ?? 844);
     const box = await yard.getByRole('button', { name: 'Apply and launch' }).boundingBox();
-    report.phone = { nav, apply: box };
-    if (box && box.y >= nav && box.y + box.height <= 844 && box.x >= 0 && box.x + box.width <= 390 && box.height >= 44) pass(`Apply is on screen under the nav (${Math.round(box.x)},${Math.round(box.y)} ${Math.round(box.width)}×${Math.round(box.height)})`);
-    else fail(`Apply is off screen or under the nav: ${JSON.stringify(box)} (nav ${nav})`);
-    const navCovered = await page.evaluate((h) => {
-      const el = document.elementFromPoint(195, h / 2);
-      return Boolean(el?.closest('.yard'));
-    }, nav);
-    if (!navCovered) pass('the nav is uncovered');
-    else fail('the yard covers the nav');
+    report.phone = { tabs, apply: box };
+    if (box && box.y >= 0 && box.y + box.height <= tabs && box.x >= 0 && box.x + box.width <= 390 && box.height >= 44) pass(`Apply is on screen, clear of the menu's tabs (${Math.round(box.x)},${Math.round(box.y)} ${Math.round(box.width)}×${Math.round(box.height)})`);
+    else fail(`Apply is off screen or under the tabs: ${JSON.stringify(box)} (tabs at ${tabs})`);
+    const stage = await page.locator('.yard-stage').boundingBox();
+    if (stage && stage.height >= 160 && stage.y + stage.height <= box.y) pass(`the showroom's in sight over it (${Math.round(stage.height)} px tall)`);
+    else fail(`the showroom's off screen or under the bar: ${JSON.stringify(stage)}`);
     if (errors.length) fail(`page errors: ${errors.join(' | ')}`);
     await ctx.close();
   }

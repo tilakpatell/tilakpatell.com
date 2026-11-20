@@ -3,7 +3,6 @@ import { RiShieldLine } from 'react-icons/ri';
 import { local, useMediaQuery, useReducedMotion } from '../../lib/hooks';
 import { WorldHost, useWorld } from '../../runtime';
 import galaxyModule from './module';
-import { CONTROLS_KEY, readControls } from '../universe/controls';
 import FlightSettings from '../universe/FlightSettings';
 import Hangar from '../universe/Hangar';
 import { SYSTEMS, goalsOf, lightYears, systemById } from './systems';
@@ -39,7 +38,7 @@ import { PowerBar } from '../universe/shared/powerBar';
 // While the 3D loads the box says so; without 3D, a note
 // that the galaxy needs it, and the panel and the map still work.
 
-export default function GalaxyView({ system, here, handle, holo = null, ship, loadout, build = null, tune = null, net = null, frozen, onEvent, onArrive, onAt, onBoard, onCrash, onMap, oath = null, found = [], course = null, hangar = false, onHangar = null, skillFx = null, powerPicks = null }) {
+export default function GalaxyView({ system, here, handle, holo = null, quiet = false, controls, onControls, onLive = null, ship, loadout, build = null, tune = null, net = null, frozen, onEvent, onArrive, onAt, onBoard, onCrash, onMap, oath = null, found = [], course = null, hangar = false, onHangar = null, skillFx = null, powerPicks = null }) {
   const labels = useRef({});
   const stars = useRef({});
   const [aim, setAim] = useState(null); // the star the nose is on
@@ -55,13 +54,9 @@ export default function GalaxyView({ system, here, handle, holo = null, ship, lo
     local.set(FLOWN_KEY, true);
   }, []);
   const [keysOpen, setKeysOpen] = useState(false); // (the keys card, over the first flight and again from its chip)
-  const [controls, setControlsState] = useState(() => readControls(local.get(CONTROLS_KEY)));
+  // (the flight settings are the page's, kept there: the flight menu's Settings tab changes them too)
+  const setControls = onControls;
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const setControls = (c) => {
-    const next = readControls(c);
-    setControlsState(next);
-    local.set(CONTROLS_KEY, next);
-  };
   // (the flight settings and the Shipyard's door are in the same corner: one at a time, the yard opened by its key as well as by its button)
   const openSettings = useCallback(
     (on) => {
@@ -114,6 +109,10 @@ export default function GalaxyView({ system, here, handle, holo = null, ship, lo
       events.current?.(e);
     },
   });
+  // (whether the 3D is drawing, for the page: the quiet HUD is a flight's)
+  useEffect(() => {
+    onLive?.(Boolean(meant && on));
+  }, [onLive, meant, on]);
   // the scene itself, while it's the world on the runtime: its own calls (jump, goTo, fire…)
   const view = { get current() { return rt?.current?.module === galaxyModule ? rt.current.world.scene : null; } };
   // (the war's battle here as the scene has it, for the line over the galaxy and its end card)
@@ -235,6 +234,7 @@ export default function GalaxyView({ system, here, handle, holo = null, ship, lo
             <FlightHud
               flying={Boolean(ship)}
               hudRef={hud}
+              quiet={quiet}
               stickRef={stick}
               vitalsIcon={<RiShieldLine className="fc-shield-icon" aria-hidden="true" />}
               speedIcon={<GameIcon name="hud:speed" className="fc-speed-icon" />}
@@ -249,9 +249,11 @@ export default function GalaxyView({ system, here, handle, holo = null, ship, lo
                 </>
               }
               after={
-                <button type="button" className="galaxy-mapbtn" onClick={onMap}>
-                  Galaxy map
-                </button>
+                !quiet && (
+                  <button type="button" className="galaxy-mapbtn" onClick={onMap}>
+                    Galaxy map
+                  </button>
+                )
               }
               jump={jumpTo}
               controls={buttons}
@@ -259,16 +261,19 @@ export default function GalaxyView({ system, here, handle, holo = null, ship, lo
           )}
           {ship && on && (
             <>
-              <FlightSettings controls={controls} onChange={setControls} open={settingsOpen} onOpen={openSettings} />
+              {/* (quiet: the settings, the keys and the map's button are the flight menu's; the Hangar's door stays, hidden, as H's) */}
+              {!quiet && <FlightSettings controls={controls} onChange={setControls} open={settingsOpen} onOpen={openSettings} />}
               {onHangar && <Hangar open={hangar} onOpen={onHangar} />}
-              <button type="button" className="galaxy-keysbtn" onClick={toggleKeys} aria-expanded={showKeys}>
-                Keys
-              </button>
-              <KeysCard open={showKeys} onClose={closeKeys} />
+              {!quiet && (
+                <button type="button" className="galaxy-keysbtn" onClick={toggleKeys} aria-expanded={showKeys}>
+                  Keys
+                </button>
+              )}
+              {!quiet && <KeysCard open={showKeys} onClose={closeKeys} />}
               {!flown && (
                 <p className="universe-hint galaxy-hint">
                   <span className="universe-hint-keys">
-                    <kbd>W</kbd> <kbd>S</kbd> throttle, <kbd>A</kbd> <kbd>D</kbd> roll, arrows to steer, <kbd>Space</kbd> boost, hold <kbd>F</kbd> to fire, <kbd>G</kbd> your crew’s power and <kbd>X</kbd> the big one once it’s charged, <kbd>V</kbd> cockpit. The named stars are other systems: put the nose on one and <kbd>J</kbd> to jump, or <kbd>M</kbd> for the galaxy map
+                    <kbd>W</kbd> <kbd>S</kbd> throttle, <kbd>A</kbd> <kbd>D</kbd> roll, arrows to steer, <kbd>Space</kbd> boost, hold <kbd>F</kbd> to fire, <kbd>G</kbd> your crew’s power and <kbd>X</kbd> the big one once it’s charged, <kbd>V</kbd> cockpit. The named stars are other systems: put the nose on one and <kbd>J</kbd> to jump, or <kbd>M</kbd> for the galaxy map{quiet ? <>; <kbd>Esc</kbd> the menu</> : null}
                     <GuideCue />
                   </span>
                   <span className="universe-hint-touch">Drag to fly, hold Boost and Fire, tap your crew’s power; point at a star and tap Jump to go to lightspeed<GuideCue touch /></span>

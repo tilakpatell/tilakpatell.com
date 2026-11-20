@@ -5,7 +5,7 @@
 // and so three.js with it. A page that loads the nav takes orbits.js, the
 // light face, instead.
 //
-// UNIVERSE, universeOf (seed.js); fullSector, placeOf, placeIn (space.js);
+// UNIVERSE, universeOf, hash64 (seed.js: the hash, for the market's rolls); fullSector, placeOf, placeIn (space.js);
 // orbitAt, moonAt, bodiesAt, spaceTime (orbits.js); systemReach (systems.js);
 // THING_BASE, THING_CELLS, THING_NEAR, THING_KINDS, thingRow
 // (things.js); SECTOR_EXTRAS, NEBULA_SHOW (extras/index.js); WONDER_KINDS (tables.js); STATION_BASE, stationsOf
@@ -18,7 +18,7 @@
 // EXTRA_LISTS (extras/index.js); kindsIn, nearestOfKind (finder.js); sectorJob,
 // withMoons (job.js: a sector as the worker makes it, and its moons put back)
 
-export { UNIVERSE, universeOf } from '../gen/seed';
+export { UNIVERSE, universeOf, hash64 } from '../gen/seed';
 export { fullSector, placeIn, placeOf } from '../gen/space';
 export { bodiesAt, moonAt, orbitAt, spaceTime } from '../gen/orbits';
 export { systemReach } from '../gen/systems';

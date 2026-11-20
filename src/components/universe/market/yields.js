@@ -8,7 +8,7 @@
 // yieldOf({ kind, id, press, area, d }) → [{ good, n }] (empty for a kind
 //   that gives none)
 
-import { hash64 } from '../../expanse/gen/seed';
+import { hash64 } from '../../expanse/shared/gen'; // (the Expanse's hash, by its face: worlds are islands)
 import { ORE_CAP } from '../things/rules';
 import { raresAt } from './areas';
 

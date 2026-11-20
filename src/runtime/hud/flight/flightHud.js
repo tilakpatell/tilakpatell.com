@@ -14,18 +14,36 @@
 // altitude and the wanted strip as the universe map wrote them; and the
 // radar drawn on a tick's points.
 //
-//   createFlightHud({ distText, draw = drawRadar }) → { place(root, frame), writes }
+//   createFlightHud({ distText, draw = drawRadar, clock }) → { place(root, frame), writes }
 //     root: the overlay's .universe-hud element, or null (nothing is written)
 //     distText(d): a distance in the map's unit, for the lock, the nav and the card
 //     draw(canvas, points, { range, dpr }): the radar's picture (radarDraw.js)
+//     clock(): now in ms (performance.now by default), for the quiet HUD's holds
+//   pokeHud(root): a fight key pressed (FlightHud.jsx): the guns and powers out for a fight's while
+//
+// And the quiet HUD's presence (../presence.js): from the record's threats,
+// hits, lock and shields, the cluster's root is marked data-fight, data-target
+// and data-low each frame (quiet.css shows and hides by them; a world that
+// isn't quiet has the marks and nothing reads them).
 
 import { edgeOf, onScreen } from '../../../lib/combat/flight/targeting.js';
 import { createFlightCluster } from '../cluster.js';
 import { drawRadar } from './radarDraw.js';
+import { createPresence } from '../presence.js';
 
-export function createFlightHud({ distText, draw = drawRadar }) {
+// (when a fight key was last pressed, by the overlay it was pressed over)
+const poked = new WeakMap();
+const clockNow = () => (typeof performance === 'undefined' ? Date.now() : performance.now());
+export const pokeHud = (root, now = clockNow()) => {
+  if (root) poked.set(root, now);
+};
+
+export function createFlightHud({ distText, draw = drawRadar, clock = clockNow }) {
   let els = null;
   const kit = createFlightCluster();
+  const presence = createPresence();
+  const sense = { threats: 0, hit: false, kill: false, lock: false, shields: null }; // (the presence's input, one record)
+  let lastPoke = -Infinity;
   const radarOpts = { range: 0, dpr: 1 }; // (the radar's options, one record)
   const edge = { x: 0, y: 0, angle: 0 };
   // an element and the last of each thing written to it (a distance, a number
@@ -54,6 +72,7 @@ export function createFlightHud({ distText, draw = drawRadar }) {
       threats: all('.universe-threat'),
       mates,
       cluster,
+      clusterRoot: box(cluster),
       speed: p('.fc-speed'),
       speedN: p('.fc-speed-n'),
       kills: p('.fc-kills-n'),
@@ -214,6 +233,29 @@ export function createFlightHud({ distText, draw = drawRadar }) {
       }
     }
     placeCluster(e, f);
+    placePresence(e, r, f);
+  }
+
+  // what the quiet HUD has out (presence.js), on the cluster's root
+  function placePresence(e, r, f) {
+    const c = e.clusterRoot;
+    if (!c) return;
+    const now = clock();
+    const p = poked.get(r);
+    if (p !== undefined && p !== lastPoke) {
+      lastPoke = p;
+      presence.poke(p);
+    }
+    const v = f.cluster?.vitals ?? null;
+    sense.threats = f.threats ? f.threats.n : 0;
+    sense.hit = Boolean(f.reticle.hit);
+    sense.kill = Boolean(f.reticle.kill);
+    sense.lock = Boolean(f.lock.on);
+    sense.shields = v && v.max > 0 ? v.value / v.max : null;
+    const st = presence.step(now, sense);
+    flag(c, 'data-fight', st.fight);
+    flag(c, 'data-target', st.target);
+    flag(c, 'data-low', st.low);
   }
 
   // the parts round the overlay

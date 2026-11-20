@@ -10,20 +10,24 @@ import { buildCode } from './build';
 import { coreOf } from '../ships/tiers';
 import { draftKeys, hullName, pasteDraft, sellable, setModule, setPart } from '../yardRules';
 import { createShowroom } from './showroom';
-import YardCatalogue from './YardCatalogue';
-import { RAIL_LABEL } from './rail';
-import YardBill from './YardBill';
+import YardList from './YardList';
+import YardStats from './YardStats';
+import YardCart from './YardCart';
 import Record from '../Record';
 import './shipyard.css';
 
-// The Shipyard's body: the catalogue down the left, the draft's ship on a
-// turntable in the middle (showroom.js, made while this is mounted), the
-// bill down the right, and the flight record over it when asked for. The
-// draft itself is the holder's (`yard`, useYard.js's: kept while the yard's
-// shut, so Escape keeps what's staged), and so is the slot picked; the note,
-// the record and the phone's bill sheet are this body's, gone when it is.
-// The Shipyard's dialog (Shipyard.jsx) holds it, and so does the Hangar's
-// Shipyard tab (components/hangar, through universe/shared/hangar.js).
+// The Shipyard's body, a game garage: the draft's ship on a turntable
+// filling it (showroom.js, made while this is mounted), its camera going to
+// the part being shopped; over it the list down the left (YardList.jsx: the
+// categories, then a category's items), the card down the right (YardStats:
+// what's pointed at, the performance, the power) and the purchase bar along
+// the foot (YardCart: what's staged, the total, Revert and Apply), and the
+// flight record over it all when asked for. The draft itself is the
+// holder's (`yard`, useYard.js's: kept while the yard's shut, so Escape
+// keeps what's staged), and so is the category open (`slot`, null for the
+// front door); the note and the record are this body's, gone when it is.
+// The Hangar's Shipyard page holds it (components/hangar, through
+// universe/shared/hangar.js), in its own panel or in the flight menu.
 // `onApplied` is told when Apply has fitted the lot (the dialog shuts then).
 
 export default function ShipyardBody({ ship, shipName = '', live, lastBuild = null, saves, dropped = null, onSell, onCrew = null, hint = null, yard, slot, onSlot, onApplied = null }) {
@@ -31,15 +35,19 @@ export default function ShipyardBody({ ship, shipName = '', live, lastBuild = nu
   const room = useRef(null);
   const [still, setStill] = useState(false); // no WebGL: a card in the showroom's place
   const [note, setNote] = useState(null);
-  const [billOpen, setBillOpen] = useState(false);
   const [record, setRecord] = useState(false);
+  const box = useRef(null);
+  const listEl = useRef(null);
+  const statsEl = useRef(null);
   const { unlocked } = useAchievements();
   const { economy, version: walletVersion } = useEconomy();
   const reduced = useMemo(() => prefersReducedMotion(), []);
   const { draft, checked, changes, looking, setLooking } = yard;
   // (what the showroom shows, for it to show the moment it's made)
   const latest = useRef(null);
-  latest.current = { show: ship ? { kind: ship, build: draft.build, loadout: draft.loadout } : null, focus: looking?.slot ?? slot };
+  // (the part the camera goes to: what's pointed at, else the category open; the front door and the selling, none)
+  const aim = looking?.slot ?? (slot === 'sell' ? null : slot);
+  latest.current = { show: ship ? { kind: ship, build: draft.build, loadout: draft.loadout } : null, focus: aim };
 
   // the showroom: made with the body, gone with it. Made a moment after
   // the body mounts, not as it does: a mount that's undone at once (React's
@@ -67,8 +75,25 @@ export default function ShipyardBody({ ship, shipName = '', live, lastBuild = nu
     if (ship) room.current?.show({ kind: ship, build: draft.build, loadout: draft.loadout });
   }, [ship, draft, still]);
   useEffect(() => {
-    room.current?.focus(looking?.slot ?? slot);
-  }, [looking, slot]);
+    room.current?.focus(aim);
+  }, [aim]);
+  // the ship in the middle of what the list and the card leave of the showroom (nothing over it on a phone: none)
+  useEffect(() => {
+    const el = box.current;
+    if (!el || typeof ResizeObserver !== 'function') return undefined;
+    const measure = () => {
+      const b = el.getBoundingClientRect();
+      const l = listEl.current?.getBoundingClientRect();
+      const r = statsEl.current?.getBoundingClientRect();
+      const over = l && r && l.right < r.left && l.top < b.top + b.height / 2;
+      const middle = over ? (l.right + r.left) / 2 - b.left : b.width / 2;
+      room.current?.frame({ shift: b.width ? Math.round(((middle - b.width / 2) / b.width) * 100) / 100 : 0 });
+    };
+    const watch = new ResizeObserver(measure);
+    watch.observe(el);
+    measure();
+    return () => watch.disconnect();
+  }, [still]);
 
   // (the stats as flown: with the crew's tiers, the wallet's, a version along so a tier bought shows)
   const core = useMemo(() => (walletVersion >= 0 && ship ? coreOf(economy, ship, draft.build) : null), [economy, walletVersion, ship, draft.build]);
@@ -107,28 +132,10 @@ export default function ShipyardBody({ ship, shipName = '', live, lastBuild = nu
   // (what's owned and fitted nowhere: the wallet's version re-renders this on a sale)
   const sell = sellable({ ...saves, keep: draftKeys(draft) }, economy);
   const crew = crewById(ship);
+  const changed = new Set(changes.map((c) => (c.slot === 'build' ? 'hull' : c.slot)));
 
   return (
-    <>
-      <YardCatalogue
-        slot={slot}
-        ship={ship}
-        onSlot={(s) => {
-          onSlot(s);
-          setNote(null);
-        }}
-        draft={draft}
-        live={live}
-        unlocked={unlocked}
-        economy={economy}
-        onStage={stage}
-        onLook={setLooking}
-        onHull={(garage) => yard.setHull(garage, lastBuild)}
-        onRoll={() => yard.roll((Math.random() * 0xffffffff) >>> 0, ownedModules(economy))}
-        onPaste={paste}
-        onSay={setNote}
-      />
-
+    <div ref={box} className="yz" data-home={!slot || undefined}>
       <div className="yard-stage">
         {still ? (
           <div className="yard-still">
@@ -145,31 +152,52 @@ export default function ShipyardBody({ ship, shipName = '', live, lastBuild = nu
         )}
         <p className="yard-caption">
           {crew?.label ?? ''} · {hullName(draft)}
-          {looking && <span className="yard-looking"> · {RAIL_LABEL[looking.slot]}: {looking.text}</span>}
         </p>
       </div>
 
-      <YardBill
+      <div ref={listEl} className="yz-list">
+      <YardList
+        slot={slot}
+        ship={ship}
+        onSlot={(s) => {
+          onSlot(s);
+          setNote(null);
+        }}
+        draft={draft}
+        live={live}
+        unlocked={unlocked}
+        economy={economy}
+        onStage={stage}
+        onLook={setLooking}
+        onHull={(garage) => yard.setHull(garage, lastBuild)}
+        onRoll={() => yard.roll((Math.random() * 0xffffffff) >>> 0, ownedModules(economy))}
+        onPaste={paste}
+        onSay={setNote}
+        changed={changed}
+        wallet={wallet}
+        sell={sell}
+        onSell={sold}
+        onRecord={() => setRecord(true)}
+        crew={castOfCrew(ship) ? crew?.label : null}
+        onCrew={onCrew}
+      />
+      </div>
+
+      <div ref={statsEl} className="yz-stats">
+        <YardStats look={looking} now={now} then={then} checked={checked} />
+      </div>
+
+      <YardCart
         checked={checked}
         changes={changes}
-        now={now}
-        then={then}
-        wallet={wallet}
         toBuyKeys={toBuyKeys}
-        sell={sell}
         note={note}
         dropped={dropped}
-        open={billOpen}
-        onOpen={setBillOpen}
         onApply={apply}
         onRevert={() => {
           yard.revert();
           setNote('Back to what’s flown.');
         }}
-        onSell={sold}
-        onRecord={() => setRecord(true)}
-        crew={castOfCrew(ship) ? crew?.label : null}
-        onCrew={onCrew}
         ready={Boolean(economy)}
       />
       {record && (
@@ -177,6 +205,6 @@ export default function ShipyardBody({ ship, shipName = '', live, lastBuild = nu
           <Record open={record} onClose={() => setRecord(false)} />
         </div>
       )}
-    </>
+    </div>
   );
 }

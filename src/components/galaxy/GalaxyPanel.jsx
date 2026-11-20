@@ -204,9 +204,12 @@ export default function GalaxyPanel({ system, at, ship, onShip, onHangar = null,
   const quote = system.quote;
   return (
     <aside ref={panel} className="universe-panel galaxy-panel dialog overflow-y-auto" data-tour="galaxy-panel" aria-label={system.name}>
-      <button type="button" className="universe-tuck" onClick={() => toggle(true)} aria-expanded="true" aria-label="Hide the panel" title="Hide the panel">
-        <RiSideBarFill className="h-4 w-4" aria-hidden="true" />
-      </button>
+      {/* (no tuck in the flight menu's Map tab, where it's put away by the menu: onTuck null) */}
+      {onTuck && (
+        <button type="button" className="universe-tuck" onClick={() => toggle(true)} aria-expanded="true" aria-label="Hide the panel" title="Hide the panel">
+          <RiSideBarFill className="h-4 w-4" aria-hidden="true" />
+        </button>
+      )}
       <GuideLink className="universe-tuck universe-guide" />
       <p className="eyebrow">A galaxy far, far away</p>
       {toward && (

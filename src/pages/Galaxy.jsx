@@ -45,6 +45,9 @@ import { createImpacts } from '../lib/impact';
 const HangarPanel = lazy(() => import('../components/hangar/HangarPanel'));
 import { TAB_KEY, readTab } from '../components/hangar/hangarRules';
 import { useSkills } from '../components/hangar/skills/useSkills';
+import FlightMenu from '../components/universe/menu/FlightMenu';
+import { useFlightMenu, useFlightMode } from '../components/universe/menu/useFlightMenu';
+import { useControls } from '../components/universe/useControls';
 // a bump's and a crash's thud, by the hit law (lib/impact.js)
 const knockLaw = createImpacts();
 
@@ -270,6 +273,17 @@ export default function Galaxy() {
     setTucked(on);
     local.set(PANEL_KEY, on ? 'tucked' : 'open');
   };
+  // the quiet HUD (docs/superpowers/specs/2026-11-18-quiet-hud-design.md), as on the universe map: flying in the drawn galaxy, the
+  // side panel, the site's nav, the corner's tools and the keys card go, and the flight menu (Esc) has them
+  const [drawing, setDrawing] = useState(false); // (the 3D drawing: GalaxyView's onLive)
+  const quiet = Boolean(ship) && drawing;
+  const [controls, setControls] = useControls();
+  const menuOk = quiet && !leaving && !mapOpen && !jumping && !intro && !yard;
+  const menu = useFlightMenu({ enabled: menuOk });
+  const { openMenu, closeMenu, openShip } = menu;
+  const menuOn = useRef(false);
+  menuOn.current = menuOk;
+  useFlightMode(quiet && !leaving);
   const pickShip = (id) => {
     audioContext();
     setShip(id);
@@ -518,15 +532,58 @@ export default function Galaxy() {
       if (e.key !== 'Escape' || e.defaultPrevented || leaving) return;
       if (document.querySelector('[aria-modal="true"]')) return;
       if (view.current.escape()) e.preventDefault();
+      // (and with nothing to back out of, flying: the menu)
+      else if (menuOn.current) {
+        e.preventDefault();
+        openMenu();
+      }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [leaving]);
+  }, [leaving, openMenu]);
+
+  // the side panel (GalaxyPanel.jsx): beside the galaxy, or, flying, the flight menu's Map tab, whose buttons shut the menu as they go
+  const galaxyPanel = (inMenu) => {
+    const shut = (fn) => (fn && inMenu ? (...a) => (closeMenu(), fn(...a)) : fn);
+    return (
+          <GalaxyPanel
+            system={sys}
+            at={at}
+            ship={ship}
+            onShip={shut(pickShip)}
+            onHangar={
+              ship && !jumping
+                ? inMenu
+                  ? () => openShip('shipyard') // (in the menu, the Hangar is its Ship tab)
+                  : () => {
+                      setHangarTab('shipyard'); // (the panel's link says the shipyard: the Hangar opens on it)
+                      openYard(true);
+                    }
+                : null
+            }
+            onMap={shut(() => setMapOpen(true))}
+            onGo={shut((id) => view.current.goTo(id))}
+            onLeave={shut(() => leave('/universe/starwars', { jump: true }))}
+            found={found}
+            onBoard={shut((path) => leave(path))}
+            onLand={canLand(sys.id) ? shut((district, how) => land(sys.id, district, how)) : null}
+            districts={SITES[sys.id]?.districts ?? []}
+            tucked={inMenu ? false : tucked}
+            onTuck={inMenu ? null : tuck}
+            jumping={jumping}
+            held={held}
+            balked={balked}
+            oath={oath}
+            suggested={suggested}
+            onSwear={onSwear}
+          />
+    );
+  };
 
   // (every system's colour is light, readable on the dark page: so dark on a button)
   const accent = { '--accent': sys.accent, '--accent-text': sys.accent, '--btn-bg': sys.accent, '--btn-ink': '#03040a' };
   return (
-    <div className="dark-scope universe-page galaxy-page" style={accent} data-tucked={tucked ? '' : undefined} data-card="" data-leaving={leaving && !leaving.prep ? (leaving.land ? 'land' : leaving.crash ? 'crash' : 'fade') : undefined} data-jumping={jumping?.phase} data-held={held ? '' : undefined}>
+    <div className="dark-scope universe-page galaxy-page" style={accent} data-tucked={tucked || quiet ? '' : undefined} data-quiet={quiet ? '' : undefined} data-card="" data-leaving={leaving && !leaving.prep ? (leaving.land ? 'land' : leaving.crash ? 'crash' : 'fade') : undefined} data-jumping={jumping?.phase} data-held={held ? '' : undefined}>
       <h1 className="sr-only">A galaxy far, far away: {sys.name}</h1>
       <p className="sr-only" aria-live="polite">
         {jumping ? `Jumping to ${systemById(jumping.to)?.name ?? 'lightspeed'}` : held ? `Interdicted short of ${systemById(held.to)?.name ?? sys.name}: an Imperial Interdictor's gravity well holds you` : `In the ${sys.system ?? sys.name} system`}
@@ -543,7 +600,11 @@ export default function Galaxy() {
         skillFx={skillFx}
         powerPicks={powerPicks}
         net={online.client}
-        frozen={Boolean(leaving) || intro || yard}
+        frozen={Boolean(leaving) || intro || yard || (menu.open && !online.on)}
+        quiet={quiet}
+        controls={controls}
+        onControls={setControls}
+        onLive={setDrawing}
         hangar={yard}
         onHangar={jumping ? null : openYard}
         onEvent={onEvent}
@@ -558,7 +619,7 @@ export default function Galaxy() {
       />
       {crew && <Comms control={comms} crew={galaxyCrew(crew)} reduced={reduced} />}
       <EarnNote note={yardNote ?? earned} />
-      {ship && !leaving && (
+      {ship && !leaving && !quiet && (
         <Suspense fallback={null}>
           <HangarPanel
             open={yard}
@@ -588,35 +649,42 @@ export default function Galaxy() {
         </p>
       )}
       {!leaving && <Online online={online} ship={ship} />}
-      <GalaxyPanel
-        system={sys}
-        at={at}
-        ship={ship}
-        onShip={pickShip}
-        onHangar={
-          ship && !jumping
-            ? () => {
-                setHangarTab('shipyard'); // (the panel's link says the shipyard: the Hangar opens on it)
-                openYard(true);
-              }
-            : null
-        }
-        onMap={() => setMapOpen(true)}
-        onGo={(id) => view.current.goTo(id)}
-        onLeave={() => leave('/universe/starwars', { jump: true })}
-        found={found}
-        onBoard={(path) => leave(path)}
-        onLand={canLand(sys.id) ? (district, how) => land(sys.id, district, how) : null}
-        districts={SITES[sys.id]?.districts ?? []}
-        tucked={tucked}
-        onTuck={tuck}
-        jumping={jumping}
-        held={held}
-        balked={balked}
-        oath={oath}
-        suggested={suggested}
-        onSwear={onSwear}
-      />
+      {quiet && !leaving && (
+        <FlightMenu
+          open={menu.open}
+          tab={menu.tab}
+          onTab={menu.setTab}
+          onOpen={openMenu}
+          onClose={closeMenu}
+          enabled={menuOk}
+          ship={ship}
+          loadout={loadout}
+          build={build}
+          picks={powerPicks}
+          carry={skillFx?.carry}
+          fx={skillFx}
+          route="/galaxy"
+          where="galaxy"
+          map={galaxyPanel(true)}
+          controls={controls}
+          onControls={setControls}
+          shipName={crew?.ship ?? ''}
+          page={menu.page}
+          onPage={menu.setPage}
+          hangarTab={hangarTab}
+          onHangarTab={setHangarTab}
+          live={live}
+          lastBuild={garage[ship] || null}
+          saves={yardSaves}
+          dropped={dropped}
+          onApply={applyDraft}
+          onSell={sellPart}
+          onShip={pickShip}
+          online={online}
+          onOnline={() => window.dispatchEvent(new CustomEvent('tp:pilot'))}
+        />
+      )}
+      {!quiet && galaxyPanel(false)}
       {mapOpen && <HoloMap holo={holo} current={current} online={online} onJump={jumpTo} onCourse={setCourse} course={course} onClose={() => setMapOpen(false)} onLeave={() => leave('/universe/starwars', { jump: true })} oath={oath} oaths={oathKept.oaths} suggested={suggested} onSwear={onSwear} onTheatre={onTheatre} />}
       {intro && (
         <GalaxyIntro
