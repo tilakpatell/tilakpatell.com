@@ -10,6 +10,10 @@
 //   pillOf, or null with no wallet or at Mk V; a lock names only what's
 //   missing) }]
 // signatureLine(crew, build) → { role, line }: the Systems tab's head
+// partsSheet({ crew, loadout, economy, unlocked }) → [{ slot, label, fitted: { id,
+//   name, does }, options: [{ id, name, does, open, owned, price, pill, lock }] }]: the
+//   ship's parts for the flight menu (outfit.js's parts, catalog.js's prices;
+//   a lock in words, yardRules.js's lockOf)
 // shipSheet({ crew, build, economy, hold, record }) → { ship, role,
 //   signature, systems (systemRows'), hold: { used, room, goods }, credits,
 //   data (exploration data not yet paid), explored: { sectors, systems,
@@ -18,12 +22,14 @@
 
 import { needText } from '../catalog';
 import { SHIP } from '../ship';
-import { capacityOf } from '../outfit';
 import { pillOf } from '../shop';
 import { readBuild } from '../shipyard/build';
 import { MAX_TIER, SYSTEMS, SYSTEM_LABEL, coreStats, profileOf } from './profiles';
 import { MK, tierItem, tiersOf } from './tiers';
 import { SIGNATURE_LINE } from '../signatures';
+import { PARTS_SLOTS, SLOT_LABEL, STOCK, capacityOf, partById, partEffects, partsFor } from '../outfit';
+import { itemFor } from '../catalog';
+import { lockOf, partOpen } from '../yardRules';
 
 export const LIVE = Object.freeze(['engines', 'pulse', 'hyperdrive', 'shields', 'scanner', 'hold', 'reactor']);
 const RANGED = true; // (a jump into generated space is held to the hyperdrive's range: explore/route.js)
@@ -85,4 +91,17 @@ export function shipSheet({ crew, build = null, economy = null, hold = null, rec
     data: rec(record)?.data ?? 0,
     explored: { sectors: rec(record)?.sectors ?? 0, systems: rec(record)?.systems ?? 0, surveyed: rec(record)?.surveyed ?? 0, furthest: rec(record)?.furthest ?? 0 },
   };
+}
+
+export function partsSheet({ crew, loadout = {}, economy = null, unlocked = [] }) {
+  return PARTS_SLOTS.map((slot) => {
+    const fitted = partById(slot, loadout[slot] ?? STOCK);
+    const options = partsFor(slot).map((p) => {
+      const item = itemFor('part', slot, p.id);
+      const owned = p.id === STOCK || Boolean(economy?.owns(item?.key));
+      const open = partOpen(p, unlocked, economy);
+      return { id: p.id, name: p.name, does: partEffects(p, crew), open, owned, price: item?.price ?? 0, pill: item && economy ? pillOf(economy, item) : null, lock: open ? null : lockOf(p, item) };
+    });
+    return { slot, label: SLOT_LABEL[slot], fitted: { id: fitted.id, name: fitted.name, does: partEffects(fitted, crew) }, options };
+  });
 }

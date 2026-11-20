@@ -31,7 +31,7 @@ let made = null;
 let unlockedNow = [];
 
 function load() {
-  made ??= Promise.all([import('../../runtime'), import('./economy'), import('./pilotMarks'), import('../galaxy/warState'), import('../galaxy/allegiance'), import('./market/store'), import('./explore/record')]).then(([rt, eco, pm, war, oath, mk, ex]) => {
+  made ??= Promise.all([import('../../runtime'), import('./economy'), import('./pilotMarks'), import('../galaxy/warState'), import('../galaxy/allegiance'), import('./market/store'), import('./explore/record'), import('./catalog')]).then(([rt, eco, pm, war, oath, mk, ex, cat]) => {
     const allegiance = () => local.get(oath.SIDE_KEY, null);
     const points = (w) => war.mine(w).points;
     const economy = eco.createEconomy({
@@ -48,7 +48,9 @@ function load() {
     const record = ex.createRecord({ saves: rt.runtime().saves });
     window.addEventListener('pagehide', () => (economy.flush(), market.flush(), record.flush()));
     const marks = () => ({ standing: Object.fromEntries(SIDES.map((s) => [s, pm.standingLevels(local, s)])), oath: pm.oathAndRank(allegiance(), points) });
-    return { economy, market, record, marks };
+    // (an achievement's part is the pilot's once it's earned, as it was: catalog.js's grantsFor)
+    const grantParts = (unlocked) => economy.grant(cat.grantsFor(unlocked));
+    return { economy, market, record, marks, grantParts };
   });
   return made;
 }
@@ -67,6 +69,10 @@ export default function EconomyProvider({ children }) {
   useEffect(() => {
     unlockedNow = unlocked;
   }, [unlocked]);
+  // an achievement's part, given when it's earned (and every one already earned, once the wallet's here)
+  useEffect(() => {
+    held?.grantParts?.(unlocked);
+  }, [held, unlocked]);
 
   useEffect(() => {
     if (!asks) return undefined;

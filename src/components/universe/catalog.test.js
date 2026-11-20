@@ -8,7 +8,7 @@ import { PARTS, STOCK } from './outfit';
 import { PAINTS } from './paint';
 import { BUILD_SLOTS, modulesFor } from './shipyard/parts';
 import { STOCK_BUILD } from './shipyard/build';
-import { BANDS, CATALOG, SKILL_NODES, itemFor, keyOf, needText, priceOf } from './catalog';
+import { BANDS, CATALOG, PART_LEVEL, SKILL_NODES, grantsFor, itemFor, keyOf, needText, priceOf } from './catalog';
 
 const ITEMS = Object.values(CATALOG);
 const MODULES = BUILD_SLOTS.flatMap((slot) => modulesFor(slot));
@@ -39,10 +39,16 @@ describe('the catalogue', () => {
   });
 
   it('an achievement lock in outfit.js becomes a need', () => {
-    for (const p of PARTS.filter((q) => q.achievement)) expect(itemFor('part', p.slot, p.id).needs.achievement, p.id).toBe(p.achievement);
+    // (a part's achievement gives it free; anyone can buy it at its level: PART_LEVEL)
+    for (const p of PARTS.filter((q) => q.achievement)) {
+      expect(itemFor('part', p.slot, p.id).needs.achievement, p.id).toBeUndefined();
+      expect(itemFor('part', p.slot, p.id).needs.level, p.id).toBe(PART_LEVEL[keyOf('part', p.slot, p.id)] ?? 5);
+    }
     for (const m of MODULES.filter((q) => q.achievement)) expect(itemFor('module', m.slot, m.id).needs.achievement, m.id).toBe(m.achievement);
     for (const p of PAINTS.filter((q) => q.achievement)) expect(itemFor('paint', 'paint', p.id).needs.achievement, p.id).toBe(p.achievement);
-    expect(itemFor('part', 'booster', 'portal').needs).toEqual({ achievement: 'showmewhatyougot' });
+    expect(itemFor('part', 'booster', 'portal').needs).toEqual({ level: 7 });
+    expect(grantsFor(['showmewhatyougot', 'onestand']).sort()).toEqual(['part:booster:portal', 'part:guns:fusion']);
+    expect(grantsFor(null)).toEqual([]);
     expect(itemFor('part', 'booster', 'srb').needs).toEqual({});
   });
 
@@ -80,7 +86,7 @@ describe('the catalogue', () => {
     expect(itemFor('paint', 'paint', 'citadel')).toMatchObject({ from: 'rickmorty', needs: { standing: { side: 'rickmorty', axis: 'law', level: 'trusted' } } });
     expect(itemFor('paint', 'paint', 'pollos')).toMatchObject({ from: 'breakingbad', needs: { standing: { side: 'breakingbad', axis: 'civil', level: 'hero' } } });
     expect(itemFor('paint', 'paint', 'huttgold')).toMatchObject({ from: 'galaxy', needs: { level: 8 } });
-    expect(itemFor('part', 'guns', 'incom')).toMatchObject({ from: 'starwars', needs: { achievement: 'rebels' } });
+    expect(itemFor('part', 'guns', 'incom')).toMatchObject({ from: 'starwars', needs: { level: 5 } });
     expect(itemFor('part', 'fins', 'council')).toMatchObject({ from: 'rickmorty', needs: { level: 5 } });
     expect(itemFor('part', 'thrusters', 'vamonos')).toMatchObject({ from: 'breakingbad', needs: { level: 3 } });
   });
@@ -162,8 +168,8 @@ describe('the weapon lines', () => {
   it('flak needs level 4 and missiles level 3, and the earned ones their achievement', () => {
     expect(itemFor('part', 'secondary', 'flak').needs).toEqual({ level: 4 });
     expect(itemFor('part', 'ordnance', 'missiles').needs).toEqual({ level: 3 });
-    expect(itemFor('part', 'secondary', 'ion').needs).toEqual({ achievement: 'rebels' });
-    expect(itemFor('part', 'ordnance', 'mk2').needs).toEqual({ achievement: 'trench' });
+    expect(itemFor('part', 'secondary', 'ion').needs).toEqual({ level: 4 });
+    expect(itemFor('part', 'ordnance', 'mk2').needs).toEqual({ level: 5 });
   });
 });
 

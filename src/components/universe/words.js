@@ -135,6 +135,8 @@ export const HOLD = {
   full: 'The hold’s full. Sell at a station, or dump something.',
   minedOut: 'This field is mined out for now. Come back in a couple of hours.',
   stripped: (name) => `${name ?? 'This wreck'} has been stripped already.`,
+  closed: 'The hold’s not ready yet.',
+  workedOut: 'Worked out here for now. Come back in a couple of hours.',
 };
 
 export const PLACE = {

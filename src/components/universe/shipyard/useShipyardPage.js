@@ -45,7 +45,8 @@ export function useShipyardPage({ ship, unlocked = [] }) {
   const { economy, version: walletVersion } = useEconomy();
   // (the parts flown: as many as the plant runs, with the reactor's tier the wallet owns for this crew)
   // (the wallet's version says what it owns changed: read here, as useYard reads it)
-  const loadout = useMemo(() => loadoutOf(loadouts, ship, unlocked, build, tune, coreOf(walletVersion >= 0 ? economy : null, ship, build)), [loadouts, ship, unlocked, build, tune, economy, walletVersion]);
+  // (and a part an achievement gives, flown when it's bought instead)
+  const loadout = useMemo(() => loadoutOf(loadouts, ship, unlocked, build, tune, coreOf(walletVersion >= 0 ? economy : null, ship, build), economy ? (k) => economy.owns(k) : null), [loadouts, ship, unlocked, build, tune, economy, walletVersion]);
   const dropped = useMemo(() => (ship ? droppedParts(loadouts[ship], loadout) : []), [loadouts, ship, loadout]); // (what the plant can't run)
 
   const [yard, setYard] = useState(false);
