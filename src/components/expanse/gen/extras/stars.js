@@ -1,11 +1,14 @@
 // Dead stars, young stars and wormholes between the systems: pulsars and
 // magnetars with beams sweeping, stars still forming in their dust, and one
-// wormhole a sector that throws you far away, one way. None in the core.
+// wormhole a sector that throws you far away, one way; brown dwarfs, failed
+// stars too cool to shine but a dull red; and now and then a quasar, a
+// starving black hole's blinding core with jets. None in the core.
 // Pure (no three.js).
 //
 // STARS: { [list]: { base, max, count, size } }
 // WORMHOLES (w8), PULSARS (w12–w14, a pulsar seven in ten, else a magnetar, its beam's reach
-//   25 × its size its extent), PROTOSTARS (w15–w17): the lists
+//   25 × its size its extent), PROTOSTARS (w15–w17), DWARFS (w46–w47, brown dwarfs, 0–2),
+//   QUASARS (w48, one sector in seven or so, its jets 1.2 × its size its extent): the lists
 // wormholeExit(from, universe) → { sector: [sx, sy, sz], key, at, heading, side }: the one
 //   rule for a one-way throw. from is { seed, sector: [sx, sy, sz] } (a wormhole row is one;
 //   another lane's rift can pass its own). 30 to 80 sectors away along a direction even in 3D,
@@ -21,21 +24,27 @@ export const STARS = Object.freeze({
   wormhole: { base: 8, max: 1, count: [1, 1], size: [60, 140] },
   pulsar: { base: 12, max: 3, count: [1, 3], size: [40, 90] },
   protostar: { base: 15, max: 3, count: [1, 3], size: [300, 700] },
+  // (the generated-planets lane's: low ids the lists before left free)
+  dwarf: { base: 46, max: 2, count: [0, 2], size: [40, 80] },
+  quasar: { base: 48, max: 1, count: [1, 1], size: [600, 1200], chance: 0.15 },
 });
 const BEAM = 25;
+const JETS = 1.2; // (a quasar's jets reach 12 × its core, 0.08 of its size: 1.2 sizes)
 const INWARD = { n: [0, 0, 1], s: [0, 0, -1], e: [-1, 0, 0], w: [1, 0, 0] };
 
 function scatter(ctx, made, list, make) {
   if (ctx.core) return [];
   const t = STARS[list];
   const rng = rngOf(hash64(ctx.seed, list));
-  const n = int(rng, ...t.count);
+  // (a rare list rolls for whether it has any first; the older lists, which have no chance,
+  // draw exactly as they did)
+  const n = t.chance === undefined || rng() < t.chance ? int(rng, ...t.count) : 0;
   const placed = placedOf(made);
   const out = [];
   for (let i = 0; i < n; i++) {
     const size = range(rng, ...t.size);
     const kind = make.kind(rng);
-    const extent = kind === 'pulsar' || kind === 'magnetar' ? BEAM * size : 0;
+    const extent = kind === 'pulsar' || kind === 'magnetar' ? BEAM * size : kind === 'quasar' ? JETS * size : 0;
     const at = dartIn(rng, ctx, { size, extent }, placed);
     if (!at) continue;
     placed.push({ at, r: size + extent });
@@ -47,6 +56,8 @@ function scatter(ctx, made, list, make) {
 const wormholes = (ctx, made) => scatter(ctx, made, 'wormhole', { kind: () => 'wormhole', more: (c) => ({ sector: [c.sx, c.sy, c.sz] }) });
 const pulsars = (ctx, made) => scatter(ctx, made, 'pulsar', { kind: (rng) => (rng() < 0.7 ? 'pulsar' : 'magnetar'), more: () => ({}) });
 const protostars = (ctx, made) => scatter(ctx, made, 'protostar', { kind: () => 'protostar', more: () => ({}) });
+const dwarfs = (ctx, made) => scatter(ctx, made, 'dwarf', { kind: () => 'dwarf', more: () => ({}) });
+const quasars = (ctx, made) => scatter(ctx, made, 'quasar', { kind: () => 'quasar', more: () => ({}) });
 
 export function wormholeExit(from, universe) {
   const rng = rngOf(hash64(from.seed, 'exit'));
@@ -69,3 +80,5 @@ const list = (name, make) => ({ list: name, base: STARS[name].base, max: STARS[n
 export const WORMHOLES = list('wormhole', wormholes);
 export const PULSARS = list('pulsar', pulsars);
 export const PROTOSTARS = list('protostar', protostars);
+export const DWARFS = list('dwarf', dwarfs);
+export const QUASARS = list('quasar', quasars);

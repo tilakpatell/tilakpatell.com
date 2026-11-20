@@ -4,7 +4,7 @@
 // layers and the cards read the same row. Pure (no three.js), so it runs in
 // Node and in the worker.
 //
-// CATALOGUE: [{ n, name, kinds: string[] }], 23 rows; name is for tests and docs, never shown
+// CATALOGUE: [{ n, name, kinds: string[] }], 25 rows (the spec's 23, a brown dwarf's and a quasar's); name is for tests and docs, never shown
 // KINDS: { [kind]: { kind, n, body, disc, lit, tint: [paletteName, k], color: '#rrggbb', near, core } }
 //   body: what's solid as one sphere, a share of the row's size, or null for no one sphere
 //   disc: the far layer's disc, a share of size, or 0 for none
@@ -26,7 +26,8 @@
 // ROGUE_TYPES: [[type, weight]] a rogue world is drawn from; LORE_COUNT: the monoliths' lines
 // traitsOf(row) → what a thing is, from its own seed: a rogue's { type, land }, a beacon's
 //   { leads: 'distress' | 'treasure' }, a monolith's { lore }, a derelict's { trap }, a pulsar's
-//   or magnetar's { spin, period, beam }; {} for any other kind. Memoised by the row's seed
+//   or magnetar's { spin, period, beam }, a quasar's { axis, jet } (its jets' length in sizes), a
+//   brown dwarf's { warmth, bands }; {} for any other kind. Memoised by the row's seed
 //   (the last 512), never by its id: a pocket universe's rows share id strings with the
 //   shared universe's.
 //
@@ -79,13 +80,19 @@ export const CATALOGUE = Object.freeze(
     [21, 'herds', ['herd']],
     [22, 'swarms', ['swarm']],
     [23, 'gargantuans', ['hole', 'arc', 'hulk', 'giant', 'dyson']],
+    // (the generated-planets lane's, 2026-11-20: after the spec's 23)
+    [24, 'brown dwarfs', ['dwarf']],
+    [25, 'quasars', ['quasar']],
   ].map(([n, name, kinds]) => Object.freeze({ n, name, kinds: Object.freeze(kinds) })),
 );
 
 const LANE2 = { rock: '#8a8178', ice: '#cfe3ee', derelict: '#6d727c', rogue: '#4a3f38' };
+// (a brown dwarf is too cool to shine but a dull ember red, a colour no tint of the palette's
+// reaches: the one kind of the 25 given its own)
+const OWN = { dwarf: '#7a2a1e' };
 const LATTICE = ['rock', 'ice', 'derelict', 'rogue', 'outpost', 'beacon', 'relay', 'monolith'];
 const OTHERS_DRAW = ['system', 'station', 'nebula', 'pocket', 'remnant', 'hole', 'arc', 'hulk', 'giant', 'dyson'];
-const UNLIT = ['beacon', 'comet', 'pulsar', 'magnetar', 'protostar', 'storm', 'wormhole', 'swarm'];
+const UNLIT = ['beacon', 'comet', 'pulsar', 'magnetar', 'protostar', 'storm', 'wormhole', 'swarm', 'dwarf', 'quasar'];
 const CORE = [...LATTICE, 'field', 'icefield', 'comet', 'rig', 'system', 'station', 'nebula'];
 
 // kind: [tint, body, disc]
@@ -122,6 +129,8 @@ const ROWS = {
   hulk: [['grey', 0], null, 0],
   giant: [['sun', 0.3], null, 0],
   dyson: [['star', 0], null, 0],
+  dwarf: [['shot', 0], 1, 1],
+  quasar: [['engine', 0.7], 0.08, 0.35],
 };
 
 const toSrgb = (c) => (c <= 0.0031308 ? c * 12.92 : 1.055 * c ** (1 / 2.4) - 0.055);
@@ -146,7 +155,7 @@ export const KINDS = Object.freeze(
           disc,
           lit: !UNLIT.includes(kind),
           tint: Object.freeze(t),
-          color: LANE2[kind] ?? hexOf(tint(...t)),
+          color: LANE2[kind] ?? OWN[kind] ?? hexOf(tint(...t)),
           near: !OTHERS_DRAW.includes(kind),
           core: CORE.includes(kind),
         }),
@@ -215,6 +224,10 @@ const TRAITS = {
   derelict: (rng) => ({ trap: rng() < 1 / 6 }),
   pulsar: (rng) => spun(rng),
   magnetar: (rng) => spun(rng),
+  // (its jets along its spin, fixed: a quasar's axis doesn't sweep)
+  quasar: (rng) => ({ axis: spun(rng).spin, jet: range(rng, 6, 12) }),
+  // (how warm it still is: the deeper the red, the older)
+  dwarf: (rng) => ({ warmth: range(rng, 0.25, 1), bands: Math.round(range(rng, 3, 9)) }),
 };
 function spun(rng) {
   // (a direction even over the sphere: z even in [-1, 1], an even angle round it)

@@ -82,6 +82,7 @@ export const THINGS = {
   },
   tail: 'Through the comet’s tail: ice samples aboard.',
   beam: (kind) => (kind === 'magnetar' ? 'A magnetar’s beam: your screens scramble.' : 'A pulsar’s beam sweeps over you: your screens scramble.'),
+  jet: 'Inside a quasar’s jet: the shields are burning off.',
   thrown: (key) => `Through the wormhole. You’re in ${key}, a long way from where you were.`,
 };
 
@@ -137,11 +138,12 @@ export const PLACE = {
   planet: { rock: 'Rocky world', ice: 'Ice world', gas: 'Gas giant', lava: 'Lava world', ocean: 'Ocean world', desert: 'Desert world', forest: 'Forest world', ringed: 'Ringed giant' },
   moon: { rocky: 'Rocky moon', icy: 'Icy moon' },
   station: 'Station',
-  thing: { rock: 'Asteroid', ice: 'Ice shard', derelict: 'Derelict', rogue: 'Rogue planet', nebula: 'Nebula', pulsar: 'Pulsar', outpost: 'Abandoned outpost', beacon: 'Beacon', relay: 'Relay array', monolith: 'Monolith', field: 'Asteroid field', icefield: 'Ice field', comet: 'Comet', rig: 'Mining rig', fleet: 'Fleet at anchor', shipyard: 'Shipyard', pocket: 'Nebula', remnant: 'Supernova remnant', storm: 'Ion storm', herd: 'Leviathan herd', swarm: 'Swarm', debris: 'Battle debris', magnetar: 'Magnetar', protostar: 'Forming star', wormhole: 'Wormhole', hole: 'Black hole', arc: 'Ringworld arc', hulk: 'Derelict hulk', giant: 'Supergiant', dyson: 'Dyson swarm', default: 'Something in space' },
+  thing: { rock: 'Asteroid', ice: 'Ice shard', derelict: 'Derelict', rogue: 'Rogue planet', nebula: 'Nebula', pulsar: 'Pulsar', outpost: 'Abandoned outpost', beacon: 'Beacon', relay: 'Relay array', monolith: 'Monolith', field: 'Asteroid field', icefield: 'Ice field', comet: 'Comet', rig: 'Mining rig', fleet: 'Fleet at anchor', shipyard: 'Shipyard', pocket: 'Nebula', remnant: 'Supernova remnant', storm: 'Ion storm', herd: 'Leviathan herd', swarm: 'Swarm', debris: 'Battle debris', magnetar: 'Magnetar', protostar: 'Forming star', wormhole: 'Wormhole', hole: 'Black hole', arc: 'Ringworld arc', hulk: 'Derelict hulk', giant: 'Supergiant', dyson: 'Dyson swarm', dwarf: 'Brown dwarf', quasar: 'Quasar', default: 'Something in space' },
   about: {
     system: ({ star, planets, station, held, companions = [] }) => `${/^[aeiou]/i.test(star) ? 'An' : 'A'} ${[star.toLowerCase(), ...companions.map((c) => `${/^[aeiou]/i.test(c) ? 'an' : 'a'} ${c}`)].join(', ').replace(/, ([^,]*)$/, ' and $1')} with ${count(planets, 'planet')}${station ? ' and a station' : ''}, held by ${held}.`,
     planet: ({ type, system, moons, rings }) => `${type} round ${system}, with ${count(moons, 'moon')}${rings ? ' and rings' : ''}.`,
     moon: ({ type, planet, system }) => `${type} of ${planet}, round ${system}.`,
+    mined: ({ planet }) => `A moon of ${planet} mined out by someone long gone: its scars cut deep, a few of their rigs still lit.`,
     station: ({ system, held }) => `A station over ${system}’s star, held by ${held}. Dock for the hangar and the shop.`,
     rock: 'A drifting rock, pitted and slow.',
     ice: 'A shard of ice, catching the light.',
@@ -173,12 +175,15 @@ export const PLACE = {
     hulk: 'A dead ship the size of a moon.',
     giant: 'A gas giant big enough to swallow a system, a storm turning on its face.',
     dyson: 'A star wrapped in a swarm of collectors, most of its light caught.',
+    dwarf: 'A failed star, too small to burn: a dull red glow through bands of cloud.',
+    quasar: 'A black hole feeding so hard its core outshines a galaxy, two jets blazing from its poles. Keep out of the jets.',
     default: 'Out here between the stars.',
   },
   held: (name) => name.replace(/^The /, 'the '), // (a faction's name mid-sentence)
   hazard: { storm: 'Ion storms', pirates: 'Pirates', minefield: 'A minefield' },
   traffic: (k) => (k >= 0.66 ? 'Busy' : k >= 0.33 ? 'Some' : 'Quiet'),
-  facts: { system: 'System', planet: 'Planet', planets: 'Planets', moons: 'Moons', rings: 'Rings', held: 'Held by', traffic: 'Traffic', hazard: 'Hazard' },
+  facts: { system: 'System', planet: 'Planet', planets: 'Planets', moons: 'Moons', rings: 'Rings', held: 'Held by', traffic: 'Traffic', hazard: 'Hazard', mined: 'Mined' },
+  mined: 'Stripped by someone long gone',
   yes: 'Yes',
   fly: 'Fly here',
   dock: 'Dock here',
