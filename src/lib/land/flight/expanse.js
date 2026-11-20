@@ -7,18 +7,10 @@
 //     space address writes it ('e:sx,sz:i:j[:k]', its height only off the middle
 //     layer), or null for anything else (a system, a wonder, junk, a non-string)
 
-import { parseSpaceId, spaceId } from '../../space/address.js';
+import { canonicalId } from '../../space/planetIds.js';
 
-// checked here first, so how lenient the address's own parser is never decides
-const PLANET_OR_MOON = /^e:-?\d+,-?\d+(?:,-?\d+)?(?::\d+){2,3}$/i;
-
-export function canonicalId(id) {
-  if (typeof id !== 'string' || !PLANET_OR_MOON.test(id)) return null;
-  const p = parseSpaceId(id);
-  if (!p || p.planet === undefined) return null;
-  const parts = p.moon === undefined ? [p.system, p.planet] : [p.system, p.planet, p.moon];
-  return spaceId([p.sx, p.sy, p.sz], ...parts).toLowerCase();
-}
+// (canonicalId moved to lib/space/planetIds.js, which the universe reads too)
+export { canonicalId };
 
 export const expanseLookup = (expanse) =>
   typeof expanse === 'function' ? expanse : (id) => expanse?.find((r) => r.id === id) ?? null;

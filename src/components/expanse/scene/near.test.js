@@ -70,7 +70,12 @@ describe('the nearest systems, built whole', () => {
     const moons = A.planets[0].moonList;
     expect(moons.length).toBeGreaterThan(0);
     expect(made.filter((b) => b.opts.small)).toHaveLength(moons.length);
-    expect(made.filter((b) => !b.opts.small).map((b) => b.look)).toEqual(['bespin', 'moon-dust']);
+    // (each planet its own look, planetLook.js's, in its type's shader family; each moon a moon's)
+    expect(made.filter((b) => !b.opts.small).map((b) => [b.look.name, b.look.family])).toEqual([
+      [A.planets[0].id.toLowerCase(), 'gas'],
+      [A.planets[1].id.toLowerCase(), 'desert'],
+    ]);
+    expect(made.filter((b) => b.opts.small).every((b) => b.look.family === 'moon')).toBe(true);
     expect(named(group, 'ring:')).toHaveLength(A.planets.filter((p) => p.ringBand).length);
     // (every mesh readied before it's shown)
     expect(prepare).toHaveBeenCalledTimes(1 + made.length + named(group, 'ring:').length);
