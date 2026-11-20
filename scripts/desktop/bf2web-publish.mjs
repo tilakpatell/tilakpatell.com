@@ -5,10 +5,11 @@
 import { appendFileSync, readFileSync, realpathSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
+import { brotliDecompressSync } from 'node:zlib';
 import { isAbsolute, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { contractProblems, rulebookProblems } from '../lib/bf2web-site.mjs';
-import { uiDataFiles } from '../lib/bf2web-ui-files.mjs';
+import { uiDataBrotli, uiDataFiles } from '../lib/bf2web-ui-files.mjs';
 import { deviationLines, finishedReceipt } from '../lib/bf2web-deviations.mjs';
 import { REPO } from './lib.mjs';
 
@@ -63,6 +64,31 @@ export function readRulebooks(directory) {
   return { entries, sha256: digest(JSON.stringify(entries)) };
 }
 
+// The local rulebook a published ui-data object stands for: the one at its own path, or, for <path>.br, the rulebook whose brotli
+// copy the uploader keeps beside it (scripts/lib/bf2web-ui-files.mjs uiDataBrotli + brotliCopy: the backdrop's *.tone.bin). r1076's
+// publish (run 44671253799, 19 Nov) was the first with .bin rulebooks, and its 18 *.tone.bin.br copies matched no local path.
+export function publishedRulebook(entries, prefix, key) {
+  if (typeof key !== 'string' || !key.startsWith(prefix)) return null;
+  const path = key.slice(prefix.length), own = entries.find((row) => row.path === path);
+  if (own) return { entry: own, brotli: false };
+  const base = path.endsWith('.br') ? path.slice(0, -3) : null;
+  const of = base && uiDataBrotli(base) ? entries.find((row) => row.path === base) : null;
+  return of ? { entry: of, brotli: true } : null;
+}
+
+// What a build's bucket prefix already holds of its ui-data must be this folder's: every object is a local rulebook at its size and
+// bytes, or the brotli copy of one whose decoded bytes are that rulebook's. objects: [{ key, size }]; get(key) -> { body } or null.
+export async function verifyPublishedRulebooks(entries, prefix, objects, get) {
+  for (const previous of objects) {
+    const found = publishedRulebook(entries, prefix, previous.key);
+    need(found && (found.brotli || found.entry.bytes === previous.size), 'the published rulebook selection differs');
+    const object = await get(previous.key);
+    let bytes = object?.body ?? null;
+    if (bytes && found.brotli) { try { bytes = brotliDecompressSync(bytes); } catch { bytes = null; } }
+    need(bytes && digest(bytes) === found.entry.sha256, 'published rulebook bytes differ');
+  }
+}
+
 export function validateRulebookDigest(rulebooks, expected) {
   need(/^[0-9a-f]{64}$/.test(expected ?? '') && rulebooks.sha256 === expected, 'the rulebook digest is absent or changed');
 }
@@ -89,12 +115,7 @@ export async function publish(argv, env = process.env) {
   const r2 = open(env), existing = await r2.text(`sites/${id}/manifest.json`);
   need(!existing || digest(Buffer.from(existing)) === digest(readFileSync(manifestFile)), 'that build name already holds a different manifest');
   const prefix = `sites/${id}/ui-data/`;
-  for (const previous of await r2.files(prefix)) {
-    const entry = rulebooks.entries.find((row) => prefix + row.path === previous.key);
-    need(entry && entry.bytes === previous.size, 'the published rulebook selection differs');
-    const object = await r2.binding.get(previous.key);
-    need(object && digest(object.body) === entry.sha256, 'published rulebook bytes differ');
-  }
+  await verifyPublishedRulebooks(rulebooks.entries, prefix, await r2.files(prefix), (key) => r2.binding.get(key));
   execFileSync(process.execPath, ['scripts/bf2web-upload.mjs', site, '--build', id, '--ui-data', ui], { cwd: REPO, env, stdio: 'inherit' });
   if (env.GITHUB_OUTPUT) appendFileSync(env.GITHUB_OUTPUT, `build=${id}\nmade=published\n`);
   return { id, files, rulebooks, checked: true, published: true };
