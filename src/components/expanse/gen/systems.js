@@ -11,12 +11,14 @@
 // planetsOf(sysId, sysSeed, at, star, culture) → the planets
 // moonsOf(planet) → [{ id: '<planet id>:k', k, name, type: 'rocky' | 'icy',
 //   seed, radius, orbit, phase, revs, tilt, mined? }]: its `moons` moons within 4.4 r, and a
-//   giant's 0 to OUTER.most outer ones past them (out to 6.4 r); a moon one in ten (MINED) mined out
+//   giant's 0 to OUTER.most outer ones past them (out to 6.4 r); a moon one in ten (MINED) mined out;
+//   the roster's thirteen seeded planets (lib/space/worldTables.js) keep theirs as they were
 // ringBandOf(planet) → { inner, outer } | null
 // systemReach(system) → how far from its star anything in it reaches
 // addBodies(sector) → a copy whose systems have reach and whose planets have
 //   centre, revs, moonList and ringBand; nothing it had changes
 
+import { SEEDED_EXPANSE } from "../../../lib/space/worldTables.js";
 import { designation, nameOf } from "./names";
 import { revsFor } from "./orbits";
 import {
@@ -45,6 +47,9 @@ export const OUTER = Object.freeze({ most: 3, from: 4.4, to: 6.4 });
 // one moon in ten was mined out by someone long gone: rigs, scars and debris (its own stream)
 export const MINED = 0.1;
 const minedOf = (seed) => (rngOf(hash64(seed, "mined"))() < MINED ? { mined: true } : {});
+// (the thirteen planets the flight's roster flies keep their moons as they were: none added, none mined)
+const ROSTER = new Set(SEEDED_EXPANSE.map(([id]) => id));
+const held = (planet) => ROSTER.has(String(planet.id).toLowerCase());
 
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 
@@ -158,12 +163,12 @@ export function moonsOf(planet) {
       phase: rng() * Math.PI * 2,
       revs: revsFor(orbit),
       tilt: range(rng, -0.35, 0.35),
-      ...minedOf(seed),
+      ...(held(planet) ? {} : minedOf(seed)),
     });
   }
   // (a giant's outer moons, from a stream of their own, so the moons before them are as they were:
   // 0 to 3 more, each a slot of the span past 4.4 r out to 6.4 r)
-  if (GIANTS.has(planet.type)) {
+  if (GIANTS.has(planet.type) && !held(planet)) {
     const orng = rngOf(hash64(planet.seed, "outer moons"));
     const more = int(orng, 0, OUTER.most);
     const span = (OUTER.to - OUTER.from) * r;
