@@ -48,7 +48,9 @@ export function keepTune(store, tunes, ship, tune) {
 // (every fit tried first on a copy, fitDraft; then everything unowned paid for in one checkout; a refusal at any step changes nothing)
 export function applyYardDraft({ ship, economy, loadouts, tunes = {}, unlocked }, { diff, toBuy, draft }) {
   if (!ship || !economy) return { result: { ok: false, why: 'shop', text: 'The shop’s still opening.' } };
-  const fitted = fitDraft(ship, draft, diff, { saved: readLoadout(loadouts[ship]), unlocked, core: coreOf(economy, ship, draft.build) }); // (the reactor's tier counts)
+  // (the reactor's tier counts; and what's on the bill fits as if it were bought, which it is if everything does)
+  const owned = (k) => economy.owns(k) || (toBuy ?? []).some((item) => item.key === k);
+  const fitted = fitDraft(ship, draft, diff, { saved: readLoadout(loadouts[ship]), unlocked, core: coreOf(economy, ship, draft.build), owned });
   if (!fitted.ok) return { result: { ok: false, why: fitted.why, text: fitted.why === 'power' ? 'Not enough power for that any more: the yard has opened again on what’s flown.' : 'Something there isn’t yours any more: the yard has opened again on what’s flown.' } };
   const paid = economy.checkout(toBuy);
   if (!paid.ok) return { result: { ok: false, why: paid.why, text: paid.why === 'credits' ? `Short ${(paid.total - economy.credits).toLocaleString('en-GB')} ¢.` : `The ${paid.item?.name ?? 'part'} can’t be bought.` } };

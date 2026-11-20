@@ -50,12 +50,14 @@ const part = (slot, id, name, blurb, { mass = 0, power = 0, achievement = null, 
 export const PARTS = [
   // boosters, strapped to its flanks, lit as it boosts
   part('booster', STOCK, 'None', 'The engines it came with.'),
-  part('booster', 'srb', 'Twin solid boosters', 'A pair of rockets strapped either side. More boost, sooner.', { mass: 2, power: 1, boost: 0.25, accel: 0.2 }),
+  part('booster', 'srb', 'Twin solid boosters', 'A pair of rockets strapped either side. More boost, sooner, and a little slower to turn.', { mass: 2, power: 1, boost: 0.25, accel: 0.2, agility: -0.05 }),
+  part('booster', 'iondrive', 'Ion drive', 'A long blue ion engine under the hull: a faster cruise and a little more boost, slow to get going.', { mass: 0.5, power: 1, cruise: 0.12, boost: 0.1, accel: -0.05, look: 'srb' }),
   part('booster', 'afterburner', 'Afterburner', 'A collar round the engines that lights the boost up long and white.', {
     mass: 1,
     power: 2,
     boost: 0.35,
     accel: 0.1,
+    agility: -0.08,
     achievement: 'trench',
     hint: 'Hit the exhaust port in the trench run',
   }),
@@ -72,17 +74,20 @@ export const PARTS = [
     power: 3,
     boost: 0.55,
     accel: 0.3,
+    agility: -0.15,
     achievement: 'showmewhatyougot',
     hint: 'Beat the Cromulon in Portal panic',
   }),
   // manoeuvring thrusters
   part('thrusters', STOCK, 'Stock', 'The thrusters it came with.'),
   part('thrusters', 'rcs', 'RCS quads', 'Four little thruster blocks at its corners. Turns, pitches and rolls quicker.', { mass: 0.5, power: 1, agility: 0.15 }),
+  part('thrusters', 'gyro', 'Gyro stabilisers', 'Spinning gyros in the hull that hold it steady: rights itself quicker, and a touch nimbler.', { mass: 0.5, power: 1, level: 0.5, agility: 0.08, look: 'rcs' }),
   part('thrusters', 'racing', 'Racing exhausts', 'Chrome pipes, hot-rod style: a faster cruise and a quicker getaway.', {
     mass: 1,
     power: 2,
     cruise: 0.15,
     accel: 0.25,
+    level: -0.1,
     achievement: 'hulk',
     hint: 'Run 2,000 m through Midtown at Smash Run',
   }),
@@ -91,6 +96,7 @@ export const PARTS = [
     power: 2,
     agility: 0.3,
     level: 0.3,
+    boost: -0.05,
     achievement: 'grounded',
     hint: 'Bring Starscream down over Jasper in Roll out',
   }),
@@ -105,6 +111,7 @@ export const PARTS = [
   // guns
   part('guns', STOCK, 'Stock', 'The guns it came with.'),
   part('guns', 'twin', 'Twin-linked cannons', 'A second barrel, fired in turn with the first. Quicker shots.', { mass: 1, power: 1, cadence: 0.8 }),
+  part('guns', 'burst', 'Burst lasers', 'Short, quick bursts from a cooled pair: quicker shots still, and heavy with the cooling.', { mass: 2, power: 2, cadence: 0.72, look: 'twin' }),
   part('guns', 'fusion', 'Fusion cannon', 'Megatron’s arm cannon, bolted on: slow, and a bolt takes three hits’ worth off a hunter.', {
     mass: 2,
     power: 3,
@@ -125,11 +132,13 @@ export const PARTS = [
   // shields
   part('shields', STOCK, 'Stock', 'The shields it came with.'),
   part('shields', 'reinforced', 'Reinforced plating', 'Armour on its flanks: takes a fifth less from a hit, comes back a little slower.', { mass: 1.5, power: 1, armor: 0.8, regen: 0.85 }),
+  part('shields', 'ablative', 'Ablative coating', 'A skin that burns off as it’s hit: takes a little less, and the shields come back a little sooner.', { mass: 1, power: 1, armor: 0.88, regen: 1.15, look: 'reinforced' }),
   part('shields', 'fastcharge', 'Fast-charge emitters', 'Shields that start coming back two seconds after a hit, and twice as fast.', {
     mass: 0.5,
     power: 2,
     regen: 2,
     delay: 2,
+    armor: 1.1,
     achievement: 'captain',
     hint: 'Clear all twelve rooms of Ricochet',
   }),
@@ -137,12 +146,14 @@ export const PARTS = [
     mass: 2,
     power: 2,
     armor: 0.6,
+    accel: -0.1,
     achievement: 'quinjet',
     hint: 'Fly the Tesseract into the hangar at Tesseract Run',
   }),
   // fins
   part('fins', STOCK, 'None', 'As it came.'),
   part('fins', 'fins', 'Stabiliser fins', 'A pair of tail fins: rolls back upright quicker, turns a touch tighter.', { mass: 0.5, level: 0.4, agility: 0.05 }),
+  part('fins', 'canards', 'Canard winglets', 'Small wings at the nose: a tighter turn, and a little drag on the boost.', { mass: 0.5, agility: 0.12, level: 0.15, boost: -0.03, look: 'fins' }),
   part('fins', 'council', 'Council of Ricks fins', 'The Council’s own tail fins, with a powered trim: upright quicker still, and tighter in a turn.', {
     mass: 0.5,
     power: 1,
@@ -189,8 +200,11 @@ export const partById = (slot, id) => BY_SLOT[slot]?.get(id) ?? BY_SLOT[slot]?.g
 // A part id for a slot, from storage or the wire, or null for anything else.
 export const parsePart = (slot, id) => (slot === 'paint' ? parsePaint(id) : typeof id === 'string' && BY_SLOT[slot]?.has(id) ? id : null);
 
-// Whether a part's there to fit, with these achievements unlocked.
-export const isOpen = (p, unlocked = []) => (p.slot === 'paint' ? paintOpen(p, unlocked) : !p.achievement || unlocked.includes(p.achievement));
+// Whether a part's there to fit, with these achievements unlocked, or bought
+// (`owned`: the wallet's owns, by catalog.js's key: an achievement's part is
+// sold at a level too, and the achievement gives it free).
+export const isOpen = (p, unlocked = [], owned = null) =>
+  p.slot === 'paint' ? paintOpen(p, unlocked) : !p.achievement || unlocked.includes(p.achievement) || (typeof owned === 'function' && owned(`part:${p.slot}:${p.id}`));
 
 // The parts (not paints) an achievement opens, for its toast.
 export const partsUnlockedBy = (achievement) => PARTS.filter((p) => p.achievement === achievement);
@@ -279,10 +293,10 @@ export function statsOf(kind, loadout = STOCK_LOADOUT, build = null, tune = null
 // The loadout a ship flies with: what was fitted to it, each part only
 // while it's still open, and, should it ever need more power than the ship
 // makes, parts coming off (the hungriest first) until it doesn't.
-export function loadoutOf(saved, ship, unlocked = [], build = null, tune = null, core = null) {
+export function loadoutOf(saved, ship, unlocked = [], build = null, tune = null, core = null, owned = null) {
   if (!ship) return { ...STOCK_LOADOUT };
   const l = readLoadout(saved?.[ship]);
-  for (const slot of SLOTS) if (!isOpen(partById(slot, l[slot]), unlocked)) l[slot] = STOCK;
+  for (const slot of SLOTS) if (!isOpen(partById(slot, l[slot]), unlocked, owned)) l[slot] = STOCK;
   while (!fits(ship, l, build, tune, core)) {
     const hungriest = PARTS_SLOTS.filter((slot) => l[slot] !== STOCK).sort((a, b) => partById(b, l[b]).power - partById(a, l[a]).power)[0];
     if (!hungriest) break;
@@ -303,10 +317,10 @@ export const fitInto = (saved, slot, id) => ({ ...readLoadout(saved), [slot]: id
 // Fitting a part: the new loadout, or why it won't go: 'locked' (not
 // earned yet) or 'power' (the ship can't run it with what else is fitted;
 // `short` says by how many MW).
-export function equip(kind, loadout, slot, id, unlocked = [], build = null, tune = null, core = null) {
+export function equip(kind, loadout, slot, id, unlocked = [], build = null, tune = null, core = null, owned = null) {
   const p = partById(slot, parsePart(slot, id));
   if (!p) return { ok: false, reason: 'unknown', loadout };
-  if (!isOpen(p, unlocked)) return { ok: false, reason: 'locked', loadout };
+  if (!isOpen(p, unlocked, owned)) return { ok: false, reason: 'locked', loadout };
   const next = { ...loadout, [slot]: p.id };
   if (!fits(kind, next, build, tune, core)) return { ok: false, reason: 'power', short: powerOf(next) + hullDraw(build, tune) - capacityOf(kind, build, core), loadout };
   return { ok: true, loadout: next };
