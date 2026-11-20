@@ -1,4 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import MarketTab from './places/MarketTab';
+import { placeMarket } from './market/trade';
 import { RiArrowGoBackLine, RiArrowLeftLine, RiArrowRightLine, RiCompass3Line, RiLayoutGridLine, RiQuestionLine, RiRestartLine, RiSideBarFill, RiSideBarLine } from 'react-icons/ri';
 import { openGuide } from '../../lib/palette';
 import { restartSite } from '../../lib/restart';
@@ -143,7 +145,7 @@ function Exits({ onClassic }) {
   );
 }
 
-export default function UniversePanel({ universe, wonder = null, docked = null, onFly = null, onSelect, onEnter, onWhole, leaving, ship, loadout, build = null, onShip, onHangar, onClassic, tucked: tuckedAsked = false, onTuck, onNav }) {
+export default function UniversePanel({ universe, wonder = null, docked = null, at = null, onFly = null, onSelect, onEnter, onWhole, leaving, ship, loadout, build = null, onShip, onHangar, onClassic, tucked: tuckedAsked = false, onTuck, onNav }) {
   // (out of hiding while a tour runs: its stops are on it)
   const touring = useTouring();
   const tucked = tuckedAsked && !touring;
@@ -231,6 +233,7 @@ export default function UniversePanel({ universe, wonder = null, docked = null, 
             ) : (
               <p className="mt-4 text-sm text-muted">{PICK_A_SHIP}</p>
             )}
+            {at === wonder.id && placeMarket(wonder.id) && <MarketTab station={placeMarket(wonder.id)} crew={ship} />}
           </>
         )}
         {/* this view has its own address: a way to share it */}
@@ -373,6 +376,7 @@ export default function UniversePanel({ universe, wonder = null, docked = null, 
           <Card moon={universe} />
         </ul>
       )}
+      {at === universe.id && placeMarket(universe.id) && <MarketTab station={placeMarket(universe.id)} crew={ship} />}
       <Exits onClassic={onClassic} />
     </aside>
   );

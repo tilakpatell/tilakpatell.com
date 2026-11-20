@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createEconomy } from '../economy';
 import { createMarket } from './store';
-import { HOME, boardOf, buyGood, jettison, sellGood, stationFor } from './trade';
+import { HOME, PLACE_MARKETS, boardOf, buyGood, jettison, placeMarket, sellGood, stationFor } from './trade';
 
 const setup = (credits = 1000) => {
   const economy = createEconomy();
@@ -58,5 +58,24 @@ describe('trading at a station', () => {
     expect(buyGood({ ...r, room: 2, station: HOME, good: 'food', n: 1 })).toMatchObject({ ok: false, why: 'room' });
     expect(jettison({ ...r, room: 2, good: 'food', n: 9 })).toBe(2);
     expect(r.economy.credits).toBeGreaterThan(0);
+  });
+});
+
+describe('the markets at hand-made places', () => {
+  it('keeps one at Home, the two portals and the Citadel, and none elsewhere', () => {
+    expect(Object.keys(PLACE_MARKETS)).toEqual(['home', 'starwars', 'rmportal', 'citadel']);
+    expect(placeMarket('home')).toMatchObject({ stationId: 'home', label: 'The Core’s exchange', area: { id: 'core' }, type: 'industry', sector: [0, 0, 0] });
+    expect(placeMarket('starwars')).toMatchObject({ area: { id: 'maelstrom' }, type: 'frontier' });
+    expect(placeMarket('citadel')).toMatchObject({ area: { id: 'curve' }, pocket: 'curve' });
+    expect(placeMarket('resume')).toBe(null);
+    expect(placeMarket(undefined)).toBe(null);
+  });
+
+  it('sells the Star Wars galaxy’s goods cheap at the Maelstrom’s gate', () => {
+    const s = setup();
+    const board = boardOf({ ...s, station: placeMarket('starwars') });
+    const spice = board.find((r) => r.id === 'spice');
+    expect(spice).toBeTruthy();
+    expect(spice.buy).toBeLessThan(150);
   });
 });

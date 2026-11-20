@@ -105,6 +105,7 @@ export default function Universe({ ask = false }) {
   const [mapState, setMapState] = useState('loading'); // ('live', 'loading' or 'flat': whether a scene runs to find it)
   const [found, setFound] = useState(null); // ({ id, dest }: what the scene found for a place, dest null for nothing there)
   const [docked, setDocked] = useState(null); // (the station the ship's docked at)
+  const [at, setAt] = useState(null); // (and the hand-made place it's at)
   const reduced = useReducedMotion();
   const map = useRef({ live: false, dive: () => 0, escape: () => false, whole: () => false, travel: () => false, where: () => null, place: () => null, fetchPlace: async () => null, nearby: () => [] }); // the 3D map, while it's drawing
   const comms = useRef(null);
@@ -375,6 +376,9 @@ export default function Universe({ ask = false }) {
   // portal or the RV's Blue Sky: the scene has the ship out at the place
   // under its flash either way), through a gate, or something for the crew to say
   const onEvent = (e) => {
+    // (the hand-made place the ship is at, for a market on its card: market/trade.js's placeMarket)
+    if (e.type === 'arrive') setAt(e.id);
+    else if (e.type === 'depart') setAt((was) => (was === e.id ? null : was));
     if (e.type === 'earn') {
       pay(e.what, e.n, e.side);
       return;
@@ -615,6 +619,7 @@ export default function Universe({ ask = false }) {
         universe={universe}
         wonder={wonderDest ?? cardRow(place, found, mapState)}
         docked={docked}
+        at={at}
         onFly={ship ? (id) => travel(id, drive) : null}
         onSelect={select}
         onEnter={enter}
