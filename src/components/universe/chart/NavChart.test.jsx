@@ -48,3 +48,14 @@ describe('the nav map’s chart', () => {
     expect(html).toContain('Sector 2, 0, 0 · 3,800 ship-lengths above the disc');
   });
 });
+
+describe('a generated planet’s traits under its name', () => {
+  it('shows its tags’ glyphs, said in words, and nothing for a mark with none', () => {
+    const mark = { id: 'E:9,0,0:0:1', kind: 'world', name: 'Ost', at: [100, 0, 100], priority: 30, color: '#88aa66', levels: ['system', 'neighbourhood'], shape: 'dot', pickable: true, tags: ['surveyed', 'ruins'] };
+    const near = createView({ range: 3000 });
+    const html = renderToStaticMarkup(<NavChart view={near} marks={[...HAND_MARKS, mark]} ship={{ x: 0, y: 0, z: 0, heading: 0 }} />);
+    expect(html).toContain('class="navmap-tags" aria-label="surveyed, ruins"');
+    expect(html).toContain('✓⌂');
+    expect(draw({})).not.toContain('navmap-tags');
+  });
+});

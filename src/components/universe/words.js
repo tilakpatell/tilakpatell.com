@@ -208,6 +208,8 @@ export const PLACE = {
 // tilts and turns, and looks straight down again.)
 export const CHART_WORDS = {
   tools: 'Chart',
+  // (a generated planet's traits under its name: places/genMarks.js's glyphs)
+  tags: { surveyed: 'surveyed', anomaly: 'an anomaly', rare: 'a rare find', exotic: 'something strange', ruins: 'ruins', secret: 'a moon’s secret', station: 'a station', hazard: 'dangerous' },
   zoomIn: 'Zoom in',
   zoomOut: 'Zoom out',
   toShip: 'Back to the ship',

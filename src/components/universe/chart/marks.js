@@ -3,8 +3,9 @@
 // left to the list: they all sit at the gate), the chart's own three (the
 // sun, the home system's name, the Curve's), the rings round the home
 // system, the belt and the Curve, and the live marks from the scene's
-// where() (the other pilots, the far fights). Lane 6b adds the generated
-// places and events here, as more marks.
+// where() (the other pilots, the far fights, the generated planets round the
+// ship: places/genMarks.js). Lane 6b adds the other generated places and events
+// here, as more marks.
 // And the chart's presets: the chips' views (CHART_VIEWS' names, middles and
 // ranges), which one a view is looking at, and the view the nav map opens on.
 //
@@ -16,6 +17,7 @@ import { BELT, HOME_RADIUS, SECTORS, SUN } from '../layout';
 import { byId } from '../universes';
 import { NEIGHBOURHOODS, neighbourhoodById } from '../neighbourhoods';
 import { CHART, createView, levelOf } from './projection';
+import { generatedMarks } from '../places/genMarks';
 
 const ALL = ['system', 'neighbourhood', 'universe'];
 // (the Curve's moons are its own chart's: from outside it, its name stands for them)
@@ -73,6 +75,8 @@ export function liveMarks(now) {
   return [
     ...(Array.isArray(now.pilots) ? now.pilots : []).filter(ok).map((p) => ({ id: `pilot:${p.id}`, kind: 'pilot', name: '', at: [p.x, y, p.z], priority: 70, color: '#9fd8ff', levels: NEAR, shape: 'pilot', pickable: false })),
     ...(Array.isArray(now.farFights) ? now.farFights : []).filter(ok).map((f) => ({ id: `fight:${f.id}`, kind: 'fight', name: f.label ?? '', at: [f.x, y, f.z], priority: 35, color: '#ff8a5c', levels: NEAR, shape: 'fight', pickable: false })),
+    // (the generated planets round the ship, in their own looks' colours, with their traits' tags: places/genMarks.js)
+    ...generatedMarks(now.generated),
   ];
 }
 

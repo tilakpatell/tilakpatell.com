@@ -252,6 +252,7 @@ import { spaceTime } from '../expanse/shared/gen';
 import { createScenePlaces } from './places/scenePlaces';
 import { createThingDrawers } from './things/drawers';
 import { createThingPlay } from './things';
+import { planetsAround } from './places/planetsAround';
 import { CABS, CAB_HFOV, CAB_VFOV, EYE, SEAT_KEY } from './cabs';
 import { runtime } from '../../runtime';
 import { EARN, deedToEarn } from './economy';
@@ -6409,6 +6410,7 @@ export async function create(canvas, ctx) {
         farFights: (state.fights ?? []).map((f) => ({ id: f.id, x: f.at[0], z: f.at[2], label: fightLabel(f.at) })), // (Fighting near …, for the nav map)
         front: front?.where() ?? null, // (the crew's war, for the nav map)
         place: places.here()?.id ?? null, docked: places.docked(), t: state.spaceT, // (the generated place it's at, docked or not, and the shared clock)
+        generated: planetsAround(expanse.sectors().values(), s, state.spaceT, { surveyed: new Set(thingPlay.surveys()) }), // (the generated planets round the ship, for the nav map: places/genMarks.js)
       };
     },
     // the whole map: the view pulls out while you keep the ship (false

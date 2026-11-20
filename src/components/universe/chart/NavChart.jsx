@@ -3,6 +3,7 @@ import { destinationById } from '../nav';
 import { FRAMES, levelOf, project, ringsFor, toFrame } from './projection';
 import { placeMarks, placeShip, ringOn, sectorGrid } from './place';
 import { REGIONS, REGION_OF } from './marks';
+import { TAG_GLYPHS } from '../places/genMarks';
 import ChartTools from './ChartTools';
 import { CHART_WORDS } from '../words';
 
@@ -238,6 +239,12 @@ export default function NavChart({ view, marks, ship = null, course = null, fron
             const name = (
               <span className="navmap-name" style={{ '--lx': `${p.dx}px`, '--ly': `${p.dy}px` }} data-off={off}>
                 {mark.name}
+                {mark.tags?.length ? (
+                  <small className="navmap-tags" aria-label={mark.tags.map((t) => CHART_WORDS.tags[t] ?? t).join(', ')}>
+                    {' '}
+                    {mark.tags.map((t) => TAG_GLYPHS[t] ?? '').join('')}
+                  </small>
+                ) : null}
               </span>
             );
             const d = destinationById(mark.id);
