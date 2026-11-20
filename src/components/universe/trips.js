@@ -165,7 +165,8 @@ export function createTrips(deps) {
     if (drive === 'hyper' && !reduced && isGenerated(id) && hyperState({ last: state.hyperAt, now: wall(), interdicted: state.interdicted, recharge: HYPER.recharge * (state.stats.jump ?? 1) }).ready) {
       const at = [park.x, park.y ?? s.y, park.z];
       const hops = hyperRoute(sectorAt(s.x, s.y, s.z), sectorAt(...at), deps.range?.() ?? Infinity);
-      if (hops.length > 1) {
+      // (the cruiser's portal gun: a charted sector, straight there)
+      if (hops.length > 1 && !deps.portal?.(sectorAt(...at))) {
         const k = state.hop?.id === id ? state.hop.k + 1 : 1;
         const [x, y, z] = hopPoint([s.x, s.y, s.z], at, 1, hops.length);
         state.hop = { id, k, n: k - 1 + hops.length, at: [x, y, z] };

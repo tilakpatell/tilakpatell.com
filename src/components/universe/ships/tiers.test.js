@@ -9,7 +9,7 @@ const owning = (...keys) => {
 
 describe('a tier as an item', () => {
   it('prices each step up as the spec does', () => {
-    expect(TIER_PRICE).toEqual([0, 0, 600, 2000, 6000, 15000]);
+    expect(TIER_PRICE).toEqual([0, 0, 600, 1600, 8000, 25000]);
     expect(MK).toEqual(['', 'Mk I', 'Mk II', 'Mk III', 'Mk IV', 'Mk V']);
   });
 
@@ -30,7 +30,7 @@ describe('a tier as an item', () => {
       stock: false,
     });
     expect(tierItem('falcon', 'engines', 3).needs).toEqual({ owns: 'tier:falcon:engines:2' });
-    expect(tierItem('falcon', 'engines', 3).price).toBe(2000);
+    expect(tierItem('falcon', 'engines', 3).price).toBe(1600);
   });
 
   it('asks Mk IV for two of its system’s rare and Mk V for four pure', () => {

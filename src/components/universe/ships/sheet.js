@@ -9,6 +9,7 @@
 //   nextValue (null at Mk V), item (the next tier's, or null), pill (shop.js's
 //   pillOf, or null with no wallet or at Mk V; a lock names only what's
 //   missing) }]
+// signatureLine(crew, build) → { role, line }: the Systems tab's head
 // shipSheet({ crew, build, economy, hold, record }) → { ship, role,
 //   signature, systems (systemRows'), hold: { used, room, goods }, credits,
 //   data (exploration data not yet paid), explored: { sectors, systems,
@@ -22,6 +23,7 @@ import { pillOf } from '../shop';
 import { readBuild } from '../shipyard/build';
 import { MAX_TIER, SYSTEMS, SYSTEM_LABEL, coreStats, profileOf } from './profiles';
 import { MK, tierItem, tiersOf } from './tiers';
+import { SIGNATURE_LINE } from '../signatures';
 
 export const LIVE = Object.freeze(['engines', 'pulse', 'hyperdrive', 'shields', 'scanner', 'hold', 'reactor']);
 const RANGED = true; // (a jump into generated space is held to the hyperdrive's range: explore/route.js)
@@ -59,6 +61,12 @@ export function systemRows({ crew, build = null, economy = null }) {
     if (pill?.kind === 'locked' && item.needs.goods) pill = { kind: 'locked', text: needText({ goods: item.needs.goods }) };
     return { id, label: SYSTEM_LABEL[id], tier, mk: MK[tier], value: valueOf(id, core, plant), nextValue: next ? valueOf(id, next, plant) : null, item, pill };
   });
+}
+
+// The ship's role and its signature, in words: the Systems tab's head
+export function signatureLine(crew, build = null) {
+  const p = profileOf(crew, build ? readBuild(build) : null);
+  return { role: p.role, line: p.signature ? SIGNATURE_LINE[p.signature] : 'A garage build: no signature of its own.' };
 }
 
 export function shipSheet({ crew, build = null, economy = null, hold = null, record = null }) {
