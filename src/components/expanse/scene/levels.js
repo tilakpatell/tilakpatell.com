@@ -17,6 +17,11 @@
 //   times where its place is real (farStars.js's realAt) and falling off
 //   with the square of the distance past it
 // beyondFade(dist, edge) → 1 within 0.8 of the edge, 0 at it
+// PLANET_SEEN → { from, to, least }: a planet's disc shows with the camera within `from` of its
+//   system's reaches of the star, and is gone by `to`; never nearer than `least`
+// planetShown(dist, reach) → 1 … 0: how much a planet's disc shows with the camera `dist` from its
+//   star (its system's reach `reach`). Past it, a system is its star alone: from far off a planet
+//   is a pinprick of its star's light, not a disc of its own (the owner's ask, 2026-11-19)
 
 export const FAR = 45000;
 export const FADE = 0.2;
@@ -37,6 +42,12 @@ export function levelWeights(dist, { reach, far = FAR }) {
 export const discPx = (dist, r, { fov, height }) => ((2 * r) / (2 * Math.max(dist, r) * Math.tan((fov * Math.PI) / 360))) * height;
 
 export const realAt = (r) => Math.max(REAL_LEAST, r * REAL_REACHES);
+
+export const PLANET_SEEN = Object.freeze({ from: 3, to: 5, least: 2500 });
+export function planetShown(dist, reach) {
+  const r = Math.max(PLANET_SEEN.least / PLANET_SEEN.from, reach);
+  return 1 - smoothstep(PLANET_SEEN.from * r, PLANET_SEEN.to * r, dist);
+}
 
 export function speckBright(dist, r) {
   const k = (4 * realAt(r)) / Math.max(dist, 1);

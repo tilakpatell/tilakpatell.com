@@ -9,7 +9,9 @@
 // same size in the same place. Every new mesh is readied (`prepare`: its
 // shaders made, its pictures sent) before it's shown.
 //
-// TYPE_LOOK: a planet type → a look (galaxy/bodies.js's LOOKS)
+// Each planet and moon wears its own look (lib/space/planetLook.js), its
+// ring its giant's bands.
+// TYPE_LOOK: a planet type → the galaxy look it wore before (galaxy/bodies.js's LOOKS)
 // STAR_STRENGTH: how strongly a star of a class lights what's near it
 // createNear(group, { budget, tier, build = buildBody, prepare = null, perFrame = 1 }) → {
 //   update(systems, cam, t, camera): systems are addBodies'd rows in the map's space,
@@ -20,11 +22,17 @@
 //   dispose() }
 
 import * as THREE from 'three';
-import { buildBody } from '../../galaxy/bodies';
+import { FAMILIES as SHADER_FAMILIES, buildBody } from '../../galaxy/bodies';
+
+// (the body shader's families, its slots and params: what a planet's own look fills)
+export { SHADER_FAMILIES };
 import { hot } from '../../../lib/three/canvasTexture';
 import { companionAt, companionsOf } from '../gen/companions';
 import { moonAt, orbitAt } from '../gen/orbits';
+import { moonRowOf, planetLook, planetRowOf } from '../../../lib/space/planetLook';
 
+// (the fixed looks generated planets wore before each had its own, planetLook.js: still the
+// galaxy looks a type is nearest, for anything that names one)
 export const TYPE_LOOK = {
   rock: 'moon-dust',
   ice: 'hoth',
@@ -57,6 +65,7 @@ const RING_VERT = /* glsl */ `
 `;
 const RING_FRAG = /* glsl */ `
   uniform vec3 uColor;
+  uniform vec3 uColor2;
   uniform float uInner;
   uniform float uOuter;
   uniform float uSeed;
@@ -69,7 +78,7 @@ const RING_FRAG = /* glsl */ `
     float gap = step(0.18, h(floor(u * 23.0) + 9.0));
     float edge = smoothstep(0.0, 0.04, u) * smoothstep(1.0, 0.94, u);
     float a = (0.25 + 0.55 * b) * gap * edge;
-    gl_FragColor = vec4(uColor * (0.6 + 0.5 * b), a);
+    gl_FragColor = vec4(mix(uColor2, uColor, b) * (0.6 + 0.5 * b), a);
   }
 `;
 
@@ -82,6 +91,9 @@ const axisOf = (p) => {
   return l > 0 ? new THREE.Vector3(m[0] / l, m[1] / l, m[2] / l) : new THREE.Vector3(0, 1, 0);
 };
 const Z = new THREE.Vector3(0, 0, 1);
+// a ring's two colours, its bands mixed between them: a giant's palest and darkest bands (any
+// other look its swatch and its rock)
+const ringColours = (look) => (look.family === 'gas' ? [look.pal.band2, look.pal.band4] : [look.swatch, look.pal.rock ?? look.swatch]);
 
 export function createNear(group, { budget, tier = 'mid', build = buildBody, prepare = null, perFrame = 1 } = {}) {
   const most = Math.max(1, budget?.systemsBuilt ?? 1);
@@ -136,7 +148,8 @@ export function createNear(group, { budget, tier = 'mid', build = buildBody, pre
     });
     for (const p of s.planets) {
       sys.queue.push(() => {
-        const body = build(TYPE_LOOK[p.type] ?? TYPE_LOOK.rock, { r: p.radius, tier });
+        const look = planetLook(planetRowOf(p));
+        const body = build(look, { r: p.radius, tier });
         body.group.name = `planet:${p.id}`;
         body.setDetail?.(1 - step * 0.25);
         g.add(body.group);
@@ -150,7 +163,7 @@ export function createNear(group, { budget, tier = 'mid', build = buildBody, pre
           const mat = new THREE.ShaderMaterial({
             vertexShader: RING_VERT,
             fragmentShader: RING_FRAG,
-            uniforms: { uColor: { value: new THREE.Color(p.color ?? '#c8b89a') }, uInner: { value: inner }, uOuter: { value: outer }, uSeed: { value: Number(BigInt.asUintN(20, BigInt(p.seed ?? 0))) / 1048576 } },
+            uniforms: { uColor: { value: new THREE.Color(ringColours(look)[0]) }, uColor2: { value: new THREE.Color(ringColours(look)[1]) }, uInner: { value: inner }, uOuter: { value: outer }, uSeed: { value: Number(BigInt.asUintN(20, BigInt(p.seed ?? 0))) / 1048576 } },
             transparent: true,
             depthWrite: false,
             side: THREE.DoubleSide,
@@ -165,7 +178,7 @@ export function createNear(group, { budget, tier = 'mid', build = buildBody, pre
       });
       for (const m of p.moonList ?? []) {
         sys.queue.push(() => {
-          const mb = build(m.type === 'icy' ? 'hoth' : 'moon-grey', { r: m.radius, small: true, tier });
+          const mb = build(planetLook(moonRowOf(m, p)), { r: m.radius, small: true, tier });
           mb.group.name = `moon:${m.id}`;
           mb.setDetail?.(1 - step * 0.25);
           g.add(mb.group);

@@ -25,6 +25,7 @@
 //   expand(biomes, seed) → biomes with each scatter made island layers
 
 import { seeded } from '../../seeded.js';
+import { MOON_FAMILY, SEEDED_EXPANSE, familyOf } from '../../space/worldTables.js';
 
 // ── the layers, short ──
 const swell = (scale, height) => ({ type: 'swell', scale, height });
@@ -620,17 +621,9 @@ export const TYPE_LOOK = {
   rock: look('geonosis', { clutter: clutter(['rock', 60], ['debris', 15]) }),
 };
 
-// the thirteen Expanse planets the roster flies (fixtures/expanse.json's, in order): their
-// ground is a plane of their type's template, held as it was (the endless universe's spec, E)
-export const SEEDED_EXPANSE = [
-  ['e:1,0:0:0', 'gas'], ['e:1,0:0:1', 'forest'], ['e:1,0:0:2', 'lava'], ['e:1,0:0:3', 'ice'], ['e:1,0:0:4', 'rock'], ['e:1,0:0:5', 'ice'], ['e:1,0:0:6', 'desert'],
-  ['e:1,0:1:0', 'desert'], ['e:1,0:1:1', 'ocean'], ['e:1,0:1:2', 'rock'],
-  ['e:1,0:2:0', 'gas'], ['e:1,0:2:1', 'ocean'], ['e:1,0:2:2', 'rock'],
-];
-
-// a moon's type (the generator's) as the family its ground is made from
-export const MOON_FAMILY = { rocky: 'rock', icy: 'ice' };
-export const familyOf = (type) => MOON_FAMILY[type] ?? type;
+// (the thirteen seeded Expanse planets and the moons' families moved to lib/space/worldTables.js,
+// which the universe's looks read too)
+export { MOON_FAMILY, SEEDED_EXPANSE, familyOf };
 
 // the plane planets' climate: two low, warped noises over (x, z)
 export const PLANE_CLIMATE = { frequency: 0.00025, warp: 400 };
