@@ -10,11 +10,13 @@
 
 // the forms' numbers (rules.js's FORMS, as uniforms) and the field: the
 // envelope is rules.js's envelope, line for line
+import { VORTEX } from './rules';
+
 const FIELD = /* glsl */ `
 precision highp sampler3D;
 uniform sampler3D uVolume;
-uniform vec4 uForms[3];
-uniform float uCore[3];
+uniform vec4 uForms[5];
+uniform float uCore[5];
 uniform float uTime;
 
 // Living, never spinning (the owner's ask): the gas drifts through the
@@ -23,6 +25,24 @@ uniform float uTime;
 // scene's clock, which stands still under reduced motion.
 vec3 nebFlow(vec3 seed) { return vec3(0.011, 0.004, -0.008) * uTime + 0.02 * sin(uTime * vec3(0.05, 0.037, 0.043) + seed * 6.2832); }
 float nebBreath(vec3 seed) { return 1.0 + 0.035 * sin(uTime * 0.21 + seed.x * 6.2832); }
+// The spirals (rules.js's vortex, form 3), the one form that turns: a point
+// carried round its eye, the whole turning as one (so nothing smears however
+// long it's watched) and twisted, the more the further in, so its gas lies
+// along the arms; and how much of the gas an arm holds there (0.1 between
+// the arms, 1 on one)
+vec3 nebVortex(vec3 p) {
+  float rho = length(p.xz) + 0.04;
+  float a = ${VORTEX.spin.toFixed(4)} * 3.0 * uTime - 0.9 * log(rho);
+  float c = cos(a), s = sin(a);
+  return vec3(c * p.x - s * p.z, p.y, s * p.x + c * p.z);
+}
+float nebArms(vec3 p, float rift) {
+  // (the arms' pattern turns whole, at the spin a third of the way out; the gas sheared through it;
+  // a rift's three and wound tighter)
+  float th = atan(p.z, p.x) + ${VORTEX.wind.toFixed(4)} * (1.0 + 0.6 * rift) * log(length(p.xz) + 0.04) + ${VORTEX.spin.toFixed(4)} * 3.0 * uTime;
+  float arm = 0.5 + 0.5 * cos((${VORTEX.arms.toFixed(1)} + rift) * th);
+  return 0.1 + 0.9 * arm * arm;
+}
 
 float nebEnvelope(int form, vec3 p) {
   vec4 f = uForms[form];
@@ -36,6 +56,11 @@ float nebEnvelope(int form, vec3 p) {
 // z its dust; fine adds a smaller tap where the cloud is near
 vec3 nebField(int form, vec3 p, vec3 seed, float fine) {
   if (dot(p, p) >= 1.5) return vec3(0.0);
+  float arms = 1.0;
+  if (form >= 3) {
+    arms = nebArms(p, float(form - 3));
+    p = nebVortex(p);
+  }
   vec3 flow = nebFlow(seed);
   vec2 n = texture(uVolume, p * 0.55 + seed + flow).rg;
   // the edge broken by the gas itself, so no cloud is a ball; breathing
@@ -48,7 +73,7 @@ vec3 nebField(int form, vec3 p, vec3 seed, float fine) {
   gas *= mix(0.45, 1.25, ridge * ridge);
   if (fine > 0.0) gas *= mix(1.0, 0.55 + 0.9 * texture(uVolume, p * 2.6 + seed.zxy + flow * 2.4).r, fine);
   float dust = smoothstep(0.7, 0.85, n.g) * 0.8;
-  return vec3(env * gas, n.g, dust * env);
+  return vec3(env * gas * arms, n.g, dust * env * arms);
 }
 
 // its colour at a sample: the first two mixed by the field, the third
@@ -189,6 +214,51 @@ vec4 nebPainted(vec2 p, vec3 c0, vec3 c1, vec3 c2, float cell) {
   // (the colours here are at full strength, brighter than the atlas's were: taken back to them)
   return vec4(light * glow * float(NEB_PAINT_LIGHT), dust * 0.9 * 0.6);
 }
+
+// A vortex far off (form 3: the two portals' spirals), painted as what it
+// is, a flat disc seen from wherever you are: where the ray from the eye
+// (o, d, in radii from its middle, the map's axes) crosses its plane, the
+// arms wound round its eye (nebArms, turning), the gas along them, dust
+// between, and a hot heart (c2) fading out to the arms' c0 and c1; seen
+// edge on, thicker and brighter, as a disc of stars is
+vec4 nebSpiral(vec3 o, vec3 d, vec3 c0, vec3 c1, vec3 c2, float cell, float rift) {
+  if (abs(d.y) < 1e-5) return vec4(0.0);
+  float t = -o.y / d.y;
+  if (t <= 0.0) return vec4(0.0);
+  vec3 p = o + d * t;
+  // (a rift lopsided, its edge wobbling as the show's portals' do)
+  p.z *= 1.0 + 0.2 * rift;
+  float ang = atan(p.z, p.x);
+  float rho = length(p.xz) * (1.0 + rift * (0.05 * sin(ang * 3.0 + uTime * 0.4) + 0.03 * sin(ang * 7.0 - uTime * 0.7)));
+  if (rho >= 1.0) return vec4(0.0);
+  vec3 q = nebVortex(p);
+  float arms = nebArms(p, rift);
+  vec2 s = q.xz * 3.2 + cell * 11.0;
+  float gas = nebFbm2(s + vec2(nebFbm2(s * 1.7), nebFbm2(s * 1.7 + 4.1)) * 1.6) * 0.65 + nebFbm2(s * 3.7 + 2.3) * 0.35; // (and a finer tap: no brushstrokes)
+  float fade = (1.0 - smoothstep(0.55, 1.0, rho)) * smoothstep(0.02, 0.09, rho);
+  float lane = smoothstep(0.35, 0.75, nebFbm2(s * 2.4 + 7.0)) * (1.0 - arms) * 0.7;
+  float body = arms * smoothstep(0.2, 0.75, gas) * fade;
+  float heart = exp(-rho * rho * 48.0);
+  vec3 col = mix(c0, c1, smoothstep(0.3, 0.8, gas * arms));
+  col = mix(col, c2, heart);
+  float tilt = clamp(1.0 / (abs(normalize(d).y) * 3.0 + 0.35), 1.0, 2.5);
+  vec3 light = (col * body * 0.85 + c2 * heart * 1.4) * tilt;
+  // where its stars are being born: pink knots strung along the arms
+  float knot = smoothstep(0.78, 0.95, nebFbm2(s * 5.3 + 19.0)) * arms * fade * (1.0 - heart);
+  light += vec3(1.0, 0.45, 0.6) * knot * 0.5;
+  // its stars: thick along the arms, some brighter than the rest
+  // (placed on its turn alone, not its twist, so each is a point, not a dash)
+  float ra = ${VORTEX.spin.toFixed(4)} * 3.0 * uTime;
+  vec2 sp = mat2(cos(ra), sin(ra), -sin(ra), cos(ra)) * p.xz;
+  float h = nebHash(floor((sp * 0.5 + 0.5) * 520.0) + cell * 37.0);
+  float st = step(0.991, h) * (0.4 + 2.6 * pow((h - 0.991) / 0.009, 3.0)) * (0.25 + arms) * fade;
+  // (a rift's are the realities it walls in: every colour, not stars)
+  vec3 hue = 0.6 + 0.4 * cos(6.2832 * (fract(h * 917.0) + vec3(0.0, 0.33, 0.67)));
+  light += mix(vec3(1.2, 1.2, 1.15), hue * 1.6, rift) * st;
+  // and its edge lit, the show's portal's bright rim
+  light += c1 * rift * smoothstep(0.9, 0.96, rho) * (1.0 - smoothstep(0.96, 1.0, rho)) * 0.7;
+  return vec4(light * float(NEB_PAINT_LIGHT), clamp(lane * fade + body * 0.25, 0.0, 0.8));
+}
 `;
 
 export const CLOUD_FRAG = /* glsl */ `
@@ -250,7 +320,7 @@ void main() {
     vec3 upMap = cross(rightMap, dirMap);
     // where the ray meets the plane through the middle, square to the line of sight, in radii
     vec3 onPlane = toMap * (rd * (dot(vCentre, dir) / max(dot(rd, dir), 1e-4)) - vCentre) * k;
-    painted = nebPainted(vec2(dot(onPlane, rightMap), dot(onPlane, upMap)), vC0, vC1, vC2, vSeed.x * 7.0);
+    painted = form >= 3 ? nebSpiral(toMap * (-vCentre) * k, normalize(toMap * rd) * k, vC0, vC1, vC2, vSeed.x * 7.0, float(form - 3)) : nebPainted(vec2(dot(onPlane, rightMap), dot(onPlane, upMap)), vC0, vC1, vC2, vSeed.x * 7.0);
     if (far > 0.999) {
       gl_FragColor = painted;
       #include <colorspace_fragment>

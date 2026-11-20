@@ -9,7 +9,8 @@
 //   yours(stationId, good, t) → net units lately, note(stationId, good, n, t)
 //   (n sold +, bought −), empty(id, t), isEmpty(id, t), salvage(id),
 //   salvaged(id), shock(stationId, good, mul, until), shockOf(stationId, good,
-//   t), changed(), on(fn) → off, flush() }
+//   t), pod() → the cargo pod or null, setPod(pod | null), changed(), on(fn) → off, flush() }
+//   (the pod: signatures/pod.js's, one at a time, kept in tp-market)
 // SHIPS_KEY, MARKET_KEY, EMPTY_FOR (ms a field stays empty), KEEP (the most of each kept)
 
 import { holdOps, readHold } from './hold';
@@ -41,6 +42,9 @@ export function createMarket({ saves = null, now = () => Date.now(), later = (fn
   const emptied = {};
   for (const [k, t] of Object.entries(isObject(raw.emptied) ? raw.emptied : {})) if (Number.isFinite(t)) emptied[k] = t;
   const salvagedSet = new Set(Array.isArray(raw.salvaged) ? raw.salvaged.filter((v) => typeof v === 'string').slice(-KEEP) : []);
+  const readPod = (p) => (isObject(p) && Array.isArray(p.at) && p.at.length === 3 && p.at.every(Number.isFinite) ? { crew: typeof p.crew === 'string' ? p.crew : null, at: [...p.at], sector: Array.isArray(p.sector) ? [...p.sector] : null, t: Number.isFinite(p.t) ? p.t : 0, lots: readHold(p.lots) } : null);
+  let pod = readPod(raw.pod);
+  if (pod && !pod.lots.length) pod = null;
   const shocks = new Map();
   const listeners = new Set();
   let pending = null;
@@ -48,7 +52,7 @@ export function createMarket({ saves = null, now = () => Date.now(), later = (fn
   const write = () => {
     pending = null;
     saves?.set(SHIPS_KEY, Object.fromEntries(Object.entries(holds).map(([crew, lots]) => [crew, { hold: lots.map((l) => ({ ...l, from: { ...l.from } })) }])));
-    saves?.set(MARKET_KEY, { yours: keepLast(yours, KEEP), emptied: keepLast(emptied, KEEP), salvaged: [...salvagedSet].slice(-KEEP) });
+    saves?.set(MARKET_KEY, { yours: keepLast(yours, KEEP), emptied: keepLast(emptied, KEEP), salvaged: [...salvagedSet].slice(-KEEP), pod });
   };
   const changed = () => {
     if (saves && pending === null) {
@@ -103,6 +107,12 @@ export function createMarket({ saves = null, now = () => Date.now(), later = (fn
     shockOf(stationId, good, t = now()) {
       const s = shocks.get(key(stationId, good));
       return s && t < s.until ? s.mul : 1;
+    },
+    pod: () => pod,
+    setPod(next) {
+      pod = readPod(next);
+      if (pod && !pod.lots.length) pod = null;
+      changed();
     },
     changed,
     on(fn) {

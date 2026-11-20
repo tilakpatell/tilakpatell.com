@@ -17,7 +17,7 @@ it('bakes the universe’s sky as Kashyyyk’s, without its suns, beacons or clo
   createMapSky(parent, { renderer: null, small: true, level: 'low', post: { ratio: 1 }, prepFrame });
   expect(createSky).toHaveBeenCalledWith({ small: true, level: 'low', renderer: null, beacons: false, clouds: false });
   expect(stub.setSystem).toHaveBeenCalledWith(expect.objectContaining({ id: 'kashyyyk', suns: [] }));
-  expect(stub.setDeep).toHaveBeenCalledWith(1); // (the map's deep sky, PR #1311)
+  expect(stub.setDeep).toHaveBeenCalledWith(2); // (the map's deep sky, PR #1311, and dark: the owner's ask)
   expect(parent.children).toContain(stub.group);
   await new Promise((r) => setTimeout(r, 0));
   expect(prepFrame).toHaveBeenCalled();

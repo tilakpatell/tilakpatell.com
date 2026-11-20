@@ -52,3 +52,13 @@ describe('a station’s trade', () => {
     expect(t.sells.some((id) => GOODS[id].rare)).toBe(false);
   });
 });
+
+describe('the layout session’s ids', () => {
+  it('keys every hand-made neighbourhood as neighbourhoods.js does', () => {
+    for (const id of ['core', 'heroes', 'oldroads', 'earthside', 'stage', 'arcade', 'rift', 'maelstrom', 'curve']) expect(AREAS[id], id).toBeTruthy();
+    setRegions(() => ({ kind: 'neighbourhood', id: 'stage', name: 'The Stage', danger: 0.1, richness: 0.2 }));
+    expect(areaOf([1, 0, 1])).toMatchObject({ id: 'stage', kind: 'neighbourhood' });
+    setRegions(() => ({ kind: 'grave', id: 'R:4,-2', danger: 0.5, richness: 0.5 }));
+    expect(areaOf([12, 0, -6]).id).toBe('grave');
+  });
+});

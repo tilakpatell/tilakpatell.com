@@ -33,7 +33,7 @@
 //
 // createSky({ small, renderer, beacons, clouds }) → { group, setSystem(system), bake(renderer),
 //   prepare(renderer) → Promise, update(camera, t), focus(id), beacons, sunDirs,
-//   setRatio(r), setDeep(k), dispose() };
+//   setRatio(r), setDeep(k) (0 … 1 the dark between taken down, 1 … 2 the whole dimmed too), dispose() };
 //   setSystem then bake (with the renderer it was made with, unless given
 //   another); beacons: [{ id, dir }] (unit vectors), the other systems' stars
 //   (drawn unless `beacons: false`, for a sky borrowed where there's no jumping)
@@ -125,7 +125,9 @@ void main() {
   // and the nebulae keep their light and the dark between goes to black
   if (uDeep > 0.0) {
     float l = dot(c, vec3(0.2126, 0.7152, 0.0722));
-    c *= mix(1.0, clamp(pow(max(l, 1e-6) / 0.25, 0.9), 0.25, 1.0), uDeep);
+    c *= mix(1.0, clamp(pow(max(l, 1e-6) / 0.25, 0.9), 0.25, 1.0), min(uDeep, 1.0));
+    // (past one, the whole of it dimmed too: the universe map's dark, its nebulae the light in it)
+    c *= mix(1.0, 0.45, clamp(uDeep - 1.0, 0.0, 1.0));
   }
   float n = fract(sin(dot(gl_FragCoord.xy, vec2(12.9898, 78.233))) * 43758.5453) - 0.5;
   c = sRGBTransferOETF(vec4(c, 1.0)).rgb + n / 255.0;
@@ -614,7 +616,7 @@ export function createSky({ small = false, level = null, renderer = null, beacon
     // how deep the dark between is, 0 (as baked, the galaxy's) to 1 (the
     // faint glow taken down toward black, the bright kept: the universe map's)
     setDeep(k) {
-      lookMat.uniforms.uDeep.value = Math.max(0, Math.min(1, k));
+      lookMat.uniforms.uDeep.value = Math.max(0, Math.min(2, k));
     },
     // the bake's shader made and linking now, as the bake will draw it (to the
     // cube, so no tone mapping); resolves once it has. The first bake is then a

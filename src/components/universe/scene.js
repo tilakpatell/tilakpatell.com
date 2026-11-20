@@ -134,10 +134,13 @@ import { LEAN, OPEN_SPACE, PLANETS, SHIP, SOLIDS, autopilot, crashLoud, forward,
 import { coreStats } from './ships/profiles';
 import { engineList } from './ships/looks';
 import { areaOf } from './market/areas';
-import { EXPLORE, HOLD } from './words';
+import { EXPLORE, HOLD, SIGNS } from './words';
 import { GOODS } from './market/goods';
 import { MINED_OUT, WORKS, yieldOf } from './market/yields';
 import { sweep as scanSweep } from './explore/scan';
+import { inspect, labEvery, labStep, portalReady, r2Patch, rangeOf } from './signatures';
+import { dropPod, nearPod, recoverInto } from './signatures/pod';
+import { hot } from '../../lib/three/canvasTexture';
 import { worthOf } from './explore/values';
 import { stationFor } from './market/trade';
 import { parseSectorKey, parseSpaceId } from '../../lib/space/address.js';
@@ -186,7 +189,8 @@ import { KEY as KEY_FULL, LIGHTS, STARS as LIT_STARS, dayYaw, lightAt, sunFor } 
 import { createCrash } from './crash';
 import { createExplosions } from '../../lib/three/explosions';
 import { createInfall } from './infall';
-import { DISK_N, MAW, captured, fallAt, plungeAt, pullAt, startFall } from './maw';
+import { DISK_N, MAW, captured, fallAt, plungeAt, startFall } from './maw';
+import { createPulls } from './pullScene';
 import { createTraffic } from './traffic';
 import { createWingmen } from './wingmen';
 import { createSkirmishes } from './skirmishes';
@@ -723,6 +727,7 @@ export async function create(canvas, ctx) {
   map.add(deep.group);
   // the portals between the map's sectors (sectorPortals.js; flown through below: portalThrough)
   const sectorPortals = createSectorPortals(map);
+  const pulls = createPulls(map, { model: () => state.model, note: (text) => (state.note = { text, until: wall() + 3 }), emit: (e) => emit(e), through: (id) => cross(() => portalThrough(id)), reduced });
   // and Rick's portal gun's, fired from the cruiser in flight (gunPortal.js; flown through below: gunThrough)
   const gunPortal = createGunPortal(map);
   let gunAt = -Infinity;
@@ -792,6 +797,63 @@ export async function create(canvas, ctx) {
   });
   const places = createScenePlaces({ group: map, universe, expanse, workers: ctx.rt?.workers ?? null, startAt: props.startAt, toScreen: (...a) => toScreen(...a), prepare: (o) => warm(o), emit: (e) => emit(e), note: (text) => (state.note = { text, until: wall() + 3 }), device: device(), tags: () => props.tags?.current ?? null, onPick: (id) => navTo(id), frame: () => size });
   // lane 4a's things in space played: E at one, a storm's drain, a pulsar's beam, a wormhole's throw (things/index.js)
+  // the signatures and the pod (signatures/): the RV's lab, a military station's check, the cargo pod
+  const crewHold = () => (props.market && state.kind ? props.market.hold(state.kind, state.core.hold) : null);
+  const labTick = (dt) => {
+    if (state.core?.signature !== 'rv' || !props.market || state.crash) return;
+    state.labT = (state.labT ?? 0) + dt;
+    if (state.labT < labEvery(state.tiers.reactor ?? 1)) return;
+    state.labT = 0;
+    const hold = crewHold();
+    const r = hold && labStep(hold.lots);
+    if (!r) return;
+    hold.lots.splice(0, hold.lots.length, ...r.lots);
+    props.market.changed();
+    state.note = { text: SIGNS.lab(GOODS[r.out].name), until: wall() + 2.5 };
+  };
+  const checkHold = (stationId) => {
+    const hold = crewHold();
+    if (!hold) return;
+    const cube = parseSpaceId(stationId);
+    const { type } = stationFor({ id: stationId, cube: cube ? [cube.sx, cube.sy, cube.sz] : [0, 0, 0] });
+    const r = inspect({ crew: state.kind, room: state.core.hold, lots: hold.lots, type });
+    if (!r.seized.length) return;
+    for (const g of r.seized) hold.remove(g.good, g.n);
+    const wallet = props.wallet;
+    const paid = wallet ? Math.min(r.fine, wallet.credits) : 0;
+    if (paid) wallet.spend(paid);
+    state.note = { text: SIGNS.seized(paid), until: wall() + 4 };
+  };
+  // the pod: dropped where the ship went down, drawn as a beacon there, taken aboard with E close to
+  const podMark = new THREE.Mesh(new THREE.OctahedronGeometry(1.2), new THREE.MeshBasicMaterial({ color: hot('#ffcf6a', 2.2), toneMapped: false }));
+  podMark.visible = false;
+  podMark.name = 'cargo-pod';
+  map.add(podMark);
+  const showPod = () => {
+    const pod = props.market?.pod();
+    podMark.visible = Boolean(pod && pod.crew === state.kind);
+    if (podMark.visible) podMark.position.set(...pod.at);
+  };
+  const podDrop = () => {
+    const hold = crewHold();
+    if (!hold || !state.ship) return;
+    const lots = hold.lots.map((l) => ({ ...l, from: { ...l.from } }));
+    const { pod, keep } = dropPod({ crew: state.kind, room: state.core.hold, lots, at: [state.ship.x, state.ship.y, state.ship.z], sector: null, t: Date.now() });
+    if (!pod) return;
+    hold.lots.splice(0, hold.lots.length, ...keep);
+    props.market.setPod(pod);
+    showPod();
+    emit({ type: 'pod', at: pod.at });
+  };
+  const podTake = () => {
+    const pod = props.market?.pod();
+    if (!pod || pod.crew !== state.kind || !nearPod(pod, state.ship)) return false;
+    const r = recoverInto(pod, crewHold());
+    props.market.setPod(r.pod);
+    showPod();
+    state.note = { text: r.got ? SIGNS.podTaken(r.got, Boolean(r.pod)) : HOLD.full, until: wall() + 3 };
+    return true;
+  };
   // the explorer's record (props.record, made beside the wallet): a generated sector charted the first time
   // it's entered, the scan, and the data bank sold at a dock. Each says its note, or null
   const chartSector = (id) => {
@@ -1880,7 +1942,14 @@ export async function create(canvas, ctx) {
       camQOn = false;
     },
     resolve: (id) => places.resolve(id), fetch: (id) => places.fetch(id), missing: (id) => places.missing(id),
-    range: () => state.core?.range ?? Infinity, // (the hyperdrive's reach into generated space: explore/route.js)
+    range: () => rangeOf(state.core), // (the hyperdrive's reach into generated space, R2's sector more: explore/route.js, signatures/)
+    // (the cruiser's portal gun: straight to a charted sector past the range, every few minutes)
+    portal: (sector) => {
+      if (state.core?.signature !== 'cruiser' || !props.record?.isCharted(sector) || !portalReady(state.portalGunAt, wall(), state.tiers.hyperdrive ?? 1)) return false;
+      state.portalGunAt = wall();
+      state.note = { text: SIGNS.portal, until: wall() + 3.5 };
+      return true;
+    },
   });
 
   // ── The ship ──
@@ -2981,6 +3050,7 @@ export async function create(canvas, ctx) {
 
   // ── A crash: into something too fast ──
   const startCrash = (e) => {
+    podDrop(); // (a crash loses the hold as a shot down does: to a pod where it went)
     powers.cancel();
     unique.clear();
     guns.clear(); // (what's in flight goes with you: it can't score once you're down)
@@ -3088,6 +3158,7 @@ export async function create(canvas, ctx) {
     engine?.set({ speed: 0, boost: false, on: false });
     if (by) net?.down(by, rammed); // everyone hears who got you
     law?.down(); // (the chase is over; the bounty isn't)
+    podDrop();
     emit({ type: 'destroyed' });
     retarget(650);
   };
@@ -3955,6 +4026,9 @@ export async function create(canvas, ctx) {
       // shields come back once you've been out of trouble a while
       thingPlay.update(state, dt, Date.now() / 1000);
       if (state.clock - state.hitAt > state.stats.delay && state.shield < 100) state.shield = Math.min(100, state.shield + dt * 12 * state.stats.regen * diff().regen);
+      // (the X-wing's R2 patches them under fire: signatures/)
+      else if (state.core?.signature === 'xwing' && state.shield > 0 && state.shield < 100) state.shield = Math.min(100, state.shield + dt * r2Patch({ tier: state.tiers.shields ?? 1, since: state.clock - state.hitAt, clock: state.clock }));
+      labTick(dt);
       if (state.shield > 70) state.lowSaid = false;
       state.heat = Math.max(0, state.heat - dt / 45);
       if (hunters) {
@@ -4157,6 +4231,7 @@ export async function create(canvas, ctx) {
       m.pivot.rotation.set(0, 0, 0);
       crashFx.arrive({ point: new THREE.Vector3(at.x, state.ship.y, at.z), kind: state.kind, heading: at.heading });
       emit({ type: 'respawn' });
+      if (props.market?.pod()?.crew === state.kind) state.note = { text: SIGNS.podLeft, until: wall() + 5 };
       retarget(900);
     }
     if (c.back) {
@@ -4379,12 +4454,10 @@ export async function create(canvas, ctx) {
     solidsNow = solidsWith(siegeSt.down ? SOLIDS_OPEN : SOLIDS, moving);
     const { ship: steppedRaw, events } = step(state.ship, input, dt, solidsNow, state.flySpace);
     const stepped = powers.afterStep(steppedRaw, dt); // (Han's corkscrew: its sidestep)
-    // the Maw's pull (maw.js): drawn in, and carried round with its disk
-    const g = pullAt(stepped.x, stepped.y, stepped.z);
-    const ship = g ? { ...stepped, x: stepped.x + g.v[0] * dt, y: stepped.y + g.v[1] * dt, z: stepped.z + g.v[2] * dt } : stepped;
-    // (held at a pose: still, and out of the Maw's pull, so every frame measured is the same picture)
+    // what pulls it (pullScene.js: the Maw, the Maelstrom's beam, the Rift's grab); held at a pose, nothing: every frame measured the same
+    const ship = pulls.step(stepped, { boost: Boolean(input.boost), dt, now: state.clock, off: state.held || Boolean(state.jump || crossing) });
     if (!state.held) state.ship = ship;
-    state.pull = state.held ? 0 : (g?.k ?? 0);
+    state.pull = pulls.k;
     // into a rock (rockHits.js): a bump at the boost or under, the shields
     // past it
     if (!state.jump && !state.held) rocksHit(before, ship, t);
@@ -4429,15 +4502,15 @@ export async function create(canvas, ctx) {
         state.note = { text: `Too fast to fly into ${placeName(air.id)}: ease off the boost`, until: wall() + 2.5 };
       }
     }
-    if (g) {
-      if (!state.pullSaid && g.k > 0.3) {
+    if (pulls.maw) {
+      if (!state.pullSaid && pulls.maw.k > 0.3) {
         state.pullSaid = true;
         emit({ type: 'pulled' });
       }
       // the hum of it, and the ship shaking in its grip
       if (!well && engine) well = wellSound();
-      well?.set(g.k);
-      if (!reduced) state.shake = Math.max(state.shake, Math.max(0, g.k - 0.2) * 0.55);
+      well?.set(pulls.maw.k);
+      if (!reduced) state.shake = Math.max(state.shake, Math.max(0, pulls.maw.k - 0.2) * 0.55);
       // past the point of no return: the fall
       if (captured(ship.x, ship.y, ship.z)) {
         startCrash({ id: MAW.id, swallowed: true, speed: ship.speed });
@@ -4525,7 +4598,7 @@ export async function create(canvas, ctx) {
     }
     return Boolean(
       state.auto ||
-        g ||
+        pulls.maw ||
         m.modules?.easing || // (a part just fitted, swinging into place)
         input.throttle ||
         input.turn ||
@@ -5313,7 +5386,7 @@ export async function create(canvas, ctx) {
     const dockedNow = places.docked();
     if (dockedNow !== state.dockedAt) {
       state.dockedAt = dockedNow;
-      if (dockedNow) sellData(dockedNow);
+      if (dockedNow) (sellData(dockedNow), checkHold(dockedNow));
     }
     // a long jump's next hop, once the hyperdrive's charged and the ship's still where the last one left it
     if (state.hop && !state.jump && !state.auto && !state.pending && state.ship) {
@@ -5489,6 +5562,7 @@ export async function create(canvas, ctx) {
       emit({ type: 'siege', what: 'closed' });
       return;
     }
+    if ((key === 'e' || (key === 'enter' && !onControl)) && !state.at && podTake()) return e.preventDefault();
     if ((key === 'e' || (key === 'enter' && !onControl)) && !state.at && thingPlay.press(state)) return e.preventDefault();
     if ((key === 'e' || (key === 'enter' && !onControl)) && state.at) {
       e.preventDefault();
@@ -5918,7 +5992,7 @@ export async function create(canvas, ctx) {
 
   // in development, renderer counts and the ship, for checking from a browser
   if (import.meta.env.DEV) {
-    window.__universeDebug = { core: () => ({ tiers: { ...state.tiers }, core: { ...state.core }, pulse: state.flySpace.pulse ?? SHIP.pulse, stats: { ...state.stats } }), powers, power: (slot) => power(slot), charge: () => powers.fill(), THREE, post, scene, expanse, farStars, teleport: (x, y, z, heading = state.ship?.heading ?? 0, pitch = 0) => state.ship && (state.ship = { ...state.ship, x, y, z, heading, pitch, speed: 0 }), renderer, camera, traffic, hunters, wingmen, skirmishes, npcs, NPCS, meetNpc: (id) => state.ship && npcs?.add(NPCS[id], skirmishSpot(state.ship) ?? { x: state.ship.x, y: state.ship.y + 5, z: state.ship.z - 40 }), director, pieces, leviathans, meteors, fleet, novae, pilots, standing, deed, wanted, law, wonders: WONDERS.map((w) => ({ id: w.id, name: w.name, at: w.at, reach: reachOf(w) })), state, foot, planets, startFoot: async (o) => (await footCode.want(), startFoot(o)), travel: (id, drive) => travel(id, drive), places: places.debug, diveAt, net: () => net, siege, citadelGeo, arms, readSiegeState, rockFields, smashed, front: () => front, happen: (id) => happen(id, state.ship), mines, escort: () => escort, eclipse: () => eclipse && { ...eclipse, k: eclipseK, key: key.intensity }, remover: () => remover, removerView, ram: (gap = 6, kind = 'tie') => {
+    window.__universeDebug = { market: () => props.market, record: () => props.record, hurt: (n, by = null) => hurt(n, by), core: () => ({ tiers: { ...state.tiers }, core: { ...state.core }, pulse: state.flySpace.pulse ?? SHIP.pulse, stats: { ...state.stats } }), powers, power: (slot) => power(slot), charge: () => powers.fill(), THREE, post, scene, expanse, farStars, teleport: (x, y, z, heading = state.ship?.heading ?? 0, pitch = 0) => state.ship && (state.ship = { ...state.ship, x, y, z, heading, pitch, speed: 0 }), renderer, camera, traffic, hunters, wingmen, skirmishes, npcs, NPCS, meetNpc: (id) => state.ship && npcs?.add(NPCS[id], skirmishSpot(state.ship) ?? { x: state.ship.x, y: state.ship.y + 5, z: state.ship.z - 40 }), director, pieces, leviathans, meteors, fleet, novae, pilots, standing, deed, wanted, law, wonders: WONDERS.map((w) => ({ id: w.id, name: w.name, at: w.at, reach: reachOf(w) })), state, foot, planets, startFoot: async (o) => (await footCode.want(), startFoot(o)), travel: (id, drive) => travel(id, drive), places: places.debug, diveAt, net: () => net, siege, citadelGeo, arms, readSiegeState, rockFields, smashed, front: () => front, happen: (id) => happen(id, state.ship), mines, escort: () => escort, eclipse: () => eclipse && { ...eclipse, k: eclipseK, key: key.intensity }, remover: () => remover, removerView, ram: (gap = 6, kind = 'tie') => {
       // a TIE (or `kind`) put `gap` dead ahead at your height, coming at you, for checking a ram from a browser
       const s = state.ship;
       if (!s || !hunters) return null;
@@ -6150,6 +6224,7 @@ export async function create(canvas, ctx) {
       setLoadout(next.loadout);
       setTune(next.tune);
       setCores(next.tiers);
+      showPod();
       setSkills(next.skillFx, next.powerPicks);
       setNet(next.net);
       // the page's pick, only when it changes. The router moves the address
@@ -6428,6 +6503,8 @@ export async function create(canvas, ctx) {
       burst.dispose();
       traffic?.dispose();
       engines.dispose();
+      podMark.geometry.dispose();
+      podMark.material.dispose();
       for (const f of flares) f.dispose();
       disposeTree(scene);
       post.dispose();
