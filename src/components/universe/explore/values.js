@@ -1,5 +1,6 @@
 // What a find is worth to the data bank: its kind's worth × how far from the
-// Core it is (1 + 0.15 a sector, to 5.5 at 30) × (1 + the region's richness).
+// Core it is (1 + 0.08 a sector, to 3.4 at 30: the spec's 0.15 paid exploring
+// far out several times anything else, pacing.test.js) × (1 + the region's richness).
 // Pure.
 //
 // WORTH: { [kind]: credits }; SURVEYED: the systems' worth a sector's survey pays
@@ -34,7 +35,7 @@ export const WORTH = Object.freeze({
 });
 export const SURVEYED = 10; // (systems' worth)
 
-const distanceK = (d) => 1 + 0.15 * Math.min(30, Math.max(0, Number(d) || 0));
+const distanceK = (d) => 1 + 0.08 * Math.min(30, Math.max(0, Number(d) || 0));
 export function worthOf(kind, d = 0, richness = 0) {
   const w = WORTH[kind];
   if (!w) return 0;
