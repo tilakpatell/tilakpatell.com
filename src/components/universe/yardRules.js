@@ -81,18 +81,20 @@ export function pasteDraft(draft, code, { unlocked = [], economy = null } = {}) 
 // don't cover is short (an issue of its own). ok: no issues.
 // A part there to stage: open as ever (no achievement, or it's earned), bought,
 // or for sale at the pilot's level (catalog.js's PART_LEVEL), its price the
-// shop's. lockOf says what a part that isn't needs: the level, or the
-// achievement that gives it free.
+// shop's. lockHint says what a part that isn't needs, as a bare sentence (the
+// shipyard's card says "Locked." before it): the level, or the achievement that
+// gives it free. lockOf is the bill's issue text, the same said in full.
 export function partOpen(p, unlocked = [], economy = null) {
   if (isOpen(p, unlocked, economy ? (k) => economy.owns(k) : null)) return true;
   const item = p ? itemFor('part', p.slot, p.id) : null;
   return Boolean(economy && item) && !economy.canBuy(item).why?.startsWith('locked:');
 }
 const lower = (s) => (s ? s[0].toLowerCase() + s.slice(1) : s);
-export function lockOf(p, item) {
-  if (p?.achievement && item?.needs?.level) return `Locked. ${needText(item.needs)}, or ${lower(p.hint ?? 'earn its achievement')} for it free.`;
-  return `Locked. ${p?.hint ?? needText(item?.needs)}.`;
+export function lockHint(p, item) {
+  if (p?.achievement && item?.needs?.level) return `${needText(item.needs)}, or ${lower(p.hint ?? 'earn its achievement')} for it free`;
+  return p?.hint ?? needText(item?.needs);
 }
+export const lockOf = (p, item) => `Locked. ${lockHint(p, item)}.`;
 
 export function check(draft, { kind, unlocked = [], economy = null } = {}) {
   const { loadout, build } = draft;
