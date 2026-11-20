@@ -7,7 +7,9 @@
 // sector 0 and every 3 × 3 × 3 block past it a region kind of its own.
 // Pure (no React, DOM or three.js).
 //
-// AREAS: { [id]: { name, kind, specialties, wants, rares } }; REGION_KINDS
+// AREAS: { [id]: { name, kind, specialties, wants, rares } }, keyed by the layout
+//   session's ids (neighbourhoods.js's: 'heroes', 'oldroads', 'earthside', 'stage',
+//   'arcade', 'rift', 'maelstrom'; the pocket 'curve'); REGION_KINDS
 // distanceOf([sx, sy, sz]) → sectors from the Core (Chebyshev)
 // setRegions(fn | null): fn([sx, sy, sz]) → { kind, id, name, danger, richness } | null
 // areaOf(sector) → { id, kind, name, danger, richness, d } (an id AREAS knows)
@@ -24,9 +26,9 @@ const area = (name, kind, specialties = [], wants = [], rares = []) => Object.fr
 export const AREAS = Object.freeze({
   core: area('The Core', 'core', BASICS, []),
   heroes: area('Hero Reach', 'neighbourhood', ['vibranium', 'energon'], ['medicine', 'alloys']),
-  fantasy: area('The Old Roads', 'neighbourhood', ['mithril', 'herbs'], ['electronics', 'luxuries']),
-  earth: area('Earthside', 'neighbourhood', ['paper', 'rum', 'pollos'], ['fuelcells', 'exotic', 'voidcrystal', 'relics', 'silk']),
-  music: area('Music', 'neighbourhood', ['vinyl', 'rigs'], ['electronics']),
+  oldroads: area('The Old Roads', 'neighbourhood', ['mithril', 'herbs'], ['electronics', 'luxuries']),
+  earthside: area('Earthside', 'neighbourhood', ['paper', 'rum', 'pollos'], ['fuelcells', 'exotic', 'voidcrystal', 'relics', 'silk']),
+  stage: area('The Stage', 'neighbourhood', ['vinyl', 'rigs'], ['electronics']),
   arcade: area('The Arcade Drift', 'neighbourhood', ['arcade'], ['electronics', 'components']),
   maelstrom: area('The Maelstrom’s mouth', 'portal', ['imperialscrap', 'spice', 'kyber', 'bacta', 'tibanna'], []),
   rift: area('The Curve Rift', 'portal', ['portalfluid', 'plumbus'], ['megaseeds']),

@@ -16,6 +16,10 @@ The owner’s answers, in order:
 6. Upgrades are bought for each ship separately; credits are shared.
 7. Goods follow the layout session’s neighbourhoods, regions and pocket universes.
 
+## Since written
+
+The pacing test (lane 4, `ships/pacing.test.js`) moved three numbers, each a finding: Mk III to V cost 1,600, 8,000 and 25,000 (not 2,000, 6,000 and 15,000); a find’s distance bonus is 1 + 0.08 a sector, 3.4 at 30 (not 0.15, 5.5); the haul is 2 at 10 sectors (not 3). The scan’s key is Z (C opens the Hangar’s crew). Exploration data is sold in fives, five credits and one xp a unit, so every `EARN` row stays whole. The plans are `plans/2026-11-18-ships-lane-1.md`, `plans/2026-11-18-ships-lane-2-market.md`, `plans/2026-11-19-ships-lane-3-explore.md` and `plans/2026-11-19-ships-lane-4-signatures.md` (its “balance pass”).
+
 ## What there is today
 
 - `outfit.js`: eight part slots (boosters, thrusters, guns, shields, fins, secondary, ordnance, paint), each part a share of +5 to +55 % on one number; `ship.js`’s `TUNE` holds the boost to 1.6 × at most. A plant (`PLANT`: X-wing 7, Falcon 9, cruiser 8, RV 5 MW) and mass limit a fit.
