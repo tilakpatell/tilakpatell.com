@@ -60,3 +60,39 @@ describe('the parts bolted on', () => {
     expect(fusion.muzzles[0][2]).toBeLessThan(0); // (out front: the nose is −z)
   });
 });
+
+describe('the tiers that show on the hull', () => {
+  const holder = (m, name) => m.group.children.find((c) => c.name === name) ?? null;
+  it('wears nothing for a tier under Mk III', () => {
+    for (const kind of SHIPS) {
+      const m = buildModules(kind, STOCK_LOADOUT, ENGINES[kind], { tiers: { hold: 2, scanner: 2 } });
+      expect(meshes(m.group)).toBe(0);
+      m.dispose();
+    }
+  });
+
+  it('wears cargo pods from the hold’s Mk III and a dish from the scanner’s, on every ship', () => {
+    for (const kind of SHIPS) {
+      const m = buildModules(kind, STOCK_LOADOUT, ENGINES[kind], { tiers: { hold: 3, scanner: 3 } });
+      expect(meshes(holder(m, 'cargo')), kind).toBe(2);
+      expect(meshes(holder(m, 'scanner')), kind).toBe(2);
+      m.dispose();
+    }
+  });
+
+  it('grows them at Mk V, and turns the dish as it flies', () => {
+    const size = (tier) => {
+      const m = buildModules('falcon', STOCK_LOADOUT, ENGINES.falcon, { tiers: { hold: tier, scanner: tier } });
+      const g = holder(m, 'cargo').children[0].geometry;
+      g.computeBoundingBox();
+      const dish = holder(m, 'scanner').children[1];
+      const before = dish.rotation.y;
+      m.update(0.5, {});
+      const turned = dish.rotation.y !== before;
+      m.dispose();
+      return { len: g.boundingBox.max.z - g.boundingBox.min.z, turned };
+    };
+    expect(size(5).len).toBeCloseTo(size(3).len * 1.4, 5);
+    expect(size(3).turned).toBe(true);
+  });
+});

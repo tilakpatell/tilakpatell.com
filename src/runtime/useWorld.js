@@ -168,9 +168,20 @@ export function useWorld(module, { props, enabled = true, onEvent = null, attemp
       adopt();
     } else {
       // (none, another module's, or ours made for something else: made afresh, the old one let go)
-      rt.mount(module, propsRef.current, el).then((shown) => {
+      const made = propsRef.current;
+      rt.mount(module, made, el).then((shown) => {
         if (shown && rt.current?.module === module) madeFor.set(rt.current.world, rebuild);
-        if (!dead) adopt();
+        if (dead) return;
+        adopt();
+        // (what the page's props became while the world was being made, a
+        // wallet that loaded meanwhile: given now, not on the page's next
+        // render, which a page standing still may never have)
+        const now = world.current;
+        if (now && !sameProps(made, propsRef.current)) {
+          given.current = { world: now, props: propsRef.current };
+          now.update?.(propsRef.current);
+          rt.invalidate();
+        }
       });
     }
     const ro =
