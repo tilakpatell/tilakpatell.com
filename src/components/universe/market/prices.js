@@ -17,7 +17,7 @@
 // haulOf(good, from, at), priceOf({ stationId, type, area, good, from, at, t,
 //   shock, yours }) → { sell, buy }
 
-import { hash64 } from '../../expanse/gen/seed';
+import { hash64 } from '../../expanse/shared/gen'; // (the Expanse's hash, by its face: worlds are islands)
 import { AREAS, distanceOf } from './areas';
 import { GOODS } from './goods';
 import { STATION_TYPES } from './stations';

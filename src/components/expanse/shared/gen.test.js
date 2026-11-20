@@ -26,7 +26,7 @@ import * as things from '../gen/things';
 // each its source's own. (A file apart from shared.test.js, which pins the
 // levels' face.)
 const GEN = [
-  'UNIVERSE', 'universeOf', 'fullSector', 'placeOf', 'placeIn', 'orbitAt', 'moonAt', 'bodiesAt', 'spaceTime',
+  'UNIVERSE', 'universeOf', 'hash64', 'fullSector', 'placeOf', 'placeIn', 'orbitAt', 'moonAt', 'bodiesAt', 'spaceTime',
   'systemReach', 'THING_BASE', 'THING_CELLS', 'THING_NEAR', 'THING_KINDS', 'SECTOR_EXTRAS', 'thingRow', 'WONDER_KINDS',
   'STATION_BASE', 'stationsOf', 'extentOf', 'KINDS', 'lookOf', 'traitsOf',
   'COMET_PERIOD', 'pathAt', 'pathSpeed', 'rowAt', 'tailOf', 'companionsOf', 'companionAt', 'NEBULA_SHOW', 'wormholeExit',
