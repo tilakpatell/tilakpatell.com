@@ -2,6 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { CHARACTERS } from './characters';
 import { FAMILIES, SLOT_JITTER, colourDistance, dominantOf, varietyOf } from './variety';
 import { SEEDED_EXPANSE, TYPE_LOOK } from './planetTables';
+import { SEEDED_DOMINANT } from '../../space/worldTables.js';
+import { fold as sharedFold } from '../../space/hash64.js';
+import { fold } from './fnl.js';
 import { randomSystems } from './fixtures/generated';
 
 const templateDominant = (type) => dominantOf(TYPE_LOOK[type].palette);
@@ -95,5 +98,15 @@ describe('varietyOf', () => {
   it('is plain data, to cross to a worker', () => {
     const v = varietyOf(systems[0][0]);
     expect(JSON.parse(JSON.stringify(v))).toEqual(v);
+  });
+});
+
+describe('the shared tables the universe reads (lib/space/worldTables.js)', () => {
+  it('hold each seeded type’s colour as its template wears it', () => {
+    for (const [type, at] of Object.entries(SEEDED_DOMINANT)) expect(dominantOf(TYPE_LOOK[type].palette, TYPE_LOOK[type].water), type).toEqual(at);
+    for (const [, type] of SEEDED_EXPANSE) expect(SEEDED_DOMINANT[type], type).toBeTruthy();
+  });
+  it('fold a seed as the noise does', () => {
+    for (const s of [0n, 123456789012345n, -5n, 77]) expect(sharedFold(s)).toBe(fold(s));
   });
 });

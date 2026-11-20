@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { FADE, FAR, beyondFade, discPx, levelWeights, realAt, speckBright } from './levels';
+import { FADE, FAR, PLANET_SEEN, beyondFade, discPx, levelWeights, planetShown, realAt, speckBright } from './levels';
 
 const SCREEN = { fov: 34, height: 1080 }; // (flight.js's field of view, a tall screen)
 
@@ -59,5 +59,20 @@ describe('the levels', () => {
     expect(beyondFade(1000, 1000)).toBe(0);
     expect(beyondFade(800, 1000)).toBe(1);
     expect(beyondFade(900, 1000)).toBeCloseTo(0.5, 9);
+  });
+});
+
+describe('a planet seen only near its star', () => {
+  it('shows whole within three of its system’s reaches, and is gone by five', () => {
+    expect(planetShown(2000, 1000)).toBe(1);
+    expect(planetShown(3000, 1000)).toBe(1);
+    const mid = planetShown(4000, 1000);
+    expect(mid).toBeGreaterThan(0);
+    expect(mid).toBeLessThan(1);
+    expect(planetShown(5000, 1000)).toBe(0);
+    expect(planetShown(40000, 1000)).toBe(0);
+  });
+  it('never hides one nearer than PLANET_SEEN.least, however small its system', () => {
+    expect(planetShown(PLANET_SEEN.least, 10)).toBe(1);
   });
 });
