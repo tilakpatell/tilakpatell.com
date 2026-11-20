@@ -9,6 +9,7 @@ import { HangarPage, TABS as HANGAR_TABS, TAB_LABEL, tabForKey, wantsKey } from 
 import { useSkills } from '../../hangar/skills/useSkills';
 import { headOf } from '../../hangar/hangarHead';
 import { shipSheet } from '../ships/sheet';
+import { coreOf } from '../ships/tiers';
 import Face from '../Faces';
 import { MENU_KEYS, MENU_TABS, dressFor } from './dress';
 import ShipTab from './ShipTab';
@@ -45,7 +46,7 @@ const typingIn = (el) => el instanceof HTMLElement && (el.isContentEditable || (
 
 export default function FlightMenu({ open, tab, onTab, onOpen, onClose, enabled = true, ship, shipName = '', loadout = null, build = null, picks = null, carry = null, fx = null, route, where = 'universe', map = null, controls = null, onControls = null, page = 'overview', onPage, hangarTab = 'shipyard', onHangarTab, live = null, lastBuild = null, saves = null, dropped = null, onApply, onSell, onShip = null, online = null, onOnline = null, hold = null }) {
   const crew = crewById(ship);
-  const { economy, version } = useEconomy({ ask: open });
+  const { economy, market, record, version } = useEconomy({ ask: open });
   const { unlocked } = useAchievements();
   const { points } = useSkills();
   const head = headOf(economy?.record?.() ?? null, points);
@@ -53,7 +54,9 @@ export default function FlightMenu({ open, tab, onTab, onOpen, onClose, enabled 
   const yard = useYard({ live, kind: ship, unlocked, economy, version, onApply });
   const [slot, setSlot] = useState(null); // (the shipyard's category open: null, its front door)
   // the ship as words and numbers (the ships session's read-out, ships/sheet.js): its systems' tiers for the Ship tab, the hold for the Cargo
-  const sheet = open && crew ? shipSheet({ crew: ship, build, economy, hold }) : null;
+  // (the hold's goods, the market's: market.hold(crew, room), the room the ship's hold tier's)
+  const goods = open && crew && market && economy ? market.hold(ship, coreOf(economy, ship).hold).goods() : null;
+  const sheet = open && crew ? shipSheet({ crew: ship, build, economy, hold: goods ? { goods } : hold, record }) : null;
   const pilots = online?.on ? (online.room?.peers ?? []).filter((x) => !x.blocked).length + 1 : null; // (as the corner counts them: you too)
   const away = () => onClose?.();
   // a page of the Ship tab; a Hangar page is the one H opens next time
@@ -112,7 +115,7 @@ export default function FlightMenu({ open, tab, onTab, onOpen, onClose, enabled 
   );
   const body = {
     ship: shipTab,
-    cargo: <CargoTab hold={sheet?.hold ?? null} />,
+    cargo: <CargoTab hold={sheet?.hold ?? null} explored={sheet?.explored ?? null} data={sheet?.data ?? 0} />,
     map,
     settings: <SettingsTab controls={controls} onControls={onControls} online={online} onOnline={onOnline} onLeave={away} />,
     help: <HelpTab route={route} onLeave={away} />,

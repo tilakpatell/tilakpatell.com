@@ -164,7 +164,9 @@ export default function Universe({ ask = false }) {
   // the quiet HUD (spec: docs/superpowers/specs/2026-11-18-quiet-hud-design.md): with a ship flying on the
   // drawn map, the side panel, the site's nav and the corner's tools go, and the flight menu (Esc) has them
   const quiet = Boolean(ship) && mapState === 'live';
-  const tuckedNow = (tucked || quiet) && !siteTour;
+  // (docked at a station, the side panel comes back with the place's card: its market, its hangar; it goes again as the ship leaves)
+  const panelNow = !quiet || siteTour || Boolean(docked);
+  const tuckedNow = (tucked || !panelNow) && !siteTour;
   const [controls, setControls] = useControls(); // (the flight settings: the scene's, and the menu's Settings tab)
   // the menu: over the flying, not over the nav map, the Hangar, the phone or the front door's choice
   const menuOk = quiet && !leaving && !charting && !phone && !yard && !asking;
@@ -704,7 +706,7 @@ export default function Universe({ ask = false }) {
           onOnline={() => window.dispatchEvent(new CustomEvent('tp:pilot'))}
         />
       )}
-      {(!quiet || siteTour) && panelOf(false)}
+      {panelNow && panelOf(false)}
       {charting && !leaving && (
         <Suspense fallback={null}>
           <NavMap

@@ -4,14 +4,15 @@ import { headOf } from '../../hangar/hangarHead';
 // The flight menu's Cargo tab: the money and the hold. The credits (one purse
 // on both maps and in every world: economy.js), the level and how far to the
 // next, what's been earned and spent and what for, and the hold, a slot a
-// thing carried. The hold's goods come with the market (the ships, economy
-// and exploration session's shipSheet: `hold` is its { used, room, goods });
-// until then it's empty, and says so.
+// good carried. The hold, the charts and the unsold data are the ships,
+// economy and exploration session's shipSheet's: `hold` is its
+// { used, room, goods } (the market's goods, { id, name, n }), `explored` its
+// { sectors, systems, surveyed, furthest } and `data` the scans not sold yet.
 
 const HOLD = 12; // (the slots drawn while there's no sheet to say the room)
 const n = (v) => (Number.isFinite(v) ? Math.round(v).toLocaleString('en-GB') : '0');
 
-export default function CargoTab({ hold = null }) {
+export default function CargoTab({ hold = null, explored = null, data = 0 }) {
   const { economy } = useEconomy();
   const r = economy?.record?.() ?? null;
   const head = headOf(r);
@@ -25,6 +26,8 @@ export default function CargoTab({ hold = null }) {
     ['Rescues', n(r?.rescues)],
     ['Battles won', n(r?.wins)],
     ['Jobs done', n(r?.quests)],
+    ['Systems charted', n(explored?.systems)],
+    ['Data unsold', n(data)],
   ];
   return (
     <div className="fm-cargo">
@@ -53,7 +56,7 @@ export default function CargoTab({ hold = null }) {
         </div>
         <div className="fm-hold-grid">
           {goods.map((g) => (
-            <div key={g.id} className="fm-slot" title={`${g.name}: ${g.n}, worth ${n(g.value)} credits`}>
+            <div key={g.id} className="fm-slot" title={Number.isFinite(g.value) ? `${g.name}: ${g.n}, worth ${n(g.value)} credits` : `${g.name}: ${g.n}`}>
               <span className="fm-slot-key">×{g.n}</span>
               <span className="fm-slot-name">{g.name}</span>
             </div>
