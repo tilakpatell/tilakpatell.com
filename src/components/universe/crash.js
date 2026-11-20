@@ -204,9 +204,10 @@ export function createCrash(parent) {
     },
 
     // info: { point, kind (the ship), heading }
-    arrive({ point, kind, heading = 0 }) {
+    arrive({ point, kind, heading = 0, size = 1 }) {
       fx.arrive = clock;
       fx.kind = kind;
+      fx.size = Number.isFinite(size) && size > 0 ? size : 1; // (a jump out of a better hyperdrive comes out of a wider ring: ships/looks.js's jumpSize)
       if (kind === 'cruiser') {
         portal.position.copy(point);
         portal.visible = true;
@@ -217,7 +218,7 @@ export function createCrash(parent) {
         flash.position.copy(point);
         fx.flashAt = clock;
         fx.flashColor.setRGB(1.6, 2.3, 4);
-        fx.flashSize = 0.32;
+        fx.flashSize = 0.32 * fx.size;
         flash.visible = true;
       }
     },
@@ -292,7 +293,7 @@ export function createCrash(parent) {
         const open = a < 0.45 ? a / 0.45 : a < 1.1 ? 1 : Math.max(0, 1 - (a - 1.1) / 0.4);
         portalMat.uniforms.uOpen.value = open;
         portalMat.uniforms.uT.value = clock;
-        portal.scale.setScalar(0.5 * (0.3 + 0.7 * open));
+        portal.scale.setScalar(0.5 * (0.3 + 0.7 * open) * (fx.size ?? 1));
         if (camera) face(portal, camera);
         if (a > 1.5) portal.visible = false;
         busy = true;
@@ -301,7 +302,7 @@ export function createCrash(parent) {
       if (ring.visible) {
         const a = clock - fx.arrive;
         const k = Math.min(1, a / 0.6);
-        ring.scale.setScalar(0.04 + k * 0.26);
+        ring.scale.setScalar((0.04 + k * 0.26) * (fx.size ?? 1));
         ringMat.color.setRGB(2.2, 3, 5).multiplyScalar((1 - k) ** 3);
         if (a > 0.6) ring.visible = false;
         busy = true;

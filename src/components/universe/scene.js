@@ -132,7 +132,7 @@ import { createImpacts, impactGroups } from '../../lib/impact';
 import { debugOn, debugPanel } from '../../lib/debugPanel';
 import { LEAN, OPEN_SPACE, PLANETS, SHIP, SOLIDS, autopilot, crashLoud, forward, headingTo, holdReach, isGoal, isPlace, noseOf, orbiting, parkAt, pulsedSpace, spawn, startAt, step } from './ship';
 import { coreStats } from './ships/profiles';
-import { engineList } from './ships/looks';
+import { SHOWS_FROM, engineList, jumpSize } from './ships/looks';
 import { areaOf } from './market/areas';
 import { EXPLORE, HOLD, SIGNS } from './words';
 import { GOODS } from './market/goods';
@@ -2117,14 +2117,17 @@ export async function create(canvas, ctx) {
   const setCores = (raw) => {
     const next = raw && typeof raw === 'object' ? raw : {};
     if (tiersKey(next) === tiersKey(state.tiers)) return;
+    const showed = (t) => `${(t.hold ?? 1) >= SHOWS_FROM.hold ? t.hold : 0}|${(t.scanner ?? 1) >= SHOWS_FROM.scanner ? t.scanner : 0}`;
+    const reshow = showed(next) !== showed(state.tiers);
     state.tiers = next;
-    restat();
+    if (reshow) refit(); // (a cargo pod or a dish to put on, or to grow)
+    else restat();
     tierLook();
   };
   const refit = () => {
     restat();
     if (!state.kind || !state.model) return setBoosterPlumes();
-    const mods = state.model.outfit(state.loadout);
+    const mods = state.model.outfit(state.loadout, state.tiers); // (and the tiers that show: ships/looks.js)
     state.barrel = 0;
     setBoosterPlumes(mods.nozzles, mods.boosterColor);
   };
@@ -4405,7 +4408,7 @@ export async function create(canvas, ctx) {
       npcs?.clear();
       state.interdicted = false;
       state.safeUntil = state.clock + SAFE;
-      crashFx.arrive({ point: new THREE.Vector3(park.x, park.y, park.z), kind: state.kind, heading: park.heading });
+      crashFx.arrive({ point: new THREE.Vector3(park.x, park.y, park.z), kind: state.kind, heading: park.heading, size: jumpSize(state.tiers.hyperdrive ?? 1) });
       emit({ type: 'jumped', id: j.id });
     }
     if (!state.jump && pieces.riftAt && pieces.riftInside(state.ship)) riftThrough();

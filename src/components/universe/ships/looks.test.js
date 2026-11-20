@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { HOT, engineLook, engineList } from './looks';
+import { HOT, SHOWS_FROM, engineList, engineLook, jumpSize, partScale } from './looks';
 
 describe('the engines a tier shows', () => {
   it('leaves Mk I as it was', () => {
@@ -22,5 +22,16 @@ describe('the engines a tier shows', () => {
     const list = [{ at: [0, 0, 0], r: 0.03, colour: '#ffb060' }];
     expect(engineList(list, 1)).toBe(list);
     expect(engineList(list, 5)[0]).toEqual({ at: [0, 0, 0], r: 0.03 * 1.4, colour: engineLook(5, '#ffb060').colour });
+  });
+});
+
+describe('the parts a tier shows', () => {
+  it('wears cargo pods and a dish from Mk III, bigger at Mk V, and jumps out of a wider ring', () => {
+    expect(SHOWS_FROM).toEqual({ hold: 3, scanner: 3 });
+    expect(partScale(3)).toBe(1);
+    expect(partScale(5)).toBeCloseTo(1.4, 9);
+    expect(jumpSize(1)).toBe(1);
+    expect(jumpSize(5)).toBeCloseTo(1.6, 9);
+    expect(jumpSize('x')).toBe(1);
   });
 });
