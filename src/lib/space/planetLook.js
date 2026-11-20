@@ -78,7 +78,7 @@ const scale = (hex, k) => hexRgb(rgbOf(hex).map((v) => v * k));
 const air = (color, density, top, sunset, falloff = 3.5, glow = 0.8) => ({ color, top, falloff, density, glow, sunset });
 
 // the shader family a planet type is drawn by
-const SHADER = { forest: 'lush', ocean: 'lush', ice: 'ice', desert: 'desert', rock: 'desert', lava: 'lava', gas: 'gas', ringed: 'gas' };
+const SHADER = { forest: 'lush', ocean: 'lush', ice: 'ice', desert: 'desert', rock: 'moon', lava: 'lava', gas: 'gas', ringed: 'gas' };
 
 function gasLook(v, rnd, base) {
   const P = v.palette;
@@ -175,8 +175,8 @@ function desertLook(v, rnd, base, cloud, atmo, ch) {
     flags: craters > 0.4 ? ['CRATERS'] : [],
     pal: { sand: P.low, sand2: P.high, rock: P.rock, dark: P.deep, salt: turn(P.high, 0, -0.2, 0.2), crest: turn(P.high, 0, 0, 0.08) },
     p: { dunes: has('dunes'), rock: between(rnd, -0.1, 0.2), craters, salt: between(rnd, 0, 0.7), scars: 0, duneFreq: between(rnd, 28, 52), canyons: has('canyons'), mesas: has('mesas') },
-    // (a rock world's old look, a dusty moon's, had no air and no cloud: it keeps none, and draws as it did)
-    ...(v.family === 'rock' ? {} : { clouds: v.sky.clouds > 0.05 ? cloud(v.sky.clouds) : undefined, atmo }),
+    clouds: v.sky.clouds > 0.05 ? cloud(v.sky.clouds) : undefined,
+    atmo,
   };
 }
 
@@ -193,14 +193,21 @@ function iceLook(v, rnd, base, cloud, atmo, ch) {
   };
 }
 
-function moonLook(v, rnd, base) {
+// a moon, and a rock world (whose old look, a dusty moon's, was this family's, on its coarser
+// sphere: kept, so its triangles hold): craters, dark seas and cracks by its land's character
+function moonLook(v, rnd, base, ch = null) {
   const P = v.palette;
+  const k = ch?.kind;
   return {
     ...base,
     family: 'moon',
     bump: 0.03,
     pal: { base: mix(P.low, P.high, 0.5), dark: scale(P.low, 0.75), bright: turn(P.high, 0, -0.05, 0.08), crack: scale(P.rock, 0.7) },
-    p: { craters: between(rnd, 0.4, 1), maria: between(rnd, 0.1, 0.6), cracks: v.family === 'ice' ? between(rnd, 0.4, 1) : between(rnd, 0, 0.2) },
+    p: {
+      craters: k === 'craters' ? between(rnd, 0.8, 1.2) : between(rnd, 0.3, 0.9),
+      maria: k === 'mesas' || k === 'plateaus' ? between(rnd, 0.5, 0.9) : between(rnd, 0.1, 0.5),
+      cracks: v.family === 'ice' || k === 'canyons' || k === 'ridges' ? between(rnd, 0.4, 1) : between(rnd, 0, 0.2),
+    },
   };
 }
 
@@ -219,6 +226,7 @@ export function planetLook(row) {
   const ch = v.character ?? { kind: 'craters', sea: 0, peaks: 300, rough: 1 };
   let look;
   if (row.parent) look = moonLook(v, rnd, base);
+  else if (row.type === 'rock') look = moonLook(v, rnd, base, ch);
   else {
     const family = SHADER[row.type] ?? 'desert';
     if (family === 'gas') look = gasLook(v, rnd, base);
