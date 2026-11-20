@@ -13,6 +13,8 @@
 //   hazardDrain(level) → how many times an ion storm's drain the hazard is (0 for none)
 //   SURVEY_KEY, SURVEY_CAP; addSurvey(list, id) → the list with it last, once, the newest kept
 //   loadSurveys(store), saveSurveys(store, list): through a localStorage-like store, never throwing
+//   hazardOf(traits) → { id, level: 'warn' | 'danger', n } | null: for the HUD, a hazard's weight (n its 1…3)
+//   promptOf(traits, ledger, id) → { key: 'E', verb } | null: what E would do in its orbit now
 
 export const ORBIT = 3;
 export const LOW = 1.6;
@@ -54,4 +56,15 @@ export function saveSurveys(store, list) {
   } catch {
     /* (a private window: the log lives this visit) */
   }
+}
+
+// (for the HUD: a level 3 hazard is a danger, a lesser one a warning; pirates come as ships)
+export function hazardOf(traits) {
+  const h = traits?.hazard;
+  if (!h || h.id === 'pirates') return null;
+  return { id: h.id, level: h.level >= 3 ? 'danger' : 'warn', n: h.level };
+}
+export function promptOf(traits, ledger, id) {
+  const verb = traits ? verbAt(traits, ledger, id) : null;
+  return verb ? { key: 'E', verb } : null;
 }

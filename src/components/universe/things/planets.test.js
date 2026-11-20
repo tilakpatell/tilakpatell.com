@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { fullSector, orbitAt, UNIVERSE } from '../../expanse/shared/gen';
 import { planetTraits } from '../places/cards';
-import { SURVEY_KEY, addSurvey, loadSurveys, saveSurveys, surveyPay, verbAt } from '../../../lib/space/planetPlay.js';
+import { SURVEY_KEY, addSurvey, hazardOf, loadSurveys, promptOf, saveSurveys, surveyPay, verbAt } from '../../../lib/space/planetPlay.js';
 import { createLedger } from './rules';
 import { createThingPlay } from './index';
 
@@ -50,5 +50,20 @@ describe('playing a planet', () => {
     expect(loadSurveys(bad)).toEqual([]);
     expect(() => saveSurveys(bad, ['a'])).not.toThrow();
     expect(SURVEY_KEY).toBe('tp-surveys');
+  });
+});
+
+describe('what the HUD reads of a planet', () => {
+  it('a hazard as a warning or a danger, and pirates as none', () => {
+    expect(hazardOf({ hazard: { id: 'heat', level: 1 } })).toEqual({ id: 'heat', level: 'warn', n: 1 });
+    expect(hazardOf({ hazard: { id: 'heat', level: 3 } })).toEqual({ id: 'heat', level: 'danger', n: 3 });
+    expect(hazardOf({ hazard: { id: 'pirates', level: 2 } })).toBe(null);
+    expect(hazardOf({ hazard: null })).toBe(null);
+  });
+  it('the key and what it does now', () => {
+    const ledger = createLedger();
+    expect(promptOf({ tags: [] }, ledger, 'p')).toEqual({ key: 'E', verb: 'survey' });
+    ledger.pay('p:survey', 1, 1);
+    expect(promptOf({ tags: [] }, ledger, 'p')).toBe(null);
   });
 });

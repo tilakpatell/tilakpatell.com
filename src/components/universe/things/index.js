@@ -190,6 +190,8 @@ export function createThingPlay({ sectors, pay, say = () => {}, travelling = () 
       // (low over a planet with a hazard: the shields drain by how bad it is, and staying through
       // PLAY.brave.secs of it pays once)
       if (hazardAt) {
+        // (said once as you drop into it)
+        if (!braveFor) say(THINGS.hazard(hazardAt.name, hazardAt.hazard));
         const k = hazardDrain(hazardAt.hazard);
         const was = state.shield;
         if (state.shield > STORM.floor) state.shield = Math.max(STORM.floor, state.shield - STORM.drain * k * dt);
