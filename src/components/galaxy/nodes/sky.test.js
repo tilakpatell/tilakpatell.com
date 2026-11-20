@@ -38,7 +38,7 @@ const bakeOf = (sky) => {
 };
 
 describe('galaxy/nodes/sky, the twin of galaxy/sky', () => {
-  it('goes deep as the sky does: off unless asked, held to 0…1', () => {
+  it('goes deep as the sky does: off unless asked, held to 0…2', () => {
     const a = glsl.createSky();
     const n = nodes.createSky();
     const deep = (s) => s.group.children[0].material.uniforms.uDeep.value;

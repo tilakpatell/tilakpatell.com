@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { systemRows } from '../universe/shared/hangar';
+import { signatureLine, systemRows } from '../universe/shared/hangar';
 import { useEconomy } from '../universe/shared/wallet';
 
 // The Hangar's Systems: the ship's seven core systems, Mk I to Mk V, each
@@ -12,6 +12,7 @@ export default function SystemsTab({ ship, build = null }) {
   const { economy, version } = useEconomy();
   const [said, setSaid] = useState(null);
   // (the wallet's version says its credits or what it owns changed: read here, as useYard reads it)
+  const sign = useMemo(() => signatureLine(ship, build), [ship, build]);
   const rows = useMemo(() => (version >= 0 ? systemRows({ crew: ship, build, economy }) : []), [ship, build, economy, version]);
   const buy = (row) => {
     const r = economy?.checkout([row.item]);
@@ -20,6 +21,8 @@ export default function SystemsTab({ ship, build = null }) {
   return (
     <div className="hangar-page hangar-systems">
       <section aria-label="Core systems">
+        <h3>{sign.role}</h3>
+        <p className="hangar-note">{sign.line}</p>
         <h3>Core systems</h3>
         <p className="hangar-note">Each tier is this ship’s own. Mk IV and Mk V need a rare found far from the Core.</p>
         <ul className="hangar-lines">

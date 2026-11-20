@@ -42,8 +42,11 @@ describe('planetLook', () => {
     for (const l of looks) expect(FLAG_SETS[l.family].map(String)).toContain(String(l.flags));
   });
 
-  it('keeps the air each type had (a rock world none, every other one some), so a planet draws the calls it drew', () => {
-    for (let i = 0; i < rows.length; i++) expect(Boolean(looks[i].atmo), rows[i].type).toBe(rows[i].type !== 'rock');
+  it('keeps the air and the sphere each type had (a rock world a moon’s, with none), so a planet draws the calls and triangles it drew', () => {
+    for (let i = 0; i < rows.length; i++) {
+      expect(Boolean(looks[i].atmo), rows[i].type).toBe(rows[i].type !== 'rock');
+      expect(looks[i].family === 'moon', rows[i].type).toBe(rows[i].type === 'rock');
+    }
   });
 
   it('makes 10,000 planets 10,000 different looks', () => {

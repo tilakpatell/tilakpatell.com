@@ -57,3 +57,14 @@ describe('the market’s saves', () => {
     expect(m.salvaged('no')).toBe(false);
   });
 });
+
+describe('the cargo pod', () => {
+  it('keeps one pod across a reload, and forgets an empty one', () => {
+    const local = memory();
+    const a = open(local);
+    a.setPod({ crew: 'rv', at: [1, 2, 3], sector: [0, 0, 0], t: 5, lots: [{ good: 'iron', n: 4, from: here }] });
+    expect(open(local).pod()).toMatchObject({ crew: 'rv', at: [1, 2, 3], lots: [{ good: 'iron', n: 4 }] });
+    open(local).setPod({ crew: 'rv', at: [1, 2, 3], lots: [] });
+    expect(open(local).pod()).toBe(null);
+  });
+});

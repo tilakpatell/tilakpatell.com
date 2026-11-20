@@ -73,7 +73,7 @@ describe('the nearest systems, built whole', () => {
     // (each planet its own look, planetLook.js's, in its type's shader family; each moon a moon's)
     expect(made.filter((b) => !b.opts.small).map((b) => [b.look.name, b.look.family])).toEqual([
       [A.planets[0].id.toLowerCase(), 'gas'],
-      [A.planets[1].id.toLowerCase(), 'desert'],
+      [A.planets[1].id.toLowerCase(), 'moon'], // (a rock world: a moon's family, as its old look was)
     ]);
     expect(made.filter((b) => b.opts.small).every((b) => b.look.family === 'moon')).toBe(true);
     expect(named(group, 'ring:')).toHaveLength(A.planets.filter((p) => p.ringBand).length);

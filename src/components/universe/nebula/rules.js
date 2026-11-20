@@ -42,8 +42,19 @@ export const FORMS = Object.freeze({
   cloud: Object.freeze({ inner: -1, peak: 0.35, outer: 1, flat: 0.55, core: 1 }), // (a cloud, fullest at its heart)
   shell: Object.freeze({ inner: 0.45, peak: 0.72, outer: 0.98, flat: 0.8, core: 1 }), // (a remnant: hollow, brightest at its rim)
   nursery: Object.freeze({ inner: -1, peak: 0.2, outer: 1, flat: 0.6, core: 2.2 }), // (a nursery: a hot heart where its stars are)
+  // (a vortex: the Maelstrom round the Star Wars gate, a flat disc of gas
+  // wound into arms that turn, faster in, about a white-hot eye: shaders.js's
+  // nebVortex, the one form that turns)
+  vortex: Object.freeze({ inner: 0.05, peak: 0.15, outer: 1, flat: 0.3, core: 1.8 }), // (its eye clear: the gate in it)
+  // (a rift: the Central Finite Curve's whorl round the Rick portal, a vortex
+  // as the show draws its portals: three tight arms, lopsided, its edge
+  // wobbling and lit, and strewn with the realities it walls in, every colour)
+  rift: Object.freeze({ inner: 0.05, peak: 0.15, outer: 1, flat: 0.3, core: 1.8 }),
 });
-export const FORM_INDEX = Object.freeze({ cloud: 0, shell: 1, nursery: 2 });
+export const FORM_INDEX = Object.freeze({ cloud: 0, shell: 1, nursery: 2, vortex: 3, rift: 4 });
+// the vortex's arms: how many, how tightly wound (radians a factor of e
+// out), and how fast its eye turns (radians a second; slower by 1 / radius out)
+export const VORTEX = Object.freeze({ arms: 2, wind: 2.6, spin: 0.05 });
 
 const finite = (v) => typeof v === 'number' && Number.isFinite(v);
 

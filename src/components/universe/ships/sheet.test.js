@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createEconomy } from '../economy';
 import { SYSTEMS } from './profiles';
-import { LIVE, shipSheet, systemRows } from './sheet';
+import { LIVE, shipSheet, signatureLine, systemRows } from './sheet';
 import { tierItem } from './tiers';
 
 // a wallet in memory with this many credits (economy.js's, no saves)
@@ -16,7 +16,7 @@ describe('the Systems tab’s rows', () => {
   it('lists the systems a tier does something for, at Mk I, each with its next tier for sale', () => {
     const rows = systemRows({ crew: 'falcon', economy: wallet(600) });
     expect(rows.map((r) => r.id)).toEqual(SYSTEMS.filter((s) => LIVE.includes(s)));
-    expect(LIVE).toEqual(['engines', 'pulse', 'hyperdrive', 'shields', 'hold', 'reactor']);
+    expect(LIVE).toEqual(['engines', 'pulse', 'hyperdrive', 'shields', 'scanner', 'hold', 'reactor']);
     const pulse = rows.find((r) => r.id === 'pulse');
     expect(pulse).toMatchObject({ label: 'Pulse drive', tier: 1, mk: 'Mk I', value: '330 a second', nextValue: '462 a second' });
     expect(pulse.item.key).toBe('tier:falcon:pulse:2');
@@ -26,10 +26,11 @@ describe('the Systems tab’s rows', () => {
   it('says each system’s number in words a pilot reads', () => {
     const rows = Object.fromEntries(systemRows({ crew: 'falcon', economy: null }).map((r) => [r.id, r]));
     expect(rows.engines.value).toBe('×1.00');
-    expect(rows.hyperdrive.value).toBe('a jump every 4.5 s');
-    expect(rows.hyperdrive.nextValue).toBe('a jump every 4.1 s');
+    expect(rows.hyperdrive.value).toBe('3 sectors, every 4.5 s');
+    expect(rows.hyperdrive.nextValue).toBe('6 sectors, every 4.1 s');
     expect(rows.shields.value).toBe('×1.10');
-    expect(rows.scanner).toBe(undefined); // (with the exploring)
+    expect(rows.scanner.value).toBe('10,000 out');
+    expect(rows.scanner.nextValue).toBe('25,000 out');
     expect(rows.hold.value).toBe('12 units');
     expect(rows.hold.nextValue).toBe('19 units');
     expect(rows.reactor.value).toBe('9 MW');
@@ -67,5 +68,21 @@ describe('the ship’s read-out', () => {
 
   it('reads a garage build as neutral', () => {
     expect(shipSheet({ crew: 'falcon', build: { hull: 'dart' }, economy: null })).toMatchObject({ role: 'Garage build', signature: null, credits: 0 });
+  });
+});
+
+describe('the read-out of an explorer', () => {
+  it('reads the record, or its read-out', () => {
+    const counts = { sectors: 4, systems: 11, surveyed: 1, furthest: 3, data: 120 };
+    expect(shipSheet({ crew: 'cruiser', economy: null, record: { record: () => counts } })).toMatchObject({ data: 120, explored: { sectors: 4, systems: 11, surveyed: 1, furthest: 3 } });
+    expect(shipSheet({ crew: 'cruiser', economy: null, record: counts }).data).toBe(120);
+  });
+});
+
+describe('the Systems tab’s head', () => {
+  it('names the ship’s role and its signature', () => {
+    expect(signatureLine('falcon')).toMatchObject({ role: 'Smuggler and runner' });
+    expect(signatureLine('falcon').line).toMatch(/compartments/);
+    expect(signatureLine('falcon', { hull: 'dart' })).toEqual({ role: 'Garage build', line: 'A garage build: no signature of its own.' });
   });
 });
