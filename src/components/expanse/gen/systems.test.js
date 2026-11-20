@@ -141,3 +141,14 @@ describe("systemReach", () => {
     }
   });
 });
+
+describe("the roster's seeded planets", () => {
+  it("keep their moons as they were: none added, none mined", () => {
+    const sector = addBodies(makeSector(UNIVERSE, 1, 0));
+    for (const s of sector.systems) for (const p of s.planets) {
+      if (!["e:1,0:0:0", "e:1,0:0:1", "e:1,0:2:0"].includes(p.id.toLowerCase())) continue;
+      expect(p.moonList).toHaveLength(p.moons);
+      expect(p.moonList.some((m) => m.mined)).toBe(false);
+    }
+  });
+});

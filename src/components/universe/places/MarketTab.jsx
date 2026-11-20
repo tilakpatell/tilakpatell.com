@@ -9,10 +9,11 @@ import { MARKET } from '../words';
 // the crew's hold. A unit at a time, or all of a good at once; each sale
 // takes a little off the next one there (market/prices.js), and the prices
 // drift with the hours. The rules are market/trade.js's.
-export default function MarketTab({ dest, crew }) {
+export default function MarketTab({ dest = null, station: given = null, crew }) {
   const { economy, market, version } = useEconomy();
   const [said, setSaid] = useState(null);
-  const station = useMemo(() => stationFor(dest), [dest]);
+  // (a generated station's trade from its place; a hand-made place's handed in: trade.js's placeMarket)
+  const station = useMemo(() => given ?? stationFor(dest), [given, dest]);
   const room = useMemo(() => (version >= 0 && crew ? coreOf(economy, crew).hold : 0), [economy, crew, version]);
   const rows = useMemo(() => (version >= 0 && market && crew ? boardOf({ market, economy, station, crew, room, t: Date.now() }) : []), [market, economy, station, crew, room, version]);
   if (!market || !economy || !crew) return <p className="mt-4 text-sm text-muted">{MARKET.opening}</p>;
@@ -34,7 +35,7 @@ export default function MarketTab({ dest, crew }) {
     <section className="universe-market mt-5" aria-label={MARKET.title}>
       <div className="universe-market-head">
         <h3>{MARKET.title}</h3>
-        <span>{MARKET.type(STATION_TYPES[station.type].name)}</span>
+        <span>{station.label ?? MARKET.type(STATION_TYPES[station.type].name)}</span>
         <span>{MARKET.hold(hold.used, hold.room)}</span>
       </div>
       <ul className="universe-market-rows">

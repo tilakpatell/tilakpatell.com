@@ -11,11 +11,17 @@
 // buyGood({ market, economy, station, crew, room, good, n, t }) → { ok, why, n, paid }
 // sellGood({ market, economy, station, crew, room, good, n, t }) → { ok, why, n, got }
 // jettison({ market, crew, room, good, n }) → the units dumped
+// PLACE_MARKETS, placeMarket(id) → the trade of a hand-made place that keeps a
+//   market (the Core's exchange on the Home station, the smugglers' posts at the
+//   Maelstrom's gate and the Curve Rift's portal, the Citadel's market in the
+//   Curve), or null; its sector is where the place is (ship.js's goalAt)
 
 import { areaOf } from './areas';
 import { GOODS } from './goods';
 import { priceOf } from './prices';
 import { stationTypeOf, tradesOf } from './stations';
+import { goalAt } from '../ship';
+import { sectorAt } from '../../../lib/space/address.js';
 
 export function stationFor(dest) {
   const sector = Array.isArray(dest?.cube) ? dest.cube : [0, 0, 0];
@@ -82,3 +88,18 @@ export function sellGood({ market, economy, station, crew, room, good, n = 1, t 
 }
 
 export const jettison = ({ market, crew, room, good, n = 1 }) => market?.hold(crew, room).remove(good, Math.floor(n)).reduce((k, l) => k + l.n, 0) ?? 0;
+
+// (the layout session's place ids; each market's area one of AREAS')
+export const PLACE_MARKETS = Object.freeze({
+  home: { area: 'core', type: 'industry', pocket: null, label: 'The Core’s exchange' },
+  starwars: { area: 'maelstrom', type: 'frontier', pocket: null, label: 'Smugglers’ post' },
+  rmportal: { area: 'rift', type: 'frontier', pocket: null, label: 'Smugglers’ post' },
+  citadel: { area: 'curve', type: 'research', pocket: 'curve', label: 'The Citadel’s market' },
+});
+export function placeMarket(id) {
+  const m = typeof id === 'string' && Object.hasOwn(PLACE_MARKETS, id) ? PLACE_MARKETS[id] : null;
+  if (!m) return null;
+  const at = goalAt(id)?.at;
+  const sector = id === 'home' || !at ? [0, 0, 0] : sectorAt(at[0], at[1] ?? 0, at[2]);
+  return { stationId: id, label: m.label, sector, pocket: m.pocket, area: { ...areaOf(sector), id: m.area, kind: m.area === 'core' ? 'core' : m.pocket ? 'pocket' : 'portal' }, type: m.type };
+}
