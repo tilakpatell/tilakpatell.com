@@ -15,7 +15,9 @@
 
 import { MAX_TIER, SYSTEMS, SYSTEM_LABEL, coreStats } from './profiles';
 
-export const TIER_PRICE = Object.freeze([0, 0, 600, 2000, 6000, 15000]);
+// (the spec's 2,000, 6,000 and 15,000 for Mk III to V, moved by its pacing test,
+// ships/pacing.test.js: every system to Mk III took 2.4 hours, the first Mk V under 4)
+export const TIER_PRICE = Object.freeze([0, 0, 600, 1600, 8000, 25000]);
 export const MK = Object.freeze(['', 'Mk I', 'Mk II', 'Mk III', 'Mk IV', 'Mk V']);
 // (Mk IV takes two of the rare, found 10 or more sectors out; Mk V four of its pure grade, 25 or more)
 export const RARE_OF = Object.freeze({

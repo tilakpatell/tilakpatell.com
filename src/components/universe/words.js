@@ -85,6 +85,27 @@ export const THINGS = {
   thrown: (key) => `Through the wormhole. You’re in ${key}, a long way from where you were.`,
 };
 
+// a long jump into generated space, in hops (explore/route.js): the HUD's note
+export const HOPS = {
+  going: (k, n, name) => `Hop ${k} of ${n}${name ? ` · ${name}` : ''}: past the hyperdrive’s range, it goes in hops.`,
+  last: (k, n) => `Hop ${k} of ${n}: the last.`,
+};
+// the scan, charting and the data bank (explore/): the HUD's notes
+export const EXPLORE = {
+  charted: (id, n) => `Sector charted · ${id} · +${n} data`,
+  scanned: ({ systems, things, surveyed, paid }) =>
+    paid ? `Scanned ${systems} system${systems === 1 ? '' : 's'} and ${things} thing${things === 1 ? '' : 's'}${surveyed ? ' · sector surveyed' : ''} · +${paid} data` : 'Scanned: nothing new in reach.',
+  charging: (s) => `Scanner charging · ${Math.ceil(s)} s`,
+  paid: (n) => `Exploration data sold · +${n.toLocaleString('en-GB')} ¢`,
+};
+// the ships' signatures and the cargo pod (signatures/): the HUD's notes
+export const SIGNS = {
+  portal: 'Portal gun: straight there.',
+  lab: (name) => `The lab: one more ${name.toLowerCase()}.`,
+  seized: (fine) => `Contraband found in the open and taken${fine ? `, and a fine of ${fine.toLocaleString('en-GB')} ¢` : ''}.`,
+  podTaken: (n, more) => `Cargo pod: ${n} aboard${more ? '; the hold’s full, the rest left in it' : ''}.`,
+  podLeft: 'Your cargo’s in a pod where you went down. Fly back to it and press E.',
+};
 // a docked station's market (places/MarketTab.jsx)
 const credits = (n) => `${n.toLocaleString('en-GB')} ¢`;
 export const MARKET = {
