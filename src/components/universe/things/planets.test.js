@@ -67,3 +67,25 @@ describe('what the HUD reads of a planet', () => {
     expect(promptOf({ tags: [] }, ledger, 'p')).toBe(null);
   });
 });
+
+describe('harvesting a planet', () => {
+  it('offers it once surveyed, with a hold to fill, and says what the market says', () => {
+    const sector = fullSector(UNIVERSE, 3, 0, 1);
+    const sys = sector.systems.find((s) => s.planets.length);
+    const p = sys.planets[0];
+    const said = [];
+    const reap = (o) => (o.id === p.id ? 'Into the hold: 3 iron' : null);
+    reap.ready = () => true;
+    const play = createThingPlay({ sectors: () => [sector], pay: () => {}, say: (t) => said.push(t), reap });
+    const at = orbitAt(p, 0);
+    const state = { ship: { x: at[0] + p.radius * 2, y: at[1], z: at[2] }, clock: 0, shield: 100 };
+    const ledger = play.ledger;
+    ledger.pay(`${p.id}:survey`, 1, 1);
+    ledger.pay(`${p.id}:probe`, 1, 1);
+    play.update(state, 0.3, 0);
+    expect(play.near()).toMatchObject({ id: p.id, verb: 'harvest' });
+    expect(play.press(state)).toBe(true);
+    expect(said.at(-1)).toBe('Into the hold: 3 iron');
+    expect(verbAt({ tags: [], resources: [{ id: 'iron', amount: 1 }] }, ledger, p.id)).toBe(null);
+  });
+});

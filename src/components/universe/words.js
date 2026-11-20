@@ -71,7 +71,7 @@ const LORE = [
   'Nothing but a spiral, worn smooth by hands.',
 ];
 export const THINGS = {
-  verb: { mine: 'Mine', salvage: 'Salvage', scan: 'Scan', follow: 'Follow the signal', hail: 'Hail', survey: 'Survey', probe: 'Probe the anomaly', search: 'Search the moon' },
+  verb: { mine: 'Mine', salvage: 'Salvage', scan: 'Scan', follow: 'Follow the signal', hail: 'Hail', survey: 'Survey', probe: 'Probe the anomaly', search: 'Search the moon', harvest: 'Harvest' },
   surveyed: (name, facts) => `Surveyed ${name}. ${facts.join(' · ')}.`,
   probed: (name, id) => `${name}: ${{ gravity: 'the probe falls up and comes back heavier', timeslip: 'the probe comes back a day older than it left', mirror: 'the probe sends back pictures of a planet that isn’t here', song: 'the probe records the ground singing, the same twelve notes', ghostlight: 'the probe follows the lights and they follow it back' }[id]}. The readings are worth something.`,
   searched: (name, kind) => `${name}: ${{ cache: 'a cache, sealed and still full', wreck: 'a wreck under the dust, its logs intact', signal: 'the signal’s source, a beacon older than anyone’s maps', machine: 'a machine, still running, that stops when you land' }[kind]}.`,
