@@ -2,11 +2,12 @@
 // systems are only stars in the sky; here, every world, moon and wonder past
 // where it's real (realAt: twenty of its reaches, never under 1,500) is a
 // star on the sky along its true direction, at skyFar (deepspace.js's
-// SKY_FAR, where the background galaxies ride): a white-hot core in a glare
-// of its own colour (its swatch, a quarter of the way to white), with four
-// faint spikes on the brighter ones, as galaxy/sky.js draws the other
-// systems. Nearer is brighter and bigger (brightness: 7 to 20 px), and the
-// one you're aimed at or going to pulses (`focus`). Its real mesh is hidden
+// SKY_FAR, where the background galaxies ride): a tight white-hot core in a
+// soft halo of its own colour (its swatch, a quarter of the way to white),
+// thin spikes on only the very brightest, as a lens sees a star; no pulsing,
+// no twinkle (there's no air out there). Nearer is brighter and bigger
+// (brightness: 7 to 20 px sprites), and the one you're aimed at or going to
+// (`focus`) steadily brighter. Its real mesh is hidden
 // out there (its lights ride in its group); over the last fifth before it's
 // real the star fades and the real thing takes over.
 //
@@ -160,7 +161,7 @@ const VERT = /* glsl */ `
     // (never cut by the far plane: on foot it's at the landing's sky,
     // footScene's far(), which the stars are well past)
     gl_Position.z = min(gl_Position.z, gl_Position.w * 0.999999);
-    float pulse = 1.0 + aFocus * (0.45 + 0.2 * sin(uTime * 6.0));
+    float pulse = 1.0 + aFocus * 0.25; // (the one you're aimed at a touch bigger, steady: stars don't pulse)
     gl_PointSize = k > 0.0 ? size * uDpr * pulse : 0.0;
     if (k <= 0.0) gl_Position = vec4(2.0, 2.0, 2.0, 1.0); // (nothing to draw: off the frame)
     vPx = gl_PointSize;
@@ -212,10 +213,13 @@ const FRAG = /* glsl */ `
       gl_FragColor = vec4(vColor * lit * cover, cover);
       return;
     }
-    float core = smoothstep(0.2, 0.05, r);
-    float glow = exp(-r * 5.5) * 0.9;
-    float spikes = (exp(-abs(q.x) * 30.0) + exp(-abs(q.y) * 30.0)) * (1.0 - r) * (smoothstep(0.3, 0.8, vBright) * 0.5 + vFocus * 0.8);
-    vec3 c = (vColor * (glow + spikes) + vec3(1.6 + vFocus * 1.4) * core) * vLum;
+    // a star as a lens sees one: a tight white-hot core, a soft halo of its
+    // colour falling off fast, and only the very brightest with faint, thin
+    // spikes (the aimed-at one brighter, never a cross drawn on it)
+    float core = smoothstep(0.12, 0.0, r);
+    float glow = exp(-r * 8.0) * 0.55 + exp(-r * 3.0) * 0.08;
+    float spikes = (exp(-abs(q.x) * 90.0) + exp(-abs(q.y) * 90.0)) * (1.0 - r) * (1.0 - r) * smoothstep(0.85, 1.0, vBright) * 0.3;
+    vec3 c = (vColor * (glow + spikes) + vec3(1.5 + vFocus * 0.6) * core) * vLum * (1.0 + vFocus * 0.3);
     gl_FragColor = vec4(c * smoothstep(1.0, 0.75, r) * vK, 0.0);
   }
 `;
