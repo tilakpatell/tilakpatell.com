@@ -133,7 +133,8 @@ import { debugOn, debugPanel } from '../../lib/debugPanel';
 import { LEAN, OPEN_SPACE, PLANETS, SHIP, SOLIDS, autopilot, crashLoud, forward, headingTo, holdReach, isGoal, isPlace, noseOf, orbiting, parkAt, pulsedSpace, spawn, startAt, step } from './ship';
 import { coreStats } from './ships/profiles';
 import { SHOWS_FROM, engineList, jumpSize } from './ships/looks';
-import { areaOf } from './market/areas';
+import { areaOf, distanceOf } from './market/areas';
+import { harvest } from './market/harvest';
 import { EXPLORE, HOLD, SIGNS } from './words';
 import { GOODS } from './market/goods';
 import { MINED_OUT, WORKS, yieldOf } from './market/yields';
@@ -913,6 +914,18 @@ export async function create(canvas, ctx) {
     else if (press + 1 >= MINED_OUT) market.empty(id);
     return HOLD.stowed(got.map((g) => `${g.n} ${GOODS[g.good].name.toLowerCase()}`).join(', '));
   };
+  // a generated planet's harvest from its orbit into the hold (market/harvest.js: one economy, the
+  // market's), counted a visit by its id as a field's presses are
+  const reap = ({ traits, id, sector }) => {
+    const market = props.market;
+    if (!market || !state.kind) return null;
+    const cube = [sector?.sx ?? 0, sector?.sy ?? 0, sector?.sz ?? 0];
+    const press = worked.get(id) ?? 0;
+    const r = harvest({ market, crew: state.kind, room: state.core.hold, traits, id, press, sector: cube, d: distanceOf(cube) });
+    if (r.got.length) worked.set(id, press + 1);
+    return r.said;
+  };
+  reap.ready = () => Boolean(props.market && state.kind);
   // (the surveys' log: none in a private window, where the store throws)
   const localStore = () => {
     try {
@@ -921,7 +934,7 @@ export async function create(canvas, ctx) {
       return null;
     }
   };
-  const thingPlay = createThingPlay({ sectors: () => expanse.sectors().values(), pay: (what, n) => pay(what, n), say: (text) => (state.note = { text, until: wall() + 3.5 }), travelling: () => Boolean(state.auto || state.jump), universe, reduced, stow, store: localStore() });
+  const thingPlay = createThingPlay({ sectors: () => expanse.sectors().values(), pay: (what, n) => pay(what, n), say: (text) => (state.note = { text, until: wall() + 3.5 }), travelling: () => Boolean(state.auto || state.jump), universe, reduced, stow, store: localStore(), reap });
   // and the big things, the Maw and the big stars, as landmarks on the sky, upright in the world (landmarks.js)
   const landmarks = createLandmarks(map, { skyFar: SKY_FAR });
   await breathe();

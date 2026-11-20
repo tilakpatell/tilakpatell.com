@@ -9,7 +9,8 @@
 //   ORBIT (radii from its middle you're in orbit within), LOW (radii it bites within)
 //   PLAY: { survey: { most }, probe: { pay }, search: { pay, near }, brave: { secs, per } }
 //   surveyPay(traits) → credits' worth, 1 a notable trait more, PLAY.survey.most at most
-//   verbAt(traits, ledger, id) → 'survey' | 'probe' | null: what E does in its orbit now
+//   verbAt(traits, ledger, id, { harvest }) → 'survey' | 'probe' | 'harvest' | null: what E does in its orbit
+//     now (harvest: whether there's a hold to take its resources into)
 //   hazardDrain(level) → how many times an ion storm's drain the hazard is (0 for none)
 //   SURVEY_KEY, SURVEY_CAP; addSurvey(list, id) → the list with it last, once, the newest kept
 //   loadSurveys(store), saveSurveys(store, list): through a localStorage-like store, never throwing
@@ -27,9 +28,11 @@ export const PLAY = Object.freeze({
 
 export const surveyPay = (traits) => Math.min(PLAY.survey.most, 1 + (traits?.tags?.length ?? 0));
 
-export function verbAt(traits, ledger, id) {
+export function verbAt(traits, ledger, id, { harvest = false } = {}) {
   if (!ledger.paid(`${id}:survey`)) return 'survey';
   if (traits.anomaly && !ledger.paid(`${id}:probe`)) return 'probe';
+  // (then, with a hold to fill, its resources: the market's harvest says when it's worked out)
+  if (harvest && traits.resources?.length) return 'harvest';
   return null;
 }
 

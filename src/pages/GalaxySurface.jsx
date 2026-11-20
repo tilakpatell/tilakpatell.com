@@ -4,6 +4,7 @@ import { local, useDocumentTitle, useReducedMotion } from '../lib/hooks';
 import { CREWS, SHIP_KEY, crewById, parseShip } from '../components/universe/crews';
 import { CONTROLS_KEY, readControls } from '../components/universe/controls';
 import { LOADOUT_KEY, loadoutOf, readLoadouts } from '../components/universe/outfit';
+import { useEconomy } from '../components/universe/shared/wallet';
 import { HULL_KEY, TUNE_KEY, readHulls, readTunes } from '../components/universe/shipyard/build';
 import { useAchievements } from '../components/Achievements';
 import Comms from '../components/universe/Comms';
@@ -205,7 +206,9 @@ export default function GalaxySurface() {
   const tune = useMemo(() => (ship && readTunes(local.get(TUNE_KEY), CREWS.map((c) => c.id))[ship]) || null, [ship]); // (the crew's own ship, tuned: its parts must still be ones its plant runs)
   // (the hero's two abilities by id, for the game's icons on the HUD's buttons)
   const powerIds = useMemo(() => abilitiesOf(hero ? heroSpec(hero) : null), [hero]);
-  const loadout = useMemo(() => loadoutOf(readLoadouts(local.get(LOADOUT_KEY), CREWS.map((c) => c.id)), ship, unlocked, build, tune), [ship, unlocked, build, tune]);
+  // (a part an achievement gives flies too when it's bought: the wallet's, read if a page has loaded it)
+  const { economy, version: walletVersion } = useEconomy({ ask: false });
+  const loadout = useMemo(() => loadoutOf(readLoadouts(local.get(LOADOUT_KEY), CREWS.map((c) => c.id)), ship, unlocked, build, tune, null, walletVersion >= 0 && economy ? (k) => economy.owns(k) : null), [ship, unlocked, build, tune, economy, walletVersion]);
   // online: the other pilots down here with you
   const online = useOnline();
   const { setKind, setLoadout, setBuild: tellBuild } = online;

@@ -8,6 +8,8 @@
 // createThingPlay({ sectors, pay, say, travelling, universe, reduced, stow, store }) → { update(state, dt, t), press(state) → boolean,
 //   near() → { id, kind, verb } | null, surveys() → the planets surveyed (ids, newest last), ledger }
 //   store: a localStorage-like store for the surveys' log (lib/space/planetPlay.js), or none
+//   reap({ traits, id, sector }) → the line to say, a planet's harvest into the hold (the market's
+//     harvest.js); reap.ready() → whether there's a hold to take it
 // A generated planet in orbit range is played too (lib/space/planetPlay.js): surveyed, its anomaly
 // probed, its secret moon searched, its hazard braved low in its orbit.
 //   sectors() → an iterable of loaded sectors; pay(what, n) the scene's earning (EARN keys);
@@ -27,7 +29,7 @@ const LOOK = 0.25; // seconds between looks for what's near enough to act on
 const LATTICE_ACTS = new Set(THING_KINDS.map((k, i) => (actionOf(k.kind) ? i : -1)).filter((i) => i >= 0));
 const len = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
 
-export function createThingPlay({ sectors, pay, say = () => {}, travelling = () => false, universe, reduced = false, stow = null, store = null } = {}) {
+export function createThingPlay({ sectors, pay, say = () => {}, travelling = () => false, universe, reduced = false, stow = null, store = null, reap = null } = {}) {
   const ledger = createLedger();
   // (the planets round the ship: their traits, made when one is first in orbit range)
   const traitCache = new Map();
@@ -62,7 +64,7 @@ export function createThingPlay({ sectors, pay, say = () => {}, travelling = () 
           if (d > p.radius * (ORBIT + 4) + 400) continue;
           const tr = traitsAt(p, sys);
           if (d < p.radius * LOW && hazardDrain(tr.hazard) > 0) hazardAt = { id: p.id, name: p.name, hazard: tr.hazard };
-          const verb = verbAt(tr, ledger, p.id);
+          const verb = verbAt(tr, ledger, p.id, { harvest: Boolean(reap?.ready?.()) });
           if (verb && d - p.radius * ORBIT < 0 && d - p.radius * ORBIT < best) {
             best = d - p.radius * ORBIT;
             near = { id: p.id, kind: 'planet', verb, row: p, traits: tr, sector: s };
@@ -117,6 +119,11 @@ export function createThingPlay({ sectors, pay, say = () => {}, travelling = () 
       surveys = addSurvey(surveys, id);
       saveSurveys(store, surveys);
       say(THINGS.surveyed(row.name, traitFacts(tr).map(([k, v]) => `${k}: ${v}`)));
+    } else if (near.verb === 'harvest') {
+      const said = reap?.({ traits: tr, id, sector: near.sector });
+      if (!said) return false;
+      say(said);
+      return true;
     } else if (near.verb === 'probe') {
       const n = ledger.pay(`${id}:probe`, PLAY.probe.pay, 1);
       if (!n) return false;

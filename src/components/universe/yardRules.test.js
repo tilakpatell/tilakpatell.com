@@ -4,7 +4,7 @@ import { itemFor } from './catalog';
 import { STOCK, STOCK_LOADOUT, partById } from './outfit';
 import { STOCK_BUILD, buildCode, statsOfBuild } from './shipyard/build';
 import { modulesFor } from './shipyard/parts';
-import { check, diff, draftKeys, fitDraft, hullLine, hullName, itemOfModule, itemOfPart, openDraft, pasteDraft, rollDraft, setHull, setModule, setPart, sellable } from './yardRules';
+import { check, diff, draftKeys, fitDraft, hullLine, hullName, itemOfModule, itemOfPart, lockHint, lockOf, openDraft, pasteDraft, rollDraft, setHull, setModule, setPart, sellable } from './yardRules';
 
 const wallet = ({ credits = 0, owned = [], unlocked = [] } = {}) => {
   const e = createEconomy({ achievements: () => unlocked });
@@ -176,11 +176,15 @@ describe('check', () => {
   });
 
   it('lists a locked part and a part the plant can’t run', () => {
-    let d = setPart(openDraft(live), 'booster', 'afterburner'); // (the trench run's)
-    const e = wallet({ credits: 100000, owned: ['part:booster:afterburner'] });
-    let r = check(d, { kind: 'falcon', unlocked: [], economy: e });
+    // (the trench run's: sold at level 4 since the parts lane, so a rookie's wallet is locked out of it, and one that owns it isn't)
+    let d = setPart(openDraft(live), 'booster', 'afterburner');
+    const rookie = createEconomy();
+    rookie.credit(100000, 'test'); // (credits, no xp: level 1)
+    let r = check(d, { kind: 'falcon', unlocked: [], economy: rookie });
     expect(r.issues.map((i) => i.why)).toEqual(['locked']);
-    expect(r.issues[0].text).toBe('Locked. Hit the exhaust port in the trench run.');
+    expect(r.issues[0].text).toBe('Locked. Reach level 4, or hit the exhaust port in the trench run for it free.');
+    r = check(d, { kind: 'falcon', unlocked: [], economy: wallet({ credits: 100000, owned: ['part:booster:afterburner'] }) });
+    expect(r.issues).toEqual([]);
     // the RV's 5 MW against portal (3), vector (2) and fastcharge (2)
     d = setPart(setPart(setPart(openDraft(live), 'booster', 'portal'), 'thrusters', 'vector'), 'shields', 'fastcharge');
     r = check(d, { kind: 'rv', unlocked: ['showmewhatyougot', 'grounded', 'captain'], economy: wallet({ owned: ['part:booster:portal', 'part:thrusters:vector', 'part:shields:fastcharge'] }) });
@@ -192,6 +196,14 @@ describe('check', () => {
     const r = check(d, { kind: 'falcon', unlocked: [], economy: wallet() });
     expect(r.issues[0]).toMatchObject({ slot: 'thrusters', id: 'vamonos', why: 'locked' });
     expect(r.issues[0].text).toMatch(/^Locked\. Reach level 3\.$/);
+  });
+
+  it('says a lock as a bare sentence for the shipyard’s card, and in full for the bill', () => {
+    const p = partById('booster', 'afterburner');
+    const item = itemOfPart('booster', 'afterburner');
+    expect(lockHint(p, item)).toBe('Reach level 4, or hit the exhaust port in the trench run for it free');
+    expect(lockOf(p, item)).toBe(`Locked. ${lockHint(p, item)}.`);
+    expect(lockHint(partById('thrusters', 'vamonos'), itemOfPart('thrusters', 'vamonos'))).toBe('Reach level 3');
   });
 
   it('says the shop’s still opening with no wallet', () => {

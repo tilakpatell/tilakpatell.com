@@ -102,6 +102,17 @@ describe('applying a draft', () => {
     expect(r.loadouts[SHIP].booster).toBe('srb');
     expect('build' in r).toBe(false);
   });
+  it('buys an achievement’s part at its level and fits it, all in one Apply', () => {
+    const e = createEconomy({ achievements: () => [] });
+    e.earn('warWin', 6); // (1,500 credits and level 4: the afterburner's)
+    const item = itemOfPart('booster', 'afterburner');
+    const draft = setPart(openDraft(live), 'booster', 'afterburner');
+    const r = applyYardDraft({ ship: SHIP, economy: e, loadouts: {}, unlocked: [] }, { diff: diff(draft, live), toBuy: [item], draft });
+    expect(r.result.ok).toBe(true);
+    expect(e.owns(item.key)).toBe(true);
+    expect(r.result.live.loadout.booster).toBe('afterburner');
+    expect(loadoutOf(r.loadouts, SHIP, [], null, null, null, (k) => e.owns(k)).booster).toBe('afterburner');
+  });
   it('a module on a garage build changes the hull: the build to fly comes with it', () => {
     const e = wallet([itemOfModule('wings', wing)]);
     const draft = setModule(setHull(openDraft(live), true, null), 'wings', wing);
