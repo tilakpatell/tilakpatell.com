@@ -16,7 +16,7 @@
 import { THING_KINDS, rowAt, tailOf, thingRow, traitsOf, wormholeExit } from '../../expanse/shared/gen';
 import { THINGS } from '../words';
 import { beamDirs } from './layout';
-import { SCRAMBLE, TAIL, act, actionOf, createLedger, inBeam, stormDrain, wormholeThrows } from './rules';
+import { SCRAMBLE, TAIL, act, actionOf, createLedger, inBeam, jetDirs, stormDrain, wormholeThrows } from './rules';
 
 const LOOK = 0.25; // seconds between looks for what's near enough to act on
 const LATTICE_ACTS = new Set(THING_KINDS.map((k, i) => (actionOf(k.kind) ? i : -1)).filter((i) => i >= 0));
@@ -91,6 +91,15 @@ export function createThingPlay({ sectors, pay, say = () => {}, travelling = () 
             // (the HUD scrambles a moment; for a visitor who asks for less motion, the note alone)
             if (!reduced) state.static = Math.max(state.static ?? 0, SCRAMBLE);
           }
+        // (in a quasar's jet the shields drain, as in an ion storm, out to its jets' length)
+        for (const r of ex.quasar ?? []) {
+          const tr = traitsOf(r);
+          if (inBeam(jetDirs(tr), r.at, ship, r.size, 0.08 * tr.jet * 1.25)) {
+            draining = true;
+            if (!(state.jetSaid > state.clock)) say(THINGS.jet);
+            state.jetSaid = state.clock + 8;
+          }
+        }
         for (const r of ex.wormhole ?? [])
           if (wormholeThrows(r, ship, { travelling: travelling() })) {
             const exit = wormholeExit(r, universe);

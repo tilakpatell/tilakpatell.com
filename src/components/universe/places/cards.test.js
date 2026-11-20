@@ -154,3 +154,17 @@ describe('a binary’s card', () => {
     expect(c.about).toMatch(/^An? .+, held by .+\.$/);
   });
 });
+
+describe('a mined-out moon’s card', () => {
+  it('says so, in its facts and its line', async () => {
+    const { UNIVERSE: U, fullSector: full } = await import('../../expanse/shared/gen');
+    let found = null;
+    for (let sx = -6; sx <= 6 && !found; sx++)
+      for (const s of full(U, sx, 0, 3).systems)
+        for (const p of s.planets) for (const m of p.moonList ?? []) if (m.mined && !found) found = { m, p, s };
+    expect(found).toBeTruthy();
+    const card = placeCard({ kind: 'moon', row: found.m, planet: found.p, system: found.s });
+    expect(card.facts).toContainEqual([PLACE.facts.mined, PLACE.mined]);
+    expect(card.about).toContain('mined out');
+  });
+});

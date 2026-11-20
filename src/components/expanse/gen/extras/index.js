@@ -21,12 +21,14 @@
 //   rig      w40000 +  mining rigs, one field in three (systems.js)
 //   fleet    w50000 +  fleets at anchor over a station's pole, one station in two (anchored.js)
 //   shipyard w60000 +  shipyards over the star's other pole, one station in four (anchored.js)
+//   dwarf    w46–w47   brown dwarfs, 0–2 a sector (stars.js)
+//   quasar   w48       a quasar, about one sector in seven (stars.js)
 // EXTRA_LISTS: the lists' names, in that order
 // NEBULA_SHOW (place.js)
 
 import { ARRIVAL_BASE, ARRIVAL_MAX } from '../gargantuans';
 import { FLEETS, YARDS } from './anchored';
-import { PROTOSTARS, PULSARS, WORMHOLES } from './stars';
+import { DWARFS, PROTOSTARS, PULSARS, QUASARS, WORMHOLES } from './stars';
 import { DEBRIS, HERDS, POCKETS, REMNANTS, STORMS, SWARMS } from './clouds';
 import { COMETS, FIELDS, RIGS } from './systems';
 
@@ -36,5 +38,6 @@ const GARGANTUANS = { list: 'gargantuan', base: 3, max: 1, make: (ctx) => (ctx.g
 const ARRIVALS = { list: 'arrival', base: ARRIVAL_BASE, max: ARRIVAL_MAX, make: (ctx) => [...(ctx.arrivals ?? [])] };
 
 // (in this order: each is told the lists before it, and keeps off them)
-export const SECTOR_EXTRAS = [GARGANTUANS, ARRIVALS, WORMHOLES, REMNANTS, PULSARS, PROTOSTARS, STORMS, POCKETS, SWARMS, HERDS, DEBRIS, FIELDS, COMETS, RIGS, FLEETS, YARDS];
+// (the brown dwarfs and quasars last, so every list before them is made as it was)
+export const SECTOR_EXTRAS = [GARGANTUANS, ARRIVALS, WORMHOLES, REMNANTS, PULSARS, PROTOSTARS, STORMS, POCKETS, SWARMS, HERDS, DEBRIS, FIELDS, COMETS, RIGS, FLEETS, YARDS, DWARFS, QUASARS];
 export const EXTRA_LISTS = Object.freeze(SECTOR_EXTRAS.map((e) => e.list));

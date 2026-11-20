@@ -136,10 +136,11 @@ function moonCard(row, planet, sys) {
     ...NONE,
     ...placeLook('moon', row),
     type,
-    about: PLACE.about.moon({ type, planet: planet.name, system: sys.name }),
+    about: row.mined ? PLACE.about.mined({ planet: planet.name }) : PLACE.about.moon({ type, planet: planet.name, system: sys.name }),
     facts: [
       [PLACE.facts.planet, planet.name],
       [PLACE.facts.system, sys.name],
+      ...(row.mined ? [[PLACE.facts.mined, PLACE.mined]] : []),
     ],
     land: true,
     faction: sys.faction ?? null,

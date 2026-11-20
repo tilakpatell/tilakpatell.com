@@ -3,7 +3,7 @@ import { PRINTED, plainSector } from "./fixtures/fingerprint";
 import { revsFor } from "./orbits";
 import { UNIVERSE, hash64, moonSeed, sectorSeed, sectorSeedOf } from "./seed";
 import { makeSector } from "./sector";
-import { addBodies, moonsOf, ringBandOf, systemReach } from "./systems";
+import { MINED, OUTER, addBodies, moonsOf, ringBandOf, systemReach } from "./systems";
 
 const raw = PRINTED.map(([sx, sz]) => makeSector(UNIVERSE, sx, sz));
 const made = raw.map(addBodies);
@@ -40,10 +40,23 @@ describe("addBodies", () => {
 });
 
 describe("moonsOf", () => {
-  it("makes the moons the planet says", () => {
+  it("makes the moons the planet says, and a giant 0 to 3 outer ones past them", () => {
+    let outer = 0;
     for (const [, p] of planets) {
-      expect(p.moonList).toHaveLength(p.moons);
-      p.moonList.forEach((m, k) => {
+      const giant = p.type === "gas" || p.type === "ringed";
+      const extra = p.moonList.length - p.moons;
+      expect(extra).toBeGreaterThanOrEqual(0);
+      expect(extra).toBeLessThanOrEqual(giant ? OUTER.most : 0);
+      outer += extra;
+      p.moonList.slice(p.moons).forEach((m, j) => {
+        const k = p.moons + j;
+        expect(m.id).toBe(`${p.id}:${k}`);
+        expect(m.seed).toBe(moonSeed(p.seed, k));
+        expect(m.orbit).toBeGreaterThan(OUTER.from * p.radius);
+        expect(m.orbit).toBeLessThanOrEqual(OUTER.to * p.radius);
+        expect(Math.abs(m.tilt)).toBeLessThanOrEqual(0.5);
+      });
+      p.moonList.slice(0, p.moons).forEach((m, k) => {
         expect(m.id).toBe(`${p.id}:${k}`);
         expect(m.k).toBe(k);
         expect(m.name).toBe(`${p.name} ${["I", "II", "III", "IV", "V", "VI"][k]}`);
@@ -57,6 +70,16 @@ describe("moonsOf", () => {
         expect(m.radius).toBeLessThanOrEqual(0.25 * p.radius + 3);
       });
     }
+    expect(outer).toBeGreaterThan(0);
+  });
+  it("keeps the moons it had before a giant's outer ones, as they were", () => {
+    for (const [, p] of planets) expect(p.moonList.slice(0, p.moons).every((m) => m.orbit <= 4.4 * p.radius)).toBe(true);
+  });
+  it("mines out about one moon in ten, from a stream of its own", () => {
+    const all = planets.flatMap(([, p]) => p.moonList);
+    const share = all.filter((m) => m.mined).length / all.length;
+    expect(share).toBeGreaterThan(MINED / 2);
+    expect(share).toBeLessThan(MINED * 2);
   });
   it("keeps the orbits rising, clear of the planet and its rings", () => {
     for (const [, p] of planets) {
@@ -65,7 +88,7 @@ describe("moonsOf", () => {
         expect(m.orbit).toBeGreaterThan(last);
         last = m.orbit;
       }
-      expect(last).toBeLessThanOrEqual(4.4 * p.radius);
+      expect(last).toBeLessThanOrEqual((p.type === "gas" || p.type === "ringed" ? OUTER.to : 4.4) * p.radius);
     }
   });
   it("is icier round cold planets", () => {
