@@ -4,7 +4,8 @@ import { mkdirSync, mkdtempSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { CONTRACT } from '../lib/bf2web-site.mjs';
-import { readRulebooks, validateEvidence, validateRulebookDigest, verifyExportFiles } from './bf2web-publish.mjs';
+import { publishedRulebook, readRulebooks, validateEvidence, validateRulebookDigest, verifyExportFiles, verifyPublishedRulebooks } from './bf2web-publish.mjs';
+import { brotliCompressSync } from 'node:zlib';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { deviationLines, finishedReceipt } from '../lib/bf2web-deviations.mjs';
@@ -110,5 +111,39 @@ describe('publishing a build with ruled deviations', () => {
     expect(validateEvidence(fixture())).toBe(true);
     const f = failed({ finished: true, deviations: [] }); f.build.steps.find((s) => s.name === 'verify').ok = false;
     expect(() => validateEvidence(f)).toThrow(/hardware check/);
+  });
+});
+
+// r1076's publish (run 44671253799, 19 Nov): the bucket's ui-data held the uploader's brotli copies of the 18 *.tone.bin
+// (<path>.br), which matched no local path, so a correct upload was refused as 'the published rulebook selection differs'.
+describe('the published ui-data selection', () => {
+  const prefix = 'sites/r1/ui-data/';
+  const tone = Buffer.alloc(4096, 7), json = Buffer.from('{"a":1}');
+  const hash = (b) => createHash('sha256').update(b).digest('hex');
+  const entries = [{ path: 'backdrop/cam2.tone.bin', bytes: tone.length, sha256: hash(tone) }, { path: 'info.json', bytes: json.length, sha256: hash(json) }];
+  const store = (objects) => ({ objects: Object.entries(objects).map(([k, body]) => ({ key: prefix + k, size: body.length })),
+    get: async (key) => (key.slice(prefix.length) in objects ? { body: new Uint8Array(objects[key.slice(prefix.length)]) } : null) });
+  it('maps a key to its rulebook, and a .br of a .bin to that .bin', () => {
+    expect(publishedRulebook(entries, prefix, prefix + 'info.json')).toEqual({ entry: entries[1], brotli: false });
+    expect(publishedRulebook(entries, prefix, prefix + 'backdrop/cam2.tone.bin.br')).toEqual({ entry: entries[0], brotli: true });
+    expect(publishedRulebook(entries, prefix, prefix + 'info.json.br')).toBe(null);
+    expect(publishedRulebook(entries, prefix, prefix + 'stray.bin.br')).toBe(null);
+    expect(publishedRulebook(entries, prefix, 'sites/other/ui-data/info.json')).toBe(null);
+  });
+  it('accepts the files and the brotli copy of a .bin whose decoded bytes are that rulebook', async () => {
+    const s = store({ 'backdrop/cam2.tone.bin': tone, 'backdrop/cam2.tone.bin.br': brotliCompressSync(tone), 'info.json': json });
+    await expect(verifyPublishedRulebooks(entries, prefix, s.objects, s.get)).resolves.toBe(undefined);
+  });
+  it('refuses a brotli copy that decodes to other bytes, or does not decode', async () => {
+    const other = store({ 'backdrop/cam2.tone.bin.br': brotliCompressSync(Buffer.alloc(4096, 8)) });
+    await expect(verifyPublishedRulebooks(entries, prefix, other.objects, other.get)).rejects.toThrow(/published rulebook bytes differ/);
+    const junk = store({ 'backdrop/cam2.tone.bin.br': Buffer.from('not brotli at all') });
+    await expect(verifyPublishedRulebooks(entries, prefix, junk.objects, junk.get)).rejects.toThrow(/published rulebook bytes differ/);
+  });
+  it('still refuses a stray object, a .br of a json, and a file at another size', async () => {
+    for (const objects of [{ 'stray.json': json }, { 'info.json.br': brotliCompressSync(json) }, { 'info.json': Buffer.from('{"a":12}') }]) {
+      const s = store(objects);
+      await expect(verifyPublishedRulebooks(entries, prefix, s.objects, s.get)).rejects.toThrow(/the published rulebook selection differs/);
+    }
   });
 });
