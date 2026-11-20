@@ -132,7 +132,7 @@ import { createImpacts, impactGroups } from '../../lib/impact';
 import { debugOn, debugPanel } from '../../lib/debugPanel';
 import { LEAN, OPEN_SPACE, PLANETS, SHIP, SOLIDS, autopilot, crashLoud, forward, headingTo, holdReach, isGoal, isPlace, noseOf, orbiting, parkAt, pulsedSpace, spawn, startAt, step } from './ship';
 import { coreStats } from './ships/profiles';
-import { engineList } from './ships/looks';
+import { SHOWS_FROM, engineList, jumpSize } from './ships/looks';
 import { areaOf } from './market/areas';
 import { EXPLORE, HOLD, SIGNS } from './words';
 import { GOODS } from './market/goods';
@@ -142,7 +142,7 @@ import { inspect, labEvery, labStep, portalReady, r2Patch, rangeOf } from './sig
 import { dropPod, nearPod, recoverInto } from './signatures/pod';
 import { hot } from '../../lib/three/canvasTexture';
 import { worthOf } from './explore/values';
-import { stationFor } from './market/trade';
+import { placeMarket, stationFor } from './market/trade';
 import { parseSectorKey, parseSpaceId } from '../../lib/space/address.js';
 import { rowAt } from '../expanse/shared/gen';
 import { HYPER, destinationById, hyperState, parkFor, riftExit } from './nav';
@@ -811,11 +811,14 @@ export async function create(canvas, ctx) {
     props.market.changed();
     state.note = { text: SIGNS.lab(GOODS[r.out].name), until: wall() + 2.5 };
   };
+  const tradeOf = (stationId) => {
+    const cube = parseSpaceId(stationId);
+    return placeMarket(stationId) ?? stationFor({ id: stationId, cube: cube ? [cube.sx, cube.sy, cube.sz] : [0, 0, 0] });
+  };
   const checkHold = (stationId) => {
     const hold = crewHold();
     if (!hold) return;
-    const cube = parseSpaceId(stationId);
-    const { type } = stationFor({ id: stationId, cube: cube ? [cube.sx, cube.sy, cube.sz] : [0, 0, 0] });
+    const { type } = tradeOf(stationId);
     const r = inspect({ crew: state.kind, room: state.core.hold, lots: hold.lots, type });
     if (!r.seized.length) return;
     for (const g of r.seized) hold.remove(g.good, g.n);
@@ -879,8 +882,7 @@ export async function create(canvas, ctx) {
   const sellData = (stationId) => {
     const wallet = props.wallet;
     if (!props.record || !wallet || !(props.record.data > 0)) return;
-    const cube = parseSpaceId(stationId);
-    const research = stationFor({ id: stationId, cube: cube ? [cube.sx, cube.sy, cube.sz] : [0, 0, 0] }).type === 'research';
+    const research = tradeOf(stationId).type === 'research';
     const n = Math.round((props.record.payOut() * (research ? 1.5 : 1)) / EARN.data.credits);
     const got = wallet.earn('data', n);
     if (got.credits) state.note = { text: EXPLORE.paid(got.credits), until: wall() + 4 };
@@ -2117,14 +2119,17 @@ export async function create(canvas, ctx) {
   const setCores = (raw) => {
     const next = raw && typeof raw === 'object' ? raw : {};
     if (tiersKey(next) === tiersKey(state.tiers)) return;
+    const showed = (t) => `${(t.hold ?? 1) >= SHOWS_FROM.hold ? t.hold : 0}|${(t.scanner ?? 1) >= SHOWS_FROM.scanner ? t.scanner : 0}`;
+    const reshow = showed(next) !== showed(state.tiers);
     state.tiers = next;
-    restat();
+    if (reshow) refit(); // (a cargo pod or a dish to put on, or to grow)
+    else restat();
     tierLook();
   };
   const refit = () => {
     restat();
     if (!state.kind || !state.model) return setBoosterPlumes();
-    const mods = state.model.outfit(state.loadout);
+    const mods = state.model.outfit(state.loadout, state.tiers); // (and the tiers that show: ships/looks.js)
     state.barrel = 0;
     setBoosterPlumes(mods.nozzles, mods.boosterColor);
   };
@@ -4405,7 +4410,7 @@ export async function create(canvas, ctx) {
       npcs?.clear();
       state.interdicted = false;
       state.safeUntil = state.clock + SAFE;
-      crashFx.arrive({ point: new THREE.Vector3(park.x, park.y, park.z), kind: state.kind, heading: park.heading });
+      crashFx.arrive({ point: new THREE.Vector3(park.x, park.y, park.z), kind: state.kind, heading: park.heading, size: jumpSize(state.tiers.hyperdrive ?? 1) });
       emit({ type: 'jumped', id: j.id });
     }
     if (!state.jump && pieces.riftAt && pieces.riftInside(state.ship)) riftThrough();
@@ -4537,12 +4542,15 @@ export async function create(canvas, ctx) {
     if (now !== state.at && (!target || now === target || now === null)) {
       const left = state.at;
       state.at = now;
+      if (left) emit({ type: 'depart', id: left }); // (the page's market on a place's card goes with it)
       if (now) {
         if (state.sel !== now) {
           state.sel = now;
           props.onPick?.(now);
         }
         emit({ type: 'arrive', id: now });
+        // (a hand-made place that keeps a market: the data bank sold, the hold checked, as at a station's dock)
+        if (placeMarket(now)) (sellData(now), checkHold(now));
         // (the spacedock at the projects station: the Shipyard's door, once an approach)
         if (now === 'projects' && !onFoot()) state.note = { text: 'Dock at the shipyard (H)', until: wall() + 3 };
         law?.arrive(props.wallet ?? null); // (a bounty on your head paid off here, out of the wallet)
