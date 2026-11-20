@@ -71,7 +71,11 @@ const LORE = [
   'Nothing but a spiral, worn smooth by hands.',
 ];
 export const THINGS = {
-  verb: { mine: 'Mine', salvage: 'Salvage', scan: 'Scan', follow: 'Follow the signal', hail: 'Hail' },
+  verb: { mine: 'Mine', salvage: 'Salvage', scan: 'Scan', follow: 'Follow the signal', hail: 'Hail', survey: 'Survey', probe: 'Probe the anomaly', search: 'Search the moon' },
+  surveyed: (name, facts) => `Surveyed ${name}. ${facts.join(' · ')}.`,
+  probed: (name, id) => `${name}: ${{ gravity: 'the probe falls up and comes back heavier', timeslip: 'the probe comes back a day older than it left', mirror: 'the probe sends back pictures of a planet that isn’t here', song: 'the probe records the ground singing, the same twelve notes', ghostlight: 'the probe follows the lights and they follow it back' }[id]}. The readings are worth something.`,
+  searched: (name, kind) => `${name}: ${{ cache: 'a cache, sealed and still full', wreck: 'a wreck under the dust, its logs intact', signal: 'the signal’s source, a beacon older than anyone’s maps', machine: 'a machine, still running, that stops when you land' }[kind]}.`,
+  braved: (name) => `You rode out ${name}’s worst. The readings are worth something.`,
   prompt: (verb, name) => `E: ${THINGS.verb[verb]} · ${name}`,
   did: ({ verb, pay, lore, leads, trap, name }) => {
     if (verb === 'mine') return pay ? 'Ore aboard. Worth something at any station.' : 'You’ve taken all this field will give for now.';
@@ -161,7 +165,11 @@ export const PLACE = {
   held: (name) => name.replace(/^The /, 'the '), // (a faction's name mid-sentence)
   hazard: { storm: 'Ion storms', pirates: 'Pirates', minefield: 'A minefield' },
   traffic: (k) => (k >= 0.66 ? 'Busy' : k >= 0.33 ? 'Some' : 'Quiet'),
-  facts: { system: 'System', planet: 'Planet', planets: 'Planets', moons: 'Moons', rings: 'Rings', held: 'Held by', traffic: 'Traffic', hazard: 'Hazard', mined: 'Mined' },
+  facts: { system: 'System', planet: 'Planet', planets: 'Planets', moons: 'Moons', rings: 'Rings', held: 'Held by', traffic: 'Traffic', hazard: 'Hazard', mined: 'Mined', resources: 'Resources', rare: 'Rare find', anomaly: 'Anomaly', ruins: 'Ruins', secret: 'A moon’s secret', station: 'Station', danger: 'Danger' },
+  good: { organics: 'Organics' },
+  anomaly: { gravity: 'Gravity runs wrong here', timeslip: 'Clocks drift in orbit', mirror: 'The sky shows another world', song: 'The ground sings on the radio', ghostlight: 'Lights move on the night side' },
+  secret: (moon, kind) => `${moon}: ${{ cache: 'a hidden cache', wreck: 'a buried wreck', signal: 'a signal from under the ice', machine: 'an old machine, still running' }[kind]}`,
+  danger: (id, level) => `${{ radiation: 'Radiation', quakes: 'Quakes', duststorms: 'Dust storms', heat: 'Heat', blizzards: 'Blizzards', cold: 'Deep cold', predators: 'Predators', spores: 'Spores', storms: 'Storms', crushing: 'Crushing winds', debris: 'Ring debris', pirates: 'Pirates' }[id]}${['', '', ', bad', ', deadly'][level] ?? ''}`,
   mined: 'Stripped by someone long gone',
   yes: 'Yes',
   fly: 'Fly here',

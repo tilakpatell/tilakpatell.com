@@ -3,37 +3,79 @@
 // scrambling the HUD, a comet's tail paying for flying it, a wormhole's
 // throat throwing you far away. The rules are rules.js's; this reads the
 // sectors the Expanse has loaded and the ship, and says what happened. It
-// never stores anything: what's been paid is for the visit.
+// stores only the planets you've surveyed: what's been paid is for the visit.
 //
-// createThingPlay({ sectors, pay, say, travelling, universe, reduced }) → { update(state, dt, t), press(state) → boolean,
-//   near() → { id, kind, verb } | null, ledger }
+// createThingPlay({ sectors, pay, say, travelling, universe, reduced, stow, store }) → { update(state, dt, t), press(state) → boolean,
+//   near() → { id, kind, verb } | null, surveys() → the planets surveyed (ids, newest last), ledger }
+//   store: a localStorage-like store for the surveys' log (lib/space/planetPlay.js), or none
+// A generated planet in orbit range is played too (lib/space/planetPlay.js): surveyed, its anomaly
+// probed, its secret moon searched, its hazard braved low in its orbit.
 //   sectors() → an iterable of loaded sectors; pay(what, n) the scene's earning (EARN keys);
 //   say(text) a note on screen; travelling() → true mid-trip (a wormhole throws only by hand)
 //   update reads and writes the scene's state: shield, hitAt (the regen waits after a drain as
 //   after a hit, but a drain is no hit: no laser, no shake), static (the HUD's scramble), ship
 //   (a wormhole's throw), clock
 
-import { THING_KINDS, rowAt, tailOf, thingRow, traitsOf, wormholeExit } from '../../expanse/shared/gen';
+import { THING_KINDS, moonAt, orbitAt, rowAt, tailOf, thingRow, traitsOf, wormholeExit } from '../../expanse/shared/gen';
+import { planetTraits, traitFacts } from '../places/cards';
+import { LOW, ORBIT, PLAY, addSurvey, hazardDrain, loadSurveys, saveSurveys, surveyPay, verbAt } from '../../../lib/space/planetPlay.js';
 import { THINGS } from '../words';
 import { beamDirs } from './layout';
-import { SCRAMBLE, TAIL, act, actionOf, createLedger, inBeam, jetDirs, stormDrain, wormholeThrows } from './rules';
+import { SCRAMBLE, STORM, TAIL, act, actionOf, createLedger, inBeam, jetDirs, stormDrain, wormholeThrows } from './rules';
 
 const LOOK = 0.25; // seconds between looks for what's near enough to act on
 const LATTICE_ACTS = new Set(THING_KINDS.map((k, i) => (actionOf(k.kind) ? i : -1)).filter((i) => i >= 0));
 const len = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
 
-export function createThingPlay({ sectors, pay, say = () => {}, travelling = () => false, universe, reduced = false, stow = null } = {}) {
+export function createThingPlay({ sectors, pay, say = () => {}, travelling = () => false, universe, reduced = false, stow = null, store = null } = {}) {
   const ledger = createLedger();
+  // (the planets round the ship: their traits, made when one is first in orbit range)
+  const traitCache = new Map();
+  const traitsAt = (p, sys) => {
+    let t = traitCache.get(p.id);
+    if (!t) {
+      t = planetTraits(p, sys);
+      if (traitCache.size > 128) traitCache.delete(traitCache.keys().next().value);
+      traitCache.set(p.id, t);
+    }
+    return t;
+  };
+  let surveys = loadSurveys(store);
+  let hazardAt = null; // { id, name, hazard } of the planet whose low orbit you're in
+  let braveFor = 0;
   let looked = 0;
   let near = null; // { id, kind, row, reach }
   let inTail = null;
   let tailFor = 0;
 
   // the nearest thing you can act on, within its reach (actionOf's `near`, in its sizes)
-  const look = (ship) => {
+  const look = (ship, t = 0) => {
     near = null;
+    hazardAt = null;
     let best = Infinity;
     for (const s of sectors()) {
+      // a planet you're in orbit round: survey it, probe it, search its secret moon, brave it
+      for (const sys of s.systems ?? [])
+        for (const p of sys.planets ?? []) {
+          const at = p.centre ? orbitAt(p, t) : p.at;
+          const d = len(at, ship);
+          if (d > p.radius * (ORBIT + 4) + 400) continue;
+          const tr = traitsAt(p, sys);
+          if (d < p.radius * LOW && hazardDrain(tr.hazard) > 0) hazardAt = { id: p.id, name: p.name, hazard: tr.hazard };
+          const verb = verbAt(tr, ledger, p.id);
+          if (verb && d - p.radius * ORBIT < 0 && d - p.radius * ORBIT < best) {
+            best = d - p.radius * ORBIT;
+            near = { id: p.id, kind: 'planet', verb, row: p, traits: tr, sector: s };
+          }
+          const m = tr.secret && p.moonList?.[tr.secret.moon];
+          if (m && !ledger.paid(`${p.id}:search`)) {
+            const dm = len(moonAt(m, p, t), ship) - m.radius * PLAY.search.near;
+            if (dm < 0 && dm < best) {
+              best = dm;
+              near = { id: p.id, kind: 'secret', verb: 'search', row: m, traits: tr, sector: s };
+            }
+          }
+        }
       const o = s.origin;
       if (Math.max(Math.abs(ship[0] - o[0]), Math.abs(ship[1] - o[1]), Math.abs(ship[2] - o[2])) > 62000) continue;
       for (const rows of Object.values(s.extras ?? {}))
@@ -64,9 +106,36 @@ export function createThingPlay({ sectors, pay, say = () => {}, travelling = () 
     }
   };
 
+  const verbOf = (n) => n.verb ?? actionOf(n.kind).verb;
+
+  const pressPlanet = () => {
+    const { id, traits: tr, row } = near;
+    if (near.verb === 'survey') {
+      const n = ledger.pay(`${id}:survey`, surveyPay(tr), 1);
+      if (!n) return false;
+      pay('found', n);
+      surveys = addSurvey(surveys, id);
+      saveSurveys(store, surveys);
+      say(THINGS.surveyed(row.name, traitFacts(tr).map(([k, v]) => `${k}: ${v}`)));
+    } else if (near.verb === 'probe') {
+      const n = ledger.pay(`${id}:probe`, PLAY.probe.pay, 1);
+      if (!n) return false;
+      pay('found', n);
+      say(THINGS.probed(row.name, tr.anomaly.id));
+    } else {
+      const n = ledger.pay(`${id}:search`, PLAY.search.pay, 1);
+      if (!n) return false;
+      pay('found', n);
+      say(THINGS.searched(row.name, tr.secret.kind));
+    }
+    near = null;
+    return true;
+  };
+
   return {
     ledger,
-    near: () => (near ? { id: near.id, kind: near.kind, verb: actionOf(near.kind).verb, name: near.row.name } : null),
+    near: () => (near ? { id: near.id, kind: near.kind, verb: verbOf(near), name: near.row.name } : null),
+    surveys: () => surveys,
     update(state, dt, t) {
       const s = state.ship;
       if (!s || state.crash) return;
@@ -75,9 +144,9 @@ export function createThingPlay({ sectors, pay, say = () => {}, travelling = () 
       if (looked <= 0) {
         looked = LOOK;
         const was = near?.id ?? null;
-        look(ship);
+        look(ship, t);
         // (a new thing in reach: the key, said once)
-        if (near && near.id !== was) say(THINGS.prompt(actionOf(near.kind).verb, near.row.name));
+        if (near && near.id !== was) say(THINGS.prompt(verbOf(near), near.row.name));
       }
       let draining = false;
       let tail = null;
@@ -118,6 +187,22 @@ export function createThingPlay({ sectors, pay, say = () => {}, travelling = () 
           if (side < 4 * r.size * (0.3 + 0.7 * (along / L))) tail = r;
         }
       }
+      // (low over a planet with a hazard: the shields drain by how bad it is, and staying through
+      // PLAY.brave.secs of it pays once)
+      if (hazardAt) {
+        const k = hazardDrain(hazardAt.hazard);
+        const was = state.shield;
+        if (state.shield > STORM.floor) state.shield = Math.max(STORM.floor, state.shield - STORM.drain * k * dt);
+        if (state.shield < was) state.hitAt = state.clock;
+        braveFor += dt;
+        if (braveFor >= PLAY.brave.secs && !ledger.paid(`${hazardAt.id}:brave`)) {
+          const n = ledger.pay(`${hazardAt.id}:brave`, PLAY.brave.per * hazardAt.hazard.level, 1);
+          if (n) {
+            pay('found', n);
+            say(THINGS.braved(hazardAt.name));
+          }
+        }
+      } else braveFor = 0;
       if (draining) {
         const was = state.shield;
         state.shield = stormDrain(state.shield, dt);
@@ -139,6 +224,7 @@ export function createThingPlay({ sectors, pay, say = () => {}, travelling = () 
     },
     press(state) {
       if (!near || !state.ship) return false;
+      if (near.kind === 'planet' || near.kind === 'secret') return pressPlanet();
       const traits = traitsOf(near.row);
       const r = act(ledger, { kind: near.kind, id: near.id, traits });
       if (!r) return false;

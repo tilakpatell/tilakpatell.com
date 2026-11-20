@@ -27,12 +27,36 @@
 //   the card's own, from the row alone (kind is placeIn's), with no words
 //   made and no system looked for, for a row round the ship (around.js)
 // placeReach(kind, row) → the card's reach, from the row alone, making nothing
+// planetTraits(row, sys) → a planet's traits (lib/space/traits.js) at its sector's distance out;
+//   a planet's card carries them as `traits`, and its facts say them (traitFacts(traits, moonName))
 // thingCardOf(kind) → THING_CARDS' row for a thing's kind, or the default's
 
 import { parseSpaceId } from '../../../lib/space/address.js';
 import { THING_KINDS, companionsOf } from '../../expanse/shared/gen';
 import { CATALOGUE_CARDS } from '../things/cards';
 import { PLACE } from '../words';
+import { goodById } from '../market/goods';
+import { planetRowOf } from '../../../lib/space/planetLook.js';
+import { traitsOfPlanet } from '../../../lib/space/traits.js';
+
+// a planet's traits (lib/space/traits.js), at its sector's distance out
+export function planetTraits(row, sys) {
+  const a = parseSpaceId(row.id);
+  const d = a ? Math.max(Math.abs(a.sx), Math.abs(a.sy ?? 0), Math.abs(a.sz)) : 0;
+  return traitsOfPlanet({ ...planetRowOf(row), system: { hazard: sys?.hazard ?? null } }, { d });
+}
+const goodName = (id) => goodById(id)?.name ?? PLACE.good[id] ?? id;
+// what a planet's traits add to its card's facts, in their order
+export function traitFacts(t, moonName = (k) => String(k + 1)) {
+  const f = [[PLACE.facts.resources, t.resources.map((r) => goodName(r.id)).join(', ')]];
+  if (t.rare) f.push([PLACE.facts.rare, goodName(t.rare.id)]);
+  if (t.anomaly) f.push([PLACE.facts.anomaly, PLACE.anomaly[t.anomaly.id]]);
+  if (t.ruins) f.push([PLACE.facts.ruins, PLACE.yes]);
+  if (t.secret) f.push([PLACE.facts.secret, PLACE.secret(moonName(t.secret.moon), t.secret.kind)]);
+  if (t.station) f.push([PLACE.facts.station, PLACE.yes]);
+  if (t.hazard) f.push([PLACE.facts.danger, PLACE.danger(t.hazard.id, t.hazard.level)]);
+  return f;
+}
 
 // The universe camera's far plane (scene.js's 45,000). Lane 2's levels.js
 // exports the same FAR once it's on main; around.js lists by it too.
@@ -118,9 +142,12 @@ function planetCard(row, sys) {
     [PLACE.facts.moons, String(moons)],
   ];
   if (rings) facts.push([PLACE.facts.rings, PLACE.yes]);
+  const traits = planetTraits(row, sys);
+  facts.push(...traitFacts(traits, (k) => row.moonList?.[k]?.name ?? `${row.name} ${k + 1}`));
   return {
     ...NONE,
     ...placeLook('planet', row),
+    traits,
     type,
     about: PLACE.about.planet({ type, system: sys.name, moons, rings }),
     facts,

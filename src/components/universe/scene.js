@@ -812,7 +812,15 @@ export async function create(canvas, ctx) {
     else if (press + 1 >= MINED_OUT) market.empty(id);
     return HOLD.stowed(got.map((g) => `${g.n} ${GOODS[g.good].name.toLowerCase()}`).join(', '));
   };
-  const thingPlay = createThingPlay({ sectors: () => expanse.sectors().values(), pay: (what, n) => pay(what, n), say: (text) => (state.note = { text, until: wall() + 3.5 }), travelling: () => Boolean(state.auto || state.jump), universe, reduced, stow });
+  // (the surveys' log: none in a private window, where the store throws)
+  const localStore = () => {
+    try {
+      return typeof window !== 'undefined' ? window.localStorage : null;
+    } catch {
+      return null;
+    }
+  };
+  const thingPlay = createThingPlay({ sectors: () => expanse.sectors().values(), pay: (what, n) => pay(what, n), say: (text) => (state.note = { text, until: wall() + 3.5 }), travelling: () => Boolean(state.auto || state.jump), universe, reduced, stow, store: localStore() });
   // and the big things, the Maw and the big stars, as landmarks on the sky, upright in the world (landmarks.js)
   const landmarks = createLandmarks(map, { skyFar: SKY_FAR });
   await breathe();

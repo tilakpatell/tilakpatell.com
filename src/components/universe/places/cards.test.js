@@ -3,7 +3,7 @@ import { PLACE } from '../words';
 import { PARK_GAP, clearOf } from '../ship';
 import { GARGANTUAN_FORMS, THING_KINDS, WONDER_KINDS, companionsOf, fullSector, placeIn, thingRow, UNIVERSE } from '../../expanse/shared/gen';
 import { parseSpaceId } from '../../../lib/space/address';
-import { FAR, THING_CARDS, placeCard, placeLook, placeReach } from './cards';
+import { FAR, THING_CARDS, placeCard, placeLook, placeReach, traitFacts } from './cards';
 
 const s = fullSector(UNIVERSE, 1, 0, 0);
 const found = (id) => {
@@ -77,7 +77,9 @@ describe('the rest of a generated place’s card', () => {
     const c = placeCard(found(ringed.id));
     const sys = s.systems[parseSpaceId(ringed.id).system];
     expect(c).toMatchObject({ kind: 'world', sub: ringed.type, name: ringed.name, color: ringed.color, r: ringed.radius, system: sys.id, faction: sys.faction, span: null });
-    expect(c.facts).toEqual([[PLACE.facts.system, sys.name], [PLACE.facts.moons, String(ringed.moonList.length)], [PLACE.facts.rings, PLACE.yes]]);
+    // (its system, moons and rings first; its traits after, traitFacts')
+    expect(c.facts.slice(0, 3)).toEqual([[PLACE.facts.system, sys.name], [PLACE.facts.moons, String(ringed.moonList.length)], [PLACE.facts.rings, PLACE.yes]]);
+    expect(c.facts.slice(3)).toEqual(traitFacts(c.traits, (k) => ringed.moonList[k].name));
     expect(c.about.endsWith(' and rings.')).toBe(true);
     const bare = planets.find((p) => !p.ringBand && !p.moonList.length);
     expect(placeCard(found(bare.id)).about).toMatch(/, with no moons\.$/);
@@ -166,5 +168,19 @@ describe('a mined-out moon’s card', () => {
     const card = placeCard({ kind: 'moon', row: found.m, planet: found.p, system: found.s });
     expect(card.facts).toContainEqual([PLACE.facts.mined, PLACE.mined]);
     expect(card.about).toContain('mined out');
+  });
+});
+
+describe('a planet’s card, with its traits', () => {
+  it('lists its resources, and whatever else it has, in words', async () => {
+    const { UNIVERSE: U, fullSector: full } = await import('../../expanse/shared/gen');
+    const s = full(U, 4, 0, 2).systems.find((x) => x.planets.length);
+    for (const p of s.planets) {
+      const card = placeCard({ kind: 'planet', row: p, system: s });
+      expect(card.traits).toBeTruthy();
+      const res = card.facts.find(([k]) => k === PLACE.facts.resources);
+      expect(res[1].length).toBeGreaterThan(0);
+      for (const [, v] of card.facts) expect(v, JSON.stringify(card.facts)).not.toMatch(/undefined|\[object/);
+    }
   });
 });
