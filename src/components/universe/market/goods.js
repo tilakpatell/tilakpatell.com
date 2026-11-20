@@ -19,6 +19,7 @@ const LIST = [
   good('titanium', 'raw', 'Titanium', 24),
   good('ice', 'raw', 'Ice', 10),
   good('gas', 'raw', 'Gas', 16),
+  good('organics', 'raw', 'Organics', 14), // (a forest's or an ocean's world: the planets' traits, lib/space/traits.js)
   good('scrap', 'salvage', 'Scrap', 14),
   good('components', 'salvage', 'Components', 40),
   good('datacores', 'salvage', 'Data cores', 70),
