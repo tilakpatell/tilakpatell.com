@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createEconomy } from '../economy';
 import { SYSTEMS } from './profiles';
-import { LIVE, shipSheet, signatureLine, systemRows } from './sheet';
+import { LIVE, partsSheet, shipSheet, signatureLine, systemRows } from './sheet';
 import { tierItem } from './tiers';
 
 // a wallet in memory with this many credits (economy.js's, no saves)
@@ -84,5 +84,19 @@ describe('the Systems tab’s head', () => {
     expect(signatureLine('falcon')).toMatchObject({ role: 'Smuggler and runner' });
     expect(signatureLine('falcon').line).toMatch(/compartments/);
     expect(signatureLine('falcon', { hull: 'dart' })).toEqual({ role: 'Garage build', line: 'A garage build: no signature of its own.' });
+  });
+});
+
+describe('the parts read-out', () => {
+  it('lists each slot, what’s fitted and what’s on offer, with the locks in words', () => {
+    const sheet = partsSheet({ crew: 'falcon', loadout: { booster: 'srb' }, economy: createEconomy(), unlocked: [] });
+    const boosters = sheet.find((s) => s.slot === 'booster');
+    expect(boosters).toMatchObject({ label: 'Boosters', fitted: { id: 'srb', name: 'Twin solid boosters' } });
+    expect(boosters.fitted.does).toContain('Agility −5%');
+    const portal = boosters.options.find((o) => o.id === 'portal');
+    expect(portal).toMatchObject({ open: false, owned: false });
+    expect(portal.lock).toMatch(/^Locked\. Reach level 7, or /);
+    expect(boosters.options.find((o) => o.id === 'iondrive')).toMatchObject({ name: 'Ion drive' });
+    expect(sheet.map((s) => s.slot)).toEqual(['booster', 'thrusters', 'guns', 'shields', 'fins', 'secondary', 'ordnance']);
   });
 });

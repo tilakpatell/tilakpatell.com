@@ -15,20 +15,12 @@
 //     (wet: a world with water drops its sea floor steeply; dry, its basins as gently as it lifts)
 
 import { cells3For, noise3For } from './fnl.js';
+import { TERRAIN } from '../../space/worldTables.js';
 
 export const CHARACTERS = ['continents', 'archipelago', 'canyons', 'mesas', 'dunes', 'craters', 'ridges', 'plateaus'];
 
-// starting values, tuned by the contact sheet (scripts/planet-contact-sheet.mjs)
-export const TERRAIN = {
-  continents: { shape: 1.3, sea: [0.35, 0.6], peaks: [300, 900], lift: 260 },
-  archipelago: { shape: 3.2, sea: [0.62, 0.8], peaks: [150, 450], lift: 200 },
-  canyons: { shape: 1.0, sea: [0, 0.15], peaks: [150, 350], lift: 60 },
-  mesas: { shape: 1.0, sea: [0, 0.15], peaks: [60, 160], lift: 60 },
-  dunes: { shape: 0.9, sea: [0, 0.1], peaks: [20, 60], lift: 40 },
-  craters: { shape: 1.0, sea: [0, 0.1], peaks: [70, 140], lift: 60 },
-  ridges: { shape: 1.1, sea: [0, 0.3], peaks: [600, 950], lift: 200 },
-  plateaus: { shape: 1.0, sea: [0, 0.3], peaks: [80, 200], lift: 0 },
-};
+// (the characters' ranges moved to lib/space/worldTables.js, which the universe's looks read too)
+export { TERRAIN };
 
 const GOLDEN = Math.PI * (3 - Math.sqrt(5));
 export const FIB_512 = Array.from({ length: 512 }, (_, i) => {

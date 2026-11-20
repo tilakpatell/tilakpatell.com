@@ -193,7 +193,7 @@ function FrontDoor({ draft, live, unlocked, ship, changed, onOpen, sell, onRecor
 // one category's items, a row each
 function Category({ slot, ship, draft, live, unlocked, economy, onStage, onLook, onHull, onRoll, onPaste, onSay, code, setCode, formId }) {
   const ids = idsIn(slot, draft, live);
-  const rows = rowsFor(slot, unlocked, ids.tuning, ship);
+  const rows = rowsFor(slot, unlocked, ids.tuning, ship, economy);
   const press = (r) => {
     if (!r.open) return onSay(`Locked. ${r.hint}.`);
     const pill = pillOf(economy, r.item);

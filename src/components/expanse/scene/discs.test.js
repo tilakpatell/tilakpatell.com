@@ -47,7 +47,11 @@ describe('the discs fed', () => {
     const byAt = (at) => w.got.find((d) => d.at.every((v, i) => Math.abs(v - at[i]) < 1e-6));
     const starA = byAt([390000, 0, 0]);
     expect(starA).toMatchObject({ r: 150, l: [0, 0, 0], alpha: 1, rough: 0 });
-    const pA = byAt(orbitAt(HAND.systems[0].planets[0], 1000));
+    // (from 10,000 off, the system is its star alone: its planet is no disc, levels.js's planetShown)
+    expect(byAt(orbitAt(HAND.systems[0].planets[0], 1000))).toBeUndefined();
+    const nearW = writer();
+    createDiscs(nearW, { budget: { discs: 100 } }).feed([HAND], [390000, 0, -2000], 1000);
+    const pA = nearW.got.find((d) => d.at.every((v, i) => Math.abs(v - orbitAt(HAND.systems[0].planets[0], 1000)[i]) < 1e-6));
     expect(pA.alpha).toBe(1);
     expect(pA.r).toBe(30);
     // (lit from its star)

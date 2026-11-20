@@ -3,7 +3,9 @@
 // stock ship's tune), the front door's groups, which row is staged and which
 // flown, and the word on a row's right. Pure, tested.
 //
-//   rowsFor(slot, unlocked, tuning, ship) → [{ id, name, module, open, hint, blurb, does, mass, power, paint, item }]
+//   rowsFor(slot, unlocked, tuning, ship, economy) → [{ id, name, module, open, hint, blurb, does, mass, power, paint, item }]
+//     (a part opens at its level as well as by its achievement: yardRules.js's partOpen, and its lock's
+//     sentence is lockHint's, bare, for the card to say as "Locked. …")
 //   GROUPS: [[name, slots]] the front door's, a game garage's sort
 //   idsIn(slot, draft, live) → { isBuild, tuning, staged, flown }
 //   statusOf(row, pill, ids) → { kind: 'locked'|'fitted'|'staged'|'flown'|'owned'|'price'|'short', text }
@@ -13,7 +15,7 @@
 import { STOCK, isOpen, partEffects, partsFor } from '../outfit';
 import { BUILD_SLOTS, isModuleOpen, modulesFor } from './parts';
 import { STOCK_BUILD, isStockModule } from './build';
-import { itemOfModule, itemOfPart } from '../yardRules';
+import { itemOfModule, itemOfPart, lockHint, partOpen } from '../yardRules';
 
 const cr = (n) => `${n.toLocaleString('en-GB')} ¢`;
 const DOES = { boost: 'Boost', accel: 'Acceleration', cruise: 'Cruise', agility: 'Agility', level: 'Self-levelling' };
@@ -30,15 +32,15 @@ const AS_IT_CAME = { name: 'As it came', module: true, open: true, hint: null, b
 const tuneRows = (slot, unlocked) => [{ ...AS_IT_CAME, id: STOCK_BUILD[slot] }, ...moduleRows(slot, unlocked).filter((r) => !isStockModule(slot, r.id))];
 
 // a row's model: whichever kind of thing the slot holds, said the same way
-export function rowsFor(slot, unlocked, tuning, ship) {
+export function rowsFor(slot, unlocked, tuning, ship, economy = null) {
   if (tuning) return tuneRows(slot, unlocked);
   if (BUILD_SLOTS.includes(slot)) return moduleRows(slot, unlocked);
   return partsFor(slot).map((p) => ({
     id: p.id,
     name: p.name,
     module: false,
-    open: isOpen(p, unlocked),
-    hint: p.hint,
+    open: slot === 'paint' ? isOpen(p, unlocked) : partOpen(p, unlocked, economy),
+    hint: slot === 'paint' ? p.hint : lockHint(p, itemOfPart(slot, p.id)),
     blurb: p.blurb,
     does: slot === 'paint' ? [] : partEffects(p, ship),
     mass: p.mass ?? 0,

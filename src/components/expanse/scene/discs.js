@@ -30,7 +30,8 @@ import { rowAt } from '../gen/paths';
 import { THING_KINDS, THING_NEAR } from '../gen/things';
 import { giantK, giantParts } from './giants';
 import { orbitAt } from '../gen/orbits';
-import { FAR, levelWeights } from './levels';
+import { FAR, levelWeights, planetShown } from './levels';
+import { planetSwatch } from '../../../lib/space/planetLook';
 import { MESH_NEAR, THING_DISC, thingsAround } from './nearThings';
 
 // how a middle-layer wonder looks as a disc (sectors.js's WONDER: a pulsar a
@@ -150,10 +151,14 @@ export function createDiscs(writer, { budget, far = FAR, keyed = false } = {}) {
             const a = companionAt(c, s, t);
             add(a[0], a[1], a[2], c.size, 'companion', c, s);
           }
-          for (const p of s.planets) {
-            const o = p.centre ? orbitAt(p, t) : p.at;
-            add(o[0], o[1], o[2], p.radius, 'planet', p, s);
-          }
+          // (its planets only near it: from further, the system is its star alone, levels.js)
+          const seen = planetShown(Math.hypot(s.at[0] - cam[0], s.at[1] - cam[1], s.at[2] - cam[2]), s.reach ?? s.star.size * 3);
+          if (seen > 0)
+            for (const p of s.planets) {
+              const o = p.centre ? orbitAt(p, t) : p.at;
+              add(o[0], o[1], o[2], p.radius, 'planet', p, s);
+              what[n - 1].shown *= seen;
+            }
         }
         for (const w of sector.wonders) {
           const look = WONDER[w.kind];
@@ -216,7 +221,7 @@ export function createDiscs(writer, { budget, far = FAR, keyed = false } = {}) {
           c = rgb(w.row.star.color);
           lift = STAR_LIFT;
         } else if (w.kind === 'planet') {
-          c = rgb(w.row.color ?? '#8a8178');
+          c = rgb(planetSwatch(w.row)); // (the look it's built with, near.js's, from far off)
           lx = w.star.at[0] - x;
           ly = w.star.at[1] - y;
           lz = w.star.at[2] - z;
