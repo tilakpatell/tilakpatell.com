@@ -4,7 +4,7 @@ import { STOCK, isOpen, partEffects, partsFor } from '../outfit';
 import { BUILD_SLOTS, isModuleOpen, modulesFor } from './parts';
 import { RAIL, RAIL_LABEL } from './rail';
 import { STOCK_BUILD, buildCode, isStockModule } from './build';
-import { itemOfModule, itemOfPart } from '../yardRules';
+import { itemOfModule, itemOfPart, lockHint, partOpen } from '../yardRules';
 import { pillOf } from '../shop';
 
 // The Shipyard's catalogue: a rail of every slot (the build's six, then the
@@ -34,15 +34,15 @@ const AS_IT_CAME = { name: 'As it came', module: true, open: true, hint: null, b
 const tuneRows = (slot, unlocked) => [{ ...AS_IT_CAME, id: STOCK_BUILD[slot] }, ...moduleRows(slot, unlocked).filter((r) => !isStockModule(slot, r.id))];
 
 // a row's model: whichever kind of thing the slot holds, said the same way
-function rowsFor(slot, unlocked, tuning, ship) {
+function rowsFor(slot, unlocked, tuning, ship, economy) {
   if (tuning) return tuneRows(slot, unlocked);
   if (BUILD_SLOTS.includes(slot)) return moduleRows(slot, unlocked);
   return partsFor(slot).map((p) => ({
     id: p.id,
     name: p.name,
     module: false,
-    open: isOpen(p, unlocked),
-    hint: p.hint,
+    open: slot === 'paint' ? isOpen(p, unlocked) : partOpen(p, unlocked, economy),
+    hint: slot === 'paint' ? p.hint : lockHint(p, itemOfPart(slot, p.id)),
     blurb: p.blurb,
     does: slot === 'paint' ? [] : partEffects(p, ship),
     mass: p.mass ?? 0,
@@ -58,7 +58,7 @@ export default function YardCatalogue({ slot, ship = null, onSlot, draft, live, 
   const isBuild = BUILD_SLOTS.includes(slot);
   // (a slot after the hull, on the crew's own ship: tuning, not a build)
   const tuning = isBuild && slot !== 'hull' && !draft.build;
-  const rows = rowsFor(slot, unlocked, tuning, ship);
+  const rows = rowsFor(slot, unlocked, tuning, ship, economy);
   const stagedId = isBuild ? (tuning ? (draft.tune?.[slot] ?? STOCK_BUILD[slot]) : (draft.build ?? null)?.[slot]) : (draft.loadout[slot] ?? STOCK);
   const flownId = isBuild ? (live.build ? live.build[slot] : slot === 'hull' ? null : (live.tune?.[slot] ?? STOCK_BUILD[slot])) : (live.loadout[slot] ?? STOCK);
 

@@ -74,7 +74,7 @@ describe('the parts', () => {
 
   it('borrow only the look of a part of their own slot (a weapon line’s, of a gun) that has one of its own', () => {
     const borrowers = PARTS.filter((p) => p.look);
-    expect(borrowers.map((p) => p.id).sort()).toEqual(['council', 'crystal', 'darkmatter', 'energon', 'flak', 'incom', 'ion', 'missiles', 'mk2', 'seismic', 'vamonos']);
+    expect(borrowers.map((p) => p.id).sort()).toEqual(['ablative', 'burst', 'canards', 'council', 'crystal', 'darkmatter', 'energon', 'flak', 'gyro', 'incom', 'ion', 'iondrive', 'missiles', 'mk2', 'seismic', 'vamonos']);
     for (const p of borrowers) {
       const from = partById(['secondary', 'ordnance'].includes(p.slot) ? 'guns' : p.slot, p.look);
       expect(from.id, p.id).toBe(p.look);
@@ -150,7 +150,7 @@ describe('what a loadout does', () => {
   });
 
   it('says what each part does, in words', () => {
-    expect(partEffects(partById('booster', 'srb'))).toEqual(['Boost +25%', 'Acceleration +20%']);
+    expect(partEffects(partById('booster', 'srb'))).toEqual(['Boost +25%', 'Acceleration +20%', 'Agility −5%']);
     expect(partEffects(partById('guns', 'fusion'))).toEqual(['Fire rate −50%', '3× on hunters']);
     expect(partEffects(partById('shields', 'reinforced'))).toEqual(['Damage taken −20%', 'Recharge −15%']);
     expect(partEffects(partById('booster', STOCK))).toEqual([]);
@@ -421,5 +421,25 @@ describe('the ship’s tiers on its stats', () => {
     const fast = Object.fromEntries(readout('xwing', STOCK_LOADOUT, null, null, coreStats('xwing', { engines: 5 })).map((r) => [r.id, r.value]));
     expect(fast.speed).toBeCloseTo(plain.speed * 1.1 * 1.32, 9);
     expect(fast.agility).toBeCloseTo(plain.agility * 1.12, 9);
+  });
+});
+
+describe('the parts as side-grades', () => {
+  it('gives the strong parts a cost as well as a gain', () => {
+    for (const [slot, id, k] of [['booster', 'portal', 'agility'], ['booster', 'afterburner', 'agility'], ['thrusters', 'racing', 'level'], ['thrusters', 'vector', 'boost'], ['shields', 'vibranium', 'accel']]) expect(partById(slot, id)[k], id).toBeLessThan(0);
+    expect(partById('shields', 'fastcharge').armor).toBeGreaterThan(1);
+  });
+
+  it('has a part in every slot that needs no achievement, two in most', () => {
+    for (const slot of ['booster', 'thrusters', 'guns', 'shields', 'fins']) expect(partsFor(slot).filter((p) => p.id !== STOCK && !p.achievement).length, slot).toBeGreaterThanOrEqual(2);
+  });
+
+  it('opens an achievement’s part to whoever bought it', () => {
+    const portal = partById('booster', 'portal');
+    expect(isOpen(portal, NONE)).toBe(false);
+    expect(isOpen(portal, NONE, (k) => k === 'part:booster:portal')).toBe(true);
+    expect(equip('xwing', STOCK_LOADOUT, 'booster', 'portal', NONE, null, null, null, (k) => k === 'part:booster:portal')).toMatchObject({ ok: true });
+    expect(loadoutOf({ xwing: { booster: 'portal' } }, 'xwing', NONE, null, null, null, (k) => k === 'part:booster:portal').booster).toBe('portal');
+    expect(loadoutOf({ xwing: { booster: 'portal' } }, 'xwing', NONE).booster).toBe(STOCK);
   });
 });
