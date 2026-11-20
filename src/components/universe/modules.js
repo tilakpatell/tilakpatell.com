@@ -15,13 +15,18 @@
 //   (where the shots leave from, in turn), fire(), update(dt, { throttle,
 //   boost, turn, climb }), dispose() }
 // fresh: the slots just fitted, which ease in. mounts: a garage build's
-// hardpoints (shipyard/parts.js), in place of the ship's own.
+// hardpoints (shipyard/parts.js), in place of the ship's own. tiers: the
+// ship's core systems (ships/), the ones that show: cargo pods under its
+// flanks from the hold's Mk III and a turning scanner dish on its starboard
+// side from the scanner's (ships/looks.js's SHOWS_FROM), bigger at Mk V;
+// nothing at Mk I, so a ship as it comes draws as it always did.
 
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
 import { turned } from './hulls';
 import { STOCK, partById } from './outfit';
+import { SHOWS_FROM, partScale } from './ships/looks';
 
 // Each ship's hardpoints (one side's, +x; the other is its mirror): pod
 // (a booster's middle, its length and radius), corner (the thruster blocks,
@@ -133,7 +138,7 @@ const rounded = (w, h, d, r = Math.min(w, h, d) * 0.3) => new RoundedBoxGeometry
 const tube = (r, len, seg = 32) => new THREE.CylinderGeometry(r, r, len, seg); // (stood on y)
 const LAY = [Math.PI / 2, 0, 0]; // (a CylinderGeometry laid along z, its top toward +z)
 
-export function buildModules(kind, loadout = {}, engines = [], { fresh = [], mounts = null } = {}) {
+export function buildModules(kind, loadout = {}, engines = [], { fresh = [], mounts = null, tiers = null } = {}) {
   // a part with no model of its own is drawn as the one it borrows the look of (outfit.js's `look`)
   const looks = (slot) => partById(slot, loadout[slot])?.look ?? loadout[slot];
   const at = mounts ?? MOUNTS[kind] ?? MOUNTS.falcon; // (a garage build brings its hull's own)
@@ -145,6 +150,7 @@ export function buildModules(kind, loadout = {}, engines = [], { fresh = [], mou
   const nozzles = [];
   const muzzles = [];
   const easing = []; // { holder, age }: the parts just fitted, swinging into place
+  const spinners = []; // (the scanner's dish, turning)
   let flame = 1;
   let slot = null; // the slot whose part is being built (its meshes go in its own holder)
   const holders = {};
@@ -485,6 +491,31 @@ export function buildModules(kind, loadout = {}, engines = [], { fresh = [], mou
     add(merge(both([[fin, [x, y, z], [0, 0, -0.3]]])), metal);
     add(merge(both([[rounded(0.0036, 0.008, 0.026, 0.0012), [x + 0.004, y + 0.028, z + 0.016], [0, 0, -0.3]]])), band);
   }
+
+  // the tiers that show: cargo pods slung under the boosters' line, banded in the trim
+  begin('cargo');
+  if ((tiers?.hold ?? 1) >= SHOWS_FROM.hold && at.pod) {
+    const k = partScale(tiers.hold);
+    const [x, y, z, len, r] = at.pod;
+    const [w, h, l] = [r * 1.6 * k, r * 1.3 * k, len * 0.55 * k];
+    const cy = y - r * 2.4;
+    add(merge(both([[rounded(w, h, l), [x, cy, z]]])), metal);
+    add(merge(both([[rounded(w * 1.05, h * 1.05, l * 0.1), [x, cy, z - l * 0.32]], [rounded(w * 1.05, h * 1.05, l * 0.1), [x, cy, z + l * 0.32]]])), band);
+  }
+  // and a scanner dish on a short mast, starboard, turning as it flies
+  begin('scanner');
+  if ((tiers?.scanner ?? 1) >= SHOWS_FROM.scanner && at.emitter) {
+    const k = partScale(tiers.scanner);
+    const [x, y, z] = at.emitter;
+    const R = 0.011 * k;
+    const mast = 0.008 * k;
+    add(merge([[tube(R * 0.12, mast), [x, y + mast / 2, z]]]), dark);
+    const bowl = turned([[0, 0], [R * 0.5, R * 0.08], [R, R * 0.32], [R * 0.96, R * 0.36]], 32);
+    const dish = add(merge([[bowl, [0, 0, 0], [-0.9, 0, 0]]]), metal);
+    dish.position.set(x, y + mast, z);
+    dish.userData.spin = 0.9;
+    spinners.push(dish);
+  }
   slot = null;
 
   // each part in its own holder about its own middle, so it can swing in from there
@@ -532,6 +563,7 @@ export function buildModules(kind, loadout = {}, engines = [], { fresh = [], mou
         g.mat.color.copy(g.color).multiplyScalar(g.now);
         g.mat.visible = g.now > 0.01;
       }
+      for (const sp of spinners) sp.rotation.y += dt * sp.userData.spin;
       for (const v of vanes) {
         v.rotation.x += (climb * 0.35 * v.userData.side - v.rotation.x) * settle;
         v.rotation.z += (-turn * 0.4 - v.rotation.z) * settle;

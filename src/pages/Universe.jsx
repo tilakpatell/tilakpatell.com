@@ -40,6 +40,7 @@ import { worldStore } from '../runtime';
 import FlightMenu from '../components/universe/menu/FlightMenu';
 import { useFlightMenu, useFlightMode } from '../components/universe/menu/useFlightMenu';
 import { useControls } from '../components/universe/useControls';
+import { placeMarket } from '../components/universe/market/trade';
 
 const PORTAL = '#97ce4c';
 // the phone out past the belt (universe/phone.js): its lock screen, fetched
@@ -108,6 +109,7 @@ export default function Universe({ ask = false }) {
   const [mapState, setMapState] = useState('loading'); // ('live', 'loading' or 'flat': whether a scene runs to find it)
   const [found, setFound] = useState(null); // ({ id, dest }: what the scene found for a place, dest null for nothing there)
   const [docked, setDocked] = useState(null); // (the station the ship's docked at)
+  const [at, setAt] = useState(null); // (and the hand-made place it's at)
   const reduced = useReducedMotion();
   const map = useRef({ live: false, dive: () => 0, escape: () => false, whole: () => false, travel: () => false, where: () => null, place: () => null, fetchPlace: async () => null, nearby: () => [] }); // the 3D map, while it's drawing
   const comms = useRef(null);
@@ -164,8 +166,9 @@ export default function Universe({ ask = false }) {
   // the quiet HUD (spec: docs/superpowers/specs/2026-11-18-quiet-hud-design.md): with a ship flying on the
   // drawn map, the side panel, the site's nav and the corner's tools go, and the flight menu (Esc) has them
   const quiet = Boolean(ship) && mapState === 'live';
-  // (docked at a station, the side panel comes back with the place's card: its market, its hangar; it goes again as the ship leaves)
-  const panelNow = !quiet || siteTour || Boolean(docked);
+  // (docked at a station, or at a hand-made place that keeps a market, the side panel comes back with the place's card:
+  // its market, its hangar; it goes again as the ship leaves)
+  const panelNow = !quiet || siteTour || Boolean(docked) || Boolean(at && placeMarket(at));
   const tuckedNow = (tucked || !panelNow) && !siteTour;
   const [controls, setControls] = useControls(); // (the flight settings: the scene's, and the menu's Settings tab)
   // the menu: over the flying, not over the nav map, the Hangar, the phone or the front door's choice
@@ -391,6 +394,9 @@ export default function Universe({ ask = false }) {
   // portal or the RV's Blue Sky: the scene has the ship out at the place
   // under its flash either way), through a gate, or something for the crew to say
   const onEvent = (e) => {
+    // (the hand-made place the ship is at, for a market on its card: market/trade.js's placeMarket)
+    if (e.type === 'arrive') setAt(e.id);
+    else if (e.type === 'depart') setAt((was) => (was === e.id ? null : was));
     if (e.type === 'earn') {
       pay(e.what, e.n, e.side);
       return;
@@ -570,6 +576,7 @@ export default function Universe({ ask = false }) {
         universe={universe}
         wonder={wonderDest ?? cardRow(place, found, mapState)}
         docked={docked}
+        at={at}
         onFly={shut(ship ? (id) => travel(id, drive) : null)}
         onSelect={select}
         onEnter={shut(enter)}

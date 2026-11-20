@@ -8,6 +8,9 @@
 // engineLook(tier, colour) → { r (times its radius), colour ('#rrggbb') }
 // engineList(list, tier) → the engines (engines.js's { at, r, colour }) at that
 //   tier: the list itself at Mk I
+// SHOWS_FROM: { hold, scanner }: the tier from which the hull wears its cargo pods
+//   and its scanner dish (modules.js); partScale(tier) → their size, 1 at Mk III
+// jumpSize(tier) → how big the ring and flash a jump comes out of are, 1 at Mk I
 
 export const HOT = '#cfe4ff';
 const MAX = 5;
@@ -22,6 +25,10 @@ export function engineLook(tier, colour) {
   const to = hex(HOT);
   return { r: 1 + 0.1 * (t - 1), colour: from && k > 0 ? toHex(from.map((v, i) => v + (to[i] - v) * k)) : colour };
 }
+
+export const SHOWS_FROM = Object.freeze({ hold: 3, scanner: 3 });
+export const partScale = (tier) => 1 + 0.2 * (Math.min(5, Math.max(3, Math.floor(tier) || 3)) - 3);
+export const jumpSize = (tier) => 1 + 0.15 * (Math.min(5, Math.max(1, Math.floor(tier) || 1)) - 1);
 
 export function engineList(list, tier) {
   if (!(tier > 1)) return list;
