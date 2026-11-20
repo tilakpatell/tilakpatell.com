@@ -77,7 +77,7 @@ describe('neighbourhoods', () => {
     const near = (sx, sz) => {
       const k = `${sx},${sz}`;
       if (!made.has(k)) {
-        // (the middle layer's old sector, with its bodies: fullSector's first `legacy` systems and wonders, before what it appends)
+        // (the old middle layer's: a whole sector's first systems and wonders, `legacy` says how many)
         const s = fullSector(UNIVERSE, sx, 0, sz, { things: false });
         made.set(k, [...s.systems.slice(0, s.legacy.systems).map((y) => ({ at: y.at, r: y.reach })), ...s.wonders.slice(0, s.legacy.wonders).map((w) => ({ at: w.at, r: w.size }))]);
       }

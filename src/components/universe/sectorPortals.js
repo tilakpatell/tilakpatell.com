@@ -76,11 +76,12 @@ export function createSectorPortals(parent) {
       g.add(m);
       return m;
     };
-    layer(HAZE_FRAG, p.r * 7, 1, additive);
-    layer(SWIRL_FRAG, p.r * 2.4, 3, premultiplied, { uSeed: { value: 2.3 + i * 1.7 } });
-    layer(SPARK_FRAG, p.r * 3.2, 4, additive);
+    const r = p.show ?? p.r; // (the Curve Rift's is drawn far bigger than it takes you: deep.js)
+    layer(HAZE_FRAG, r * (p.show ? 3.4 : 7), 1, additive); // (a big one's glow kept close: it sits in the dark, not lights it)
+    layer(SWIRL_FRAG, r * 2.4, 3, premultiplied, { uSeed: { value: 2.3 + i * 1.7 } });
+    layer(SPARK_FRAG, r * 3.2, 4, additive);
     group.add(g);
-    faces.push(g);
+    faces.push({ g, lopsided: Boolean(p.show), seed: i * 1.7 });
   });
   const q = new THREE.Quaternion();
   return {
@@ -90,7 +91,11 @@ export function createSectorPortals(parent) {
       if (!camera) return;
       // always face the camera: undo the map's turn, then take the camera's
       group.getWorldQuaternion(q).invert().multiply(camera.quaternion);
-      for (const g of faces) g.quaternion.copy(q);
+      for (const { g, lopsided, seed } of faces) {
+        g.quaternion.copy(q);
+        // (a big one lopsided, as the show draws them, and wobbling a little)
+        if (lopsided) g.scale.set(1 + 0.04 * Math.sin(t * 1.1 + seed), 1.24 + 0.06 * Math.sin(t * 1.7 + seed), 1);
+      }
     },
     dispose() {
       parent.remove(group);
