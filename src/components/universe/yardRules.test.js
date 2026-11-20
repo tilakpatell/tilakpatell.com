@@ -4,7 +4,7 @@ import { itemFor } from './catalog';
 import { STOCK, STOCK_LOADOUT, partById } from './outfit';
 import { STOCK_BUILD, buildCode, statsOfBuild } from './shipyard/build';
 import { modulesFor } from './shipyard/parts';
-import { check, diff, draftKeys, fitDraft, hullLine, hullName, itemOfModule, itemOfPart, openDraft, pasteDraft, rollDraft, setHull, setModule, setPart, sellable } from './yardRules';
+import { check, diff, draftKeys, fitDraft, hullLine, hullName, itemOfModule, itemOfPart, lockHint, lockOf, openDraft, pasteDraft, rollDraft, setHull, setModule, setPart, sellable } from './yardRules';
 
 const wallet = ({ credits = 0, owned = [], unlocked = [] } = {}) => {
   const e = createEconomy({ achievements: () => unlocked });
@@ -196,6 +196,14 @@ describe('check', () => {
     const r = check(d, { kind: 'falcon', unlocked: [], economy: wallet() });
     expect(r.issues[0]).toMatchObject({ slot: 'thrusters', id: 'vamonos', why: 'locked' });
     expect(r.issues[0].text).toMatch(/^Locked\. Reach level 3\.$/);
+  });
+
+  it('says a lock as a bare sentence for the shipyard’s card, and in full for the bill', () => {
+    const p = partById('booster', 'afterburner');
+    const item = itemOfPart('booster', 'afterburner');
+    expect(lockHint(p, item)).toBe('Reach level 4, or hit the exhaust port in the trench run for it free');
+    expect(lockOf(p, item)).toBe(`Locked. ${lockHint(p, item)}.`);
+    expect(lockHint(partById('thrusters', 'vamonos'), itemOfPart('thrusters', 'vamonos'))).toBe('Reach level 3');
   });
 
   it('says the shop’s still opening with no wallet', () => {

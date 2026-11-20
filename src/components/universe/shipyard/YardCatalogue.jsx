@@ -4,7 +4,7 @@ import { STOCK, isOpen, partEffects, partsFor } from '../outfit';
 import { BUILD_SLOTS, isModuleOpen, modulesFor } from './parts';
 import { RAIL, RAIL_LABEL } from './rail';
 import { STOCK_BUILD, buildCode, isStockModule } from './build';
-import { itemOfModule, itemOfPart, lockOf, partOpen } from '../yardRules';
+import { itemOfModule, itemOfPart, lockHint, partOpen } from '../yardRules';
 import { pillOf } from '../shop';
 
 // The Shipyard's catalogue: a rail of every slot (the build's six, then the
@@ -42,7 +42,7 @@ function rowsFor(slot, unlocked, tuning, ship, economy) {
     name: p.name,
     module: false,
     open: slot === 'paint' ? isOpen(p, unlocked) : partOpen(p, unlocked, economy),
-    hint: slot === 'paint' ? p.hint : lockOf(p, itemOfPart(slot, p.id)).replace(/^Locked\. |\.$/g, ''),
+    hint: slot === 'paint' ? p.hint : lockHint(p, itemOfPart(slot, p.id)),
     blurb: p.blurb,
     does: slot === 'paint' ? [] : partEffects(p, ship),
     mass: p.mass ?? 0,
