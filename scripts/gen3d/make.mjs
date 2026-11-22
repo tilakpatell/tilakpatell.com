@@ -174,5 +174,12 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const usage = 'usage: node scripts/gen3d/make.mjs NAME (--image FRONT [--left L --back B --right R] | --prompt "…") [--faithful | --no-faithful] [--what "…"] [--faces N] [--tex N]';
   if (!name || !(opts.image || opts.prompt)) throw new Error(usage);
   for (const f of typeof opts.image === 'object' ? Object.values(opts.image) : [opts.image].filter(Boolean)) if (!existsSync(f)) throw new Error(`no ${f}\n${usage}`);
-  await make(name, { ...opts, faithful: !unfaithful && (faithful || typeof opts.image === 'string') });
+  try {
+    await make(name, { ...opts, faithful: !unfaithful && (faithful || typeof opts.image === 'string') });
+  } finally {
+    // (the judge's llama-server, when Qwen3-VL picked or judged: a child of this process, it kept
+    // it from ever exiting, so a model made and judged waited out the runner's two hours and was
+    // called hung, its pull request never opened)
+    (await import('./vlm.mjs')).stop();
+  }
 }
