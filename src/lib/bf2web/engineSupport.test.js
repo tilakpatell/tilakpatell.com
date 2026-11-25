@@ -102,7 +102,11 @@ describe('whether a browser can run bf2-web’s engine', () => {
       maxStorageTexturesPerShaderStage: 8, maxUniformBuffersPerShaderStage: 12, maxComputeInvocationsPerWorkgroup: 1024,
       maxComputeWorkgroupSizeX: 1024, maxComputeWorkgroupSizeY: 1024, maxComputeWorkgroupSizeZ: 64, maxComputeWorkgroupStorageSize: 32768,
     };
-    const gpu = (limits) => ({ requestAdapter: async () => ({ features: new Set(['texture-compression-bc', 'dual-source-blending']), limits: supportedLimits(limits), info: { vendor: 'apple', architecture: 'metal-3' } }) });
+    // (float32-filterable: Dawn's Metal backend, PhysicalDeviceMTL.mm InitializeSupportedFeaturesImpl, google/dawn main blob f7df6e12:
+    //   if ([*mDevice supports32BitFloatFiltering]) { EnableFeature(Feature::Float32Filterable); }   (built for macOS 11 / iOS 14 and up)
+    //   #elif DAWN_PLATFORM_IS(MACOS): if ([*mDevice supportsFamily:MTLGPUFamilyMac2]) { EnableFeature(Feature::Float32Filterable); }
+    // Apple silicon Macs are MTLGPUFamilyMac2 GPUs; r1080's needs name the feature, so the Mac fixture lists it)
+    const gpu = (limits) => ({ requestAdapter: async () => ({ features: new Set(['texture-compression-bc', 'dual-source-blending', 'float32-filterable']), limits: supportedLimits(limits), info: { vendor: 'apple', architecture: 'metal-3' } }) });
     const mac = { ...browser, deviceMemory: null, cores: 12 };
 
     it('reads every limit the needs name, off the prototype, and lets the Mac through', async () => {
