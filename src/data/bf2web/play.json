@@ -497,6 +497,19 @@
         "movies/",
         "films/"
       ]
+    },
+    "r1080-b06afd58": {
+      "site": "sites/r1080-b06afd58/",
+      "export": "web/",
+      "uiData": "sites/r1080-b06afd58/ui-data/",
+      "exportAllow": [
+        "fonts/",
+        "strings/",
+        "svg/",
+        "textures/",
+        "movies/",
+        "films/"
+      ]
     }
   }
 }
