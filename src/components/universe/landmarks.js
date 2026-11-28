@@ -157,13 +157,14 @@ varying vec3 vCol1;
 varying float vK;
 varying vec3 vAxis;
 // a big sun, from far off (galaxy/sky.js's, made to carry across the map):
-// a white-hot disc in a wide glare of its colour, with long faint rays
+// a white-hot disc in a close glare of its colour, with short faint rays
 vec3 sunOf(vec2 uv, vec3 col) {
   float r = length(uv);
   float disc = smoothstep(0.06, 0.045, r);
-  float glow = exp(-r * 6.0) * 1.1 + exp(-r * 2.2) * 0.32;
+  // (its glare kept close and its rays faint: a sun seen across space, not a lens flare)
+  float glow = exp(-r * 7.0) * 0.95 + exp(-r * 2.6) * 0.12;
   float a = atan(uv.y, uv.x);
-  float rays = pow(abs(cos(a * 3.0)), 40.0) * exp(-r * 2.6) * 0.5 + pow(abs(cos(a * 2.0 + 0.6)), 70.0) * exp(-r * 3.0) * 0.32;
+  float rays = pow(abs(cos(a * 3.0)), 60.0) * exp(-r * 4.0) * 0.18 + pow(abs(cos(a * 2.0 + 0.6)), 90.0) * exp(-r * 4.5) * 0.1;
   return (col * 1.6 * (glow + rays) + vec3(6.0) * disc) * smoothstep(1.0, 0.65, r);
 }
 void main() {
