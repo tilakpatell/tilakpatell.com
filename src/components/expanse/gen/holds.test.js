@@ -79,6 +79,6 @@ describe('ids', () => {
     expect(fullSector(UNIVERSE, 1, 0, 0).extras).toEqual(s.extras);
   });
   it('names the lists in their order', () => {
-    expect(EXTRA_LISTS).toEqual(['gargantuan', 'arrival', 'wormhole', 'remnant', 'pulsar', 'protostar', 'storm', 'pocket', 'swarm', 'herd', 'debris', 'field', 'comet', 'rig', 'fleet', 'shipyard']);
+    expect(EXTRA_LISTS).toEqual(['gargantuan', 'arrival', 'wormhole', 'remnant', 'pulsar', 'protostar', 'storm', 'pocket', 'swarm', 'herd', 'debris', 'field', 'comet', 'rig', 'fleet', 'shipyard', 'dwarf', 'quasar']);
   });
 });

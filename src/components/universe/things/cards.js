@@ -41,6 +41,8 @@ export const CATALOGUE_CARDS = {
   debris: card('debris', { solid: false, chart: dot(15) }),
   magnetar: card('magnetar', { chart: STAR }),
   protostar: card('protostar', { chart: STAR }),
+  dwarf: card('dwarf', { chart: STAR }),
+  quasar: card('quasar', { chart: Object.freeze({ shape: 'star', priority: 60 }) }),
   // (parked outside its throat)
   wormhole: card('wormhole', { chart: Object.freeze({ shape: 'hole', priority: 40 }) }),
   // (a gargantuan is on the sky from across a sector, so it's listed out to 400,000; parked

@@ -36,7 +36,13 @@ export const ACTIONS = Object.freeze({
   monolith: { verb: 'scan', times: 3, once: true, near: 6 },
   beacon: { verb: 'follow', times: 0, once: true, near: 8 },
   fleet: { verb: 'hail', times: 0, once: true, near: 3 },
+  // (a brown dwarf's and a quasar's readings: a quasar's worth three, scanned from its disc's edge)
+  dwarf: { verb: 'scan', times: 1, once: true, near: 6 },
+  quasar: { verb: 'scan', times: 3, once: true, near: 2 },
 });
+
+// a quasar's two jets, out of both its poles
+export const jetDirs = (traits) => [traits.axis, traits.axis.map((c) => -c)];
 
 export const actionOf = (kind) => (Object.hasOwn(ACTIONS, kind) ? ACTIONS[kind] : null);
 
@@ -68,10 +74,10 @@ export function act(ledger, { kind, id, traits = {}, hostile = false }) {
 
 export const stormDrain = (shields, dt) => (shields <= STORM.floor ? shields : Math.max(STORM.floor, shields - STORM.drain * dt));
 
-export function inBeam(dirs, at, ship, size) {
+export function inBeam(dirs, at, ship, size, reach = 25) {
   const v = [ship[0] - at[0], ship[1] - at[1], ship[2] - at[2]];
   const d = Math.hypot(v[0], v[1], v[2]);
-  if (d === 0 || d > 25 * size) return false;
+  if (d === 0 || d > reach * size) return false;
   return dirs.some((u) => (u[0] * v[0] + u[1] * v[1] + u[2] * v[2]) / d > Math.cos(BEAM_WIDTH));
 }
 

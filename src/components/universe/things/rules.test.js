@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ACTIONS, ORE_CAP, STORM, act, actionOf, createLedger, inBeam, stormDrain, wormholeThrows } from './rules';
+import { ACTIONS, ORE_CAP, STORM, act, actionOf, createLedger, inBeam, jetDirs, stormDrain, wormholeThrows } from './rules';
 
 describe('what a thing lets you do', () => {
   it('pays salvage and scans once a visit, ore up to five rocks a field', () => {
@@ -29,5 +29,22 @@ describe('what a thing lets you do', () => {
     expect(wormholeThrows(w, [10, 0, 0])).toBe(true);
     expect(wormholeThrows(w, [10, 0, 0], { travelling: true })).toBe(false);
     expect(wormholeThrows(w, [60, 0, 0])).toBe(false);
+  });
+});
+
+describe('a quasar and a brown dwarf', () => {
+  it('can be scanned once each, a quasar for three times a dwarf', () => {
+    const ledger = createLedger();
+    expect(act(ledger, { kind: 'quasar', id: 'q' })).toEqual({ verb: 'scan', pay: 3 });
+    expect(act(ledger, { kind: 'quasar', id: 'q' })).toEqual({ verb: 'scan', pay: 0 });
+    expect(act(ledger, { kind: 'dwarf', id: 'd' })).toEqual({ verb: 'scan', pay: 1 });
+  });
+  it('has jets out of both poles, and a ship down one is in it', () => {
+    const tr = { axis: [0, 1, 0], jet: 10 };
+    const dirs = jetDirs(tr);
+    expect(dirs).toEqual([[0, 1, 0], [-0, -1, -0]]);
+    expect(inBeam(dirs, [0, 0, 0], [0, -500, 0], 1000, 1)).toBe(true);
+    expect(inBeam(dirs, [0, 0, 0], [500, 0, 0], 1000, 1)).toBe(false);
+    expect(inBeam(dirs, [0, 0, 0], [0, 1500, 0], 1000, 1)).toBe(false); // (past the jet's end)
   });
 });

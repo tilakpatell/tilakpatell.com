@@ -21,6 +21,7 @@
 //   lookDistance(a, b) → how far apart two looks are (0 the same; a family apart is 100)
 //   planetRowOf(p), moonRowOf(m, p) → the row a look reads, from a sector's planet and moon
 //     (the fields of a planet's row a look reads)
+//   (a moon's row with mined: true is drawn mined out: stripped darker, its workings' cuts lit)
 //   planetSwatch(p) → planetLook(planetRowOf(p)).swatch, kept on the sector's row (a WeakMap)
 
 import { fold } from './hash64.js';
@@ -39,7 +40,7 @@ export const FLAG_SETS = {
 const SALT = 0xa4c6e208;
 
 export const planetRowOf = (p) => ({ id: p.id.toLowerCase(), type: p.type, seed: String(p.seed), radius: p.radius, moons: typeof p.moons === 'number' ? p.moons : (p.moons?.length ?? 0), rings: Boolean(p.rings) });
-export const moonRowOf = (m, p) => ({ id: m.id.toLowerCase(), type: m.type, seed: String(m.seed), radius: m.radius, parent: p.id.toLowerCase() });
+export const moonRowOf = (m, p) => ({ id: m.id.toLowerCase(), type: m.type, seed: String(m.seed), radius: m.radius, parent: p.id.toLowerCase(), ...(m.mined ? { mined: true } : {}) });
 const swatches = new WeakMap();
 export function planetSwatch(p) {
   let c = swatches.get(p);
@@ -211,6 +212,17 @@ function moonLook(v, rnd, base, ch = null) {
   };
 }
 
+// a moon mined out by someone long gone: its ground stripped darker, its cracks the cuts of the
+// workings, lit still by what's left running in them
+function minedLook(look, rnd) {
+  const p = look.pal;
+  return {
+    ...look,
+    pal: { ...p, base: scale(p.base, 0.7), dark: scale(p.dark, 0.6), crack: hexOf(between(rnd, 18, 40), 1, between(rnd, 0.5, 0.6)) },
+    p: { ...look.p, cracks: between(rnd, 0.8, 1.2), craters: Math.max(look.p.craters, 0.7) },
+  };
+}
+
 const memo = new Map();
 const MEMO = 4096;
 
@@ -225,7 +237,7 @@ export function planetLook(row) {
   const atmo = air(mix(v.sky.high, v.sky.low, 0.35), 1.6 + 1.4 * v.sky.haze, 1.045 + 0.03 * v.sky.haze, mix('#ff9a60', v.sky.low, 0.3));
   const ch = v.character ?? { kind: 'craters', sea: 0, peaks: 300, rough: 1 };
   let look;
-  if (row.parent) look = moonLook(v, rnd, base);
+  if (row.parent) look = row.mined ? minedLook(moonLook(v, rnd, base), rnd) : moonLook(v, rnd, base);
   else if (row.type === 'rock') look = moonLook(v, rnd, base, ch);
   else {
     const family = SHADER[row.type] ?? 'desert';

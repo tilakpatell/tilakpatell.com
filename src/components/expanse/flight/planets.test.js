@@ -5,6 +5,7 @@ import { LIFE, expanseLife } from '../../../lib/land/flight/lifeTables';
 import { SITE_GROUND, SITE_LAYERS } from '../../../lib/land/flight/planetTables';
 import { makeSector } from '../gen/sector.js';
 import { UNIVERSE, hash64 } from '../gen/seed.js';
+import { moonsOf } from '../gen/systems.js';
 import { FIGURES, GALAXY_KINDS, SURFACE_MODELS } from '../../galaxy/shared/models';
 import { SITES } from '../../galaxy/shared/ground';
 import { BUILT_KINDS } from '../../universe/shared/flying';
@@ -68,7 +69,8 @@ describe('the flight’s planets, composed', () => {
     expect(row).toMatchObject({ id: `${p.id.toLowerCase()}:0`, parent: p.id.toLowerCase() });
     expect(['rocky', 'icy']).toContain(row.type);
     expect(planetSpecOf(row.id)).toMatchObject({ kind: 'moon', buildable: false });
-    expect(expanseRow(`${p.id}:${p.moons}`)).toBeNull();
+    // (past every moon it has: a giant's outer ones too)
+    expect(expanseRow(`${p.id}:${moonsOf(p).length}`)).toBeNull();
   });
 
   it('reads an Expanse planet’s life from its system', () => {

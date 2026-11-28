@@ -9,21 +9,22 @@ import { THING_KINDS, thingRow } from './things';
 const LANE2 = { rock: '#8a8178', ice: '#cfe3ee', derelict: '#6d727c', rogue: '#4a3f38' };
 
 describe('the catalogue', () => {
-  it('has the spec’s 23 entries in its order, at least 20, each drawn as its own kinds', () => {
-    expect(CATALOGUE.map((c) => c.n)).toEqual(Array.from({ length: 23 }, (_, i) => i + 1));
+  it('has the spec’s 23 entries in its order, then the brown dwarfs and quasars, each drawn as its own kinds', () => {
+    expect(CATALOGUE.map((c) => c.n)).toEqual(Array.from({ length: 25 }, (_, i) => i + 1));
     expect(CATALOGUE.length).toBeGreaterThanOrEqual(20);
     const kinds = CATALOGUE.flatMap((c) => c.kinds);
-    expect(kinds).toHaveLength(32);
-    expect(new Set(kinds).size).toBe(32);
+    expect(kinds).toHaveLength(34);
+    expect(new Set(kinds).size).toBe(34);
+    expect(CATALOGUE.slice(23).map((c) => c.kinds)).toEqual([['dwarf'], ['quasar']]);
     expect(Object.keys(KINDS).sort()).toEqual([...kinds].sort());
     for (const c of CATALOGUE) for (const k of c.kinds) expect(KINDS[k].n, k).toBe(c.n);
     expect(CATALOGUE[22].kinds).toEqual(['hole', 'arc', 'hulk', 'giant', 'dyson']);
   });
-  it('tints every kind from the palette, and keeps lane 2’s four colours', () => {
+  it('tints every kind from the palette but the brown dwarf’s ember, and keeps lane 2’s four colours', () => {
     for (const [k, row] of Object.entries(KINDS)) {
       expect(row.color, k).toMatch(/^#[0-9a-f]{6}$/);
       expect(PALETTE[row.tint[0]], k).toBeDefined();
-      if (!LANE2[k]) expect(row.color, k).toBe(hexOf(tint(...row.tint)));
+      if (!LANE2[k] && k !== 'dwarf') expect(row.color, k).toBe(hexOf(tint(...row.tint)));
     }
     for (const [k, hex] of Object.entries(LANE2)) expect(KINDS[k].color).toBe(hex);
     expect(hexOf(PALETTE.sun.linear)).toBe(PALETTE.sun.hex);

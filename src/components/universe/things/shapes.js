@@ -112,6 +112,18 @@ const SHAPES = {
     { name: 'halo', geometry: PLANE(), material: puff(KINDS.protostar.color, 2, 0.6), additive: true, billboard: true },
     { name: 'disc', geometry: new THREE.RingGeometry(0.2, 1, 48, 2).rotateX(-Math.PI / 2), material: new THREE.MeshBasicMaterial({ color: hot(KINDS.protostar.color, 0.9), toneMapped: false, transparent: true, opacity: 0.45, side: THREE.DoubleSide, depthWrite: false }) },
   ],
+  // (a failed star: a dull ember ball, barely brighter than the dark, a faint red haze round it)
+  dwarf: () => [
+    { name: 'ball', geometry: new THREE.SphereGeometry(1, 32, 20), material: new THREE.MeshBasicMaterial({ color: hot(KINDS.dwarf.color, 0.9) }) },
+    { name: 'halo', geometry: PLANE(), material: puff(KINDS.dwarf.color, 0.7, 0.5), additive: true, billboard: true },
+  ],
+  // (a blinding white core in a hot disc, two jets out of its poles)
+  quasar: () => [
+    { name: 'core', geometry: new THREE.SphereGeometry(0.08, 16, 12), material: glow('#ffffff', 6) },
+    { name: 'halo', geometry: PLANE(), material: puff(KINDS.quasar.color, 4, 0.9), additive: true, billboard: true },
+    { name: 'disc', geometry: new THREE.RingGeometry(0.1, 0.6, 64, 2).rotateX(-Math.PI / 2), material: new THREE.MeshBasicMaterial({ color: hot('#ffd6a0', 2.2), toneMapped: false, transparent: true, opacity: 0.6, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, depthWrite: false }) },
+    { name: 'jets', geometry: new THREE.ConeGeometry(1, 1, 16, 1, true).translate(0, -0.5, 0).rotateX(Math.PI), material: glow(KINDS.quasar.color, 3, 0.35), additive: true, many: 'jets' },
+  ],
   // (a dark throat ringed by the starlight it bends: a thin bright ring at the edge, a fainter
   // one further out, and arcs of smeared stars; no painted spiral)
   wormhole: () => [

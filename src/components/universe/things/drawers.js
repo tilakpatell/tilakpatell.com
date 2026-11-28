@@ -25,7 +25,7 @@ import { DRAWN, partsOf } from './shapes';
 import { GIANT_KINDS, createGiantDrawer } from './gargantuans';
 
 const ENTRIES = 24; // (a kind's entries near at once, at most: lane 2's cap is thingsNear, 32 on mid)
-const PER = { rocks: null, pieces: null, bodies: null, haulers: 5, ships: 7, sparks: 4, motes: 24, beams: 2, arcs: 3 };
+const PER = { rocks: null, pieces: null, bodies: null, haulers: 5, ships: 7, sparks: 4, motes: 24, beams: 2, arcs: 3, jets: 2 };
 // (the visitor asked for less motion: no lightning flickers)
 const REDUCED = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
 const TAU = 2 * Math.PI;
@@ -143,6 +143,26 @@ function place(kind, e, t, w, budget, put, names) {
     for (const d of beamDirs(tr, t)) {
       q.setFromUnitVectors(Y, v.set(...d));
       put('beams', at, q, size * 2, size * tr.beam, size * 2, w);
+    }
+    return;
+  }
+  if (kind === 'dwarf') {
+    q.setFromEuler(spin(seed, t, 0.01));
+    put('ball', at, q, s, s, s);
+    put('halo', at, q, size * 1.6, size * 1.6, size * 1.6, w * traitsOf(row).warmth);
+    return;
+  }
+  if (kind === 'quasar') {
+    const tr = traitsOf(row);
+    v.set(...tr.axis);
+    q.setFromUnitVectors(Y, v);
+    put('disc', at, q, s, s, s, w);
+    put('core', at, q, s, s, s);
+    put('halo', at, q, size * 0.5, size * 0.5, size * 0.5, w);
+    // (the jets out of both poles, 0.08 × size wide at the core, `jet` cores long)
+    for (const sign of [1, -1]) {
+      q.setFromUnitVectors(Y, v.set(...tr.axis).multiplyScalar(sign));
+      put('jets', at, q, size * 0.05, size * 0.08 * tr.jet * 1.25, size * 0.05, w);
     }
     return;
   }
