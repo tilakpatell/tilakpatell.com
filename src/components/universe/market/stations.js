@@ -7,7 +7,7 @@
 // stationTypeOf(seed, area) → a type, the same for the same seed and area
 // tradesOf(type, area) → { sells: [good ids], buys: [good ids] }
 
-import { hash64 } from '../../expanse/gen/seed';
+import { hash64 } from '../../expanse/shared/gen'; // (the Expanse's hash, by its face: worlds are islands)
 import { AREAS } from './areas';
 import { GOODS } from './goods';
 

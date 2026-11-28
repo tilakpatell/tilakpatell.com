@@ -6,8 +6,8 @@
 //
 // It starts the dev server unless --url names one, opens /universe flying the
 // RV, goes out past the Core (61,000 east, as the endless check does), waits
-// for a station, jumps to it and docks, shuts the Hangar the dock opens, and
-// on the place card's Market: earns credits, buys one of the first good, reads
+// for a station, jumps to it and docks, shuts the Hangar the dock opens (the
+// flight menu's Shipyard), and on the place card's Market: earns credits, buys one of the first good, reads
 // tp-ships for it in the RV's hold, sells it back, and checks the credits came
 // back short of what it cost; then parks at Home and finds the Core's
 // exchange on its card. Shots in lab/market. Exit 1 on any miss.
@@ -95,9 +95,10 @@ try {
   await page.evaluate((id) => window.__universeDebug.travel(id, 'hyper'), st.id);
   if (await until(page, (id) => window.__universe().docked === id, st.id, 300000)) pass(`docked at ${st.name}`);
   else throw new Error(`never docked at ${st.id}`);
-  await until(page, () => Boolean(document.querySelector('.hangar-panel')), null, 30000);
+  // (the dock opens the Hangar: flying, it's the flight menu's Shipyard page; Escape shuts either, and the side panel's back while docked)
+  await until(page, () => Boolean(document.querySelector('.hangar-panel, .hud-pause')), null, 30000);
   await page.keyboard.press('Escape');
-  await until(page, () => !document.querySelector('.hangar-panel'), null, 30000);
+  await until(page, () => !document.querySelector('.hangar-panel, .hud-pause'), null, 30000);
   const marketBox = page.locator('.universe-market');
   if (await marketBox.waitFor({ timeout: 60000 }).then(() => true, () => false)) pass('the place card shows the Market');
   else throw new Error('no Market on the card');

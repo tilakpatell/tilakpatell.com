@@ -16,7 +16,7 @@
 // raresAt(area, d) → the rare goods found there: the area's from RARE_FROM
 //   sectors out, their pure grade from PURE_FROM
 
-import { hash64 } from '../../expanse/gen/seed';
+import { hash64 } from '../../expanse/shared/gen'; // (the Expanse's hash, by its face: worlds are islands)
 
 export const RARE_FROM = 10;
 export const PURE_FROM = 25;

@@ -22,7 +22,6 @@ export default function FlightSettings({ controls, onChange, open, onOpen }) {
   const id = useId();
   const panel = useRef(null);
   const button = useRef(null);
-  const set = (patch) => onChange({ ...controls, ...patch });
 
   // O opens and closes it; Escape closes it (before the page's own Escape,
   // which would leave the selected place)
@@ -84,73 +83,85 @@ export default function FlightSettings({ controls, onChange, open, onOpen }) {
               </svg>
             </button>
           </header>
-          <fieldset className="universe-setting">
-            <legend className="universe-setting-name">Difficulty</legend>
-            <span className="universe-seg universe-seg-4">
-              {DIFFICULTIES.map((m) => (
-                <button key={m} type="button" aria-pressed={controls.difficulty === m} onClick={() => set({ difficulty: m })}>
-                  {DIFFICULTY[m].label}
-                </button>
-              ))}
-            </span>
-            <span className="universe-setting-hint">{DIFFICULTY[controls.difficulty]?.hint}</span>
-          </fieldset>
-          {ORDER.map((k) => {
-            const r = CONTROLS[k];
-            const v = controls[k];
-            return (
-              <label key={k} className="universe-setting">
-                <span className="universe-setting-top">
-                  <span className="universe-setting-name">{r.label}</span>
-                  <output className="universe-setting-value">{pct(k, v)}</output>
-                </span>
-                <input
-                  type="range"
-                  min={r.min}
-                  max={r.max}
-                  step={r.step}
-                  value={v}
-                  style={{ '--fill': `${((v - r.min) / (r.max - r.min)) * 100}%` }}
-                  onChange={(e) => set({ [k]: Number(e.target.value) })}
-                  aria-describedby={`${id}-${k}`}
-                />
-                <span id={`${id}-${k}`} className="universe-setting-hint">
-                  {r.hint}
-                </span>
-              </label>
-            );
-          })}
-          <label className="universe-setting universe-setting-row">
-            <span className="universe-setting-name">Invert up and down</span>
-            <input type="checkbox" role="switch" checked={controls.invert} onChange={(e) => set({ invert: e.target.checked })} />
-          </label>
-          <fieldset className="universe-setting">
-            <legend className="universe-setting-name">A and D</legend>
-            <span className="universe-seg">
-              {AD.map((m) => (
-                <button key={m} type="button" aria-pressed={controls.ad === m} onClick={() => set({ ad: m })}>
-                  {AD_LABEL[m]}
-                </button>
-              ))}
-            </span>
-            <span className="universe-setting-hint">{AD_HINT[controls.ad]}</span>
-          </fieldset>
-          <fieldset className="universe-setting">
-            <legend className="universe-setting-name">Drag up and down</legend>
-            <span className="universe-seg">
-              {DRAG_UP.map((m) => (
-                <button key={m} type="button" aria-pressed={controls.dragUp === m} onClick={() => set({ dragUp: m })}>
-                  {DRAG_LABEL[m]}
-                </button>
-              ))}
-            </span>
-            <span className="universe-setting-hint">{DRAG_HINT[controls.dragUp]}</span>
-          </fieldset>
-          <button type="button" className="universe-settings-reset" onClick={() => onChange({ ...DEFAULTS })}>
-            Reset all
-          </button>
+          <FlightControls controls={controls} onChange={onChange} />
         </section>
       )}
+    </>
+  );
+}
+
+// The settings themselves, for the popover above and the flight menu's
+// Settings tab (universe/menu): every change live, as the popover's always were.
+export function FlightControls({ controls, onChange }) {
+  const id = useId();
+  const set = (patch) => onChange({ ...controls, ...patch });
+  return (
+    <>
+    <fieldset className="universe-setting">
+      <legend className="universe-setting-name">Difficulty</legend>
+      <span className="universe-seg universe-seg-4">
+        {DIFFICULTIES.map((m) => (
+          <button key={m} type="button" aria-pressed={controls.difficulty === m} onClick={() => set({ difficulty: m })}>
+            {DIFFICULTY[m].label}
+          </button>
+        ))}
+      </span>
+      <span className="universe-setting-hint">{DIFFICULTY[controls.difficulty]?.hint}</span>
+    </fieldset>
+    {ORDER.map((k) => {
+      const r = CONTROLS[k];
+      const v = controls[k];
+      return (
+        <label key={k} className="universe-setting">
+          <span className="universe-setting-top">
+            <span className="universe-setting-name">{r.label}</span>
+            <output className="universe-setting-value">{pct(k, v)}</output>
+          </span>
+          <input
+            type="range"
+            min={r.min}
+            max={r.max}
+            step={r.step}
+            value={v}
+            style={{ '--fill': `${((v - r.min) / (r.max - r.min)) * 100}%` }}
+            onChange={(e) => set({ [k]: Number(e.target.value) })}
+            aria-describedby={`${id}-${k}`}
+          />
+          <span id={`${id}-${k}`} className="universe-setting-hint">
+            {r.hint}
+          </span>
+        </label>
+      );
+    })}
+    <label className="universe-setting universe-setting-row">
+      <span className="universe-setting-name">Invert up and down</span>
+      <input type="checkbox" role="switch" checked={controls.invert} onChange={(e) => set({ invert: e.target.checked })} />
+    </label>
+    <fieldset className="universe-setting">
+      <legend className="universe-setting-name">A and D</legend>
+      <span className="universe-seg">
+        {AD.map((m) => (
+          <button key={m} type="button" aria-pressed={controls.ad === m} onClick={() => set({ ad: m })}>
+            {AD_LABEL[m]}
+          </button>
+        ))}
+      </span>
+      <span className="universe-setting-hint">{AD_HINT[controls.ad]}</span>
+    </fieldset>
+    <fieldset className="universe-setting">
+      <legend className="universe-setting-name">Drag up and down</legend>
+      <span className="universe-seg">
+        {DRAG_UP.map((m) => (
+          <button key={m} type="button" aria-pressed={controls.dragUp === m} onClick={() => set({ dragUp: m })}>
+            {DRAG_LABEL[m]}
+          </button>
+        ))}
+      </span>
+      <span className="universe-setting-hint">{DRAG_HINT[controls.dragUp]}</span>
+    </fieldset>
+    <button type="button" className="universe-settings-reset" onClick={() => onChange({ ...DEFAULTS })}>
+      Reset all
+    </button>
     </>
   );
 }

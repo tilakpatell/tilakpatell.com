@@ -13,7 +13,7 @@
 //   traitsOfPlanet): its first resource always, the others by their amount, and
 //   now and then its rare (the pure grade from PURE_FROM out)
 
-import { hash64 } from '../../expanse/gen/seed';
+import { hash64 } from '../../expanse/shared/gen'; // (the Expanse's hash, by its face: worlds are islands)
 import { ORE_CAP } from '../things/rules';
 import { PURE_FROM, raresAt } from './areas';
 import { GOODS } from './goods';

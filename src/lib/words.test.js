@@ -24,6 +24,7 @@ const FILES = [
   ...list('components/universe/online/', /\.jsx$/),
   ...list('components/universe/chart/', /\.jsx$/), // the nav map's chart
   ...list('components/universe/places/', /\.jsx$/), // a generated place's card
+  ...list('components/universe/menu/', /\.jsx$/), // the flight menu's tabs
   ...list('components/launch/', /\.jsx?$/), // the front door's welcome, quick tour and arrival
   'components/universe/nav.js',
   'components/universe/scene.js',

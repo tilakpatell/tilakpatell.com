@@ -1,0 +1,244 @@
+/* The flight menu's tabs (FlightMenu.jsx and its tabs, in the HUD kit's
+   PauseMenu: runtime/hud/pause.css is the frame). Laid out once, in the
+   kit's --pause-* tokens, so a dress (dresses.css) changes the material and
+   never the layout. Nothing a player reads is under 0.7rem; the key caps
+   are the kit's (kbd.hud-cap), set by --hud-key-* only. */
+
+/* while a ship flies (useFlightMode): the site's nav is put away, its pages
+   on the Site tab; what sat under it moves up to the menu chip's line; the
+   Multiplayer pill goes (its card and its feed stay: Settings opens it) */
+html[data-flight] { --nav-h: 56px; }
+html[data-flight] .site-nav { visibility: hidden; transform: translateY(calc(-100% - 16px)); }
+html[data-flight] .universe-online-pill { display: none; }
+/* and the map's corner tools (the flight settings, the Shipyard's door, the
+   nav map's button): their keys open the menu's tabs, or are still heard (H,
+   M); the Hangar's button stays in the page, as H's door */
+.universe-page[data-quiet] :is(.universe-tools, .universe-hangar-btn) { display: none; }
+/* (a touch screen's tools row is laid out by thumbs.css, at its weight: this outweighs it) */
+:root .universe-page[data-quiet] .universe-map[data-ship] .universe-tools { display: none; }
+/* the guide's corner: its key (?) and the Help tab's button have it */
+html[data-flight] .guide-btn { display: none; }
+/* (the guide's corner sits over the menu's tabs on a phone, and the tour's offer over its foot: put away while it's open, the Help tab has both) */
+body:has(.hud-pause) :is(.guide-btn, .tour-offer) { display: none; }
+/* with a mouse, Rick's portal gun is its key (P, on the Help tab) and the
+   guide's corner its key (?, and Help's button); a touch screen keeps both */
+@media (pointer: fine) {
+  .universe-page[data-quiet] .universe-portalgun { display: none; }
+}
+
+.fm {
+  /* (Battlefront's Univers has no fi or fl: every ligature off, so “flying” keeps its f) */
+  font-variant-ligatures: none;
+  --hud-key-face: var(--pause-num);
+  --text: var(--pause-ink);
+  --muted: var(--pause-muted);
+  --engine: var(--pause-accent);
+  --border: var(--pause-line);
+}
+
+/* the head: the crew, the money, the level, who's online */
+.fm-crew { display: flex; align-items: center; gap: 0.8rem; min-width: 0; }
+.fm-faces { display: inline-flex; flex: none; }
+.fm-face { width: 34px; height: 34px; border-radius: 50%; border: 2px solid var(--pause-bg); background: var(--pause-slot); }
+.fm-face + .fm-face { margin-left: -10px; }
+.fm-crew-ship { margin: 0; font: 700 1.05rem/1.15 var(--pause-display); color: var(--pause-ink); }
+.fm-head-stats { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 0.35rem 1.2rem; margin: 0; color: var(--pause-muted); font: 500 0.82rem/1.2 var(--pause-num); font-variant-numeric: tabular-nums; }
+.fm-head-stats b { color: var(--pause-ink); font-weight: 600; }
+
+/* the parts every tab uses */
+.fm-h { margin: 0 0 0.65rem; color: var(--pause-muted); font: 700 0.74rem/1.2 var(--pause-display); letter-spacing: 0.14em; text-transform: uppercase; }
+.fm-title { margin: 0; color: var(--pause-ink); font: 700 1.5rem/1.1 var(--pause-display); text-wrap: balance; }
+.fm-sub { display: flex; align-items: center; gap: 0.5rem; margin: 0.3rem 0 0; color: var(--pause-muted); font-size: 0.9rem; }
+.fm-text { margin: 0.5rem 0 0; color: var(--pause-ink); font-size: 0.92rem; line-height: 1.5; max-width: 62ch; }
+.fm-muted { color: var(--pause-muted); }
+.fm-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-height: 40px;
+  padding: 0.5rem 0.95rem;
+  border: 1px solid var(--pause-line);
+  border-radius: var(--pause-radius);
+  background: transparent;
+  color: var(--pause-ink);
+  font: 600 0.9rem/1.2 var(--pause-body);
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+.fm-btn:hover { border-color: var(--pause-accent); }
+.fm-btn[aria-pressed='true'] { border-color: var(--pause-accent); color: var(--pause-accent); }
+.fm-primary { border-color: var(--pause-accent); background: var(--pause-accent); color: var(--pause-accent-ink); }
+.fm-primary .fm-muted { color: color-mix(in srgb, var(--pause-accent-ink) 70%, transparent); }
+.fm-chip { min-height: 34px; padding: 0.3rem 0.8rem; border: 1px solid var(--pause-line); border-radius: 999px; background: transparent; color: var(--pause-ink); font: 600 0.82rem/1 var(--pause-body); cursor: pointer; }
+.fm-chip:hover { border-color: var(--pause-accent); }
+:is(.fm-btn, .fm-chip, .fm-slot, .fm-page, .fm-q > summary, .fm-credits > summary):focus-visible { outline: 2px solid var(--pause-accent); outline-offset: 2px; }
+.fm-bar { position: relative; display: block; height: 6px; margin-top: 0.6rem; overflow: hidden; border-radius: 3px; background: var(--pause-slot); }
+.fm-bar > span { position: absolute; inset: 0; transform-origin: left; scale: var(--v, 0) 1; background: var(--pause-accent); }
+.fm-foot-keys { font: 500 0.78rem/1 var(--pause-num); }
+@media (pointer: coarse) {
+  .fm-foot-keys { display: none; } /* (keys a touch screen hasn't got) */
+}
+
+/* a slot: an inventory's square, its key in the corner */
+.fm-slot {
+  position: relative;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 0.4rem;
+  width: 90px;
+  height: 90px;
+  padding: 0.55rem 0.3rem 0.45rem;
+  border: 1px solid var(--pause-line);
+  border-radius: var(--pause-slot-radius);
+  background: var(--pause-slot);
+  color: var(--pause-ink);
+  font: inherit;
+  cursor: pointer;
+}
+.fm-slot[data-empty] { cursor: default; }
+.fm-slot[aria-pressed='true'] { border-color: var(--pause-accent); box-shadow: inset 0 0 0 1px var(--pause-accent); }
+.fm-slot-icon { width: 30px; height: 30px; color: var(--pause-accent); }
+.fm-slot-name { max-width: 82px; overflow: hidden; font: 600 0.72rem/1.15 var(--pause-body); text-align: center; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.fm-slot[data-empty] .fm-slot-name { color: var(--pause-muted); font-weight: 500; }
+.fm-tier { display: flex; gap: 2px; }
+.fm-tier > i { width: 9px; height: 3px; border-radius: 1px; background: var(--pause-line); }
+.fm-tier > i[data-on] { background: var(--pause-accent); }
+.fm-slot-key { position: absolute; left: 6px; top: 5px; color: var(--pause-muted); font: 600 0.7rem/1 var(--pause-num); }
+
+/* Ship */
+.fm-ship { display: grid; grid-template-columns: minmax(220px, 260px) minmax(0, 1fr) minmax(220px, 280px); gap: 1.6rem; }
+.fm-ship-card { display: grid; align-content: start; gap: 0.2rem; }
+.fm-portrait { display: block; width: 100%; max-width: 260px; height: auto; margin: -0.2rem 0 0.6rem; mix-blend-mode: lighten; }
+.fm-ship-card .fm-btn { margin-top: 0.8rem; justify-self: start; }
+.fm-ships { display: grid; gap: 0.4rem; margin-top: 0.5rem; }
+.fm-ship-pick { display: grid; gap: 0.15rem; }
+.fm-ship-pick .fm-muted { font-size: 0.8rem; font-weight: 500; }
+.fm-slots { display: grid; align-content: start; gap: 1.05rem; min-width: 0; }
+.fm-slot-row .fm-h { margin-bottom: 0.5rem; }
+.fm-slot-line { display: flex; flex-wrap: wrap; gap: 0.6rem; }
+.fm-detail { display: grid; align-content: start; gap: 0.35rem; padding-left: 1.4rem; border-left: 1px solid var(--pause-line); }
+.fm-detail-icon { width: 46px; height: 46px; color: var(--pause-accent); }
+.fm-detail-title { font-size: 1.3rem; }
+.fm-detail .fm-btn { margin-top: 0.8rem; justify-self: start; }
+
+/* Cargo */
+.fm-cargo { display: grid; grid-template-columns: minmax(240px, 300px) minmax(0, 1fr); gap: 2rem; }
+.fm-big { margin: 0; color: var(--pause-accent); font: 600 2.6rem/1 var(--pause-num); font-variant-numeric: tabular-nums; }
+.fm-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.7rem 1rem; margin: 1.3rem 0 0; }
+.fm-stats div { display: grid; gap: 0.15rem; }
+.fm-stats dt { color: var(--pause-muted); font-size: 0.78rem; }
+.fm-stats dd { margin: 0; color: var(--pause-ink); font: 600 1rem/1.1 var(--pause-num); font-variant-numeric: tabular-nums; }
+.fm-hold-head { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; }
+.fm-hold-head .fm-muted { font: 500 0.8rem/1 var(--pause-num); }
+.fm-hold-grid { display: grid; grid-template-columns: repeat(auto-fill, 90px); gap: 0.6rem; }
+.fm-hold-grid .fm-slot { cursor: default; }
+
+/* Settings: the flight settings' own controls, in the dress's ink */
+.fm-settings { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 2rem; }
+.fm-set-flight { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem 1.6rem; align-content: start; }
+.fm-set-flight > .fm-h { grid-column: 1 / -1; margin: 0; }
+.fm-set-flight .universe-settings-reset { justify-self: start; }
+.fm-set-side { display: grid; align-content: start; gap: 1.6rem; }
+.fm-set { display: grid; align-content: start; gap: 0.7rem; }
+.fm-set > .fm-h { margin: 0; }
+.fm-set .fm-btn { justify-self: start; }
+.fm-toggle { display: flex; align-items: center; justify-content: space-between; gap: 1rem; min-height: 36px; font-size: 0.92rem; }
+.fm-toggle input { accent-color: var(--pause-accent); width: 18px; height: 18px; }
+
+/* Help */
+.fm-help { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 2rem; }
+.fm-faq { display: grid; align-content: start; gap: 0.55rem; }
+.fm-q { border: 1px solid var(--pause-line); border-radius: var(--pause-radius); background: var(--pause-slot); padding: 0.75rem 1rem; }
+.fm-q > summary { display: flex; justify-content: space-between; gap: 1rem; color: var(--pause-ink); font: 600 0.98rem/1.3 var(--pause-body); list-style: none; cursor: pointer; }
+.fm-q > summary::-webkit-details-marker { display: none; }
+.fm-q > summary::after { content: '+'; color: var(--pause-accent); font-family: var(--pause-num); }
+.fm-q[open] > summary::after { content: '–'; }
+.fm-help-side { display: grid; align-content: start; gap: 1.5rem; }
+.fm-keys + .fm-keys { margin-top: 0.8rem; }
+.fm-keytable { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
+.fm-keytable td { padding: 0.32rem 0; vertical-align: top; color: var(--pause-ink); }
+.fm-keytable td:first-child { width: 42%; padding-right: 0.8rem; }
+.fm-tour { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.5rem; }
+.fm-tour-pick { display: grid; gap: 0.2rem; }
+.fm-tour-pick .fm-muted { font-size: 0.78rem; font-weight: 500; }
+
+/* Site */
+.fm-pages { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 0.7rem; }
+.fm-page { display: grid; gap: 0.3rem; padding: 1rem 1.1rem; border: 1px solid var(--pause-line); border-radius: var(--pause-radius); background: var(--pause-slot); color: var(--pause-ink); text-decoration: none; }
+.fm-page:hover { border-color: var(--pause-accent); }
+.fm-page .fm-title { font-size: 1.15rem; }
+.fm-page .fm-muted { font-size: 0.84rem; }
+.fm-site-row { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-top: 1.2rem; }
+.fm-credits { margin-top: 1.4rem; color: var(--pause-muted); font-size: 0.86rem; }
+.fm-credits > summary { cursor: pointer; font-weight: 600; }
+
+/* Ship: its pages, the overview and the Hangar's, along its top */
+.fm-shiptab { display: flex; flex-direction: column; gap: 1rem; min-height: 100%; }
+.fm-pages-strip { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.fm-page-tab[aria-selected='true'] { border-color: var(--pause-accent); background: var(--pause-accent); color: var(--pause-accent-ink); }
+.fm-points { margin-left: auto; border-color: var(--pause-accent); color: var(--pause-accent); }
+/* the Hangar's page in the menu: the shipyard's tokens (shipyard.css has them on
+   .yard, which is the full page's box), no box of its own, the dress's ink;
+   the shipyard's three panes get the tab's height and scroll in themselves */
+.fm-hangar {
+  --yard-bg: transparent;
+  --yard-line: var(--pause-line);
+  --yard-pane: var(--pause-slot);
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  color: var(--pause-ink);
+}
+.fm-hangar .hangar-body { flex: 1; min-height: 0; overflow: visible; }
+/* the shipyard, a garage's whole screen: the panel near the window's size,
+   and the yard the rest of its tab's height, by the column's flex (a page
+   whose height came from its content took the catalogue's 3,200 px, and the
+   showroom's canvas grew with it) */
+@media (min-width: 900px) {
+  .fm .hud-pause-panel:has(.hangar-body[data-tab='shipyard']) { width: calc(100vw - 32px); height: calc(100dvh - 96px); }
+  .fm .hud-pause-body:has(.hangar-body[data-tab='shipyard']) { display: flex; flex-direction: column; overflow: hidden; padding-block: 0.9rem; }
+  .fm .hud-pause-body:has(.hangar-body[data-tab='shipyard']) .fm-shiptab { flex: 1; min-height: 0; gap: 0.7rem; }
+  .fm-hangar .hangar-body[data-tab='shipyard'] { display: flex; flex: 1; min-height: 0; overflow: hidden; }
+}
+/* (narrower, the yard stacks, showroom over list over card, and the menu's
+   body scrolls it as one page, the bar along its foot while there's a bill) */
+@media (max-width: 899px) {
+  .fm-hangar .hangar-body[data-tab='shipyard'] { display: block; overflow: visible; }
+  .fm-hangar .yz { height: auto; min-height: 0; overflow: visible; }
+}
+.fm-hangar .hangar-page { max-width: none; padding: 0; }
+.fm-hangar :is(button, input):focus-visible { outline: 2px solid var(--pause-accent); outline-offset: 1px; }
+
+/* the Map tab holds the page's side panel: in the menu, not beside the map */
+.fm .hud-pause-body .universe-panel {
+  position: static;
+  inset: auto;
+  width: auto;
+  max-width: 62rem;
+  max-height: none;
+  overflow: visible;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  animation: none;
+}
+
+/* (the galaxy's loading film, a band in the menu rather than the whole tab) */
+.fm .hud-pause-body .galaxy-film-card { max-height: 220px; }
+/* (and what else the panel said has its own tab now: the keys are Help's, the credits and the ways out the Site's) */
+.fm .hud-pause-body :is(.universe-keymap, .universe-keymap-land, .universe-keymap-touch, .universe-guide-all, .universe-credits, .universe-exits, .universe-guide, .universe-guide-tucked) { display: none; }
+
+/* narrower: the columns stack */
+@media (max-width: 980px) {
+  .fm-ship, .fm-cargo, .fm-settings, .fm-help { grid-template-columns: minmax(0, 1fr); }
+  .fm-detail { padding-left: 0; border-left: 0; }
+  .fm-set-flight { grid-template-columns: minmax(0, 1fr); }
+}
+@media (pointer: coarse) {
+  .fm-btn, .fm-chip { min-height: 44px; }
+}
